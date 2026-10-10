@@ -1,0 +1,50 @@
+{
+  "id": "fornecedores",
+  "stack": "python",
+  "sections": [
+    "dashboard",
+    "indicators",
+    "analysis",
+    "reports",
+    "settings"
+  ],
+  "durable": true,
+  "jobs": [],
+  "mutation": {
+    "path": "/fornecedores/suppliers/FOR-0284/attachments",
+    "file": {
+      "field": "file",
+      "name": "conformidade-{uniq}.pdf",
+      "content": "%PDF-1.4\n% conformidade {uniq}\n%%EOF\n",
+      "type": "application/pdf"
+    },
+    "vary": "file",
+    "ok": [
+      201
+    ],
+    "audit_action": "Anexo de fornecedor enviado"
+  },
+  "job_trigger": null,
+  "heavy": null,
+  "search": {
+    "q": "Norte",
+    "min": 1
+  },
+  "storage": {
+    "upload": {
+      "path": "/fornecedores/suppliers/FOR-0284/attachments",
+      "field": "file",
+      "name": "armazenamento-{uniq}.pdf",
+      "content": "%PDF-1.4\n% armazenamento {uniq}\n%%EOF\n",
+      "type": "application/pdf"
+    },
+    "download_prefix": "/fornecedores/suppliers/FOR-0284/attachments/",
+    "delete_suffix": "/delete",
+    "traversal": [
+      "/fornecedores/suppliers/FOR-0284/attachments/..%2F..%2Fsegredo",
+      "/fornecedores/suppliers/FOR-0284/attachments/%2e%2e",
+      "/fornecedores/suppliers/FOR-0284/attachments/a%5Cb"
+    ],
+    "accept_unavailable": false
+  }
+}

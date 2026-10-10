@@ -1,0 +1,8 @@
+{% extends "workspace.html" %}
+{% block content %}
+<div class="app-page-header"><div><div class="eyebrow">{{ t(app.name) }}</div><h1 class="page-title">{{ t('Início') }}</h1><p class="page-subtitle">{{ t('Resumo do app.') }}</p></div><a class="primary-button" href="{{ base }}/itens">{{ t('Ver itens') }}</a></div>
+<div class="metric-grid">
+<div class="metric-card"><span class="metric-label">{{ t('Itens cadastrados') }}</span><strong class="metric-value">{{ thousands(count) }}</strong></div>
+<div class="metric-card"><span class="metric-label">{{ t('Quantidade total') }}</span><strong class="metric-value">{{ thousands(total) }}</strong></div>
+</div>
+{% endblock %}

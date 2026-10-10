@@ -1,0 +1,29 @@
+{
+  "_doc": "Vetores compartilhados (onda 10): o confinamento de caminhos e a URL pré-assinada S3 são iguais no hub (Rust, hub-storage), no hub-sdk Rust e no hub_sdk Python. Testados nas três pontas.",
+  "paths_ok": [
+    ["/a//b/c.pdf", "a/b/c.pdf"],
+    ["", ""],
+    ["///", ""],
+    ["Relatório 2026/ação ç.pdf", "Relatório 2026/ação ç.pdf"],
+    ["a/.hidden", "a/.hidden"],
+    ["FOR-0284/20260928-contrato.pdf", "FOR-0284/20260928-contrato.pdf"]
+  ],
+  "paths_bad": [
+    "..", "../x", "a/../../x", "a/./b", "a\\..\\b", "..\\x", "%2e%2e/x", "%252e%252e/x", "a/%2F/b",
+    "a/\uff0e\uff0e/b", "\u2024\u2024/x", "a\u2215b", "a\uff0f..", "a/b\u0000c", "a/b\nc", "C:/Windows",
+    "a/b?c", "a/<x>", "a/b|c", "a/b#frag", "nome /x", "pasta./x", " espaço/x", "a\u202efdp.exe"
+  ],
+  "presign": {
+    "endpoint": "http://hub-objstore:9000",
+    "bucket": "fornecedores",
+    "region": "us-east-1",
+    "access_key": "AKIDEXAMPLE",
+    "secret_key": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+    "public_url": "https://arquivos.exemplo.com",
+    "key": "anexos/a b.pdf",
+    "expires": 900,
+    "now": 1790596800,
+    "url": "https://arquivos.exemplo.com/fornecedores/anexos/a%20b.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIDEXAMPLE%2F20260928%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260928T120000Z&X-Amz-Expires=900&X-Amz-SignedHeaders=host&X-Amz-Signature=eb3d670579654469f4f68b9f80081ce5c0aa84edc71d36a1475cf25a98f40e8d",
+    "put_url": "https://arquivos.exemplo.com/fornecedores/anexos/a%20b.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIDEXAMPLE%2F20260928%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260928T120000Z&X-Amz-Expires=900&X-Amz-SignedHeaders=host&X-Amz-Signature=dd22499402d87759451c4aa81d0a41621489015a65fba8edb880f751f6ea510b"
+  }
+}

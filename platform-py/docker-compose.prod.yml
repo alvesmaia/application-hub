@@ -1,0 +1,64 @@
+# Overlay de PRODUÇÃO — use sempre com --env-file .prod.env (gitignored; modelo em prod.env.example):
+#   docker compose --env-file .prod.env -f docker-compose.yml -f docker-compose.apps.yml -f docker-compose.prod.yml up -d
+# Sem contas demo (HUB_DEMO_USERS não existe), sem rotas de teste dos apps, variáveis obrigatórias
+# (o compose recusa subir se faltar), cookie Secure e semente de variáveis sem a variável de teste.
+# Compose >= 2.24 (!override / !reset).
+services:
+  app-hub-web:
+    env_file: !override
+      - path: ./.prod.env
+        required: true
+    environment:
+      HUB_PUBLIC_URL: ${HUB_PUBLIC_URL:?https://hub.exemplo.com.br}
+      HUB_PUBLIC_DOCS: ${HUB_PUBLIC_DOCS:-1}
+      HUB_COOKIE_SECURE: "1"
+      HUB_MASTER_KEY_FILE: ${HUB_MASTER_KEY_FILE:-/data/master.key} # falha ao subir se o arquivo faltar (nunca gera chave nova em silêncio)
+      HUB_DB_URL: postgresql://hub:${APP_HUB_DB_PASSWORD:?}@app-hub-db:5432/hub
+      HUB_STATE_DB_URL: postgresql://hub:${APP_HUB_DB_PASSWORD:?}@app-hub-db:5432/hub
+      HUB_S3_ADMIN_URL: http://hubadmin:${APP_HUB_OBJSTORE_PASSWORD:?}@app-hub-objstore:9000
+      HUB_APP_ENV_FILE: /config/app-env.prod.json
+      # Âncora externa da auditoria (F19): cabeça assinada fora do volume de dados (outro disco/NFS em produção).
+      HUB_AUDIT_HEAD_FILE: /audit-head/head.jsonl
+      HUB_BUILD_CPUS: ${HUB_BUILD_CPUS:-2}
+      HUB_BUILD_TIMEOUT_S: ${HUB_BUILD_TIMEOUT_S:-900}
+      HUB_KEEP_IMAGES: ${HUB_KEEP_IMAGES:-3}
+    volumes:
+      - ./app-env.prod.json:/config/app-env.prod.json:ro
+      - ${HUB_AUDIT_HEAD_DIR:?defina HUB_AUDIT_HEAD_DIR (pasta fora do volume de dados)}:/audit-head
+
+  app-hub-db:
+    environment:
+      POSTGRES_PASSWORD: ${APP_HUB_DB_PASSWORD:?}
+
+  app-hub-objstore:
+    environment:
+      MINIO_ROOT_PASSWORD: ${APP_HUB_OBJSTORE_PASSWORD:?}
+
+  app-hub-app-db:
+    environment:
+      POSTGRES_PASSWORD: ${APP_HUB_APP_DB_PASSWORD:?}
+
+  app-hub-app-ativos:
+    environment: &prod-app
+      HUB_DEMO_E2E_HOSTILE: "0"
+      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:?}@app-hub-app-db:5432/ativos
+      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_ATIVOS:?}
+
+  app-hub-app-fornecedores:
+    environment:
+      <<: *prod-app
+      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:?}@app-hub-app-db:5432/fornecedores
+      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_FORNECEDORES:?}
+      HUB_S3_SECRET_KEY_FORNECEDORES: ${APP_HUB_OBJSTORE_PASSWORD:?}
+
+  app-hub-app-servicos:
+    environment:
+      <<: *prod-app
+      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:?}@app-hub-app-db:5432/servicos
+      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_SERVICOS:?}
+
+  app-hub-app-coletor:
+    environment:
+      <<: *prod-app
+      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:?}@app-hub-app-db:5432/coletor
+      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_COLETOR:?}

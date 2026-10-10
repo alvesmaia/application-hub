@@ -1,0 +1,69 @@
+import { test, expect } from '@playwright/test';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { WORK_DIR, openApp, stateFile, uniq } from './helpers';
+
+test.use({ storageState: stateFile('admin') });
+
+const SUP = 'FOR-0279';
+
+test('fornecedores: anexo (envio e download byte a byte), ficha PDF e consulta externa', async ({ page }) => {
+  await openApp(page, `/apps/fornecedores/indicators?id=${SUP}`);
+  await expect(page.locator('#app-root h2').first()).toBeVisible();
+
+  // Upload de anexo (PDF) pelo formulário do app; download confere os bytes.
+  fs.mkdirSync(WORK_DIR, { recursive: true });
+  const name = `e2e-${uniq()}.pdf`;
+  const bytes = Buffer.concat([Buffer.from('%PDF-1.4\n'), crypto.randomBytes(40_000)]);
+  const file = path.join(WORK_DIR, name);
+  fs.writeFileSync(file, bytes);
+  await page.setInputFiles('#f-anexo', file);
+  const up = page.waitForResponse((r) => r.url().endsWith(`/suppliers/${SUP}/attachments`) && r.request().method() === 'POST');
+  await page.locator('form[enctype="multipart/form-data"][action$="/attachments"] button[type="submit"]').click();
+  expect((await up).status()).toBeLessThan(300);
+  const link = page.locator(`a[href*="/attachments/"][href$="-${name}"]`).first();
+  await expect(link).toBeVisible();
+  const [dl] = await Promise.all([page.waitForEvent('download'), link.click()]);
+  const got = fs.readFileSync((await dl.path())!);
+  expect(crypto.createHash('sha256').update(got).digest('hex')).toBe(crypto.createHash('sha256').update(bytes).digest('hex'));
+
+  // Ficha em PDF gerada pelo app.
+  const [pdf] = await Promise.all([page.waitForEvent('download'), page.locator('a', { hasText: 'Gerar ficha PDF' }).click()]);
+  const pdfBytes = fs.readFileSync((await pdf.path())!);
+  expect(pdfBytes.subarray(0, 5).toString()).toBe('%PDF-');
+
+  // Consulta à API externa (hub-extapi) substitui o painel.
+  const look = page.waitForResponse((r) => r.url().includes(`/suppliers/${SUP}/lookup`));
+  await page.locator('#lookup-box button[type="submit"]').click();
+  expect((await look).status()).toBeLessThan(500);
+  await expect(page.locator('#lookup-box')).not.toContainText('Consultando', { timeout: 15_000 });
+  await expect(page.locator('#lookup-box')).toContainText(/Situação|situação|ATIVA|Ativa|Razão|Consulta/);
+});
+
+test('servicos: relatório pesado com agrupamento e exportação CSV', async ({ page }) => {
+  test.setTimeout(240_000);
+  await openApp(page, '/apps/servicos/reports');
+  await page.selectOption('select[name="agrupar"]', { index: 1 });
+  const rep = page.waitForResponse((r) => r.url().includes('/_frag/servicos/reports?'), { timeout: 120_000 });
+  await page.locator('form[action="/apps/servicos/reports"] button[type="submit"]').click();
+  const r = await rep;
+  expect(r.status()).toBe(200);
+  await expect(page.locator('#app-root')).toContainText(/\d+ linhas · \d+ ms/);
+  const summary = await page.locator('#app-root h2', { hasText: /linhas ·/ }).first().textContent();
+  test.info().annotations.push({ type: 'relatório', description: summary || '' });
+  const csv = page.locator('a[href*="/_frag/servicos/reports/export.csv"]').first();
+  const [dl] = await Promise.all([page.waitForEvent('download'), csv.click()]);
+  const text = fs.readFileSync((await dl.path())!, 'utf8');
+  expect(text.trim().split(/\r?\n/).length).toBeGreaterThan(2);
+});
+
+test('servicos: abrir chamado e atualizar status', async ({ page }) => {
+  await openApp(page, '/apps/servicos/requests?new=1');
+  const title = `Chamado E2E ${uniq()}`;
+  await page.fill('#t-title', title);
+  const post = page.waitForResponse((r) => r.url().endsWith('/_frag/servicos/requests') && r.request().method() === 'POST');
+  await page.locator('#ticket-new button[type="submit"]').click();
+  expect((await post).status()).toBeLessThan(300);
+  await expect(page.locator('#app-root')).toContainText(/SD-\d{4}-\d+/);
+});

@@ -1,0 +1,29 @@
+/* Documentação da API v1 (onda 11): visualizador mínimo, sem dependências externas. */
+:root { --bg: #F4F6FB; --fg: #334E68; --muted: #52606D; --card: #FFFFFF; --line: #E1E6F0; --get: #3A4FD8; --post: #0B6B3A; --put: #8A4B00; --delete: #9B1C1C; --danger-bg: #FDECEC; --on-method: #FFFFFF; --link: #3A4FD8; }
+@media (prefers-color-scheme: dark) { :root[data-theme="auto"] { --bg: #191919; --fg: #EDEDED; --muted: #A5A5A5; --card: #202020; --line: #2F2F2F; --get: #3A4FD8; --post: #0B6B3A; --put: #8A4B00; --delete: #9B1C1C; --danger-bg: #33201E; --link: #8FA3FF; } }
+/* Nunito Sans (interface) e Red Hat Mono (código) servidas pelo hub (identidade Alvesmaia; OFL em /assets/fonts/OFL.txt). */
+@font-face { font-family: "Nunito Sans"; font-display: swap; font-weight: 400 900; src: url("/assets/fonts/nunito-sans-latin-wght-normal.woff2") format("woff2-variations"), url("/assets/fonts/nunito-sans-latin-wght-normal.woff2") format("woff2"); }
+@font-face { font-family: "Red Hat Mono"; font-display: swap; font-weight: 300 700; src: url("/assets/fonts/red-hat-mono-latin-wght-normal.woff2") format("woff2"); }
+* { box-sizing: border-box; }
+body { margin: 0; font: 13px/1.5 "Nunito Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; background: var(--bg); color: var(--fg); }
+.apidoc-head, #apidoc { max-width: 1040px; margin: 0 auto; padding: 16px; }
+.apidoc-head h1 { margin: 16px 0 4px; font-size: 1.6rem; }
+.apidoc-head small { color: var(--muted); font-weight: 500; }
+.apidoc-head p { color: var(--muted); margin: 0; }
+a { color: var(--link); }
+code { font: 13px "Red Hat Mono", ui-monospace, Consolas, monospace; background: var(--line); padding: 1px 4px; border-radius: 4px; }
+h2.tag { margin: 28px 0 8px; font-size: 1.15rem; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+details.op { background: var(--card); border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; }
+details.op > summary { cursor: pointer; padding: 10px 12px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; list-style: none; }
+details.op > summary::-webkit-details-marker { display: none; }
+.method { font: 700 12px "Red Hat Mono", ui-monospace, Consolas, monospace; color: var(--on-method); border-radius: 4px; padding: 2px 6px; min-width: 56px; text-align: center; }
+.m-get { background: var(--get); } .m-post { background: var(--post); } .m-put { background: var(--put); } .m-delete { background: var(--delete); }
+.path { font: 14px "Red Hat Mono", ui-monospace, Consolas, monospace; word-break: break-all; }
+.summary { color: var(--muted); }
+.badge { font-size: 12px; border-radius: 999px; padding: 1px 8px; border: 1px solid var(--line); }
+.badge.danger { background: var(--danger-bg); color: var(--delete); border-color: transparent; }
+.op-body { padding: 0 12px 12px; overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; border-bottom: 1px solid var(--line); padding: 6px 8px; vertical-align: top; }
+pre { background: var(--line); padding: 8px; border-radius: 6px; overflow-x: auto; font-size: 12.5px; }
+.error { color: var(--delete); }

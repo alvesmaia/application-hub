@@ -1,0 +1,34 @@
+Application Hub
+Copyright 2026 Alvesmaia
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+The names "Application Hub" and "Alvesmaia", and the Alvesmaia logo, are trademarks
+and are NOT licensed under the Apache License; see TRADEMARKS.md.
+
+This product bundles the following third-party components, each under its own license:
+
+- Nunito Sans (font) — Copyright 2016 The Nunito Sans Project Authors.
+  SIL Open Font License 1.1 — platform/assets/shell/fonts/OFL-NunitoSans.txt
+- Red Hat Display and Red Hat Mono (fonts) — Copyright 2024 The Red Hat Project Authors.
+  SIL Open Font License 1.1 — platform/assets/shell/fonts/OFL.txt
+- Lucide icons (sun, moon, monitor; inlined SVG paths) — Copyright Lucide Contributors 2022,
+  portions Copyright Cole Bemis 2013-2022 (Feather, MIT). ISC License —
+  platform/assets/shell/fonts/LUCIDE-ICONS.txt
+- Coding-agent icons (Claude Code, OpenAI Codex, GitHub Copilot, Cursor, OpenCode; unmodified SVGs as
+  published by Cloudflare's agent docs) — platform/assets/web/agents/. Names and logos are trademarks
+  of their respective owners (Anthropic, OpenAI, GitHub/Microsoft, Anysphere, SST/OpenCode); used only
+  nominatively to indicate the prompt works with those tools. No endorsement implied.
+- @zxing/library 0.23.0 (barcode/QR decoding, unmodified UMD build) — Copyright ZXing authors.
+  Apache License 2.0 — platform/assets/shell/vendor/LICENSE-zxing.txt
+
+Not bundled in this source tree, but built from upstream source by the compose files and the
+image workflow (separate programs, used over the network only, never linked):
+
+- MinIO server and mc client (github.com/minio/minio, github.com/minio/mc) —
+  GNU Affero General Public License v3.0. The container images built by
+  platform-py/infra/minio/Dockerfile contain unmodified upstream binaries; their corresponding
+  source is the upstream tag named in that Dockerfile (MINIO_VERSION / MC_VERSION).
+- PostgreSQL (official postgres:16-alpine image) — PostgreSQL License.
+
+Python and JavaScript dependencies are installed at build time from their registries
+(see the pyproject.toml / uv.lock and package.json files) and keep their own licenses.

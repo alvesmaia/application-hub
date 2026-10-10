@@ -1,0 +1,31 @@
+{
+  "id": "coletor",
+  "name": "Coletor",
+  "version": "1.0.0",
+  "mode": "fragment",
+  "routes": [
+    "/coletor/*"
+  ],
+  "resources": {
+    "cpu": 1.0,
+    "memory": "384Mi",
+    "pids": 100
+  },
+  "limits": {
+    "max_upload_mb": 8
+  },
+  "permissions": [
+    "coletor.read"
+  ],
+  "sdk": "1.0",
+  "runtime": {
+    "stack": "python"
+  },
+  "stack": {
+    "language": "Python 3.12",
+    "framework": "FastAPI",
+    "sdk": "hub-sdk-python 1.0",
+    "db": "PostgreSQL 16",
+    "libs": ["python-barcode", "segno", "ppf-datamatrix"]
+  }
+}

@@ -1,0 +1,14 @@
+.venv/
+dist/
+__pycache__/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.dev.env
+.prod.env
+.coverage
+.tmp-instance.env
+.devkit-instance.env
+.iso-instance.env
+.devkit-apps.json
+.secrets/

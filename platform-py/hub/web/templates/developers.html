@@ -1,0 +1,31 @@
+{% extends base_tpl|default("base.html") %}
+{% block title %}{{ tab }} · {{ brand }}{% endblock %}
+{% block head %}<link rel="alternate" type="text/markdown" href="{{ raw_url }}"/>{% endblock %}
+
+{% block main %}
+<div class="dev-docs">
+<nav class="dev-nav" aria-label="{{ tr('Documentação') }}" data-dev-nav="">
+<button type="button" class="dev-nav-toggle" aria-expanded="false" aria-controls="dev-nav-body" data-dev-nav-toggle="">{{ tr(doc.title) }}<svg class="dev-chev" viewBox="0 0 16 16" aria-hidden="true"><path d="m6 4 4 4-4 4"/></svg></button>
+<div class="dev-nav-body" id="dev-nav-body">
+<p class="dev-nav-head">{{ tr('Desenvolvedores') }}</p>
+<div class="dev-nav-search"><input type="search" class="dev-nav-filter" data-dev-nav-filter="" placeholder="{{ tr('Filtrar') }}" aria-label="{{ tr('Filtrar') }}" aria-keyshortcuts="/"><kbd aria-hidden="true">/</kbd></div>
+<p class="dev-nav-empty" data-dev-nav-empty="" hidden="">{{ tr('Nada encontrado.') }}</p>
+{% for sid, label, href in sections %}{% set cur = doc.section == sid %}<details class="dev-nav-group"{% if cur %} open{% endif %}><summary class="dev-nav-row{% if cur %} dev-nav-cur{% endif %}">{{ tr(label) }}<svg class="dev-chev" viewBox="0 0 16 16" aria-hidden="true"><path d="m6 4 4 4-4 4"/></svg></summary>
+<ul>{% for d in docs if d.section == sid %}<li><a class="dev-nav-link" href="/developers{{ '/' ~ d.slug if d.slug else '' }}"{% if d.slug == doc.slug %} aria-current="page"{% endif %}>{{ tr('Visão geral') if d.split or not d.slug else tr(d.title) }}</a></li>{% endfor %}</ul></details>
+{% endfor %}
+</div>
+</nav>
+{% if toc %}<aside class="dev-toc" aria-labelledby="dev-toc-title"><p class="dev-toc-title" id="dev-toc-title">{{ tr('Nesta página') }}</p>
+<ul class="dev-toc-list" aria-labelledby="dev-toc-title" data-dev-toc=""><!--notr-->{% for lvl, title, hid in toc %}{% set prev = loop.previtem[0] if loop.previtem else lvl %}{% set nxt = loop.nextitem[0] if loop.nextitem else lvl %}<li>{% if lvl > prev %}<svg class="dev-toc-curve" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0C0 .5 1 .5 1 1" vector-effect="non-scaling-stroke"/></svg>{% endif %}<a class="dev-toc-link dev-toc-l{{ lvl }}" href="#{{ hid }}">{{ title }}</a>{% if nxt < lvl %}<svg class="dev-toc-curve" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true"><path d="M1 0C1 .5 0 .5 0 1" vector-effect="non-scaling-stroke"/></svg>{% endif %}</li>{% endfor %}<!--/notr--></ul></aside>{% endif %}
+<article class="dev-article" aria-label="{{ tr(doc.title) }}">
+{% if lang_note %}<p class="dev-note">{{ tr('Esta documentação está em português.') }}</p>{% endif %}
+<nav class="dev-crumbs" aria-label="{{ tr('Trilha') }}"><a href="/developers">{{ tr('Desenvolvedores') }}</a>{% for sid, label, href in sections if sid == doc.section and doc.slug and label != doc.title %} / <a href="/developers/{{ href }}">{{ tr(label) }}</a>{% endfor %} / <span aria-current="page">{{ tr(doc.title) }}</span></nav>
+{% set parts = doc_html.split('</h1>', 1) %}<div class="dev-doc" data-dev-doc=""><!--notr-->{{ parts[0]|safe }}{% if parts|length > 1 %}</h1><!--/notr--><p class="dev-meta">{{ tr('Atualizado em') }} <time datetime="{{ updated }}">{{ updated }}</time></p>{% if prompt %}<div class="dev-hero-actions"><span class="dev-prompt" data-hub-copy-prompt="" aria-label="{{ tr('Copiar prompt') }}">
+<button type="button" class="agent-copy" data-hub-copy-prompt-button=""><span class="agent-icons" role="img" aria-label="{{ tr('Agentes compatíveis') }}">{% for aid, aname in agents %}<img class="agent-ico agent-ico-light" src="/assets/agents/{{ aid }}-light.svg" alt="{{ aname }}" title="{{ aname }}" width="18" height="18"><img class="agent-ico agent-ico-dark" src="/assets/agents/{{ aid }}-dark.svg" alt="{{ aname }}" title="{{ aname }}" width="18" height="18">{% endfor %}</span><svg class="dev-ico dev-ico-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span data-copy-idle="">{{ tr('Copiar prompt') }}</span><span data-copy-done="" hidden="">{{ tr('Prompt copiado') }}</span></button>
+<textarea hidden="" readonly="" aria-hidden="true" tabindex="-1" data-hub-copy-prompt-text="">{{ prompt }}</textarea>
+<span class="visually-hidden" role="status" aria-live="polite" data-hub-copy-prompt-status=""></span>
+<span hidden="" data-copy-fail="">{{ tr('Não foi possível copiar. Selecione o texto e copie manualmente.') }}</span>
+</span></div>{% endif %}<!--notr-->{{ parts[1]|safe }}{% endif %}<!--/notr--></div>
+</article>
+</div>
+{% endblock %}

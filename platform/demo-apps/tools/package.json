@@ -1,0 +1,8 @@
+{
+  "name": "hub-demo-apps-tools",
+  "license": "Apache-2.0",
+  "private": true,
+  "description": "Gera os fragmentos HTML dos apps de demonstração a partir do mockup (js/*.js).",
+  "scripts": { "generate": "node generate-fragments.mjs" },
+  "dependencies": { "jsdom": "^24.1.0" }
+}

@@ -1,0 +1,12 @@
+{#- Fim da sessão: acertos, erros, pulados, tempo médio por leitura certa e duração. -#}
+<section class="col-card col-summary" data-col-summary aria-labelledby="col-summary-title">
+<h2 id="col-summary-title" class="col-section-title">{{ t('Sessão concluída') }}</h2>
+<div class="col-stats col-stats-4">
+<div><span>{{ t('Acertos') }}</span><strong data-col-acertos>{{ summary.acertos }}</strong></div>
+<div><span>{{ t('Erros') }}</span><strong data-col-erros>{{ summary.erros }}</strong></div>
+<div><span>{{ t('Pulados') }}</span><strong data-col-pulados>{{ summary.pulados }}</strong></div>
+<div><span>{{ t('Tempo médio por leitura') }}</span><strong data-col-media>{{ avg_s }} s</strong></div>
+</div>
+<p class="col-hint">{{ t('Duração total: {s} s.', s=total_s) }}</p>
+{% include "_results.html" %}
+</section>

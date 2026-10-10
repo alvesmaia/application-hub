@@ -1,0 +1,10 @@
+.venv
+.hub
+.env
+deploy.*.env
+*.hubapp
+tests
+**/__pycache__
+.pytest_cache
+.ruff_cache
+.coverage

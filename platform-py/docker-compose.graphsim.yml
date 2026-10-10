@@ -1,0 +1,28 @@
+# Simulador do SharePoint/Graph (perfil sharepoint-sim). Uso (em platform-py/):
+#   docker compose -p app-hub -f docker-compose.yml -f docker-compose.graphsim.yml --profile sharepoint-sim up -d --build
+# Conexao SharePoint de teste: Tenant 00000000-0000-0000-0000-00000000c0de, Client ID
+# 11111111-2222-3333-4444-555555555555, segredo `segredo-do-simulador`, site
+# https://contoso.sharepoint.com/sites/Hub. Para testar certificado, aponte GRAPHSIM_CERT_PEM_FILE
+# (dentro do container) para o PEM do certificado aceito e monte-o em /certs.
+services:
+  app-hub-graphsim:
+    build:
+      context: .
+      dockerfile: graphsim/Dockerfile
+    image: app-hub-graphsim
+    container_name: app-hub-graphsim
+    profiles: ["sharepoint-sim"]
+    labels: { hub.py: "1" }
+    mem_limit: 128m
+    restart: unless-stopped
+    environment:
+      GRAPHSIM_CERT_PEM_FILE: ${GRAPHSIM_CERT_PEM_FILE:-}
+    volumes:
+      - ${GRAPHSIM_CERT_DIR:-./graphsim}:/certs:ro
+    ports:
+      - "127.0.0.1:18080:8080"
+
+  app-hub-web:
+    environment:
+      HUB_GRAPH_URL: http://app-hub-graphsim:8080/v1.0
+      HUB_GRAPH_LOGIN_URL: http://app-hub-graphsim:8080

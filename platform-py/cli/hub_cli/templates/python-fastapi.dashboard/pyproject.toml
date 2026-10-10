@@ -1,0 +1,48 @@
+[project]
+name = "__APP_ID__"
+version = "0.1.0"
+description = "__APP_NAME__ — app da Application Hub (Python + FastAPI + hub_sdk)"
+requires-python = ">=3.12"
+dependencies = [
+  "hub-sdk[sql,dashboards]==0.2.0",
+  "uvicorn[standard]==0.54.0",
+  "python-multipart==0.0.32",
+]
+
+[dependency-groups]
+dev = ["pytest==9.1.1", "pytest-cov>=7", "httpx==0.28.1", "ruff==0.16.9", "ty>=0.0.84"]
+
+# O SDK vem junto do projeto (vendor/): nada de acesso ao repositório do hub.
+[tool.uv.sources]
+hub-sdk = { path = "vendor/__SDK_WHEEL__" }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/__PKG__"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "ASYNC", "S", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003", "E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S105", "S106"]
+
+[tool.ty.rules]
+all = "error"
+
+[tool.ty.environment]
+python-version = "3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=__PKG__ --cov-report=term-missing --cov-fail-under=80"
+
+[tool.coverage.run]
+omit = ["*/__main__.py", "*/migrations/*"]

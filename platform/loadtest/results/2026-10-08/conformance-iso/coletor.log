@@ -1,0 +1,46 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python
+rootdir: /suite
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collecting ... collected 30 items
+
+test_contract.py::test_health_is_get_app_root_200 PASSED                 [  3%]
+test_contract.py::test_sections_are_fragments_with_the_workspace PASSED  [  6%]
+test_contract.py::test_never_emits_unprefixed_self_links PASSED          [ 10%]
+test_contract.py::test_unknown_section_is_404_and_other_prefixes_are_not_served PASSED [ 13%]
+test_contract.py::test_skeleton PASSED                                   [ 16%]
+test_contract.py::test_assets_closed_list_with_types PASSED              [ 20%]
+test_contract.py::test_no_app_javascript_in_fragments PASSED             [ 23%]
+test_contract.py::test_identity_is_used_and_escaped_and_invalid_is_guest PASSED [ 26%]
+test_contract.py::test_internal_endpoints_require_the_token PASSED       [ 30%]
+test_contract.py::test_search_contract PASSED                            [ 33%]
+test_contract.py::test_approvals_contract PASSED                         [ 36%]
+test_contract.py::test_locale_from_hub_headers PASSED                    [ 40%]
+test_contract.py::test_trace_context_propagates_to_app_and_db PASSED     [ 43%]
+test_contract.py::test_flags_push_contract PASSED                        [ 46%]
+test_contract.py::test_flag_header_drives_the_ui SKIPPED (perfil sem...) [ 50%]
+test_contract.py::test_outbox_page_shape_and_limit_cap PASSED            [ 53%]
+test_contract.py::test_idempotency_replay_mismatch_scope_and_audit_exactly_once PASSED [ 56%]
+test_contract.py::test_idempotency_same_key_in_parallel_executes_once PASSED [ 60%]
+test_contract.py::test_jobs_listing_contract PASSED                      [ 63%]
+test_contract.py::test_job_cancel_and_retry_semantics SKIPPED (app s...) [ 66%]
+test_contract.py::test_heavy_operations_answer_429_with_retry_after SKIPPED [ 70%]
+test_contract.py::test_downloads_are_attachments_nosniff_no_store SKIPPED [ 73%]
+test_contract.py::test_storage_roundtrip_confinement_and_failures SKIPPED [ 76%]
+test_contract.py::test_sdk_tables_and_durable_effects PASSED             [ 80%]
+test_contract.py::test_openapi_is_valid_and_only_documents_the_app_api PASSED [ 83%]
+test_contract.py::test_declared_endpoints_are_reachable_and_auth_is_enforced PASSED [ 86%]
+test_contract.py::test_ready_header_is_absent_once_the_app_is_ready PASSED [ 90%]
+test_contract.py::test_ready_and_health_endpoints_are_mandatory PASSED   [ 93%]
+test_contract.py::test_mcp_initialize_list_and_call_a_safe_tool PASSED   [ 96%]
+test_contract.py::test_zz_cookies_and_headers_over_every_response PASSED [100%]
+
+--------------------- generated xml file: /out/coletor.xml ---------------------
+=========================== short test summary info ============================
+SKIPPED [1] test_contract.py:274: perfil sem flag de demonstração
+SKIPPED [1] test_contract.py:449: app sem gatilho de tarefa no perfil
+SKIPPED [1] test_contract.py:487: app sem operação pesada no perfil
+SKIPPED [1] test_contract.py:519: app sem download no perfil
+SKIPPED [1] test_contract.py:542: app sem armazenamento de arquivos no perfil
+======================== 25 passed, 5 skipped in 1.34s =========================

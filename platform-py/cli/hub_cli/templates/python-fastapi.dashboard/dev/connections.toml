@@ -1,0 +1,11 @@
+# Conexões SQL locais do `hub dev` (copiado para .hub/connections.toml na 1ª execução; edite lá).
+# No hub, a conexão de mesmo nome vem de Administração › Conexões (vinculada ao app × ambiente).
+# url: sqlite:///.hub/<nome>.db (criado de dev/<nome>.sql) ou um banco real com o driver no projeto:
+#   postgresql+psycopg://usuario:senha@localhost:5432/vendas
+#   mysql+pymysql://usuario:senha@localhost:3306/vendas     (uv add pymysql)
+#   mssql+pytds://usuario:senha@localhost:1433/vendas       (uv add sqlalchemy-pytds)
+
+[connections.vendas]
+url = "sqlite:///.hub/vendas.db"
+readonly = true
+max_rows = 5000

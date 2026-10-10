@@ -1,0 +1,595 @@
+{
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "Problem": {
+        "properties": {
+          "detail": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status"
+        ],
+        "type": "object"
+      },
+      "StatusIn": {
+        "properties": {
+          "status": {
+            "enum": [
+              "Aberto",
+              "Em atendimento",
+              "Aguardando",
+              "Resolvido",
+              "Fechado"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "version": {
+            "description": "Versão lida (controle otimista; 409 se mudou).",
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "status",
+          "version"
+        ],
+        "title": "StatusIn",
+        "type": "object"
+      },
+      "TicketIn": {
+        "properties": {
+          "approval": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Pedir aprovação na Inbox dos aprovadores.",
+            "title": "Approval"
+          },
+          "category": {
+            "enum": [
+              "Tecnologia",
+              "Software",
+              "Acessos",
+              "Financeiro",
+              "Facilities",
+              "Pessoas",
+              "Compras",
+              "Infraestrutura"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "priority": {
+            "enum": [
+              "Baixa",
+              "Normal",
+              "Alta",
+              "Crítica"
+            ],
+            "title": "Priority",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "category",
+          "priority"
+        ],
+        "title": "TicketIn",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "bearer": {
+        "description": "Token de API do hub (escopo do app), pelo gateway",
+        "scheme": "bearer",
+        "type": "http"
+      },
+      "session": {
+        "in": "cookie",
+        "name": "hub_session",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "title": "Central de Serviços — API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/servicos/api/v1/approvals": {
+      "get": {
+        "operationId": "approvals_pending",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Erro (RFC 9457)"
+          }
+        },
+        "summary": "Pedidos de aprovação pendentes (decisão pela Inbox do hub)",
+        "tags": [
+          "Aprovações"
+        ],
+        "x-hub-destructive": false
+      }
+    },
+    "/servicos/api/v1/reports/summary": {
+      "get": {
+        "operationId": "reports_summary",
+        "parameters": [
+          {
+            "description": "Início (AAAA-MM-DD)",
+            "in": "query",
+            "name": "de",
+            "required": false,
+            "schema": {
+              "description": "Início (AAAA-MM-DD)",
+              "title": "De",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Fim (AAAA-MM-DD)",
+            "in": "query",
+            "name": "ate",
+            "required": false,
+            "schema": {
+              "description": "Fim (AAAA-MM-DD)",
+              "title": "Ate",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Granularidade",
+            "in": "query",
+            "name": "agrupar",
+            "required": false,
+            "schema": {
+              "description": "Granularidade",
+              "enum": [
+                "dia",
+                "semana",
+                "mes"
+              ],
+              "title": "Agrupar",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Categoria",
+            "in": "query",
+            "name": "categoria",
+            "required": false,
+            "schema": {
+              "description": "Categoria",
+              "enum": [
+                "Tecnologia",
+                "Software",
+                "Acessos",
+                "Financeiro",
+                "Facilities",
+                "Pessoas",
+                "Compras",
+                "Infraestrutura"
+              ],
+              "title": "Categoria",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Erro (RFC 9457)"
+          }
+        },
+        "summary": "Relatório agregado por período e categoria",
+        "tags": [
+          "Relatórios"
+        ],
+        "x-hub-destructive": false
+      }
+    },
+    "/servicos/api/v1/tickets": {
+      "get": {
+        "operationId": "tickets_list",
+        "parameters": [
+          {
+            "description": "Status",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "description": "Status",
+              "enum": [
+                "Aberto",
+                "Em atendimento",
+                "Aguardando",
+                "Resolvido",
+                "Fechado"
+              ],
+              "title": "Status",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Categoria",
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "description": "Categoria",
+              "enum": [
+                "Tecnologia",
+                "Software",
+                "Acessos",
+                "Financeiro",
+                "Facilities",
+                "Pessoas",
+                "Compras",
+                "Infraestrutura"
+              ],
+              "title": "Category",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Protocolo exato (SD-AAAA-n)",
+            "in": "query",
+            "name": "protocol",
+            "required": false,
+            "schema": {
+              "description": "Protocolo exato (SD-AAAA-n)",
+              "title": "Protocol",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Até 100 (padrão 25)",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "description": "Até 100 (padrão 25)",
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Erro (RFC 9457)"
+          }
+        },
+        "summary": "Lista chamados (mais recentes primeiro)",
+        "tags": [
+          "Chamados"
+        ],
+        "x-hub-destructive": false
+      },
+      "post": {
+        "operationId": "tickets_open",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Erro (RFC 9457)"
+          }
+        },
+        "summary": "Abre um chamado (opcional: pedir aprovação na Inbox)",
+        "tags": [
+          "Chamados"
+        ],
+        "x-hub-destructive": false
+      }
+    },
+    "/servicos/api/v1/tickets/{id}": {
+      "get": {
+        "operationId": "tickets_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "title": "Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Erro (RFC 9457)"
+          }
+        },
+        "summary": "Um chamado",
+        "tags": [
+          "Chamados"
+        ],
+        "x-hub-destructive": false
+      }
+    },
+    "/servicos/api/v1/tickets/{id}/status": {
+      "put": {
+        "operationId": "tickets_set_status",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "title": "Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "4XX": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Erro (RFC 9457)"
+          }
+        },
+        "summary": "Muda o status de um chamado (envie a versão lida)",
+        "tags": [
+          "Chamados"
+        ],
+        "x-hub-destructive": true
+      }
+    }
+  },
+  "security": [
+    {
+      "bearer": []
+    },
+    {
+      "session": []
+    }
+  ],
+  "servers": [
+    {
+      "url": "/"
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+# Configuração do Application Hub (onda 11) — copie para config/hub.toml ou aponte
+# HUB_CONFIG_FILE para o arquivo. Todos os valores abaixo são os PADRÕES: um arquivo
+# vazio (ou nenhum arquivo) dá exatamente este comportamento.
+#
+# Variáveis de ambiente sobrescrevem o arquivo:
+#   HUB_API_ENABLED, HUB_API_DOCS_ENABLED, HUB_API_RATE_PER_MIN,
+#   HUB_MCP_ENABLED, HUB_MCP_PATH, HUB_MCP_TRANSPORTS (ex.: "http,stdio"),
+#   HUB_MCP_DESTRUCTIVE_ACTIONS (approve_in_hub|confirm|deny), HUB_MCP_EXPOSE_APP_TOOLS,
+#   HUB_MCP_CALLS_PER_MIN, HUB_MCP_TOOL_TIMEOUT_S, HUB_MCP_MAX_RESULT_KB,
+#   HUB_MCP_CONFIRM_TTL_S, HUB_APPS_ALLOW_WITHOUT_API
+# Chave desconhecida, tipo errado ou valor fora da faixa => o hub NÃO sobe (erro claro).
+
+[api]
+# Superfície pública versionada /api/v1 (+ /api/v1/openapi.json e /api/docs).
+# A interface web usa as rotas internas /api/* e continua funcionando sempre:
+# enabled = false só faz /api/v1, o OpenAPI e a documentação responderem 404.
+enabled = true
+# Requisições por minuto por usuário — todos os tokens do mesmo dono (e a sessão)
+# dividem a cota; token de CI (sem dono) tem a própria (429 + Retry-After acima disso).
+rate_per_min = 600
+# Paginação: tamanho padrão e máximo de ?limit=.
+page_size = 50
+max_page_size = 500
+
+[api.docs]
+# Página /api/docs (exige login) e o documento OpenAPI 3.1.
+enabled = true
+
+[mcp]
+# Servidor MCP (Model Context Protocol) do hub para clientes de IA; só aceita
+# Authorization: Bearer (token com escopo mcp). As ferramentas DO HUB são a mesma
+# superfície de /api/v1: com [api].enabled = false elas somem (ficam só as dos apps,
+# se expose_app_tools).
+enabled = true
+# "http" = Streamable HTTP em `path`; "stdio" = o `hub mcp` da CLI (proxy que fala
+# com o hub por HTTP; exige "http").
+transports = ["http", "stdio"]
+path = "/mcp"
+# Ferramentas que alteram/removem algo (deploy, rollback, backup, cancelar tarefa e
+# TODA mutação POST/PUT/PATCH/DELETE dos apps, salvo mcp.confirm_exempt no manifesto):
+#   "approve_in_hub" = (padrão) a 1ª chamada cria um pedido "Aprovar ação do agente" na
+#                      Inbox do dono do token (ferramenta, argumentos, cliente) e devolve
+#                      um confirm_token; a ação só roda na 2ª chamada DEPOIS de o usuário
+#                      aprovar no hub pela sessão do navegador (o token nunca aprova);
+#   "confirm"        = a 1ª chamada devolve um confirm_token e a 2ª, com ele, executa.
+#                      ATENÇÃO: depende da UI de aprovação do cliente de IA — o próprio
+#                      modelo consegue reenviar o token (não é confirmação humana);
+#   "deny"           = essas ferramentas nem aparecem.
+destructive_actions = "approve_in_hub"
+# Agrega as ferramentas MCP dos apps como <app>.<ferramenta> (chamadas pelo hub, em
+# nome do usuário, pela rede interna — os apps nunca são alcançados diretamente).
+expose_app_tools = true
+# Onda 12: /mcp, /.well-known/* e /oauth/* fora de HUB_ADMIN_ALLOWED_CIDRS (cliente de IA
+# na nuvem, ex.: Langdock SaaS, alcança o hub pela internet). /api e /admin seguem
+# restritos. Env: HUB_MCP_PUBLIC_NETWORK.
+public_network = false
+
+[mcp.limits]
+calls_per_min = 120      # chamadas de ferramenta por minuto por usuário (tokens do mesmo dono dividem)
+tool_timeout_s = 30      # tempo máximo de uma ferramenta
+max_result_kb = 256      # resultado maior é truncado
+logs_tail_max = 200      # linhas máximas de logs_tail
+confirm_ttl_s = 300      # validade do confirm_token
+max_request_kb = 256     # corpo máximo de uma mensagem JSON-RPC
+
+[mcp.oauth]
+# O hub como servidor de autorização OAuth 2.1 (PKCE S256 obrigatório) e servidor de
+# recurso do /mcp, para clientes MCP remotos (ex.: Langdock). Descoberta:
+# /.well-known/oauth-protected-resource/mcp e /.well-known/oauth-authorization-server.
+# O endereço público (emissor e "resource") vem de HUB_PUBLIC_URL — defina em produção.
+# Tokens pessoais (Authorization: Bearer hubt_…) continuam valendo no /mcp.
+enabled = true
+# Registro dinâmico de clientes (POST /oauth/register, RFC 7591) — o Langdock usa.
+dynamic_registration = true
+# client_id = URL HTTPS de um Client ID Metadata Document (buscado pelo hub; só
+# endereços públicos).
+client_metadata_documents = true
+# Hosts aceitos nas redirect_uri (vazio = qualquer host HTTPS; localhost/127.0.0.1
+# sempre aceitos, com http). Ex.: ["app.langdock.com"]. Env: HUB_MCP_OAUTH_ALLOWED_REDIRECT_HOSTS.
+allowed_redirect_hosts = []
+# Escopos que um cliente OAuth pode receber (o token age como o usuário, com as mesmas
+# permissões da interface; estes escopos só limitam): "mcp" = ferramentas de leitura;
+# "api:write" = ferramentas que alteram algo. Tirar "api:write" = agentes só leem.
+allowed_scopes = ["mcp", "api:write"]
+access_token_ttl_s = 3600    # token de acesso (amarrado ao resource = <HUB_PUBLIC_URL>/mcp)
+refresh_token_ttl_days = 30  # refresh token (rotação a cada uso; reuso revoga a concessão)
+code_ttl_s = 120             # código de autorização (uso único)
+
+[apps]
+# Regra: todo app expõe API (manifesto api.enabled = true, padrão). true aceita
+# pacotes com api.enabled = false (exceção documentada; o pipeline avisa).
+allow_without_api = false

@@ -1,0 +1,3 @@
+{#- Resultados da sessão (o mais novo primeiro): ok / erro / pulado. -#}
+{% if results %}<h3 class="col-subtitle">{{ t('Resultados') }}</h3>
+<ol class="col-results" data-col-results>{% for x in results %}<li class="col-res col-res-{{ x.outcome }}" data-col-result="{{ x.outcome }}"><span class="col-res-pos">{{ x.pos + 1 }}</span><span class="col-res-main"><strong>{{ t('Certo') if x.outcome == 'ok' else (t('Erro') if x.outcome == 'erro' else t('Pulado')) }}</strong><span class="col-mono">{{ x.value }} · {{ x.fmt_label }}{% if x.outcome == 'erro' %} · {{ t('leu {r}', r=x.read) }}{% endif %}</span></span>{% if x.outcome == 'ok' %}<span class="col-res-time">{{ '%.1f' | format(x.ms / 1000) }} s</span>{% endif %}</li>{% endfor %}</ol>{% endif %}

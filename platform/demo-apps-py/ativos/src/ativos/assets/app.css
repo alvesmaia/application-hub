@@ -1,0 +1,97 @@
+/* identidade:inicio — Gestão de Ativos — verde-azulado, sans do sistema (CONTRATO-APP §29).
+   Tokens PRÓPRIOS do app: no CSS do app, `:root` vale para a área do app (#app-root) e o hub
+   repassa cada `--app-<papel>` para o que desenha ali. Variante escura obrigatória (claro e
+   escuro conferidos por scripts/gen-dark-theme.mjs --check: texto ≥ 4,5:1, formas ≥ 3:1). */
+:root {
+  --app-font: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --app-page: #F1F7F7;
+  --app-surface: #FFFFFF;
+  --app-raised: #FFFFFF;
+  --app-alt: #F3F8F8;
+  --app-hover: #E8F2F2;
+  --app-border: #D3E3E3;
+  --app-border-strong: #B5CFCF;
+  --app-control: #6E8A8A;
+  --app-tint: #E0F2F1;
+  --app-tint-border: #A7D7D3;
+  --app-title: #0B3B3A;
+  --app-body: #284B4A;
+  --app-secondary: #4A6564;
+  --app-faint: #56706F;
+  --app-ink: #062524;
+  --app-primary: #0F766E;
+  --app-primary-hover: #0B5E58;
+  --app-on-primary: #FFFFFF;
+  --app-fill: #0F766E;
+  --app-accent: #13968E;
+  --app-accent-soft: #5EC4BD;
+  --app-chrome: #0B3B3A;
+  --app-chrome-raised: #12504E;
+  --app-chrome-text: #FFFFFF;
+  --app-chrome-text-2: #B9D9D6;
+  --app-chrome-icon: #9FE0D9;
+}
+:root[data-theme="dark"] {
+  --app-page: #0F1A1A;
+  --app-surface: #152323;
+  --app-raised: #1B2D2D;
+  --app-alt: #122020;
+  --app-hover: #1D3030;
+  --app-border: #264040;
+  --app-border-strong: #335454;
+  --app-control: #6F9090;
+  --app-tint: #163A38;
+  --app-tint-border: #2A5E5A;
+  --app-title: #F0FAF9;
+  --app-body: #D5E8E6;
+  --app-secondary: #A3BFBC;
+  --app-faint: #93B0AD;
+  --app-ink: #FFFFFF;
+  --app-primary: #5FD4C8;
+  --app-primary-hover: #8AE3DA;
+  --app-on-primary: #052522;
+  --app-fill: #0F766E;
+  --app-accent: #2DB8AD;
+  --app-accent-soft: #1F8C84;
+  --app-chrome: #0C1717;
+  --app-chrome-raised: #1B2D2D;
+  --app-chrome-text: #FFFFFF;
+  --app-chrome-text-2: #A3BFBC;
+  --app-chrome-icon: #8FE0D6;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] {
+    --app-page: #0F1A1A;
+    --app-surface: #152323;
+    --app-raised: #1B2D2D;
+    --app-alt: #122020;
+    --app-hover: #1D3030;
+    --app-border: #264040;
+    --app-border-strong: #335454;
+    --app-control: #6F9090;
+    --app-tint: #163A38;
+    --app-tint-border: #2A5E5A;
+    --app-title: #F0FAF9;
+    --app-body: #D5E8E6;
+    --app-secondary: #A3BFBC;
+    --app-faint: #93B0AD;
+    --app-ink: #FFFFFF;
+    --app-primary: #5FD4C8;
+    --app-primary-hover: #8AE3DA;
+    --app-on-primary: #052522;
+    --app-fill: #0F766E;
+    --app-accent: #2DB8AD;
+    --app-accent-soft: #1F8C84;
+    --app-chrome: #0C1717;
+    --app-chrome-raised: #1B2D2D;
+    --app-chrome-text: #FFFFFF;
+    --app-chrome-text-2: #A3BFBC;
+    --app-chrome-icon: #8FE0D6;
+  }
+}
+/* identidade:fim */
+/* Forma: cantos retos e contidos, cabeçalhos de tabela em caixa alta. */
+:root { --radius-md: 4px; --radius-lg: 5px; --radius-xl: 6px; --radius-2xl: 6px; --radius-3xl: 7px; --radius-4xl: 8px; --radius-5xl: 8px; --radius-6xl: 10px; }
+.app-sidebar .nav-item.active { box-shadow: inset 3px 0 0 var(--app-chrome-icon); }
+.data-table th { text-transform: uppercase; letter-spacing: .04em; }
+/* forma:fim */

@@ -1,0 +1,18 @@
+{% extends "workspace.html" %}
+{% block content %}
+<div class="app-page-header"><div><div class="eyebrow">{{ t(app.name) }}</div><h1 class="page-title">{{ t('Painel') }}</h1><p class="page-subtitle">{{ t('Vendas por mês e por região, com filtro e exportação.') }}</p></div>{{ export }}</div>
+<section class="hub-panel">{{ filters }}</section>
+{% if error %}
+<div class="hub-notice hub-notice-warn" role="alert"><p>{{ t(error) }}</p></div>
+{% else %}
+{{ kpis }}
+<div class="hub-dash-grid2">
+<section class="hub-panel">{{ linha }}</section>
+<section class="hub-panel">{{ rosca }}</section>
+</div>
+<section class="hub-panel">
+<div class="hub-panel-head"><h2>{{ t('Detalhe') }}</h2></div>
+{{ tabela }}
+</section>
+{% endif %}
+{% endblock %}

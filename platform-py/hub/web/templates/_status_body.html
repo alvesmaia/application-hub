@@ -1,0 +1,11 @@
+<div class="{{ 'status-banner status-banner-ok' if ok else 'status-banner status-banner-bad' }}" data-status-overall="">{{ tr(data.overall) }}</div>
+<section class="panel status-apps">
+{% for a in data.apps %}<div class="status-app" data-status-app="{{ a.name }}">
+<div class="status-app-head"><strong>{{ a.name }}</strong><span class="obs-muted"> · {{ tr(a.env) }}</span><span class="{{ a.css }}" data-status-state="">{{ tr(a.state) }}</span></div>
+<div class="uptime-bars" aria-label="{{ tr('Disponibilidade dos últimos 30 dias') }}">{% for c, ti in a.bars %}<span class="{{ c }}" title="{{ tr(ti) }}"></span>{% endfor %}</div>
+<div class="status-app-foot"><span>{{ tr('30 dias atrás') }}</span><span>{{ tr(a.uptime) }}</span><span>{{ tr('hoje') }}</span></div>
+{% if a.slo %}<div class="obs-muted">{{ a.slo }}</div>{% endif %}
+</div>
+{% endfor %}</section>
+<div class="section-heading"><div><h2>{{ tr('Incidentes') }}</h2><p>{{ tr('Automáticos (quedas, falta de memória, implantações que falharam, SLO queimando) e notas da equipe.') }}</p></div>{% if can_edit %}<button type="button" class="primary-button" data-incident-new="">{{ icon('plus')|safe }} {{ tr('Registrar incidente') }}</button>{% endif %}</div>
+<section class="panel">{% if not data.incidents %}<div class="empty-state">{{ tr('Nenhum incidente registrado.') }}</div>{% endif %}{% for i in data.incidents %}<div class="incident" data-incident="{{ i.id }}"><div class="incident-head"><span class="{{ i.css }}">{{ tr(i.state) }}</span><strong>{{ i.title }}</strong></div><div class="obs-muted">{{ i.meta }}</div>{% for who, text in i.notes %}<p class="incident-note"><small>{{ who }}</small><br/>{{ text }}</p>{% endfor %}{% if can_edit and i.open %}<div class="incident-actions"><button type="button" class="secondary-button" data-incident-note="{{ i.id }}">{{ tr('Adicionar nota') }}</button><button type="button" class="secondary-button" data-incident-resolve="{{ i.id }}">{{ tr('Marcar como resolvido') }}</button></div>{% endif %}</div>{% endfor %}</section>

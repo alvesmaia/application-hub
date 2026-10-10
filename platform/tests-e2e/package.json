@@ -1,0 +1,17 @@
+{
+  "name": "hub-tests-e2e",
+  "license": "Apache-2.0",
+  "private": true,
+  "description": "Onda 6 — E2E (Playwright) do roteiro de apresentação, várias abas e paridade hub dev × produção",
+  "scripts": {
+    "e2e": "playwright test",
+    "e2e:core": "playwright test --grep @core",
+    "e2e:demo": "playwright test --project=demo",
+    "e2e:multitab": "playwright test --project=multitab",
+    "e2e:report": "playwright show-report reports/html"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0"
+  }
+}

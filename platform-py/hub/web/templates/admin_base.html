@@ -1,0 +1,8 @@
+{% extends base_tpl|default("base.html") %}
+{% block title %}{{ tab|default(title) }} · {{ brand }}{% endblock %}
+{% block main %}
+<div class="page-container"><div class="app-page-header page-head"><div class="page-head-text"><div class="eyebrow">{{ eyebrow }}</div><h1 class="page-title">{{ title }}</h1><p class="page-subtitle">{{ subtitle }}</p></div><div class="page-actions admin-actions">{% block actions %}{% endblock %}</div></div>
+{% if tabs %}{% include "_tabs.html" %}{% endif %}{% include "_apply.html" %}
+{% block body %}{% endblock %}
+</div>
+{% endblock %}

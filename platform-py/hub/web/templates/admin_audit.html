@@ -1,0 +1,12 @@
+{% extends "admin_base.html" %}
+{% block actions %}<a class="secondary-button" href="/api/admin/audit/export" download="auditoria.jsonl" data-audit-export="">{{ icon('file')|safe }} Exportar (JSONL com provas)</a><button type="button" class="primary-button" data-audit-verify="">{{ icon('check')|safe }} Verificar integridade</button>{% endblock %}
+{% block body %}
+<div id="admin-meta" hidden="" data-admin-meta="{{ meta }}"></div>
+<div class="panel audit-verify hidden" data-audit-verify-result="" role="status" aria-live="polite"></div>
+{% if blocked %}<div class="panel audit-verify audit-bad" data-audit-blocked=""><strong>Cadeia de auditoria bloqueada: </strong>{{ blocked }}</div>{% endif %}
+<div class="audit-toolbar"><form class="audit-filter" method="get"><label class="log-field"><span>Aplicação</span><select name="scope" data-hub-autosubmit="">{% for v, label, on in chips %}<option value="{{ v }}"{% if on %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label><noscript><button class="secondary-button" type="submit">Aplicar</button></noscript></form>
+<div class="{{ 'obs-muted audit-bad audit-published' if published[2] else 'obs-muted audit-published' }}" data-audit-published=""><span>{{ published[0] }}</span><details class="info-tip"><summary aria-label="Detalhes" title="Detalhes">i</summary><span class="info-tip-body">{{ published[1] }}</span></details></div></div>
+<section class="panel"><div class="activity-list">{% for r in rows %}<div class="activity-row"><span class="activity-icon" style="background:var(--c-blue-94-6);color:var(--color-accent)">{{ icon(r.icon)|safe }}</span><div class="activity-text"><strong>{{ r.title }}</strong><br/>{% for part, code in r.detail %}{% if code %}<code>{{ part }}</code>{% else %}{{ part }}{% endif %}{% endfor %}</div><span class="activity-time">{{ r.time }}</span></div>{% endfor %}{% if not rows %}<div class="empty-state">Nenhum evento para esta aplicação.</div>{% endif %}</div></section>
+{% include "_pager.html" %}
+{% if usage %}{% include "_usage.html" %}{% endif %}
+{% endblock %}

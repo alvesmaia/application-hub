@@ -1,0 +1,50 @@
+{
+  "id": "ativos",
+  "name": "Gestão de Ativos",
+  "version": "2.5.0",
+  "mode": "fragment",
+  "routes": [
+    "/ativos/*"
+  ],
+  "resources": {
+    "cpu": 1.0,
+    "memory": "1Gi",
+    "pids": 100
+  },
+  "limits": {
+    "max_upload_mb": 50
+  },
+  "env": [
+    "API_BASE_URL"
+  ],
+  "permissions": [
+    "ativos.read"
+  ],
+  "jobs": [
+    {
+      "name": "ativos.import",
+      "max_duration_s": 3600,
+      "max_attempts": 5
+    },
+    {
+      "name": "ativos.export_xlsx",
+      "max_duration_s": 1800,
+      "max_attempts": 3
+    }
+  ],
+  "sdk": "1.0",
+  "runtime": {
+    "stack": "python"
+  },
+  "stack": {
+    "language": "Python 3.12",
+    "framework": "FastAPI",
+    "sdk": "hub-sdk-python 1.0",
+    "db": "PostgreSQL 16",
+    "libs": [
+      "python-calamine",
+      "openpyxl",
+      "asyncpg"
+    ]
+  }
+}

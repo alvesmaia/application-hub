@@ -1,0 +1,5894 @@
+{
+ "mem": "1g",
+ "hostCfg": [
+  "hub-web cpus=1000000000 mem=1073741824 cpuset=0-3",
+  "hub-app-ativos cpus=1000000000 mem=1073741824 cpuset=0-3",
+  "hub-app-fornecedores cpus=1000000000 mem=1073741824 cpuset=0-3",
+  "hub-app-servicos cpus=1000000000 mem=1073741824 cpuset=0-3",
+  "hub-db cpus=1000000000 mem=1073741824 cpuset=0-3",
+  "hub-objstore cpus=500000000 mem=536870912 cpuset=0-3",
+  "hub-extapi cpus=250000000 mem=67108864 cpuset=0-3"
+ ],
+ "summary": {
+  "ativos": {
+   "maxUsers": 25,
+   "broke": {
+    "step": "ativos-u35",
+    "app": "ativos",
+    "users": 35,
+    "ok": false,
+    "slo": {
+     "p95List": false,
+     "p95Detail": false,
+     "errors": true,
+     "noOom": true
+    },
+    "total": 456,
+    "errRate": 0,
+    "shedRate": 0.22,
+    "rps": 10.1,
+    "classes": {
+     "hub-probe": {
+      "n": 225,
+      "err": 0,
+      "shed": 0,
+      "rps": 5,
+      "p50": 1.9,
+      "p95": 4.1,
+      "p99": 13.2,
+      "max": 26.8,
+      "codes": {
+       "200": 225
+      }
+     },
+     "list": {
+      "n": 239,
+      "err": 0,
+      "shed": 0,
+      "rps": 5.31,
+      "p50": 68.5,
+      "p95": 508.8,
+      "p99": 646.5,
+      "max": 963.4,
+      "codes": {
+       "200": 239
+      }
+     },
+     "export-start": {
+      "n": 16,
+      "err": 0,
+      "shed": 0,
+      "rps": 0.36,
+      "p50": 19.8,
+      "p95": 285.3,
+      "p99": 285.3,
+      "max": 285.3,
+      "codes": {
+       "202": 16
+      }
+     },
+     "detail": {
+      "n": 76,
+      "err": 0,
+      "shed": 0,
+      "rps": 1.69,
+      "p50": 181.9,
+      "p95": 712,
+      "p99": 845.3,
+      "max": 845.3,
+      "codes": {
+       "200": 76
+      }
+     },
+     "edit": {
+      "n": 8,
+      "err": 0,
+      "shed": 0,
+      "rps": 0.18,
+      "p50": 25.2,
+      "p95": 207.9,
+      "p99": 207.9,
+      "max": 207.9,
+      "codes": {
+       "200": 8
+      }
+     },
+     "poll": {
+      "n": 41,
+      "err": 0,
+      "shed": 0,
+      "rps": 0.91,
+      "p50": 3.1,
+      "p95": 82,
+      "p99": 103.1,
+      "max": 103.1,
+      "codes": {
+       "200": 41
+      }
+     },
+     "export-download": {
+      "n": 16,
+      "err": 0,
+      "shed": 0,
+      "rps": 0.36,
+      "p50": 20,
+      "p95": 52,
+      "p99": 52,
+      "max": 52,
+      "codes": {
+       "200": 16
+      }
+     },
+     "export": {
+      "n": 36,
+      "err": 0,
+      "shed": 1,
+      "rps": 0.8,
+      "p50": 184.8,
+      "p95": 1301.7,
+      "p99": 1331.5,
+      "max": 1331.5,
+      "codes": {
+       "200": 35,
+       "429": 1
+      }
+     },
+     "import-upload": {
+      "n": 7,
+      "err": 0,
+      "shed": 0,
+      "rps": 0.16,
+      "p50": 34.4,
+      "p95": 175.1,
+      "p99": 175.1,
+      "max": 175.1,
+      "codes": {
+       "202": 7
+      }
+     },
+     "import": {
+      "n": 7,
+      "err": 0,
+      "shed": 0,
+      "rps": 0.16,
+      "p50": 1106.6,
+      "p95": 1177.7,
+      "p99": 1177.7,
+      "max": 1177.7,
+      "codes": {
+       "200": 7
+      }
+     },
+     "heavy-start": {
+      "n": 17,
+      "err": 0,
+      "shed": 0,
+      "rps": 0.38,
+      "p50": 34,
+      "p95": 272.9,
+      "p99": 272.9,
+      "max": 272.9,
+      "codes": {
+       "202": 17
+      }
+     },
+     "heavy-download": {
+      "n": 17,
+      "err": 0,
+      "shed": 0,
+      "rps": 0.38,
+      "p50": 23.9,
+      "p95": 103.5,
+      "p99": 103.5,
+      "max": 103.5,
+      "codes": {
+       "200": 17
+      }
+     },
+     "heavy": {
+      "n": 17,
+      "err": 0,
+      "shed": 0,
+      "rps": 0.38,
+      "p50": 1126.9,
+      "p95": 2086.3,
+      "p99": 2086.3,
+      "max": 2086.3,
+      "codes": {
+       "200": 17
+      }
+     }
+    },
+    "restarts": [],
+    "ooms": [],
+    "maxPgConns": 17,
+    "stats": {
+     "hub-web": {
+      "cpuAvg": 2,
+      "cpuMax": 16,
+      "memPeakMiB": 98
+     },
+     "hub-app-ativos": {
+      "cpuAvg": 10,
+      "cpuMax": 57,
+      "memPeakMiB": 41
+     },
+     "hub-app-fornecedores": {
+      "cpuAvg": 0,
+      "cpuMax": 2,
+      "memPeakMiB": 1
+     },
+     "hub-app-servicos": {
+      "cpuAvg": 0,
+      "cpuMax": 2,
+      "memPeakMiB": 2
+     },
+     "hub-db": {
+      "cpuAvg": 52,
+      "cpuMax": 105,
+      "memPeakMiB": 550
+     },
+     "hub-objstore": {
+      "cpuAvg": 1,
+      "cpuMax": 5,
+      "memPeakMiB": 137
+     },
+     "hub-extapi": {
+      "cpuAvg": 0,
+      "cpuMax": 2,
+      "memPeakMiB": 1
+     }
+    }
+   }
+  },
+  "fornecedores": {
+   "maxUsers": 800,
+   "broke": {
+    "step": "fornecedores-u1200",
+    "app": "fornecedores",
+    "users": 1200,
+    "ok": false,
+    "slo": {
+     "p95List": true,
+     "p95Detail": false,
+     "errors": false,
+     "noOom": true
+    },
+    "total": 13535,
+    "errRate": 1.46,
+    "shedRate": 10.82,
+    "rps": 300.5,
+    "classes": {
+     "list": {
+      "n": 7301,
+      "err": 0,
+      "shed": 0,
+      "rps": 162.07,
+      "p50": 2.2,
+      "p95": 14.2,
+      "p99": 25.7,
+      "max": 49.4,
+      "codes": {
+       "200": 7301
+      }
+     },
+     "detail": {
+      "n": 2414,
+      "err": 0,
+      "shed": 0,
+      "rps": 53.59,
+      "p50": 2138.2,
+      "p95": 4943,
+      "p99": 6277.2,
+      "max": 7682.8,
+      "codes": {
+       "200": 2414
+      }
+     },
+     "hub-probe": {
+      "n": 226,
+      "err": 0,
+      "shed": 0,
+      "rps": 5.02,
+      "p50": 3.8,
+      "p95": 17,
+      "p99": 26.4,
+      "max": 38.2,
+      "codes": {
+       "200": 226
+      }
+     },
+     "attachment": {
+      "n": 1069,
+      "err": 198,
+      "shed": 0,
+      "rps": 23.73,
+      "p50": 140.8,
+      "p95": 4822.5,
+      "p99": 5881.9,
+      "max": 8717,
+      "codes": {
+       "200": 383,
+       "201": 488,
+       "404": 55,
+       "502": 143
+      }
+     },
+     "edit": {
+      "n": 1243,
+      "err": 0,
+      "shed": 0,
+      "rps": 27.59,
+      "p50": 285.2,
+      "p95": 2068.6,
+      "p99": 3867.3,
+      "max": 5219.3,
+      "codes": {
+       "200": 1243
+      }
+     },
+     "heavy": {
+      "n": 590,
+      "err": 0,
+      "shed": 575,
+      "rps": 13.1,
+      "p50": 2.1,
+      "p95": 21.8,
+      "p99": 2323.4,
+      "max": 6183.3,
+      "codes": {
+       "200": 15,
+       "429": 575
+      }
+     },
+     "export": {
+      "n": 918,
+      "err": 0,
+      "shed": 890,
+      "rps": 20.38,
+      "p50": 2.1,
+      "p95": 18.9,
+      "p99": 2724.7,
+      "max": 5595.5,
+      "codes": {
+       "200": 28,
+       "429": 890
+      }
+     }
+    },
+    "restarts": [],
+    "ooms": [],
+    "maxPgConns": 17,
+    "stats": {
+     "hub-web": {
+      "cpuAvg": 21,
+      "cpuMax": 33,
+      "memPeakMiB": 234
+     },
+     "hub-app-ativos": {
+      "cpuAvg": 0,
+      "cpuMax": 2,
+      "memPeakMiB": 18
+     },
+     "hub-app-fornecedores": {
+      "cpuAvg": 13,
+      "cpuMax": 20,
+      "memPeakMiB": 311
+     },
+     "hub-app-servicos": {
+      "cpuAvg": 0,
+      "cpuMax": 2,
+      "memPeakMiB": 1
+     },
+     "hub-db": {
+      "cpuAvg": 2,
+      "cpuMax": 6,
+      "memPeakMiB": 539
+     },
+     "hub-objstore": {
+      "cpuAvg": 41,
+      "cpuMax": 52,
+      "memPeakMiB": 348
+     },
+     "hub-extapi": {
+      "cpuAvg": 1,
+      "cpuMax": 3,
+      "memPeakMiB": 2
+     }
+    }
+   }
+  },
+  "servicos": {
+   "maxUsers": 200,
+   "broke": {
+    "step": "servicos-u300",
+    "app": "servicos",
+    "users": 300,
+    "ok": false,
+    "slo": {
+     "p95List": false,
+     "p95Detail": false,
+     "errors": true,
+     "noOom": true
+    },
+    "total": 3308,
+    "errRate": 0,
+    "shedRate": 10.79,
+    "rps": 73.5,
+    "classes": {
+     "hub-probe": {
+      "n": 225,
+      "err": 0,
+      "shed": 0,
+      "rps": 5,
+      "p50": 1.8,
+      "p95": 6.3,
+      "p99": 10.1,
+      "max": 14.1,
+      "codes": {
+       "200": 225
+      }
+     },
+     "detail": {
+      "n": 636,
+      "err": 0,
+      "shed": 0,
+      "rps": 14.12,
+      "p50": 24.1,
+      "p95": 636.7,
+      "p99": 1545.8,
+      "max": 1873.5,
+      "codes": {
+       "200": 636
+      }
+     },
+     "list": {
+      "n": 2185,
+      "err": 0,
+      "shed": 0,
+      "rps": 48.52,
+      "p50": 31.6,
+      "p95": 1187.9,
+      "p99": 2905.6,
+      "max": 5248.3,
+      "codes": {
+       "200": 2185
+      }
+     },
+     "export": {
+      "n": 261,
+      "err": 0,
+      "shed": 227,
+      "rps": 5.8,
+      "p50": 2,
+      "p95": 1271.4,
+      "p99": 3069.9,
+      "max": 3379,
+      "codes": {
+       "200": 34,
+       "429": 227
+      }
+     },
+     "heavy": {
+      "n": 167,
+      "err": 0,
+      "shed": 130,
+      "rps": 3.71,
+      "p50": 2.3,
+      "p95": 1234.4,
+      "p99": 1975,
+      "max": 2495.1,
+      "codes": {
+       "200": 37,
+       "429": 130
+      }
+     },
+     "edit": {
+      "n": 59,
+      "err": 0,
+      "shed": 0,
+      "rps": 1.31,
+      "p50": 96.2,
+      "p95": 1013.8,
+      "p99": 2008.7,
+      "max": 2008.7,
+      "codes": {
+       "200": 40,
+       "422": 19
+      }
+     }
+    },
+    "restarts": [],
+    "ooms": [],
+    "maxPgConns": 31,
+    "stats": {
+     "hub-web": {
+      "cpuAvg": 5,
+      "cpuMax": 12,
+      "memPeakMiB": 234
+     },
+     "hub-app-ativos": {
+      "cpuAvg": 0,
+      "cpuMax": 0,
+      "memPeakMiB": 18
+     },
+     "hub-app-fornecedores": {
+      "cpuAvg": 0,
+      "cpuMax": 2,
+      "memPeakMiB": 309
+     },
+     "hub-app-servicos": {
+      "cpuAvg": 3,
+      "cpuMax": 7,
+      "memPeakMiB": 9
+     },
+     "hub-db": {
+      "cpuAvg": 86,
+      "cpuMax": 105,
+      "memPeakMiB": 980
+     },
+     "hub-objstore": {
+      "cpuAvg": 1,
+      "cpuMax": 4,
+      "memPeakMiB": 156
+     },
+     "hub-extapi": {
+      "cpuAvg": 0,
+      "cpuMax": 0,
+      "memPeakMiB": 2
+     }
+    }
+   }
+  },
+  "all": {
+   "maxUsers": 50,
+   "broke": {
+    "step": "all-u75",
+    "app": "all",
+    "users": 75,
+    "ok": false,
+    "slo": {
+     "p95List": true,
+     "p95Detail": false,
+     "errors": true,
+     "noOom": true
+    },
+    "total": 892,
+    "errRate": 0,
+    "shedRate": 1.01,
+    "rps": 19.8,
+    "classes": {
+     "hub-probe": {
+      "n": 225,
+      "err": 0,
+      "shed": 0,
+      "rps": 5,
+      "p50": 1.8,
+      "p95": 3.1,
+      "p99": 17.3,
+      "max": 59.4,
+      "codes": {
+       "200": 225
+      }
+     },
+     "list": {
+      "n": 524,
+      "err": 0,
+      "shed": 0,
+      "rps": 11.64,
+      "p50": 5.4,
+      "p95": 464.9,
+      "p99": 1351.5,
+      "max": 14201.5,
+      "codes": {
+       "200": 524
+      }
+     },
+     "edit": {
+      "n": 39,
+      "err": 0,
+      "shed": 0,
+      "rps": 0.87,
+      "p50": 263.1,
+      "p95": 2765.3,
+      "p99": 3904.8,
+      "max": 3904.8,
+      "codes": {
+       "200": 37,
+       "422": 2
+      }
+     },
+     "detail": {
+      "n": 151,
+      "err": 0,
+      "shed": 0,
+      "rps": 3.35,
+      "p50": 12.5,
+      "p95": 659.6,
+      "p99": 1071.5,
+      "max": 1374.9,
+      "codes": {
+       "200": 151
+      }
+     },
+     "export": {
+      "n": 58,
+      "err": 0,
+      "shed": 3,
+      "rps": 1.29,
+      "p50": 251.8,
+      "p95": 1932.9,
+      "p99": 3163.4,
+      "max": 3163.4,
+      "codes": {
+       "200": 55,
+       "429": 3
+      }
+     },
+     "heavy": {
+      "n": 48,
+      "err": 0,
+      "shed": 6,
+      "rps": 1.07,
+      "p50": 11.9,
+      "p95": 1406.5,
+      "p99": 1900.6,
+      "max": 1900.6,
+      "codes": {
+       "200": 42,
+       "429": 6
+      }
+     },
+     "heavy-start": {
+      "n": 12,
+      "err": 0,
+      "shed": 0,
+      "rps": 0.27,
+      "p50": 23.8,
+      "p95": 112,
+      "p99": 112,
+      "max": 112,
+      "codes": {
+       "202": 12
+      }
+     },
+     "attachment": {
+      "n": 26,
+      "err": 0,
+      "shed": 0,
+      "rps": 0.58,
+      "p50": 25.6,
+      "p95": 48.8,
+      "p99": 54.6,
+      "max": 54.6,
+      "codes": {
+       "200": 13,
+       "201": 13
+      }
+     },
+     "poll": {
+      "n": 25,
+      "err": 0,
+      "shed": 0,
+      "rps": 0.56,
+      "p50": 3.2,
+      "p95": 83.5,
+      "p99": 86,
+      "max": 86,
+      "codes": {
+       "200": 25
+      }
+     },
+     "heavy-download": {
+      "n": 12,
+      "err": 0,
+      "shed": 0,
+      "rps": 0.27,
+      "p50": 28.9,
+      "p95": 103.6,
+      "p99": 103.6,
+      "max": 103.6,
+      "codes": {
+       "200": 12
+      }
+     },
+     "export-start": {
+      "n": 9,
+      "err": 0,
+      "shed": 0,
+      "rps": 0.2,
+      "p50": 46.2,
+      "p95": 103.6,
+      "p99": 103.6,
+      "max": 103.6,
+      "codes": {
+       "202": 9
+      }
+     },
+     "export-download": {
+      "n": 9,
+      "err": 0,
+      "shed": 0,
+      "rps": 0.2,
+      "p50": 9,
+      "p95": 80.4,
+      "p99": 80.4,
+      "max": 80.4,
+      "codes": {
+       "200": 9
+      }
+     },
+     "import-upload": {
+      "n": 2,
+      "err": 0,
+      "shed": 0,
+      "rps": 0.04,
+      "p50": 199.7,
+      "p95": 199.7,
+      "p99": 199.7,
+      "max": 199.7,
+      "codes": {
+       "202": 2
+      }
+     },
+     "import": {
+      "n": 2,
+      "err": 0,
+      "shed": 0,
+      "rps": 0.04,
+      "p50": 1203.3,
+      "p95": 1203.3,
+      "p99": 1203.3,
+      "max": 1203.3,
+      "codes": {
+       "200": 2
+      }
+     }
+    },
+    "restarts": [],
+    "ooms": [],
+    "maxPgConns": 31,
+    "stats": {
+     "hub-web": {
+      "cpuAvg": 3,
+      "cpuMax": 12,
+      "memPeakMiB": 233
+     },
+     "hub-app-ativos": {
+      "cpuAvg": 4,
+      "cpuMax": 39,
+      "memPeakMiB": 33
+     },
+     "hub-app-fornecedores": {
+      "cpuAvg": 1,
+      "cpuMax": 3,
+      "memPeakMiB": 310
+     },
+     "hub-app-servicos": {
+      "cpuAvg": 1,
+      "cpuMax": 2,
+      "memPeakMiB": 8
+     },
+     "hub-db": {
+      "cpuAvg": 64,
+      "cpuMax": 103,
+      "memPeakMiB": 856
+     },
+     "hub-objstore": {
+      "cpuAvg": 3,
+      "cpuMax": 15,
+      "memPeakMiB": 345
+     },
+     "hub-extapi": {
+      "cpuAvg": 0,
+      "cpuMax": 2,
+      "memPeakMiB": 2
+     }
+    }
+   }
+  }
+ },
+ "steps": [
+  {
+   "step": "ativos-u10",
+   "app": "ativos",
+   "users": 10,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 127,
+   "errRate": 0,
+   "shedRate": 0,
+   "rps": 2.8,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.9,
+     "p95": 3.7,
+     "p99": 11.4,
+     "max": 190.5,
+     "codes": {
+      "200": 225
+     }
+    },
+    "detail": {
+     "n": 22,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.49,
+     "p50": 122.7,
+     "p95": 219,
+     "p99": 273.8,
+     "max": 273.8,
+     "codes": {
+      "200": 22
+     }
+    },
+    "list": {
+     "n": 69,
+     "err": 0,
+     "shed": 0,
+     "rps": 1.53,
+     "p50": 58.4,
+     "p95": 210.9,
+     "p99": 441.5,
+     "max": 441.5,
+     "codes": {
+      "200": 69
+     }
+    },
+    "export-start": {
+     "n": 5,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.11,
+     "p50": 22.2,
+     "p95": 31.7,
+     "p99": 31.7,
+     "max": 31.7,
+     "codes": {
+      "202": 5
+     }
+    },
+    "poll": {
+     "n": 14,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.31,
+     "p50": 2.9,
+     "p95": 4.6,
+     "p99": 4.6,
+     "max": 4.6,
+     "codes": {
+      "200": 14
+     }
+    },
+    "export-download": {
+     "n": 5,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.11,
+     "p50": 3.9,
+     "p95": 14.4,
+     "p99": 14.4,
+     "max": 14.4,
+     "codes": {
+      "200": 5
+     }
+    },
+    "export": {
+     "n": 7,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.16,
+     "p50": 1031.6,
+     "p95": 1041,
+     "p99": 1041,
+     "max": 1041,
+     "codes": {
+      "200": 7
+     }
+    },
+    "edit": {
+     "n": 3,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.07,
+     "p50": 21.3,
+     "p95": 87.4,
+     "p99": 87.4,
+     "max": 87.4,
+     "codes": {
+      "200": 3
+     }
+    },
+    "heavy-start": {
+     "n": 4,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.09,
+     "p50": 21.4,
+     "p95": 22.1,
+     "p99": 22.1,
+     "max": 22.1,
+     "codes": {
+      "202": 4
+     }
+    },
+    "heavy-download": {
+     "n": 4,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.09,
+     "p50": 187.8,
+     "p95": 1219.7,
+     "p99": 1219.7,
+     "max": 1219.7,
+     "codes": {
+      "200": 4
+     }
+    },
+    "heavy": {
+     "n": 4,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.09,
+     "p50": 1213.7,
+     "p95": 5253.2,
+     "p99": 5253.2,
+     "max": 5253.2,
+     "codes": {
+      "200": 4
+     }
+    },
+    "import-upload": {
+     "n": 2,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.04,
+     "p50": 246.9,
+     "p95": 246.9,
+     "p99": 246.9,
+     "max": 246.9,
+     "codes": {
+      "202": 2
+     }
+    },
+    "import": {
+     "n": 2,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.04,
+     "p50": 1250.4,
+     "p95": 1250.4,
+     "p99": 1250.4,
+     "max": 1250.4,
+     "codes": {
+      "200": 2
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 10,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 2,
+     "cpuMax": 33,
+     "memPeakMiB": 99
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 8,
+     "cpuMax": 100,
+     "memPeakMiB": 23
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 1
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 1
+    },
+    "hub-db": {
+     "cpuAvg": 21,
+     "cpuMax": 70,
+     "memPeakMiB": 552
+    },
+    "hub-objstore": {
+     "cpuAvg": 1,
+     "cpuMax": 7,
+     "memPeakMiB": 259
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 1
+    }
+   }
+  },
+  {
+   "step": "ativos-u25",
+   "app": "ativos",
+   "users": 25,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 345,
+   "errRate": 0,
+   "shedRate": 0.29,
+   "rps": 7.7,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.9,
+     "p95": 5.6,
+     "p99": 40.3,
+     "max": 200.7,
+     "codes": {
+      "200": 225
+     }
+    },
+    "detail": {
+     "n": 48,
+     "err": 0,
+     "shed": 0,
+     "rps": 1.07,
+     "p50": 137.3,
+     "p95": 362.9,
+     "p99": 477.1,
+     "max": 477.1,
+     "codes": {
+      "200": 48
+     }
+    },
+    "list": {
+     "n": 178,
+     "err": 0,
+     "shed": 0,
+     "rps": 3.95,
+     "p50": 63.2,
+     "p95": 283.6,
+     "p99": 446.2,
+     "max": 474.6,
+     "codes": {
+      "200": 178
+     }
+    },
+    "poll": {
+     "n": 40,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.89,
+     "p50": 3.1,
+     "p95": 30.7,
+     "p99": 331.1,
+     "max": 331.1,
+     "codes": {
+      "200": 40
+     }
+    },
+    "export-download": {
+     "n": 12,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.27,
+     "p50": 12.9,
+     "p95": 65,
+     "p99": 65,
+     "max": 65,
+     "codes": {
+      "200": 12
+     }
+    },
+    "export": {
+     "n": 21,
+     "err": 0,
+     "shed": 1,
+     "rps": 0.47,
+     "p50": 1027.6,
+     "p95": 1103.7,
+     "p99": 3383.4,
+     "max": 3383.4,
+     "codes": {
+      "200": 20,
+      "429": 1
+     }
+    },
+    "heavy-start": {
+     "n": 20,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.44,
+     "p50": 18.6,
+     "p95": 257.6,
+     "p99": 257.6,
+     "max": 257.6,
+     "codes": {
+      "202": 20
+     }
+    },
+    "edit": {
+     "n": 7,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.16,
+     "p50": 21.6,
+     "p95": 105,
+     "p99": 105,
+     "max": 105,
+     "codes": {
+      "200": 7
+     }
+    },
+    "heavy-download": {
+     "n": 20,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.44,
+     "p50": 31.3,
+     "p95": 1211,
+     "p99": 1211,
+     "max": 1211,
+     "codes": {
+      "200": 20
+     }
+    },
+    "heavy": {
+     "n": 20,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.44,
+     "p50": 1054.5,
+     "p95": 4245.7,
+     "p99": 4245.7,
+     "max": 4245.7,
+     "codes": {
+      "200": 20
+     }
+    },
+    "import-upload": {
+     "n": 4,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.09,
+     "p50": 34.3,
+     "p95": 269.2,
+     "p99": 269.2,
+     "max": 269.2,
+     "codes": {
+      "202": 4
+     }
+    },
+    "export-start": {
+     "n": 11,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.24,
+     "p50": 19.1,
+     "p95": 93.1,
+     "p99": 93.1,
+     "max": 93.1,
+     "codes": {
+      "202": 11
+     }
+    },
+    "import": {
+     "n": 4,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.09,
+     "p50": 1038.2,
+     "p95": 1273.2,
+     "p99": 1273.2,
+     "max": 1273.2,
+     "codes": {
+      "200": 4
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 13,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 3,
+     "cpuMax": 34,
+     "memPeakMiB": 98
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 11,
+     "cpuMax": 96,
+     "memPeakMiB": 40
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 1
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 1
+    },
+    "hub-db": {
+     "cpuAvg": 41,
+     "cpuMax": 86,
+     "memPeakMiB": 580
+    },
+    "hub-objstore": {
+     "cpuAvg": 1,
+     "cpuMax": 4,
+     "memPeakMiB": 139
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 1
+    }
+   }
+  },
+  {
+   "step": "ativos-u35",
+   "app": "ativos",
+   "users": 35,
+   "ok": false,
+   "slo": {
+    "p95List": false,
+    "p95Detail": false,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 456,
+   "errRate": 0,
+   "shedRate": 0.22,
+   "rps": 10.1,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.9,
+     "p95": 4.1,
+     "p99": 13.2,
+     "max": 26.8,
+     "codes": {
+      "200": 225
+     }
+    },
+    "list": {
+     "n": 239,
+     "err": 0,
+     "shed": 0,
+     "rps": 5.31,
+     "p50": 68.5,
+     "p95": 508.8,
+     "p99": 646.5,
+     "max": 963.4,
+     "codes": {
+      "200": 239
+     }
+    },
+    "export-start": {
+     "n": 16,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.36,
+     "p50": 19.8,
+     "p95": 285.3,
+     "p99": 285.3,
+     "max": 285.3,
+     "codes": {
+      "202": 16
+     }
+    },
+    "detail": {
+     "n": 76,
+     "err": 0,
+     "shed": 0,
+     "rps": 1.69,
+     "p50": 181.9,
+     "p95": 712,
+     "p99": 845.3,
+     "max": 845.3,
+     "codes": {
+      "200": 76
+     }
+    },
+    "edit": {
+     "n": 8,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.18,
+     "p50": 25.2,
+     "p95": 207.9,
+     "p99": 207.9,
+     "max": 207.9,
+     "codes": {
+      "200": 8
+     }
+    },
+    "poll": {
+     "n": 41,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.91,
+     "p50": 3.1,
+     "p95": 82,
+     "p99": 103.1,
+     "max": 103.1,
+     "codes": {
+      "200": 41
+     }
+    },
+    "export-download": {
+     "n": 16,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.36,
+     "p50": 20,
+     "p95": 52,
+     "p99": 52,
+     "max": 52,
+     "codes": {
+      "200": 16
+     }
+    },
+    "export": {
+     "n": 36,
+     "err": 0,
+     "shed": 1,
+     "rps": 0.8,
+     "p50": 184.8,
+     "p95": 1301.7,
+     "p99": 1331.5,
+     "max": 1331.5,
+     "codes": {
+      "200": 35,
+      "429": 1
+     }
+    },
+    "import-upload": {
+     "n": 7,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.16,
+     "p50": 34.4,
+     "p95": 175.1,
+     "p99": 175.1,
+     "max": 175.1,
+     "codes": {
+      "202": 7
+     }
+    },
+    "import": {
+     "n": 7,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.16,
+     "p50": 1106.6,
+     "p95": 1177.7,
+     "p99": 1177.7,
+     "max": 1177.7,
+     "codes": {
+      "200": 7
+     }
+    },
+    "heavy-start": {
+     "n": 17,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.38,
+     "p50": 34,
+     "p95": 272.9,
+     "p99": 272.9,
+     "max": 272.9,
+     "codes": {
+      "202": 17
+     }
+    },
+    "heavy-download": {
+     "n": 17,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.38,
+     "p50": 23.9,
+     "p95": 103.5,
+     "p99": 103.5,
+     "max": 103.5,
+     "codes": {
+      "200": 17
+     }
+    },
+    "heavy": {
+     "n": 17,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.38,
+     "p50": 1126.9,
+     "p95": 2086.3,
+     "p99": 2086.3,
+     "max": 2086.3,
+     "codes": {
+      "200": 17
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 17,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 2,
+     "cpuMax": 16,
+     "memPeakMiB": 98
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 10,
+     "cpuMax": 57,
+     "memPeakMiB": 41
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 1
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 2
+    },
+    "hub-db": {
+     "cpuAvg": 52,
+     "cpuMax": 105,
+     "memPeakMiB": 550
+    },
+    "hub-objstore": {
+     "cpuAvg": 1,
+     "cpuMax": 5,
+     "memPeakMiB": 137
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 1
+    }
+   }
+  },
+  {
+   "step": "fornecedores-u10",
+   "app": "fornecedores",
+   "users": 10,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 130,
+   "errRate": 0,
+   "shedRate": 0,
+   "rps": 2.9,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 2,
+     "p95": 3.1,
+     "p99": 6,
+     "max": 9,
+     "codes": {
+      "200": 225
+     }
+    },
+    "detail": {
+     "n": 29,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.64,
+     "p50": 3.7,
+     "p95": 7.3,
+     "p99": 8.2,
+     "max": 8.2,
+     "codes": {
+      "200": 29
+     }
+    },
+    "list": {
+     "n": 65,
+     "err": 0,
+     "shed": 0,
+     "rps": 1.44,
+     "p50": 2.4,
+     "p95": 3.3,
+     "p99": 4.3,
+     "max": 4.3,
+     "codes": {
+      "200": 65
+     }
+    },
+    "export": {
+     "n": 10,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.22,
+     "p50": 3.4,
+     "p95": 4,
+     "p99": 4,
+     "max": 4,
+     "codes": {
+      "200": 10
+     }
+    },
+    "edit": {
+     "n": 13,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.29,
+     "p50": 352.1,
+     "p95": 1975.2,
+     "p99": 1975.2,
+     "max": 1975.2,
+     "codes": {
+      "200": 13
+     }
+    },
+    "attachment": {
+     "n": 10,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.22,
+     "p50": 23.2,
+     "p95": 41.1,
+     "p99": 41.1,
+     "max": 41.1,
+     "codes": {
+      "200": 5,
+      "201": 5
+     }
+    },
+    "heavy": {
+     "n": 3,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.07,
+     "p50": 3.2,
+     "p95": 3.6,
+     "p99": 3.6,
+     "max": 3.6,
+     "codes": {
+      "200": 3
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 17,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 1,
+     "cpuMax": 3,
+     "memPeakMiB": 98
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 38
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 3
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 1
+    },
+    "hub-db": {
+     "cpuAvg": 2,
+     "cpuMax": 7,
+     "memPeakMiB": 539
+    },
+    "hub-objstore": {
+     "cpuAvg": 1,
+     "cpuMax": 5,
+     "memPeakMiB": 105
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 1
+    }
+   }
+  },
+  {
+   "step": "fornecedores-u25",
+   "app": "fornecedores",
+   "users": 25,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 317,
+   "errRate": 0,
+   "shedRate": 0,
+   "rps": 7,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.9,
+     "p95": 2.7,
+     "p99": 3.2,
+     "max": 5.6,
+     "codes": {
+      "200": 225
+     }
+    },
+    "list": {
+     "n": 167,
+     "err": 0,
+     "shed": 0,
+     "rps": 3.71,
+     "p50": 2.4,
+     "p95": 3.5,
+     "p99": 4.9,
+     "max": 5.9,
+     "codes": {
+      "200": 167
+     }
+    },
+    "attachment": {
+     "n": 24,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.53,
+     "p50": 18.6,
+     "p95": 31.2,
+     "p99": 49.5,
+     "max": 49.5,
+     "codes": {
+      "200": 12,
+      "201": 12
+     }
+    },
+    "heavy": {
+     "n": 20,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.44,
+     "p50": 3.4,
+     "p95": 9,
+     "p99": 9,
+     "max": 9,
+     "codes": {
+      "200": 20
+     }
+    },
+    "export": {
+     "n": 20,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.44,
+     "p50": 3.3,
+     "p95": 6.3,
+     "p99": 6.3,
+     "max": 6.3,
+     "codes": {
+      "200": 20
+     }
+    },
+    "detail": {
+     "n": 55,
+     "err": 0,
+     "shed": 0,
+     "rps": 1.22,
+     "p50": 3.5,
+     "p95": 4.8,
+     "p99": 6,
+     "max": 6,
+     "codes": {
+      "200": 55
+     }
+    },
+    "edit": {
+     "n": 31,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.69,
+     "p50": 310.6,
+     "p95": 2767.2,
+     "p99": 4007.7,
+     "max": 4007.7,
+     "codes": {
+      "200": 31
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 17,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 1,
+     "cpuMax": 3,
+     "memPeakMiB": 98
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 20
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 0,
+     "cpuMax": 1,
+     "memPeakMiB": 4
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 1
+    },
+    "hub-db": {
+     "cpuAvg": 1,
+     "cpuMax": 5,
+     "memPeakMiB": 539
+    },
+    "hub-objstore": {
+     "cpuAvg": 1,
+     "cpuMax": 5,
+     "memPeakMiB": 111
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 1
+    }
+   }
+  },
+  {
+   "step": "fornecedores-u35",
+   "app": "fornecedores",
+   "users": 35,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 442,
+   "errRate": 0,
+   "shedRate": 0,
+   "rps": 9.8,
+   "classes": {
+    "detail": {
+     "n": 85,
+     "err": 0,
+     "shed": 0,
+     "rps": 1.89,
+     "p50": 3.8,
+     "p95": 4.6,
+     "p99": 6.6,
+     "max": 6.6,
+     "codes": {
+      "200": 85
+     }
+    },
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.9,
+     "p95": 2.9,
+     "p99": 4.6,
+     "max": 7.8,
+     "codes": {
+      "200": 225
+     }
+    },
+    "list": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 2.3,
+     "p95": 3,
+     "p99": 3.7,
+     "max": 5.5,
+     "codes": {
+      "200": 225
+     }
+    },
+    "edit": {
+     "n": 54,
+     "err": 0,
+     "shed": 0,
+     "rps": 1.2,
+     "p50": 303.8,
+     "p95": 2076.7,
+     "p99": 2771.9,
+     "max": 2771.9,
+     "codes": {
+      "200": 54
+     }
+    },
+    "export": {
+     "n": 35,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.78,
+     "p50": 3.4,
+     "p95": 5.2,
+     "p99": 5.9,
+     "max": 5.9,
+     "codes": {
+      "200": 35
+     }
+    },
+    "heavy": {
+     "n": 17,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.38,
+     "p50": 3.7,
+     "p95": 5.4,
+     "p99": 5.4,
+     "max": 5.4,
+     "codes": {
+      "200": 17
+     }
+    },
+    "attachment": {
+     "n": 26,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.58,
+     "p50": 16.8,
+     "p95": 22.6,
+     "p99": 53.5,
+     "max": 53.5,
+     "codes": {
+      "200": 13,
+      "201": 13
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 17,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 1,
+     "cpuMax": 3,
+     "memPeakMiB": 98
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 20
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 1,
+     "cpuMax": 3,
+     "memPeakMiB": 4
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 1
+    },
+    "hub-db": {
+     "cpuAvg": 2,
+     "cpuMax": 6,
+     "memPeakMiB": 540
+    },
+    "hub-objstore": {
+     "cpuAvg": 1,
+     "cpuMax": 6,
+     "memPeakMiB": 159
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 1
+    }
+   }
+  },
+  {
+   "step": "fornecedores-u50",
+   "app": "fornecedores",
+   "users": 50,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 622,
+   "errRate": 0,
+   "shedRate": 0,
+   "rps": 13.8,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 4.99,
+     "p50": 1.9,
+     "p95": 2.8,
+     "p99": 4.1,
+     "max": 4.2,
+     "codes": {
+      "200": 225
+     }
+    },
+    "list": {
+     "n": 346,
+     "err": 0,
+     "shed": 0,
+     "rps": 7.68,
+     "p50": 2.3,
+     "p95": 3.4,
+     "p99": 4.9,
+     "max": 10.2,
+     "codes": {
+      "200": 346
+     }
+    },
+    "edit": {
+     "n": 52,
+     "err": 0,
+     "shed": 0,
+     "rps": 1.15,
+     "p50": 349.7,
+     "p95": 2639.8,
+     "p99": 2913,
+     "max": 2913,
+     "codes": {
+      "200": 52
+     }
+    },
+    "attachment": {
+     "n": 58,
+     "err": 0,
+     "shed": 0,
+     "rps": 1.29,
+     "p50": 18.2,
+     "p95": 21.7,
+     "p99": 22.3,
+     "max": 22.3,
+     "codes": {
+      "200": 29,
+      "201": 29
+     }
+    },
+    "export": {
+     "n": 41,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.91,
+     "p50": 3.6,
+     "p95": 4.7,
+     "p99": 5.7,
+     "max": 5.7,
+     "codes": {
+      "200": 41
+     }
+    },
+    "heavy": {
+     "n": 26,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.58,
+     "p50": 3.5,
+     "p95": 4.1,
+     "p99": 5.2,
+     "max": 5.2,
+     "codes": {
+      "200": 26
+     }
+    },
+    "detail": {
+     "n": 99,
+     "err": 0,
+     "shed": 0,
+     "rps": 2.2,
+     "p50": 3.7,
+     "p95": 5,
+     "p99": 9.9,
+     "max": 9.9,
+     "codes": {
+      "200": 99
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 17,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 2,
+     "cpuMax": 5,
+     "memPeakMiB": 98
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 18
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 1,
+     "cpuMax": 3,
+     "memPeakMiB": 5
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 1
+    },
+    "hub-db": {
+     "cpuAvg": 1,
+     "cpuMax": 5,
+     "memPeakMiB": 541
+    },
+    "hub-objstore": {
+     "cpuAvg": 2,
+     "cpuMax": 5,
+     "memPeakMiB": 177
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 1
+    }
+   }
+  },
+  {
+   "step": "fornecedores-u75",
+   "app": "fornecedores",
+   "users": 75,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 941,
+   "errRate": 0,
+   "shedRate": 0,
+   "rps": 20.9,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.8,
+     "p95": 2.4,
+     "p99": 3.8,
+     "max": 7.3,
+     "codes": {
+      "200": 225
+     }
+    },
+    "detail": {
+     "n": 159,
+     "err": 0,
+     "shed": 0,
+     "rps": 3.53,
+     "p50": 3.8,
+     "p95": 5.1,
+     "p99": 8.8,
+     "max": 10.3,
+     "codes": {
+      "200": 159
+     }
+    },
+    "list": {
+     "n": 505,
+     "err": 0,
+     "shed": 0,
+     "rps": 11.21,
+     "p50": 2.2,
+     "p95": 3.3,
+     "p99": 4.4,
+     "max": 8,
+     "codes": {
+      "200": 505
+     }
+    },
+    "edit": {
+     "n": 80,
+     "err": 0,
+     "shed": 0,
+     "rps": 1.78,
+     "p50": 285.9,
+     "p95": 1940.2,
+     "p99": 3997.6,
+     "max": 3997.6,
+     "codes": {
+      "200": 80
+     }
+    },
+    "export": {
+     "n": 81,
+     "err": 0,
+     "shed": 0,
+     "rps": 1.8,
+     "p50": 3.6,
+     "p95": 5.2,
+     "p99": 7.4,
+     "max": 7.4,
+     "codes": {
+      "200": 81
+     }
+    },
+    "attachment": {
+     "n": 74,
+     "err": 0,
+     "shed": 0,
+     "rps": 1.64,
+     "p50": 17.4,
+     "p95": 24.6,
+     "p99": 48,
+     "max": 48,
+     "codes": {
+      "200": 37,
+      "201": 37
+     }
+    },
+    "heavy": {
+     "n": 42,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.93,
+     "p50": 3.6,
+     "p95": 4.7,
+     "p99": 7,
+     "max": 7,
+     "codes": {
+      "200": 42
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 17,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 3,
+     "cpuMax": 6,
+     "memPeakMiB": 98
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 18
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 1,
+     "cpuMax": 3,
+     "memPeakMiB": 6
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 1
+    },
+    "hub-db": {
+     "cpuAvg": 1,
+     "cpuMax": 5,
+     "memPeakMiB": 541
+    },
+    "hub-objstore": {
+     "cpuAvg": 2,
+     "cpuMax": 8,
+     "memPeakMiB": 246
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 1
+    }
+   }
+  },
+  {
+   "step": "fornecedores-u100",
+   "app": "fornecedores",
+   "users": 100,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 1266,
+   "errRate": 0,
+   "shedRate": 0,
+   "rps": 28.1,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.8,
+     "p95": 2.5,
+     "p99": 3.5,
+     "max": 6.9,
+     "codes": {
+      "200": 225
+     }
+    },
+    "list": {
+     "n": 676,
+     "err": 0,
+     "shed": 0,
+     "rps": 15.01,
+     "p50": 2.2,
+     "p95": 3.3,
+     "p99": 6.6,
+     "max": 8.8,
+     "codes": {
+      "200": 676
+     }
+    },
+    "heavy": {
+     "n": 54,
+     "err": 0,
+     "shed": 0,
+     "rps": 1.2,
+     "p50": 3.7,
+     "p95": 4.9,
+     "p99": 6.2,
+     "max": 6.2,
+     "codes": {
+      "200": 54
+     }
+    },
+    "detail": {
+     "n": 233,
+     "err": 0,
+     "shed": 0,
+     "rps": 5.17,
+     "p50": 4.1,
+     "p95": 6.2,
+     "p99": 10.4,
+     "max": 14,
+     "codes": {
+      "200": 233
+     }
+    },
+    "edit": {
+     "n": 118,
+     "err": 0,
+     "shed": 0,
+     "rps": 2.62,
+     "p50": 299.2,
+     "p95": 2058.5,
+     "p99": 2539.7,
+     "max": 2842.2,
+     "codes": {
+      "200": 118
+     }
+    },
+    "attachment": {
+     "n": 112,
+     "err": 0,
+     "shed": 0,
+     "rps": 2.49,
+     "p50": 17.2,
+     "p95": 25.3,
+     "p99": 52.3,
+     "max": 58.3,
+     "codes": {
+      "200": 56,
+      "201": 56
+     }
+    },
+    "export": {
+     "n": 73,
+     "err": 0,
+     "shed": 0,
+     "rps": 1.62,
+     "p50": 3.7,
+     "p95": 7.5,
+     "p99": 11.9,
+     "max": 11.9,
+     "codes": {
+      "200": 73
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 17,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 3,
+     "cpuMax": 7,
+     "memPeakMiB": 98
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 18
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 1,
+     "cpuMax": 3,
+     "memPeakMiB": 7
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 1
+    },
+    "hub-db": {
+     "cpuAvg": 1,
+     "cpuMax": 3,
+     "memPeakMiB": 540
+    },
+    "hub-objstore": {
+     "cpuAvg": 3,
+     "cpuMax": 8,
+     "memPeakMiB": 255
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 1
+    }
+   }
+  },
+  {
+   "step": "fornecedores-u150",
+   "app": "fornecedores",
+   "users": 150,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 1937,
+   "errRate": 0,
+   "shedRate": 0,
+   "rps": 43,
+   "classes": {
+    "detail": {
+     "n": 340,
+     "err": 0,
+     "shed": 0,
+     "rps": 7.55,
+     "p50": 4.4,
+     "p95": 47.1,
+     "p99": 51.4,
+     "max": 119.1,
+     "codes": {
+      "200": 340
+     }
+    },
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.7,
+     "p95": 3.2,
+     "p99": 8.1,
+     "max": 173.9,
+     "codes": {
+      "200": 225
+     }
+    },
+    "list": {
+     "n": 1027,
+     "err": 0,
+     "shed": 0,
+     "rps": 22.8,
+     "p50": 2.1,
+     "p95": 3.2,
+     "p99": 8.1,
+     "max": 190.4,
+     "codes": {
+      "200": 1027
+     }
+    },
+    "attachment": {
+     "n": 166,
+     "err": 0,
+     "shed": 0,
+     "rps": 3.69,
+     "p50": 17.5,
+     "p95": 31.5,
+     "p99": 136.3,
+     "max": 224.6,
+     "codes": {
+      "200": 83,
+      "201": 83
+     }
+    },
+    "edit": {
+     "n": 177,
+     "err": 0,
+     "shed": 0,
+     "rps": 3.93,
+     "p50": 280.4,
+     "p95": 2084,
+     "p99": 3801.9,
+     "max": 4002.1,
+     "codes": {
+      "200": 177
+     }
+    },
+    "heavy": {
+     "n": 92,
+     "err": 0,
+     "shed": 0,
+     "rps": 2.04,
+     "p50": 3.8,
+     "p95": 5.1,
+     "p99": 5.9,
+     "max": 5.9,
+     "codes": {
+      "200": 92
+     }
+    },
+    "export": {
+     "n": 135,
+     "err": 0,
+     "shed": 0,
+     "rps": 3,
+     "p50": 4,
+     "p95": 7.4,
+     "p99": 13.3,
+     "max": 158.9,
+     "codes": {
+      "200": 135
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 17,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 4,
+     "cpuMax": 7,
+     "memPeakMiB": 98
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 18
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 2,
+     "cpuMax": 3,
+     "memPeakMiB": 10
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 1
+    },
+    "hub-db": {
+     "cpuAvg": 2,
+     "cpuMax": 6,
+     "memPeakMiB": 541
+    },
+    "hub-objstore": {
+     "cpuAvg": 4,
+     "cpuMax": 10,
+     "memPeakMiB": 301
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 1
+    }
+   }
+  },
+  {
+   "step": "fornecedores-u200",
+   "app": "fornecedores",
+   "users": 200,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 2538,
+   "errRate": 0,
+   "shedRate": 0,
+   "rps": 56.4,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.7,
+     "p95": 2.6,
+     "p99": 5.6,
+     "max": 8,
+     "codes": {
+      "200": 225
+     }
+    },
+    "list": {
+     "n": 1326,
+     "err": 0,
+     "shed": 0,
+     "rps": 29.44,
+     "p50": 2.1,
+     "p95": 3.8,
+     "p99": 6.8,
+     "max": 12.8,
+     "codes": {
+      "200": 1326
+     }
+    },
+    "heavy": {
+     "n": 125,
+     "err": 0,
+     "shed": 0,
+     "rps": 2.78,
+     "p50": 4.2,
+     "p95": 5.5,
+     "p99": 9.8,
+     "max": 29,
+     "codes": {
+      "200": 125
+     }
+    },
+    "edit": {
+     "n": 222,
+     "err": 0,
+     "shed": 0,
+     "rps": 4.93,
+     "p50": 295.5,
+     "p95": 2656.2,
+     "p99": 4015.5,
+     "max": 4115.6,
+     "codes": {
+      "200": 222
+     }
+    },
+    "detail": {
+     "n": 446,
+     "err": 0,
+     "shed": 0,
+     "rps": 9.9,
+     "p50": 4.9,
+     "p95": 44.1,
+     "p99": 49.7,
+     "max": 52.7,
+     "codes": {
+      "200": 446
+     }
+    },
+    "export": {
+     "n": 195,
+     "err": 0,
+     "shed": 0,
+     "rps": 4.33,
+     "p50": 4.1,
+     "p95": 6.5,
+     "p99": 12.6,
+     "max": 19,
+     "codes": {
+      "200": 195
+     }
+    },
+    "attachment": {
+     "n": 224,
+     "err": 0,
+     "shed": 0,
+     "rps": 4.97,
+     "p50": 17.5,
+     "p95": 56.7,
+     "p99": 66.6,
+     "max": 81,
+     "codes": {
+      "200": 112,
+      "201": 112
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 17,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 5,
+     "cpuMax": 10,
+     "memPeakMiB": 103
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 3,
+     "memPeakMiB": 18
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 3,
+     "cpuMax": 5,
+     "memPeakMiB": 16
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 1
+    },
+    "hub-db": {
+     "cpuAvg": 1,
+     "cpuMax": 5,
+     "memPeakMiB": 539
+    },
+    "hub-objstore": {
+     "cpuAvg": 6,
+     "cpuMax": 10,
+     "memPeakMiB": 310
+    },
+    "hub-extapi": {
+     "cpuAvg": 1,
+     "cpuMax": 3,
+     "memPeakMiB": 1
+    }
+   }
+  },
+  {
+   "step": "fornecedores-u300",
+   "app": "fornecedores",
+   "users": 300,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 3816,
+   "errRate": 0,
+   "shedRate": 0,
+   "rps": 84.7,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.6,
+     "p95": 3.6,
+     "p99": 6.2,
+     "max": 9.9,
+     "codes": {
+      "200": 225
+     }
+    },
+    "detail": {
+     "n": 656,
+     "err": 0,
+     "shed": 0,
+     "rps": 14.57,
+     "p50": 5.3,
+     "p95": 9.6,
+     "p99": 47.6,
+     "max": 50.3,
+     "codes": {
+      "200": 656
+     }
+    },
+    "list": {
+     "n": 2024,
+     "err": 0,
+     "shed": 0,
+     "rps": 44.95,
+     "p50": 2,
+     "p95": 3.9,
+     "p99": 8.8,
+     "max": 13.6,
+     "codes": {
+      "200": 2024
+     }
+    },
+    "edit": {
+     "n": 330,
+     "err": 0,
+     "shed": 0,
+     "rps": 7.33,
+     "p50": 283.2,
+     "p95": 2035.1,
+     "p99": 3882.5,
+     "max": 4013.1,
+     "codes": {
+      "200": 330
+     }
+    },
+    "export": {
+     "n": 264,
+     "err": 0,
+     "shed": 0,
+     "rps": 5.86,
+     "p50": 4.5,
+     "p95": 8.1,
+     "p99": 12.9,
+     "max": 27.7,
+     "codes": {
+      "200": 264
+     }
+    },
+    "heavy": {
+     "n": 170,
+     "err": 0,
+     "shed": 0,
+     "rps": 3.78,
+     "p50": 4.4,
+     "p95": 7.7,
+     "p99": 12.9,
+     "max": 14.7,
+     "codes": {
+      "200": 170
+     }
+    },
+    "attachment": {
+     "n": 372,
+     "err": 0,
+     "shed": 0,
+     "rps": 8.26,
+     "p50": 18.4,
+     "p95": 65,
+     "p99": 78.1,
+     "max": 79,
+     "codes": {
+      "200": 186,
+      "201": 186
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 17,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 7,
+     "cpuMax": 13,
+     "memPeakMiB": 104
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 18
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 4,
+     "cpuMax": 8,
+     "memPeakMiB": 26
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 1
+    },
+    "hub-db": {
+     "cpuAvg": 2,
+     "cpuMax": 5,
+     "memPeakMiB": 539
+    },
+    "hub-objstore": {
+     "cpuAvg": 9,
+     "cpuMax": 17,
+     "memPeakMiB": 317
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 1
+    }
+   }
+  },
+  {
+   "step": "fornecedores-u400",
+   "app": "fornecedores",
+   "users": 400,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 5098,
+   "errRate": 0,
+   "shedRate": 0,
+   "rps": 113.2,
+   "classes": {
+    "export": {
+     "n": 321,
+     "err": 0,
+     "shed": 0,
+     "rps": 7.13,
+     "p50": 4.9,
+     "p95": 9.3,
+     "p99": 16.3,
+     "max": 22,
+     "codes": {
+      "200": 321
+     }
+    },
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.6,
+     "p95": 3.2,
+     "p99": 5.3,
+     "max": 11.8,
+     "codes": {
+      "200": 225
+     }
+    },
+    "list": {
+     "n": 2758,
+     "err": 0,
+     "shed": 0,
+     "rps": 61.25,
+     "p50": 2,
+     "p95": 4.1,
+     "p99": 10.2,
+     "max": 25.9,
+     "codes": {
+      "200": 2758
+     }
+    },
+    "detail": {
+     "n": 925,
+     "err": 0,
+     "shed": 0,
+     "rps": 20.54,
+     "p50": 6.1,
+     "p95": 12.9,
+     "p99": 47.7,
+     "max": 52.3,
+     "codes": {
+      "200": 925
+     }
+    },
+    "edit": {
+     "n": 458,
+     "err": 0,
+     "shed": 0,
+     "rps": 10.17,
+     "p50": 288.6,
+     "p95": 2081.4,
+     "p99": 3868.9,
+     "max": 4110.1,
+     "codes": {
+      "200": 458
+     }
+    },
+    "attachment": {
+     "n": 418,
+     "err": 0,
+     "shed": 0,
+     "rps": 9.28,
+     "p50": 19,
+     "p95": 57.7,
+     "p99": 77.2,
+     "max": 85,
+     "codes": {
+      "200": 209,
+      "201": 209
+     }
+    },
+    "heavy": {
+     "n": 218,
+     "err": 0,
+     "shed": 0,
+     "rps": 4.84,
+     "p50": 4.9,
+     "p95": 7.8,
+     "p99": 12,
+     "max": 21.9,
+     "codes": {
+      "200": 218
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 17,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 10,
+     "cpuMax": 14,
+     "memPeakMiB": 107
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 18
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 5,
+     "cpuMax": 8,
+     "memPeakMiB": 44
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 1
+    },
+    "hub-db": {
+     "cpuAvg": 2,
+     "cpuMax": 6,
+     "memPeakMiB": 542
+    },
+    "hub-objstore": {
+     "cpuAvg": 14,
+     "cpuMax": 24,
+     "memPeakMiB": 321
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 1
+    }
+   }
+  },
+  {
+   "step": "fornecedores-u600",
+   "app": "fornecedores",
+   "users": 600,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 7663,
+   "errRate": 0,
+   "shedRate": 0.2,
+   "rps": 170.1,
+   "classes": {
+    "hub-probe": {
+     "n": 226,
+     "err": 0,
+     "shed": 0,
+     "rps": 5.02,
+     "p50": 1.6,
+     "p95": 5.6,
+     "p99": 13.1,
+     "max": 20.7,
+     "codes": {
+      "200": 226
+     }
+    },
+    "list": {
+     "n": 4139,
+     "err": 0,
+     "shed": 0,
+     "rps": 91.9,
+     "p50": 2,
+     "p95": 6.4,
+     "p99": 11.9,
+     "max": 28.5,
+     "codes": {
+      "200": 4139
+     }
+    },
+    "detail": {
+     "n": 1313,
+     "err": 0,
+     "shed": 0,
+     "rps": 29.15,
+     "p50": 7.3,
+     "p95": 34,
+     "p99": 65.5,
+     "max": 189.3,
+     "codes": {
+      "200": 1313
+     }
+    },
+    "edit": {
+     "n": 653,
+     "err": 0,
+     "shed": 0,
+     "rps": 14.5,
+     "p50": 278.3,
+     "p95": 2042.9,
+     "p99": 2786.7,
+     "max": 3970.3,
+     "codes": {
+      "200": 653
+     }
+    },
+    "heavy": {
+     "n": 333,
+     "err": 0,
+     "shed": 3,
+     "rps": 7.39,
+     "p50": 5.8,
+     "p95": 18.9,
+     "p99": 65.3,
+     "max": 169,
+     "codes": {
+      "200": 330,
+      "429": 3
+     }
+    },
+    "export": {
+     "n": 547,
+     "err": 0,
+     "shed": 12,
+     "rps": 12.15,
+     "p50": 5.7,
+     "p95": 15.2,
+     "p99": 61,
+     "max": 179.8,
+     "codes": {
+      "200": 535,
+      "429": 12
+     }
+    },
+    "attachment": {
+     "n": 678,
+     "err": 0,
+     "shed": 0,
+     "rps": 15.05,
+     "p50": 21.8,
+     "p95": 65.3,
+     "p99": 114.6,
+     "max": 185.6,
+     "codes": {
+      "200": 339,
+      "201": 339
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 17,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 12,
+     "cpuMax": 19,
+     "memPeakMiB": 108
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 20
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 7,
+     "cpuMax": 11,
+     "memPeakMiB": 86
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 1
+    },
+    "hub-db": {
+     "cpuAvg": 2,
+     "cpuMax": 7,
+     "memPeakMiB": 539
+    },
+    "hub-objstore": {
+     "cpuAvg": 23,
+     "cpuMax": 36,
+     "memPeakMiB": 327
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 1
+    }
+   }
+  },
+  {
+   "step": "fornecedores-u800",
+   "app": "fornecedores",
+   "users": 800,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 10143,
+   "errRate": 0,
+   "shedRate": 2.27,
+   "rps": 225.2,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 2,
+     "p95": 12,
+     "p99": 26.8,
+     "max": 43.5,
+     "codes": {
+      "200": 225
+     }
+    },
+    "edit": {
+     "n": 878,
+     "err": 0,
+     "shed": 0,
+     "rps": 19.5,
+     "p50": 294.5,
+     "p95": 2065,
+     "p99": 3928.2,
+     "max": 4119,
+     "codes": {
+      "200": 878
+     }
+    },
+    "list": {
+     "n": 5488,
+     "err": 0,
+     "shed": 0,
+     "rps": 121.86,
+     "p50": 2.1,
+     "p95": 9.6,
+     "p99": 18.6,
+     "max": 50,
+     "codes": {
+      "200": 5488
+     }
+    },
+    "export": {
+     "n": 676,
+     "err": 0,
+     "shed": 145,
+     "rps": 15.01,
+     "p50": 8.4,
+     "p95": 104.1,
+     "p99": 280.1,
+     "max": 902.4,
+     "codes": {
+      "200": 531,
+      "429": 145
+     }
+    },
+    "detail": {
+     "n": 1763,
+     "err": 0,
+     "shed": 0,
+     "rps": 39.15,
+     "p50": 24.3,
+     "p95": 254,
+     "p99": 515.6,
+     "max": 1034.9,
+     "codes": {
+      "200": 1763
+     }
+    },
+    "heavy": {
+     "n": 442,
+     "err": 0,
+     "shed": 85,
+     "rps": 9.81,
+     "p50": 8.8,
+     "p95": 104.3,
+     "p99": 219.5,
+     "max": 341,
+     "codes": {
+      "200": 357,
+      "429": 85
+     }
+    },
+    "attachment": {
+     "n": 896,
+     "err": 0,
+     "shed": 0,
+     "rps": 19.9,
+     "p50": 35.8,
+     "p95": 295.3,
+     "p99": 688.6,
+     "max": 1064.9,
+     "codes": {
+      "200": 448,
+      "201": 448
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 17,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 19,
+     "cpuMax": 36,
+     "memPeakMiB": 139
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 18
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 11,
+     "cpuMax": 18,
+     "memPeakMiB": 164
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 2
+    },
+    "hub-db": {
+     "cpuAvg": 2,
+     "cpuMax": 7,
+     "memPeakMiB": 540
+    },
+    "hub-objstore": {
+     "cpuAvg": 38,
+     "cpuMax": 53,
+     "memPeakMiB": 334
+    },
+    "hub-extapi": {
+     "cpuAvg": 1,
+     "cpuMax": 3,
+     "memPeakMiB": 1
+    }
+   }
+  },
+  {
+   "step": "fornecedores-u1200",
+   "app": "fornecedores",
+   "users": 1200,
+   "ok": false,
+   "slo": {
+    "p95List": true,
+    "p95Detail": false,
+    "errors": false,
+    "noOom": true
+   },
+   "total": 13535,
+   "errRate": 1.46,
+   "shedRate": 10.82,
+   "rps": 300.5,
+   "classes": {
+    "list": {
+     "n": 7301,
+     "err": 0,
+     "shed": 0,
+     "rps": 162.07,
+     "p50": 2.2,
+     "p95": 14.2,
+     "p99": 25.7,
+     "max": 49.4,
+     "codes": {
+      "200": 7301
+     }
+    },
+    "detail": {
+     "n": 2414,
+     "err": 0,
+     "shed": 0,
+     "rps": 53.59,
+     "p50": 2138.2,
+     "p95": 4943,
+     "p99": 6277.2,
+     "max": 7682.8,
+     "codes": {
+      "200": 2414
+     }
+    },
+    "hub-probe": {
+     "n": 226,
+     "err": 0,
+     "shed": 0,
+     "rps": 5.02,
+     "p50": 3.8,
+     "p95": 17,
+     "p99": 26.4,
+     "max": 38.2,
+     "codes": {
+      "200": 226
+     }
+    },
+    "attachment": {
+     "n": 1069,
+     "err": 198,
+     "shed": 0,
+     "rps": 23.73,
+     "p50": 140.8,
+     "p95": 4822.5,
+     "p99": 5881.9,
+     "max": 8717,
+     "codes": {
+      "200": 383,
+      "201": 488,
+      "404": 55,
+      "502": 143
+     }
+    },
+    "edit": {
+     "n": 1243,
+     "err": 0,
+     "shed": 0,
+     "rps": 27.59,
+     "p50": 285.2,
+     "p95": 2068.6,
+     "p99": 3867.3,
+     "max": 5219.3,
+     "codes": {
+      "200": 1243
+     }
+    },
+    "heavy": {
+     "n": 590,
+     "err": 0,
+     "shed": 575,
+     "rps": 13.1,
+     "p50": 2.1,
+     "p95": 21.8,
+     "p99": 2323.4,
+     "max": 6183.3,
+     "codes": {
+      "200": 15,
+      "429": 575
+     }
+    },
+    "export": {
+     "n": 918,
+     "err": 0,
+     "shed": 890,
+     "rps": 20.38,
+     "p50": 2.1,
+     "p95": 18.9,
+     "p99": 2724.7,
+     "max": 5595.5,
+     "codes": {
+      "200": 28,
+      "429": 890
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 17,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 21,
+     "cpuMax": 33,
+     "memPeakMiB": 234
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 18
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 13,
+     "cpuMax": 20,
+     "memPeakMiB": 311
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 1
+    },
+    "hub-db": {
+     "cpuAvg": 2,
+     "cpuMax": 6,
+     "memPeakMiB": 539
+    },
+    "hub-objstore": {
+     "cpuAvg": 41,
+     "cpuMax": 52,
+     "memPeakMiB": 348
+    },
+    "hub-extapi": {
+     "cpuAvg": 1,
+     "cpuMax": 3,
+     "memPeakMiB": 2
+    }
+   }
+  },
+  {
+   "step": "servicos-u10",
+   "app": "servicos",
+   "users": 10,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 110,
+   "errRate": 0,
+   "shedRate": 0,
+   "rps": 2.4,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 2,
+     "p95": 4.2,
+     "p99": 6.5,
+     "max": 9.1,
+     "codes": {
+      "200": 225
+     }
+    },
+    "list": {
+     "n": 73,
+     "err": 0,
+     "shed": 0,
+     "rps": 1.62,
+     "p50": 3.7,
+     "p95": 9.4,
+     "p99": 25,
+     "max": 25,
+     "codes": {
+      "200": 73
+     }
+    },
+    "detail": {
+     "n": 21,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.47,
+     "p50": 4.9,
+     "p95": 13.9,
+     "p99": 14.1,
+     "max": 14.1,
+     "codes": {
+      "200": 21
+     }
+    },
+    "edit": {
+     "n": 4,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.09,
+     "p50": 17.6,
+     "p95": 31.6,
+     "p99": 31.6,
+     "max": 31.6,
+     "codes": {
+      "200": 3,
+      "422": 1
+     }
+    },
+    "export": {
+     "n": 5,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.11,
+     "p50": 292,
+     "p95": 308.8,
+     "p99": 308.8,
+     "max": 308.8,
+     "codes": {
+      "200": 5
+     }
+    },
+    "heavy": {
+     "n": 7,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.16,
+     "p50": 296.7,
+     "p95": 612,
+     "p99": 612,
+     "max": 612,
+     "codes": {
+      "200": 7
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 19,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 1,
+     "cpuMax": 2,
+     "memPeakMiB": 234
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 18
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 310
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 2
+    },
+    "hub-db": {
+     "cpuAvg": 7,
+     "cpuMax": 58,
+     "memPeakMiB": 563
+    },
+    "hub-objstore": {
+     "cpuAvg": 1,
+     "cpuMax": 4,
+     "memPeakMiB": 341
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 2
+    }
+   }
+  },
+  {
+   "step": "servicos-u25",
+   "app": "servicos",
+   "users": 25,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 282,
+   "errRate": 0,
+   "shedRate": 1.06,
+   "rps": 6.3,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.9,
+     "p95": 3.6,
+     "p99": 4.8,
+     "max": 7.9,
+     "codes": {
+      "200": 225
+     }
+    },
+    "list": {
+     "n": 204,
+     "err": 0,
+     "shed": 0,
+     "rps": 4.53,
+     "p50": 3.6,
+     "p95": 15,
+     "p99": 711.3,
+     "max": 4604.7,
+     "codes": {
+      "200": 204
+     }
+    },
+    "export": {
+     "n": 25,
+     "err": 0,
+     "shed": 2,
+     "rps": 0.56,
+     "p50": 300.8,
+     "p95": 614.9,
+     "p99": 700.2,
+     "max": 700.2,
+     "codes": {
+      "200": 23,
+      "429": 2
+     }
+    },
+    "detail": {
+     "n": 40,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.89,
+     "p50": 4.4,
+     "p95": 23,
+     "p99": 59.9,
+     "max": 59.9,
+     "codes": {
+      "200": 40
+     }
+    },
+    "heavy": {
+     "n": 10,
+     "err": 0,
+     "shed": 1,
+     "rps": 0.22,
+     "p50": 343.6,
+     "p95": 633.9,
+     "p99": 633.9,
+     "max": 633.9,
+     "codes": {
+      "200": 9,
+      "429": 1
+     }
+    },
+    "edit": {
+     "n": 3,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.07,
+     "p50": 11.6,
+     "p95": 18.7,
+     "p99": 18.7,
+     "max": 18.7,
+     "codes": {
+      "200": 1,
+      "422": 2
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 21,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 1,
+     "cpuMax": 4,
+     "memPeakMiB": 234
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 18
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 0,
+     "cpuMax": 3,
+     "memPeakMiB": 310
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 1,
+     "cpuMax": 3,
+     "memPeakMiB": 2
+    },
+    "hub-db": {
+     "cpuAvg": 17,
+     "cpuMax": 67,
+     "memPeakMiB": 919
+    },
+    "hub-objstore": {
+     "cpuAvg": 2,
+     "cpuMax": 15,
+     "memPeakMiB": 341
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 2
+    }
+   }
+  },
+  {
+   "step": "servicos-u35",
+   "app": "servicos",
+   "users": 35,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 409,
+   "errRate": 0,
+   "shedRate": 0.49,
+   "rps": 9.1,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 2,
+     "p95": 3.8,
+     "p99": 5.7,
+     "max": 6.6,
+     "codes": {
+      "200": 225
+     }
+    },
+    "list": {
+     "n": 274,
+     "err": 0,
+     "shed": 0,
+     "rps": 6.08,
+     "p50": 3.7,
+     "p95": 26.9,
+     "p99": 552.4,
+     "max": 768,
+     "codes": {
+      "200": 274
+     }
+    },
+    "export": {
+     "n": 23,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.51,
+     "p50": 320.9,
+     "p95": 598.5,
+     "p99": 609.9,
+     "max": 609.9,
+     "codes": {
+      "200": 23
+     }
+    },
+    "detail": {
+     "n": 79,
+     "err": 0,
+     "shed": 0,
+     "rps": 1.75,
+     "p50": 3.9,
+     "p95": 15.1,
+     "p99": 22,
+     "max": 22,
+     "codes": {
+      "200": 79
+     }
+    },
+    "heavy": {
+     "n": 23,
+     "err": 0,
+     "shed": 2,
+     "rps": 0.51,
+     "p50": 294,
+     "p95": 641.4,
+     "p99": 806.9,
+     "max": 806.9,
+     "codes": {
+      "200": 21,
+      "429": 2
+     }
+    },
+    "edit": {
+     "n": 10,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.22,
+     "p50": 15,
+     "p95": 32.2,
+     "p99": 32.2,
+     "max": 32.2,
+     "codes": {
+      "200": 7,
+      "422": 3
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 21,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 2,
+     "cpuMax": 4,
+     "memPeakMiB": 234
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 18
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 310
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 1,
+     "cpuMax": 3,
+     "memPeakMiB": 2
+    },
+    "hub-db": {
+     "cpuAvg": 32,
+     "cpuMax": 101,
+     "memPeakMiB": 953
+    },
+    "hub-objstore": {
+     "cpuAvg": 1,
+     "cpuMax": 9,
+     "memPeakMiB": 191
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 2
+    }
+   }
+  },
+  {
+   "step": "servicos-u50",
+   "app": "servicos",
+   "users": 50,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 577,
+   "errRate": 0,
+   "shedRate": 1.56,
+   "rps": 12.8,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.9,
+     "p95": 3.2,
+     "p99": 4.9,
+     "max": 17.7,
+     "codes": {
+      "200": 225
+     }
+    },
+    "detail": {
+     "n": 128,
+     "err": 0,
+     "shed": 0,
+     "rps": 2.84,
+     "p50": 4.6,
+     "p95": 30.5,
+     "p99": 47.2,
+     "max": 53.2,
+     "codes": {
+      "200": 128
+     }
+    },
+    "list": {
+     "n": 365,
+     "err": 0,
+     "shed": 0,
+     "rps": 8.1,
+     "p50": 3.6,
+     "p95": 47.4,
+     "p99": 819.9,
+     "max": 931.9,
+     "codes": {
+      "200": 365
+     }
+    },
+    "heavy": {
+     "n": 33,
+     "err": 0,
+     "shed": 4,
+     "rps": 0.73,
+     "p50": 361.1,
+     "p95": 743.6,
+     "p99": 772.4,
+     "max": 772.4,
+     "codes": {
+      "200": 29,
+      "429": 4
+     }
+    },
+    "export": {
+     "n": 43,
+     "err": 0,
+     "shed": 5,
+     "rps": 0.95,
+     "p50": 355.3,
+     "p95": 619.4,
+     "p99": 772,
+     "max": 772,
+     "codes": {
+      "200": 38,
+      "429": 5
+     }
+    },
+    "edit": {
+     "n": 8,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.18,
+     "p50": 15.3,
+     "p95": 18.4,
+     "p99": 18.4,
+     "max": 18.4,
+     "codes": {
+      "200": 5,
+      "422": 3
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 22,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 2,
+     "cpuMax": 4,
+     "memPeakMiB": 233
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 18
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 309
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 1,
+     "cpuMax": 2,
+     "memPeakMiB": 3
+    },
+    "hub-db": {
+     "cpuAvg": 40,
+     "cpuMax": 97,
+     "memPeakMiB": 956
+    },
+    "hub-objstore": {
+     "cpuAvg": 1,
+     "cpuMax": 5,
+     "memPeakMiB": 190
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 2
+    }
+   }
+  },
+  {
+   "step": "servicos-u75",
+   "app": "servicos",
+   "users": 75,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 849,
+   "errRate": 0,
+   "shedRate": 3.06,
+   "rps": 18.9,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.9,
+     "p95": 2.8,
+     "p99": 6,
+     "max": 13.2,
+     "codes": {
+      "200": 225
+     }
+    },
+    "list": {
+     "n": 562,
+     "err": 0,
+     "shed": 0,
+     "rps": 12.48,
+     "p50": 3.6,
+     "p95": 53.7,
+     "p99": 772.1,
+     "max": 929.7,
+     "codes": {
+      "200": 562
+     }
+    },
+    "detail": {
+     "n": 160,
+     "err": 0,
+     "shed": 0,
+     "rps": 3.55,
+     "p50": 4,
+     "p95": 45.5,
+     "p99": 64.9,
+     "max": 137.1,
+     "codes": {
+      "200": 160
+     }
+    },
+    "export": {
+     "n": 57,
+     "err": 0,
+     "shed": 13,
+     "rps": 1.27,
+     "p50": 415.1,
+     "p95": 782.3,
+     "p99": 885.6,
+     "max": 885.6,
+     "codes": {
+      "200": 44,
+      "429": 13
+     }
+    },
+    "heavy": {
+     "n": 52,
+     "err": 0,
+     "shed": 13,
+     "rps": 1.15,
+     "p50": 401.3,
+     "p95": 854.5,
+     "p99": 870.1,
+     "max": 870.1,
+     "codes": {
+      "200": 39,
+      "429": 13
+     }
+    },
+    "edit": {
+     "n": 18,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.4,
+     "p50": 15.9,
+     "p95": 62,
+     "p99": 62,
+     "max": 62,
+     "codes": {
+      "200": 11,
+      "422": 7
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 24,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 2,
+     "cpuMax": 3,
+     "memPeakMiB": 233
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 18
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 309
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 1,
+     "cpuMax": 2,
+     "memPeakMiB": 3
+    },
+    "hub-db": {
+     "cpuAvg": 50,
+     "cpuMax": 98,
+     "memPeakMiB": 955
+    },
+    "hub-objstore": {
+     "cpuAvg": 1,
+     "cpuMax": 4,
+     "memPeakMiB": 166
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 2
+    }
+   }
+  },
+  {
+   "step": "servicos-u100",
+   "app": "servicos",
+   "users": 100,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 1123,
+   "errRate": 0,
+   "shedRate": 5.61,
+   "rps": 24.9,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.9,
+     "p95": 3.4,
+     "p99": 7.3,
+     "max": 10.8,
+     "codes": {
+      "200": 225
+     }
+    },
+    "list": {
+     "n": 736,
+     "err": 0,
+     "shed": 0,
+     "rps": 16.34,
+     "p50": 3.7,
+     "p95": 70.5,
+     "p99": 1077.3,
+     "max": 1235.4,
+     "codes": {
+      "200": 736
+     }
+    },
+    "detail": {
+     "n": 219,
+     "err": 0,
+     "shed": 0,
+     "rps": 4.86,
+     "p50": 4,
+     "p95": 52.7,
+     "p99": 85.7,
+     "max": 97.3,
+     "codes": {
+      "200": 219
+     }
+    },
+    "export": {
+     "n": 97,
+     "err": 0,
+     "shed": 42,
+     "rps": 2.15,
+     "p50": 315.3,
+     "p95": 1067.8,
+     "p99": 1185.7,
+     "max": 1185.7,
+     "codes": {
+      "200": 55,
+      "429": 42
+     }
+    },
+    "heavy": {
+     "n": 49,
+     "err": 0,
+     "shed": 21,
+     "rps": 1.09,
+     "p50": 296.9,
+     "p95": 994.6,
+     "p99": 1115.4,
+     "max": 1115.4,
+     "codes": {
+      "200": 28,
+      "429": 21
+     }
+    },
+    "edit": {
+     "n": 22,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.49,
+     "p50": 16.2,
+     "p95": 87.9,
+     "p99": 101.2,
+     "max": 101.2,
+     "codes": {
+      "200": 16,
+      "422": 6
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 27,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 2,
+     "cpuMax": 3,
+     "memPeakMiB": 233
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 18
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 309
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 1,
+     "cpuMax": 2,
+     "memPeakMiB": 3
+    },
+    "hub-db": {
+     "cpuAvg": 64,
+     "cpuMax": 104,
+     "memPeakMiB": 963
+    },
+    "hub-objstore": {
+     "cpuAvg": 1,
+     "cpuMax": 4,
+     "memPeakMiB": 166
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 2
+    }
+   }
+  },
+  {
+   "step": "servicos-u150",
+   "app": "servicos",
+   "users": 150,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 1693,
+   "errRate": 0,
+   "shedRate": 7.62,
+   "rps": 37.6,
+   "classes": {
+    "detail": {
+     "n": 322,
+     "err": 0,
+     "shed": 0,
+     "rps": 7.15,
+     "p50": 4.2,
+     "p95": 59.1,
+     "p99": 79.7,
+     "max": 107.5,
+     "codes": {
+      "200": 322
+     }
+    },
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.8,
+     "p95": 3.6,
+     "p99": 6.1,
+     "max": 10.9,
+     "codes": {
+      "200": 225
+     }
+    },
+    "export": {
+     "n": 152,
+     "err": 0,
+     "shed": 88,
+     "rps": 3.38,
+     "p50": 2.8,
+     "p95": 900.2,
+     "p99": 1106,
+     "max": 1492.5,
+     "codes": {
+      "200": 64,
+      "429": 88
+     }
+    },
+    "list": {
+     "n": 1118,
+     "err": 0,
+     "shed": 0,
+     "rps": 24.83,
+     "p50": 3.8,
+     "p95": 67.2,
+     "p99": 943.5,
+     "max": 1763,
+     "codes": {
+      "200": 1118
+     }
+    },
+    "edit": {
+     "n": 26,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.58,
+     "p50": 15.7,
+     "p95": 100.8,
+     "p99": 108.4,
+     "max": 108.4,
+     "codes": {
+      "200": 14,
+      "422": 12
+     }
+    },
+    "heavy": {
+     "n": 75,
+     "err": 0,
+     "shed": 41,
+     "rps": 1.67,
+     "p50": 4.9,
+     "p95": 976.5,
+     "p99": 1339.8,
+     "max": 1339.8,
+     "codes": {
+      "200": 34,
+      "429": 41
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 29,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 3,
+     "cpuMax": 6,
+     "memPeakMiB": 233
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 18
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 0,
+     "cpuMax": 3,
+     "memPeakMiB": 309
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 2,
+     "cpuMax": 4,
+     "memPeakMiB": 3
+    },
+    "hub-db": {
+     "cpuAvg": 72,
+     "cpuMax": 105,
+     "memPeakMiB": 974
+    },
+    "hub-objstore": {
+     "cpuAvg": 1,
+     "cpuMax": 4,
+     "memPeakMiB": 156
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 2
+    }
+   }
+  },
+  {
+   "step": "servicos-u200",
+   "app": "servicos",
+   "users": 200,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 2273,
+   "errRate": 0,
+   "shedRate": 9.15,
+   "rps": 50.5,
+   "classes": {
+    "detail": {
+     "n": 423,
+     "err": 0,
+     "shed": 0,
+     "rps": 9.39,
+     "p50": 13.2,
+     "p95": 77.2,
+     "p99": 88.9,
+     "max": 131.5,
+     "codes": {
+      "200": 423
+     }
+    },
+    "list": {
+     "n": 1510,
+     "err": 0,
+     "shed": 0,
+     "rps": 33.53,
+     "p50": 10.4,
+     "p95": 84.5,
+     "p99": 1593.5,
+     "max": 2655.9,
+     "codes": {
+      "200": 1510
+     }
+    },
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.8,
+     "p95": 2.5,
+     "p99": 3.8,
+     "max": 4.2,
+     "codes": {
+      "200": 225
+     }
+    },
+    "heavy": {
+     "n": 130,
+     "err": 0,
+     "shed": 99,
+     "rps": 2.89,
+     "p50": 2.1,
+     "p95": 1184.3,
+     "p99": 1674.2,
+     "max": 1879.8,
+     "codes": {
+      "200": 31,
+      "429": 99
+     }
+    },
+    "export": {
+     "n": 169,
+     "err": 0,
+     "shed": 109,
+     "rps": 3.75,
+     "p50": 2.4,
+     "p95": 1262.4,
+     "p99": 1971.5,
+     "max": 2117.5,
+     "codes": {
+      "200": 60,
+      "429": 109
+     }
+    },
+    "edit": {
+     "n": 41,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.91,
+     "p50": 58.7,
+     "p95": 180.3,
+     "p99": 198.3,
+     "max": 198.3,
+     "codes": {
+      "200": 21,
+      "422": 20
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 30,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 4,
+     "cpuMax": 6,
+     "memPeakMiB": 233
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 18
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 309
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 2,
+     "cpuMax": 5,
+     "memPeakMiB": 4
+    },
+    "hub-db": {
+     "cpuAvg": 83,
+     "cpuMax": 104,
+     "memPeakMiB": 980
+    },
+    "hub-objstore": {
+     "cpuAvg": 1,
+     "cpuMax": 4,
+     "memPeakMiB": 156
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 2
+    }
+   }
+  },
+  {
+   "step": "servicos-u300",
+   "app": "servicos",
+   "users": 300,
+   "ok": false,
+   "slo": {
+    "p95List": false,
+    "p95Detail": false,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 3308,
+   "errRate": 0,
+   "shedRate": 10.79,
+   "rps": 73.5,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.8,
+     "p95": 6.3,
+     "p99": 10.1,
+     "max": 14.1,
+     "codes": {
+      "200": 225
+     }
+    },
+    "detail": {
+     "n": 636,
+     "err": 0,
+     "shed": 0,
+     "rps": 14.12,
+     "p50": 24.1,
+     "p95": 636.7,
+     "p99": 1545.8,
+     "max": 1873.5,
+     "codes": {
+      "200": 636
+     }
+    },
+    "list": {
+     "n": 2185,
+     "err": 0,
+     "shed": 0,
+     "rps": 48.52,
+     "p50": 31.6,
+     "p95": 1187.9,
+     "p99": 2905.6,
+     "max": 5248.3,
+     "codes": {
+      "200": 2185
+     }
+    },
+    "export": {
+     "n": 261,
+     "err": 0,
+     "shed": 227,
+     "rps": 5.8,
+     "p50": 2,
+     "p95": 1271.4,
+     "p99": 3069.9,
+     "max": 3379,
+     "codes": {
+      "200": 34,
+      "429": 227
+     }
+    },
+    "heavy": {
+     "n": 167,
+     "err": 0,
+     "shed": 130,
+     "rps": 3.71,
+     "p50": 2.3,
+     "p95": 1234.4,
+     "p99": 1975,
+     "max": 2495.1,
+     "codes": {
+      "200": 37,
+      "429": 130
+     }
+    },
+    "edit": {
+     "n": 59,
+     "err": 0,
+     "shed": 0,
+     "rps": 1.31,
+     "p50": 96.2,
+     "p95": 1013.8,
+     "p99": 2008.7,
+     "max": 2008.7,
+     "codes": {
+      "200": 40,
+      "422": 19
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 31,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 5,
+     "cpuMax": 12,
+     "memPeakMiB": 234
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 18
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 309
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 3,
+     "cpuMax": 7,
+     "memPeakMiB": 9
+    },
+    "hub-db": {
+     "cpuAvg": 86,
+     "cpuMax": 105,
+     "memPeakMiB": 980
+    },
+    "hub-objstore": {
+     "cpuAvg": 1,
+     "cpuMax": 4,
+     "memPeakMiB": 156
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 2
+    }
+   }
+  },
+  {
+   "step": "all-u10",
+   "app": "all",
+   "users": 10,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 128,
+   "errRate": 0,
+   "shedRate": 0,
+   "rps": 2.8,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 2,
+     "p95": 4.3,
+     "p99": 6.9,
+     "max": 9.2,
+     "codes": {
+      "200": 225
+     }
+    },
+    "list": {
+     "n": 64,
+     "err": 0,
+     "shed": 0,
+     "rps": 1.42,
+     "p50": 5.6,
+     "p95": 142.9,
+     "p99": 279.5,
+     "max": 279.5,
+     "codes": {
+      "200": 64
+     }
+    },
+    "detail": {
+     "n": 24,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.53,
+     "p50": 13.4,
+     "p95": 119.3,
+     "p99": 129.1,
+     "max": 129.1,
+     "codes": {
+      "200": 24
+     }
+    },
+    "edit": {
+     "n": 2,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.04,
+     "p50": 379.9,
+     "p95": 379.9,
+     "p99": 379.9,
+     "max": 379.9,
+     "codes": {
+      "200": 2
+     }
+    },
+    "export": {
+     "n": 11,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.24,
+     "p50": 348.3,
+     "p95": 1034.1,
+     "p99": 1034.1,
+     "max": 1034.1,
+     "codes": {
+      "200": 11
+     }
+    },
+    "heavy-start": {
+     "n": 3,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.07,
+     "p50": 25.8,
+     "p95": 29.5,
+     "p99": 29.5,
+     "max": 29.5,
+     "codes": {
+      "202": 3
+     }
+    },
+    "poll": {
+     "n": 8,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.18,
+     "p50": 2.9,
+     "p95": 4.2,
+     "p99": 4.2,
+     "max": 4.2,
+     "codes": {
+      "200": 8
+     }
+    },
+    "heavy-download": {
+     "n": 3,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.07,
+     "p50": 34.9,
+     "p95": 78.3,
+     "p99": 78.3,
+     "max": 78.3,
+     "codes": {
+      "200": 3
+     }
+    },
+    "heavy": {
+     "n": 5,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.11,
+     "p50": 1049.9,
+     "p95": 1107.3,
+     "p99": 1107.3,
+     "max": 1107.3,
+     "codes": {
+      "200": 5
+     }
+    },
+    "attachment": {
+     "n": 6,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.13,
+     "p50": 32.9,
+     "p95": 37.5,
+     "p99": 37.5,
+     "max": 37.5,
+     "codes": {
+      "200": 3,
+      "201": 3
+     }
+    },
+    "export-start": {
+     "n": 4,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.09,
+     "p50": 21.1,
+     "p95": 27.8,
+     "p99": 27.8,
+     "max": 27.8,
+     "codes": {
+      "202": 4
+     }
+    },
+    "export-download": {
+     "n": 4,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.09,
+     "p50": 3,
+     "p95": 11.3,
+     "p99": 11.3,
+     "max": 11.3,
+     "codes": {
+      "200": 4
+     }
+    },
+    "import-upload": {
+     "n": 1,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.02,
+     "p50": 32.5,
+     "p95": 32.5,
+     "p99": 32.5,
+     "max": 32.5,
+     "codes": {
+      "202": 1
+     }
+    },
+    "import": {
+     "n": 1,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.02,
+     "p50": 1035.9,
+     "p95": 1035.9,
+     "p99": 1035.9,
+     "max": 1035.9,
+     "codes": {
+      "200": 1
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 31,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 2,
+     "cpuMax": 7,
+     "memPeakMiB": 234
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 2,
+     "cpuMax": 39,
+     "memPeakMiB": 19
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 310
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 8
+    },
+    "hub-db": {
+     "cpuAvg": 12,
+     "cpuMax": 50,
+     "memPeakMiB": 952
+    },
+    "hub-objstore": {
+     "cpuAvg": 1,
+     "cpuMax": 7,
+     "memPeakMiB": 192
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 2
+    }
+   }
+  },
+  {
+   "step": "all-u25",
+   "app": "all",
+   "users": 25,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 307,
+   "errRate": 0,
+   "shedRate": 0,
+   "rps": 6.8,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.9,
+     "p95": 3.2,
+     "p99": 5.8,
+     "max": 9.4,
+     "codes": {
+      "200": 225
+     }
+    },
+    "list": {
+     "n": 164,
+     "err": 0,
+     "shed": 0,
+     "rps": 3.64,
+     "p50": 3.8,
+     "p95": 155.7,
+     "p99": 2051.1,
+     "max": 9591.1,
+     "codes": {
+      "200": 164
+     }
+    },
+    "export": {
+     "n": 30,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.67,
+     "p50": 125.8,
+     "p95": 1089.2,
+     "p99": 1101.1,
+     "max": 1101.1,
+     "codes": {
+      "200": 30
+     }
+    },
+    "detail": {
+     "n": 58,
+     "err": 0,
+     "shed": 0,
+     "rps": 1.29,
+     "p50": 16.7,
+     "p95": 282.4,
+     "p99": 433.3,
+     "max": 433.3,
+     "codes": {
+      "200": 58
+     }
+    },
+    "edit": {
+     "n": 14,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.31,
+     "p50": 233.4,
+     "p95": 2055.9,
+     "p99": 2055.9,
+     "max": 2055.9,
+     "codes": {
+      "200": 13,
+      "422": 1
+     }
+    },
+    "heavy": {
+     "n": 15,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.33,
+     "p50": 637.7,
+     "p95": 1098.8,
+     "p99": 1098.8,
+     "max": 1098.8,
+     "codes": {
+      "200": 15
+     }
+    },
+    "attachment": {
+     "n": 4,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.09,
+     "p50": 27,
+     "p95": 54.9,
+     "p99": 54.9,
+     "max": 54.9,
+     "codes": {
+      "200": 2,
+      "201": 2
+     }
+    },
+    "heavy-start": {
+     "n": 5,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.11,
+     "p50": 19.4,
+     "p95": 25.7,
+     "p99": 25.7,
+     "max": 25.7,
+     "codes": {
+      "202": 5
+     }
+    },
+    "poll": {
+     "n": 11,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.24,
+     "p50": 2.9,
+     "p95": 5,
+     "p99": 5,
+     "max": 5,
+     "codes": {
+      "200": 11
+     }
+    },
+    "heavy-download": {
+     "n": 5,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.11,
+     "p50": 22.2,
+     "p95": 69,
+     "p99": 69,
+     "max": 69,
+     "codes": {
+      "200": 5
+     }
+    },
+    "export-start": {
+     "n": 5,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.11,
+     "p50": 18.1,
+     "p95": 89.8,
+     "p99": 89.8,
+     "max": 89.8,
+     "codes": {
+      "202": 5
+     }
+    },
+    "export-download": {
+     "n": 5,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.11,
+     "p50": 3.4,
+     "p95": 10.3,
+     "p99": 10.3,
+     "max": 10.3,
+     "codes": {
+      "200": 5
+     }
+    },
+    "import-upload": {
+     "n": 1,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.02,
+     "p50": 22.6,
+     "p95": 22.6,
+     "p99": 22.6,
+     "max": 22.6,
+     "codes": {
+      "202": 1
+     }
+    },
+    "import": {
+     "n": 1,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.02,
+     "p50": 1026.6,
+     "p95": 1026.6,
+     "p99": 1026.6,
+     "max": 1026.6,
+     "codes": {
+      "200": 1
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 31,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 1,
+     "cpuMax": 6,
+     "memPeakMiB": 234
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 2,
+     "cpuMax": 22,
+     "memPeakMiB": 19
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 310
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 9
+    },
+    "hub-db": {
+     "cpuAvg": 26,
+     "cpuMax": 74,
+     "memPeakMiB": 866
+    },
+    "hub-objstore": {
+     "cpuAvg": 1,
+     "cpuMax": 6,
+     "memPeakMiB": 262
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 0,
+     "memPeakMiB": 2
+    }
+   }
+  },
+  {
+   "step": "all-u35",
+   "app": "all",
+   "users": 35,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 430,
+   "errRate": 0,
+   "shedRate": 0,
+   "rps": 9.5,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.9,
+     "p95": 3.5,
+     "p99": 5.8,
+     "max": 13,
+     "codes": {
+      "200": 225
+     }
+    },
+    "list": {
+     "n": 254,
+     "err": 0,
+     "shed": 0,
+     "rps": 5.64,
+     "p50": 3.8,
+     "p95": 312.7,
+     "p99": 1403.7,
+     "max": 10690.8,
+     "codes": {
+      "200": 254
+     }
+    },
+    "detail": {
+     "n": 89,
+     "err": 0,
+     "shed": 0,
+     "rps": 1.98,
+     "p50": 12.9,
+     "p95": 180.3,
+     "p99": 346.5,
+     "max": 346.5,
+     "codes": {
+      "200": 89
+     }
+    },
+    "attachment": {
+     "n": 8,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.18,
+     "p50": 24,
+     "p95": 32.5,
+     "p99": 32.5,
+     "max": 32.5,
+     "codes": {
+      "200": 4,
+      "201": 4
+     }
+    },
+    "export": {
+     "n": 23,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.51,
+     "p50": 118.1,
+     "p95": 1077.6,
+     "p99": 1110,
+     "max": 1110,
+     "codes": {
+      "200": 23
+     }
+    },
+    "export-start": {
+     "n": 6,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.13,
+     "p50": 15.1,
+     "p95": 63.9,
+     "p99": 63.9,
+     "max": 63.9,
+     "codes": {
+      "202": 6
+     }
+    },
+    "heavy": {
+     "n": 13,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.29,
+     "p50": 672.6,
+     "p95": 1136.2,
+     "p99": 1136.2,
+     "max": 1136.2,
+     "codes": {
+      "200": 13
+     }
+    },
+    "poll": {
+     "n": 12,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.27,
+     "p50": 3.3,
+     "p95": 49.7,
+     "p99": 49.7,
+     "max": 49.7,
+     "codes": {
+      "200": 12
+     }
+    },
+    "export-download": {
+     "n": 6,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.13,
+     "p50": 12.3,
+     "p95": 46.6,
+     "p99": 46.6,
+     "max": 46.6,
+     "codes": {
+      "200": 6
+     }
+    },
+    "edit": {
+     "n": 19,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.42,
+     "p50": 281.1,
+     "p95": 2516.1,
+     "p99": 2516.1,
+     "max": 2516.1,
+     "codes": {
+      "200": 19
+     }
+    },
+    "import-upload": {
+     "n": 2,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.04,
+     "p50": 30.3,
+     "p95": 30.3,
+     "p99": 30.3,
+     "max": 30.3,
+     "codes": {
+      "202": 2
+     }
+    },
+    "import": {
+     "n": 2,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.04,
+     "p50": 1033.9,
+     "p95": 1033.9,
+     "p99": 1033.9,
+     "max": 1033.9,
+     "codes": {
+      "200": 2
+     }
+    },
+    "heavy-start": {
+     "n": 4,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.09,
+     "p50": 13.8,
+     "p95": 115.1,
+     "p99": 115.1,
+     "max": 115.1,
+     "codes": {
+      "202": 4
+     }
+    },
+    "heavy-download": {
+     "n": 4,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.09,
+     "p50": 26.7,
+     "p95": 94,
+     "p99": 94,
+     "max": 94,
+     "codes": {
+      "200": 4
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 32,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 3,
+     "cpuMax": 10,
+     "memPeakMiB": 233
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 3,
+     "cpuMax": 31,
+     "memPeakMiB": 30
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 0,
+     "cpuMax": 1,
+     "memPeakMiB": 310
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 1,
+     "memPeakMiB": 8
+    },
+    "hub-db": {
+     "cpuAvg": 31,
+     "cpuMax": 81,
+     "memPeakMiB": 898
+    },
+    "hub-objstore": {
+     "cpuAvg": 2,
+     "cpuMax": 9,
+     "memPeakMiB": 286
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 2
+    }
+   }
+  },
+  {
+   "step": "all-u50",
+   "app": "all",
+   "users": 50,
+   "ok": true,
+   "slo": {
+    "p95List": true,
+    "p95Detail": true,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 602,
+   "errRate": 0,
+   "shedRate": 0.5,
+   "rps": 13.4,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.9,
+     "p95": 3.5,
+     "p99": 8.9,
+     "max": 68.6,
+     "codes": {
+      "200": 225
+     }
+    },
+    "detail": {
+     "n": 99,
+     "err": 0,
+     "shed": 0,
+     "rps": 2.2,
+     "p50": 22.5,
+     "p95": 461.7,
+     "p99": 675.8,
+     "max": 675.8,
+     "codes": {
+      "200": 99
+     }
+    },
+    "edit": {
+     "n": 19,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.42,
+     "p50": 290.8,
+     "p95": 2004.4,
+     "p99": 2004.4,
+     "max": 2004.4,
+     "codes": {
+      "200": 19
+     }
+    },
+    "list": {
+     "n": 340,
+     "err": 0,
+     "shed": 0,
+     "rps": 7.55,
+     "p50": 4.1,
+     "p95": 358.4,
+     "p99": 6520.7,
+     "max": 12974.5,
+     "codes": {
+      "200": 340
+     }
+    },
+    "poll": {
+     "n": 30,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.67,
+     "p50": 3.5,
+     "p95": 90.5,
+     "p99": 103.9,
+     "max": 103.9,
+     "codes": {
+      "200": 30
+     }
+    },
+    "heavy-download": {
+     "n": 8,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.18,
+     "p50": 25.4,
+     "p95": 665,
+     "p99": 665,
+     "max": 665,
+     "codes": {
+      "200": 8
+     }
+    },
+    "heavy": {
+     "n": 29,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.64,
+     "p50": 570.8,
+     "p95": 1250.3,
+     "p99": 4959,
+     "max": 4959,
+     "codes": {
+      "200": 29
+     }
+    },
+    "attachment": {
+     "n": 16,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.36,
+     "p50": 19.7,
+     "p95": 37.4,
+     "p99": 37.4,
+     "max": 37.4,
+     "codes": {
+      "200": 8,
+      "201": 8
+     }
+    },
+    "export": {
+     "n": 46,
+     "err": 0,
+     "shed": 3,
+     "rps": 1.02,
+     "p50": 486.6,
+     "p95": 1246.9,
+     "p99": 1632,
+     "max": 1632,
+     "codes": {
+      "200": 43,
+      "429": 3
+     }
+    },
+    "export-start": {
+     "n": 13,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.29,
+     "p50": 26.9,
+     "p95": 191.5,
+     "p99": 191.5,
+     "max": 191.5,
+     "codes": {
+      "202": 13
+     }
+    },
+    "export-download": {
+     "n": 13,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.29,
+     "p50": 10.1,
+     "p95": 107.6,
+     "p99": 107.6,
+     "max": 107.6,
+     "codes": {
+      "200": 13
+     }
+    },
+    "heavy-start": {
+     "n": 7,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.16,
+     "p50": 49.3,
+     "p95": 174.1,
+     "p99": 174.1,
+     "max": 174.1,
+     "codes": {
+      "202": 7
+     }
+    },
+    "import-upload": {
+     "n": 6,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.13,
+     "p50": 73.3,
+     "p95": 167.5,
+     "p99": 167.5,
+     "max": 167.5,
+     "codes": {
+      "202": 6
+     }
+    },
+    "import": {
+     "n": 6,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.13,
+     "p50": 1158.9,
+     "p95": 1184.4,
+     "p99": 1184.4,
+     "max": 1184.4,
+     "codes": {
+      "200": 6
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 31,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 3,
+     "cpuMax": 18,
+     "memPeakMiB": 235
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 9,
+     "cpuMax": 101,
+     "memPeakMiB": 31
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 1,
+     "cpuMax": 2,
+     "memPeakMiB": 310
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 10
+    },
+    "hub-db": {
+     "cpuAvg": 49,
+     "cpuMax": 99,
+     "memPeakMiB": 855
+    },
+    "hub-objstore": {
+     "cpuAvg": 3,
+     "cpuMax": 11,
+     "memPeakMiB": 308
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 2
+    }
+   }
+  },
+  {
+   "step": "all-u75",
+   "app": "all",
+   "users": 75,
+   "ok": false,
+   "slo": {
+    "p95List": true,
+    "p95Detail": false,
+    "errors": true,
+    "noOom": true
+   },
+   "total": 892,
+   "errRate": 0,
+   "shedRate": 1.01,
+   "rps": 19.8,
+   "classes": {
+    "hub-probe": {
+     "n": 225,
+     "err": 0,
+     "shed": 0,
+     "rps": 5,
+     "p50": 1.8,
+     "p95": 3.1,
+     "p99": 17.3,
+     "max": 59.4,
+     "codes": {
+      "200": 225
+     }
+    },
+    "list": {
+     "n": 524,
+     "err": 0,
+     "shed": 0,
+     "rps": 11.64,
+     "p50": 5.4,
+     "p95": 464.9,
+     "p99": 1351.5,
+     "max": 14201.5,
+     "codes": {
+      "200": 524
+     }
+    },
+    "edit": {
+     "n": 39,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.87,
+     "p50": 263.1,
+     "p95": 2765.3,
+     "p99": 3904.8,
+     "max": 3904.8,
+     "codes": {
+      "200": 37,
+      "422": 2
+     }
+    },
+    "detail": {
+     "n": 151,
+     "err": 0,
+     "shed": 0,
+     "rps": 3.35,
+     "p50": 12.5,
+     "p95": 659.6,
+     "p99": 1071.5,
+     "max": 1374.9,
+     "codes": {
+      "200": 151
+     }
+    },
+    "export": {
+     "n": 58,
+     "err": 0,
+     "shed": 3,
+     "rps": 1.29,
+     "p50": 251.8,
+     "p95": 1932.9,
+     "p99": 3163.4,
+     "max": 3163.4,
+     "codes": {
+      "200": 55,
+      "429": 3
+     }
+    },
+    "heavy": {
+     "n": 48,
+     "err": 0,
+     "shed": 6,
+     "rps": 1.07,
+     "p50": 11.9,
+     "p95": 1406.5,
+     "p99": 1900.6,
+     "max": 1900.6,
+     "codes": {
+      "200": 42,
+      "429": 6
+     }
+    },
+    "heavy-start": {
+     "n": 12,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.27,
+     "p50": 23.8,
+     "p95": 112,
+     "p99": 112,
+     "max": 112,
+     "codes": {
+      "202": 12
+     }
+    },
+    "attachment": {
+     "n": 26,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.58,
+     "p50": 25.6,
+     "p95": 48.8,
+     "p99": 54.6,
+     "max": 54.6,
+     "codes": {
+      "200": 13,
+      "201": 13
+     }
+    },
+    "poll": {
+     "n": 25,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.56,
+     "p50": 3.2,
+     "p95": 83.5,
+     "p99": 86,
+     "max": 86,
+     "codes": {
+      "200": 25
+     }
+    },
+    "heavy-download": {
+     "n": 12,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.27,
+     "p50": 28.9,
+     "p95": 103.6,
+     "p99": 103.6,
+     "max": 103.6,
+     "codes": {
+      "200": 12
+     }
+    },
+    "export-start": {
+     "n": 9,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.2,
+     "p50": 46.2,
+     "p95": 103.6,
+     "p99": 103.6,
+     "max": 103.6,
+     "codes": {
+      "202": 9
+     }
+    },
+    "export-download": {
+     "n": 9,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.2,
+     "p50": 9,
+     "p95": 80.4,
+     "p99": 80.4,
+     "max": 80.4,
+     "codes": {
+      "200": 9
+     }
+    },
+    "import-upload": {
+     "n": 2,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.04,
+     "p50": 199.7,
+     "p95": 199.7,
+     "p99": 199.7,
+     "max": 199.7,
+     "codes": {
+      "202": 2
+     }
+    },
+    "import": {
+     "n": 2,
+     "err": 0,
+     "shed": 0,
+     "rps": 0.04,
+     "p50": 1203.3,
+     "p95": 1203.3,
+     "p99": 1203.3,
+     "max": 1203.3,
+     "codes": {
+      "200": 2
+     }
+    }
+   },
+   "restarts": [],
+   "ooms": [],
+   "maxPgConns": 31,
+   "stats": {
+    "hub-web": {
+     "cpuAvg": 3,
+     "cpuMax": 12,
+     "memPeakMiB": 233
+    },
+    "hub-app-ativos": {
+     "cpuAvg": 4,
+     "cpuMax": 39,
+     "memPeakMiB": 33
+    },
+    "hub-app-fornecedores": {
+     "cpuAvg": 1,
+     "cpuMax": 3,
+     "memPeakMiB": 310
+    },
+    "hub-app-servicos": {
+     "cpuAvg": 1,
+     "cpuMax": 2,
+     "memPeakMiB": 8
+    },
+    "hub-db": {
+     "cpuAvg": 64,
+     "cpuMax": 103,
+     "memPeakMiB": 856
+    },
+    "hub-objstore": {
+     "cpuAvg": 3,
+     "cpuMax": 15,
+     "memPeakMiB": 345
+    },
+    "hub-extapi": {
+     "cpuAvg": 0,
+     "cpuMax": 2,
+     "memPeakMiB": 2
+    }
+   }
+  }
+ ],
+ "dbSize": "postgres=7519 kB, ativos=310 MB, servicos=930 MB",
+ "objSize": "695M\t/data"
+}

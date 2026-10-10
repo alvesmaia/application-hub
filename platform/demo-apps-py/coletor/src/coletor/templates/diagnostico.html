@@ -1,0 +1,36 @@
+{% extends "workspace.html" %}
+{% block content %}
+<div class="col-screen" data-hub-feedback="beep vibrate flash">
+{% set title = t('Diagnóstico do aparelho') %}{% set subtitle = t('Teste cada recurso antes de começar o turno. O resultado fica só neste aparelho.') %}{% set action = '' %}
+{% include "_head.html" %}
+<section class="col-card col-install">
+<div><h2 class="col-section-title">{{ t('Instalar no aparelho') }}</h2><p class="col-hint">{{ t('Abre em tela cheia, como um app, direto no Coletor.') }}</p></div>
+<button type="button" class="col-button col-button-primary" data-hub-install="{{ base }}" hidden>{{ t('Instalar no aparelho') }}</button>
+<p class="col-hint" data-hub-install-ios hidden>{{ t('No iPhone ou iPad: toque em Compartilhar e depois em "Adicionar à Tela de Início".') }}</p>
+<p class="col-hint" data-hub-install-done hidden>{{ t('Já instalado neste aparelho.') }}</p>
+<p class="col-hint" data-hub-install-unavailable>{{ t('Se o botão não aparecer, use o menu do navegador: "Instalar app" ou "Adicionar à tela inicial".') }}</p>
+</section>
+<section class="col-card" data-hub-diag>
+<div class="hub-table-scroll"><table class="data-table col-table col-diag"><caption class="col-caption">{{ t('Recursos do aparelho') }}</caption><thead><tr><th scope="col">{{ t('Recurso') }}</th><th scope="col">{{ t('Resultado') }}</th><th scope="col"><span class="visually-hidden">{{ t('Ação') }}</span></th></tr></thead><tbody>
+<tr data-hub-diag-check="secure"><th scope="row">{{ t('Conexão segura (HTTPS)') }}</th><td data-hub-diag-status>—</td><td></td></tr>
+<tr data-hub-diag-check="online"><th scope="row">{{ t('Conexão com a rede') }}</th><td data-hub-diag-status>—</td><td></td></tr>
+<tr data-hub-diag-check="pwa"><th scope="row">{{ t('Instalado como app') }}</th><td data-hub-diag-status>—</td><td></td></tr>
+<tr data-hub-diag-check="camera"><th scope="row">{{ t('Câmera traseira') }}</th><td data-hub-diag-status>—</td><td><button type="button" class="col-button col-button-small" data-hub-diag-run>{{ t('Testar') }}</button></td></tr>
+<tr data-hub-diag-check="torch"><th scope="row">{{ t('Lanterna') }}</th><td data-hub-diag-status>—</td><td><button type="button" class="col-button col-button-small" data-hub-diag-run>{{ t('Testar') }}</button></td></tr>
+<tr data-hub-diag-check="scan"><th scope="row">{{ t('Leitura pela câmera') }}</th><td data-hub-diag-status>—</td><td><button type="button" class="col-button col-button-small" data-hub-diag-run>{{ t('Testar') }}</button></td></tr>
+<tr data-hub-diag-check="wedge"><th scope="row"><label for="diag-leitor">{{ t('Leitor tipo pistola') }}</label></th><td data-hub-diag-status>—</td><td><input id="diag-leitor" class="col-input col-input-small" data-hub-wedge data-hub-diag-wedge placeholder="{{ t('Dispare aqui') }}" autocomplete="off"></td></tr>
+<tr data-hub-diag-check="beep"><th scope="row">{{ t('Bipe') }}</th><td data-hub-diag-status>—</td><td><button type="button" class="col-button col-button-small" data-hub-diag-run>{{ t('Testar') }}</button></td></tr>
+<tr data-hub-diag-check="vibrate"><th scope="row">{{ t('Vibração') }}</th><td data-hub-diag-status>—</td><td><button type="button" class="col-button col-button-small" data-hub-diag-run>{{ t('Testar') }}</button></td></tr>
+<tr data-hub-diag-check="capture"><th scope="row">{{ t('Foto') }}</th><td data-hub-diag-status>—</td><td><button type="button" class="col-button col-button-small" data-hub-diag-run>{{ t('Testar') }}</button></td></tr>
+<tr data-hub-diag-check="storage"><th scope="row">{{ t('Fila offline') }}</th><td data-hub-diag-status>—</td><td></td></tr>
+</tbody></table></div>
+<ul class="col-diag-info">
+<li data-hub-diag-info="{{ t('App') }}">Coletor {{ version }}</li>
+<li data-hub-diag-info="{{ t('Ambiente') }}">{{ t(env) }}</li>
+<li data-hub-diag-info="SDK">hub-sdk-python {{ sdk }} · Python {{ py }}</li>
+<li data-hub-diag-info="{{ t('Banco de dados') }}">{{ t('Conectado') if db_ready else t('Indisponível') }}</li>
+</ul>
+<div class="col-actions"><button type="button" class="col-button col-button-dark" data-hub-diag-copy>{{ t('Copiar relatório') }}</button></div>
+</section>
+</div>
+{% endblock %}

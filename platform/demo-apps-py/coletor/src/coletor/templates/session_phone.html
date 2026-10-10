@@ -1,0 +1,14 @@
+{#- Sessão de teste no celular (Escanear): posição, código esperado e controles. Atualizado pelo
+    WebSocket (data-hub-ws do contêiner) ou, sem ele, a cada 2 s. -#}
+<section id="col-session" class="col-card col-session" data-col-session="{{ sess.status if sess else 'none' }}"{% if sess and sess.active %} data-col-pos="{{ shown }}" data-col-expected="{{ cur.value }}"{% endif %} aria-live="polite"{% if not sess or sess.status == 'cancelled' %} hidden{% endif %}>
+{% if sess and sess.active %}
+<div class="col-session-head"><h2 class="col-section-title">{{ t('Sessão de teste') }}</h2><span class="col-session-pos">{{ t('{a} de {b}', a=shown, b=sess.total) }}</span></div>
+{% if sess.status == 'paused' %}<p class="col-session-flag" data-col-flag="paused">{{ t('Sessão parada — toque em Continuar.') }}</p>{% endif %}
+<p class="col-expected"><span class="col-label">{{ t('Código esperado') }}</span><strong class="col-expected-value">{{ cur.value }}</strong><span class="col-muted">{{ cur_fmt }} · {{ cur.label }}</span></p>
+{% if sess.matched %}<p class="col-session-flag col-flag-ok" data-col-flag="ok">{{ t('Lido certo — toque em Próximo.') }}</p>{% elif sess.last_error %}<p class="col-session-flag col-flag-err" data-col-flag="erro">{{ t('Leu “{r}” — não é este código.', r=sess.last_error.read) }}</p>{% endif %}
+{% set tela = 'escanear' %}{% set target = '#col-session' %}{% include "_session_controls.html" %}
+{% elif sess and sess.status == 'done' %}
+<div class="col-session-head"><h2 class="col-section-title">{{ t('Sessão concluída') }}</h2></div>
+<p class="col-hint">{{ t('{a} acertos, {e} erros, {p} pulados · {s} s por leitura em média.', a=summary.acertos, e=summary.erros, p=summary.pulados, s=avg_s) }}</p>
+{% endif %}
+</section>

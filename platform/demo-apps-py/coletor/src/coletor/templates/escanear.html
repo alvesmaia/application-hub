@@ -1,0 +1,21 @@
+{% extends "workspace.html" %}
+{% block content %}
+<div class="col-screen col-scan" data-hub-feedback="beep vibrate flash">
+{% set title = t('Escanear') %}{% set subtitle = t('Aponte a câmera ou dispare o leitor: cada leitura é registrada e aparece na Folha de teste do computador.') %}{% set action = '' %}
+{% include "_head.html" %}
+{{ notice_html }}
+{% include "_offline.html" %}
+<div id="col-phone-live" class="col-live-box" data-hub-ws="{{ base }}/ws/live?view=escanear" data-hub-ws-target="#col-session" data-hub-get="{{ base }}/escanear/sessao" data-hub-trigger="every 2s" data-hub-target="#col-session">
+{% include "session_phone.html" %}
+</div>
+{% include "scan_control.html" %}
+<form id="leitura" class="col-card col-scan-form" method="post" action="{{ base }}/escanear/ler" data-hub-target="#scan-result" data-hub-offline-queue="{{ t('Leitura') }}" autocomplete="off">
+<input type="hidden" id="formato" name="formato" value="">
+<label class="col-label" for="codigo">{{ t('Código') }}</label>
+<div class="col-code-row"><input id="codigo" name="codigo" class="col-input col-input-code" data-hub-wedge data-hub-clear autofocus autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="send" maxlength="256" placeholder="{{ t('Leia ou digite o código') }}" aria-describedby="codigo-dica"><button type="submit" class="col-button col-button-dark">{{ t('Registrar') }}</button></div>
+<p id="codigo-dica" class="col-hint">{{ t('Leitor tipo pistola: aponte e dispare — o campo fica sempre pronto.') }}</p>
+</form>
+{% if lookup %}<div class="col-result col-result-{{ lookup.feedback }} col-result-big" role="status" data-col-lookup><span class="col-result-mark" aria-hidden="true">{{ '✓' if lookup.feedback == 'ok' else ('!' if lookup.feedback == 'warn' else '✕') }}</span><span class="col-result-text"><strong>{{ lookup.label }}</strong><span class="col-mono">{{ lookup.value }}</span></span></div>{% endif %}
+{% set fresh = false %}{% set empty = false %}{% include "scan_result.html" %}
+</div>
+{% endblock %}

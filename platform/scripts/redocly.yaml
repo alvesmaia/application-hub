@@ -1,0 +1,12 @@
+# Linter do OpenAPI (ci-local, etapa openapi-lint). Base "recommended" do Redocly;
+# as exceções abaixo são decisões do projeto, não esquecimentos.
+extends:
+  - recommended
+rules:
+  info-license: off            # API interna, sem licença pública
+  no-server-example.com: error
+  operation-4xx-response: error
+  operation-operationId-unique: error
+  operation-summary: error
+  no-unused-components: warn
+  security-defined: error

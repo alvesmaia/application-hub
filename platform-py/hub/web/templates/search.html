@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ t('search.title') }} · {{ brand }}{% endblock %}
+{% block main %}
+<div class="page-container">
+<div class="app-page-header page-head"><div class="page-head-text"><div class="eyebrow">{{ t('search.title') }}</div><h1 class="page-title">{{ t('search.title') }}</h1><p class="page-subtitle">{{ t('search.subtitle') }}</p></div><div class="page-actions admin-actions"></div></div>
+<form method="get" action="/search" class="hub-search-form" role="search" data-hub-search-record="{{ record }}"><label class="visually-hidden" for="search-q">{{ t('search.placeholder') }}</label><input id="search-q" name="q" type="search" class="hub-input" value="{{ q }}" placeholder="{{ t('search.placeholder') }}" maxlength="100"/><button type="submit" class="primary-button">{{ t('shell.search') }}</button></form>
+{% if back %}<p class="hub-search-back"><a class="hub-link" href="{{ back }}">← {{ t('search.back_all') }}</a></p>{% endif %}
+{% if partial %}<p class="hub-muted hub-search-partial" role="status">{{ t('js.palette_partial') }}</p>{% endif %}
+{% if no_results %}<div class="empty-state">{{ none_text }}</div>{% endif %}
+{% for g in groups %}<section class="panel hub-search-group{{ ' hub-search-admin' if g.section == 'admin' }}" aria-labelledby="g-{{ g.id }}"><h2 id="g-{{ g.id }}">{{ g.label }}</h2><ul class="hub-list">{% for url, (a, m, z), meta in g.hits %}<li><a href="{{ url }}">{{ a }}{% if m %}<mark>{{ m }}</mark>{% endif %}{{ z }}</a><small>{{ meta }}</small></li>{% endfor %}</ul>{% if g.more_url %}<p class="hub-search-more"><a class="hub-link" href="{{ g.more_url }}">{{ g.more_label }} →</a></p>{% endif %}</section>
+{% endfor %}
+</div>
+{% endblock %}

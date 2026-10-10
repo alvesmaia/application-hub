@@ -1,0 +1,6 @@
+Use ponytail (minimal code) and caveman (short report). Use ai-memory MCP if useful.
+
+TASK F6d (continuation) — read docs/migracao/tarefas/F6d-codex-fim-sdk-rust.md and your partial status docs/migracao/status/F6d.md. Your uncommitted edits in platform/** and README*.md are yours: keep and finish them.
+Scope clarification (overrides "do NOT touch platform-py/**"): you MAY create NEW files `platform-py/docker-compose.apps.yml`, `platform-py/apps.json` (HUB_APPS_FILE) and edit `platform-py/scripts/dev.sh`. Do NOT edit platform-py/hub/**, platform-py/Dockerfile, platform-py/docker-compose.yml, platform-py/.coverage — another agent (F3a) is editing them right now; if wiring HUB_APPS_FILE needs a change there, use an env override in docker-compose.apps.yml (compose merge with `-f docker-compose.yml -f docker-compose.apps.yml`) and note it in the status.
+Pending: conformance HTTP for the 5 apps, compose for `hubpy-app-<id>` (≤256m each), sample-packages.sh, Rust SDK/demo-apps removal, verify curl :8090/apps/<id> → 200 for the 5 apps + one screenshot.
+Commit ONLY your paths (`git add <paths>`, never `git add -A`), `git pull --rebase` before push, no force. Prefix `feat(python): F6d`, trailer `Co-Authored-By: Codex <noreply@openai.com>`. Never touch the Rust worktree or containers hub-*, apphub-devtunnel. Update docs/migracao/status/F6d.md.

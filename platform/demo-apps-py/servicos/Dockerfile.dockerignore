@@ -1,0 +1,12 @@
+# Contexto do hub-servicos: só o SDK Python, o app e os assets compartilhados.
+*
+!sdk-python/
+!demo-apps-py/servicos/
+!demo-apps/assets/demo.css
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/*.egg-info
+sdk-python/tests
+demo-apps-py/servicos/tests

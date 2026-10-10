@@ -1,0 +1,630 @@
+[
+ {
+  "scenario": "A",
+  "step": "c10",
+  "mem": "512m",
+  "cpus": "1.0",
+  "c": 10,
+  "target": "hub-app-ativos",
+  "load": {
+   "total": 21288,
+   "rps": 354.7,
+   "errorRate": 0,
+   "p50": 10.1,
+   "p95": 87,
+   "p99": 93.2,
+   "max": 178.5,
+   "codes": {
+    "200": 21288
+   },
+   "errors": {}
+  },
+  "stats": {
+   "hub-web": {
+    "cpuAvg": 11.8,
+    "cpuMax": 14.1,
+    "memPeakMiB": 6,
+    "pidsMax": 2,
+    "samples": 30
+   },
+   "hub-app-ativos": {
+    "cpuAvg": 99.2,
+    "cpuMax": 103.1,
+    "memPeakMiB": 68,
+    "pidsMax": 17,
+    "samples": 30
+   },
+   "hub-app-fornecedores": {
+    "cpuAvg": 0,
+    "cpuMax": 0,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 30
+   },
+   "hub-app-servicos": {
+    "cpuAvg": 0,
+    "cpuMax": 0,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 30
+   }
+  },
+  "restarts": {},
+  "oomEvents": [],
+  "dieEvents": []
+ },
+ {
+  "scenario": "A",
+  "step": "c50",
+  "mem": "512m",
+  "cpus": "1.0",
+  "c": 50,
+  "target": "hub-app-ativos",
+  "load": {
+   "total": 21838,
+   "rps": 362.9,
+   "errorRate": 0,
+   "p50": 112.6,
+   "p95": 284.9,
+   "p99": 389.5,
+   "max": 916,
+   "codes": {
+    "200": 21838
+   },
+   "errors": {}
+  },
+  "stats": {
+   "hub-web": {
+    "cpuAvg": 11,
+    "cpuMax": 13.7,
+    "memPeakMiB": 11,
+    "pidsMax": 11,
+    "samples": 31
+   },
+   "hub-app-ativos": {
+    "cpuAvg": 97.2,
+    "cpuMax": 106.3,
+    "memPeakMiB": 155,
+    "pidsMax": 40,
+    "samples": 31
+   },
+   "hub-app-fornecedores": {
+    "cpuAvg": 0,
+    "cpuMax": 0,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 31
+   },
+   "hub-app-servicos": {
+    "cpuAvg": 0,
+    "cpuMax": 0,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 31
+   }
+  },
+  "restarts": {},
+  "oomEvents": [],
+  "dieEvents": []
+ },
+ {
+  "scenario": "A",
+  "step": "c100",
+  "mem": "512m",
+  "cpus": "1.0",
+  "c": 100,
+  "target": "hub-app-ativos",
+  "load": {
+   "total": 21966,
+   "rps": 363.5,
+   "errorRate": 0,
+   "p50": 285.6,
+   "p95": 699,
+   "p99": 895.8,
+   "max": 1387.4,
+   "codes": {
+    "200": 21966
+   },
+   "errors": {}
+  },
+  "stats": {
+   "hub-web": {
+    "cpuAvg": 11.1,
+    "cpuMax": 13.3,
+    "memPeakMiB": 16,
+    "pidsMax": 11,
+    "samples": 30
+   },
+   "hub-app-ativos": {
+    "cpuAvg": 96.7,
+    "cpuMax": 104.2,
+    "memPeakMiB": 191,
+    "pidsMax": 40,
+    "samples": 30
+   },
+   "hub-app-fornecedores": {
+    "cpuAvg": 0,
+    "cpuMax": 0,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 30
+   },
+   "hub-app-servicos": {
+    "cpuAvg": 0,
+    "cpuMax": 0,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 30
+   }
+  },
+  "restarts": {},
+  "oomEvents": [],
+  "dieEvents": []
+ },
+ {
+  "scenario": "A",
+  "step": "c200",
+  "mem": "512m",
+  "cpus": "1.0",
+  "c": 200,
+  "target": "hub-app-ativos",
+  "load": {
+   "total": 21831,
+   "rps": 357.6,
+   "errorRate": 0,
+   "p50": 512.3,
+   "p95": 1306,
+   "p99": 1605.7,
+   "max": 2217.4,
+   "codes": {
+    "200": 21831
+   },
+   "errors": {}
+  },
+  "stats": {
+   "hub-web": {
+    "cpuAvg": 11.2,
+    "cpuMax": 16.6,
+    "memPeakMiB": 29,
+    "pidsMax": 58,
+    "samples": 31
+   },
+   "hub-app-ativos": {
+    "cpuAvg": 97.4,
+    "cpuMax": 102.9,
+    "memPeakMiB": 271,
+    "pidsMax": 40,
+    "samples": 31
+   },
+   "hub-app-fornecedores": {
+    "cpuAvg": 0,
+    "cpuMax": 0,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 31
+   },
+   "hub-app-servicos": {
+    "cpuAvg": 0,
+    "cpuMax": 0,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 31
+   }
+  },
+  "restarts": {},
+  "oomEvents": [],
+  "dieEvents": []
+ },
+ {
+  "scenario": "A",
+  "step": "c400",
+  "mem": "512m",
+  "cpus": "1.0",
+  "c": 400,
+  "target": "hub-app-ativos",
+  "load": {
+   "total": 22264,
+   "rps": 339.4,
+   "errorRate": 0.0549,
+   "p50": 1067.9,
+   "p95": 2404.3,
+   "p99": 3098.7,
+   "max": 3952.1,
+   "codes": {
+    "200": 21042,
+    "502": 1222
+   },
+   "errors": {}
+  },
+  "stats": {
+   "hub-web": {
+    "cpuAvg": 12,
+    "cpuMax": 24.7,
+    "memPeakMiB": 52,
+    "pidsMax": 32,
+    "samples": 31
+   },
+   "hub-app-ativos": {
+    "cpuAvg": 89.3,
+    "cpuMax": 103.5,
+    "memPeakMiB": 492,
+    "pidsMax": 40,
+    "samples": 31
+   },
+   "hub-app-fornecedores": {
+    "cpuAvg": 0,
+    "cpuMax": 0,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 31
+   },
+   "hub-app-servicos": {
+    "cpuAvg": 0,
+    "cpuMax": 0,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 31
+   }
+  },
+  "restarts": {
+   "hub-app-ativos": 3
+  },
+  "oomEvents": [
+   "hub-app-ativos oom",
+   "hub-app-ativos oom",
+   "hub-app-ativos oom"
+  ],
+  "dieEvents": [
+   "hub-app-ativos die",
+   "hub-app-ativos die",
+   "hub-app-ativos die"
+  ]
+ },
+ {
+  "scenario": "C",
+  "step": "c4",
+  "mem": "512m",
+  "cpus": "1.0",
+  "c": 4,
+  "target": "hub-app-ativos",
+  "load": {
+   "total": 582,
+   "rps": 9.7,
+   "errorRate": 0,
+   "p50": 402.7,
+   "p95": 490.1,
+   "p99": 497,
+   "max": 581.7,
+   "codes": {
+    "200": 582
+   },
+   "errors": {}
+  },
+  "stats": {
+   "hub-web": {
+    "cpuAvg": 0.5,
+    "cpuMax": 0.7,
+    "memPeakMiB": 47,
+    "pidsMax": 2,
+    "samples": 30
+   },
+   "hub-app-ativos": {
+    "cpuAvg": 97.7,
+    "cpuMax": 104.6,
+    "memPeakMiB": 121,
+    "pidsMax": 34,
+    "samples": 30
+   },
+   "hub-app-fornecedores": {
+    "cpuAvg": 0,
+    "cpuMax": 0,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 30
+   },
+   "hub-app-servicos": {
+    "cpuAvg": 0,
+    "cpuMax": 0,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 30
+   }
+  },
+  "restarts": {},
+  "oomEvents": [],
+  "dieEvents": []
+ },
+ {
+  "scenario": "C",
+  "step": "c16",
+  "mem": "512m",
+  "cpus": "1.0",
+  "c": 16,
+  "target": "hub-app-ativos",
+  "load": {
+   "total": 588,
+   "rps": 9.7,
+   "errorRate": 0,
+   "p50": 1695.9,
+   "p95": 2601.5,
+   "p99": 3005.6,
+   "max": 3290.2,
+   "codes": {
+    "200": 588
+   },
+   "errors": {}
+  },
+  "stats": {
+   "hub-web": {
+    "cpuAvg": 0.5,
+    "cpuMax": 0.9,
+    "memPeakMiB": 47,
+    "pidsMax": 2,
+    "samples": 30
+   },
+   "hub-app-ativos": {
+    "cpuAvg": 99.3,
+    "cpuMax": 104.4,
+    "memPeakMiB": 122,
+    "pidsMax": 40,
+    "samples": 30
+   },
+   "hub-app-fornecedores": {
+    "cpuAvg": 0,
+    "cpuMax": 0,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 30
+   },
+   "hub-app-servicos": {
+    "cpuAvg": 0,
+    "cpuMax": 0,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 30
+   }
+  },
+  "restarts": {},
+  "oomEvents": [],
+  "dieEvents": []
+ },
+ {
+  "scenario": "C",
+  "step": "c64",
+  "mem": "512m",
+  "cpus": "1.0",
+  "c": 64,
+  "target": "hub-app-ativos",
+  "load": {
+   "total": 626,
+   "rps": 9.7,
+   "errorRate": 0,
+   "p50": 6804.2,
+   "p95": 8597,
+   "p99": 9096.6,
+   "max": 9353.1,
+   "codes": {
+    "200": 626
+   },
+   "errors": {}
+  },
+  "stats": {
+   "hub-web": {
+    "cpuAvg": 0.4,
+    "cpuMax": 0.9,
+    "memPeakMiB": 46,
+    "pidsMax": 16,
+    "samples": 32
+   },
+   "hub-app-ativos": {
+    "cpuAvg": 99.3,
+    "cpuMax": 103.9,
+    "memPeakMiB": 121,
+    "pidsMax": 40,
+    "samples": 32
+   },
+   "hub-app-fornecedores": {
+    "cpuAvg": 0,
+    "cpuMax": 0,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 32
+   },
+   "hub-app-servicos": {
+    "cpuAvg": 0,
+    "cpuMax": 0,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 32
+   }
+  },
+  "restarts": {},
+  "oomEvents": [],
+  "dieEvents": []
+ },
+ {
+  "scenario": "B",
+  "step": "c4",
+  "mem": "512m",
+  "cpus": "1.0",
+  "c": 4,
+  "target": "hub-app-ativos",
+  "load": {
+   "total": 1044,
+   "rps": 17.4,
+   "errorRate": 0,
+   "p50": 229.5,
+   "p95": 235.8,
+   "p99": 241.1,
+   "max": 286.7,
+   "codes": {
+    "200": 1044
+   },
+   "errors": {}
+  },
+  "stats": {
+   "hub-web": {
+    "cpuAvg": 0.7,
+    "cpuMax": 0.8,
+    "memPeakMiB": 44,
+    "pidsMax": 2,
+    "samples": 30
+   },
+   "hub-app-ativos": {
+    "cpuAvg": 39.5,
+    "cpuMax": 47.3,
+    "memPeakMiB": 249,
+    "pidsMax": 34,
+    "samples": 30
+   },
+   "hub-app-fornecedores": {
+    "cpuAvg": 0,
+    "cpuMax": 0,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 30
+   },
+   "hub-app-servicos": {
+    "cpuAvg": 0,
+    "cpuMax": 0,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 30
+   }
+  },
+  "restarts": {},
+  "oomEvents": [],
+  "dieEvents": []
+ },
+ {
+  "scenario": "B",
+  "step": "c8",
+  "mem": "512m",
+  "cpus": "1.0",
+  "c": 8,
+  "target": "hub-app-ativos",
+  "load": {
+   "total": 2083,
+   "rps": 34.6,
+   "errorRate": 0,
+   "p50": 228.9,
+   "p95": 244.8,
+   "p99": 284.3,
+   "max": 301.1,
+   "codes": {
+    "200": 2083
+   },
+   "errors": {}
+  },
+  "stats": {
+   "hub-web": {
+    "cpuAvg": 1.4,
+    "cpuMax": 1.8,
+    "memPeakMiB": 44,
+    "pidsMax": 2,
+    "samples": 30
+   },
+   "hub-app-ativos": {
+    "cpuAvg": 78.9,
+    "cpuMax": 85.3,
+    "memPeakMiB": 378,
+    "pidsMax": 34,
+    "samples": 30
+   },
+   "hub-app-fornecedores": {
+    "cpuAvg": 0,
+    "cpuMax": 0,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 30
+   },
+   "hub-app-servicos": {
+    "cpuAvg": 0,
+    "cpuMax": 0,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 30
+   }
+  },
+  "restarts": {},
+  "oomEvents": [],
+  "dieEvents": []
+ },
+ {
+  "scenario": "B",
+  "step": "c16",
+  "mem": "512m",
+  "cpus": "1.0",
+  "c": 16,
+  "target": "hub-app-ativos",
+  "load": {
+   "total": 1821,
+   "rps": 0.4,
+   "errorRate": 0.9852,
+   "p50": 3.4,
+   "p95": 3165.1,
+   "p99": 5003.2,
+   "max": 5005.7,
+   "codes": {
+    "200": 27,
+    "502": 1794
+   },
+   "errors": {}
+  },
+  "stats": {
+   "hub-web": {
+    "cpuAvg": 0.9,
+    "cpuMax": 6.5,
+    "memPeakMiB": 44,
+    "pidsMax": 23,
+    "samples": 32
+   },
+   "hub-app-ativos": {
+    "cpuAvg": 0,
+    "cpuMax": 0.2,
+    "memPeakMiB": 120,
+    "pidsMax": 34,
+    "samples": 32
+   },
+   "hub-app-fornecedores": {
+    "cpuAvg": 0.3,
+    "cpuMax": 1.8,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 32
+   },
+   "hub-app-servicos": {
+    "cpuAvg": 0.3,
+    "cpuMax": 1.9,
+    "memPeakMiB": 1,
+    "pidsMax": 2,
+    "samples": 32
+   }
+  },
+  "restarts": {
+   "hub-app-ativos": 9
+  },
+  "oomEvents": [
+   "hub-app-ativos oom",
+   "hub-app-ativos oom",
+   "hub-app-ativos oom",
+   "hub-app-ativos oom",
+   "hub-app-ativos oom",
+   "hub-app-ativos oom",
+   "hub-app-ativos oom",
+   "hub-app-ativos oom",
+   "hub-app-ativos oom"
+  ],
+  "dieEvents": [
+   "hub-app-ativos die",
+   "hub-app-ativos die",
+   "hub-app-ativos die",
+   "hub-app-ativos die",
+   "hub-app-ativos die",
+   "hub-app-ativos die",
+   "hub-app-ativos die",
+   "hub-app-ativos die",
+   "hub-app-ativos die"
+  ]
+ }
+]

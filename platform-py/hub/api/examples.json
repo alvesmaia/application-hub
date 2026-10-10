@@ -1,0 +1,335 @@
+{
+ "App": {
+  "api": {
+   "base": "/ativos/api/v1",
+   "enabled": true,
+   "openapi": "/ativos/api/openapi.json"
+  },
+  "id": "ativos",
+  "jobs": [],
+  "mcp": {
+   "enabled": true,
+   "exposed_by_hub": true,
+   "tool_prefix": "ativos."
+  },
+  "mode": "fragment",
+  "name": "Gestão de Ativos",
+  "routes": [
+   "/ativos/*"
+  ],
+  "stack": null,
+  "status": "ok",
+  "url": "/ativos",
+  "version": "2.4.1"
+ },
+ "AppStatus": {
+  "app": "ativos",
+  "last_hour": {
+   "availability": 1,
+   "errors": 0,
+   "from": 1790769798,
+   "p95": null,
+   "probes": 1,
+   "probes_ok": 1,
+   "requests": 0,
+   "to": 1790773399
+  },
+  "open_incidents": [],
+  "slos": [],
+  "status": "ok",
+  "version": "2.4.1"
+ },
+ "AuditEntry": {
+  "actor": "Administrador",
+  "at": 1790773398576,
+  "detail": "admin@test.local · senha",
+  "icon": "users",
+  "id": 9,
+  "scope": "platform",
+  "title": "Acesso à plataforma"
+ },
+ "AuditVerify": {
+  "anchor_seq": 7,
+  "checkpoints": 1,
+  "entries": 15,
+  "from_seq": 0,
+  "last_hash": "fb6b…",
+  "last_seq": 15,
+  "migrated": 7,
+  "ok": true,
+  "problems": [],
+  "segments": 1
+ },
+ "Backup": {
+  "app": "ativos",
+  "at": 1790762598243,
+  "env": "producao",
+  "id": 3,
+  "status": "ok"
+ },
+ "Connection": {
+  "bindings": [
+   {
+    "app": "contratos",
+    "env": "producao"
+   }
+  ],
+  "kind": "sharepoint",
+  "name": "sp-docs"
+ },
+ "ConnectionTest": {
+  "ok": true,
+  "steps": [
+   {
+    "name": "gravar",
+    "ok": true
+   }
+  ]
+ },
+ "Container": {
+  "container": "hub-app-ativos",
+  "cpu": 1,
+  "env": "producao",
+  "id": "ativos",
+  "image": "ghcr.io/org/ativos@sha256:…",
+  "memory": "1Gi",
+  "memory_bytes": 1073741824,
+  "name": "Gestão de Ativos",
+  "pids": 100,
+  "restart_pending": false
+ },
+ "ContainerAction": {
+  "action": "restart",
+  "container": "hub-app-ativos"
+ },
+ "DecideRequest": {
+  "comment": "ok",
+  "decision": "approve"
+ },
+ "DecideResult": {
+  "ok": true,
+  "status": "approved"
+ },
+ "Deployment": {
+  "app": "ativos",
+  "at": 1790762598243,
+  "commit": "a91f3c2",
+  "env": "Produção",
+  "id": 5,
+  "image": "ghcr.io/org/ativos@sha256:…",
+  "note": "",
+  "origin": "GitHub Actions",
+  "package": null,
+  "runtime": "",
+  "sha256": "",
+  "status": "Implantado",
+  "version": "2.4.1"
+ },
+ "DeprovisionRequest": {
+  "confirm": "hub-ativos"
+ },
+ "InboxItem": {
+  "app": "contratos",
+  "at": 1790773398576,
+  "id": "n42",
+  "kind": "approval",
+  "status": "pending",
+  "title": "Aprovar contrato"
+ },
+ "Job": {
+  "app": "ativos",
+  "done": false,
+  "env": "producao",
+  "id": 1,
+  "kind": "backup",
+  "message": "",
+  "ok": false,
+  "progress": 0,
+  "result": null,
+  "steps": [],
+  "title": "Backup de Gestão de Ativos"
+ },
+ "LogLine": {
+  "app": "ativos",
+  "at": 1790767578173,
+  "level": "INFO",
+  "message": "Novo ativo cadastrado",
+  "source": "app",
+  "time": "30/09 08:26:18",
+  "user": "john.doe"
+ },
+ "Observability": {
+  "items": [
+   {
+    "app": "ativos",
+    "availability": 1,
+    "env": "producao",
+    "errors": 0,
+    "minutes": 15,
+    "p95_ms": null,
+    "probes": 1,
+    "probes_ok": 1,
+    "requests": 0
+   }
+  ],
+  "minutes": 15
+ },
+ "Page": {
+  "items": [],
+  "limit": 50,
+  "next": null,
+  "offset": 0,
+  "total": 0
+ },
+ "Problem": {
+  "detail": "Sua função não tem a permissão exigida por esta operação.",
+  "instance": "/api/v1/deployments",
+  "status": 403,
+  "title": "Acesso negado",
+  "type": "/api/v1/problems/forbidden"
+ },
+ "Role": {
+  "description": "Acesso técnico",
+  "level": "Alto",
+  "members": 3,
+  "name": "Tech Lead",
+  "permissions": [
+   true,
+   false,
+   true,
+   true,
+   true,
+   false
+  ]
+ },
+ "RotateResult": {
+  "failed": 0,
+  "items": [
+   "ativos/producao: ok"
+  ],
+  "rotated": 2
+ },
+ "SearchResult": {
+  "groups": [
+   {
+    "hits": [
+     {
+      "kind": "Aplicações",
+      "score": 0.6,
+      "subtitle": "",
+      "title": "Gestão de Ativos",
+      "url": "/ativos"
+     }
+    ],
+    "id": "platform",
+    "label": "Plataforma"
+   }
+  ],
+  "partial": false,
+  "q": "ativos",
+  "took_ms": 3,
+  "total": 1,
+  "unavailable": []
+ },
+ "StatusPage": {
+  "apps": [
+   {
+    "id": "ativos",
+    "name": "Gestão de Ativos",
+    "status": "ok"
+   }
+  ],
+  "open_incidents": [],
+  "overall": "ok"
+ },
+ "Storage": {
+  "app": "ativos",
+  "bucket": "hub-ativos",
+  "connection": "hub-ativos-producao",
+  "env": "producao"
+ },
+ "StorageChange": {
+  "changed": true,
+  "detail": "bucket, usuário e conexão criados",
+  "storage": {
+   "app": "ativos",
+   "bucket": "hub-ativos",
+   "env": "producao"
+  }
+ },
+ "Task": {
+  "app": "ativos",
+  "app_name": "Gestão de Ativos",
+  "attempts": 1,
+  "cancel_requested": false,
+  "created_at": 1790762598,
+  "elapsed_s": 2,
+  "env": "producao",
+  "error": null,
+  "id": "6f1c…",
+  "kind": "import",
+  "max_attempts": 5,
+  "progress_done": 40,
+  "progress_text": "Linhas 400/1000",
+  "progress_total": 100,
+  "run_after": 0,
+  "saga": null,
+  "status": "running",
+  "updated_at": 1790762600,
+  "user": "ana"
+ },
+ "TaskActionResult": {
+  "job": {
+   "attempts": 0,
+   "id": "6f1c…",
+   "kind": "import",
+   "max_attempts": 5,
+   "status": "queued"
+  }
+ },
+ "User": {
+  "active": true,
+  "created_at": 1790773398061,
+  "email": "ana@empresa.com",
+  "failed_attempts": 0,
+  "id": "u14739adc7",
+  "last_login": null,
+  "local_password": true,
+  "locked": false,
+  "locked_until": null,
+  "must_change_password": false,
+  "name": "Ana",
+  "roles": [
+   "Administrador"
+  ],
+  "sso": false
+ },
+ "UserCreate": {
+  "email": "novo@empresa.com",
+  "must_change_password": true,
+  "name": "Novo Usuário",
+  "password": "SUBSTITUA-por-uma-senha",
+  "roles": [
+   "Colaborador"
+  ]
+ },
+ "UserUpdate": {
+  "active": true,
+  "name": "Ana Souza",
+  "roles": [
+   "Tech Lead"
+  ]
+ },
+ "Variable": {
+  "bindings": [
+   {
+    "app": "ativos",
+    "env": "producao"
+   }
+  ],
+  "kind": "publica",
+  "managed": false,
+  "name": "LOG_LEVEL",
+  "value": "info"
+ }
+}

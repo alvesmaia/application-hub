@@ -1,0 +1,52 @@
+/* auth.css — login, troca de senha e 403 (páginas avulsas, sem rail), no visual do shell. */
+.auth-body .app-root, .auth-main{margin-left:0}
+.auth-main{min-height:calc(100vh - 72px);display:grid;place-items:center;padding:var(--space-32) var(--space-16);background:var(--color-bg)}
+.auth-card{width:min(420px,100%);background:var(--color-surface);border:1px solid var(--color-divider);border-radius:var(--radius-5xl);padding:var(--space-28) var(--space-28) var(--space-24);box-shadow:0 8px 30px color-mix(in srgb,var(--c-navy-16-2) 5.5%,transparent);font-family:var(--font-ui)}
+.auth-card .eyebrow{color:var(--color-accent)}
+.auth-title{font:700 24px var(--font-ui);letter-spacing:-.5px;margin:var(--space-6) 0 var(--space-6);color:var(--color-brand)}
+.auth-copy{font-size:var(--font-size-md);color:var(--c-gray-42);line-height:1.6;margin:0 0 var(--space-12)}
+.auth-muted{color:var(--c-gray-54-1)}
+.auth-form .form-field input{font-size:var(--font-size-base);padding:11px}
+.auth-submit{width:100%;padding:var(--space-12) var(--space-14);font-size:var(--font-size-md);margin-top:var(--space-6);background:var(--color-accent);box-shadow:none}
+.auth-submit:hover{background:var(--c-navy-25)}
+.auth-link{display:inline-block;text-decoration:none;box-shadow:none}
+.auth-actions{margin-top:var(--space-14)}
+.auth-alert{background:var(--color-danger-soft);color:var(--c-red-43);border:1px solid var(--c-red-88-1);border-radius:var(--radius-lg);padding:var(--space-10) var(--space-12);font-size:var(--font-size-md);margin:var(--space-8) 0 var(--space-4)}
+.auth-info{background:var(--c-blue-95);color:var(--color-accent);border:1px solid var(--c-blue-87);border-radius:var(--radius-lg);padding:var(--space-10) var(--space-12);font-size:var(--font-size-md);margin:var(--space-8) 0 var(--space-4)}
+.auth-divider{display:flex;align-items:center;gap:var(--space-10);color:var(--c-gray-64-1);font-size:var(--font-size-sm);margin:var(--space-16) 0 var(--space-12)}
+.auth-divider:before,.auth-divider:after{content:"";flex:1;border-top:1px solid var(--c-blue-94-3)}
+.auth-sso{display:block;text-align:center;text-decoration:none;font-size:var(--font-size-md);padding:11px}
+.auth-inline{display:flex;align-items:center;gap:var(--space-10);margin:0}
+.auth-inline .auth-muted{color:color-mix(in srgb,var(--color-text-inverse) 80%,transparent);font-size:var(--font-size-md)}
+.auth-note{margin-top:var(--space-14);font-size:var(--font-size-sm);line-height:1.6}
+.user-actions{display:flex;gap:var(--space-6);flex-wrap:wrap}
+.user-actions .secondary-button{padding:var(--space-6) 9px}
+.token-secret{display:flex;align-items:center;gap:var(--space-10);flex-wrap:wrap;background:var(--color-warning-soft);border:1px solid var(--c-yellow-83);border-radius:var(--radius-2xl);padding:var(--space-12) var(--space-14);margin-bottom:var(--space-14);font-size:var(--font-size-md)}
+.token-secret code{background:var(--color-surface);border:1px solid var(--c-yellow-82);border-radius:var(--radius-sm);padding:var(--space-6) var(--space-8);word-break:break-all;flex:1;min-width:220px}
+.role-apps{margin-top:var(--space-12);padding-top:var(--space-10);border-top:1px solid var(--c-blue-95-10)}
+@media(max-width:640px){.auth-card{padding:22px var(--space-18)}.auth-main{min-height:calc(100vh - 62px)}}
+/* Onda 12 (2.1): frase de segurança nas telas de credencial do hub. */
+/* Telas de credencial cabem numa viewport (sem rolagem) a partir de ~560px de altura:
+ * header de 41px + área centrada em 100dvh; espaçamento compacto. */
+body.auth-body{min-height:100dvh;overflow-x:hidden}
+.auth-main{min-height:calc(100dvh - 42px);padding:var(--space-16);box-sizing:border-box}
+.auth-card{padding:var(--space-24) var(--space-24) var(--space-20)}
+.auth-title{font:800 22px var(--font-display);letter-spacing:-.02em;margin:var(--space-4) 0}
+.auth-copy{line-height:1.5;margin:0 0 var(--space-10)}
+.auth-form .form-field{margin-bottom:var(--space-10)}
+.auth-form .form-field input{padding:7px 10px;min-height:34px}
+.auth-submit{padding:var(--space-8) var(--space-14);min-height:36px}
+.auth-divider{margin:var(--space-12) 0 var(--space-10)}
+.auth-sso{padding:7px}
+.auth-note{margin-top:var(--space-10);line-height:1.45}
+.auth-info,.auth-alert{padding:var(--space-8) var(--space-10);line-height:1.45}
+@media(max-width:640px){.auth-main{min-height:calc(100dvh - 42px);padding:var(--space-12)}.auth-card{padding:var(--space-18) var(--space-16)}}
+/* Mostrar/ocultar senha (login.js). */
+.auth-pw{position:relative}
+.auth-pw input,.auth-form .auth-pw input{width:100%;padding-right:40px}
+.auth-pw-toggle{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:32px;height:32px;display:grid;place-items:center;border:0;border-radius:6px;background:transparent;color:var(--color-text-secondary);cursor:pointer}
+.auth-pw-toggle:hover{background:var(--color-surface-hover);color:var(--color-text-strong)}
+.auth-pw-toggle[aria-pressed="true"]{color:var(--color-accent)}
+.auth-pw-toggle svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.auth-pw-toggle[hidden]{display:none}
+.auth-sso{display:flex;align-items:center;justify-content:center;gap:var(--space-8);text-decoration:none;box-sizing:border-box}.auth-sso svg{flex:none}.auth-or{text-align:center;margin:var(--space-12) 0 0}

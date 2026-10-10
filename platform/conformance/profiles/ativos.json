@@ -1,0 +1,57 @@
+{
+  "db_span_path": "/ativos/assets",
+  "flag": {
+    "key": "novo-resumo",
+    "path": "/ativos",
+    "marker": "data-flag=\"novo-resumo\""
+  },
+  "id": "ativos",
+  "stack": "python",
+  "sections": [
+    "dashboard",
+    "assets",
+    "movements",
+    "reports",
+    "settings"
+  ],
+  "durable": true,
+  "jobs": [
+    "ativos.import",
+    "ativos.export_xlsx"
+  ],
+  "mutation": {
+    "path": "/ativos/assets",
+    "form": {
+      "tag": "CONF-{uniq}",
+      "name": "Ativo de conformidade {uniq}",
+      "category": "Tecnologia",
+      "location": "São Paulo",
+      "status": "Disponível"
+    },
+    "vary": "name",
+    "ok": [
+      201
+    ],
+    "audit_action": "Ativo cadastrado"
+  },
+  "job_trigger": {
+    "path": "/ativos/itens/export.xlsx",
+    "form": {
+      "q": "CONF-NENHUM-{uniq}"
+    },
+    "ok": [
+      200,
+      202
+    ],
+    "kind": "ativos.export_xlsx"
+  },
+  "heavy": {
+    "path": "/ativos/itens/export.csv",
+    "parallel": 6,
+    "expect_429": true
+  },
+  "search": {
+    "q": "a",
+    "min": 0
+  }
+}

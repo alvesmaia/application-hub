@@ -1,0 +1,23 @@
+{
+  "aad": "golden:aad",
+  "plaintext": "rust-golden",
+  "ciphertext": "vault:v1:k173b6b01:gu3NmLlpMqVB6ESvY1vWH0GR1G31e57IY8T3wUrEkVqSsCQR2n7k",
+  "master_key": "1111111111111111111111111111111111111111111111111111111111111111",
+  "keyring": {
+    "version": 2,
+    "kek_fingerprint": "276b9fe67a98950b",
+    "active": "k173b6b01",
+    "deks": [
+      {
+        "id": "k173b6b01",
+        "wrapped": "Glek6RRBNYEJRqc1Z9NKXnlRAyXnAyZa4YSmqTMg2fVjxGA2MY12V6l8U57O80gDN0kMrkmNT+ZzcXJe",
+        "created_ms": 1791293078193
+      }
+    ],
+    "audit_seed": "AJqzDJcrHwb5UHw0/KL0Qa/MYBpEX0XD9Ex5IDLWf+ZBEph1bV9eaeJrQi7q8vFE5eGy1xnQkvlZwIRv",
+    "audit_public_keys": [
+      "zygRWk+xJ0b45O8MaY/sH9VVUV0J6qY/YVeJD1Cg4qw="
+    ],
+    "sealed_meta": "80E9RweW1qMao3d5vdmsg5qY2uzjID7ciS5hJqfeqnt1jw9D8cfAVRL97Xlbp0wqeWYQbom5If9cmNqUGyURlV1uk+EhxRXduDpl7zB+YIcjJEAE+wHcWHE3ZeVqVI9AdZWufY6f"
+  }
+}

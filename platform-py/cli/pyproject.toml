@@ -1,0 +1,74 @@
+[project]
+name = "hub-cli"
+version = "0.2.0"
+license = "Apache-2.0"
+description = "CLI da Application Hub: project create, dev (hub local sem Docker), check, pack, mcp"
+requires-python = ">=3.12"
+# httpx: API do hub. O resto: o hub em processo do `hub dev`/`hub check` (pacote `hub` embutido no wheel).
+dependencies = [
+    "httpx>=0.27",
+    "asyncpg>=0.31.0",
+    "argon2-cffi>=23.1",
+    "cryptography>=50.0.2",
+    "fastapi>=0.115",
+    "jinja2>=3.1",
+    "uvicorn>=0.30",
+    "websockets>=13",
+    "pydantic>=2.13.5",
+    "pydantic-settings>=2.15.0",
+    "docker>=7.2.0",
+    "python-multipart>=0.0.32",
+    "tzdata>=2024.1",
+    "markdown-it-py>=4.2.0",
+]
+
+[project.scripts]
+hub = "hub_cli.main:run"
+
+[dependency-groups]
+dev = ["ruff>=0.6", "pytest>=8", "pytest-cov>=7", "ty>=0.0.84", "hub"]
+
+# No repositório o hub vem da pasta ao lado (no wheel ele é embutido).
+[tool.uv.sources]
+hub = { path = "..", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hub_cli"]
+exclude = ["**/__pycache__", "**/*.pyc", "**/.ruff_cache", "**/.pytest_cache"]
+
+# Wheel autossuficiente (fora do repositório): o hub em processo e os assets do shell. O SDK
+# (`hub_cli/_wheels/hub_sdk-*.whl`) é gerado por `scripts/build-cli.sh` antes do `uv build --wheel`.
+[tool.hatch.build.targets.wheel.force-include]
+"../hub" = "hub"
+"../../platform/assets/shell" = "hub_cli/_assets/shell"
+"../../platform/assets/web" = "hub_cli/_assets/web"
+"../../platform/demo-apps/assets/demo.css" = "hub_cli/templates/python-fastapi/src/__PKG__/assets/demo.css"
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+extend-exclude = ["hub_cli/templates", "hub_cli/_assets", "hub_cli/_wheels"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "ASYNC", "S", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003", "E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S105", "S106"]
+
+[tool.ty.src]
+exclude = ["hub_cli/templates"]
+
+[tool.ty.rules]
+all = "error"
+
+[tool.ty.environment]
+python-version = "3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=hub_cli --cov-report=term-missing --cov-fail-under=80"

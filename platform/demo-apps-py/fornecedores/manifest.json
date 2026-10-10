@@ -1,0 +1,31 @@
+{
+  "id": "fornecedores",
+  "name": "Rede de Fornecedores",
+  "version": "1.9.0",
+  "mode": "fragment",
+  "routes": [
+    "/fornecedores/*"
+  ],
+  "limits": {
+    "max_upload_mb": 25
+  },
+  "env": [
+    "API_BASE_URL"
+  ],
+  "permissions": [
+    "fornecedores.read"
+  ],
+  "sdk": "1.0",
+  "runtime": {
+    "stack": "python"
+  },
+  "stack": {
+    "language": "Python 3.12",
+    "framework": "FastAPI",
+    "sdk": "hub-sdk-python 1.0",
+    "db": "MinIO (S3)",
+    "libs": [
+      "asyncpg"
+    ]
+  }
+}

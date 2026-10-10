@@ -1,0 +1,113 @@
+{
+ "top": [
+  {
+   "href": "/",
+   "label": "Início",
+   "icon": "<path d=\"m3 11.5 9-7.5 9 7.5\"/><path d=\"M5.5 9.8V19a1 1 0 0 0 1 1H9v-6h6v6h2.5a1 1 0 0 0 1-1V9.8\"/>"
+  },
+  {
+   "href": "/applications",
+   "label": "Aplicações",
+   "icon": "<rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/>"
+  },
+  {
+   "href": "/status",
+   "label": "Status",
+   "icon": "<path d=\"m5 13 4 4L19 7\"/>"
+  }
+ ],
+ "groups": [
+  {
+   "id": "access",
+   "name": "Acesso",
+   "icon": "<rect x=\"4\" y=\"10\" width=\"16\" height=\"11\" rx=\"2\"/><path d=\"M8 10V7a4 4 0 0 1 8 0v3\"/><circle cx=\"12\" cy=\"15\" r=\"1.5\"/><path d=\"M12 16.5V18\"/>",
+   "items": [
+    {
+     "href": "/admin/users",
+     "label": "Usuários e funções",
+     "icon": "<path d=\"M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM20 8v6M23 11h-6\"/>"
+    },
+    {
+     "href": "/admin/tokens",
+     "label": "Credenciais",
+     "icon": "<circle cx=\"7.5\" cy=\"15.5\" r=\"4.5\"/><path d=\"m10.7 12.3 9.3-9.3M16 7l3 3M18 5l2 2\"/>"
+    }
+   ]
+  },
+  {
+   "id": "apps",
+   "name": "Aplicações",
+   "icon": "<path d=\"m12 3 9 4.5-9 4.5-9-4.5Z\"/><path d=\"m3 12 9 4.5 9-4.5\"/><path d=\"m3 16.5 9 4.5 9-4.5\"/>",
+   "items": [
+    {
+     "href": "/admin/deploys",
+     "label": "Implantações",
+     "icon": "<path d=\"M6 4v16l14-8Z\"/>"
+    },
+    {
+     "href": "/developers",
+     "label": "Desenvolvedores",
+     "icon": "<path d=\"m8 8-4 4 4 4M16 8l4 4-4 4M14 4l-4 16\"/>",
+     "also": [
+      "/dev/docs"
+     ]
+    },
+    {
+     "href": "/admin/runtime",
+     "label": "Containers",
+     "icon": "<path d=\"m12 3 9 5-9 5-9-5 9-5Z\"/><path d=\"m3 8 9 5 9-5M3 8v9l9 5 9-5V8M12 13v9\"/>"
+    },
+    {
+     "href": "/admin/env",
+     "label": "Configuração das apps",
+     "icon": "<path d=\"M8 3H6.5A1.5 1.5 0 0 0 5 4.5V8a2 2 0 0 1-2 2 2 2 0 0 1 2 2v3.5A1.5 1.5 0 0 0 6.5 17H8\"/><path d=\"M16 3h1.5A1.5 1.5 0 0 1 19 4.5V8a2 2 0 0 0 2 2 2 2 0 0 0-2 2v3.5a1.5 1.5 0 0 1-1.5 1.5H16\"/>",
+     "also": [
+      "/admin/connections"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ops",
+   "name": "Operação",
+   "icon": "<path d=\"M4.2 18a9 9 0 1 1 15.6 0\"/><path d=\"m12 14 4-5\"/><circle cx=\"12\" cy=\"14\" r=\"1.5\"/>",
+   "items": [
+    {
+     "href": "/admin/tasks",
+     "label": "Tarefas",
+     "icon": "<path d=\"M10 6h10M10 12h10M10 18h10\"/><path d=\"m3.5 6 1.5 1.5L7.5 5M3.5 12l1.5 1.5L7.5 11M3.5 18l1.5 1.5L7.5 17\"/>"
+    },
+    {
+     "href": "/admin/backups",
+     "label": "Backups",
+     "icon": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3 2\"/>"
+    },
+    {
+     "href": "/admin/health",
+     "label": "Saúde",
+     "icon": "<path d=\"M20.8 11A5.5 5.5 0 0 0 12 5.6 5.5 5.5 0 0 0 3.2 11\"/><path d=\"M3 13h4l2-3 3 6 2-3h7\"/><path d=\"M5.5 16.5 12 21l6.5-4.5\"/>"
+    },
+    {
+     "href": "/admin/logs",
+     "label": "Logs e auditoria",
+     "icon": "<rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"2\"/><path d=\"m7 9 3 3-3 3\"/><path d=\"M12 15h5\"/>",
+     "also": [
+      "/admin/audit"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "gov",
+   "name": "Governança",
+   "icon": "<path d=\"M12 3v18M7 21h10M5 7h14M12 5l-7 2M12 5l7 2\"/><path d=\"m5 7-3 7a3.5 3.5 0 0 0 6 0Z\"/><path d=\"m19 7-3 7a3.5 3.5 0 0 0 6 0Z\"/>",
+   "items": [
+    {
+     "href": "/admin",
+     "label": "Configurações",
+     "icon": "<circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z\"/>"
+    }
+   ]
+  }
+ ]
+}

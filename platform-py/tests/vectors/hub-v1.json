@@ -1,0 +1,5479 @@
+{
+  "components": {
+    "responses": {
+      "Problem": {
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        },
+        "description": "Erro (RFC 9457)"
+      }
+    },
+    "schemas": {
+      "App": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "api": {
+              "base": "/ativos/api/v1",
+              "enabled": true,
+              "openapi": "/ativos/api/openapi.json"
+            },
+            "id": "ativos",
+            "jobs": [],
+            "mcp": {
+              "enabled": true,
+              "exposed_by_hub": true,
+              "tool_prefix": "ativos."
+            },
+            "mode": "fragment",
+            "name": "Gestão de Ativos",
+            "routes": [
+              "/ativos/*"
+            ],
+            "stack": null,
+            "status": "ok",
+            "url": "/ativos",
+            "version": "2.4.1"
+          }
+        ],
+        "properties": {
+          "api": {
+            "$ref": "#/components/schemas/AppApi"
+          },
+          "id": {
+            "pattern": "^[a-z0-9-]{1,40}$",
+            "type": "string"
+          },
+          "jobs": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "mcp": {
+            "$ref": "#/components/schemas/AppMcp"
+          },
+          "mode": {
+            "description": "`fragment` ou `iframe`.",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "routes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "stack": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "version",
+          "mode",
+          "url",
+          "routes",
+          "status",
+          "jobs",
+          "api",
+          "mcp"
+        ],
+        "type": "object"
+      },
+      "AppApi": {
+        "additionalProperties": true,
+        "properties": {
+          "base": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "openapi": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "type": "object"
+      },
+      "AppMcp": {
+        "additionalProperties": true,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "exposed_by_hub": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "tool_prefix": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "type": "object"
+      },
+      "AppStatus": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "app": "ativos",
+            "last_hour": {
+              "availability": 1.0,
+              "errors": 0,
+              "from": 1790769798,
+              "p95": null,
+              "probes": 1,
+              "probes_ok": 1,
+              "requests": 0,
+              "to": 1790773399
+            },
+            "open_incidents": [],
+            "slos": [],
+            "status": "ok",
+            "version": "2.4.1"
+          }
+        ],
+        "properties": {
+          "app": {
+            "type": "string"
+          },
+          "last_hour": {
+            "$ref": "#/components/schemas/Window"
+          },
+          "open_incidents": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "slos": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "app",
+          "version",
+          "status",
+          "open_incidents",
+          "slos",
+          "last_hour"
+        ],
+        "type": "object"
+      },
+      "AuditEntry": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "actor": "Administrador",
+            "at": 1790773398576,
+            "detail": "admin@test.local · senha",
+            "icon": "users",
+            "id": 9,
+            "scope": "platform",
+            "title": "Acesso à plataforma"
+          }
+        ],
+        "properties": {
+          "actor": {
+            "type": "string"
+          },
+          "at": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "scope": {
+            "description": "`platform` ou id do app.",
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "actor",
+          "scope",
+          "title",
+          "detail"
+        ],
+        "type": "object"
+      },
+      "AuditVerify": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "anchor_seq": 7,
+            "checkpoints": 1,
+            "entries": 15,
+            "from_seq": 0,
+            "last_hash": "fb6b…",
+            "last_seq": 15,
+            "migrated": 7,
+            "ok": true,
+            "problems": [],
+            "segments": 1
+          }
+        ],
+        "properties": {
+          "checkpoints": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "entries": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "last_hash": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_seq": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "problems": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "segments": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ok",
+          "entries",
+          "segments",
+          "checkpoints",
+          "problems",
+          "last_seq"
+        ],
+        "type": "object"
+      },
+      "Backup": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "app": "ativos",
+            "at": 1790762598243,
+            "env": "producao",
+            "id": 3,
+            "status": "ok"
+          }
+        ],
+        "properties": {
+          "app": {
+            "type": "string"
+          },
+          "env": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "app",
+          "status"
+        ],
+        "type": "object"
+      },
+      "Binding": {
+        "additionalProperties": true,
+        "properties": {
+          "app": {
+            "type": "string"
+          },
+          "env": {
+            "$ref": "#/components/schemas/Env"
+          }
+        },
+        "required": [
+          "app",
+          "env"
+        ],
+        "type": "object"
+      },
+      "Connection": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "bindings": [
+              {
+                "app": "contratos",
+                "env": "producao"
+              }
+            ],
+            "kind": "sharepoint",
+            "name": "sp-docs"
+          }
+        ],
+        "properties": {
+          "bindings": {
+            "items": {
+              "$ref": "#/components/schemas/Binding"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "description": "`sharepoint` ou `s3`.",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "bindings"
+        ],
+        "type": "object"
+      },
+      "ConnectionTest": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "ok": true,
+            "steps": [
+              {
+                "name": "gravar",
+                "ok": true
+              }
+            ]
+          }
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "steps": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "ok",
+          "steps"
+        ],
+        "type": "object"
+      },
+      "Container": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "container": "hub-app-ativos",
+            "cpu": 1.0,
+            "env": "producao",
+            "id": "ativos",
+            "image": "ghcr.io/org/ativos@sha256:…",
+            "memory": "1Gi",
+            "memory_bytes": 1073741824,
+            "name": "Gestão de Ativos",
+            "pids": 100,
+            "restart_pending": false
+          }
+        ],
+        "properties": {
+          "container": {
+            "type": "string"
+          },
+          "cpu": {
+            "format": "double",
+            "type": "number"
+          },
+          "env": {
+            "$ref": "#/components/schemas/Env"
+          },
+          "id": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "memory": {
+            "type": "string"
+          },
+          "memory_bytes": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "pids": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "restart_pending": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "env",
+          "container",
+          "image",
+          "cpu",
+          "memory",
+          "memory_bytes",
+          "pids",
+          "restart_pending"
+        ],
+        "type": "object"
+      },
+      "ContainerAction": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "action": "restart",
+            "container": "hub-app-ativos"
+          }
+        ],
+        "properties": {
+          "action": {
+            "description": "`start`, `stop` ou `restart`.",
+            "type": "string"
+          },
+          "container": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "container",
+          "action"
+        ],
+        "type": "object"
+      },
+      "DecideRequest": {
+        "additionalProperties": false,
+        "examples": [
+          {
+            "comment": "ok",
+            "decision": "approve"
+          }
+        ],
+        "properties": {
+          "comment": {
+            "maxLength": 500,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "decision": {
+            "$ref": "#/components/schemas/Decision"
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "type": "object"
+      },
+      "DecideResult": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "ok": true,
+            "status": "approved"
+          }
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "type": "object"
+      },
+      "Decision": {
+        "enum": [
+          "approve",
+          "reject"
+        ],
+        "type": "string"
+      },
+      "Deployment": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "app": "ativos",
+            "at": 1790762598243,
+            "commit": "a91f3c2",
+            "env": "Produção",
+            "id": 5,
+            "image": "ghcr.io/org/ativos@sha256:…",
+            "note": "",
+            "origin": "GitHub Actions",
+            "package": null,
+            "runtime": "",
+            "sha256": "",
+            "status": "Implantado",
+            "version": "2.4.1"
+          }
+        ],
+        "properties": {
+          "app": {
+            "type": "string"
+          },
+          "at": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "commit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "env": {
+            "description": "Rótulo do ambiente (`Produção`/`Staging`).",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "image": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "origin": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "package": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "runtime": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sha256": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "app",
+          "env",
+          "version",
+          "status",
+          "at"
+        ],
+        "type": "object"
+      },
+      "DeprovisionRequest": {
+        "additionalProperties": false,
+        "examples": [
+          {
+            "confirm": "hub-ativos"
+          }
+        ],
+        "properties": {
+          "confirm": {
+            "description": "Nome do bucket (confirmação).",
+            "minLength": 1,
+            "type": "string"
+          },
+          "force": {
+            "description": "Apagar mesmo com objetos (exige `password`; só sessão do navegador).",
+            "type": "boolean"
+          },
+          "password": {
+            "description": "Sua senha (reautenticação), só com `force`.",
+            "format": "password",
+            "type": [
+              "string",
+              "null"
+            ],
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "confirm"
+        ],
+        "type": "object"
+      },
+      "Env": {
+        "description": "Ambiente de um app.",
+        "enum": [
+          "producao",
+          "staging"
+        ],
+        "type": "string"
+      },
+      "InboxItem": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "app": "contratos",
+            "at": 1790773398576,
+            "id": "n42",
+            "kind": "approval",
+            "status": "pending",
+            "title": "Aprovar contrato"
+          }
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "description": "`alert`, `notification`, `approval`, `access`, `agent`.",
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "title"
+        ],
+        "type": "object"
+      },
+      "Job": {
+        "additionalProperties": true,
+        "description": "Job assíncrono do hub (implantação, backup, restauração).",
+        "examples": [
+          {
+            "app": "ativos",
+            "done": false,
+            "env": "producao",
+            "id": 1,
+            "kind": "backup",
+            "message": "",
+            "ok": false,
+            "progress": 0,
+            "result": null,
+            "steps": [],
+            "title": "Backup de Gestão de Ativos"
+          }
+        ],
+        "properties": {
+          "app": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "done": {
+            "type": "boolean"
+          },
+          "env": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Env"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "progress": {
+            "format": "int32",
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "result": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "steps": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "steps",
+          "done",
+          "ok",
+          "message",
+          "progress",
+          "result"
+        ],
+        "type": "object"
+      },
+      "LogLine": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "app": "ativos",
+            "at": 1790767578173,
+            "level": "INFO",
+            "message": "Novo ativo cadastrado",
+            "source": "app",
+            "time": "30/09 08:26:18",
+            "user": "john.doe"
+          }
+        ],
+        "properties": {
+          "app": {
+            "type": "string"
+          },
+          "at": {
+            "description": "Milissegundos desde a época.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "level": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "time": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "user": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "app",
+          "at",
+          "level",
+          "message"
+        ],
+        "type": "object"
+      },
+      "ObsItem": {
+        "additionalProperties": true,
+        "properties": {
+          "app": {
+            "type": "string"
+          },
+          "availability": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "env": {
+            "$ref": "#/components/schemas/Env"
+          },
+          "errors": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "minutes": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "p95_ms": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "probes": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "probes_ok": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "requests": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "app",
+          "env",
+          "errors",
+          "requests",
+          "probes",
+          "probes_ok",
+          "minutes"
+        ],
+        "type": "object"
+      },
+      "Observability": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "items": [
+              {
+                "app": "ativos",
+                "availability": 1.0,
+                "env": "producao",
+                "errors": 0,
+                "minutes": 15,
+                "p95_ms": null,
+                "probes": 1,
+                "probes_ok": 1,
+                "requests": 0
+              }
+            ],
+            "minutes": 15
+          }
+        ],
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ObsItem"
+            },
+            "type": "array"
+          },
+          "minutes": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "minutes",
+          "items"
+        ],
+        "type": "object"
+      },
+      "Page": {
+        "additionalProperties": true,
+        "description": "Página de uma lista (`items` tipados por operação).",
+        "examples": [
+          {
+            "items": [],
+            "limit": 50,
+            "next": null,
+            "offset": 0,
+            "total": 0
+          }
+        ],
+        "properties": {
+          "items": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "limit": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "next": {
+            "description": "URL da próxima página (ou `null`).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "offset": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "type": "object"
+      },
+      "Problem": {
+        "additionalProperties": true,
+        "description": "Erro no formato RFC 9457 (`application/problem+json`).",
+        "examples": [
+          {
+            "detail": "Sua função não tem a permissão exigida por esta operação.",
+            "instance": "/api/v1/deployments",
+            "status": 403,
+            "title": "Acesso negado",
+            "type": "/api/v1/problems/forbidden"
+          }
+        ],
+        "properties": {
+          "detail": {
+            "description": "Explicação no idioma do usuário.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "instance": {
+            "description": "Caminho da requisição.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "format": "int32",
+            "maximum": 599,
+            "minimum": 400,
+            "type": "integer"
+          },
+          "title": {
+            "description": "Título curto no idioma do usuário.",
+            "type": "string"
+          },
+          "type": {
+            "description": "URI do tipo de problema (`/api/v1/problems/<slug>`).",
+            "format": "uri-reference",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status"
+        ],
+        "type": "object"
+      },
+      "Role": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "description": "Acesso técnico",
+            "level": "Alto",
+            "members": 3,
+            "name": "Tech Lead",
+            "permissions": [
+              true,
+              false,
+              true,
+              true,
+              true,
+              false
+            ]
+          }
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "members": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "permissions": {
+            "description": "Acessar aplicações, Usuários, Deploys, Configurações, Variáveis, Auditoria.",
+            "items": {
+              "type": "boolean"
+            },
+            "maxItems": 6,
+            "minItems": 6,
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "level",
+          "members",
+          "permissions"
+        ],
+        "type": "object"
+      },
+      "RotateResult": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "failed": 0,
+            "items": [
+              "ativos/producao: ok"
+            ],
+            "rotated": 2
+          }
+        ],
+        "properties": {
+          "failed": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "items": {
+            "description": "Uma linha por app × ambiente.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "rotated": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rotated",
+          "failed",
+          "items"
+        ],
+        "type": "object"
+      },
+      "Saga": {
+        "additionalProperties": true,
+        "properties": {
+          "state": {
+            "description": "`running`, `compensating`, `completed`, `compensated`, `failed`.",
+            "type": "string"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/SagaStep"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "state",
+          "steps"
+        ],
+        "type": "object"
+      },
+      "SagaStep": {
+        "additionalProperties": true,
+        "description": "Passo de saga reportado pelo app (onda 12, 2.9).",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "state": {
+            "description": "`pending`, `done`, `compensating`, `compensated`, `failed`.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "state"
+        ],
+        "type": "object"
+      },
+      "SearchGroup": {
+        "additionalProperties": true,
+        "properties": {
+          "hits": {
+            "items": {
+              "$ref": "#/components/schemas/SearchHit"
+            },
+            "type": "array"
+          },
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "hits"
+        ],
+        "type": "object"
+      },
+      "SearchHit": {
+        "additionalProperties": true,
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "score": {
+            "format": "double",
+            "type": "number"
+          },
+          "subtitle": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "title",
+          "subtitle",
+          "url",
+          "score"
+        ],
+        "type": "object"
+      },
+      "SearchResult": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "groups": [
+              {
+                "hits": [
+                  {
+                    "kind": "Aplicações",
+                    "score": 0.6,
+                    "subtitle": "",
+                    "title": "Gestão de Ativos",
+                    "url": "/ativos"
+                  }
+                ],
+                "id": "platform",
+                "label": "Plataforma"
+              }
+            ],
+            "partial": false,
+            "q": "ativos",
+            "took_ms": 3,
+            "total": 1,
+            "unavailable": []
+          }
+        ],
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/SearchGroup"
+            },
+            "type": "array"
+          },
+          "partial": {
+            "type": "boolean"
+          },
+          "q": {
+            "type": "string"
+          },
+          "took_ms": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "unavailable": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "q",
+          "total",
+          "took_ms",
+          "partial",
+          "unavailable",
+          "groups"
+        ],
+        "type": "object"
+      },
+      "StatusApp": {
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status"
+        ],
+        "type": "object"
+      },
+      "StatusPage": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "apps": [
+              {
+                "id": "ativos",
+                "name": "Gestão de Ativos",
+                "status": "ok"
+              }
+            ],
+            "open_incidents": [],
+            "overall": "ok"
+          }
+        ],
+        "properties": {
+          "apps": {
+            "items": {
+              "$ref": "#/components/schemas/StatusApp"
+            },
+            "type": "array"
+          },
+          "open_incidents": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "overall": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "overall",
+          "apps",
+          "open_incidents"
+        ],
+        "type": "object"
+      },
+      "Storage": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "app": "ativos",
+            "bucket": "hub-ativos",
+            "connection": "hub-ativos-producao",
+            "env": "producao"
+          }
+        ],
+        "properties": {
+          "app": {
+            "type": "string"
+          },
+          "bucket": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "connection": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "env": {
+            "$ref": "#/components/schemas/Env"
+          }
+        },
+        "required": [
+          "app",
+          "env"
+        ],
+        "type": "object"
+      },
+      "StorageChange": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "changed": true,
+            "detail": "bucket, usuário e conexão criados",
+            "storage": {
+              "app": "ativos",
+              "bucket": "hub-ativos",
+              "env": "producao"
+            }
+          }
+        ],
+        "properties": {
+          "changed": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "storage": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Storage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "Task": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "app": "ativos",
+            "app_name": "Gestão de Ativos",
+            "attempts": 1,
+            "cancel_requested": false,
+            "created_at": 1790762598,
+            "elapsed_s": 2.0,
+            "env": "producao",
+            "error": null,
+            "id": "6f1c…",
+            "kind": "import",
+            "max_attempts": 5,
+            "progress_done": 40,
+            "progress_text": "Linhas 400/1000",
+            "progress_total": 100,
+            "run_after": 0,
+            "saga": null,
+            "status": "running",
+            "updated_at": 1790762600,
+            "user": "ana"
+          }
+        ],
+        "properties": {
+          "app": {
+            "type": "string"
+          },
+          "app_name": {
+            "type": "string"
+          },
+          "attempts": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "cancel_requested": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "elapsed_s": {
+            "format": "double",
+            "type": "number"
+          },
+          "env": {
+            "$ref": "#/components/schemas/Env"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "max_attempts": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "progress_done": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "progress_text": {
+            "type": "string"
+          },
+          "progress_total": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "run_after": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "saga": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Saga",
+                "description": "Estado da saga, quando a tarefa é uma saga."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/TaskStatus"
+          },
+          "updated_at": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "user": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "app",
+          "app_name",
+          "env",
+          "id",
+          "kind",
+          "status",
+          "attempts",
+          "max_attempts",
+          "progress_done",
+          "progress_total",
+          "progress_text",
+          "cancel_requested",
+          "user",
+          "created_at",
+          "updated_at",
+          "elapsed_s",
+          "run_after"
+        ],
+        "type": "object"
+      },
+      "TaskActionResult": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "job": {
+              "attempts": 0,
+              "id": "6f1c…",
+              "kind": "import",
+              "max_attempts": 5,
+              "status": "queued"
+            }
+          }
+        ],
+        "properties": {
+          "job": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "job"
+        ],
+        "type": "object"
+      },
+      "TaskStatus": {
+        "description": "Estado de uma tarefa durável de app.",
+        "enum": [
+          "queued",
+          "running",
+          "done",
+          "failed",
+          "dead",
+          "cancelled"
+        ],
+        "type": "string"
+      },
+      "User": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "active": true,
+            "created_at": 1790773398061,
+            "email": "ana@empresa.com",
+            "failed_attempts": 0,
+            "id": "u14739adc7",
+            "last_login": null,
+            "local_password": true,
+            "locked": false,
+            "locked_until": null,
+            "must_change_password": false,
+            "name": "Ana",
+            "roles": [
+              "Administrador"
+            ],
+            "sso": false
+          }
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "failed_attempts": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "last_login": {
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "local_password": {
+            "type": "boolean"
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "locked_until": {
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "must_change_password": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "sso": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "roles",
+          "active",
+          "must_change_password",
+          "locked",
+          "failed_attempts",
+          "created_at",
+          "sso",
+          "local_password"
+        ],
+        "type": "object"
+      },
+      "UserCreate": {
+        "additionalProperties": false,
+        "examples": [
+          {
+            "email": "novo@empresa.com",
+            "must_change_password": true,
+            "name": "Novo Usuário",
+            "password": "SUBSTITUA-por-uma-senha",
+            "roles": [
+              "Colaborador"
+            ]
+          }
+        ],
+        "properties": {
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "must_change_password": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "password": {
+            "description": "Senha provisória (troca obrigatória no primeiro login).",
+            "format": "password",
+            "minLength": 12,
+            "type": "string",
+            "writeOnly": true
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "email",
+          "name",
+          "roles",
+          "password"
+        ],
+        "type": "object"
+      },
+      "UserUpdate": {
+        "additionalProperties": false,
+        "examples": [
+          {
+            "active": true,
+            "name": "Ana Souza",
+            "roles": [
+              "Tech Lead"
+            ]
+          }
+        ],
+        "properties": {
+          "active": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "VarKind": {
+        "description": "`publica` ou `secreta`.",
+        "enum": [
+          "publica",
+          "secreta"
+        ],
+        "type": "string"
+      },
+      "Variable": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "bindings": [
+              {
+                "app": "ativos",
+                "env": "producao"
+              }
+            ],
+            "kind": "publica",
+            "managed": false,
+            "name": "LOG_LEVEL",
+            "value": "info"
+          }
+        ],
+        "properties": {
+          "bindings": {
+            "items": {
+              "$ref": "#/components/schemas/Binding"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/VarKind"
+          },
+          "managed": {
+            "type": "boolean"
+          },
+          "name": {
+            "pattern": "^[A-Z0-9_]{1,80}$",
+            "type": "string"
+          },
+          "value": {
+            "description": "Valor (segredos mascarados: `••••••••3f9a`).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "value",
+          "managed",
+          "bindings"
+        ],
+        "type": "object"
+      },
+      "Window": {
+        "additionalProperties": true,
+        "properties": {
+          "availability": {
+            "format": "double",
+            "maximum": 1,
+            "minimum": 0,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "errors": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "from": {
+            "description": "Início/fim (segundos desde a época).",
+            "format": "int64",
+            "type": "integer"
+          },
+          "p95": {
+            "description": "p95 em ms (ou `null` sem tráfego).",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "probes": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "probes_ok": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "requests": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "to": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "errors",
+          "requests",
+          "probes",
+          "probes_ok",
+          "from",
+          "to"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "bearer": {
+        "description": "Token de API (hubt_…) com escopos api:read/api:write",
+        "scheme": "bearer",
+        "type": "http"
+      },
+      "session": {
+        "in": "cookie",
+        "name": "hub_session",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "description": "API versionada do hub. Mesmo RBAC da interface; erros no formato RFC 9457 (application/problem+json). Listas paginadas com limit/offset.",
+    "title": "Application Hub — API pública",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/apps": {
+      "get": {
+        "operationId": "apps_list",
+        "parameters": [
+          {
+            "description": "Itens por página",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Deslocamento",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Texto em qualquer campo",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por stack",
+            "in": "query",
+            "name": "stack",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por status",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": [
+                    {
+                      "api": {
+                        "base": "/ativos/api/v1",
+                        "enabled": true,
+                        "openapi": "/ativos/api/openapi.json"
+                      },
+                      "id": "ativos",
+                      "jobs": [],
+                      "mcp": {
+                        "enabled": true,
+                        "exposed_by_hub": true,
+                        "tool_prefix": "ativos."
+                      },
+                      "mode": "fragment",
+                      "name": "Gestão de Ativos",
+                      "routes": [
+                        "/ativos/*"
+                      ],
+                      "stack": null,
+                      "status": "ok",
+                      "url": "/ativos",
+                      "version": "2.4.1"
+                    }
+                  ],
+                  "limit": 50,
+                  "next": null,
+                  "offset": 0,
+                  "total": 1
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    {
+                      "properties": {
+                        "items": {
+                          "items": {
+                            "$ref": "#/components/schemas/App"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Página da lista"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Lista os apps que você alcança (catálogo)",
+        "tags": [
+          "Apps"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/apps/{app}": {
+      "get": {
+        "operationId": "apps_get",
+        "parameters": [
+          {
+            "description": "Id do app (ex.: ativos)",
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "api": {
+                    "base": "/ativos/api/v1",
+                    "enabled": true,
+                    "openapi": "/ativos/api/openapi.json"
+                  },
+                  "id": "ativos",
+                  "jobs": [],
+                  "mcp": {
+                    "enabled": true,
+                    "exposed_by_hub": true,
+                    "tool_prefix": "ativos."
+                  },
+                  "mode": "fragment",
+                  "name": "Gestão de Ativos",
+                  "routes": [
+                    "/ativos/*"
+                  ],
+                  "stack": null,
+                  "status": "ok",
+                  "url": "/ativos",
+                  "version": "2.4.1"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/App"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Detalhes de um app (manifesto, API, MCP)",
+        "tags": [
+          "Apps"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/apps/{app}/backups": {
+      "post": {
+        "operationId": "backups_run",
+        "parameters": [
+          {
+            "description": "Id do app (ex.: ativos)",
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Ambiente (padrão: producao)",
+            "in": "query",
+            "name": "env",
+            "required": false,
+            "schema": {
+              "enum": [
+                "producao",
+                "staging"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "app": "ativos",
+                  "done": false,
+                  "env": "producao",
+                  "id": 1,
+                  "kind": "backup",
+                  "message": "",
+                  "ok": false,
+                  "progress": 0,
+                  "result": null,
+                  "steps": [],
+                  "title": "Backup de Gestão de Ativos"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Faz um backup agora (banco + bucket + arquivos); devolve o job",
+        "tags": [
+          "Backups"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/apps/{app}/containers/restart": {
+      "post": {
+        "operationId": "containers_restart",
+        "parameters": [
+          {
+            "description": "Id do app (ex.: ativos)",
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Ambiente (padrão: producao)",
+            "in": "query",
+            "name": "env",
+            "required": false,
+            "schema": {
+              "enum": [
+                "producao",
+                "staging"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "action": "restart",
+                  "container": "hub-app-ativos"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ContainerAction"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Reinicia o container do app",
+        "tags": [
+          "Containers"
+        ],
+        "x-hub-destructive": true,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/apps/{app}/containers/start": {
+      "post": {
+        "operationId": "containers_start",
+        "parameters": [
+          {
+            "description": "Id do app (ex.: ativos)",
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Ambiente (padrão: producao)",
+            "in": "query",
+            "name": "env",
+            "required": false,
+            "schema": {
+              "enum": [
+                "producao",
+                "staging"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "action": "restart",
+                  "container": "hub-app-ativos"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ContainerAction"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Inicia o container do app",
+        "tags": [
+          "Containers"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/apps/{app}/containers/stop": {
+      "post": {
+        "operationId": "containers_stop",
+        "parameters": [
+          {
+            "description": "Id do app (ex.: ativos)",
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Ambiente (padrão: producao)",
+            "in": "query",
+            "name": "env",
+            "required": false,
+            "schema": {
+              "enum": [
+                "producao",
+                "staging"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "action": "restart",
+                  "container": "hub-app-ativos"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ContainerAction"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Para o container do app (o app fica fora do ar)",
+        "tags": [
+          "Containers"
+        ],
+        "x-hub-destructive": true,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/apps/{app}/status": {
+      "get": {
+        "operationId": "apps_status",
+        "parameters": [
+          {
+            "description": "Id do app (ex.: ativos)",
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "app": "ativos",
+                  "last_hour": {
+                    "availability": 1.0,
+                    "errors": 0,
+                    "from": 1790769798,
+                    "p95": null,
+                    "probes": 1,
+                    "probes_ok": 1,
+                    "requests": 0,
+                    "to": 1790773399
+                  },
+                  "open_incidents": [],
+                  "slos": [],
+                  "status": "ok",
+                  "version": "2.4.1"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AppStatus"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Situação de um app: estado, incidentes abertos e SLOs",
+        "tags": [
+          "Apps"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/apps/{app}/storage": {
+      "post": {
+        "operationId": "storage_provision",
+        "parameters": [
+          {
+            "description": "Id do app (ex.: ativos)",
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Ambiente (padrão: producao)",
+            "in": "query",
+            "name": "env",
+            "required": false,
+            "schema": {
+              "enum": [
+                "producao",
+                "staging"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "changed": true,
+                  "detail": "bucket, usuário e conexão criados",
+                  "storage": {
+                    "app": "ativos",
+                    "bucket": "hub-ativos",
+                    "env": "producao"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/StorageChange"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Provisiona o armazenamento do app: bucket + usuário do MinIO restrito ao bucket + conexão S3 do broker (idempotente; desfaz em falha parcial)",
+        "tags": [
+          "Conexões"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/apps/{app}/storage/deprovision": {
+      "post": {
+        "operationId": "storage_deprovision",
+        "parameters": [
+          {
+            "description": "Id do app (ex.: ativos)",
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Ambiente (padrão: producao)",
+            "in": "query",
+            "name": "env",
+            "required": false,
+            "schema": {
+              "enum": [
+                "producao",
+                "staging"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "confirm": "hub-ativos"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/DeprovisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "changed": true,
+                  "detail": "bucket, usuário e conexão criados",
+                  "storage": {
+                    "app": "ativos",
+                    "bucket": "hub-ativos",
+                    "env": "producao"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/StorageChange"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Desprovisiona o armazenamento do app (exige confirm = nome do bucket; bucket com objetos exige force e a senha numa sessão do navegador)",
+        "tags": [
+          "Conexões"
+        ],
+        "x-hub-destructive": true,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/audit": {
+      "get": {
+        "operationId": "audit_query",
+        "parameters": [
+          {
+            "description": "platform ou id do app",
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Itens por página",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Deslocamento",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Texto em qualquer campo",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por actor",
+            "in": "query",
+            "name": "actor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": [
+                    {
+                      "actor": "Administrador",
+                      "at": 1790773398576,
+                      "detail": "admin@test.local · senha",
+                      "icon": "users",
+                      "id": 9,
+                      "scope": "platform",
+                      "title": "Acesso à plataforma"
+                    }
+                  ],
+                  "limit": 50,
+                  "next": null,
+                  "offset": 0,
+                  "total": 1
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    {
+                      "properties": {
+                        "items": {
+                          "items": {
+                            "$ref": "#/components/schemas/AuditEntry"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Página da lista"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Consulta a trilha de auditoria (mais recentes primeiro)",
+        "tags": [
+          "Auditoria"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/audit/verify": {
+      "post": {
+        "operationId": "audit_verify",
+        "parameters": [],
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "anchor_seq": 7,
+                  "checkpoints": 1,
+                  "entries": 15,
+                  "from_seq": 0,
+                  "last_hash": "fb6b…",
+                  "last_seq": 15,
+                  "migrated": 7,
+                  "ok": true,
+                  "problems": [],
+                  "segments": 1
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AuditVerify"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Verifica a integridade da cadeia de auditoria",
+        "tags": [
+          "Auditoria"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/backups": {
+      "get": {
+        "operationId": "backups_list",
+        "parameters": [
+          {
+            "description": "Itens por página",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Deslocamento",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Texto em qualquer campo",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por app",
+            "in": "query",
+            "name": "app",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por env",
+            "in": "query",
+            "name": "env",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por status",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": [
+                    {
+                      "app": "ativos",
+                      "at": 1790762598243,
+                      "env": "producao",
+                      "id": 3,
+                      "status": "ok"
+                    }
+                  ],
+                  "limit": 50,
+                  "next": null,
+                  "offset": 0,
+                  "total": 1
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    {
+                      "properties": {
+                        "items": {
+                          "items": {
+                            "$ref": "#/components/schemas/Backup"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Página da lista"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Histórico de backups",
+        "tags": [
+          "Backups"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/backups/credentials/rotate": {
+      "post": {
+        "operationId": "backups_rotate_credentials",
+        "parameters": [],
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "failed": 0,
+                  "items": [
+                    "ativos/producao: ok"
+                  ],
+                  "rotated": 2
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/RotateResult"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Rotaciona as credenciais só leitura dos backups (papel por banco, chave por bucket); as antigas deixam de valer",
+        "tags": [
+          "Backups"
+        ],
+        "x-hub-destructive": true,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/backups/{id}/restore": {
+      "post": {
+        "operationId": "backups_restore",
+        "parameters": [
+          {
+            "description": "Identificador",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "app": "ativos",
+                  "done": false,
+                  "env": "producao",
+                  "id": 1,
+                  "kind": "backup",
+                  "message": "",
+                  "ok": false,
+                  "progress": 0,
+                  "result": null,
+                  "steps": [],
+                  "title": "Backup de Gestão de Ativos"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Restaura um backup (substitui os dados atuais; snapshot de segurança antes)",
+        "tags": [
+          "Backups"
+        ],
+        "x-hub-destructive": true,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/connections": {
+      "get": {
+        "operationId": "connections_list",
+        "parameters": [
+          {
+            "description": "Itens por página",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Deslocamento",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Texto em qualquer campo",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": [
+                    {
+                      "bindings": [
+                        {
+                          "app": "contratos",
+                          "env": "producao"
+                        }
+                      ],
+                      "kind": "sharepoint",
+                      "name": "sp-docs"
+                    }
+                  ],
+                  "limit": 50,
+                  "next": null,
+                  "offset": 0,
+                  "total": 1
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    {
+                      "properties": {
+                        "items": {
+                          "items": {
+                            "$ref": "#/components/schemas/Connection"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Página da lista"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Conexões de armazenamento e vínculos (sem credenciais)",
+        "tags": [
+          "Conexões"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/connections/{name}/test": {
+      "post": {
+        "operationId": "connections_test",
+        "parameters": [
+          {
+            "description": "Nome da conexão",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "steps": [
+                    {
+                      "name": "gravar",
+                      "ok": true
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionTest"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Testa uma conexão",
+        "tags": [
+          "Conexões"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/containers": {
+      "get": {
+        "operationId": "containers_list",
+        "parameters": [
+          {
+            "description": "Itens por página",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Deslocamento",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Texto em qualquer campo",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por app",
+            "in": "query",
+            "name": "app",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por status",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": [
+                    {
+                      "container": "hub-app-ativos",
+                      "cpu": 1.0,
+                      "env": "producao",
+                      "id": "ativos",
+                      "image": "ghcr.io/org/ativos@sha256:…",
+                      "memory": "1Gi",
+                      "memory_bytes": 1073741824,
+                      "name": "Gestão de Ativos",
+                      "pids": 100,
+                      "restart_pending": false
+                    }
+                  ],
+                  "limit": 50,
+                  "next": null,
+                  "offset": 0,
+                  "total": 1
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    {
+                      "properties": {
+                        "items": {
+                          "items": {
+                            "$ref": "#/components/schemas/Container"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Página da lista"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Containers dos apps (estado, recursos, versão)",
+        "tags": [
+          "Containers"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/deployments": {
+      "get": {
+        "operationId": "deployments_list",
+        "parameters": [
+          {
+            "description": "Itens por página",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Deslocamento",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Texto em qualquer campo",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por app",
+            "in": "query",
+            "name": "app",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por env",
+            "in": "query",
+            "name": "env",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por status",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": [
+                    {
+                      "app": "ativos",
+                      "at": 1790762598243,
+                      "commit": "a91f3c2",
+                      "env": "Produção",
+                      "id": 5,
+                      "image": "ghcr.io/org/ativos@sha256:…",
+                      "note": "",
+                      "origin": "GitHub Actions",
+                      "package": null,
+                      "runtime": "",
+                      "sha256": "",
+                      "status": "Implantado",
+                      "version": "2.4.1"
+                    }
+                  ],
+                  "limit": 50,
+                  "next": null,
+                  "offset": 0,
+                  "total": 1
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    {
+                      "properties": {
+                        "items": {
+                          "items": {
+                            "$ref": "#/components/schemas/Deployment"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Página da lista"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Implantações (histórico e pendentes de aprovação)",
+        "tags": [
+          "Implantações"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      },
+      "post": {
+        "operationId": "deployments_import",
+        "parameters": [
+          {
+            "description": "Ambiente (padrão: producao)",
+            "in": "query",
+            "name": "env",
+            "required": false,
+            "schema": {
+              "enum": [
+                "producao",
+                "staging"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "SHA do commit (CI)",
+            "in": "query",
+            "name": "commit",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "env": {
+                    "enum": [
+                      "producao",
+                      "staging"
+                    ],
+                    "type": "string"
+                  },
+                  "package": {
+                    "contentEncoding": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "package"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "app": "ativos",
+                  "done": false,
+                  "env": "producao",
+                  "id": 1,
+                  "kind": "backup",
+                  "message": "",
+                  "ok": false,
+                  "progress": 0,
+                  "result": null,
+                  "steps": [],
+                  "title": "Backup de Gestão de Ativos"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Importa um pacote .hubapp (multipart: package, env) — roda o pipeline de 7 passos",
+        "tags": [
+          "Implantações"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": false
+      }
+    },
+    "/api/v1/deployments/{id}/approve": {
+      "post": {
+        "operationId": "deployments_approve",
+        "parameters": [
+          {
+            "description": "Identificador",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "app": "ativos",
+                  "done": false,
+                  "env": "producao",
+                  "id": 1,
+                  "kind": "backup",
+                  "message": "",
+                  "ok": false,
+                  "progress": 0,
+                  "result": null,
+                  "steps": [],
+                  "title": "Backup de Gestão de Ativos"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Aprova uma implantação de produção (troca o tráfego)",
+        "tags": [
+          "Implantações"
+        ],
+        "x-hub-destructive": true,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/deployments/{id}/promote": {
+      "post": {
+        "operationId": "deployments_promote",
+        "parameters": [
+          {
+            "description": "Identificador",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "app": "ativos",
+                  "done": false,
+                  "env": "producao",
+                  "id": 1,
+                  "kind": "backup",
+                  "message": "",
+                  "ok": false,
+                  "progress": 0,
+                  "result": null,
+                  "steps": [],
+                  "title": "Backup de Gestão de Ativos"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Promove a versão de staging para produção",
+        "tags": [
+          "Implantações"
+        ],
+        "x-hub-destructive": true,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/deployments/{id}/rollback": {
+      "post": {
+        "operationId": "deployments_rollback",
+        "parameters": [
+          {
+            "description": "Identificador",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "app": "ativos",
+                  "done": false,
+                  "env": "producao",
+                  "id": 1,
+                  "kind": "backup",
+                  "message": "",
+                  "ok": false,
+                  "progress": 0,
+                  "result": null,
+                  "steps": [],
+                  "title": "Backup de Gestão de Ativos"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Volta para a versão anterior",
+        "tags": [
+          "Implantações"
+        ],
+        "x-hub-destructive": true,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/inbox": {
+      "get": {
+        "operationId": "inbox_list",
+        "parameters": [
+          {
+            "description": "Itens por página",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Deslocamento",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Texto em qualquer campo",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por kind",
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por app",
+            "in": "query",
+            "name": "app",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por status",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": [
+                    {
+                      "app": "contratos",
+                      "at": 1790773398576,
+                      "id": "n42",
+                      "kind": "approval",
+                      "status": "pending",
+                      "title": "Aprovar contrato"
+                    }
+                  ],
+                  "limit": 50,
+                  "next": null,
+                  "offset": 0,
+                  "total": 1
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    {
+                      "properties": {
+                        "items": {
+                          "items": {
+                            "$ref": "#/components/schemas/InboxItem"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Página da lista"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Sua Inbox (notificações e pedidos de aprovação)",
+        "tags": [
+          "Inbox"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/inbox/{id}/decide": {
+      "post": {
+        "operationId": "inbox_decide",
+        "parameters": [
+          {
+            "description": "Identificador",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "comment": "ok",
+                "decision": "approve"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/DecideRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "status": "approved"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/DecideResult"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Decide um pedido de aprovação (approve/reject)",
+        "tags": [
+          "Inbox"
+        ],
+        "x-hub-destructive": true,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/jobs/{id}": {
+      "get": {
+        "operationId": "jobs_get",
+        "parameters": [
+          {
+            "description": "Identificador",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "app": "ativos",
+                  "done": false,
+                  "env": "producao",
+                  "id": 1,
+                  "kind": "backup",
+                  "message": "",
+                  "ok": false,
+                  "progress": 0,
+                  "result": null,
+                  "steps": [],
+                  "title": "Backup de Gestão de Ativos"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Situação de um job assíncrono (implantação, backup, restauração)",
+        "tags": [
+          "Implantações"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/logs": {
+      "get": {
+        "operationId": "logs_tail",
+        "parameters": [
+          {
+            "description": "Filtra por app",
+            "in": "query",
+            "name": "app",
+            "required": false,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Janela em minutos",
+            "in": "query",
+            "name": "minutes",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Itens por página",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Deslocamento",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Texto em qualquer campo",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por level",
+            "in": "query",
+            "name": "level",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": [
+                    {
+                      "app": "ativos",
+                      "at": 1790767578173,
+                      "level": "INFO",
+                      "message": "Novo ativo cadastrado",
+                      "source": "app",
+                      "time": "30/09 08:26:18",
+                      "user": "john.doe"
+                    }
+                  ],
+                  "limit": 50,
+                  "next": null,
+                  "offset": 0,
+                  "total": 1
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    {
+                      "properties": {
+                        "items": {
+                          "items": {
+                            "$ref": "#/components/schemas/LogLine"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Página da lista"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Últimas linhas de log (plataforma e apps)",
+        "tags": [
+          "Observabilidade"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/observability/summary": {
+      "get": {
+        "operationId": "observability_summary",
+        "parameters": [
+          {
+            "description": "Janela (padrão 15)",
+            "in": "query",
+            "name": "minutes",
+            "required": false,
+            "schema": {
+              "enum": [
+                15,
+                30,
+                60
+              ],
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Só este app",
+            "in": "query",
+            "name": "app",
+            "required": false,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": [
+                    {
+                      "app": "ativos",
+                      "availability": 1.0,
+                      "env": "producao",
+                      "errors": 0,
+                      "minutes": 15,
+                      "p95_ms": null,
+                      "probes": 1,
+                      "probes_ok": 1,
+                      "requests": 0
+                    }
+                  ],
+                  "minutes": 15
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Observability"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Resumo de tráfego, erros e latência (p95) por app e ambiente",
+        "tags": [
+          "Observabilidade"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/roles": {
+      "get": {
+        "operationId": "roles_list",
+        "parameters": [
+          {
+            "description": "Itens por página",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Deslocamento",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Texto em qualquer campo",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": [
+                    {
+                      "description": "Acesso técnico",
+                      "level": "Alto",
+                      "members": 3,
+                      "name": "Tech Lead",
+                      "permissions": [
+                        true,
+                        false,
+                        true,
+                        true,
+                        true,
+                        false
+                      ]
+                    }
+                  ],
+                  "limit": 50,
+                  "next": null,
+                  "offset": 0,
+                  "total": 1
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    {
+                      "properties": {
+                        "items": {
+                          "items": {
+                            "$ref": "#/components/schemas/Role"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Página da lista"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Funções e permissões",
+        "tags": [
+          "Usuários"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/search": {
+      "get": {
+        "operationId": "search",
+        "parameters": [
+          {
+            "description": "Termo",
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "maxLength": 100,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "groups": [
+                    {
+                      "hits": [
+                        {
+                          "kind": "Aplicações",
+                          "score": 0.6,
+                          "subtitle": "",
+                          "title": "Gestão de Ativos",
+                          "url": "/ativos"
+                        }
+                      ],
+                      "id": "platform",
+                      "label": "Plataforma"
+                    }
+                  ],
+                  "partial": false,
+                  "q": "ativos",
+                  "took_ms": 3,
+                  "total": 1,
+                  "unavailable": []
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResult"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Busca federada (plataforma + apps que você alcança)",
+        "tags": [
+          "Busca"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/status": {
+      "get": {
+        "operationId": "status_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "apps": [
+                    {
+                      "id": "ativos",
+                      "name": "Gestão de Ativos",
+                      "status": "ok"
+                    }
+                  ],
+                  "open_incidents": [],
+                  "overall": "ok"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/StatusPage"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Status page: situação atual de cada app visível e incidentes abertos",
+        "tags": [
+          "Apps"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/storage": {
+      "get": {
+        "operationId": "storage_list",
+        "parameters": [
+          {
+            "description": "Itens por página",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Deslocamento",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Texto em qualquer campo",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por app",
+            "in": "query",
+            "name": "app",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por env",
+            "in": "query",
+            "name": "env",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": [
+                    {
+                      "app": "ativos",
+                      "bucket": "hub-ativos",
+                      "connection": "hub-ativos-producao",
+                      "env": "producao"
+                    }
+                  ],
+                  "limit": 50,
+                  "next": null,
+                  "offset": 0,
+                  "total": 1
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    {
+                      "properties": {
+                        "items": {
+                          "items": {
+                            "$ref": "#/components/schemas/Storage"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Página da lista"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Armazenamentos provisionados pelo hub (bucket, usuário restrito e conexão por app × ambiente)",
+        "tags": [
+          "Conexões"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/tasks": {
+      "get": {
+        "operationId": "tasks_list",
+        "parameters": [
+          {
+            "description": "Itens por página",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Deslocamento",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Texto em qualquer campo",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por app",
+            "in": "query",
+            "name": "app",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por status",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por kind",
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": [
+                    {
+                      "app": "ativos",
+                      "app_name": "Gestão de Ativos",
+                      "attempts": 1,
+                      "cancel_requested": false,
+                      "created_at": 1790762598,
+                      "elapsed_s": 2.0,
+                      "env": "producao",
+                      "error": null,
+                      "id": "6f1c…",
+                      "kind": "import",
+                      "max_attempts": 5,
+                      "progress_done": 40,
+                      "progress_text": "Linhas 400/1000",
+                      "progress_total": 100,
+                      "run_after": 0,
+                      "saga": null,
+                      "status": "running",
+                      "updated_at": 1790762600,
+                      "user": "ana"
+                    }
+                  ],
+                  "limit": 50,
+                  "next": null,
+                  "offset": 0,
+                  "total": 1
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    {
+                      "properties": {
+                        "items": {
+                          "items": {
+                            "$ref": "#/components/schemas/Task"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Página da lista"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Tarefas duráveis dos apps",
+        "tags": [
+          "Tarefas"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/tasks/{app}/{id}/cancel": {
+      "post": {
+        "operationId": "tasks_cancel",
+        "parameters": [
+          {
+            "description": "Id do app (ex.: ativos)",
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Identificador",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "job": {
+                    "attempts": 0,
+                    "id": "6f1c…",
+                    "kind": "import",
+                    "max_attempts": 5,
+                    "status": "queued"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/TaskActionResult"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Cancela uma tarefa",
+        "tags": [
+          "Tarefas"
+        ],
+        "x-hub-destructive": true,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/tasks/{app}/{id}/retry": {
+      "post": {
+        "operationId": "tasks_retry",
+        "parameters": [
+          {
+            "description": "Id do app (ex.: ativos)",
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Identificador",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "job": {
+                    "attempts": 0,
+                    "id": "6f1c…",
+                    "kind": "import",
+                    "max_attempts": 5,
+                    "status": "queued"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/TaskActionResult"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Reprocessa uma tarefa",
+        "tags": [
+          "Tarefas"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/users": {
+      "get": {
+        "operationId": "users_list",
+        "parameters": [
+          {
+            "description": "Itens por página",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Deslocamento",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Texto em qualquer campo",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por email",
+            "in": "query",
+            "name": "email",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por active",
+            "in": "query",
+            "name": "active",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": [
+                    {
+                      "active": true,
+                      "created_at": 1790773398061,
+                      "email": "ana@empresa.com",
+                      "failed_attempts": 0,
+                      "id": "u14739adc7",
+                      "last_login": null,
+                      "local_password": true,
+                      "locked": false,
+                      "locked_until": null,
+                      "must_change_password": false,
+                      "name": "Ana",
+                      "roles": [
+                        "Administrador"
+                      ],
+                      "sso": false
+                    }
+                  ],
+                  "limit": 50,
+                  "next": null,
+                  "offset": 0,
+                  "total": 1
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    {
+                      "properties": {
+                        "items": {
+                          "items": {
+                            "$ref": "#/components/schemas/User"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Página da lista"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Usuários",
+        "tags": [
+          "Usuários"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      },
+      "post": {
+        "operationId": "users_create",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "email": "novo@empresa.com",
+                "must_change_password": true,
+                "name": "Novo Usuário",
+                "password": "SUBSTITUA-por-uma-senha",
+                "roles": [
+                  "Colaborador"
+                ]
+              },
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "active": true,
+                  "created_at": 1790773398061,
+                  "email": "ana@empresa.com",
+                  "failed_attempts": 0,
+                  "id": "u14739adc7",
+                  "last_login": null,
+                  "local_password": true,
+                  "locked": false,
+                  "locked_until": null,
+                  "must_change_password": false,
+                  "name": "Ana",
+                  "roles": [
+                    "Administrador"
+                  ],
+                  "sso": false
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Cria um usuário (senha provisória devolvida uma vez)",
+        "tags": [
+          "Usuários"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": false
+      }
+    },
+    "/api/v1/users/{id}": {
+      "put": {
+        "operationId": "users_update",
+        "parameters": [
+          {
+            "description": "Identificador",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "active": true,
+                "name": "Ana Souza",
+                "roles": [
+                  "Tech Lead"
+                ]
+              },
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "active": true,
+                  "created_at": 1790773398061,
+                  "email": "ana@empresa.com",
+                  "failed_attempts": 0,
+                  "id": "u14739adc7",
+                  "last_login": null,
+                  "local_password": true,
+                  "locked": false,
+                  "locked_until": null,
+                  "must_change_password": false,
+                  "name": "Ana",
+                  "roles": [
+                    "Administrador"
+                  ],
+                  "sso": false
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Altera nome, funções ou situação de um usuário",
+        "tags": [
+          "Usuários"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": false
+      }
+    },
+    "/api/v1/variables": {
+      "get": {
+        "operationId": "variables_list",
+        "parameters": [
+          {
+            "description": "Itens por página",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Deslocamento",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Texto em qualquer campo",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por name",
+            "in": "query",
+            "name": "name",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtra por secret",
+            "in": "query",
+            "name": "secret",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": [
+                    {
+                      "bindings": [
+                        {
+                          "app": "ativos",
+                          "env": "producao"
+                        }
+                      ],
+                      "kind": "publica",
+                      "managed": false,
+                      "name": "LOG_LEVEL",
+                      "value": "info"
+                    }
+                  ],
+                  "limit": 50,
+                  "next": null,
+                  "offset": 0,
+                  "total": 1
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    {
+                      "properties": {
+                        "items": {
+                          "items": {
+                            "$ref": "#/components/schemas/Variable"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Página da lista"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Variáveis de ambiente e vínculos (segredos mascarados)",
+        "tags": [
+          "Variáveis"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    }
+  },
+  "security": [
+    {
+      "bearer": []
+    },
+    {
+      "session": []
+    }
+  ],
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "tags": [
+    {
+      "description": "Catálogo de apps, situação e status page",
+      "name": "Apps"
+    },
+    {
+      "description": "Tráfego, erros, latência e logs",
+      "name": "Observabilidade"
+    },
+    {
+      "description": "Pacotes .hubapp, aprovação, promoção, rollback e jobs",
+      "name": "Implantações"
+    },
+    {
+      "description": "Ciclo de vida dos containers dos apps",
+      "name": "Containers"
+    },
+    {
+      "description": "Backups, restauração e credenciais de backup",
+      "name": "Backups"
+    },
+    {
+      "description": "Tarefas duráveis e sagas dos apps",
+      "name": "Tarefas"
+    },
+    {
+      "description": "Variáveis de ambiente (segredos mascarados)",
+      "name": "Variáveis"
+    },
+    {
+      "description": "Conexões de armazenamento e provisionamento",
+      "name": "Conexões"
+    },
+    {
+      "description": "Usuários e funções",
+      "name": "Usuários"
+    },
+    {
+      "description": "Trilha de auditoria em cadeia",
+      "name": "Auditoria"
+    },
+    {
+      "description": "Notificações e pedidos de aprovação",
+      "name": "Inbox"
+    },
+    {
+      "description": "Busca federada",
+      "name": "Busca"
+    }
+  ]
+}

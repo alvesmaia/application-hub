@@ -1,0 +1,34 @@
+{
+  "db_span_path": "/coletor/escanear",
+  "id": "coletor",
+  "stack": "python",
+  "sections": [
+    "escanear",
+    "folha",
+    "diagnostico"
+  ],
+  "durable": true,
+  "jobs": [],
+  "mutation": {
+    "path": "/coletor/api/v1/reads",
+    "json": {
+      "value": "CONF-{uniq}"
+    },
+    "vary": "value",
+    "ok": [
+      201
+    ],
+    "audit_action": "Leitura registrada"
+  },
+  "job_trigger": null,
+  "heavy": null,
+  "search": {
+    "q": "COL-0001",
+    "min": 1
+  },
+  "locale": {
+    "pt": "Voltar à plataforma",
+    "en": "Back to the platform",
+    "es": "Volver a la plataforma"
+  }
+}

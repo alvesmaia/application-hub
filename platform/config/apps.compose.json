@@ -1,0 +1,251 @@
+[
+  {
+    "manifest": {
+      "id": "ativos",
+      "name": "Gestão de Ativos",
+      "version": "2.5.0",
+      "mode": "fragment",
+      "routes": [
+        "/ativos/*"
+      ],
+      "resources": {
+        "cpu": 1,
+        "memory": "1Gi",
+        "pids": 100
+      },
+      "limits": {
+        "max_upload_mb": 50
+      },
+      "env": [
+        "API_BASE_URL"
+      ],
+      "permissions": [
+        "ativos.read"
+      ],
+      "jobs": [
+        {
+          "name": "ativos.import",
+          "max_duration_s": 3600,
+          "max_attempts": 5
+        },
+        {
+          "name": "ativos.export_xlsx",
+          "max_duration_s": 1800,
+          "max_attempts": 3
+        }
+      ],
+      "sdk": "1.0",
+      "runtime": {
+        "stack": "python"
+      },
+      "stack": {
+        "language": "Python 3.12",
+        "framework": "FastAPI",
+        "sdk": "hub-sdk-python 1.0",
+        "db": "PostgreSQL 16",
+        "libs": [
+          "python-calamine",
+          "openpyxl",
+          "asyncpg"
+        ]
+      }
+    },
+    "upstream": "http://hub-app-ativos:8080",
+    "display": {
+      "description": "Controle e acompanhe os ativos da organização.",
+      "color": "#e0f2f1",
+      "ink": "#0f766e",
+      "icon": "box",
+      "short": "Ativos"
+    }
+  },
+  {
+    "manifest": {
+      "id": "fornecedores",
+      "name": "Rede de Fornecedores",
+      "version": "1.9.0",
+      "mode": "fragment",
+      "routes": [
+        "/fornecedores/*"
+      ],
+      "limits": {
+        "max_upload_mb": 25
+      },
+      "env": [
+        "API_BASE_URL"
+      ],
+      "permissions": [
+        "fornecedores.read"
+      ],
+      "sdk": "1.0",
+      "runtime": {
+        "stack": "python"
+      },
+      "stack": {
+        "language": "Python 3.12",
+        "framework": "FastAPI",
+        "sdk": "hub-sdk-python 1.0",
+        "db": "MinIO (S3)",
+        "libs": [
+          "asyncpg"
+        ]
+      }
+    },
+    "upstream": "http://hub-app-fornecedores:8080",
+    "display": {
+      "description": "Gerencie parceiros, avaliações e contratos em um só lugar.",
+      "color": "#f6e4dc",
+      "ink": "#9a4530",
+      "icon": "groups",
+      "short": "Fornecedores"
+    }
+  },
+  {
+    "manifest": {
+      "id": "servicos",
+      "name": "Central de Serviços",
+      "version": "3.2.0",
+      "mode": "fragment",
+      "routes": [
+        "/servicos/*"
+      ],
+      "notify_roles": [
+        "Administrador"
+      ],
+      "resources": {
+        "cpu": 1,
+        "memory": "1Gi",
+        "pids": 100
+      },
+      "env": [
+        "API_BASE_URL"
+      ],
+      "permissions": [
+        "servicos.read"
+      ],
+      "sdk": "1.0",
+      "runtime": {
+        "stack": "python"
+      },
+      "stack": {
+        "language": "Python 3.12",
+        "framework": "FastAPI",
+        "sdk": "hub-sdk-python 1.0",
+        "db": "PostgreSQL 16",
+        "libs": [
+          "asyncpg"
+        ]
+      }
+    },
+    "upstream": "http://hub-app-servicos:8080",
+    "display": {
+      "description": "Atendimento interno, solicitações e aprovações em um só lugar.",
+      "color": "#e3f1df",
+      "ink": "#2d6a3e",
+      "icon": "clipboard",
+      "short": "Serviços"
+    }
+  },
+  {
+    "manifest": {
+      "id": "contratos",
+      "name": "Gestão de Contratos",
+      "version": "1.0.0",
+      "mode": "fragment",
+      "routes": [
+        "/contratos/*"
+      ],
+      "resources": {
+        "cpu": 1,
+        "memory": "1Gi",
+        "pids": 100
+      },
+      "limits": {
+        "max_upload_mb": 50
+      },
+      "permissions": [
+        "contratos.read"
+      ],
+      "jobs": [
+        {
+          "name": "contratos.import",
+          "max_duration_s": 3600,
+          "max_attempts": 5
+        },
+        {
+          "name": "contratos.export_xlsx",
+          "max_duration_s": 1800,
+          "max_attempts": 3
+        }
+      ],
+      "sdk": "1.0",
+      "runtime": {
+        "stack": "python"
+      },
+      "stack": {
+        "language": "Python 3.12",
+        "framework": "FastAPI",
+        "sdk": "hub-sdk-python 1.0",
+        "db": "PostgreSQL 16",
+        "libs": [
+          "python-calamine",
+          "openpyxl",
+          "asyncpg"
+        ]
+      }
+    },
+    "upstream": "http://hub-app-contratos:8080",
+    "display": {
+      "description": "Contratos, vigências e valores acordados com fornecedores.",
+      "color": "#f5e4e8",
+      "ink": "#8b1e3f",
+      "icon": "file",
+      "short": "Contratos"
+    }
+  },
+  {
+    "manifest": {
+      "id": "coletor",
+      "name": "Coletor",
+      "version": "1.0.0",
+      "mode": "fragment",
+      "routes": [
+        "/coletor/*"
+      ],
+      "resources": {
+        "cpu": 1,
+        "memory": "384Mi",
+        "pids": 100
+      },
+      "limits": {
+        "max_upload_mb": 8
+      },
+      "permissions": [
+        "coletor.read"
+      ],
+      "sdk": "1.0",
+      "runtime": {
+        "stack": "python"
+      },
+      "stack": {
+        "language": "Python 3.12",
+        "framework": "FastAPI",
+        "sdk": "hub-sdk-python 1.0",
+        "db": "PostgreSQL 16",
+        "libs": [
+          "python-barcode",
+          "segno",
+          "ppf-datamatrix"
+        ]
+      }
+    },
+    "upstream": "http://hub-app-coletor:8080",
+    "display": {
+      "description": "Inventário, recebimento e consulta pelo celular com leitor de código de barras.",
+      "color": "#ffc20e",
+      "ink": "#1d2125",
+      "icon": "box",
+      "short": "Coletor"
+    }
+  }
+]

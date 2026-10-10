@@ -1,0 +1,71 @@
+[project]
+name = "hub"
+version = "0.2.0"
+license = "Apache-2.0"
+description = "Application Hub (stack Python) - F0"
+requires-python = ">=3.12"
+dependencies = [
+    "asyncpg>=0.31.0",
+    "argon2-cffi>=23.1",
+    "cryptography>=50.0.2",
+    "fastapi>=0.115",
+    "jinja2>=3.1",
+    "httpx>=0.27",
+    "uvicorn>=0.30",
+    "websockets>=13",
+    "pydantic>=2.13.5",
+    "pydantic-settings>=2.15.0",
+    "docker>=7.2.0",
+    "python-multipart>=0.0.32",
+    "tzdata>=2024.1",
+    "markdown-it-py>=4.2.0",
+    "pygments>=2.18",
+    "pymysql>=1.1",
+    "python-tds>=1.16",
+]
+
+[project.scripts]
+hub-check = "hub_check:main"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.6",
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+    "httpx>=0.27",
+    "asyncpg-stubs>=0.31.3",
+    "ty>=0.0.84",
+    "pytest-cov>=7",
+    "jsonschema>=4.26.0",
+    "pre-commit>=4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+include = ["hub", "hub_check.py"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "ASYNC", "S", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003", "E501", "ASYNC109"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S105", "S106", "S311"]
+
+[tool.ty.rules]
+all = "error"
+
+[tool.ty.environment]
+python-version = "3.12"
+extra-paths = ["cli"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+markers = ["docker: usa o daemon Docker real (DOCKER_AVAILABLE=1)"]
+testpaths = ["tests"]

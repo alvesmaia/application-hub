@@ -1,0 +1,41 @@
+{
+  "id": "servicos",
+  "stack": "python",
+  "sections": [
+    "dashboard",
+    "requests",
+    "approvals",
+    "knowledge",
+    "settings"
+  ],
+  "durable": true,
+  "jobs": [],
+  "mutation": {
+    "path": "/servicos/requests",
+    "form": {
+      "title": "Chamado de conformidade {uniq}",
+      "category": "Tecnologia",
+      "priority": "Normal",
+      "description": "Aberto pela suíte de conformidade ({uniq})."
+    },
+    "vary": "description",
+    "ok": [
+      200,
+      201
+    ],
+    "audit_action": "Chamado aberto"
+  },
+  "job_trigger": null,
+  "heavy": {
+    "path": "/servicos/reports/export.csv",
+    "parallel": 6,
+    "expect_429": false
+  },
+  "search": {
+    "q": "SD-",
+    "min": 0
+  },
+  "approvals": {
+    "unknown": "sd-999999999"
+  }
+}

@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Atalho para a CLI Python: hub pack|mcp|dev
+exec uv run --quiet --project "$(dirname "$0")" hub "$@"

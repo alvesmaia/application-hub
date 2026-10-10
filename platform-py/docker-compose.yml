@@ -1,0 +1,129 @@
+# Pilha do hub. Nomes de projeto/contêineres/volumes/redes/imagens, porta e faixa das redes são configuráveis
+# (padrões = instalação original): HUB_PROJECT (app-hub), HUB_PORT (8090), HUB_BIND (127.0.0.1),
+# HUB_SUBNET (10.231 → redes 10.231.<n>.0/24 dos apps). Duas instâncias no mesmo host = HUB_PROJECT, HUB_PORT e
+# HUB_SUBNET distintos (ver scripts/install.sh). Apps de exemplo: docker-compose.apps.yml + perfil `demo-apps`.
+name: ${HUB_PROJECT:-app-hub}
+
+services:
+  app-hub-web:
+    image: ${HUB_PROJECT:-app-hub}-web
+    build:
+      context: ..
+      dockerfile: platform-py/Dockerfile
+      args:
+        MC_IMAGE: ${HUB_MC_IMAGE:-app-hub-mc:0.10.0} # construir antes: scripts/install.sh (ou infra/minio/Dockerfile, alvo mc)
+    container_name: ${HUB_PROJECT:-app-hub}-web
+    labels: { hub.py: "1" }
+    mem_limit: 1g # backups e restaurações montam o pacote em memória (como o hub Rust: 1 GiB)
+    restart: unless-stopped
+    ports:
+      - "${HUB_BIND:-127.0.0.1}:${HUB_PORT:-8090}:8090"
+      - "[::1]:${HUB_PORT:-8090}:8090"
+    environment:
+      HUB_PLATFORM_DIR: /platform
+      HUB_APPS_FILE: /platform/config/apps.compose.json
+      HUB_DB_URL: postgresql://hub:${APP_HUB_DB_PASSWORD:-hubpy-dev}@app-hub-db:5432/hub
+      HUB_STATE_DB_URL: postgresql://hub:${APP_HUB_DB_PASSWORD:-hubpy-dev}@app-hub-db:5432/hub
+      HUB_DATA_DIR: /data
+      HUB_CONTAINER_SOCKET: /var/run/docker.sock
+      # Contêineres desta instância (o hub só opera os do seu prefixo; padrão app-hub-app-*).
+      HUB_CONTAINER_PREFIX: ${HUB_PROJECT:-app-hub}-app-
+      HUB_BACKUP_DB_CONTAINER: ${HUB_PROJECT:-app-hub}-app-db
+      HUB_APP_NETWORK: ${HUB_PROJECT:-app-hub}_default
+      HUB_APP_ENV_FILE: /config/app-env.json # valores da pilha Python (app-hub-app-db, app-hub-objstore); a carga só cria o que falta
+      # Broker de armazenamento (Administração › Conexões): porta própria, só /_hub/storage/*, alcançada pelos
+      # apps na rede hub-app-<id> (não publicada); cada token só vale a partir da rede do seu app.
+      HUB_BROKER_ADDR: 0.0.0.0:8081
+      HUB_BROKER_PUBLIC_URL: http://app-hub-web:8081
+      HUB_BROKER_APP_CIDRS: "ativos=${HUB_SUBNET:-10.231}.1.0/24,fornecedores=${HUB_SUBNET:-10.231}.2.0/24,servicos=${HUB_SUBNET:-10.231}.3.0/24,coletor=${HUB_SUBNET:-10.231}.5.0/24"
+      # Object store da plataforma (MinIO) para «Provisionar armazenamento».
+      HUB_S3_ADMIN_URL: http://hubadmin:${APP_HUB_OBJSTORE_PASSWORD:-hubpy-objstore-dev}@app-hub-objstore:9000
+    # Sem --reload: o hub publicado não reinicia quando o código em disco muda (recarga só no modo dev).
+    command: ["uvicorn", "hub.main:app", "--host", "0.0.0.0", "--port", "8090"]
+    env_file:
+      - path: ./.dev.env
+        required: false
+    volumes:
+      - app-hub-data:/data
+      - ./app-env.json:/config/app-env.json:ro
+      # Socket do daemon (aprovado pelo dono, como na pilha Rust): o hub só opera containers `app-hub-*`
+      # (guarda em hub/ops/runtime.py); nunca hub-*, apphub-devtunnel nem containers de fora do projeto.
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Linux: o socket costuma ser root:docker; exporte DOCKER_GID=$(stat -c %g /var/run/docker.sock).
+    group_add: ["${DOCKER_GID:-0}"]
+    depends_on: [app-hub-db, app-hub-objstore]
+    networks:
+      - default
+      - hub-app-ativos
+      - hub-app-coletor
+      - hub-app-fornecedores
+      - hub-app-servicos
+
+  app-hub-db:
+    image: postgres:16-alpine
+    container_name: ${HUB_PROJECT:-app-hub}-db
+    labels: { hub.py: "1" }
+    mem_limit: 256m
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hub
+      POSTGRES_PASSWORD: ${APP_HUB_DB_PASSWORD:-hubpy-dev}
+      POSTGRES_DB: hub
+    volumes:
+      - app-hub-db-data:/var/lib/postgresql/data
+
+  # MinIO leve (AGPL-3.0, compilado do código-fonte oficial em infra/minio/Dockerfile; ver NOTICE).
+  app-hub-objstore:
+    image: ${HUB_MINIO_IMAGE:-app-hub-minio:0.10.0}
+    build:
+      context: ./infra/minio
+      target: minio
+    container_name: ${HUB_PROJECT:-app-hub}-objstore
+    labels: { hub.py: "1" }
+    command: ["server", "/data"]
+    mem_limit: 256m
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: hubadmin
+      MINIO_ROOT_PASSWORD: ${APP_HUB_OBJSTORE_PASSWORD:-hubpy-objstore-dev}
+      MINIO_BROWSER: "off"
+    volumes:
+      - app-hub-objstore-data:/data
+    security_opt: [no-new-privileges]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      start_period: 5s
+      retries: 10
+
+volumes:
+  app-hub-db-data:
+    name: ${HUB_PROJECT:-app-hub}-db-data
+    labels: { hub.py: "1" }
+  app-hub-data:
+    name: ${HUB_PROJECT:-app-hub}-data
+    labels: { hub.py: "1" }
+  app-hub-objstore-data:
+    name: ${HUB_PROJECT:-app-hub}-objstore-data
+    labels: { hub.py: "1" }
+
+# Uma rede por app (o broker reconhece o app pela faixa = HUB_BROKER_APP_CIDRS). Existem mesmo sem os apps de
+# exemplo, para que apps instalados depois entrem nelas.
+networks:
+  hub-app-ativos:
+    name: ${HUB_PROJECT:-app-hub}-app-ativos
+    driver: bridge
+    ipam: { config: [{ subnet: "${HUB_SUBNET:-10.231}.1.0/24" }] }
+  hub-app-fornecedores:
+    name: ${HUB_PROJECT:-app-hub}-app-fornecedores
+    driver: bridge
+    ipam: { config: [{ subnet: "${HUB_SUBNET:-10.231}.2.0/24" }] }
+  hub-app-servicos:
+    name: ${HUB_PROJECT:-app-hub}-app-servicos
+    driver: bridge
+    ipam: { config: [{ subnet: "${HUB_SUBNET:-10.231}.3.0/24" }] }
+  hub-app-coletor:
+    name: ${HUB_PROJECT:-app-hub}-app-coletor
+    driver: bridge
+    ipam: { config: [{ subnet: "${HUB_SUBNET:-10.231}.5.0/24" }] }

@@ -1,0 +1,246 @@
+[
+  {
+    "name": "DATABASE_URL_ATIVOS",
+    "kind": "connection_string",
+    "inject_as": "HUB_DB_URL",
+    "value": "postgresql://hub:hubpy-app-dev@app-hub-app-db:5432/ativos",
+    "bindings": [
+      {
+        "app": "ativos",
+        "env": "producao"
+      }
+    ]
+  },
+  {
+    "name": "DATABASE_URL_SERVICOS",
+    "kind": "connection_string",
+    "inject_as": "HUB_DB_URL",
+    "value": "postgresql://hub:hubpy-app-dev@app-hub-app-db:5432/servicos",
+    "bindings": [
+      {
+        "app": "servicos",
+        "env": "producao"
+      }
+    ]
+  },
+  {
+    "name": "HUB_INTERNAL_TOKEN_ATIVOS",
+    "kind": "secreta",
+    "inject_as": "HUB_INTERNAL_TOKEN",
+    "value": "ativos-token-interno-demo-7f3a91",
+    "bindings": [
+      {
+        "app": "ativos",
+        "env": "staging"
+      },
+      {
+        "app": "ativos",
+        "env": "producao"
+      }
+    ]
+  },
+  {
+    "name": "HUB_INTERNAL_TOKEN_FORNECEDORES",
+    "kind": "secreta",
+    "inject_as": "HUB_INTERNAL_TOKEN",
+    "value": "fornecedores-token-interno-demo-2c8e44",
+    "bindings": [
+      {
+        "app": "fornecedores",
+        "env": "staging"
+      },
+      {
+        "app": "fornecedores",
+        "env": "producao"
+      }
+    ]
+  },
+  {
+    "name": "HUB_INTERNAL_TOKEN_SERVICOS",
+    "kind": "secreta",
+    "inject_as": "HUB_INTERNAL_TOKEN",
+    "value": "servicos-token-interno-demo-b51d07",
+    "bindings": [
+      {
+        "app": "servicos",
+        "env": "staging"
+      },
+      {
+        "app": "servicos",
+        "env": "producao"
+      }
+    ]
+  },
+  {
+    "name": "HUB_S3_ENDPOINT",
+    "kind": "publica",
+    "value": "http://app-hub-objstore:9000",
+    "bindings": [
+      {
+        "app": "fornecedores",
+        "env": "staging"
+      },
+      {
+        "app": "fornecedores",
+        "env": "producao"
+      }
+    ]
+  },
+  {
+    "name": "HUB_S3_BUCKET",
+    "kind": "publica",
+    "value": "fornecedores",
+    "bindings": [
+      {
+        "app": "fornecedores",
+        "env": "staging"
+      },
+      {
+        "app": "fornecedores",
+        "env": "producao"
+      }
+    ]
+  },
+  {
+    "name": "HUB_S3_ACCESS_KEY",
+    "kind": "publica",
+    "value": "hubadmin",
+    "bindings": [
+      {
+        "app": "fornecedores",
+        "env": "staging"
+      },
+      {
+        "app": "fornecedores",
+        "env": "producao"
+      }
+    ]
+  },
+  {
+    "name": "HUB_S3_SECRET_KEY",
+    "kind": "secreta",
+    "value": "hubpy-objstore-dev",
+    "bindings": [
+      {
+        "app": "fornecedores",
+        "env": "staging"
+      },
+      {
+        "app": "fornecedores",
+        "env": "producao"
+      }
+    ]
+  },
+  {
+    "name": "HUB_HEAVY_MAX",
+    "kind": "publica",
+    "value": "2",
+    "bindings": [
+      {
+        "app": "ativos",
+        "env": "staging"
+      },
+      {
+        "app": "ativos",
+        "env": "producao"
+      }
+    ]
+  },
+  {
+    "name": "HUB_JOB_LEASE_S",
+    "kind": "publica",
+    "value": "15",
+    "bindings": [
+      {
+        "app": "ativos",
+        "env": "staging"
+      },
+      {
+        "app": "ativos",
+        "env": "producao"
+      }
+    ]
+  },
+  {
+    "name": "HUB_DEMO_E2E_HOSTILE",
+    "kind": "publica",
+    "value": "1",
+    "bindings": [
+      {
+        "app": "ativos",
+        "env": "staging"
+      },
+      {
+        "app": "ativos",
+        "env": "producao"
+      },
+      {
+        "app": "servicos",
+        "env": "staging"
+      },
+      {
+        "app": "servicos",
+        "env": "producao"
+      }
+    ]
+  },
+  {
+    "name": "HUB_SESSION_CAPACITY",
+    "kind": "publica",
+    "value": "2000",
+    "bindings": [
+      {
+        "app": "servicos",
+        "env": "staging"
+      },
+      {
+        "app": "servicos",
+        "env": "producao"
+      }
+    ]
+  },
+  {
+    "name": "DATABASE_URL_COLETOR",
+    "kind": "connection_string",
+    "inject_as": "HUB_DB_URL",
+    "managed": true,
+    "value": "postgresql://hub:hubpy-app-dev@app-hub-app-db:5432/coletor",
+    "bindings": [
+      {
+        "app": "coletor",
+        "env": "producao"
+      }
+    ]
+  },
+  {
+    "name": "HUB_INTERNAL_TOKEN_COLETOR",
+    "kind": "secreta",
+    "inject_as": "HUB_INTERNAL_TOKEN",
+    "value": "coletor-token-interno-demo-8e1b35",
+    "bindings": [
+      {
+        "app": "coletor",
+        "env": "staging"
+      },
+      {
+        "app": "coletor",
+        "env": "producao"
+      }
+    ]
+  },
+  {
+    "name": "COLETOR_HUB_URL",
+    "kind": "publica",
+    "value": "http://app-hub-web:8090",
+    "bindings": [
+      {
+        "app": "coletor",
+        "env": "staging"
+      },
+      {
+        "app": "coletor",
+        "env": "producao"
+      }
+    ]
+  }
+]

@@ -1,0 +1,13 @@
+{#- Sessão em andamento: o código atual em tamanho grande, progresso, situação, controles e resultados. -#}
+<section class="col-card col-queue" data-col-queue data-col-status="{{ sess.status }}" data-col-pos="{{ shown }}" data-col-expected="{{ cur.value }}" data-col-order="{{ sess.order() | join(',') }}" aria-labelledby="col-queue-title">
+<div class="col-queue-head"><h2 id="col-queue-title" class="col-section-title">{{ t('Sessão de teste') }}</h2><span class="col-queue-pos" data-col-progress>{{ t('{a} de {b}', a=shown, b=sess.total) }}</span></div>
+<progress class="col-progress" max="{{ sess.total }}" value="{{ sess.pos }}" aria-label="{{ t('Progresso da sessão') }}"></progress>
+{% if sess.status == 'paused' %}<p class="col-queue-flag col-flag-paused" role="status" data-col-flag="paused">{{ t('Sessão parada — toque em Continuar para seguir.') }}</p>{% endif %}
+<figure class="col-code-card col-code-big" data-col-current="{{ cur.value }}" data-col-format="{{ cur.fmt }}">{{ code_svg(cur.fmt, cur.value, module_px=6, label=cur.label) }}<figcaption><strong>{{ cur.label }}</strong><span class="col-mono">{{ cur.value }} · {{ cur_fmt }}</span></figcaption></figure>
+{% if sess.matched %}<p class="col-queue-flag col-flag-ok" role="status" data-col-flag="ok">{{ t('Lido certo — toque em Próximo.') }}</p>
+{% elif sess.last_error %}<p class="col-queue-flag col-flag-err" role="status" data-col-flag="erro">{{ t('Leu “{r}” — não é este código. Leia de novo.', r=sess.last_error.read) }}</p>
+{% else %}<p class="col-queue-flag" role="status" data-col-flag="wait">{{ t('Aguardando a leitura no celular…') }}</p>{% endif %}
+{% set tela = 'folha' %}{% set target = '#col-folha-state' %}{% include "_session_controls.html" %}
+<form class="col-auto" method="post" action="{{ base }}/sessao/auto" data-hub-target="#col-folha-state"><input type="hidden" name="tela" value="folha"><label class="col-check"><input type="checkbox" name="auto" value="1" data-hub-post="{{ base }}/sessao/auto" data-hub-target="#col-folha-state"{% if sess.auto %} checked{% endif %}><span>{{ t('Avançar automaticamente após a leitura') }}</span></label></form>
+{% include "_results.html" %}
+</section>

@@ -1,0 +1,15 @@
+{% extends "admin_base.html" %}
+{% block body %}
+<div id="admin-meta" hidden="" data-admin-meta="{{ meta }}"></div>
+<div class="log-console" data-log-console=""><div class="log-toolbar">
+<label class="log-field"><span>Aplicação</span><select data-log-app="">{% for v, l in apps %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select></label>
+<label class="log-field"><span>Intervalo</span><select data-log-range="">{% for v, l in ranges %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select></label>
+<label class="log-field"><span>Nível</span><select data-log-level="">{% for v, l in levels %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select></label>
+<label class="log-field"><span>Origem</span><select data-log-source="">{% for v, l in sources %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select></label>
+<label class="log-field log-field-user"><span>Usuário</span><input type="text" data-log-user="" placeholder="Filtrar por usuário..."/></label>
+<button type="button" class="secondary-button" data-log-query="">{{ icon('search')|safe }} Buscar</button><div class="log-toolbar-spacer"></div>
+<button type="button" class="log-live-btn" data-log-live="" aria-pressed="false">{{ icon('play')|safe }}<span>Tempo real</span></button>
+<button type="button" class="secondary-button" data-log-clear="">{{ icon('trash')|safe }} Limpar</button></div>
+<div class="log-window"><div class="log-window-bar"><span class="log-window-title">log-stream — app-platform</span><span class="log-status" data-log-status=""><i class="log-status-dot"></i>Parado</span></div>
+<div class="log-terminal" data-log-terminal="" role="log" aria-live="polite">{% for l in lines %}<div class="log-line"><span class="log-time">{{ l.time }}</span><span class="{{ l.css }}">{{ l.level }}</span><span class="log-app">{{ l.app }}</span><span class="log-user">{{ l.user }}</span><code class="log-msg">{{ l.message }}</code></div>{% endfor %}{% if not lines %}<div class="log-empty">Ainda não há registros reais para estes filtros. Eles aparecem quando alguém usa os apps, entra na plataforma ou quando os contêineres escrevem na saída.</div>{% endif %}</div></div></div>
+{% endblock %}

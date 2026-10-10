@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ t('shell.home') }} · {{ brand }}{% endblock %}
+{% block main %}
+<div class="page-container">
+<div class="app-page-header page-head"><div class="page-head-text"><div class="eyebrow">{{ t('shell.home') }}</div><h1 class="page-title">{{ greeting }}</h1><p class="page-subtitle">{{ subtitle }}</p></div><div class="page-actions admin-actions"><a class="secondary-button" href="/applications">{{ t('home.see_apps') }}</a><button type="button" class="primary-button" data-home-customize="" aria-pressed="false">{{ t('home.customize') }}</button></div></div>
+<div class="hub-home-editor" data-home-editor="" hidden data-layout="{{ layout_json }}" data-layout-source="{{ layout_source }}">
+<p class="obs-muted" id="home-drag-hint">{{ t('js.drag_hint') }}</p>
+<div class="hub-home-editor-row">
+<div class="hub-home-editor-group">
+<span class="hub-home-add" data-home-add-wrap=""><label class="visually-hidden" for="home-add">{{ t('home.add_widget') }}</label><select id="home-add" class="hub-select" data-home-add="">{% for id, label in widget_options %}<option value="{{ id }}">{{ label }}</option>{% endfor %}</select><button type="button" class="secondary-button" data-home-add-btn="">{{ t('home.add_widget') }}</button></span>
+<span data-home-add-empty="" hidden></span>
+<button type="button" class="secondary-button" data-home-reset="">{{ t('home.reset') }}</button>
+</div>
+<div class="hub-home-editor-group">
+<button type="button" class="secondary-button" data-home-cancel="">{{ t('home.cancel') }}</button>
+<button type="button" class="primary-button" data-home-done="">{{ t('home.save') }}</button>
+</div>
+</div>
+</div>
+<div class="hub-widgets" data-home-widgets="" aria-describedby="home-drag-hint">
+{% for w in widgets %}<section class="panel hub-widget" data-widget="{{ w.id }}"{% if w.hidden %} hidden{% endif %} aria-labelledby="w-{{ w.id }}">
+<header class="hub-widget-head"><h2 id="w-{{ w.id }}">{{ w.title }}</h2><div class="hub-widget-tools" data-widget-tools="" hidden><span class="hub-grip" aria-hidden="true">{{ icon('grip')|safe }}</span><button type="button" class="icon-button" data-widget-up="" aria-label="{{ t('home.move_up') }} · {{ w.title }}">↑</button><button type="button" class="icon-button" data-widget-down="" aria-label="{{ t('home.move_down') }} · {{ w.title }}">↓</button><button type="button" class="icon-button" data-widget-remove="" aria-label="{{ t('home.remove') }} · {{ w.title }}">✕</button></div></header>
+{% if w.id == 'favorites' %}{% if not favs %}<p class="obs-muted">{{ t('widget.favorites_empty') }}</p>{% endif %}<div class="hub-fav-grid">{% for c in favs %}<a class="hub-fav" href="/apps/{{ c.id }}"><span class="app-icon" style="{{ c.icon_style }}">{{ icon(c.icon)|safe }}</span><span>{{ c.name }}</span></a>{% endfor %}</div>{% endif %}
+{% if w.id == 'recents' %}{% if not recents %}<p class="obs-muted">{{ t('widget.recents_empty') }}</p>{% endif %}<ul class="hub-list">{% for path, label, when in recents %}<li><a href="{{ path }}">{{ label }}</a><small>{{ when }}</small></li>{% endfor %}</ul>{% endif %}
+{% if w.id == 'inbox' %}{% if not inbox %}<p class="obs-muted">{{ t('shell.inbox_empty') }}</p>{% endif %}<ul class="hub-list">{% for e in inbox %}<li class="{{ '' if e.read else 'unread' }}"><a href="{{ e.link or '/inbox' }}">{{ e.title }}</a><small>{{ e.app_name }} · {{ e.when }}</small></li>{% endfor %}</ul><a class="open-link" href="/inbox">{{ t('shell.inbox_all') }} ({{ unread }})</a>{% endif %}
+{% if w.id == 'status' %}<ul class="hub-list">{% for id, n, label, css in states %}<li><a href="/apps/{{ id }}">{{ n }}</a><span class="{{ css }}">{{ label }}</span></li>{% endfor %}</ul><a class="open-link" href="/status">{{ t('shortcut.status') }}</a>{% endif %}
+{% if w.id == 'onboarding' %}<div class="hub-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ progress_pct }}" aria-label="{{ progress_label }}"><span class="hub-progress-bar" data-pct="{{ progress_pct }}"></span></div><p class="obs-muted">{{ progress_label }}</p>{% if all_done %}<p>{{ t('widget.onboarding_done') }}</p>{% endif %}<ul class="hub-checklist">{% for s in steps %}<li class="{{ 'done' if s.done else '' }}" data-step="{{ s.key }}"><span class="hub-check" aria-hidden="true">{{ '✓' if s.done else '' }}</span>{% if s.link.startswith('#') %}<button type="button" class="linklike" data-step-action="{{ s.link }}">{{ s.label }}</button>{% else %}<a href="{{ s.link }}">{{ s.label }}</a>{% endif %}<span class="visually-hidden">{{ ' (concluído)' if s.done else '' }}</span></li>{% endfor %}</ul><button type="button" class="secondary-button" data-hub-tour-start="">{{ t('shell.tour') }}</button>{% endif %}
+{% if w.id == 'shortcuts' %}<ul class="hub-list hub-shortcuts"><li><a href="/applications">{{ icon('box')|safe }} {{ t('shortcut.catalog') }}</a></li><li><a href="/inbox">{{ icon('inbox')|safe }} {{ t('shortcut.inbox') }}</a></li><li><a href="/status">{{ icon('check')|safe }} {{ t('shortcut.status') }}</a></li><li><button type="button" class="linklike" data-hub-palette-open="">{{ icon('search')|safe }} {{ t('shortcut.search') }}</button></li>{% if analytics %}<li><a href="/admin#uso">{{ icon('chart')|safe }} {{ t('shortcut.analytics') }}</a></li>{% endif %}</ul>{% endif %}
+</section>
+{% endfor %}</div>
+</div>
+{% endblock %}

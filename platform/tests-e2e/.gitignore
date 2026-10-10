@@ -1,0 +1,6 @@
+node_modules/
+.auth/
+reports/
+test-results/
+.work/
+test-results-visual/

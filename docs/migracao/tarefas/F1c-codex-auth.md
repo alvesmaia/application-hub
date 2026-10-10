@@ -1,0 +1,14 @@
+Use ponytail (minimal code) and caveman (short report). Use ai-memory MCP for context if useful.
+
+TASK F1c — port `platform/crates/hub-auth` (and the auth/session parts of `platform/apps/hub-web/src/{auth.rs,auth_http.rs,me_tokens.rs}`) to Python in `platform-py/hub/auth/` (worktree = current dir, branch stack/python). Read `docs/PLANO-MIGRACAO-PYTHON.md` and `docs/migracao/status/{F0,F1a,F1b}.md` first. Reuse `hub/state` (F1a) and `hub/vault` (F1a).
+
+Scope:
+1. Users/roles/permissions model and store with the SAME on-disk format as the Rust `auth.json` (and file-coherence lock/generation with hub/state when HUB_STATE_DB_URL is set), so the Python hub can read the Rust data dir.
+2. Password hashing compatible with the Rust hashes (read which algorithm/params hub-auth uses — likely Argon2id; use `argon2-cffi`), password policy, login with e-mail or username (unique local part), login rate limiter (per-IP via trusted proxy, shared via hub/state).
+3. Sessions: cookie name/attributes like Rust (HttpOnly, SameSite, Secure when https), rotation on login (session fixation), TTL, logout, state-DB down → 503 (not 401).
+4. RBAC: port `rbac` (OWNED_ACTIONS, owned_surface, token_covers), role → actions, route guards as FastAPI dependencies.
+5. API tokens (personal `hubt_…` with scopes, expiry, max per user; stored hashed), resolution of `Authorization: Bearer`.
+6. Bootstrap/demo users exactly like Rust: HUB_DEMO_USERS=1 → admin/operador/leitor (display names "Administrador", "Operador", "Leitor"), password from HUB_DEMO_PASSWORD (default "admin"/"operador"/"leitor"), reset on startup, no bootstrap admin in demo mode; HUB_BOOTSTRAP_ADMIN_EMAIL/PASSWORD flow for production with policy check or generated one-time password file + forced change.
+7. Wire into the app: login page + password change page (credential pages: top-level, COOP, frame-ancestors none — markup copied from the running Rust hub at http://localhost:8080/login), replace the fixed demo admin in shell/gateway (`x-hub-user` from the session), CIDR control-plane guard + trusted proxies (port `access.rs`).
+Tests: port the Rust hub-auth tests (unit) + golden test that a Rust-generated password hash and session/token hash verify in Python; integration tests with httpx TestClient (login ok/fail, username login, rate limit, session rotation, logout, RBAC denial → 403 page inside shell, bearer token scopes).
+Rules: `platform-py/scripts/check.sh` must pass (ruff, ruff format, mypy --strict, pytest). Throwaway Postgres if needed: `docker run -d --rm --name hubpy-testdb -e POSTGRES_PASSWORD=t -p 127.0.0.1:55432:5432 --memory 256m --label hub.py=1 postgres:16-alpine` (stop at the end). Never touch the Rust hub dir or its containers (hub-*, apphub-devtunnel). Do not edit hub/gateway beyond wiring the identity. Commit with prefix `feat(python): F1c` and trailer `Co-Authored-By: Codex <noreply@openai.com>`, `git push`. Status: `docs/migracao/status/F1c.md`.

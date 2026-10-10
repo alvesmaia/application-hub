@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ app.name }} · {{ brand }}{% endblock %}
+{% block main %}
+<div class="workspace workspace-no-sidebar" id="workspace">
+<section class="workspace-content">
+<div class="app-loading" role="status" aria-busy="true" aria-label="Carregando" data-loader-name="{{ app.name }}">
+<div class="loader-heading"><span class="loader-mark" style="color:{{ app.ink }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg></span><div><span class="loader-app-name">{{ app.name }}</span><span class="loader-message">{{ t('shell.preparing') }}</span></div><strong class="loader-percentage" aria-hidden="true">0%</strong></div>
+<div class="loader-track" role="progressbar" aria-label="Carregando" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="loader-fill"></span></div>
+<div class="loader-footer"><span>{{ t('shell.loading_ws') }}</span><span>{{ t('shell.few_seconds') }}</span></div>
+</div>
+</section>
+</div>
+{% endblock %}
+{% block after_main %}
+<script src="/assets/hub-safe.js"></script>
+<script src="/assets/hub-chart.js"></script>
+<script src="/assets/hub-kit.js" data-hub-kit=""></script>
+<script src="/assets/hub-device.js" defer></script>
+<script src="/assets/hub.js" data-hub-app="{{ app.id }}" data-hub-section="{{ app.section }}" data-hub-frag="/_frag" data-hub-version="{{ app.version }}" data-hub-color="{{ app.color }}" data-hub-ink="{{ app.ink }}" data-hub-scripts="{{ app.scripts }}"></script>
+{% endblock %}

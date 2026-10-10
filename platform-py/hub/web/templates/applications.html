@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ t('shell.apps') }} · {{ brand }}{% endblock %}
+{% block main %}
+<div class="page-container">
+<div class="app-page-header page-head"><div class="page-head-text"><div class="eyebrow">{{ t('shell.apps') }}</div><h1 class="page-title">{{ t('shell.apps') }}</h1><p class="page-subtitle">{{ t('apps.subtitle') }}</p></div><div class="page-actions admin-actions"></div></div>
+{% if not mine %}<div class="empty-state">{{ t('apps.empty') }}</div>{% endif %}
+<div class="app-grid app-catalog-grid">
+{% for c, tx, st in mine %}<article class="app-card" data-app="{{ c.id }}">
+<div class="app-card-top"><span class="app-icon" style="{{ c.icon_style }}">{{ icon(c.icon)|safe }}</span><span class="hub-card-actions"><button type="button" class="hub-stack-toggle" data-stack-toggle="{{ c.id }}" aria-expanded="false" aria-controls="stack-{{ c.id }}" aria-label="{{ tx.stack_label }}" title="{{ tx.stack_label }}">i</button><button type="button" class="{{ 'icon-button hub-star on' if c.fav else 'icon-button hub-star' }}" data-fav="{{ c.id }}" aria-pressed="{{ 'true' if c.fav else 'false' }}" aria-label="{{ tx.fav_label }}" title="{{ tx.fav_label }}">{{ icon('star')|safe }}</button><div class="hub-stack" id="stack-{{ c.id }}" data-app-stack="{{ c.id }}"><span class="hub-stack-title">{{ t('apps.stack_title') }}</span><dl>{% for k, v in c.stack_rows %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% endfor %}{% if c.stack_libs %}<dt>{{ t('apps.stack_libs') }}</dt><dd><span class="hub-stack-chips">{% for l in c.stack_libs %}<span class="hub-stack-chip">{{ l }}</span>{% endfor %}</span></dd>{% endif %}</dl></div></span></div>
+<h2 class="app-card-title">{{ c.name }}</h2>
+<p>{{ c.description }}</p>
+<div class="app-card-meta"><span class="{{ st[1] }}">{{ st[0] }}</span><span class="app-version" title="{{ tx.version_title }}">v{{ c.version.lstrip('v') }}</span><a class="open-link" href="/apps/{{ c.id }}">{{ t('apps.open') }} <span aria-hidden="true">→</span></a></div>
+</article>
+{% endfor %}</div>
+{% if others %}<div class="section-heading"><div><h2>{{ t('apps.others') }}</h2><p>{{ t('apps.others_hint') }}</p></div></div>
+<div class="app-grid app-catalog-grid">
+{% for c in others %}<article class="app-card hub-locked" data-app="{{ c.id }}">
+<div class="app-card-top"><span class="app-icon" style="{{ c.icon_style }}">{{ icon(c.icon)|safe }}</span></div>
+<h2 class="app-card-title">{{ c.name }}</h2>
+<p>{{ c.description }}</p>
+<div class="app-card-meta"><button type="button" class="secondary-button" data-request-access="{{ c.id }}">{{ t('apps.request') }}</button></div>
+</article>
+{% endfor %}</div>{% endif %}
+</div>
+{% endblock %}

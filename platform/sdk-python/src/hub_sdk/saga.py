@@ -1,0 +1,246 @@
+"""Sagas (onda 12, item 2.9) — mesma semântica e mesmo formato de estado do SDK Rust
+(``hub_sdk::saga``).
+
+Uma saga é uma sequência de **passos** (ação + compensação) executada como tarefa durável
+(:mod:`hub_sdk.jobs`): mesma fila, lease, ``attempt_token``, checkpoint e visibilidade em
+Operações › Tarefas.
+
+- Estado no checkpoint da tarefa (``{"saga": {...}}``), gravado com o fence da tentativa
+  depois de cada passo/compensação. Queda no meio → outro worker retoma: para a frente
+  se ``running``, compensando se ``compensating``.
+- Falha definitiva (:class:`~hub_sdk.jobs.JobFail`) ou transitória na última tentativa →
+  compensações em ordem inversa, do passo que falhou (pode ter aplicado parte) até o
+  primeiro. Transitória antes disso → nova tentativa no mesmo passo.
+- Idempotência: chave estável ``<tarefa>:<passo>`` (``…:undo`` na compensação); efeitos no
+  banco por :meth:`StepCtx.once` (exatamente uma vez). Compensações toleram "nada a
+  desfazer".
+- Fim: ``completed`` → tarefa ``done``; ``compensated`` → ``failed`` com o motivo;
+  compensação com erro definitivo → ``failed`` (intervenção manual).
+
+A regra de próximo passo (:func:`next_action`) usa os vetores de
+vetores da era Rust (branch ``stack/rust-topcoat``, ``crates/hub-sdk/saga-vectors.json``).
+"""
+
+from __future__ import annotations
+
+import json
+from collections.abc import Awaitable, Callable, Sequence
+from dataclasses import dataclass, field
+from typing import Any
+
+from hub_sdk import outbox
+from hub_sdk.jobs import JobCtx, JobError, JobFail, JobRetry, JobSpec
+
+StepFn = Callable[["StepCtx"], Awaitable[Any]]
+
+
+def new_state(names: Sequence[str]) -> dict[str, Any]:
+    return {"v": 1, "state": "running", "steps": [{"name": n, "state": "pending"} for n in names]}
+
+
+def next_action(s: dict[str, Any]) -> str:
+    """Próxima ação a partir do estado salvo: ``run:i``, ``compensate:i``, ``complete``,
+    ``compensated`` ou ``failed`` (mesma regra do Rust)."""
+    steps = s.get("steps") or []
+    st = s.get("state")
+    if st == "running":
+        for i, p in enumerate(steps):
+            if p.get("state") != "done":
+                return f"run:{i}"
+        return "complete"
+    if st == "compensating":
+        for i in range(len(steps) - 1, -1, -1):
+            if steps[i].get("state") in ("done", "attempted", "compensating"):
+                return f"compensate:{i}"
+        return "compensated"
+    if st == "completed":
+        return "complete"
+    if st == "compensated":
+        return "compensated"
+    return "failed"
+
+
+def state_of(checkpoint: Any, names: Sequence[str]) -> dict[str, Any]:
+    """Estado da saga no checkpoint (ou um novo). Recusa definição alterada em andamento."""
+    cp = checkpoint
+    if isinstance(cp, str):
+        cp = json.loads(cp)
+    s = cp.get("saga") if isinstance(cp, dict) else None
+    if s is None:
+        return new_state(names)
+    saved = [p.get("name") for p in s.get("steps", [])]
+    if saved != list(names):
+        raise JobFail(
+            f"a definição da saga mudou com ela em andamento (salvo: {saved}; agora: {list(names)})"
+        )
+    return dict(s)
+
+
+def summary(checkpoint: Any) -> dict[str, Any] | None:
+    """Resumo para o hub: ``{state, steps: [{name, state}], reason}``."""
+    cp = json.loads(checkpoint) if isinstance(checkpoint, str) else checkpoint
+    s = cp.get("saga") if isinstance(cp, dict) else None
+    if not isinstance(s, dict):
+        return None
+    return {
+        "state": s.get("state"),
+        "steps": [{"name": p.get("name"), "state": p.get("state")} for p in s.get("steps", [])],
+        "reason": s.get("reason"),
+    }
+
+
+@dataclass
+class StepCtx:
+    """Contexto de um passo."""
+
+    saga_id: str
+    step: str
+    key: str
+    input: Any
+    outputs: dict[str, Any]
+    output: Any
+    reason: str | None
+    user: str
+    pool: Any
+
+    async def once(self, fn: Callable[[Any], Awaitable[Any]]) -> Any:
+        """Efeito no banco **exatamente uma vez**: ``fn(conn)`` roda numa transação que
+        também grava ``hub_saga_once(key)``; numa retomada devolve a saída gravada."""
+        # Reivindica primeiro, na mesma transação do efeito: uma execução concorrente do
+        # mesmo passo espera na chave única até esta confirmar ou desfazer.
+        async with self.pool.acquire() as c:
+            async with c.transaction():
+                claimed = await c.fetchval(
+                    "INSERT INTO hub_saga_once (key) VALUES ($1) ON CONFLICT (key) DO NOTHING RETURNING true",
+                    self.key,
+                )
+                if claimed:
+                    out = await fn(c)
+                    await c.execute("UPDATE hub_saga_once SET output = $2 WHERE key = $1", self.key, out)
+                    return out
+            r = await c.fetchrow("SELECT output FROM hub_saga_once WHERE key = $1", self.key)
+            return _loads(r["output"]) if r is not None else None
+
+
+def _loads(v: Any) -> Any:
+    return json.loads(v) if isinstance(v, str) else v
+
+
+@dataclass
+class Step:
+    name: str
+    action: StepFn
+    compensate: StepFn | None = None
+
+
+@dataclass
+class Saga:
+    """Definição de uma saga (um tipo de tarefa). Registre como qualquer handler."""
+
+    spec: JobSpec
+    steps: list[Step] = field(default_factory=list)
+
+    def step(self, name: str, action: StepFn, compensate: StepFn | None = None) -> Saga:
+        self.steps.append(Step(name, action, compensate))
+        return self
+
+    def final_event(self, job: Any, status: str, detail: str) -> outbox.Event | None:
+        return None
+
+    async def _save(self, ctx: JobCtx, st: dict[str, Any]) -> None:
+        done = sum(1 for p in st["steps"] if p.get("state") == "done")
+        async with ctx.pool.acquire() as c, c.transaction():
+            await ctx.save_checkpoint(c, {"saga": st}, done, len(st["steps"]), f"saga: {st['state']}")
+
+    def _ctx(self, ctx: JobCtx, st: dict[str, Any], name: str, key: str) -> StepCtx:
+        outs = {p["name"]: p["output"] for p in st["steps"] if p.get("output") is not None}
+        return StepCtx(
+            saga_id=ctx.job.id,
+            step=name,
+            key=key,
+            input=_loads(ctx.job.payload),
+            outputs=outs,
+            output=None,
+            reason=st.get("reason"),
+            user=ctx.job.user,
+            pool=ctx.pool,
+        )
+
+    async def run(self, ctx: JobCtx) -> Any:
+        names = [s.name for s in self.steps]
+        st = state_of(ctx.checkpoint, names)
+        last = ctx.job.attempts >= ctx.job.max_attempts
+        while True:
+            ctx.raise_if_stopping()
+            nxt = next_action(st)
+            if nxt.startswith("run:"):
+                i = int(nxt[4:])
+                name = names[i]
+                try:
+                    out = await self.steps[i].action(self._ctx(ctx, st, name, f"{ctx.job.id}:{name}"))
+                except (JobRetry, JobFail) as e:
+                    if isinstance(e, JobRetry) and not last:
+                        raise JobRetry(f"{name}: {e}") from e
+                    st["steps"][i]["state"] = "attempted"
+                    st["steps"][i]["error"] = str(e)
+                    st["state"] = "compensating"
+                    st["reason"] = f"{name}: {e}"
+                    await self._save(ctx, st)
+                    continue
+                except JobError:
+                    raise
+                except Exception as e:  # erro inesperado do passo = transitório
+                    if not last:
+                        raise JobRetry(f"{name}: {e.__class__.__name__}: {e}") from e
+                    st["steps"][i]["state"] = "attempted"
+                    st["steps"][i]["error"] = str(e)
+                    st["state"] = "compensating"
+                    st["reason"] = f"{name}: {e}"
+                    await self._save(ctx, st)
+                    continue
+                st["steps"][i]["state"] = "done"
+                if out is not None:
+                    st["steps"][i]["output"] = out
+                st["steps"][i].pop("error", None)
+                await self._save(ctx, st)
+            elif nxt.startswith("compensate:"):
+                i = int(nxt[11:])
+                name = names[i]
+                if st["steps"][i]["state"] != "compensating":
+                    st["steps"][i]["state"] = "compensating"
+                    await self._save(ctx, st)
+                sc = self._ctx(ctx, st, name, f"{ctx.job.id}:{name}:undo")
+                sc.output = st["steps"][i].get("output")
+                comp = self.steps[i].compensate
+                try:
+                    if comp is not None:
+                        await comp(sc)
+                except JobFail as e:
+                    st["steps"][i]["state"] = "failed"
+                    st["steps"][i]["error"] = str(e)
+                    st["state"] = "failed"
+                    await self._save(ctx, st)
+                    raise JobFail(f"compensação de {name} falhou (intervenção manual): {e}") from e
+                except JobRetry as e:
+                    raise JobRetry(f"compensação de {name}: {e}") from e
+                except JobError:
+                    raise
+                except Exception as e:
+                    raise JobRetry(f"compensação de {name}: {e.__class__.__name__}: {e}") from e
+                st["steps"][i]["state"] = "compensated"
+                await self._save(ctx, st)
+            elif nxt == "complete":
+                if st["state"] != "completed":
+                    st["state"] = "completed"
+                    await self._save(ctx, st)
+                return {
+                    "saga": "completed",
+                    "outputs": {p["name"]: p["output"] for p in st["steps"] if p.get("output") is not None},
+                }
+            elif nxt == "compensated":
+                if st["state"] != "compensated":
+                    st["state"] = "compensated"
+                    await self._save(ctx, st)
+                raise JobFail(f"saga compensada — {st.get('reason') or ''}")
+            else:
+                raise JobFail(f"saga com compensação pendente de intervenção — {st.get('reason') or ''}")

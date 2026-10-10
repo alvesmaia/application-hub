@@ -1,0 +1,13 @@
+{
+  "name": "hub-mcp-client-check",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "description": "Onda 12 (2.2) — cliente MCP independente (SDK oficial TypeScript) contra o hub: OAuth (descoberta, registro dinâmico, PKCE, token, refresh) + tools/list + tools/call",
+  "scripts": {
+    "check": "node check.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.31.0"
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "entries": [
+    {
+      "check": "fora-do-shell",
+      "route": "^/dev/docs/[a-z-]+\\.md$",
+      "reason": "Documento Markdown cru servido para agentes e para a CLI (F22): não é página HTML do hub, então não tem shell."
+    },
+    {
+      "check": "tema-padrao",
+      "route": "^/dev/docs/[a-z-]+\\.md$",
+      "reason": "Documento Markdown cru servido para agentes e para a CLI (F22): não é página HTML do hub, então não tem tema."
+    },
+    {
+      "check": "cor-igual-fundo",
+      "route": "^/dev/docs/[a-z-]+\\.md$",
+      "reason": "Texto puro no visualizador do navegador: no SO escuro o Chrome pinta fundo escuro na tela, mas o <body> fica transparente e a varredura o lê como branco (falso positivo; captura mostra texto claro sobre fundo escuro)."
+    },
+    {
+      "check": "modal-fecha-no-fundo",
+      "selector": "hub-palette",
+      "reason": "Paleta de busca (Ctrl K) é uma sobreposição transitória de navegação, sem dados digitados a perder; fechar ao clicar fora é o comportamento convencional (a regra vale para modais de formulário)."
+    },
+    {
+      "check": "contraste-ui",
+      "selector": "hub-palette-input > input",
+      "message": "controle sem borda",
+      "reason": "Campo único da paleta Ctrl K: ocupa a faixa superior do diálogo, separada do resto por uma linha, com ícone de busca e foco automático; o diálogo inteiro é o campo (padrão de command palette)."
+    },
+    {
+      "check": "contraste-ui",
+      "selector": "(app2-search|app3-knowledge-hero > div > label) > input",
+      "message": "controle sem borda",
+      "reason": "Campo composto: o input fica dentro de um wrapper (div.app2-search / label do hero) com borda de controle de 3:1 e anel de foco em :focus-within; o próprio input é transparente de propósito."
+    },
+    {
+      "check": "jargao",
+      "route": "^/admin/env$",
+      "message": "Reinício pendente desde",
+      "reason": "Aviso 'Reinício pendente… alteradas: HUB_X' na tela de Variáveis de ambiente (administração): lista as próprias variáveis alteradas, que é o dado que o administrador precisa ver para decidir Aplicar; aparece só quando há alteração pendente (mesmo texto da implementação Rust)."
+    },
+    {
+      "check": "jargao",
+      "route": "^/inbox$",
+      "message": "Ferramenta: .* Operação:|Cliente declarado",
+      "reason": "Pedido de aprovação de agente de IA: o texto mostra a operação da API a ser aprovada (informação de segurança para quem aprova); só existe quando há pedido de agente pendente (mesmo texto da implementação Rust)."
+    },
+    {
+      "check": "jargao",
+      "route": "^/developers(/|$)",
+      "reason": "Portal do desenvolvedor (F24): a documentação técnica (referência da CLI, SDK, contrato do app) precisa citar variáveis de ambiente, verbos HTTP e caminhos de API — é o conteúdo, para desenvolvedores."
+    },
+    {
+      "check": "http-status",
+      "route": "^/apps/contratos(/|$)",
+      "message": "HTTP 404",
+      "reason": "Dado de teste: pedidos de aprovação antigos na Inbox apontam para o app 'contratos', removido da pilha Python; o 404 é a resposta correta para app inexistente (agora em HTML, sem download)."
+    },
+    {
+      "check": "console",
+      "route": "^/apps/contratos(/|$)",
+      "message": "status of 404",
+      "reason": "Mesmo caso: o 404 do app removido 'contratos' (link vindo de item de teste da Inbox)."
+    },
+    {
+      "check": "navegacao",
+      "route": "^/apps/contratos(/|$)",
+      "reason": "Mesmo caso: app 'contratos' removido; o link vem de itens de teste na Inbox e abre uma resposta 404."
+    },
+    {
+      "check": "http-status",
+      "route": "^/account/agent-approval/\\d+$",
+      "role": "^(operador|leitor)$",
+      "message": "HTTP 404",
+      "reason": "Esperado: a aprovação de agente só existe para o dono do pedido; para outro usuário o hub responde 404 de propósito (não revela que o item existe). A varredura apenas reaproveita o link visto pelo admin."
+    },
+    {
+      "check": "console",
+      "route": "^/account/agent-approval/\\d+$",
+      "role": "^(operador|leitor)$",
+      "message": "status of 404",
+      "reason": "Mesmo caso: o 404 intencional da aprovação de agente para quem não é o dono."
+    },
+    {
+      "check": "console",
+      "route": "^/apps/servicos(/|$)",
+      "message": "e2e-tampered|integrity",
+      "reason": "Dado de teste: o E2E de scripts de app (14-onda12) deixou aprovado em 'servicos' um script adulterado de propósito; o navegador recusa pelo SRI (é a defesa funcionando). Sai quando o estado de teste for limpo."
+    },
+    {
+      "check": "tema-padrao",
+      "route": "^/apps/contratos(/|$)",
+      "reason": "Mesmo caso do 404 do app removido 'contratos' (link de item de teste da Inbox): a resposta de erro é um trecho HTML sem o shell, então não há data-theme."
+    }
+  ]
+}

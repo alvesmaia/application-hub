@@ -1,0 +1,18 @@
+# Usa as imagens publicadas no GHCR (workflow manual .github/workflows/images.yml) em vez de compilar:
+#   HUB_REGISTRY=ghcr.io/alvesmaia HUB_VERSION=0.2.0 \
+#   docker compose --env-file .prod.env -f docker-compose.yml -f docker-compose.apps.yml -f docker-compose.prod.yml \
+#     -f docker-compose.ghcr.yml pull && … up -d
+# Sem `build` aqui: `up --build` com este arquivo ainda compilaria; use `pull` + `up -d`.
+services:
+  app-hub-web:
+    image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-web:${HUB_VERSION:?defina HUB_VERSION}
+  app-hub-objstore:
+    image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-minio:${HUB_VERSION:?}
+  app-hub-app-ativos:
+    image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-ativos:${HUB_VERSION:?}
+  app-hub-app-fornecedores:
+    image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-fornecedores:${HUB_VERSION:?}
+  app-hub-app-servicos:
+    image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-servicos:${HUB_VERSION:?}
+  app-hub-app-coletor:
+    image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-coletor:${HUB_VERSION:?}

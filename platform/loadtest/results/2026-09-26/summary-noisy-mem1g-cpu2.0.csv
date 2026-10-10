@@ -1,0 +1,7 @@
+scenario,step,mem,cpus,c,rps,p50,p95,p99,errorRate,total,app_cpu_avg,app_cpu_max,app_mem_peak_mib,hub_cpu_avg,hub_cpu_max,hub_mem_peak_mib,restarts,oom_events
+D,baseline,1g,2.0,0,,,,,,,1.1,2.8,4,1.1,2.8,4,{},0
+D,ativos-cpu,1g,2.0,64,25.4,2365.4,4209.7,4396.2,0,1574,193.9,201.1,6,2.3,4.9,10,{},0
+D,ativos-mem,1g,2.0,64,0.1,88.5,5009.3,5063.8,0.9968,2194,3.1,96.4,999,2.7,10,19,{"hub-app-ativos":9},8
+D,3apps-cpu,1g,2.0,64,34.1,1895.9,2211.3,2323.7,0,2097,125.8,153.2,6,4.5,5.5,24,{},0
+D,3apps-mem,1g,2.0,64,0.3,1368,5016.7,5046.1,0.9882,1869,0,0,4,4.8,20.6,39,{"hub-app-ativos":9;"hub-app-fornecedores":9;"hub-app-servicos":9},15
+D,baseline-after,1g,2.0,0,,,,,,,1.4,3.1,23,1.4,3.1,23,{},0

@@ -1,0 +1,8 @@
+{#- Leituras ao vivo do mesmo usuário (dentro do estado da Folha, redesenhado pelo WebSocket). -#}
+<section id="live-reads" class="col-card col-live" aria-labelledby="live-title">
+<div class="col-live-head"><h2 id="live-title" class="col-section-title">{{ t('Leituras ao vivo') }}</h2><span class="col-live-count" data-col-count="{{ total }}">{{ t('{n} leituras', n=total) }}</span>
+<form method="post" action="{{ base }}/folha/limpar" data-hub-target="#live-reads"><button type="submit" class="col-button col-button-ghost col-button-small"{% if not total %} disabled{% endif %}>{{ t('Limpar') }}</button></form></div>
+<p class="col-hint">{{ t('O que você lê no celular (mesmo usuário) aparece aqui na hora — a mais nova primeiro.') }}</p>
+{% if reads %}<ol class="col-reads col-reads-live" data-col-live>{% for x in reads %}<li class="col-read col-read-{{ x.feedback }}" data-col-read="{{ x.id }}"><span class="col-read-time">{{ x.time }}</span><span class="col-read-main"><strong>{{ x.label }}</strong><span class="col-mono">{{ x.value }}</span></span><span class="col-read-meta">{{ x.format_label }} · {{ x.source_label }}</span></li>{% endfor %}</ol>
+{% else %}<p class="col-empty">{{ t('Nenhuma leitura ainda.') }}</p>{% endif %}
+</section>

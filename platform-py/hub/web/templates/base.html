@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" data-theme="{{ theme }}">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="color-scheme" content="{{ color_scheme }}"/>
+<title>{% block title %}{{ brand }}{% endblock %}</title>
+<link rel="icon" type="image/svg+xml" href="/assets/logo.svg"/>
+<link rel="manifest" href="{{ manifest_href }}" crossorigin="use-credentials"/>
+<meta name="theme-color" content="{{ theme_color }}"/>
+{% if dev_reload() %}<meta name="hub-dev-reload" content="/_dev/reload"/>{% endif %}
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<link rel="preload" href="/assets/fonts/nunito-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous"/>
+<link rel="preload" href="/assets/fonts/red-hat-display-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous"/>
+<link rel="stylesheet" href="/assets/tokens.css"/>
+<link rel="stylesheet" href="/assets/theme.css"/>
+<link rel="stylesheet" href="/assets/styles.css"/>
+<link rel="stylesheet" href="/assets/hub.css"/>
+<link rel="stylesheet" href="/assets/ops.css"/>
+<link rel="stylesheet" href="/assets/devdocs.css"/>
+{% block head %}{% endblock %}
+</head>
+<body class="{{ body_class|default('rail-expanded') }}" data-hub-perms="{{ perms }}" data-hub-ux="1" data-hub-tour="{{ tour }}" data-hub-i18n="{{ i18n }}" data-hub-palette="{{ palette }}">
+<a class="skip-link" href="#app-root">{{ t('shell.skip') }}</a>
+{% macro svg(inner) %}<svg viewBox="0 0 24 24" aria-hidden="true">{{ inner|safe }}</svg>{% endmacro %}
+<header class="platform-header">
+<button type="button" class="icon-button rail-toggle" data-hub-rail-toggle="" data-rail-ctx="{{ rail_ctx }}" aria-controls="hub-rail" aria-expanded="true" aria-label="{{ rail_label }}" title="{{ rail_label }}" aria-keyshortcuts="Control+B">{{ svg('<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/>') }}</button>
+<a class="brand" href="/" aria-label="{{ t('shell.home_label') }}"><span class="brand-mark"><img src="/assets/logo.svg" alt=""/></span><span class="brand-text"><span class="brand-name">{{ brand }}</span><span class="brand-subtitle">{{ t('shell.workspace') }}</span></span></a>
+<button type="button" class="header-search hub-search-trigger" data-hub-palette-open="" aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K" data-tour="search">{{ svg('<circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/>') }}<span class="hub-search-label">{{ t('shell.search_hint') }}</span><kbd class="hub-kbd" aria-hidden="true">Ctrl K</kbd></button>
+<div class="header-actions">
+<button type="button" class="icon-button hub-search-mobile" data-hub-palette-open="" aria-haspopup="dialog" aria-label="{{ t('shell.search') }}" title="{{ t('shell.search') }}">{{ svg('<circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/>') }}</button>
+<details class="hub-notif-menu" data-hub-notifications="{{ unread }}" data-tour="inbox">
+<summary class="icon-button" aria-label="{{ tn('shell.inbox_label', unread) }}">{{ svg('<path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 20a1.9 1.9 0 0 0 3.4 0"/>') }}<span class="hub-notif-count{{ '' if unread else ' hidden' }}" data-hub-unread="" aria-hidden="true">{{ [unread, 99]|min }}</span></summary>
+<div class="header-popover hub-notif-popover"><h2 class="hub-popover-title">{{ t('shell.inbox_title') }}</h2><div data-hub-inbox-list="">{% if not bell %}<div class="popover-row">{{ t('shell.inbox_empty') }}</div>{% endif %}{% for e in bell %}<div class="popover-row hub-notif-item{{ '' if e.read else ' unread' }}" data-level="{{ e.level }}" data-kind="{{ e.kind }}"><a href="{{ e.link or '/inbox' }}"><strong>{{ e.title }}</strong></a><small>{{ e.app_name ~ ' · ' ~ e.body if e.app_name else e.body }}</small><small>{{ e.when }}</small></div>{% endfor %}</div><div class="hub-popover-actions"><a class="profile-option" href="/inbox">{{ t('shell.inbox_all') }}</a>{% if unread %}<form method="post" action="/account/notifications/read?next={{ path|urlencode }}"><button type="submit" class="profile-option" data-notif-read="">{{ t('shell.mark_all') }}</button></form>{% endif %}</div></div>
+</details>
+<details class="hub-user-menu" data-tour="user">
+<summary class="user-button" aria-label="{{ t('shell.user_menu') }}" title="{{ user.name }}"><span class="avatar" aria-hidden="true">{{ user.initials }}</span><span class="user-copy"><strong>{{ user.name }}</strong></span><svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></summary>
+<div class="header-popover hub-user-popover"><p class="popover-section-label">{{ t('shell.signed_as') }}</p><div class="popover-row hub-user-who" title="{{ user.name }}"><strong>{{ user.name }}</strong></div><a class="profile-option" href="/account" data-hub-settings="">{{ tr('Minha conta') }}</a><button type="button" class="profile-option" data-hub-tour-start="">{{ t('shell.tour') }}</button><form method="post" action="/logout"><button type="submit" class="profile-option" data-logout="">{{ t('shell.logout') }}</button></form></div>
+</details>
+</div>
+<button type="button" class="icon-button hub-drawer-toggle" data-hub-drawer-toggle="" aria-controls="hub-rail" aria-expanded="false" aria-label="{{ t('shell.menu_open') }}" data-label-open="{{ t('shell.menu_open') }}" data-label-close="{{ t('shell.menu_close') }}">{{ svg('<path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/>') }}</button>
+</header>
+<aside class="platform-rail" id="hub-rail" aria-label="{{ t('shell.nav') }}">
+<div class="hub-drawer-user hub-drawer-only"><span class="avatar" aria-hidden="true">{{ user.initials }}</span><span class="hub-drawer-who"><strong>{{ user.name }}</strong></span></div>
+<nav class="rail-nav" aria-label="{{ t('shell.nav') }}">
+{% for it in nav.top %}<a class="rail-item{{ ' active' if it.href == path }}" href="{{ it.href }}" aria-label="{{ it.label }}" aria-current="{{ 'page' if it.href == path else 'false' }}"{% if loop.index <= 2 %} data-tour="{{ 'home' if loop.first else 'apps' }}"{% endif %}><span class="rail-icon">{{ svg(it.icon) }}</span><span class="rail-name">{{ it.label }}</span><span class="rail-tooltip" aria-hidden="true">{{ it.label }}</span></a>
+{% endfor %}{% if nav.groups %}<div class="rail-divider" role="presentation"></div>
+<div class="rail-sections" id="hub-admin-menu" data-tour="admin">
+{% for g in nav.groups %}<div class="rail-group" role="group" aria-labelledby="hub-admin-group-{{ g.id }}" data-rail-group="hub-admin-group-{{ g.id }}">
+<button type="button" class="rail-group-label" id="hub-admin-group-{{ g.id }}" aria-expanded="true" aria-controls="hub-admin-group-{{ g.id }}-items" data-rail-group-toggle=""><span class="rail-group-icon">{{ svg(g.icon) }}</span><span class="rail-group-name">{{ g.name }}</span><svg class="rail-group-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg><span class="rail-tooltip" aria-hidden="true">{{ g.name }}</span></button>
+<div class="rail-group-items" id="hub-admin-group-{{ g.id }}-items" data-rail-title="{{ g.name }}">
+{% for it in g['items'] %}<a class="rail-subitem{{ ' active' if it.href == path or path in it.also }}" href="{{ it.href }}" aria-label="{{ it.label }}" aria-current="{{ 'page' if it.href == path or path in it.also else 'false' }}"><span class="rail-icon">{{ svg(it.icon) }}</span><span class="rail-name">{{ it.label }}</span><span class="rail-tooltip" aria-hidden="true">{{ it.label }}</span></a>
+{% endfor %}</div>
+</div>
+{% endfor %}</div>{% endif %}
+</nav>
+<div class="hub-drawer-account hub-drawer-only" role="group" aria-label="{{ t('shell.account') }}"><a class="rail-subitem" href="/account" data-hub-settings=""><span class="rail-name">{{ tr('Minha conta') }}</span></a><form method="post" action="/logout"><button type="submit" class="rail-subitem hub-drawer-logout" data-logout="">{{ t('shell.logout') }}</button></form></div>
+</aside>
+<main id="app-root" class="app-root" tabindex="-1">
+{% if staging %}<div class="hub-staging-bar" role="status" data-hub-staging-bar="">{{ tr('Você está em staging') }} · <a href="/hub-env?to=producao&amp;next={{ path|urlencode }}">{{ tr('Voltar à produção') }}</a></div>{% endif %}
+{% block main %}{% endblock %}
+</main>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="hub-live" class="visually-hidden" aria-live="polite"></div>
+{% block after_main %}{% endblock %}
+{% for s in scripts %}<script src="/assets/{{ s }}" defer></script>
+{% endfor %}</body>
+</html>

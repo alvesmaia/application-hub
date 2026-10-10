@@ -1,0 +1,54 @@
+# Publica as imagens no GitHub Container Registry (ghcr.io/<dono>/app-hub-*:<versão> e :latest).
+# MANUAL: só roda por "Run workflow" (workflow_dispatch) — sem gatilho de push/tag. Ver docs/IMPLANTACAO.md ("Imagens prontas (GHCR)").
+name: images
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versão (tag das imagens), ex.: 0.2.0 — deve bater com platform-py/hub/__init__.py"
+        required: true
+      latest:
+        description: "Também marcar :latest"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    env:
+      REG: ghcr.io/${{ github.repository_owner }}
+      VER: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Versão confere com o código
+        run: grep -q "__version__ = \"$VER\"" platform-py/hub/__init__.py
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build (MinIO/mc do código-fonte, hub, apps de exemplo)
+        run: |
+          set -eux
+          docker build --target mc    -t "$REG/app-hub-mc:$VER"    platform-py/infra/minio
+          docker build --target minio -t "$REG/app-hub-minio:$VER" platform-py/infra/minio
+          docker build -f platform-py/Dockerfile --build-arg MC_IMAGE="$REG/app-hub-mc:$VER" -t "$REG/app-hub-web:$VER" .
+          for a in ativos fornecedores servicos; do
+            docker build -f "platform/demo-apps-py/$a/Dockerfile" -t "$REG/app-hub-$a:$VER" platform
+          done
+          docker build -f platform/Dockerfile.coletor -t "$REG/app-hub-coletor:$VER" platform
+      - name: Push
+        run: |
+          set -eux
+          for i in mc minio web ativos fornecedores servicos coletor; do
+            docker push "$REG/app-hub-$i:$VER"
+            if [ "${{ inputs.latest }}" = true ]; then
+              docker tag "$REG/app-hub-$i:$VER" "$REG/app-hub-$i:latest"
+              docker push "$REG/app-hub-$i:latest"
+            fi
+          done

@@ -1,0 +1,2986 @@
+warning[duplicate]: found 2 duplicate entries for crate 'base64'
+   ┌─ platform/Cargo.lock:24:1
+   │  
+24 │ ╭ base64 0.22.1 registry+https://github.com/rust-lang/crates.io-index
+25 │ │ base64 0.23.1 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰───────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ base64 v0.22.1
+     ├── bollard v0.18.1
+     │   ├── hub-ops v0.1.0
+     │   │   └── hub-web v0.1.0
+     │   └── hub-runtime v0.1.0
+     │       ├── hub-ops v0.1.0 (*)
+     │       └── hub-web v0.1.0 (*)
+     ├── cookie v0.18.2
+     │   ├── cookie_store v0.22.1
+     │   │   └── reqwest v0.12.28
+     │   │       ├── hub-admin v0.1.0
+     │   │       │   ├── hub-auth v0.1.0
+     │   │       │   │   └── hub-web v0.1.0 (*)
+     │   │       │   ├── hub-ops v0.1.0 (*)
+     │   │       │   ├── (dev) hub-runtime v0.1.0 (*)
+     │   │       │   └── hub-web v0.1.0 (*)
+     │   │       ├── hub-auth v0.1.0 (*)
+     │   │       ├── (dev) hub-cli v0.1.0
+     │   │       │   └── (dev) hub-web v0.1.0 (*)
+     │   │       ├── hub-demo-apps v0.1.0
+     │   │       ├── hub-gateway v0.1.0
+     │   │       │   ├── hub-cli v0.1.0 (*)
+     │   │       │   └── hub-web v0.1.0 (*)
+     │   │       ├── (dev) hub-ops v0.1.0 (*)
+     │   │       ├── (dev) hub-sdk v0.1.0
+     │   │       │   └── hub-demo-apps v0.1.0 (*)
+     │   │       └── (dev) hub-web v0.1.0 (*)
+     │   ├── reqwest v0.12.28 (*)
+     │   └── topcoat-cookie v0.9.0
+     │       ├── topcoat v0.9.0
+     │       │   ├── hub-cli v0.1.0 (*)
+     │       │   ├── hub-shell v0.1.0
+     │       │   │   ├── hub-cli v0.1.0 (*)
+     │       │   │   └── hub-web v0.1.0 (*)
+     │       │   └── hub-web v0.1.0 (*)
+     │       └── topcoat-session v0.9.0
+     │           └── topcoat v0.9.0 (*)
+     ├── hub-auth v0.1.0 (*)
+     ├── (dev) hub-cli v0.1.0 (*)
+     ├── hub-demo-apps v0.1.0 (*)
+     ├── hub-gateway v0.1.0 (*)
+     ├── (dev) hub-web v0.1.0 (*)
+     ├── postgres-protocol v0.6.12
+     │   ├── postgres-types v0.2.14
+     │   │   └── tokio-postgres v0.7.18
+     │   │       ├── deadpool-postgres v0.14.2
+     │   │       │   ├── hub-demo-apps v0.1.0 (*)
+     │   │       │   └── hub-sdk v0.1.0 (*)
+     │   │       ├── hub-demo-apps v0.1.0 (*)
+     │   │       ├── hub-ops v0.1.0 (*)
+     │   │       └── hub-sdk v0.1.0 (*)
+     │   └── tokio-postgres v0.7.18 (*)
+     ├── reqwest v0.12.28 (*)
+     ├── topcoat-core v0.9.0
+     │   ├── topcoat v0.9.0 (*)
+     │   ├── topcoat-asset v0.9.0
+     │   │   ├── topcoat v0.9.0 (*)
+     │   │   ├── topcoat-font v0.9.0
+     │   │   │   ├── topcoat v0.9.0 (*)
+     │   │   │   └── topcoat-font-grammar v0.9.0
+     │   │   │       └── topcoat-font-macro v0.9.0
+     │   │   │           └── topcoat v0.9.0 (*)
+     │   │   └── topcoat-runtime v0.9.0
+     │   │       ├── topcoat v0.9.0 (*)
+     │   │       └── topcoat-runtime-grammar v0.9.0
+     │   │           └── topcoat-runtime-macro v0.9.0
+     │   │               └── topcoat v0.9.0 (*)
+     │   ├── topcoat-cookie v0.9.0 (*)
+     │   ├── topcoat-font v0.9.0 (*)
+     │   ├── topcoat-icon v0.9.0
+     │   │   ├── topcoat v0.9.0 (*)
+     │   │   └── topcoat-icon-grammar v0.9.0
+     │   │       └── topcoat-icon-macro v0.9.0
+     │   │           └── topcoat v0.9.0 (*)
+     │   ├── topcoat-router v0.9.0
+     │   │   ├── topcoat v0.9.0 (*)
+     │   │   ├── topcoat-asset v0.9.0 (*)
+     │   │   ├── topcoat-cookie v0.9.0 (*)
+     │   │   ├── topcoat-font v0.9.0 (*)
+     │   │   ├── topcoat-runtime v0.9.0 (*)
+     │   │   ├── topcoat-runtime-grammar v0.9.0 (*)
+     │   │   └── topcoat-session v0.9.0 (*)
+     │   ├── topcoat-runtime v0.9.0 (*)
+     │   ├── topcoat-session v0.9.0 (*)
+     │   └── topcoat-view v0.9.0
+     │       ├── topcoat v0.9.0 (*)
+     │       ├── topcoat-asset v0.9.0 (*)
+     │       ├── topcoat-font v0.9.0 (*)
+     │       ├── topcoat-icon v0.9.0 (*)
+     │       ├── topcoat-router v0.9.0 (*)
+     │       ├── topcoat-runtime v0.9.0 (*)
+     │       └── topcoat-view-grammar v0.9.0
+     │           └── topcoat-view-macro v0.9.0
+     │               ├── topcoat v0.9.0 (*)
+     │               ├── topcoat-font v0.9.0 (*)
+     │               └── topcoat-icon v0.9.0 (*)
+     └── topcoat-session v0.9.0 (*)
+   ├ base64 v0.23.1
+     └── hyper-util v0.1.21
+         ├── axum v0.8.9
+         │   ├── hub-admin v0.1.0
+         │   │   ├── hub-auth v0.1.0
+         │   │   │   └── hub-web v0.1.0
+         │   │   ├── hub-ops v0.1.0
+         │   │   │   └── hub-web v0.1.0 (*)
+         │   │   ├── (dev) hub-runtime v0.1.0
+         │   │   │   ├── hub-ops v0.1.0 (*)
+         │   │   │   └── hub-web v0.1.0 (*)
+         │   │   └── hub-web v0.1.0 (*)
+         │   ├── hub-auth v0.1.0 (*)
+         │   ├── hub-cli v0.1.0
+         │   │   └── (dev) hub-web v0.1.0 (*)
+         │   ├── hub-demo-apps v0.1.0
+         │   ├── hub-gateway v0.1.0
+         │   │   ├── hub-cli v0.1.0 (*)
+         │   │   └── hub-web v0.1.0 (*)
+         │   ├── hub-ops v0.1.0 (*)
+         │   ├── hub-sdk v0.1.0
+         │   │   └── hub-demo-apps v0.1.0 (*)
+         │   ├── hub-shell v0.1.0
+         │   │   ├── hub-cli v0.1.0 (*)
+         │   │   └── hub-web v0.1.0 (*)
+         │   └── hub-web v0.1.0 (*)
+         ├── bollard v0.18.1
+         │   ├── hub-ops v0.1.0 (*)
+         │   └── hub-runtime v0.1.0 (*)
+         ├── hyper-named-pipe v0.1.1
+         │   └── bollard v0.18.1 (*)
+         ├── hyper-rustls v0.27.10
+         │   └── reqwest v0.12.28
+         │       ├── hub-admin v0.1.0 (*)
+         │       ├── hub-auth v0.1.0 (*)
+         │       ├── (dev) hub-cli v0.1.0 (*)
+         │       ├── hub-demo-apps v0.1.0 (*)
+         │       ├── hub-gateway v0.1.0 (*)
+         │       ├── (dev) hub-ops v0.1.0 (*)
+         │       ├── (dev) hub-sdk v0.1.0 (*)
+         │       └── (dev) hub-web v0.1.0 (*)
+         ├── hyperlocal v0.9.1
+         │   └── bollard v0.18.1 (*)
+         ├── reqwest v0.12.28 (*)
+         └── topcoat-router v0.9.0
+             ├── topcoat v0.9.0
+             │   ├── hub-cli v0.1.0 (*)
+             │   ├── hub-shell v0.1.0 (*)
+             │   └── hub-web v0.1.0 (*)
+             ├── topcoat-asset v0.9.0
+             │   ├── topcoat v0.9.0 (*)
+             │   ├── topcoat-font v0.9.0
+             │   │   ├── topcoat v0.9.0 (*)
+             │   │   └── topcoat-font-grammar v0.9.0
+             │   │       └── topcoat-font-macro v0.9.0
+             │   │           └── topcoat v0.9.0 (*)
+             │   └── topcoat-runtime v0.9.0
+             │       ├── topcoat v0.9.0 (*)
+             │       └── topcoat-runtime-grammar v0.9.0
+             │           └── topcoat-runtime-macro v0.9.0
+             │               └── topcoat v0.9.0 (*)
+             ├── topcoat-cookie v0.9.0
+             │   ├── topcoat v0.9.0 (*)
+             │   └── topcoat-session v0.9.0
+             │       └── topcoat v0.9.0 (*)
+             ├── topcoat-font v0.9.0 (*)
+             ├── topcoat-runtime v0.9.0 (*)
+             ├── topcoat-runtime-grammar v0.9.0 (*)
+             └── topcoat-session v0.9.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'block-buffer'
+   ┌─ platform/Cargo.lock:29:1
+   │  
+29 │ ╭ block-buffer 0.10.4 registry+https://github.com/rust-lang/crates.io-index
+30 │ │ block-buffer 0.12.1 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰─────────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ block-buffer v0.10.4
+     └── digest v0.10.7
+         ├── blake2 v0.10.6
+         │   └── argon2 v0.5.3
+         │       └── hub-auth v0.1.0
+         │           └── hub-web v0.1.0
+         ├── hmac v0.12.1
+         │   ├── cookie v0.18.2
+         │   │   ├── cookie_store v0.22.1
+         │   │   │   └── reqwest v0.12.28
+         │   │   │       ├── hub-admin v0.1.0
+         │   │   │       │   ├── hub-auth v0.1.0 (*)
+         │   │   │       │   ├── hub-ops v0.1.0
+         │   │   │       │   │   └── hub-web v0.1.0 (*)
+         │   │   │       │   ├── (dev) hub-runtime v0.1.0
+         │   │   │       │   │   ├── hub-ops v0.1.0 (*)
+         │   │   │       │   │   └── hub-web v0.1.0 (*)
+         │   │   │       │   └── hub-web v0.1.0 (*)
+         │   │   │       ├── hub-auth v0.1.0 (*)
+         │   │   │       ├── (dev) hub-cli v0.1.0
+         │   │   │       │   └── (dev) hub-web v0.1.0 (*)
+         │   │   │       ├── hub-demo-apps v0.1.0
+         │   │   │       ├── hub-gateway v0.1.0
+         │   │   │       │   ├── hub-cli v0.1.0 (*)
+         │   │   │       │   └── hub-web v0.1.0 (*)
+         │   │   │       ├── (dev) hub-ops v0.1.0 (*)
+         │   │   │       ├── (dev) hub-sdk v0.1.0
+         │   │   │       │   └── hub-demo-apps v0.1.0 (*)
+         │   │   │       └── (dev) hub-web v0.1.0 (*)
+         │   │   ├── reqwest v0.12.28 (*)
+         │   │   └── topcoat-cookie v0.9.0
+         │   │       ├── topcoat v0.9.0
+         │   │       │   ├── hub-cli v0.1.0 (*)
+         │   │       │   ├── hub-shell v0.1.0
+         │   │       │   │   ├── hub-cli v0.1.0 (*)
+         │   │       │   │   └── hub-web v0.1.0 (*)
+         │   │       │   └── hub-web v0.1.0 (*)
+         │   │       └── topcoat-session v0.9.0
+         │   │           └── topcoat v0.9.0 (*)
+         │   ├── hkdf v0.12.4
+         │   │   └── cookie v0.18.2 (*)
+         │   ├── hub-demo-apps v0.1.0 (*)
+         │   ├── pbkdf2 v0.12.2
+         │   │   └── zip v2.4.2
+         │   │       ├── (dev) hub-cli v0.1.0 (*)
+         │   │       ├── hub-demo-apps v0.1.0 (*)
+         │   │       └── hub-ops v0.1.0 (*)
+         │   └── zip v2.4.2 (*)
+         ├── pbkdf2 v0.12.2 (*)
+         ├── sha1 v0.10.7
+         │   ├── tungstenite v0.29.0
+         │   │   └── tokio-tungstenite v0.29.0
+         │   │       ├── topcoat v0.9.0 (*)
+         │   │       └── topcoat-router v0.9.0
+         │   │           ├── topcoat v0.9.0 (*)
+         │   │           ├── topcoat-asset v0.9.0
+         │   │           │   ├── topcoat v0.9.0 (*)
+         │   │           │   ├── topcoat-font v0.9.0
+         │   │           │   │   ├── topcoat v0.9.0 (*)
+         │   │           │   │   └── topcoat-font-grammar v0.9.0
+         │   │           │   │       └── topcoat-font-macro v0.9.0
+         │   │           │   │           └── topcoat v0.9.0 (*)
+         │   │           │   └── topcoat-runtime v0.9.0
+         │   │           │       ├── topcoat v0.9.0 (*)
+         │   │           │       └── topcoat-runtime-grammar v0.9.0
+         │   │           │           └── topcoat-runtime-macro v0.9.0
+         │   │           │               └── topcoat v0.9.0 (*)
+         │   │           ├── topcoat-cookie v0.9.0 (*)
+         │   │           ├── topcoat-font v0.9.0 (*)
+         │   │           ├── topcoat-runtime v0.9.0 (*)
+         │   │           ├── topcoat-runtime-grammar v0.9.0 (*)
+         │   │           └── topcoat-session v0.9.0 (*)
+         │   └── zip v2.4.2 (*)
+         └── sha2 v0.10.9
+             ├── cookie v0.18.2 (*)
+             ├── hub-auth v0.1.0 (*)
+             ├── hub-cli v0.1.0 (*)
+             ├── hub-demo-apps v0.1.0 (*)
+             ├── hub-ops v0.1.0 (*)
+             └── hub-sdk v0.1.0 (*)
+   ├ block-buffer v0.12.1
+     └── digest v0.11.3
+         ├── hmac v0.13.0
+         │   └── postgres-protocol v0.6.12
+         │       ├── postgres-types v0.2.14
+         │       │   └── tokio-postgres v0.7.18
+         │       │       ├── deadpool-postgres v0.14.2
+         │       │       │   ├── hub-demo-apps v0.1.0
+         │       │       │   └── hub-sdk v0.1.0
+         │       │       │       └── hub-demo-apps v0.1.0 (*)
+         │       │       ├── hub-demo-apps v0.1.0 (*)
+         │       │       ├── hub-ops v0.1.0
+         │       │       │   └── hub-web v0.1.0
+         │       │       └── hub-sdk v0.1.0 (*)
+         │       └── tokio-postgres v0.7.18 (*)
+         ├── md-5 v0.11.0
+         │   └── postgres-protocol v0.6.12 (*)
+         └── sha2 v0.11.0
+             ├── postgres-protocol v0.6.12 (*)
+             ├── topcoat-asset v0.9.0
+             │   ├── topcoat v0.9.0
+             │   │   ├── hub-cli v0.1.0
+             │   │   │   └── (dev) hub-web v0.1.0 (*)
+             │   │   ├── hub-shell v0.1.0
+             │   │   │   ├── hub-cli v0.1.0 (*)
+             │   │   │   └── hub-web v0.1.0 (*)
+             │   │   └── hub-web v0.1.0 (*)
+             │   ├── topcoat-font v0.9.0
+             │   │   ├── topcoat v0.9.0 (*)
+             │   │   └── topcoat-font-grammar v0.9.0
+             │   │       └── topcoat-font-macro v0.9.0
+             │   │           └── topcoat v0.9.0 (*)
+             │   └── topcoat-runtime v0.9.0
+             │       ├── topcoat v0.9.0 (*)
+             │       └── topcoat-runtime-grammar v0.9.0
+             │           └── topcoat-runtime-macro v0.9.0
+             │               └── topcoat v0.9.0 (*)
+             └── topcoat-session v0.9.0
+                 └── topcoat v0.9.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'cpufeatures'
+   ┌─ platform/Cargo.lock:61:1
+   │  
+61 │ ╭ cpufeatures 0.2.17 registry+https://github.com/rust-lang/crates.io-index
+62 │ │ cpufeatures 0.3.1 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰───────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ cpufeatures v0.2.17
+     ├── aes v0.8.4
+     │   ├── aes-gcm v0.10.3
+     │   │   └── cookie v0.18.2
+     │   │       ├── cookie_store v0.22.1
+     │   │       │   └── reqwest v0.12.28
+     │   │       │       ├── hub-admin v0.1.0
+     │   │       │       │   ├── hub-auth v0.1.0
+     │   │       │       │   │   └── hub-web v0.1.0
+     │   │       │       │   ├── hub-ops v0.1.0
+     │   │       │       │   │   └── hub-web v0.1.0 (*)
+     │   │       │       │   ├── (dev) hub-runtime v0.1.0
+     │   │       │       │   │   ├── hub-ops v0.1.0 (*)
+     │   │       │       │   │   └── hub-web v0.1.0 (*)
+     │   │       │       │   └── hub-web v0.1.0 (*)
+     │   │       │       ├── hub-auth v0.1.0 (*)
+     │   │       │       ├── (dev) hub-cli v0.1.0
+     │   │       │       │   └── (dev) hub-web v0.1.0 (*)
+     │   │       │       ├── hub-demo-apps v0.1.0
+     │   │       │       ├── hub-gateway v0.1.0
+     │   │       │       │   ├── hub-cli v0.1.0 (*)
+     │   │       │       │   └── hub-web v0.1.0 (*)
+     │   │       │       ├── (dev) hub-ops v0.1.0 (*)
+     │   │       │       ├── (dev) hub-sdk v0.1.0
+     │   │       │       │   └── hub-demo-apps v0.1.0 (*)
+     │   │       │       └── (dev) hub-web v0.1.0 (*)
+     │   │       ├── reqwest v0.12.28 (*)
+     │   │       └── topcoat-cookie v0.9.0
+     │   │           ├── topcoat v0.9.0
+     │   │           │   ├── hub-cli v0.1.0 (*)
+     │   │           │   ├── hub-shell v0.1.0
+     │   │           │   │   ├── hub-cli v0.1.0 (*)
+     │   │           │   │   └── hub-web v0.1.0 (*)
+     │   │           │   └── hub-web v0.1.0 (*)
+     │   │           └── topcoat-session v0.9.0
+     │   │               └── topcoat v0.9.0 (*)
+     │   └── zip v2.4.2
+     │       ├── (dev) hub-cli v0.1.0 (*)
+     │       ├── hub-demo-apps v0.1.0 (*)
+     │       └── hub-ops v0.1.0 (*)
+     ├── argon2 v0.5.3
+     │   └── hub-auth v0.1.0 (*)
+     ├── polyval v0.6.2
+     │   └── ghash v0.5.1
+     │       └── aes-gcm v0.10.3 (*)
+     ├── sha1 v0.10.7
+     │   ├── tungstenite v0.29.0
+     │   │   └── tokio-tungstenite v0.29.0
+     │   │       ├── topcoat v0.9.0 (*)
+     │   │       └── topcoat-router v0.9.0
+     │   │           ├── topcoat v0.9.0 (*)
+     │   │           ├── topcoat-asset v0.9.0
+     │   │           │   ├── topcoat v0.9.0 (*)
+     │   │           │   ├── topcoat-font v0.9.0
+     │   │           │   │   ├── topcoat v0.9.0 (*)
+     │   │           │   │   └── topcoat-font-grammar v0.9.0
+     │   │           │   │       └── topcoat-font-macro v0.9.0
+     │   │           │   │           └── topcoat v0.9.0 (*)
+     │   │           │   └── topcoat-runtime v0.9.0
+     │   │           │       ├── topcoat v0.9.0 (*)
+     │   │           │       └── topcoat-runtime-grammar v0.9.0
+     │   │           │           └── topcoat-runtime-macro v0.9.0
+     │   │           │               └── topcoat v0.9.0 (*)
+     │   │           ├── topcoat-cookie v0.9.0 (*)
+     │   │           ├── topcoat-font v0.9.0 (*)
+     │   │           ├── topcoat-runtime v0.9.0 (*)
+     │   │           ├── topcoat-runtime-grammar v0.9.0 (*)
+     │   │           └── topcoat-session v0.9.0 (*)
+     │   └── zip v2.4.2 (*)
+     └── sha2 v0.10.9
+         ├── cookie v0.18.2 (*)
+         ├── hub-auth v0.1.0 (*)
+         ├── hub-cli v0.1.0 (*)
+         ├── hub-demo-apps v0.1.0 (*)
+         ├── hub-ops v0.1.0 (*)
+         └── hub-sdk v0.1.0 (*)
+   ├ cpufeatures v0.3.1
+     ├── chacha20 v0.10.2
+     │   └── rand v0.10.3
+     │       ├── postgres-protocol v0.6.12
+     │       │   ├── postgres-types v0.2.14
+     │       │   │   └── tokio-postgres v0.7.18
+     │       │   │       ├── deadpool-postgres v0.14.2
+     │       │   │       │   ├── hub-demo-apps v0.1.0
+     │       │   │       │   └── hub-sdk v0.1.0
+     │       │   │       │       └── hub-demo-apps v0.1.0 (*)
+     │       │   │       ├── hub-demo-apps v0.1.0 (*)
+     │       │   │       ├── hub-ops v0.1.0
+     │       │   │       │   └── hub-web v0.1.0
+     │       │   │       └── hub-sdk v0.1.0 (*)
+     │       │   └── tokio-postgres v0.7.18 (*)
+     │       └── tokio-postgres v0.7.18 (*)
+     └── sha2 v0.11.0
+         ├── postgres-protocol v0.6.12 (*)
+         ├── topcoat-asset v0.9.0
+         │   ├── topcoat v0.9.0
+         │   │   ├── hub-cli v0.1.0
+         │   │   │   └── (dev) hub-web v0.1.0 (*)
+         │   │   ├── hub-shell v0.1.0
+         │   │   │   ├── hub-cli v0.1.0 (*)
+         │   │   │   └── hub-web v0.1.0 (*)
+         │   │   └── hub-web v0.1.0 (*)
+         │   ├── topcoat-font v0.9.0
+         │   │   ├── topcoat v0.9.0 (*)
+         │   │   └── topcoat-font-grammar v0.9.0
+         │   │       └── topcoat-font-macro v0.9.0
+         │   │           └── topcoat v0.9.0 (*)
+         │   └── topcoat-runtime v0.9.0
+         │       ├── topcoat v0.9.0 (*)
+         │       └── topcoat-runtime-grammar v0.9.0
+         │           └── topcoat-runtime-macro v0.9.0
+         │               └── topcoat v0.9.0 (*)
+         └── topcoat-session v0.9.0
+             └── topcoat v0.9.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'crypto-common'
+   ┌─ platform/Cargo.lock:69:1
+   │  
+69 │ ╭ crypto-common 0.1.7 registry+https://github.com/rust-lang/crates.io-index
+70 │ │ crypto-common 0.2.2 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰─────────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ crypto-common v0.1.7
+     ├── aead v0.5.2
+     │   └── aes-gcm v0.10.3
+     │       └── cookie v0.18.2
+     │           ├── cookie_store v0.22.1
+     │           │   └── reqwest v0.12.28
+     │           │       ├── hub-admin v0.1.0
+     │           │       │   ├── hub-auth v0.1.0
+     │           │       │   │   └── hub-web v0.1.0
+     │           │       │   ├── hub-ops v0.1.0
+     │           │       │   │   └── hub-web v0.1.0 (*)
+     │           │       │   ├── (dev) hub-runtime v0.1.0
+     │           │       │   │   ├── hub-ops v0.1.0 (*)
+     │           │       │   │   └── hub-web v0.1.0 (*)
+     │           │       │   └── hub-web v0.1.0 (*)
+     │           │       ├── hub-auth v0.1.0 (*)
+     │           │       ├── (dev) hub-cli v0.1.0
+     │           │       │   └── (dev) hub-web v0.1.0 (*)
+     │           │       ├── hub-demo-apps v0.1.0
+     │           │       ├── hub-gateway v0.1.0
+     │           │       │   ├── hub-cli v0.1.0 (*)
+     │           │       │   └── hub-web v0.1.0 (*)
+     │           │       ├── (dev) hub-ops v0.1.0 (*)
+     │           │       ├── (dev) hub-sdk v0.1.0
+     │           │       │   └── hub-demo-apps v0.1.0 (*)
+     │           │       └── (dev) hub-web v0.1.0 (*)
+     │           ├── reqwest v0.12.28 (*)
+     │           └── topcoat-cookie v0.9.0
+     │               ├── topcoat v0.9.0
+     │               │   ├── hub-cli v0.1.0 (*)
+     │               │   ├── hub-shell v0.1.0
+     │               │   │   ├── hub-cli v0.1.0 (*)
+     │               │   │   └── hub-web v0.1.0 (*)
+     │               │   └── hub-web v0.1.0 (*)
+     │               └── topcoat-session v0.9.0
+     │                   └── topcoat v0.9.0 (*)
+     ├── cipher v0.4.4
+     │   ├── aes v0.8.4
+     │   │   ├── aes-gcm v0.10.3 (*)
+     │   │   └── zip v2.4.2
+     │   │       ├── (dev) hub-cli v0.1.0 (*)
+     │   │       ├── hub-demo-apps v0.1.0 (*)
+     │   │       └── hub-ops v0.1.0 (*)
+     │   ├── aes-gcm v0.10.3 (*)
+     │   └── ctr v0.9.2
+     │       └── aes-gcm v0.10.3 (*)
+     ├── digest v0.10.7
+     │   ├── blake2 v0.10.6
+     │   │   └── argon2 v0.5.3
+     │   │       └── hub-auth v0.1.0 (*)
+     │   ├── hmac v0.12.1
+     │   │   ├── cookie v0.18.2 (*)
+     │   │   ├── hkdf v0.12.4
+     │   │   │   └── cookie v0.18.2 (*)
+     │   │   ├── hub-demo-apps v0.1.0 (*)
+     │   │   ├── pbkdf2 v0.12.2
+     │   │   │   └── zip v2.4.2 (*)
+     │   │   └── zip v2.4.2 (*)
+     │   ├── pbkdf2 v0.12.2 (*)
+     │   ├── sha1 v0.10.7
+     │   │   ├── tungstenite v0.29.0
+     │   │   │   └── tokio-tungstenite v0.29.0
+     │   │   │       ├── topcoat v0.9.0 (*)
+     │   │   │       └── topcoat-router v0.9.0
+     │   │   │           ├── topcoat v0.9.0 (*)
+     │   │   │           ├── topcoat-asset v0.9.0
+     │   │   │           │   ├── topcoat v0.9.0 (*)
+     │   │   │           │   ├── topcoat-font v0.9.0
+     │   │   │           │   │   ├── topcoat v0.9.0 (*)
+     │   │   │           │   │   └── topcoat-font-grammar v0.9.0
+     │   │   │           │   │       └── topcoat-font-macro v0.9.0
+     │   │   │           │   │           └── topcoat v0.9.0 (*)
+     │   │   │           │   └── topcoat-runtime v0.9.0
+     │   │   │           │       ├── topcoat v0.9.0 (*)
+     │   │   │           │       └── topcoat-runtime-grammar v0.9.0
+     │   │   │           │           └── topcoat-runtime-macro v0.9.0
+     │   │   │           │               └── topcoat v0.9.0 (*)
+     │   │   │           ├── topcoat-cookie v0.9.0 (*)
+     │   │   │           ├── topcoat-font v0.9.0 (*)
+     │   │   │           ├── topcoat-runtime v0.9.0 (*)
+     │   │   │           ├── topcoat-runtime-grammar v0.9.0 (*)
+     │   │   │           └── topcoat-session v0.9.0 (*)
+     │   │   └── zip v2.4.2 (*)
+     │   └── sha2 v0.10.9
+     │       ├── cookie v0.18.2 (*)
+     │       ├── hub-auth v0.1.0 (*)
+     │       ├── hub-cli v0.1.0 (*)
+     │       ├── hub-demo-apps v0.1.0 (*)
+     │       ├── hub-ops v0.1.0 (*)
+     │       └── hub-sdk v0.1.0 (*)
+     └── universal-hash v0.5.1
+         └── polyval v0.6.2
+             └── ghash v0.5.1
+                 └── aes-gcm v0.10.3 (*)
+   ├ crypto-common v0.2.2
+     └── digest v0.11.3
+         ├── hmac v0.13.0
+         │   └── postgres-protocol v0.6.12
+         │       ├── postgres-types v0.2.14
+         │       │   └── tokio-postgres v0.7.18
+         │       │       ├── deadpool-postgres v0.14.2
+         │       │       │   ├── hub-demo-apps v0.1.0
+         │       │       │   └── hub-sdk v0.1.0
+         │       │       │       └── hub-demo-apps v0.1.0 (*)
+         │       │       ├── hub-demo-apps v0.1.0 (*)
+         │       │       ├── hub-ops v0.1.0
+         │       │       │   └── hub-web v0.1.0
+         │       │       └── hub-sdk v0.1.0 (*)
+         │       └── tokio-postgres v0.7.18 (*)
+         ├── md-5 v0.11.0
+         │   └── postgres-protocol v0.6.12 (*)
+         └── sha2 v0.11.0
+             ├── postgres-protocol v0.6.12 (*)
+             ├── topcoat-asset v0.9.0
+             │   ├── topcoat v0.9.0
+             │   │   ├── hub-cli v0.1.0
+             │   │   │   └── (dev) hub-web v0.1.0 (*)
+             │   │   ├── hub-shell v0.1.0
+             │   │   │   ├── hub-cli v0.1.0 (*)
+             │   │   │   └── hub-web v0.1.0 (*)
+             │   │   └── hub-web v0.1.0 (*)
+             │   ├── topcoat-font v0.9.0
+             │   │   ├── topcoat v0.9.0 (*)
+             │   │   └── topcoat-font-grammar v0.9.0
+             │   │       └── topcoat-font-macro v0.9.0
+             │   │           └── topcoat v0.9.0 (*)
+             │   └── topcoat-runtime v0.9.0
+             │       ├── topcoat v0.9.0 (*)
+             │       └── topcoat-runtime-grammar v0.9.0
+             │           └── topcoat-runtime-macro v0.9.0
+             │               └── topcoat v0.9.0 (*)
+             └── topcoat-session v0.9.0
+                 └── topcoat v0.9.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'digest'
+   ┌─ platform/Cargo.lock:81:1
+   │  
+81 │ ╭ digest 0.10.7 registry+https://github.com/rust-lang/crates.io-index
+82 │ │ digest 0.11.3 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰───────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ digest v0.10.7
+     ├── blake2 v0.10.6
+     │   └── argon2 v0.5.3
+     │       └── hub-auth v0.1.0
+     │           └── hub-web v0.1.0
+     ├── hmac v0.12.1
+     │   ├── cookie v0.18.2
+     │   │   ├── cookie_store v0.22.1
+     │   │   │   └── reqwest v0.12.28
+     │   │   │       ├── hub-admin v0.1.0
+     │   │   │       │   ├── hub-auth v0.1.0 (*)
+     │   │   │       │   ├── hub-ops v0.1.0
+     │   │   │       │   │   └── hub-web v0.1.0 (*)
+     │   │   │       │   ├── (dev) hub-runtime v0.1.0
+     │   │   │       │   │   ├── hub-ops v0.1.0 (*)
+     │   │   │       │   │   └── hub-web v0.1.0 (*)
+     │   │   │       │   └── hub-web v0.1.0 (*)
+     │   │   │       ├── hub-auth v0.1.0 (*)
+     │   │   │       ├── (dev) hub-cli v0.1.0
+     │   │   │       │   └── (dev) hub-web v0.1.0 (*)
+     │   │   │       ├── hub-demo-apps v0.1.0
+     │   │   │       ├── hub-gateway v0.1.0
+     │   │   │       │   ├── hub-cli v0.1.0 (*)
+     │   │   │       │   └── hub-web v0.1.0 (*)
+     │   │   │       ├── (dev) hub-ops v0.1.0 (*)
+     │   │   │       ├── (dev) hub-sdk v0.1.0
+     │   │   │       │   └── hub-demo-apps v0.1.0 (*)
+     │   │   │       └── (dev) hub-web v0.1.0 (*)
+     │   │   ├── reqwest v0.12.28 (*)
+     │   │   └── topcoat-cookie v0.9.0
+     │   │       ├── topcoat v0.9.0
+     │   │       │   ├── hub-cli v0.1.0 (*)
+     │   │       │   ├── hub-shell v0.1.0
+     │   │       │   │   ├── hub-cli v0.1.0 (*)
+     │   │       │   │   └── hub-web v0.1.0 (*)
+     │   │       │   └── hub-web v0.1.0 (*)
+     │   │       └── topcoat-session v0.9.0
+     │   │           └── topcoat v0.9.0 (*)
+     │   ├── hkdf v0.12.4
+     │   │   └── cookie v0.18.2 (*)
+     │   ├── hub-demo-apps v0.1.0 (*)
+     │   ├── pbkdf2 v0.12.2
+     │   │   └── zip v2.4.2
+     │   │       ├── (dev) hub-cli v0.1.0 (*)
+     │   │       ├── hub-demo-apps v0.1.0 (*)
+     │   │       └── hub-ops v0.1.0 (*)
+     │   └── zip v2.4.2 (*)
+     ├── pbkdf2 v0.12.2 (*)
+     ├── sha1 v0.10.7
+     │   ├── tungstenite v0.29.0
+     │   │   └── tokio-tungstenite v0.29.0
+     │   │       ├── topcoat v0.9.0 (*)
+     │   │       └── topcoat-router v0.9.0
+     │   │           ├── topcoat v0.9.0 (*)
+     │   │           ├── topcoat-asset v0.9.0
+     │   │           │   ├── topcoat v0.9.0 (*)
+     │   │           │   ├── topcoat-font v0.9.0
+     │   │           │   │   ├── topcoat v0.9.0 (*)
+     │   │           │   │   └── topcoat-font-grammar v0.9.0
+     │   │           │   │       └── topcoat-font-macro v0.9.0
+     │   │           │   │           └── topcoat v0.9.0 (*)
+     │   │           │   └── topcoat-runtime v0.9.0
+     │   │           │       ├── topcoat v0.9.0 (*)
+     │   │           │       └── topcoat-runtime-grammar v0.9.0
+     │   │           │           └── topcoat-runtime-macro v0.9.0
+     │   │           │               └── topcoat v0.9.0 (*)
+     │   │           ├── topcoat-cookie v0.9.0 (*)
+     │   │           ├── topcoat-font v0.9.0 (*)
+     │   │           ├── topcoat-runtime v0.9.0 (*)
+     │   │           ├── topcoat-runtime-grammar v0.9.0 (*)
+     │   │           └── topcoat-session v0.9.0 (*)
+     │   └── zip v2.4.2 (*)
+     └── sha2 v0.10.9
+         ├── cookie v0.18.2 (*)
+         ├── hub-auth v0.1.0 (*)
+         ├── hub-cli v0.1.0 (*)
+         ├── hub-demo-apps v0.1.0 (*)
+         ├── hub-ops v0.1.0 (*)
+         └── hub-sdk v0.1.0 (*)
+   ├ digest v0.11.3
+     ├── hmac v0.13.0
+     │   └── postgres-protocol v0.6.12
+     │       ├── postgres-types v0.2.14
+     │       │   └── tokio-postgres v0.7.18
+     │       │       ├── deadpool-postgres v0.14.2
+     │       │       │   ├── hub-demo-apps v0.1.0
+     │       │       │   └── hub-sdk v0.1.0
+     │       │       │       └── hub-demo-apps v0.1.0 (*)
+     │       │       ├── hub-demo-apps v0.1.0 (*)
+     │       │       ├── hub-ops v0.1.0
+     │       │       │   └── hub-web v0.1.0
+     │       │       └── hub-sdk v0.1.0 (*)
+     │       └── tokio-postgres v0.7.18 (*)
+     ├── md-5 v0.11.0
+     │   └── postgres-protocol v0.6.12 (*)
+     └── sha2 v0.11.0
+         ├── postgres-protocol v0.6.12 (*)
+         ├── topcoat-asset v0.9.0
+         │   ├── topcoat v0.9.0
+         │   │   ├── hub-cli v0.1.0
+         │   │   │   └── (dev) hub-web v0.1.0 (*)
+         │   │   ├── hub-shell v0.1.0
+         │   │   │   ├── hub-cli v0.1.0 (*)
+         │   │   │   └── hub-web v0.1.0 (*)
+         │   │   └── hub-web v0.1.0 (*)
+         │   ├── topcoat-font v0.9.0
+         │   │   ├── topcoat v0.9.0 (*)
+         │   │   └── topcoat-font-grammar v0.9.0
+         │   │       └── topcoat-font-macro v0.9.0
+         │   │           └── topcoat v0.9.0 (*)
+         │   └── topcoat-runtime v0.9.0
+         │       ├── topcoat v0.9.0 (*)
+         │       └── topcoat-runtime-grammar v0.9.0
+         │           └── topcoat-runtime-macro v0.9.0
+         │               └── topcoat v0.9.0 (*)
+         └── topcoat-session v0.9.0
+             └── topcoat v0.9.0 (*)
+
+warning[duplicate]: found 3 duplicate entries for crate 'getrandom'
+    ┌─ platform/Cargo.lock:106:1
+    │  
+106 │ ╭ getrandom 0.2.17 registry+https://github.com/rust-lang/crates.io-index
+107 │ │ getrandom 0.3.4 registry+https://github.com/rust-lang/crates.io-index
+108 │ │ getrandom 0.4.3 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ getrandom v0.2.17
+      ├── hub-admin v0.1.0
+      │   ├── hub-auth v0.1.0
+      │   │   └── hub-web v0.1.0
+      │   ├── hub-ops v0.1.0
+      │   │   └── hub-web v0.1.0 (*)
+      │   ├── (dev) hub-runtime v0.1.0
+      │   │   ├── hub-ops v0.1.0 (*)
+      │   │   └── hub-web v0.1.0 (*)
+      │   └── hub-web v0.1.0 (*)
+      ├── hub-auth v0.1.0 (*)
+      ├── rand_core v0.6.4
+      │   ├── crypto-common v0.1.7
+      │   │   ├── aead v0.5.2
+      │   │   │   └── aes-gcm v0.10.3
+      │   │   │       └── cookie v0.18.2
+      │   │   │           ├── cookie_store v0.22.1
+      │   │   │           │   └── reqwest v0.12.28
+      │   │   │           │       ├── hub-admin v0.1.0 (*)
+      │   │   │           │       ├── hub-auth v0.1.0 (*)
+      │   │   │           │       ├── (dev) hub-cli v0.1.0
+      │   │   │           │       │   └── (dev) hub-web v0.1.0 (*)
+      │   │   │           │       ├── hub-demo-apps v0.1.0
+      │   │   │           │       ├── hub-gateway v0.1.0
+      │   │   │           │       │   ├── hub-cli v0.1.0 (*)
+      │   │   │           │       │   └── hub-web v0.1.0 (*)
+      │   │   │           │       ├── (dev) hub-ops v0.1.0 (*)
+      │   │   │           │       ├── (dev) hub-sdk v0.1.0
+      │   │   │           │       │   └── hub-demo-apps v0.1.0 (*)
+      │   │   │           │       └── (dev) hub-web v0.1.0 (*)
+      │   │   │           ├── reqwest v0.12.28 (*)
+      │   │   │           └── topcoat-cookie v0.9.0
+      │   │   │               ├── topcoat v0.9.0
+      │   │   │               │   ├── hub-cli v0.1.0 (*)
+      │   │   │               │   ├── hub-shell v0.1.0
+      │   │   │               │   │   ├── hub-cli v0.1.0 (*)
+      │   │   │               │   │   └── hub-web v0.1.0 (*)
+      │   │   │               │   └── hub-web v0.1.0 (*)
+      │   │   │               └── topcoat-session v0.9.0
+      │   │   │                   └── topcoat v0.9.0 (*)
+      │   │   ├── cipher v0.4.4
+      │   │   │   ├── aes v0.8.4
+      │   │   │   │   ├── aes-gcm v0.10.3 (*)
+      │   │   │   │   └── zip v2.4.2
+      │   │   │   │       ├── (dev) hub-cli v0.1.0 (*)
+      │   │   │   │       ├── hub-demo-apps v0.1.0 (*)
+      │   │   │   │       └── hub-ops v0.1.0 (*)
+      │   │   │   ├── aes-gcm v0.10.3 (*)
+      │   │   │   └── ctr v0.9.2
+      │   │   │       └── aes-gcm v0.10.3 (*)
+      │   │   ├── digest v0.10.7
+      │   │   │   ├── blake2 v0.10.6
+      │   │   │   │   └── argon2 v0.5.3
+      │   │   │   │       └── hub-auth v0.1.0 (*)
+      │   │   │   ├── hmac v0.12.1
+      │   │   │   │   ├── cookie v0.18.2 (*)
+      │   │   │   │   ├── hkdf v0.12.4
+      │   │   │   │   │   └── cookie v0.18.2 (*)
+      │   │   │   │   ├── hub-demo-apps v0.1.0 (*)
+      │   │   │   │   ├── pbkdf2 v0.12.2
+      │   │   │   │   │   └── zip v2.4.2 (*)
+      │   │   │   │   └── zip v2.4.2 (*)
+      │   │   │   ├── pbkdf2 v0.12.2 (*)
+      │   │   │   ├── sha1 v0.10.7
+      │   │   │   │   ├── tungstenite v0.29.0
+      │   │   │   │   │   └── tokio-tungstenite v0.29.0
+      │   │   │   │   │       ├── topcoat v0.9.0 (*)
+      │   │   │   │   │       └── topcoat-router v0.9.0
+      │   │   │   │   │           ├── topcoat v0.9.0 (*)
+      │   │   │   │   │           ├── topcoat-asset v0.9.0
+      │   │   │   │   │           │   ├── topcoat v0.9.0 (*)
+      │   │   │   │   │           │   ├── topcoat-font v0.9.0
+      │   │   │   │   │           │   │   ├── topcoat v0.9.0 (*)
+      │   │   │   │   │           │   │   └── topcoat-font-grammar v0.9.0
+      │   │   │   │   │           │   │       └── topcoat-font-macro v0.9.0
+      │   │   │   │   │           │   │           └── topcoat v0.9.0 (*)
+      │   │   │   │   │           │   └── topcoat-runtime v0.9.0
+      │   │   │   │   │           │       ├── topcoat v0.9.0 (*)
+      │   │   │   │   │           │       └── topcoat-runtime-grammar v0.9.0
+      │   │   │   │   │           │           └── topcoat-runtime-macro v0.9.0
+      │   │   │   │   │           │               └── topcoat v0.9.0 (*)
+      │   │   │   │   │           ├── topcoat-cookie v0.9.0 (*)
+      │   │   │   │   │           ├── topcoat-font v0.9.0 (*)
+      │   │   │   │   │           ├── topcoat-runtime v0.9.0 (*)
+      │   │   │   │   │           ├── topcoat-runtime-grammar v0.9.0 (*)
+      │   │   │   │   │           └── topcoat-session v0.9.0 (*)
+      │   │   │   │   └── zip v2.4.2 (*)
+      │   │   │   └── sha2 v0.10.9
+      │   │   │       ├── cookie v0.18.2 (*)
+      │   │   │       ├── hub-auth v0.1.0 (*)
+      │   │   │       ├── hub-cli v0.1.0 (*)
+      │   │   │       ├── hub-demo-apps v0.1.0 (*)
+      │   │   │       ├── hub-ops v0.1.0 (*)
+      │   │   │       └── hub-sdk v0.1.0 (*)
+      │   │   └── universal-hash v0.5.1
+      │   │       └── polyval v0.6.2
+      │   │           └── ghash v0.5.1
+      │   │               └── aes-gcm v0.10.3 (*)
+      │   ├── password-hash v0.5.0
+      │   │   └── argon2 v0.5.3 (*)
+      │   ├── rand v0.8.8
+      │   │   └── cookie v0.18.2 (*)
+      │   └── rand_chacha v0.3.1
+      │       └── rand v0.8.8 (*)
+      ├── ring v0.17.14
+      │   ├── hub-auth v0.1.0 (*)
+      │   ├── rustls v0.23.45
+      │   │   ├── hyper-rustls v0.27.10
+      │   │   │   └── reqwest v0.12.28 (*)
+      │   │   ├── reqwest v0.12.28 (*)
+      │   │   └── tokio-rustls v0.26.5
+      │   │       ├── hyper-rustls v0.27.10 (*)
+      │   │       └── reqwest v0.12.28 (*)
+      │   └── rustls-webpki v0.103.15
+      │       └── rustls v0.23.45 (*)
+      └── topcoat-cookie v0.9.0 (*)
+    ├ getrandom v0.3.4
+      ├── rand_core v0.9.5
+      │   ├── rand v0.9.5
+      │   │   └── tungstenite v0.29.0
+      │   │       └── tokio-tungstenite v0.29.0
+      │   │           ├── topcoat v0.9.0
+      │   │           │   ├── hub-cli v0.1.0
+      │   │           │   │   └── (dev) hub-web v0.1.0
+      │   │           │   ├── hub-shell v0.1.0
+      │   │           │   │   ├── hub-cli v0.1.0 (*)
+      │   │           │   │   └── hub-web v0.1.0 (*)
+      │   │           │   └── hub-web v0.1.0 (*)
+      │   │           └── topcoat-router v0.9.0
+      │   │               ├── topcoat v0.9.0 (*)
+      │   │               ├── topcoat-asset v0.9.0
+      │   │               │   ├── topcoat v0.9.0 (*)
+      │   │               │   ├── topcoat-font v0.9.0
+      │   │               │   │   ├── topcoat v0.9.0 (*)
+      │   │               │   │   └── topcoat-font-grammar v0.9.0
+      │   │               │   │       └── topcoat-font-macro v0.9.0
+      │   │               │   │           └── topcoat v0.9.0 (*)
+      │   │               │   └── topcoat-runtime v0.9.0
+      │   │               │       ├── topcoat v0.9.0 (*)
+      │   │               │       └── topcoat-runtime-grammar v0.9.0
+      │   │               │           └── topcoat-runtime-macro v0.9.0
+      │   │               │               └── topcoat v0.9.0 (*)
+      │   │               ├── topcoat-cookie v0.9.0
+      │   │               │   ├── topcoat v0.9.0 (*)
+      │   │               │   └── topcoat-session v0.9.0
+      │   │               │       └── topcoat v0.9.0 (*)
+      │   │               ├── topcoat-font v0.9.0 (*)
+      │   │               ├── topcoat-runtime v0.9.0 (*)
+      │   │               ├── topcoat-runtime-grammar v0.9.0 (*)
+      │   │               └── topcoat-session v0.9.0 (*)
+      │   └── rand_chacha v0.9.0
+      │       └── rand v0.9.5 (*)
+      └── zip v2.4.2
+          ├── (dev) hub-cli v0.1.0 (*)
+          ├── hub-demo-apps v0.1.0
+          └── hub-ops v0.1.0
+              └── hub-web v0.1.0 (*)
+    ├ getrandom v0.4.3
+      ├── deadpool-postgres v0.14.2
+      │   ├── hub-demo-apps v0.1.0
+      │   └── hub-sdk v0.1.0
+      │       └── hub-demo-apps v0.1.0 (*)
+      ├── jobserver v0.1.35
+      │   └── cc v1.5.1
+      │       ├── (build) bzip2-sys v0.1.13+1.0.8
+      │       │   └── bzip2 v0.5.2
+      │       │       └── zip v2.4.2
+      │       │           ├── (dev) hub-cli v0.1.0
+      │       │           │   └── (dev) hub-web v0.1.0
+      │       │           ├── hub-demo-apps v0.1.0 (*)
+      │       │           └── hub-ops v0.1.0
+      │       │               └── hub-web v0.1.0 (*)
+      │       ├── (build) iana-time-zone-haiku v0.1.2
+      │       │   └── iana-time-zone v0.1.65
+      │       │       └── chrono v0.4.45
+      │       │           ├── hub-demo-apps v0.1.0 (*)
+      │       │           └── postgres-types v0.2.14
+      │       │               └── tokio-postgres v0.7.18
+      │       │                   ├── deadpool-postgres v0.14.2 (*)
+      │       │                   ├── hub-demo-apps v0.1.0 (*)
+      │       │                   ├── hub-ops v0.1.0 (*)
+      │       │                   └── hub-sdk v0.1.0 (*)
+      │       ├── (build) lzma-sys v0.1.20
+      │       │   └── xz2 v0.1.7
+      │       │       └── zip v2.4.2 (*)
+      │       ├── (build) ring v0.17.14
+      │       │   ├── hub-auth v0.1.0
+      │       │   │   └── hub-web v0.1.0 (*)
+      │       │   ├── rustls v0.23.45
+      │       │   │   ├── hyper-rustls v0.27.10
+      │       │   │   │   └── reqwest v0.12.28
+      │       │   │   │       ├── hub-admin v0.1.0
+      │       │   │   │       │   ├── hub-auth v0.1.0 (*)
+      │       │   │   │       │   ├── hub-ops v0.1.0 (*)
+      │       │   │   │       │   ├── (dev) hub-runtime v0.1.0
+      │       │   │   │       │   │   ├── hub-ops v0.1.0 (*)
+      │       │   │   │       │   │   └── hub-web v0.1.0 (*)
+      │       │   │   │       │   └── hub-web v0.1.0 (*)
+      │       │   │   │       ├── hub-auth v0.1.0 (*)
+      │       │   │   │       ├── (dev) hub-cli v0.1.0 (*)
+      │       │   │   │       ├── hub-demo-apps v0.1.0 (*)
+      │       │   │   │       ├── hub-gateway v0.1.0
+      │       │   │   │       │   ├── hub-cli v0.1.0 (*)
+      │       │   │   │       │   └── hub-web v0.1.0 (*)
+      │       │   │   │       ├── (dev) hub-ops v0.1.0 (*)
+      │       │   │   │       ├── (dev) hub-sdk v0.1.0 (*)
+      │       │   │   │       └── (dev) hub-web v0.1.0 (*)
+      │       │   │   ├── reqwest v0.12.28 (*)
+      │       │   │   └── tokio-rustls v0.26.5
+      │       │   │       ├── hyper-rustls v0.27.10 (*)
+      │       │   │       └── reqwest v0.12.28 (*)
+      │       │   └── rustls-webpki v0.103.15
+      │       │       └── rustls v0.23.45 (*)
+      │       └── (build) zstd-sys v2.1.0+zstd.1.5.7
+      │           └── zstd-safe v7.3.0
+      │               └── zstd v0.13.3
+      │                   └── zip v2.4.2 (*)
+      ├── rand v0.10.3
+      │   ├── postgres-protocol v0.6.12
+      │   │   ├── postgres-types v0.2.14 (*)
+      │   │   └── tokio-postgres v0.7.18 (*)
+      │   └── tokio-postgres v0.7.18 (*)
+      ├── tempfile v3.27.0
+      │   ├── (dev) hub-admin v0.1.0 (*)
+      │   ├── (dev) hub-auth v0.1.0 (*)
+      │   ├── (dev) hub-cli v0.1.0 (*)
+      │   ├── (dev) hub-ops v0.1.0 (*)
+      │   ├── hub-sdk v0.1.0 (*)
+      │   ├── (dev) hub-web v0.1.0 (*)
+      │   └── rust_xlsxwriter v0.99.1
+      │       └── hub-demo-apps v0.1.0 (*)
+      ├── topcoat-runtime-grammar v0.9.0
+      │   └── topcoat-runtime-macro v0.9.0
+      │       └── topcoat v0.9.0
+      │           ├── hub-cli v0.1.0 (*)
+      │           ├── hub-shell v0.1.0
+      │           │   ├── hub-cli v0.1.0 (*)
+      │           │   └── hub-web v0.1.0 (*)
+      │           └── hub-web v0.1.0 (*)
+      └── topcoat-session v0.9.0
+          └── topcoat v0.9.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'hmac'
+    ┌─ platform/Cargo.lock:115:1
+    │  
+115 │ ╭ hmac 0.12.1 registry+https://github.com/rust-lang/crates.io-index
+116 │ │ hmac 0.13.0 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ hmac v0.12.1
+      ├── cookie v0.18.2
+      │   ├── cookie_store v0.22.1
+      │   │   └── reqwest v0.12.28
+      │   │       ├── hub-admin v0.1.0
+      │   │       │   ├── hub-auth v0.1.0
+      │   │       │   │   └── hub-web v0.1.0
+      │   │       │   ├── hub-ops v0.1.0
+      │   │       │   │   └── hub-web v0.1.0 (*)
+      │   │       │   ├── (dev) hub-runtime v0.1.0
+      │   │       │   │   ├── hub-ops v0.1.0 (*)
+      │   │       │   │   └── hub-web v0.1.0 (*)
+      │   │       │   └── hub-web v0.1.0 (*)
+      │   │       ├── hub-auth v0.1.0 (*)
+      │   │       ├── (dev) hub-cli v0.1.0
+      │   │       │   └── (dev) hub-web v0.1.0 (*)
+      │   │       ├── hub-demo-apps v0.1.0
+      │   │       ├── hub-gateway v0.1.0
+      │   │       │   ├── hub-cli v0.1.0 (*)
+      │   │       │   └── hub-web v0.1.0 (*)
+      │   │       ├── (dev) hub-ops v0.1.0 (*)
+      │   │       ├── (dev) hub-sdk v0.1.0
+      │   │       │   └── hub-demo-apps v0.1.0 (*)
+      │   │       └── (dev) hub-web v0.1.0 (*)
+      │   ├── reqwest v0.12.28 (*)
+      │   └── topcoat-cookie v0.9.0
+      │       ├── topcoat v0.9.0
+      │       │   ├── hub-cli v0.1.0 (*)
+      │       │   ├── hub-shell v0.1.0
+      │       │   │   ├── hub-cli v0.1.0 (*)
+      │       │   │   └── hub-web v0.1.0 (*)
+      │       │   └── hub-web v0.1.0 (*)
+      │       └── topcoat-session v0.9.0
+      │           └── topcoat v0.9.0 (*)
+      ├── hkdf v0.12.4
+      │   └── cookie v0.18.2 (*)
+      ├── hub-demo-apps v0.1.0 (*)
+      ├── pbkdf2 v0.12.2
+      │   └── zip v2.4.2
+      │       ├── (dev) hub-cli v0.1.0 (*)
+      │       ├── hub-demo-apps v0.1.0 (*)
+      │       └── hub-ops v0.1.0 (*)
+      └── zip v2.4.2 (*)
+    ├ hmac v0.13.0
+      └── postgres-protocol v0.6.12
+          ├── postgres-types v0.2.14
+          │   └── tokio-postgres v0.7.18
+          │       ├── deadpool-postgres v0.14.2
+          │       │   ├── hub-demo-apps v0.1.0
+          │       │   └── hub-sdk v0.1.0
+          │       │       └── hub-demo-apps v0.1.0 (*)
+          │       ├── hub-demo-apps v0.1.0 (*)
+          │       ├── hub-ops v0.1.0
+          │       │   └── hub-web v0.1.0
+          │       └── hub-sdk v0.1.0 (*)
+          └── tokio-postgres v0.7.18 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'matchit'
+    ┌─ platform/Cargo.lock:173:1
+    │  
+173 │ ╭ matchit 0.8.4 registry+https://github.com/rust-lang/crates.io-index
+174 │ │ matchit 0.9.2 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰───────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ matchit v0.8.4
+      └── axum v0.8.9
+          ├── hub-admin v0.1.0
+          │   ├── hub-auth v0.1.0
+          │   │   └── hub-web v0.1.0
+          │   ├── hub-ops v0.1.0
+          │   │   └── hub-web v0.1.0 (*)
+          │   ├── (dev) hub-runtime v0.1.0
+          │   │   ├── hub-ops v0.1.0 (*)
+          │   │   └── hub-web v0.1.0 (*)
+          │   └── hub-web v0.1.0 (*)
+          ├── hub-auth v0.1.0 (*)
+          ├── hub-cli v0.1.0
+          │   └── (dev) hub-web v0.1.0 (*)
+          ├── hub-demo-apps v0.1.0
+          ├── hub-gateway v0.1.0
+          │   ├── hub-cli v0.1.0 (*)
+          │   └── hub-web v0.1.0 (*)
+          ├── hub-ops v0.1.0 (*)
+          ├── hub-sdk v0.1.0
+          │   └── hub-demo-apps v0.1.0 (*)
+          ├── hub-shell v0.1.0
+          │   ├── hub-cli v0.1.0 (*)
+          │   └── hub-web v0.1.0 (*)
+          └── hub-web v0.1.0 (*)
+    ├ matchit v0.9.2
+      └── topcoat-router v0.9.0
+          ├── topcoat v0.9.0
+          │   ├── hub-cli v0.1.0
+          │   │   └── (dev) hub-web v0.1.0
+          │   ├── hub-shell v0.1.0
+          │   │   ├── hub-cli v0.1.0 (*)
+          │   │   └── hub-web v0.1.0 (*)
+          │   └── hub-web v0.1.0 (*)
+          ├── topcoat-asset v0.9.0
+          │   ├── topcoat v0.9.0 (*)
+          │   ├── topcoat-font v0.9.0
+          │   │   ├── topcoat v0.9.0 (*)
+          │   │   └── topcoat-font-grammar v0.9.0
+          │   │       └── topcoat-font-macro v0.9.0
+          │   │           └── topcoat v0.9.0 (*)
+          │   └── topcoat-runtime v0.9.0
+          │       ├── topcoat v0.9.0 (*)
+          │       └── topcoat-runtime-grammar v0.9.0
+          │           └── topcoat-runtime-macro v0.9.0
+          │               └── topcoat v0.9.0 (*)
+          ├── topcoat-cookie v0.9.0
+          │   ├── topcoat v0.9.0 (*)
+          │   └── topcoat-session v0.9.0
+          │       └── topcoat v0.9.0 (*)
+          ├── topcoat-font v0.9.0 (*)
+          ├── topcoat-runtime v0.9.0 (*)
+          ├── topcoat-runtime-grammar v0.9.0 (*)
+          └── topcoat-session v0.9.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'r-efi'
+    ┌─ platform/Cargo.lock:216:1
+    │  
+216 │ ╭ r-efi 5.3.0 registry+https://github.com/rust-lang/crates.io-index
+217 │ │ r-efi 6.0.0 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ r-efi v5.3.0
+      └── getrandom v0.3.4
+          ├── rand_core v0.9.5
+          │   ├── rand v0.9.5
+          │   │   └── tungstenite v0.29.0
+          │   │       └── tokio-tungstenite v0.29.0
+          │   │           ├── topcoat v0.9.0
+          │   │           │   ├── hub-cli v0.1.0
+          │   │           │   │   └── (dev) hub-web v0.1.0
+          │   │           │   ├── hub-shell v0.1.0
+          │   │           │   │   ├── hub-cli v0.1.0 (*)
+          │   │           │   │   └── hub-web v0.1.0 (*)
+          │   │           │   └── hub-web v0.1.0 (*)
+          │   │           └── topcoat-router v0.9.0
+          │   │               ├── topcoat v0.9.0 (*)
+          │   │               ├── topcoat-asset v0.9.0
+          │   │               │   ├── topcoat v0.9.0 (*)
+          │   │               │   ├── topcoat-font v0.9.0
+          │   │               │   │   ├── topcoat v0.9.0 (*)
+          │   │               │   │   └── topcoat-font-grammar v0.9.0
+          │   │               │   │       └── topcoat-font-macro v0.9.0
+          │   │               │   │           └── topcoat v0.9.0 (*)
+          │   │               │   └── topcoat-runtime v0.9.0
+          │   │               │       ├── topcoat v0.9.0 (*)
+          │   │               │       └── topcoat-runtime-grammar v0.9.0
+          │   │               │           └── topcoat-runtime-macro v0.9.0
+          │   │               │               └── topcoat v0.9.0 (*)
+          │   │               ├── topcoat-cookie v0.9.0
+          │   │               │   ├── topcoat v0.9.0 (*)
+          │   │               │   └── topcoat-session v0.9.0
+          │   │               │       └── topcoat v0.9.0 (*)
+          │   │               ├── topcoat-font v0.9.0 (*)
+          │   │               ├── topcoat-runtime v0.9.0 (*)
+          │   │               ├── topcoat-runtime-grammar v0.9.0 (*)
+          │   │               └── topcoat-session v0.9.0 (*)
+          │   └── rand_chacha v0.9.0
+          │       └── rand v0.9.5 (*)
+          └── zip v2.4.2
+              ├── (dev) hub-cli v0.1.0 (*)
+              ├── hub-demo-apps v0.1.0
+              └── hub-ops v0.1.0
+                  └── hub-web v0.1.0 (*)
+    ├ r-efi v6.0.0
+      └── getrandom v0.4.3
+          ├── deadpool-postgres v0.14.2
+          │   ├── hub-demo-apps v0.1.0
+          │   └── hub-sdk v0.1.0
+          │       └── hub-demo-apps v0.1.0 (*)
+          ├── jobserver v0.1.35
+          │   └── cc v1.5.1
+          │       ├── (build) bzip2-sys v0.1.13+1.0.8
+          │       │   └── bzip2 v0.5.2
+          │       │       └── zip v2.4.2
+          │       │           ├── (dev) hub-cli v0.1.0
+          │       │           │   └── (dev) hub-web v0.1.0
+          │       │           ├── hub-demo-apps v0.1.0 (*)
+          │       │           └── hub-ops v0.1.0
+          │       │               └── hub-web v0.1.0 (*)
+          │       ├── (build) iana-time-zone-haiku v0.1.2
+          │       │   └── iana-time-zone v0.1.65
+          │       │       └── chrono v0.4.45
+          │       │           ├── hub-demo-apps v0.1.0 (*)
+          │       │           └── postgres-types v0.2.14
+          │       │               └── tokio-postgres v0.7.18
+          │       │                   ├── deadpool-postgres v0.14.2 (*)
+          │       │                   ├── hub-demo-apps v0.1.0 (*)
+          │       │                   ├── hub-ops v0.1.0 (*)
+          │       │                   └── hub-sdk v0.1.0 (*)
+          │       ├── (build) lzma-sys v0.1.20
+          │       │   └── xz2 v0.1.7
+          │       │       └── zip v2.4.2 (*)
+          │       ├── (build) ring v0.17.14
+          │       │   ├── hub-auth v0.1.0
+          │       │   │   └── hub-web v0.1.0 (*)
+          │       │   ├── rustls v0.23.45
+          │       │   │   ├── hyper-rustls v0.27.10
+          │       │   │   │   └── reqwest v0.12.28
+          │       │   │   │       ├── hub-admin v0.1.0
+          │       │   │   │       │   ├── hub-auth v0.1.0 (*)
+          │       │   │   │       │   ├── hub-ops v0.1.0 (*)
+          │       │   │   │       │   ├── (dev) hub-runtime v0.1.0
+          │       │   │   │       │   │   ├── hub-ops v0.1.0 (*)
+          │       │   │   │       │   │   └── hub-web v0.1.0 (*)
+          │       │   │   │       │   └── hub-web v0.1.0 (*)
+          │       │   │   │       ├── hub-auth v0.1.0 (*)
+          │       │   │   │       ├── (dev) hub-cli v0.1.0 (*)
+          │       │   │   │       ├── hub-demo-apps v0.1.0 (*)
+          │       │   │   │       ├── hub-gateway v0.1.0
+          │       │   │   │       │   ├── hub-cli v0.1.0 (*)
+          │       │   │   │       │   └── hub-web v0.1.0 (*)
+          │       │   │   │       ├── (dev) hub-ops v0.1.0 (*)
+          │       │   │   │       ├── (dev) hub-sdk v0.1.0 (*)
+          │       │   │   │       └── (dev) hub-web v0.1.0 (*)
+          │       │   │   ├── reqwest v0.12.28 (*)
+          │       │   │   └── tokio-rustls v0.26.5
+          │       │   │       ├── hyper-rustls v0.27.10 (*)
+          │       │   │       └── reqwest v0.12.28 (*)
+          │       │   └── rustls-webpki v0.103.15
+          │       │       └── rustls v0.23.45 (*)
+          │       └── (build) zstd-sys v2.1.0+zstd.1.5.7
+          │           └── zstd-safe v7.3.0
+          │               └── zstd v0.13.3
+          │                   └── zip v2.4.2 (*)
+          ├── rand v0.10.3
+          │   ├── postgres-protocol v0.6.12
+          │   │   ├── postgres-types v0.2.14 (*)
+          │   │   └── tokio-postgres v0.7.18 (*)
+          │   └── tokio-postgres v0.7.18 (*)
+          ├── tempfile v3.27.0
+          │   ├── (dev) hub-admin v0.1.0 (*)
+          │   ├── (dev) hub-auth v0.1.0 (*)
+          │   ├── (dev) hub-cli v0.1.0 (*)
+          │   ├── (dev) hub-ops v0.1.0 (*)
+          │   ├── hub-sdk v0.1.0 (*)
+          │   ├── (dev) hub-web v0.1.0 (*)
+          │   └── rust_xlsxwriter v0.99.1
+          │       └── hub-demo-apps v0.1.0 (*)
+          ├── topcoat-runtime-grammar v0.9.0
+          │   └── topcoat-runtime-macro v0.9.0
+          │       └── topcoat v0.9.0
+          │           ├── hub-cli v0.1.0 (*)
+          │           ├── hub-shell v0.1.0
+          │           │   ├── hub-cli v0.1.0 (*)
+          │           │   └── hub-web v0.1.0 (*)
+          │           └── hub-web v0.1.0 (*)
+          └── topcoat-session v0.9.0
+              └── topcoat v0.9.0 (*)
+
+warning[duplicate]: found 3 duplicate entries for crate 'rand'
+    ┌─ platform/Cargo.lock:218:1
+    │  
+218 │ ╭ rand 0.8.8 registry+https://github.com/rust-lang/crates.io-index
+219 │ │ rand 0.9.5 registry+https://github.com/rust-lang/crates.io-index
+220 │ │ rand 0.10.3 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ rand v0.8.8
+      └── cookie v0.18.2
+          ├── cookie_store v0.22.1
+          │   └── reqwest v0.12.28
+          │       ├── hub-admin v0.1.0
+          │       │   ├── hub-auth v0.1.0
+          │       │   │   └── hub-web v0.1.0
+          │       │   ├── hub-ops v0.1.0
+          │       │   │   └── hub-web v0.1.0 (*)
+          │       │   ├── (dev) hub-runtime v0.1.0
+          │       │   │   ├── hub-ops v0.1.0 (*)
+          │       │   │   └── hub-web v0.1.0 (*)
+          │       │   └── hub-web v0.1.0 (*)
+          │       ├── hub-auth v0.1.0 (*)
+          │       ├── (dev) hub-cli v0.1.0
+          │       │   └── (dev) hub-web v0.1.0 (*)
+          │       ├── hub-demo-apps v0.1.0
+          │       ├── hub-gateway v0.1.0
+          │       │   ├── hub-cli v0.1.0 (*)
+          │       │   └── hub-web v0.1.0 (*)
+          │       ├── (dev) hub-ops v0.1.0 (*)
+          │       ├── (dev) hub-sdk v0.1.0
+          │       │   └── hub-demo-apps v0.1.0 (*)
+          │       └── (dev) hub-web v0.1.0 (*)
+          ├── reqwest v0.12.28 (*)
+          └── topcoat-cookie v0.9.0
+              ├── topcoat v0.9.0
+              │   ├── hub-cli v0.1.0 (*)
+              │   ├── hub-shell v0.1.0
+              │   │   ├── hub-cli v0.1.0 (*)
+              │   │   └── hub-web v0.1.0 (*)
+              │   └── hub-web v0.1.0 (*)
+              └── topcoat-session v0.9.0
+                  └── topcoat v0.9.0 (*)
+    ├ rand v0.9.5
+      └── tungstenite v0.29.0
+          └── tokio-tungstenite v0.29.0
+              ├── topcoat v0.9.0
+              │   ├── hub-cli v0.1.0
+              │   │   └── (dev) hub-web v0.1.0
+              │   ├── hub-shell v0.1.0
+              │   │   ├── hub-cli v0.1.0 (*)
+              │   │   └── hub-web v0.1.0 (*)
+              │   └── hub-web v0.1.0 (*)
+              └── topcoat-router v0.9.0
+                  ├── topcoat v0.9.0 (*)
+                  ├── topcoat-asset v0.9.0
+                  │   ├── topcoat v0.9.0 (*)
+                  │   ├── topcoat-font v0.9.0
+                  │   │   ├── topcoat v0.9.0 (*)
+                  │   │   └── topcoat-font-grammar v0.9.0
+                  │   │       └── topcoat-font-macro v0.9.0
+                  │   │           └── topcoat v0.9.0 (*)
+                  │   └── topcoat-runtime v0.9.0
+                  │       ├── topcoat v0.9.0 (*)
+                  │       └── topcoat-runtime-grammar v0.9.0
+                  │           └── topcoat-runtime-macro v0.9.0
+                  │               └── topcoat v0.9.0 (*)
+                  ├── topcoat-cookie v0.9.0
+                  │   ├── topcoat v0.9.0 (*)
+                  │   └── topcoat-session v0.9.0
+                  │       └── topcoat v0.9.0 (*)
+                  ├── topcoat-font v0.9.0 (*)
+                  ├── topcoat-runtime v0.9.0 (*)
+                  ├── topcoat-runtime-grammar v0.9.0 (*)
+                  └── topcoat-session v0.9.0 (*)
+    ├ rand v0.10.3
+      ├── postgres-protocol v0.6.12
+      │   ├── postgres-types v0.2.14
+      │   │   └── tokio-postgres v0.7.18
+      │   │       ├── deadpool-postgres v0.14.2
+      │   │       │   ├── hub-demo-apps v0.1.0
+      │   │       │   └── hub-sdk v0.1.0
+      │   │       │       └── hub-demo-apps v0.1.0 (*)
+      │   │       ├── hub-demo-apps v0.1.0 (*)
+      │   │       ├── hub-ops v0.1.0
+      │   │       │   └── hub-web v0.1.0
+      │   │       └── hub-sdk v0.1.0 (*)
+      │   └── tokio-postgres v0.7.18 (*)
+      └── tokio-postgres v0.7.18 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'rand_chacha'
+    ┌─ platform/Cargo.lock:221:1
+    │  
+221 │ ╭ rand_chacha 0.3.1 registry+https://github.com/rust-lang/crates.io-index
+222 │ │ rand_chacha 0.9.0 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰───────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ rand_chacha v0.3.1
+      └── rand v0.8.8
+          └── cookie v0.18.2
+              ├── cookie_store v0.22.1
+              │   └── reqwest v0.12.28
+              │       ├── hub-admin v0.1.0
+              │       │   ├── hub-auth v0.1.0
+              │       │   │   └── hub-web v0.1.0
+              │       │   ├── hub-ops v0.1.0
+              │       │   │   └── hub-web v0.1.0 (*)
+              │       │   ├── (dev) hub-runtime v0.1.0
+              │       │   │   ├── hub-ops v0.1.0 (*)
+              │       │   │   └── hub-web v0.1.0 (*)
+              │       │   └── hub-web v0.1.0 (*)
+              │       ├── hub-auth v0.1.0 (*)
+              │       ├── (dev) hub-cli v0.1.0
+              │       │   └── (dev) hub-web v0.1.0 (*)
+              │       ├── hub-demo-apps v0.1.0
+              │       ├── hub-gateway v0.1.0
+              │       │   ├── hub-cli v0.1.0 (*)
+              │       │   └── hub-web v0.1.0 (*)
+              │       ├── (dev) hub-ops v0.1.0 (*)
+              │       ├── (dev) hub-sdk v0.1.0
+              │       │   └── hub-demo-apps v0.1.0 (*)
+              │       └── (dev) hub-web v0.1.0 (*)
+              ├── reqwest v0.12.28 (*)
+              └── topcoat-cookie v0.9.0
+                  ├── topcoat v0.9.0
+                  │   ├── hub-cli v0.1.0 (*)
+                  │   ├── hub-shell v0.1.0
+                  │   │   ├── hub-cli v0.1.0 (*)
+                  │   │   └── hub-web v0.1.0 (*)
+                  │   └── hub-web v0.1.0 (*)
+                  └── topcoat-session v0.9.0
+                      └── topcoat v0.9.0 (*)
+    ├ rand_chacha v0.9.0
+      └── rand v0.9.5
+          └── tungstenite v0.29.0
+              └── tokio-tungstenite v0.29.0
+                  ├── topcoat v0.9.0
+                  │   ├── hub-cli v0.1.0
+                  │   │   └── (dev) hub-web v0.1.0
+                  │   ├── hub-shell v0.1.0
+                  │   │   ├── hub-cli v0.1.0 (*)
+                  │   │   └── hub-web v0.1.0 (*)
+                  │   └── hub-web v0.1.0 (*)
+                  └── topcoat-router v0.9.0
+                      ├── topcoat v0.9.0 (*)
+                      ├── topcoat-asset v0.9.0
+                      │   ├── topcoat v0.9.0 (*)
+                      │   ├── topcoat-font v0.9.0
+                      │   │   ├── topcoat v0.9.0 (*)
+                      │   │   └── topcoat-font-grammar v0.9.0
+                      │   │       └── topcoat-font-macro v0.9.0
+                      │   │           └── topcoat v0.9.0 (*)
+                      │   └── topcoat-runtime v0.9.0
+                      │       ├── topcoat v0.9.0 (*)
+                      │       └── topcoat-runtime-grammar v0.9.0
+                      │           └── topcoat-runtime-macro v0.9.0
+                      │               └── topcoat v0.9.0 (*)
+                      ├── topcoat-cookie v0.9.0
+                      │   ├── topcoat v0.9.0 (*)
+                      │   └── topcoat-session v0.9.0
+                      │       └── topcoat v0.9.0 (*)
+                      ├── topcoat-font v0.9.0 (*)
+                      ├── topcoat-runtime v0.9.0 (*)
+                      ├── topcoat-runtime-grammar v0.9.0 (*)
+                      └── topcoat-session v0.9.0 (*)
+
+warning[duplicate]: found 3 duplicate entries for crate 'rand_core'
+    ┌─ platform/Cargo.lock:223:1
+    │  
+223 │ ╭ rand_core 0.6.4 registry+https://github.com/rust-lang/crates.io-index
+224 │ │ rand_core 0.9.5 registry+https://github.com/rust-lang/crates.io-index
+225 │ │ rand_core 0.10.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰──────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ rand_core v0.6.4
+      ├── crypto-common v0.1.7
+      │   ├── aead v0.5.2
+      │   │   └── aes-gcm v0.10.3
+      │   │       └── cookie v0.18.2
+      │   │           ├── cookie_store v0.22.1
+      │   │           │   └── reqwest v0.12.28
+      │   │           │       ├── hub-admin v0.1.0
+      │   │           │       │   ├── hub-auth v0.1.0
+      │   │           │       │   │   └── hub-web v0.1.0
+      │   │           │       │   ├── hub-ops v0.1.0
+      │   │           │       │   │   └── hub-web v0.1.0 (*)
+      │   │           │       │   ├── (dev) hub-runtime v0.1.0
+      │   │           │       │   │   ├── hub-ops v0.1.0 (*)
+      │   │           │       │   │   └── hub-web v0.1.0 (*)
+      │   │           │       │   └── hub-web v0.1.0 (*)
+      │   │           │       ├── hub-auth v0.1.0 (*)
+      │   │           │       ├── (dev) hub-cli v0.1.0
+      │   │           │       │   └── (dev) hub-web v0.1.0 (*)
+      │   │           │       ├── hub-demo-apps v0.1.0
+      │   │           │       ├── hub-gateway v0.1.0
+      │   │           │       │   ├── hub-cli v0.1.0 (*)
+      │   │           │       │   └── hub-web v0.1.0 (*)
+      │   │           │       ├── (dev) hub-ops v0.1.0 (*)
+      │   │           │       ├── (dev) hub-sdk v0.1.0
+      │   │           │       │   └── hub-demo-apps v0.1.0 (*)
+      │   │           │       └── (dev) hub-web v0.1.0 (*)
+      │   │           ├── reqwest v0.12.28 (*)
+      │   │           └── topcoat-cookie v0.9.0
+      │   │               ├── topcoat v0.9.0
+      │   │               │   ├── hub-cli v0.1.0 (*)
+      │   │               │   ├── hub-shell v0.1.0
+      │   │               │   │   ├── hub-cli v0.1.0 (*)
+      │   │               │   │   └── hub-web v0.1.0 (*)
+      │   │               │   └── hub-web v0.1.0 (*)
+      │   │               └── topcoat-session v0.9.0
+      │   │                   └── topcoat v0.9.0 (*)
+      │   ├── cipher v0.4.4
+      │   │   ├── aes v0.8.4
+      │   │   │   ├── aes-gcm v0.10.3 (*)
+      │   │   │   └── zip v2.4.2
+      │   │   │       ├── (dev) hub-cli v0.1.0 (*)
+      │   │   │       ├── hub-demo-apps v0.1.0 (*)
+      │   │   │       └── hub-ops v0.1.0 (*)
+      │   │   ├── aes-gcm v0.10.3 (*)
+      │   │   └── ctr v0.9.2
+      │   │       └── aes-gcm v0.10.3 (*)
+      │   ├── digest v0.10.7
+      │   │   ├── blake2 v0.10.6
+      │   │   │   └── argon2 v0.5.3
+      │   │   │       └── hub-auth v0.1.0 (*)
+      │   │   ├── hmac v0.12.1
+      │   │   │   ├── cookie v0.18.2 (*)
+      │   │   │   ├── hkdf v0.12.4
+      │   │   │   │   └── cookie v0.18.2 (*)
+      │   │   │   ├── hub-demo-apps v0.1.0 (*)
+      │   │   │   ├── pbkdf2 v0.12.2
+      │   │   │   │   └── zip v2.4.2 (*)
+      │   │   │   └── zip v2.4.2 (*)
+      │   │   ├── pbkdf2 v0.12.2 (*)
+      │   │   ├── sha1 v0.10.7
+      │   │   │   ├── tungstenite v0.29.0
+      │   │   │   │   └── tokio-tungstenite v0.29.0
+      │   │   │   │       ├── topcoat v0.9.0 (*)
+      │   │   │   │       └── topcoat-router v0.9.0
+      │   │   │   │           ├── topcoat v0.9.0 (*)
+      │   │   │   │           ├── topcoat-asset v0.9.0
+      │   │   │   │           │   ├── topcoat v0.9.0 (*)
+      │   │   │   │           │   ├── topcoat-font v0.9.0
+      │   │   │   │           │   │   ├── topcoat v0.9.0 (*)
+      │   │   │   │           │   │   └── topcoat-font-grammar v0.9.0
+      │   │   │   │           │   │       └── topcoat-font-macro v0.9.0
+      │   │   │   │           │   │           └── topcoat v0.9.0 (*)
+      │   │   │   │           │   └── topcoat-runtime v0.9.0
+      │   │   │   │           │       ├── topcoat v0.9.0 (*)
+      │   │   │   │           │       └── topcoat-runtime-grammar v0.9.0
+      │   │   │   │           │           └── topcoat-runtime-macro v0.9.0
+      │   │   │   │           │               └── topcoat v0.9.0 (*)
+      │   │   │   │           ├── topcoat-cookie v0.9.0 (*)
+      │   │   │   │           ├── topcoat-font v0.9.0 (*)
+      │   │   │   │           ├── topcoat-runtime v0.9.0 (*)
+      │   │   │   │           ├── topcoat-runtime-grammar v0.9.0 (*)
+      │   │   │   │           └── topcoat-session v0.9.0 (*)
+      │   │   │   └── zip v2.4.2 (*)
+      │   │   └── sha2 v0.10.9
+      │   │       ├── cookie v0.18.2 (*)
+      │   │       ├── hub-auth v0.1.0 (*)
+      │   │       ├── hub-cli v0.1.0 (*)
+      │   │       ├── hub-demo-apps v0.1.0 (*)
+      │   │       ├── hub-ops v0.1.0 (*)
+      │   │       └── hub-sdk v0.1.0 (*)
+      │   └── universal-hash v0.5.1
+      │       └── polyval v0.6.2
+      │           └── ghash v0.5.1
+      │               └── aes-gcm v0.10.3 (*)
+      ├── password-hash v0.5.0
+      │   └── argon2 v0.5.3 (*)
+      ├── rand v0.8.8
+      │   └── cookie v0.18.2 (*)
+      └── rand_chacha v0.3.1
+          └── rand v0.8.8 (*)
+    ├ rand_core v0.9.5
+      ├── rand v0.9.5
+      │   └── tungstenite v0.29.0
+      │       └── tokio-tungstenite v0.29.0
+      │           ├── topcoat v0.9.0
+      │           │   ├── hub-cli v0.1.0
+      │           │   │   └── (dev) hub-web v0.1.0
+      │           │   ├── hub-shell v0.1.0
+      │           │   │   ├── hub-cli v0.1.0 (*)
+      │           │   │   └── hub-web v0.1.0 (*)
+      │           │   └── hub-web v0.1.0 (*)
+      │           └── topcoat-router v0.9.0
+      │               ├── topcoat v0.9.0 (*)
+      │               ├── topcoat-asset v0.9.0
+      │               │   ├── topcoat v0.9.0 (*)
+      │               │   ├── topcoat-font v0.9.0
+      │               │   │   ├── topcoat v0.9.0 (*)
+      │               │   │   └── topcoat-font-grammar v0.9.0
+      │               │   │       └── topcoat-font-macro v0.9.0
+      │               │   │           └── topcoat v0.9.0 (*)
+      │               │   └── topcoat-runtime v0.9.0
+      │               │       ├── topcoat v0.9.0 (*)
+      │               │       └── topcoat-runtime-grammar v0.9.0
+      │               │           └── topcoat-runtime-macro v0.9.0
+      │               │               └── topcoat v0.9.0 (*)
+      │               ├── topcoat-cookie v0.9.0
+      │               │   ├── topcoat v0.9.0 (*)
+      │               │   └── topcoat-session v0.9.0
+      │               │       └── topcoat v0.9.0 (*)
+      │               ├── topcoat-font v0.9.0 (*)
+      │               ├── topcoat-runtime v0.9.0 (*)
+      │               ├── topcoat-runtime-grammar v0.9.0 (*)
+      │               └── topcoat-session v0.9.0 (*)
+      └── rand_chacha v0.9.0
+          └── rand v0.9.5 (*)
+    ├ rand_core v0.10.1
+      ├── chacha20 v0.10.2
+      │   └── rand v0.10.3
+      │       ├── postgres-protocol v0.6.12
+      │       │   ├── postgres-types v0.2.14
+      │       │   │   └── tokio-postgres v0.7.18
+      │       │   │       ├── deadpool-postgres v0.14.2
+      │       │   │       │   ├── hub-demo-apps v0.1.0
+      │       │   │       │   └── hub-sdk v0.1.0
+      │       │   │       │       └── hub-demo-apps v0.1.0 (*)
+      │       │   │       ├── hub-demo-apps v0.1.0 (*)
+      │       │   │       ├── hub-ops v0.1.0
+      │       │   │       │   └── hub-web v0.1.0
+      │       │   │       └── hub-sdk v0.1.0 (*)
+      │       │   └── tokio-postgres v0.7.18 (*)
+      │       └── tokio-postgres v0.7.18 (*)
+      ├── getrandom v0.4.3
+      │   ├── deadpool-postgres v0.14.2 (*)
+      │   ├── jobserver v0.1.35
+      │   │   └── cc v1.5.1
+      │   │       ├── (build) bzip2-sys v0.1.13+1.0.8
+      │   │       │   └── bzip2 v0.5.2
+      │   │       │       └── zip v2.4.2
+      │   │       │           ├── (dev) hub-cli v0.1.0
+      │   │       │           │   └── (dev) hub-web v0.1.0 (*)
+      │   │       │           ├── hub-demo-apps v0.1.0 (*)
+      │   │       │           └── hub-ops v0.1.0 (*)
+      │   │       ├── (build) iana-time-zone-haiku v0.1.2
+      │   │       │   └── iana-time-zone v0.1.65
+      │   │       │       └── chrono v0.4.45
+      │   │       │           ├── hub-demo-apps v0.1.0 (*)
+      │   │       │           └── postgres-types v0.2.14 (*)
+      │   │       ├── (build) lzma-sys v0.1.20
+      │   │       │   └── xz2 v0.1.7
+      │   │       │       └── zip v2.4.2 (*)
+      │   │       ├── (build) ring v0.17.14
+      │   │       │   ├── hub-auth v0.1.0
+      │   │       │   │   └── hub-web v0.1.0 (*)
+      │   │       │   ├── rustls v0.23.45
+      │   │       │   │   ├── hyper-rustls v0.27.10
+      │   │       │   │   │   └── reqwest v0.12.28
+      │   │       │   │   │       ├── hub-admin v0.1.0
+      │   │       │   │   │       │   ├── hub-auth v0.1.0 (*)
+      │   │       │   │   │       │   ├── hub-ops v0.1.0 (*)
+      │   │       │   │   │       │   ├── (dev) hub-runtime v0.1.0
+      │   │       │   │   │       │   │   ├── hub-ops v0.1.0 (*)
+      │   │       │   │   │       │   │   └── hub-web v0.1.0 (*)
+      │   │       │   │   │       │   └── hub-web v0.1.0 (*)
+      │   │       │   │   │       ├── hub-auth v0.1.0 (*)
+      │   │       │   │   │       ├── (dev) hub-cli v0.1.0 (*)
+      │   │       │   │   │       ├── hub-demo-apps v0.1.0 (*)
+      │   │       │   │   │       ├── hub-gateway v0.1.0
+      │   │       │   │   │       │   ├── hub-cli v0.1.0 (*)
+      │   │       │   │   │       │   └── hub-web v0.1.0 (*)
+      │   │       │   │   │       ├── (dev) hub-ops v0.1.0 (*)
+      │   │       │   │   │       ├── (dev) hub-sdk v0.1.0 (*)
+      │   │       │   │   │       └── (dev) hub-web v0.1.0 (*)
+      │   │       │   │   ├── reqwest v0.12.28 (*)
+      │   │       │   │   └── tokio-rustls v0.26.5
+      │   │       │   │       ├── hyper-rustls v0.27.10 (*)
+      │   │       │   │       └── reqwest v0.12.28 (*)
+      │   │       │   └── rustls-webpki v0.103.15
+      │   │       │       └── rustls v0.23.45 (*)
+      │   │       └── (build) zstd-sys v2.1.0+zstd.1.5.7
+      │   │           └── zstd-safe v7.3.0
+      │   │               └── zstd v0.13.3
+      │   │                   └── zip v2.4.2 (*)
+      │   ├── rand v0.10.3 (*)
+      │   ├── tempfile v3.27.0
+      │   │   ├── (dev) hub-admin v0.1.0 (*)
+      │   │   ├── (dev) hub-auth v0.1.0 (*)
+      │   │   ├── (dev) hub-cli v0.1.0 (*)
+      │   │   ├── (dev) hub-ops v0.1.0 (*)
+      │   │   ├── hub-sdk v0.1.0 (*)
+      │   │   ├── (dev) hub-web v0.1.0 (*)
+      │   │   └── rust_xlsxwriter v0.99.1
+      │   │       └── hub-demo-apps v0.1.0 (*)
+      │   ├── topcoat-runtime-grammar v0.9.0
+      │   │   └── topcoat-runtime-macro v0.9.0
+      │   │       └── topcoat v0.9.0
+      │   │           ├── hub-cli v0.1.0 (*)
+      │   │           ├── hub-shell v0.1.0
+      │   │           │   ├── hub-cli v0.1.0 (*)
+      │   │           │   └── hub-web v0.1.0 (*)
+      │   │           └── hub-web v0.1.0 (*)
+      │   └── topcoat-session v0.9.0
+      │       └── topcoat v0.9.0 (*)
+      └── rand v0.10.3 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'sha2'
+    ┌─ platform/Cargo.lock:253:1
+    │  
+253 │ ╭ sha2 0.10.9 registry+https://github.com/rust-lang/crates.io-index
+254 │ │ sha2 0.11.0 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ sha2 v0.10.9
+      ├── cookie v0.18.2
+      │   ├── cookie_store v0.22.1
+      │   │   └── reqwest v0.12.28
+      │   │       ├── hub-admin v0.1.0
+      │   │       │   ├── hub-auth v0.1.0
+      │   │       │   │   └── hub-web v0.1.0
+      │   │       │   ├── hub-ops v0.1.0
+      │   │       │   │   └── hub-web v0.1.0 (*)
+      │   │       │   ├── (dev) hub-runtime v0.1.0
+      │   │       │   │   ├── hub-ops v0.1.0 (*)
+      │   │       │   │   └── hub-web v0.1.0 (*)
+      │   │       │   └── hub-web v0.1.0 (*)
+      │   │       ├── hub-auth v0.1.0 (*)
+      │   │       ├── (dev) hub-cli v0.1.0
+      │   │       │   └── (dev) hub-web v0.1.0 (*)
+      │   │       ├── hub-demo-apps v0.1.0
+      │   │       ├── hub-gateway v0.1.0
+      │   │       │   ├── hub-cli v0.1.0 (*)
+      │   │       │   └── hub-web v0.1.0 (*)
+      │   │       ├── (dev) hub-ops v0.1.0 (*)
+      │   │       ├── (dev) hub-sdk v0.1.0
+      │   │       │   └── hub-demo-apps v0.1.0 (*)
+      │   │       └── (dev) hub-web v0.1.0 (*)
+      │   ├── reqwest v0.12.28 (*)
+      │   └── topcoat-cookie v0.9.0
+      │       ├── topcoat v0.9.0
+      │       │   ├── hub-cli v0.1.0 (*)
+      │       │   ├── hub-shell v0.1.0
+      │       │   │   ├── hub-cli v0.1.0 (*)
+      │       │   │   └── hub-web v0.1.0 (*)
+      │       │   └── hub-web v0.1.0 (*)
+      │       └── topcoat-session v0.9.0
+      │           └── topcoat v0.9.0 (*)
+      ├── hub-auth v0.1.0 (*)
+      ├── hub-cli v0.1.0 (*)
+      ├── hub-demo-apps v0.1.0 (*)
+      ├── hub-ops v0.1.0 (*)
+      └── hub-sdk v0.1.0 (*)
+    ├ sha2 v0.11.0
+      ├── postgres-protocol v0.6.12
+      │   ├── postgres-types v0.2.14
+      │   │   └── tokio-postgres v0.7.18
+      │   │       ├── deadpool-postgres v0.14.2
+      │   │       │   ├── hub-demo-apps v0.1.0
+      │   │       │   └── hub-sdk v0.1.0
+      │   │       │       └── hub-demo-apps v0.1.0 (*)
+      │   │       ├── hub-demo-apps v0.1.0 (*)
+      │   │       ├── hub-ops v0.1.0
+      │   │       │   └── hub-web v0.1.0
+      │   │       └── hub-sdk v0.1.0 (*)
+      │   └── tokio-postgres v0.7.18 (*)
+      ├── topcoat-asset v0.9.0
+      │   ├── topcoat v0.9.0
+      │   │   ├── hub-cli v0.1.0
+      │   │   │   └── (dev) hub-web v0.1.0 (*)
+      │   │   ├── hub-shell v0.1.0
+      │   │   │   ├── hub-cli v0.1.0 (*)
+      │   │   │   └── hub-web v0.1.0 (*)
+      │   │   └── hub-web v0.1.0 (*)
+      │   ├── topcoat-font v0.9.0
+      │   │   ├── topcoat v0.9.0 (*)
+      │   │   └── topcoat-font-grammar v0.9.0
+      │   │       └── topcoat-font-macro v0.9.0
+      │   │           └── topcoat v0.9.0 (*)
+      │   └── topcoat-runtime v0.9.0
+      │       ├── topcoat v0.9.0 (*)
+      │       └── topcoat-runtime-grammar v0.9.0
+      │           └── topcoat-runtime-macro v0.9.0
+      │               └── topcoat v0.9.0 (*)
+      └── topcoat-session v0.9.0
+          └── topcoat v0.9.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'syn'
+    ┌─ platform/Cargo.lock:268:1
+    │  
+268 │ ╭ syn 2.0.119 registry+https://github.com/rust-lang/crates.io-index
+269 │ │ syn 3.0.6 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰───────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ syn v2.0.119
+      ├── derive_arbitrary v1.4.2
+      │   └── arbitrary v1.4.2
+      │       └── zip v2.4.2
+      │           ├── (dev) hub-cli v0.1.0
+      │           │   └── (dev) hub-web v0.1.0
+      │           ├── hub-demo-apps v0.1.0
+      │           └── hub-ops v0.1.0
+      │               └── hub-web v0.1.0 (*)
+      ├── tracing-attributes v0.1.31
+      │   └── tracing v0.1.44
+      │       ├── axum v0.8.9
+      │       │   ├── hub-admin v0.1.0
+      │       │   │   ├── hub-auth v0.1.0
+      │       │   │   │   └── hub-web v0.1.0 (*)
+      │       │   │   ├── hub-ops v0.1.0 (*)
+      │       │   │   ├── (dev) hub-runtime v0.1.0
+      │       │   │   │   ├── hub-ops v0.1.0 (*)
+      │       │   │   │   └── hub-web v0.1.0 (*)
+      │       │   │   └── hub-web v0.1.0 (*)
+      │       │   ├── hub-auth v0.1.0 (*)
+      │       │   ├── hub-cli v0.1.0 (*)
+      │       │   ├── hub-demo-apps v0.1.0 (*)
+      │       │   ├── hub-gateway v0.1.0
+      │       │   │   ├── hub-cli v0.1.0 (*)
+      │       │   │   └── hub-web v0.1.0 (*)
+      │       │   ├── hub-ops v0.1.0 (*)
+      │       │   ├── hub-sdk v0.1.0
+      │       │   │   └── hub-demo-apps v0.1.0 (*)
+      │       │   ├── hub-shell v0.1.0
+      │       │   │   ├── hub-cli v0.1.0 (*)
+      │       │   │   └── hub-web v0.1.0 (*)
+      │       │   └── hub-web v0.1.0 (*)
+      │       ├── axum-core v0.5.6
+      │       │   └── axum v0.8.9 (*)
+      │       ├── deadpool-postgres v0.14.2
+      │       │   ├── hub-demo-apps v0.1.0 (*)
+      │       │   └── hub-sdk v0.1.0 (*)
+      │       ├── h2 v0.4.19
+      │       │   └── hyper v1.11.1
+      │       │       ├── axum v0.8.9 (*)
+      │       │       ├── bollard v0.18.1
+      │       │       │   ├── hub-ops v0.1.0 (*)
+      │       │       │   └── hub-runtime v0.1.0 (*)
+      │       │       ├── hyper-named-pipe v0.1.1
+      │       │       │   └── bollard v0.18.1 (*)
+      │       │       ├── hyper-rustls v0.27.10
+      │       │       │   └── reqwest v0.12.28
+      │       │       │       ├── hub-admin v0.1.0 (*)
+      │       │       │       ├── hub-auth v0.1.0 (*)
+      │       │       │       ├── (dev) hub-cli v0.1.0 (*)
+      │       │       │       ├── hub-demo-apps v0.1.0 (*)
+      │       │       │       ├── hub-gateway v0.1.0 (*)
+      │       │       │       ├── (dev) hub-ops v0.1.0 (*)
+      │       │       │       ├── (dev) hub-sdk v0.1.0 (*)
+      │       │       │       └── (dev) hub-web v0.1.0 (*)
+      │       │       ├── hyper-util v0.1.21
+      │       │       │   ├── axum v0.8.9 (*)
+      │       │       │   ├── bollard v0.18.1 (*)
+      │       │       │   ├── hyper-named-pipe v0.1.1 (*)
+      │       │       │   ├── hyper-rustls v0.27.10 (*)
+      │       │       │   ├── hyperlocal v0.9.1
+      │       │       │   │   └── bollard v0.18.1 (*)
+      │       │       │   ├── reqwest v0.12.28 (*)
+      │       │       │   └── topcoat-router v0.9.0
+      │       │       │       ├── topcoat v0.9.0
+      │       │       │       │   ├── hub-cli v0.1.0 (*)
+      │       │       │       │   ├── hub-shell v0.1.0 (*)
+      │       │       │       │   └── hub-web v0.1.0 (*)
+      │       │       │       ├── topcoat-asset v0.9.0
+      │       │       │       │   ├── topcoat v0.9.0 (*)
+      │       │       │       │   ├── topcoat-font v0.9.0
+      │       │       │       │   │   ├── topcoat v0.9.0 (*)
+      │       │       │       │   │   └── topcoat-font-grammar v0.9.0
+      │       │       │       │   │       └── topcoat-font-macro v0.9.0
+      │       │       │       │   │           └── topcoat v0.9.0 (*)
+      │       │       │       │   └── topcoat-runtime v0.9.0
+      │       │       │       │       ├── topcoat v0.9.0 (*)
+      │       │       │       │       └── topcoat-runtime-grammar v0.9.0
+      │       │       │       │           └── topcoat-runtime-macro v0.9.0
+      │       │       │       │               └── topcoat v0.9.0 (*)
+      │       │       │       ├── topcoat-cookie v0.9.0
+      │       │       │       │   ├── topcoat v0.9.0 (*)
+      │       │       │       │   └── topcoat-session v0.9.0
+      │       │       │       │       └── topcoat v0.9.0 (*)
+      │       │       │       ├── topcoat-font v0.9.0 (*)
+      │       │       │       ├── topcoat-runtime v0.9.0 (*)
+      │       │       │       ├── topcoat-runtime-grammar v0.9.0 (*)
+      │       │       │       └── topcoat-session v0.9.0 (*)
+      │       │       ├── hyperlocal v0.9.1 (*)
+      │       │       ├── reqwest v0.12.28 (*)
+      │       │       └── topcoat-router v0.9.0 (*)
+      │       ├── hyper-util v0.1.21 (*)
+      │       └── tower v0.5.3
+      │           ├── axum v0.8.9 (*)
+      │           ├── (dev) hub-sdk v0.1.0 (*)
+      │           ├── reqwest v0.12.28 (*)
+      │           ├── topcoat-router v0.9.0 (*)
+      │           └── tower-http v0.6.11
+      │               └── reqwest v0.12.28 (*)
+      ├── windows-implement v0.57.0
+      │   └── windows-core v0.57.0
+      │       └── windows v0.57.0
+      │           └── sysinfo v0.32.1
+      │               └── hub-ops v0.1.0 (*)
+      ├── windows-implement v0.60.2
+      │   └── windows-core v0.62.2
+      │       └── iana-time-zone v0.1.65
+      │           └── chrono v0.4.45
+      │               ├── hub-demo-apps v0.1.0 (*)
+      │               └── postgres-types v0.2.14
+      │                   └── tokio-postgres v0.7.18
+      │                       ├── deadpool-postgres v0.14.2 (*)
+      │                       ├── hub-demo-apps v0.1.0 (*)
+      │                       ├── hub-ops v0.1.0 (*)
+      │                       └── hub-sdk v0.1.0 (*)
+      ├── windows-interface v0.57.0
+      │   └── windows-core v0.57.0 (*)
+      ├── windows-interface v0.59.3
+      │   └── windows-core v0.62.2 (*)
+      └── zeroize_derive v1.5.0
+          └── zeroize v1.9.0
+              ├── rustls v0.23.45
+              │   ├── hyper-rustls v0.27.10 (*)
+              │   ├── reqwest v0.12.28 (*)
+              │   └── tokio-rustls v0.26.5
+              │       ├── hyper-rustls v0.27.10 (*)
+              │       └── reqwest v0.12.28 (*)
+              ├── rustls-pki-types v1.15.1
+              │   ├── reqwest v0.12.28 (*)
+              │   ├── rustls v0.23.45 (*)
+              │   ├── rustls-webpki v0.103.15
+              │   │   └── rustls v0.23.45 (*)
+              │   └── webpki-roots v1.0.9
+              │       ├── hyper-rustls v0.27.10 (*)
+              │       └── reqwest v0.12.28 (*)
+              └── zip v2.4.2 (*)
+    ├ syn v3.0.6
+      ├── async-trait v0.1.92
+      │   ├── deadpool-postgres v0.14.2
+      │   │   ├── hub-demo-apps v0.1.0
+      │   │   └── hub-sdk v0.1.0
+      │   │       └── hub-demo-apps v0.1.0 (*)
+      │   ├── hub-ops v0.1.0
+      │   │   └── hub-web v0.1.0
+      │   ├── hub-runtime v0.1.0
+      │   │   ├── hub-ops v0.1.0 (*)
+      │   │   └── hub-web v0.1.0 (*)
+      │   ├── hub-sdk v0.1.0 (*)
+      │   └── tokio-postgres v0.7.18
+      │       ├── deadpool-postgres v0.14.2 (*)
+      │       ├── hub-demo-apps v0.1.0 (*)
+      │       ├── hub-ops v0.1.0 (*)
+      │       └── hub-sdk v0.1.0 (*)
+      ├── clap_derive v4.6.7
+      │   └── clap v4.6.7
+      │       └── hub-cli v0.1.0
+      │           └── (dev) hub-web v0.1.0 (*)
+      ├── displaydoc v0.2.7
+      │   ├── icu_collections v2.3.0
+      │   │   ├── icu_normalizer v2.3.0
+      │   │   │   └── idna_adapter v1.2.2
+      │   │   │       └── idna v1.1.0
+      │   │   │           ├── cookie_store v0.22.1
+      │   │   │           │   └── reqwest v0.12.28
+      │   │   │           │       ├── hub-admin v0.1.0
+      │   │   │           │       │   ├── hub-auth v0.1.0
+      │   │   │           │       │   │   └── hub-web v0.1.0 (*)
+      │   │   │           │       │   ├── hub-ops v0.1.0 (*)
+      │   │   │           │       │   ├── (dev) hub-runtime v0.1.0 (*)
+      │   │   │           │       │   └── hub-web v0.1.0 (*)
+      │   │   │           │       ├── hub-auth v0.1.0 (*)
+      │   │   │           │       ├── (dev) hub-cli v0.1.0 (*)
+      │   │   │           │       ├── hub-demo-apps v0.1.0 (*)
+      │   │   │           │       ├── hub-gateway v0.1.0
+      │   │   │           │       │   ├── hub-cli v0.1.0 (*)
+      │   │   │           │       │   └── hub-web v0.1.0 (*)
+      │   │   │           │       ├── (dev) hub-ops v0.1.0 (*)
+      │   │   │           │       ├── (dev) hub-sdk v0.1.0 (*)
+      │   │   │           │       └── (dev) hub-web v0.1.0 (*)
+      │   │   │           ├── publicsuffix v2.3.0
+      │   │   │           │   └── cookie_store v0.22.1 (*)
+      │   │   │           └── url v2.5.8
+      │   │   │               ├── bollard v0.18.1
+      │   │   │               │   ├── hub-ops v0.1.0 (*)
+      │   │   │               │   └── hub-runtime v0.1.0 (*)
+      │   │   │               ├── cookie_store v0.22.1 (*)
+      │   │   │               ├── hub-auth v0.1.0 (*)
+      │   │   │               ├── reqwest v0.12.28 (*)
+      │   │   │               └── tower-http v0.6.11
+      │   │   │                   └── reqwest v0.12.28 (*)
+      │   │   └── icu_properties v2.3.0
+      │   │       └── idna_adapter v1.2.2 (*)
+      │   ├── icu_locale_core v2.3.0
+      │   │   ├── icu_properties v2.3.0 (*)
+      │   │   └── icu_provider v2.3.1
+      │   │       ├── icu_normalizer v2.3.0 (*)
+      │   │       └── icu_properties v2.3.0 (*)
+      │   ├── icu_properties v2.3.0 (*)
+      │   ├── icu_provider v2.3.1 (*)
+      │   ├── tinystr v0.8.4
+      │   │   └── icu_locale_core v2.3.0 (*)
+      │   ├── zerotrie v0.2.5
+      │   │   ├── icu_properties v2.3.0 (*)
+      │   │   └── icu_provider v2.3.1 (*)
+      │   └── zip v2.4.2
+      │       ├── (dev) hub-cli v0.1.0 (*)
+      │       ├── hub-demo-apps v0.1.0 (*)
+      │       └── hub-ops v0.1.0 (*)
+      ├── futures-macro v0.3.34
+      │   └── futures-util v0.3.34
+      │       ├── axum v0.8.9
+      │       │   ├── hub-admin v0.1.0 (*)
+      │       │   ├── hub-auth v0.1.0 (*)
+      │       │   ├── hub-cli v0.1.0 (*)
+      │       │   ├── hub-demo-apps v0.1.0 (*)
+      │       │   ├── hub-gateway v0.1.0 (*)
+      │       │   ├── hub-ops v0.1.0 (*)
+      │       │   ├── hub-sdk v0.1.0 (*)
+      │       │   ├── hub-shell v0.1.0
+      │       │   │   ├── hub-cli v0.1.0 (*)
+      │       │   │   └── hub-web v0.1.0 (*)
+      │       │   └── hub-web v0.1.0 (*)
+      │       ├── bollard v0.18.1 (*)
+      │       ├── hub-admin v0.1.0 (*)
+      │       ├── hub-demo-apps v0.1.0 (*)
+      │       ├── (dev) hub-gateway v0.1.0 (*)
+      │       ├── hub-ops v0.1.0 (*)
+      │       ├── (dev) hub-runtime v0.1.0 (*)
+      │       ├── hub-sdk v0.1.0 (*)
+      │       ├── hyper-util v0.1.21
+      │       │   ├── axum v0.8.9 (*)
+      │       │   ├── bollard v0.18.1 (*)
+      │       │   ├── hyper-named-pipe v0.1.1
+      │       │   │   └── bollard v0.18.1 (*)
+      │       │   ├── hyper-rustls v0.27.10
+      │       │   │   └── reqwest v0.12.28 (*)
+      │       │   ├── hyperlocal v0.9.1
+      │       │   │   └── bollard v0.18.1 (*)
+      │       │   ├── reqwest v0.12.28 (*)
+      │       │   └── topcoat-router v0.9.0
+      │       │       ├── topcoat v0.9.0
+      │       │       │   ├── hub-cli v0.1.0 (*)
+      │       │       │   ├── hub-shell v0.1.0 (*)
+      │       │       │   └── hub-web v0.1.0 (*)
+      │       │       ├── topcoat-asset v0.9.0
+      │       │       │   ├── topcoat v0.9.0 (*)
+      │       │       │   ├── topcoat-font v0.9.0
+      │       │       │   │   ├── topcoat v0.9.0 (*)
+      │       │       │   │   └── topcoat-font-grammar v0.9.0
+      │       │       │   │       └── topcoat-font-macro v0.9.0
+      │       │       │   │           └── topcoat v0.9.0 (*)
+      │       │       │   └── topcoat-runtime v0.9.0
+      │       │       │       ├── topcoat v0.9.0 (*)
+      │       │       │       └── topcoat-runtime-grammar v0.9.0
+      │       │       │           └── topcoat-runtime-macro v0.9.0
+      │       │       │               └── topcoat v0.9.0 (*)
+      │       │       ├── topcoat-cookie v0.9.0
+      │       │       │   ├── topcoat v0.9.0 (*)
+      │       │       │   └── topcoat-session v0.9.0
+      │       │       │       └── topcoat v0.9.0 (*)
+      │       │       ├── topcoat-font v0.9.0 (*)
+      │       │       ├── topcoat-runtime v0.9.0 (*)
+      │       │       ├── topcoat-runtime-grammar v0.9.0 (*)
+      │       │       └── topcoat-session v0.9.0 (*)
+      │       ├── js-sys v0.3.106
+      │       │   ├── getrandom v0.2.17
+      │       │   │   ├── hub-admin v0.1.0 (*)
+      │       │   │   ├── hub-auth v0.1.0 (*)
+      │       │   │   ├── rand_core v0.6.4
+      │       │   │   │   ├── crypto-common v0.1.7
+      │       │   │   │   │   ├── aead v0.5.2
+      │       │   │   │   │   │   └── aes-gcm v0.10.3
+      │       │   │   │   │   │       └── cookie v0.18.2
+      │       │   │   │   │   │           ├── cookie_store v0.22.1 (*)
+      │       │   │   │   │   │           ├── reqwest v0.12.28 (*)
+      │       │   │   │   │   │           └── topcoat-cookie v0.9.0 (*)
+      │       │   │   │   │   ├── cipher v0.4.4
+      │       │   │   │   │   │   ├── aes v0.8.4
+      │       │   │   │   │   │   │   ├── aes-gcm v0.10.3 (*)
+      │       │   │   │   │   │   │   └── zip v2.4.2 (*)
+      │       │   │   │   │   │   ├── aes-gcm v0.10.3 (*)
+      │       │   │   │   │   │   └── ctr v0.9.2
+      │       │   │   │   │   │       └── aes-gcm v0.10.3 (*)
+      │       │   │   │   │   ├── digest v0.10.7
+      │       │   │   │   │   │   ├── blake2 v0.10.6
+      │       │   │   │   │   │   │   └── argon2 v0.5.3
+      │       │   │   │   │   │   │       └── hub-auth v0.1.0 (*)
+      │       │   │   │   │   │   ├── hmac v0.12.1
+      │       │   │   │   │   │   │   ├── cookie v0.18.2 (*)
+      │       │   │   │   │   │   │   ├── hkdf v0.12.4
+      │       │   │   │   │   │   │   │   └── cookie v0.18.2 (*)
+      │       │   │   │   │   │   │   ├── hub-demo-apps v0.1.0 (*)
+      │       │   │   │   │   │   │   ├── pbkdf2 v0.12.2
+      │       │   │   │   │   │   │   │   └── zip v2.4.2 (*)
+      │       │   │   │   │   │   │   └── zip v2.4.2 (*)
+      │       │   │   │   │   │   ├── pbkdf2 v0.12.2 (*)
+      │       │   │   │   │   │   ├── sha1 v0.10.7
+      │       │   │   │   │   │   │   ├── tungstenite v0.29.0
+      │       │   │   │   │   │   │   │   └── tokio-tungstenite v0.29.0
+      │       │   │   │   │   │   │   │       ├── topcoat v0.9.0 (*)
+      │       │   │   │   │   │   │   │       └── topcoat-router v0.9.0 (*)
+      │       │   │   │   │   │   │   └── zip v2.4.2 (*)
+      │       │   │   │   │   │   └── sha2 v0.10.9
+      │       │   │   │   │   │       ├── cookie v0.18.2 (*)
+      │       │   │   │   │   │       ├── hub-auth v0.1.0 (*)
+      │       │   │   │   │   │       ├── hub-cli v0.1.0 (*)
+      │       │   │   │   │   │       ├── hub-demo-apps v0.1.0 (*)
+      │       │   │   │   │   │       ├── hub-ops v0.1.0 (*)
+      │       │   │   │   │   │       └── hub-sdk v0.1.0 (*)
+      │       │   │   │   │   └── universal-hash v0.5.1
+      │       │   │   │   │       └── polyval v0.6.2
+      │       │   │   │   │           └── ghash v0.5.1
+      │       │   │   │   │               └── aes-gcm v0.10.3 (*)
+      │       │   │   │   ├── password-hash v0.5.0
+      │       │   │   │   │   └── argon2 v0.5.3 (*)
+      │       │   │   │   ├── rand v0.8.8
+      │       │   │   │   │   └── cookie v0.18.2 (*)
+      │       │   │   │   └── rand_chacha v0.3.1
+      │       │   │   │       └── rand v0.8.8 (*)
+      │       │   │   ├── ring v0.17.14
+      │       │   │   │   ├── hub-auth v0.1.0 (*)
+      │       │   │   │   ├── rustls v0.23.45
+      │       │   │   │   │   ├── hyper-rustls v0.27.10 (*)
+      │       │   │   │   │   ├── reqwest v0.12.28 (*)
+      │       │   │   │   │   └── tokio-rustls v0.26.5
+      │       │   │   │   │       ├── hyper-rustls v0.27.10 (*)
+      │       │   │   │   │       └── reqwest v0.12.28 (*)
+      │       │   │   │   └── rustls-webpki v0.103.15
+      │       │   │   │       └── rustls v0.23.45 (*)
+      │       │   │   └── topcoat-cookie v0.9.0 (*)
+      │       │   ├── getrandom v0.3.4
+      │       │   │   ├── rand_core v0.9.5
+      │       │   │   │   ├── rand v0.9.5
+      │       │   │   │   │   └── tungstenite v0.29.0 (*)
+      │       │   │   │   └── rand_chacha v0.9.0
+      │       │   │   │       └── rand v0.9.5 (*)
+      │       │   │   └── zip v2.4.2 (*)
+      │       │   ├── getrandom v0.4.3
+      │       │   │   ├── deadpool-postgres v0.14.2 (*)
+      │       │   │   ├── jobserver v0.1.35
+      │       │   │   │   └── cc v1.5.1
+      │       │   │   │       ├── (build) bzip2-sys v0.1.13+1.0.8
+      │       │   │   │       │   └── bzip2 v0.5.2
+      │       │   │   │       │       └── zip v2.4.2 (*)
+      │       │   │   │       ├── (build) iana-time-zone-haiku v0.1.2
+      │       │   │   │       │   └── iana-time-zone v0.1.65
+      │       │   │   │       │       └── chrono v0.4.45
+      │       │   │   │       │           ├── hub-demo-apps v0.1.0 (*)
+      │       │   │   │       │           └── postgres-types v0.2.14
+      │       │   │   │       │               └── tokio-postgres v0.7.18 (*)
+      │       │   │   │       ├── (build) lzma-sys v0.1.20
+      │       │   │   │       │   └── xz2 v0.1.7
+      │       │   │   │       │       └── zip v2.4.2 (*)
+      │       │   │   │       ├── (build) ring v0.17.14 (*)
+      │       │   │   │       └── (build) zstd-sys v2.1.0+zstd.1.5.7
+      │       │   │   │           └── zstd-safe v7.3.0
+      │       │   │   │               └── zstd v0.13.3
+      │       │   │   │                   └── zip v2.4.2 (*)
+      │       │   │   ├── rand v0.10.3
+      │       │   │   │   ├── postgres-protocol v0.6.12
+      │       │   │   │   │   ├── postgres-types v0.2.14 (*)
+      │       │   │   │   │   └── tokio-postgres v0.7.18 (*)
+      │       │   │   │   └── tokio-postgres v0.7.18 (*)
+      │       │   │   ├── tempfile v3.27.0
+      │       │   │   │   ├── (dev) hub-admin v0.1.0 (*)
+      │       │   │   │   ├── (dev) hub-auth v0.1.0 (*)
+      │       │   │   │   ├── (dev) hub-cli v0.1.0 (*)
+      │       │   │   │   ├── (dev) hub-ops v0.1.0 (*)
+      │       │   │   │   ├── hub-sdk v0.1.0 (*)
+      │       │   │   │   ├── (dev) hub-web v0.1.0 (*)
+      │       │   │   │   └── rust_xlsxwriter v0.99.1
+      │       │   │   │       └── hub-demo-apps v0.1.0 (*)
+      │       │   │   ├── topcoat-runtime-grammar v0.9.0 (*)
+      │       │   │   └── topcoat-session v0.9.0 (*)
+      │       │   ├── iana-time-zone v0.1.65 (*)
+      │       │   ├── reqwest v0.12.28 (*)
+      │       │   ├── wasm-bindgen-futures v0.4.79
+      │       │   │   ├── reqwest v0.12.28 (*)
+      │       │   │   └── wasm-streams v0.4.2
+      │       │   │       └── reqwest v0.12.28 (*)
+      │       │   ├── wasm-streams v0.4.2 (*)
+      │       │   ├── web-sys v0.3.106
+      │       │   │   ├── reqwest v0.12.28 (*)
+      │       │   │   ├── wasm-streams v0.4.2 (*)
+      │       │   │   └── whoami v2.1.3
+      │       │   │       └── tokio-postgres v0.7.18 (*)
+      │       │   └── web-time v1.1.0
+      │       │       └── topcoat-session v0.9.0 (*)
+      │       ├── multer v3.1.0
+      │       │   └── axum v0.8.9 (*)
+      │       ├── reqwest v0.12.28 (*)
+      │       ├── tokio-postgres v0.7.18 (*)
+      │       ├── tokio-tungstenite v0.29.0 (*)
+      │       ├── topcoat v0.9.0 (*)
+      │       ├── topcoat-router v0.9.0 (*)
+      │       ├── topcoat-runtime v0.9.0 (*)
+      │       ├── topcoat-view v0.9.0
+      │       │   ├── topcoat v0.9.0 (*)
+      │       │   ├── topcoat-asset v0.9.0 (*)
+      │       │   ├── topcoat-font v0.9.0 (*)
+      │       │   ├── topcoat-icon v0.9.0
+      │       │   │   ├── topcoat v0.9.0 (*)
+      │       │   │   └── topcoat-icon-grammar v0.9.0
+      │       │   │       └── topcoat-icon-macro v0.9.0
+      │       │   │           └── topcoat v0.9.0 (*)
+      │       │   ├── topcoat-router v0.9.0 (*)
+      │       │   ├── topcoat-runtime v0.9.0 (*)
+      │       │   └── topcoat-view-grammar v0.9.0
+      │       │       └── topcoat-view-macro v0.9.0
+      │       │           ├── topcoat v0.9.0 (*)
+      │       │           ├── topcoat-font v0.9.0 (*)
+      │       │           └── topcoat-icon v0.9.0 (*)
+      │       ├── tower v0.5.3
+      │       │   ├── axum v0.8.9 (*)
+      │       │   ├── (dev) hub-sdk v0.1.0 (*)
+      │       │   ├── reqwest v0.12.28 (*)
+      │       │   ├── topcoat-router v0.9.0 (*)
+      │       │   └── tower-http v0.6.11 (*)
+      │       ├── tower-http v0.6.11 (*)
+      │       └── wasm-streams v0.4.2 (*)
+      ├── multiversion-macros v0.9.0
+      │   └── multiversion v0.9.0
+      │       └── encoding_rs v0.8.41
+      │           ├── calamine v0.36.1
+      │           │   └── hub-demo-apps v0.1.0 (*)
+      │           ├── codepage v0.1.3
+      │           │   └── calamine v0.36.1 (*)
+      │           ├── multer v3.1.0 (*)
+      │           └── quick-xml v0.41.0
+      │               └── calamine v0.36.1 (*)
+      ├── ref-cast-impl v1.0.27
+      │   └── ref-cast v1.0.27
+      │       ├── topcoat-router v0.9.0 (*)
+      │       └── topcoat-runtime v0.9.0 (*)
+      ├── serde_derive v1.0.229
+      │   ├── bollard v0.18.1 (*)
+      │   ├── cookie_store v0.22.1 (*)
+      │   └── serde v1.0.229
+      │       ├── bollard v0.18.1 (*)
+      │       ├── bollard-stubs v1.47.1-rc.27.3.1
+      │       │   └── bollard v0.18.1 (*)
+      │       ├── calamine v0.36.1 (*)
+      │       ├── cookie_store v0.22.1 (*)
+      │       ├── hub-admin v0.1.0 (*)
+      │       ├── hub-auth v0.1.0 (*)
+      │       ├── hub-cli v0.1.0 (*)
+      │       ├── hub-demo-apps v0.1.0 (*)
+      │       ├── hub-gateway v0.1.0 (*)
+      │       ├── hub-manifest v0.1.0
+      │       │   ├── hub-cli v0.1.0 (*)
+      │       │   ├── (dev) hub-gateway v0.1.0 (*)
+      │       │   ├── hub-ops v0.1.0 (*)
+      │       │   ├── hub-registry v0.1.0
+      │       │   │   ├── hub-cli v0.1.0 (*)
+      │       │   │   ├── hub-gateway v0.1.0 (*)
+      │       │   │   ├── hub-ops v0.1.0 (*)
+      │       │   │   └── hub-web v0.1.0 (*)
+      │       │   ├── hub-runtime v0.1.0 (*)
+      │       │   └── hub-web v0.1.0 (*)
+      │       ├── hub-ops v0.1.0 (*)
+      │       ├── hub-sdk v0.1.0 (*)
+      │       ├── hub-shell v0.1.0 (*)
+      │       ├── hub-web v0.1.0 (*)
+      │       ├── reqwest v0.12.28 (*)
+      │       ├── serde_urlencoded v0.7.1
+      │       │   ├── axum v0.8.9 (*)
+      │       │   ├── bollard v0.18.1 (*)
+      │       │   ├── reqwest v0.12.28 (*)
+      │       │   └── topcoat-router v0.9.0 (*)
+      │       ├── serde_yaml v0.9.34+deprecated
+      │       │   └── (dev) hub-runtime v0.1.0 (*)
+      │       ├── topcoat v0.9.0 (*)
+      │       ├── topcoat-asset v0.9.0 (*)
+      │       ├── topcoat-cookie v0.9.0 (*)
+      │       ├── (build) topcoat-font v0.9.0 (*)
+      │       ├── topcoat-router v0.9.0 (*)
+      │       ├── topcoat-runtime v0.9.0 (*)
+      │       └── topcoat-runtime-grammar v0.9.0 (*)
+      ├── serde_repr v0.1.21
+      │   ├── bollard v0.18.1 (*)
+      │   └── bollard-stubs v1.47.1-rc.27.3.1 (*)
+      ├── synstructure v0.14.0
+      │   ├── yoke-derive v0.8.3
+      │   │   └── yoke v0.8.3
+      │   │       ├── icu_collections v2.3.0 (*)
+      │   │       ├── icu_provider v2.3.1 (*)
+      │   │       ├── zerotrie v0.2.5 (*)
+      │   │       └── zerovec v0.11.8
+      │   │           ├── icu_collections v2.3.0 (*)
+      │   │           ├── icu_locale_core v2.3.0 (*)
+      │   │           ├── icu_normalizer v2.3.0 (*)
+      │   │           ├── icu_properties v2.3.0 (*)
+      │   │           ├── icu_provider v2.3.1 (*)
+      │   │           ├── potential_utf v0.1.6
+      │   │           │   └── icu_collections v2.3.0 (*)
+      │   │           └── tinystr v0.8.4 (*)
+      │   └── zerofrom-derive v0.1.8
+      │       └── zerofrom v0.1.8
+      │           ├── icu_collections v2.3.0 (*)
+      │           ├── icu_provider v2.3.1 (*)
+      │           ├── yoke v0.8.3 (*)
+      │           ├── zerotrie v0.2.5 (*)
+      │           └── zerovec v0.11.8 (*)
+      ├── thiserror-impl v2.0.21
+      │   └── thiserror v2.0.21
+      │       ├── bollard v0.18.1 (*)
+      │       ├── hub-manifest v0.1.0 (*)
+      │       ├── hub-registry v0.1.0 (*)
+      │       ├── topcoat-asset v0.9.0 (*)
+      │       ├── topcoat-core v0.9.0
+      │       │   ├── topcoat v0.9.0 (*)
+      │       │   ├── topcoat-asset v0.9.0 (*)
+      │       │   ├── topcoat-cookie v0.9.0 (*)
+      │       │   ├── topcoat-font v0.9.0 (*)
+      │       │   ├── topcoat-icon v0.9.0 (*)
+      │       │   ├── topcoat-router v0.9.0 (*)
+      │       │   ├── topcoat-runtime v0.9.0 (*)
+      │       │   ├── topcoat-session v0.9.0 (*)
+      │       │   └── topcoat-view v0.9.0 (*)
+      │       ├── topcoat-session v0.9.0 (*)
+      │       ├── tungstenite v0.29.0 (*)
+      │       └── zip v2.4.2 (*)
+      ├── tokio-macros v2.7.2
+      │   └── tokio v1.53.1
+      │       ├── async-compression v0.4.48
+      │       │   └── tower-http v0.7.1
+      │       │       └── topcoat-router v0.9.0 (*)
+      │       ├── axum v0.8.9 (*)
+      │       ├── bollard v0.18.1 (*)
+      │       ├── deadpool v0.13.1
+      │       │   └── deadpool-postgres v0.14.2 (*)
+      │       ├── deadpool-postgres v0.14.2 (*)
+      │       ├── deadpool-runtime v0.3.1
+      │       │   └── deadpool v0.13.1 (*)
+      │       ├── h2 v0.4.19
+      │       │   └── hyper v1.11.1
+      │       │       ├── axum v0.8.9 (*)
+      │       │       ├── bollard v0.18.1 (*)
+      │       │       ├── hyper-named-pipe v0.1.1 (*)
+      │       │       ├── hyper-rustls v0.27.10 (*)
+      │       │       ├── hyper-util v0.1.21 (*)
+      │       │       ├── hyperlocal v0.9.1 (*)
+      │       │       ├── reqwest v0.12.28 (*)
+      │       │       └── topcoat-router v0.9.0 (*)
+      │       ├── hub-admin v0.1.0 (*)
+      │       ├── hub-auth v0.1.0 (*)
+      │       ├── hub-cli v0.1.0 (*)
+      │       ├── hub-demo-apps v0.1.0 (*)
+      │       ├── hub-gateway v0.1.0 (*)
+      │       ├── hub-ops v0.1.0 (*)
+      │       ├── (dev) hub-runtime v0.1.0 (*)
+      │       ├── hub-sdk v0.1.0 (*)
+      │       ├── (dev) hub-web v0.1.0 (*)
+      │       ├── hyper v1.11.1 (*)
+      │       ├── hyper-named-pipe v0.1.1 (*)
+      │       ├── hyper-rustls v0.27.10 (*)
+      │       ├── hyper-util v0.1.21 (*)
+      │       ├── hyperlocal v0.9.1 (*)
+      │       ├── reqwest v0.12.28 (*)
+      │       ├── tokio-postgres v0.7.18 (*)
+      │       ├── tokio-rustls v0.26.5 (*)
+      │       ├── tokio-tungstenite v0.29.0 (*)
+      │       ├── tokio-util v0.7.19
+      │       │   ├── bollard v0.18.1 (*)
+      │       │   ├── h2 v0.4.19 (*)
+      │       │   ├── hub-demo-apps v0.1.0 (*)
+      │       │   ├── reqwest v0.12.28 (*)
+      │       │   ├── tokio-postgres v0.7.18 (*)
+      │       │   ├── topcoat-router v0.9.0 (*)
+      │       │   └── tower-http v0.7.1 (*)
+      │       ├── topcoat v0.9.0 (*)
+      │       ├── topcoat-asset v0.9.0 (*)
+      │       ├── topcoat-core v0.9.0 (*)
+      │       ├── topcoat-router v0.9.0 (*)
+      │       ├── topcoat-runtime v0.9.0 (*)
+      │       ├── topcoat-session v0.9.0 (*)
+      │       ├── tower v0.5.3 (*)
+      │       ├── tower-http v0.7.1 (*)
+      │       └── wasm-bindgen-futures v0.4.79 (*)
+      ├── topcoat-core-grammar v0.9.0
+      │   ├── topcoat-core-macro v0.9.0
+      │   │   └── topcoat v0.9.0 (*)
+      │   ├── topcoat-font-grammar v0.9.0 (*)
+      │   ├── topcoat-icon-grammar v0.9.0 (*)
+      │   ├── topcoat-router-grammar v0.9.0
+      │   │   └── topcoat-router-macro v0.9.0
+      │   │       └── topcoat v0.9.0 (*)
+      │   ├── topcoat-runtime-grammar v0.9.0 (*)
+      │   └── topcoat-view-grammar v0.9.0 (*)
+      ├── topcoat-core-macro v0.9.0 (*)
+      ├── topcoat-font-grammar v0.9.0 (*)
+      ├── topcoat-font-macro v0.9.0 (*)
+      ├── topcoat-icon-grammar v0.9.0 (*)
+      ├── topcoat-icon-macro v0.9.0 (*)
+      ├── topcoat-router-grammar v0.9.0 (*)
+      ├── topcoat-router-macro v0.9.0 (*)
+      ├── topcoat-runtime-grammar v0.9.0 (*)
+      ├── topcoat-runtime-macro v0.9.0 (*)
+      ├── topcoat-view-grammar v0.9.0 (*)
+      ├── topcoat-view-macro v0.9.0 (*)
+      ├── wasm-bindgen-macro-support v0.2.129
+      │   └── wasm-bindgen-macro v0.2.129
+      │       └── wasm-bindgen v0.2.129
+      │           ├── getrandom v0.2.17 (*)
+      │           ├── getrandom v0.3.4 (*)
+      │           ├── getrandom v0.4.3 (*)
+      │           ├── iana-time-zone v0.1.65 (*)
+      │           ├── js-sys v0.3.106 (*)
+      │           ├── reqwest v0.12.28 (*)
+      │           ├── wasm-bindgen-futures v0.4.79 (*)
+      │           ├── wasm-streams v0.4.2 (*)
+      │           ├── web-sys v0.3.106 (*)
+      │           └── web-time v1.1.0 (*)
+      ├── yoke-derive v0.8.3 (*)
+      ├── zerofrom-derive v0.1.8 (*)
+      └── zerovec-derive v0.11.6
+          └── zerovec v0.11.8 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'tower-http'
+    ┌─ platform/Cargo.lock:315:1
+    │  
+315 │ ╭ tower-http 0.6.11 registry+https://github.com/rust-lang/crates.io-index
+316 │ │ tower-http 0.7.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰──────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ tower-http v0.6.11
+      └── reqwest v0.12.28
+          ├── hub-admin v0.1.0
+          │   ├── hub-auth v0.1.0
+          │   │   └── hub-web v0.1.0
+          │   ├── hub-ops v0.1.0
+          │   │   └── hub-web v0.1.0 (*)
+          │   ├── (dev) hub-runtime v0.1.0
+          │   │   ├── hub-ops v0.1.0 (*)
+          │   │   └── hub-web v0.1.0 (*)
+          │   └── hub-web v0.1.0 (*)
+          ├── hub-auth v0.1.0 (*)
+          ├── (dev) hub-cli v0.1.0
+          │   └── (dev) hub-web v0.1.0 (*)
+          ├── hub-demo-apps v0.1.0
+          ├── hub-gateway v0.1.0
+          │   ├── hub-cli v0.1.0 (*)
+          │   └── hub-web v0.1.0 (*)
+          ├── (dev) hub-ops v0.1.0 (*)
+          ├── (dev) hub-sdk v0.1.0
+          │   └── hub-demo-apps v0.1.0 (*)
+          └── (dev) hub-web v0.1.0 (*)
+    ├ tower-http v0.7.1
+      └── topcoat-router v0.9.0
+          ├── topcoat v0.9.0
+          │   ├── hub-cli v0.1.0
+          │   │   └── (dev) hub-web v0.1.0
+          │   ├── hub-shell v0.1.0
+          │   │   ├── hub-cli v0.1.0 (*)
+          │   │   └── hub-web v0.1.0 (*)
+          │   └── hub-web v0.1.0 (*)
+          ├── topcoat-asset v0.9.0
+          │   ├── topcoat v0.9.0 (*)
+          │   ├── topcoat-font v0.9.0
+          │   │   ├── topcoat v0.9.0 (*)
+          │   │   └── topcoat-font-grammar v0.9.0
+          │   │       └── topcoat-font-macro v0.9.0
+          │   │           └── topcoat v0.9.0 (*)
+          │   └── topcoat-runtime v0.9.0
+          │       ├── topcoat v0.9.0 (*)
+          │       └── topcoat-runtime-grammar v0.9.0
+          │           └── topcoat-runtime-macro v0.9.0
+          │               └── topcoat v0.9.0 (*)
+          ├── topcoat-cookie v0.9.0
+          │   ├── topcoat v0.9.0 (*)
+          │   └── topcoat-session v0.9.0
+          │       └── topcoat v0.9.0 (*)
+          ├── topcoat-font v0.9.0 (*)
+          ├── topcoat-runtime v0.9.0 (*)
+          ├── topcoat-runtime-grammar v0.9.0 (*)
+          └── topcoat-session v0.9.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'wasi'
+    ┌─ platform/Cargo.lock:339:1
+    │  
+339 │ ╭ wasi 0.11.1+wasi-snapshot-preview1 registry+https://github.com/rust-lang/crates.io-index
+340 │ │ wasi 0.14.7+wasi-0.2.4 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰────────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ wasi v0.11.1+wasi-snapshot-preview1
+      ├── getrandom v0.2.17
+      │   ├── hub-admin v0.1.0
+      │   │   ├── hub-auth v0.1.0
+      │   │   │   └── hub-web v0.1.0
+      │   │   ├── hub-ops v0.1.0
+      │   │   │   └── hub-web v0.1.0 (*)
+      │   │   ├── (dev) hub-runtime v0.1.0
+      │   │   │   ├── hub-ops v0.1.0 (*)
+      │   │   │   └── hub-web v0.1.0 (*)
+      │   │   └── hub-web v0.1.0 (*)
+      │   ├── hub-auth v0.1.0 (*)
+      │   ├── rand_core v0.6.4
+      │   │   ├── crypto-common v0.1.7
+      │   │   │   ├── aead v0.5.2
+      │   │   │   │   └── aes-gcm v0.10.3
+      │   │   │   │       └── cookie v0.18.2
+      │   │   │   │           ├── cookie_store v0.22.1
+      │   │   │   │           │   └── reqwest v0.12.28
+      │   │   │   │           │       ├── hub-admin v0.1.0 (*)
+      │   │   │   │           │       ├── hub-auth v0.1.0 (*)
+      │   │   │   │           │       ├── (dev) hub-cli v0.1.0
+      │   │   │   │           │       │   └── (dev) hub-web v0.1.0 (*)
+      │   │   │   │           │       ├── hub-demo-apps v0.1.0
+      │   │   │   │           │       ├── hub-gateway v0.1.0
+      │   │   │   │           │       │   ├── hub-cli v0.1.0 (*)
+      │   │   │   │           │       │   └── hub-web v0.1.0 (*)
+      │   │   │   │           │       ├── (dev) hub-ops v0.1.0 (*)
+      │   │   │   │           │       ├── (dev) hub-sdk v0.1.0
+      │   │   │   │           │       │   └── hub-demo-apps v0.1.0 (*)
+      │   │   │   │           │       └── (dev) hub-web v0.1.0 (*)
+      │   │   │   │           ├── reqwest v0.12.28 (*)
+      │   │   │   │           └── topcoat-cookie v0.9.0
+      │   │   │   │               ├── topcoat v0.9.0
+      │   │   │   │               │   ├── hub-cli v0.1.0 (*)
+      │   │   │   │               │   ├── hub-shell v0.1.0
+      │   │   │   │               │   │   ├── hub-cli v0.1.0 (*)
+      │   │   │   │               │   │   └── hub-web v0.1.0 (*)
+      │   │   │   │               │   └── hub-web v0.1.0 (*)
+      │   │   │   │               └── topcoat-session v0.9.0
+      │   │   │   │                   └── topcoat v0.9.0 (*)
+      │   │   │   ├── cipher v0.4.4
+      │   │   │   │   ├── aes v0.8.4
+      │   │   │   │   │   ├── aes-gcm v0.10.3 (*)
+      │   │   │   │   │   └── zip v2.4.2
+      │   │   │   │   │       ├── (dev) hub-cli v0.1.0 (*)
+      │   │   │   │   │       ├── hub-demo-apps v0.1.0 (*)
+      │   │   │   │   │       └── hub-ops v0.1.0 (*)
+      │   │   │   │   ├── aes-gcm v0.10.3 (*)
+      │   │   │   │   └── ctr v0.9.2
+      │   │   │   │       └── aes-gcm v0.10.3 (*)
+      │   │   │   ├── digest v0.10.7
+      │   │   │   │   ├── blake2 v0.10.6
+      │   │   │   │   │   └── argon2 v0.5.3
+      │   │   │   │   │       └── hub-auth v0.1.0 (*)
+      │   │   │   │   ├── hmac v0.12.1
+      │   │   │   │   │   ├── cookie v0.18.2 (*)
+      │   │   │   │   │   ├── hkdf v0.12.4
+      │   │   │   │   │   │   └── cookie v0.18.2 (*)
+      │   │   │   │   │   ├── hub-demo-apps v0.1.0 (*)
+      │   │   │   │   │   ├── pbkdf2 v0.12.2
+      │   │   │   │   │   │   └── zip v2.4.2 (*)
+      │   │   │   │   │   └── zip v2.4.2 (*)
+      │   │   │   │   ├── pbkdf2 v0.12.2 (*)
+      │   │   │   │   ├── sha1 v0.10.7
+      │   │   │   │   │   ├── tungstenite v0.29.0
+      │   │   │   │   │   │   └── tokio-tungstenite v0.29.0
+      │   │   │   │   │   │       ├── topcoat v0.9.0 (*)
+      │   │   │   │   │   │       └── topcoat-router v0.9.0
+      │   │   │   │   │   │           ├── topcoat v0.9.0 (*)
+      │   │   │   │   │   │           ├── topcoat-asset v0.9.0
+      │   │   │   │   │   │           │   ├── topcoat v0.9.0 (*)
+      │   │   │   │   │   │           │   ├── topcoat-font v0.9.0
+      │   │   │   │   │   │           │   │   ├── topcoat v0.9.0 (*)
+      │   │   │   │   │   │           │   │   └── topcoat-font-grammar v0.9.0
+      │   │   │   │   │   │           │   │       └── topcoat-font-macro v0.9.0
+      │   │   │   │   │   │           │   │           └── topcoat v0.9.0 (*)
+      │   │   │   │   │   │           │   └── topcoat-runtime v0.9.0
+      │   │   │   │   │   │           │       ├── topcoat v0.9.0 (*)
+      │   │   │   │   │   │           │       └── topcoat-runtime-grammar v0.9.0
+      │   │   │   │   │   │           │           └── topcoat-runtime-macro v0.9.0
+      │   │   │   │   │   │           │               └── topcoat v0.9.0 (*)
+      │   │   │   │   │   │           ├── topcoat-cookie v0.9.0 (*)
+      │   │   │   │   │   │           ├── topcoat-font v0.9.0 (*)
+      │   │   │   │   │   │           ├── topcoat-runtime v0.9.0 (*)
+      │   │   │   │   │   │           ├── topcoat-runtime-grammar v0.9.0 (*)
+      │   │   │   │   │   │           └── topcoat-session v0.9.0 (*)
+      │   │   │   │   │   └── zip v2.4.2 (*)
+      │   │   │   │   └── sha2 v0.10.9
+      │   │   │   │       ├── cookie v0.18.2 (*)
+      │   │   │   │       ├── hub-auth v0.1.0 (*)
+      │   │   │   │       ├── hub-cli v0.1.0 (*)
+      │   │   │   │       ├── hub-demo-apps v0.1.0 (*)
+      │   │   │   │       ├── hub-ops v0.1.0 (*)
+      │   │   │   │       └── hub-sdk v0.1.0 (*)
+      │   │   │   └── universal-hash v0.5.1
+      │   │   │       └── polyval v0.6.2
+      │   │   │           └── ghash v0.5.1
+      │   │   │               └── aes-gcm v0.10.3 (*)
+      │   │   ├── password-hash v0.5.0
+      │   │   │   └── argon2 v0.5.3 (*)
+      │   │   ├── rand v0.8.8
+      │   │   │   └── cookie v0.18.2 (*)
+      │   │   └── rand_chacha v0.3.1
+      │   │       └── rand v0.8.8 (*)
+      │   ├── ring v0.17.14
+      │   │   ├── hub-auth v0.1.0 (*)
+      │   │   ├── rustls v0.23.45
+      │   │   │   ├── hyper-rustls v0.27.10
+      │   │   │   │   └── reqwest v0.12.28 (*)
+      │   │   │   ├── reqwest v0.12.28 (*)
+      │   │   │   └── tokio-rustls v0.26.5
+      │   │   │       ├── hyper-rustls v0.27.10 (*)
+      │   │   │       └── reqwest v0.12.28 (*)
+      │   │   └── rustls-webpki v0.103.15
+      │   │       └── rustls v0.23.45 (*)
+      │   └── topcoat-cookie v0.9.0 (*)
+      └── mio v1.2.3
+          └── tokio v1.53.1
+              ├── async-compression v0.4.48
+              │   └── tower-http v0.7.1
+              │       └── topcoat-router v0.9.0 (*)
+              ├── axum v0.8.9
+              │   ├── hub-admin v0.1.0 (*)
+              │   ├── hub-auth v0.1.0 (*)
+              │   ├── hub-cli v0.1.0 (*)
+              │   ├── hub-demo-apps v0.1.0 (*)
+              │   ├── hub-gateway v0.1.0 (*)
+              │   ├── hub-ops v0.1.0 (*)
+              │   ├── hub-sdk v0.1.0 (*)
+              │   ├── hub-shell v0.1.0 (*)
+              │   └── hub-web v0.1.0 (*)
+              ├── bollard v0.18.1
+              │   ├── hub-ops v0.1.0 (*)
+              │   └── hub-runtime v0.1.0 (*)
+              ├── deadpool v0.13.1
+              │   └── deadpool-postgres v0.14.2
+              │       ├── hub-demo-apps v0.1.0 (*)
+              │       └── hub-sdk v0.1.0 (*)
+              ├── deadpool-postgres v0.14.2 (*)
+              ├── deadpool-runtime v0.3.1
+              │   └── deadpool v0.13.1 (*)
+              ├── h2 v0.4.19
+              │   └── hyper v1.11.1
+              │       ├── axum v0.8.9 (*)
+              │       ├── bollard v0.18.1 (*)
+              │       ├── hyper-named-pipe v0.1.1
+              │       │   └── bollard v0.18.1 (*)
+              │       ├── hyper-rustls v0.27.10 (*)
+              │       ├── hyper-util v0.1.21
+              │       │   ├── axum v0.8.9 (*)
+              │       │   ├── bollard v0.18.1 (*)
+              │       │   ├── hyper-named-pipe v0.1.1 (*)
+              │       │   ├── hyper-rustls v0.27.10 (*)
+              │       │   ├── hyperlocal v0.9.1
+              │       │   │   └── bollard v0.18.1 (*)
+              │       │   ├── reqwest v0.12.28 (*)
+              │       │   └── topcoat-router v0.9.0 (*)
+              │       ├── hyperlocal v0.9.1 (*)
+              │       ├── reqwest v0.12.28 (*)
+              │       └── topcoat-router v0.9.0 (*)
+              ├── hub-admin v0.1.0 (*)
+              ├── hub-auth v0.1.0 (*)
+              ├── hub-cli v0.1.0 (*)
+              ├── hub-demo-apps v0.1.0 (*)
+              ├── hub-gateway v0.1.0 (*)
+              ├── hub-ops v0.1.0 (*)
+              ├── (dev) hub-runtime v0.1.0 (*)
+              ├── hub-sdk v0.1.0 (*)
+              ├── (dev) hub-web v0.1.0 (*)
+              ├── hyper v1.11.1 (*)
+              ├── hyper-named-pipe v0.1.1 (*)
+              ├── hyper-rustls v0.27.10 (*)
+              ├── hyper-util v0.1.21 (*)
+              ├── hyperlocal v0.9.1 (*)
+              ├── reqwest v0.12.28 (*)
+              ├── tokio-postgres v0.7.18
+              │   ├── deadpool-postgres v0.14.2 (*)
+              │   ├── hub-demo-apps v0.1.0 (*)
+              │   ├── hub-ops v0.1.0 (*)
+              │   └── hub-sdk v0.1.0 (*)
+              ├── tokio-rustls v0.26.5 (*)
+              ├── tokio-tungstenite v0.29.0 (*)
+              ├── tokio-util v0.7.19
+              │   ├── bollard v0.18.1 (*)
+              │   ├── h2 v0.4.19 (*)
+              │   ├── hub-demo-apps v0.1.0 (*)
+              │   ├── reqwest v0.12.28 (*)
+              │   ├── tokio-postgres v0.7.18 (*)
+              │   ├── topcoat-router v0.9.0 (*)
+              │   └── tower-http v0.7.1 (*)
+              ├── topcoat v0.9.0 (*)
+              ├── topcoat-asset v0.9.0 (*)
+              ├── topcoat-core v0.9.0
+              │   ├── topcoat v0.9.0 (*)
+              │   ├── topcoat-asset v0.9.0 (*)
+              │   ├── topcoat-cookie v0.9.0 (*)
+              │   ├── topcoat-font v0.9.0 (*)
+              │   ├── topcoat-icon v0.9.0
+              │   │   ├── topcoat v0.9.0 (*)
+              │   │   └── topcoat-icon-grammar v0.9.0
+              │   │       └── topcoat-icon-macro v0.9.0
+              │   │           └── topcoat v0.9.0 (*)
+              │   ├── topcoat-router v0.9.0 (*)
+              │   ├── topcoat-runtime v0.9.0 (*)
+              │   ├── topcoat-session v0.9.0 (*)
+              │   └── topcoat-view v0.9.0
+              │       ├── topcoat v0.9.0 (*)
+              │       ├── topcoat-asset v0.9.0 (*)
+              │       ├── topcoat-font v0.9.0 (*)
+              │       ├── topcoat-icon v0.9.0 (*)
+              │       ├── topcoat-router v0.9.0 (*)
+              │       ├── topcoat-runtime v0.9.0 (*)
+              │       └── topcoat-view-grammar v0.9.0
+              │           └── topcoat-view-macro v0.9.0
+              │               ├── topcoat v0.9.0 (*)
+              │               ├── topcoat-font v0.9.0 (*)
+              │               └── topcoat-icon v0.9.0 (*)
+              ├── topcoat-router v0.9.0 (*)
+              ├── topcoat-runtime v0.9.0 (*)
+              ├── topcoat-session v0.9.0 (*)
+              ├── tower v0.5.3
+              │   ├── axum v0.8.9 (*)
+              │   ├── (dev) hub-sdk v0.1.0 (*)
+              │   ├── reqwest v0.12.28 (*)
+              │   ├── topcoat-router v0.9.0 (*)
+              │   └── tower-http v0.6.11
+              │       └── reqwest v0.12.28 (*)
+              ├── tower-http v0.7.1 (*)
+              └── wasm-bindgen-futures v0.4.79
+                  ├── reqwest v0.12.28 (*)
+                  └── wasm-streams v0.4.2
+                      └── reqwest v0.12.28 (*)
+    ├ wasi v0.14.7+wasi-0.2.4
+      └── wasite v1.0.2
+          └── whoami v2.1.3
+              └── tokio-postgres v0.7.18
+                  ├── deadpool-postgres v0.14.2
+                  │   ├── hub-demo-apps v0.1.0
+                  │   └── hub-sdk v0.1.0
+                  │       └── hub-demo-apps v0.1.0 (*)
+                  ├── hub-demo-apps v0.1.0 (*)
+                  ├── hub-ops v0.1.0
+                  │   └── hub-web v0.1.0
+                  └── hub-sdk v0.1.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows-core'
+    ┌─ platform/Cargo.lock:357:1
+    │  
+357 │ ╭ windows-core 0.57.0 registry+https://github.com/rust-lang/crates.io-index
+358 │ │ windows-core 0.62.2 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows-core v0.57.0
+      └── windows v0.57.0
+          └── sysinfo v0.32.1
+              └── hub-ops v0.1.0
+                  └── hub-web v0.1.0
+    ├ windows-core v0.62.2
+      └── iana-time-zone v0.1.65
+          └── chrono v0.4.45
+              ├── hub-demo-apps v0.1.0
+              └── postgres-types v0.2.14
+                  └── tokio-postgres v0.7.18
+                      ├── deadpool-postgres v0.14.2
+                      │   ├── hub-demo-apps v0.1.0 (*)
+                      │   └── hub-sdk v0.1.0
+                      │       └── hub-demo-apps v0.1.0 (*)
+                      ├── hub-demo-apps v0.1.0 (*)
+                      ├── hub-ops v0.1.0
+                      │   └── hub-web v0.1.0
+                      └── hub-sdk v0.1.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows-implement'
+    ┌─ platform/Cargo.lock:359:1
+    │  
+359 │ ╭ windows-implement 0.57.0 registry+https://github.com/rust-lang/crates.io-index
+360 │ │ windows-implement 0.60.2 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰──────────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows-implement v0.57.0
+      └── windows-core v0.57.0
+          └── windows v0.57.0
+              └── sysinfo v0.32.1
+                  └── hub-ops v0.1.0
+                      └── hub-web v0.1.0
+    ├ windows-implement v0.60.2
+      └── windows-core v0.62.2
+          └── iana-time-zone v0.1.65
+              └── chrono v0.4.45
+                  ├── hub-demo-apps v0.1.0
+                  └── postgres-types v0.2.14
+                      └── tokio-postgres v0.7.18
+                          ├── deadpool-postgres v0.14.2
+                          │   ├── hub-demo-apps v0.1.0 (*)
+                          │   └── hub-sdk v0.1.0
+                          │       └── hub-demo-apps v0.1.0 (*)
+                          ├── hub-demo-apps v0.1.0 (*)
+                          ├── hub-ops v0.1.0
+                          │   └── hub-web v0.1.0
+                          └── hub-sdk v0.1.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows-interface'
+    ┌─ platform/Cargo.lock:361:1
+    │  
+361 │ ╭ windows-interface 0.57.0 registry+https://github.com/rust-lang/crates.io-index
+362 │ │ windows-interface 0.59.3 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰──────────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows-interface v0.57.0
+      └── windows-core v0.57.0
+          └── windows v0.57.0
+              └── sysinfo v0.32.1
+                  └── hub-ops v0.1.0
+                      └── hub-web v0.1.0
+    ├ windows-interface v0.59.3
+      └── windows-core v0.62.2
+          └── iana-time-zone v0.1.65
+              └── chrono v0.4.45
+                  ├── hub-demo-apps v0.1.0
+                  └── postgres-types v0.2.14
+                      └── tokio-postgres v0.7.18
+                          ├── deadpool-postgres v0.14.2
+                          │   ├── hub-demo-apps v0.1.0 (*)
+                          │   └── hub-sdk v0.1.0
+                          │       └── hub-demo-apps v0.1.0 (*)
+                          ├── hub-demo-apps v0.1.0 (*)
+                          ├── hub-ops v0.1.0
+                          │   └── hub-web v0.1.0
+                          └── hub-sdk v0.1.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows-result'
+    ┌─ platform/Cargo.lock:364:1
+    │  
+364 │ ╭ windows-result 0.1.2 registry+https://github.com/rust-lang/crates.io-index
+365 │ │ windows-result 0.4.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰──────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows-result v0.1.2
+      └── windows-core v0.57.0
+          └── windows v0.57.0
+              └── sysinfo v0.32.1
+                  └── hub-ops v0.1.0
+                      └── hub-web v0.1.0
+    ├ windows-result v0.4.1
+      └── windows-core v0.62.2
+          └── iana-time-zone v0.1.65
+              └── chrono v0.4.45
+                  ├── hub-demo-apps v0.1.0
+                  └── postgres-types v0.2.14
+                      └── tokio-postgres v0.7.18
+                          ├── deadpool-postgres v0.14.2
+                          │   ├── hub-demo-apps v0.1.0 (*)
+                          │   └── hub-sdk v0.1.0
+                          │       └── hub-demo-apps v0.1.0 (*)
+                          ├── hub-demo-apps v0.1.0 (*)
+                          ├── hub-ops v0.1.0
+                          │   └── hub-web v0.1.0
+                          └── hub-sdk v0.1.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows-sys'
+    ┌─ platform/Cargo.lock:367:1
+    │  
+367 │ ╭ windows-sys 0.52.0 registry+https://github.com/rust-lang/crates.io-index
+368 │ │ windows-sys 0.61.2 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows-sys v0.52.0
+      └── ring v0.17.14
+          ├── hub-auth v0.1.0
+          │   └── hub-web v0.1.0
+          ├── rustls v0.23.45
+          │   ├── hyper-rustls v0.27.10
+          │   │   └── reqwest v0.12.28
+          │   │       ├── hub-admin v0.1.0
+          │   │       │   ├── hub-auth v0.1.0 (*)
+          │   │       │   ├── hub-ops v0.1.0
+          │   │       │   │   └── hub-web v0.1.0 (*)
+          │   │       │   ├── (dev) hub-runtime v0.1.0
+          │   │       │   │   ├── hub-ops v0.1.0 (*)
+          │   │       │   │   └── hub-web v0.1.0 (*)
+          │   │       │   └── hub-web v0.1.0 (*)
+          │   │       ├── hub-auth v0.1.0 (*)
+          │   │       ├── (dev) hub-cli v0.1.0
+          │   │       │   └── (dev) hub-web v0.1.0 (*)
+          │   │       ├── hub-demo-apps v0.1.0
+          │   │       ├── hub-gateway v0.1.0
+          │   │       │   ├── hub-cli v0.1.0 (*)
+          │   │       │   └── hub-web v0.1.0 (*)
+          │   │       ├── (dev) hub-ops v0.1.0 (*)
+          │   │       ├── (dev) hub-sdk v0.1.0
+          │   │       │   └── hub-demo-apps v0.1.0 (*)
+          │   │       └── (dev) hub-web v0.1.0 (*)
+          │   ├── reqwest v0.12.28 (*)
+          │   └── tokio-rustls v0.26.5
+          │       ├── hyper-rustls v0.27.10 (*)
+          │       └── reqwest v0.12.28 (*)
+          └── rustls-webpki v0.103.15
+              └── rustls v0.23.45 (*)
+    ├ windows-sys v0.61.2
+      ├── anstyle-query v1.1.5
+      │   └── anstream v1.0.0
+      │       └── clap_builder v4.6.7
+      │           └── clap v4.6.7
+      │               └── hub-cli v0.1.0
+      │                   └── (dev) hub-web v0.1.0
+      ├── anstyle-wincon v3.0.11
+      │   └── anstream v1.0.0 (*)
+      ├── errno v0.3.14
+      │   ├── rustix v1.1.5
+      │   │   └── tempfile v3.27.0
+      │   │       ├── (dev) hub-admin v0.1.0
+      │   │       │   ├── hub-auth v0.1.0
+      │   │       │   │   └── hub-web v0.1.0 (*)
+      │   │       │   ├── hub-ops v0.1.0
+      │   │       │   │   └── hub-web v0.1.0 (*)
+      │   │       │   ├── (dev) hub-runtime v0.1.0
+      │   │       │   │   ├── hub-ops v0.1.0 (*)
+      │   │       │   │   └── hub-web v0.1.0 (*)
+      │   │       │   └── hub-web v0.1.0 (*)
+      │   │       ├── (dev) hub-auth v0.1.0 (*)
+      │   │       ├── (dev) hub-cli v0.1.0 (*)
+      │   │       ├── (dev) hub-ops v0.1.0 (*)
+      │   │       ├── hub-sdk v0.1.0
+      │   │       │   └── hub-demo-apps v0.1.0
+      │   │       ├── (dev) hub-web v0.1.0 (*)
+      │   │       └── rust_xlsxwriter v0.99.1
+      │   │           └── hub-demo-apps v0.1.0 (*)
+      │   └── signal-hook-registry v1.4.8
+      │       └── tokio v1.53.1
+      │           ├── async-compression v0.4.48
+      │           │   └── tower-http v0.7.1
+      │           │       └── topcoat-router v0.9.0
+      │           │           ├── topcoat v0.9.0
+      │           │           │   ├── hub-cli v0.1.0 (*)
+      │           │           │   ├── hub-shell v0.1.0
+      │           │           │   │   ├── hub-cli v0.1.0 (*)
+      │           │           │   │   └── hub-web v0.1.0 (*)
+      │           │           │   └── hub-web v0.1.0 (*)
+      │           │           ├── topcoat-asset v0.9.0
+      │           │           │   ├── topcoat v0.9.0 (*)
+      │           │           │   ├── topcoat-font v0.9.0
+      │           │           │   │   ├── topcoat v0.9.0 (*)
+      │           │           │   │   └── topcoat-font-grammar v0.9.0
+      │           │           │   │       └── topcoat-font-macro v0.9.0
+      │           │           │   │           └── topcoat v0.9.0 (*)
+      │           │           │   └── topcoat-runtime v0.9.0
+      │           │           │       ├── topcoat v0.9.0 (*)
+      │           │           │       └── topcoat-runtime-grammar v0.9.0
+      │           │           │           └── topcoat-runtime-macro v0.9.0
+      │           │           │               └── topcoat v0.9.0 (*)
+      │           │           ├── topcoat-cookie v0.9.0
+      │           │           │   ├── topcoat v0.9.0 (*)
+      │           │           │   └── topcoat-session v0.9.0
+      │           │           │       └── topcoat v0.9.0 (*)
+      │           │           ├── topcoat-font v0.9.0 (*)
+      │           │           ├── topcoat-runtime v0.9.0 (*)
+      │           │           ├── topcoat-runtime-grammar v0.9.0 (*)
+      │           │           └── topcoat-session v0.9.0 (*)
+      │           ├── axum v0.8.9
+      │           │   ├── hub-admin v0.1.0 (*)
+      │           │   ├── hub-auth v0.1.0 (*)
+      │           │   ├── hub-cli v0.1.0 (*)
+      │           │   ├── hub-demo-apps v0.1.0 (*)
+      │           │   ├── hub-gateway v0.1.0
+      │           │   │   ├── hub-cli v0.1.0 (*)
+      │           │   │   └── hub-web v0.1.0 (*)
+      │           │   ├── hub-ops v0.1.0 (*)
+      │           │   ├── hub-sdk v0.1.0 (*)
+      │           │   ├── hub-shell v0.1.0 (*)
+      │           │   └── hub-web v0.1.0 (*)
+      │           ├── bollard v0.18.1
+      │           │   ├── hub-ops v0.1.0 (*)
+      │           │   └── hub-runtime v0.1.0 (*)
+      │           ├── deadpool v0.13.1
+      │           │   └── deadpool-postgres v0.14.2
+      │           │       ├── hub-demo-apps v0.1.0 (*)
+      │           │       └── hub-sdk v0.1.0 (*)
+      │           ├── deadpool-postgres v0.14.2 (*)
+      │           ├── deadpool-runtime v0.3.1
+      │           │   └── deadpool v0.13.1 (*)
+      │           ├── h2 v0.4.19
+      │           │   └── hyper v1.11.1
+      │           │       ├── axum v0.8.9 (*)
+      │           │       ├── bollard v0.18.1 (*)
+      │           │       ├── hyper-named-pipe v0.1.1
+      │           │       │   └── bollard v0.18.1 (*)
+      │           │       ├── hyper-rustls v0.27.10
+      │           │       │   └── reqwest v0.12.28
+      │           │       │       ├── hub-admin v0.1.0 (*)
+      │           │       │       ├── hub-auth v0.1.0 (*)
+      │           │       │       ├── (dev) hub-cli v0.1.0 (*)
+      │           │       │       ├── hub-demo-apps v0.1.0 (*)
+      │           │       │       ├── hub-gateway v0.1.0 (*)
+      │           │       │       ├── (dev) hub-ops v0.1.0 (*)
+      │           │       │       ├── (dev) hub-sdk v0.1.0 (*)
+      │           │       │       └── (dev) hub-web v0.1.0 (*)
+      │           │       ├── hyper-util v0.1.21
+      │           │       │   ├── axum v0.8.9 (*)
+      │           │       │   ├── bollard v0.18.1 (*)
+      │           │       │   ├── hyper-named-pipe v0.1.1 (*)
+      │           │       │   ├── hyper-rustls v0.27.10 (*)
+      │           │       │   ├── hyperlocal v0.9.1
+      │           │       │   │   └── bollard v0.18.1 (*)
+      │           │       │   ├── reqwest v0.12.28 (*)
+      │           │       │   └── topcoat-router v0.9.0 (*)
+      │           │       ├── hyperlocal v0.9.1 (*)
+      │           │       ├── reqwest v0.12.28 (*)
+      │           │       └── topcoat-router v0.9.0 (*)
+      │           ├── hub-admin v0.1.0 (*)
+      │           ├── hub-auth v0.1.0 (*)
+      │           ├── hub-cli v0.1.0 (*)
+      │           ├── hub-demo-apps v0.1.0 (*)
+      │           ├── hub-gateway v0.1.0 (*)
+      │           ├── hub-ops v0.1.0 (*)
+      │           ├── (dev) hub-runtime v0.1.0 (*)
+      │           ├── hub-sdk v0.1.0 (*)
+      │           ├── (dev) hub-web v0.1.0 (*)
+      │           ├── hyper v1.11.1 (*)
+      │           ├── hyper-named-pipe v0.1.1 (*)
+      │           ├── hyper-rustls v0.27.10 (*)
+      │           ├── hyper-util v0.1.21 (*)
+      │           ├── hyperlocal v0.9.1 (*)
+      │           ├── reqwest v0.12.28 (*)
+      │           ├── tokio-postgres v0.7.18
+      │           │   ├── deadpool-postgres v0.14.2 (*)
+      │           │   ├── hub-demo-apps v0.1.0 (*)
+      │           │   ├── hub-ops v0.1.0 (*)
+      │           │   └── hub-sdk v0.1.0 (*)
+      │           ├── tokio-rustls v0.26.5
+      │           │   ├── hyper-rustls v0.27.10 (*)
+      │           │   └── reqwest v0.12.28 (*)
+      │           ├── tokio-tungstenite v0.29.0
+      │           │   ├── topcoat v0.9.0 (*)
+      │           │   └── topcoat-router v0.9.0 (*)
+      │           ├── tokio-util v0.7.19
+      │           │   ├── bollard v0.18.1 (*)
+      │           │   ├── h2 v0.4.19 (*)
+      │           │   ├── hub-demo-apps v0.1.0 (*)
+      │           │   ├── reqwest v0.12.28 (*)
+      │           │   ├── tokio-postgres v0.7.18 (*)
+      │           │   ├── topcoat-router v0.9.0 (*)
+      │           │   └── tower-http v0.7.1 (*)
+      │           ├── topcoat v0.9.0 (*)
+      │           ├── topcoat-asset v0.9.0 (*)
+      │           ├── topcoat-core v0.9.0
+      │           │   ├── topcoat v0.9.0 (*)
+      │           │   ├── topcoat-asset v0.9.0 (*)
+      │           │   ├── topcoat-cookie v0.9.0 (*)
+      │           │   ├── topcoat-font v0.9.0 (*)
+      │           │   ├── topcoat-icon v0.9.0
+      │           │   │   ├── topcoat v0.9.0 (*)
+      │           │   │   └── topcoat-icon-grammar v0.9.0
+      │           │   │       └── topcoat-icon-macro v0.9.0
+      │           │   │           └── topcoat v0.9.0 (*)
+      │           │   ├── topcoat-router v0.9.0 (*)
+      │           │   ├── topcoat-runtime v0.9.0 (*)
+      │           │   ├── topcoat-session v0.9.0 (*)
+      │           │   └── topcoat-view v0.9.0
+      │           │       ├── topcoat v0.9.0 (*)
+      │           │       ├── topcoat-asset v0.9.0 (*)
+      │           │       ├── topcoat-font v0.9.0 (*)
+      │           │       ├── topcoat-icon v0.9.0 (*)
+      │           │       ├── topcoat-router v0.9.0 (*)
+      │           │       ├── topcoat-runtime v0.9.0 (*)
+      │           │       └── topcoat-view-grammar v0.9.0
+      │           │           └── topcoat-view-macro v0.9.0
+      │           │               ├── topcoat v0.9.0 (*)
+      │           │               ├── topcoat-font v0.9.0 (*)
+      │           │               └── topcoat-icon v0.9.0 (*)
+      │           ├── topcoat-router v0.9.0 (*)
+      │           ├── topcoat-runtime v0.9.0 (*)
+      │           ├── topcoat-session v0.9.0 (*)
+      │           ├── tower v0.5.3
+      │           │   ├── axum v0.8.9 (*)
+      │           │   ├── (dev) hub-sdk v0.1.0 (*)
+      │           │   ├── reqwest v0.12.28 (*)
+      │           │   ├── topcoat-router v0.9.0 (*)
+      │           │   └── tower-http v0.6.11
+      │           │       └── reqwest v0.12.28 (*)
+      │           ├── tower-http v0.7.1 (*)
+      │           └── wasm-bindgen-futures v0.4.79
+      │               ├── reqwest v0.12.28 (*)
+      │               └── wasm-streams v0.4.2
+      │                   └── reqwest v0.12.28 (*)
+      ├── (dev) hub-cli v0.1.0 (*)
+      ├── mio v1.2.3
+      │   └── tokio v1.53.1 (*)
+      ├── rustix v1.1.5 (*)
+      ├── socket2 v0.6.5
+      │   ├── hyper-util v0.1.21 (*)
+      │   ├── tokio v1.53.1 (*)
+      │   └── tokio-postgres v0.7.18 (*)
+      ├── tempfile v3.27.0 (*)
+      └── tokio v1.53.1 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'zip'
+    ┌─ platform/Cargo.lock:392:1
+    │  
+392 │ ╭ zip 2.4.2 registry+https://github.com/rust-lang/crates.io-index
+393 │ │ zip 8.6.0 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰───────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ zip v2.4.2
+      ├── (dev) hub-cli v0.1.0
+      │   └── (dev) hub-web v0.1.0
+      ├── hub-demo-apps v0.1.0
+      └── hub-ops v0.1.0
+          └── hub-web v0.1.0 (*)
+    ├ zip v8.6.0
+      ├── calamine v0.36.1
+      │   └── hub-demo-apps v0.1.0
+      └── rust_xlsxwriter v0.99.1
+          └── hub-demo-apps v0.1.0 (*)
+
+advisories ok, bans ok, licenses ok, sources ok

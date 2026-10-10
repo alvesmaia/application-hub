@@ -1,0 +1,12 @@
+# Dependências de terceiros da imagem hub-contratos (hub-sdk-python + app contratos) e as
+# de build dos dois pacotes locais. Fonte do requirements.lock (com hashes) — ver
+# "Atualizar dependências Python" no platform/README.md.
+fastapi==0.141.1
+starlette==1.7.0
+asyncpg==0.31.0
+jinja2==3.1.6
+uvicorn==0.54.0
+python-multipart==0.0.32
+openpyxl==3.1.5
+python-calamine==0.8.2
+setuptools>=69

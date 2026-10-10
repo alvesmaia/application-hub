@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ t('shell.status') }} · {{ brand }}{% endblock %}
+{% block main %}
+<div class="page-container">
+<div class="app-page-header page-head"><div class="page-head-text"><div class="eyebrow">{{ t('shell.status') }}</div><h1 class="page-title">{{ tr('Status das aplicações') }}</h1><p class="page-subtitle">{{ tr('Situação atual, disponibilidade dos últimos 30 dias e incidentes.') }}</p></div><div class="page-actions admin-actions"></div></div>
+<div id="incident-meta" hidden data-incident-meta="{{ incident_meta }}"></div>
+{% include "_status_body.html" %}
+</div>
+{% endblock %}

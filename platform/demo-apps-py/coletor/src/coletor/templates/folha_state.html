@@ -1,0 +1,44 @@
+{#- Estado da Folha (redesenhado pelo WebSocket a cada leitura/mudança da sessão): início (QR do
+    app + iniciar + todos os códigos), fila (um código por vez) ou resumo; ao lado, leituras ao vivo. -#}
+<div id="col-folha-state" class="col-folha" data-col-state="{{ sess.status if sess else 'none' }}">
+<div class="col-folha-sheet">
+{% if sess and sess.active %}{% include "queue.html" %}
+{% else %}
+{% if sess and sess.status == 'done' %}{% include "summary.html" %}{% endif %}
+{% if app_url %}<section class="col-open-app" data-col-open-app aria-labelledby="col-open-title">
+<figure class="col-code-card col-code-card-small">{{ code_svg('qr_code', app_url, label=t('QR para abrir o Coletor no celular')) }}</figure>
+<div class="col-open-text"><h2 id="col-open-title" class="col-section-title">{{ t('Abrir o Coletor no celular') }}</h2>
+<p class="col-open-warn"><strong>{{ t('Não é um código de teste — aponte a câmera do celular (fora do Coletor) para abrir o app.') }}</strong></p>
+<span class="col-mono">{{ app_url }}</span></div>
+</section>{% endif %}
+{% if db_ok %}<section class="col-card col-start col-noprint" data-col-start aria-labelledby="col-start-title">
+<h2 id="col-start-title" class="col-section-title">{{ t('Sessão de teste') if not sess or sess.status != 'done' else t('Nova sessão') }}</h2>
+<p class="col-hint">{{ t('{n} códigos, um de cada vez e em ordem sorteada. Leia cada um com o celular em Escanear; o resultado aparece aqui na hora.', n=n_codes) }}</p>
+<form class="col-start-form" method="post" action="{{ base }}/sessao/iniciar" data-hub-target="#col-folha-state">
+<input type="hidden" name="tela" value="folha">
+<label class="col-check"><input type="checkbox" name="auto" value="1" checked><span>{{ t('Avançar automaticamente após a leitura') }}</span></label>
+<button type="submit" class="col-button col-button-primary" data-col-action="iniciar">{{ t('Iniciar sessão') }}</button>
+</form>
+</section>{% endif %}
+<section class="col-step" data-col-step="itens"><h2 class="col-section-title">{{ t('Itens') }}</h2>
+<div class="col-code-grid col-code-grid-dense">
+{% for it in items %}<figure class="col-code-card">{{ code_svg('ean_13', it.code[:12], module_px=3) }}<figcaption><strong>{{ it.name }}</strong><span class="col-mono">{{ it.code }} · {{ it.code128 }}</span></figcaption></figure>{% endfor %}
+</div></section>
+<section class="col-step" data-col-step="locais"><h2 class="col-section-title">{{ t('Locais') }}</h2>
+<div class="col-code-grid col-code-grid-dense">
+{% for l in locs %}<figure class="col-code-card">{{ code_svg('code_39', l.code, module_px=3) }}<figcaption><strong>{{ l.code }}</strong><span>{{ l.name }}</span></figcaption></figure>{% endfor %}
+</div></section>
+<section class="col-step" data-col-step="pedidos"><h2 class="col-section-title">{{ t('Pedidos') }}</h2>
+<div class="col-code-grid">
+<figure class="col-code-card">{{ code_svg('qr_code', order.code, module_px=4) }}<figcaption><strong>{{ t('Pedido (QR)') }}</strong><span class="col-mono">{{ order.code }}</span></figcaption></figure>
+<figure class="col-code-card">{{ code_svg('code_128', order.code, module_px=4) }}<figcaption><strong>{{ t('Pedido (Code 128)') }}</strong><span class="col-mono">{{ order.code }}</span></figcaption></figure>
+</div></section>
+<section class="col-step" data-col-step="formatos"><h2 class="col-section-title">{{ t('Formatos variados') }}</h2>
+<div class="col-code-grid">
+{% for fmt, value in samples %}<figure class="col-code-card" data-sample-format="{{ fmt }}">{{ code_svg(fmt, value, module_px=4) }}<figcaption><strong>{{ fmt_label(fmt) }}</strong><span class="col-mono">{{ value }}</span></figcaption></figure>{% endfor %}
+</div></section>
+<p class="col-hint">{{ t('Folha gerada em {d}. Os códigos são os do catálogo de demonstração do Coletor.', d=date(today)) }}</p>
+{% endif %}
+</div>
+<aside class="col-folha-live col-noprint">{% if db_ok %}{% include "live_reads.html" %}{% endif %}</aside>
+</div>

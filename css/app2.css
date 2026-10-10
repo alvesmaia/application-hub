@@ -1,0 +1,259 @@
+/* App 2's warm terracotta and forest palette is intentionally isolated from the platform shell. */
+.app-catalog-grid{grid-template-columns:minmax(0,1fr);max-width:980px;gap:10px}
+.app-catalog-grid .app-card{position:relative;display:grid;grid-template-columns:42px minmax(155px,.85fr) minmax(200px,1.25fr) minmax(220px,1fr);align-items:center;column-gap:17px;min-height:90px;padding:15px 42px 15px 17px}
+.app-catalog-grid .app-card-top{display:contents}
+.app-catalog-grid .app-card-top>.app-icon{grid-column:1;grid-row:1 / span 2;width:38px;height:38px}
+.app-catalog-grid .app-card h3{grid-column:2;grid-row:1 / span 2;margin:0;align-self:center}
+.app-catalog-grid .app-card p{grid-column:3;grid-row:1 / span 2;min-height:0;margin:0;align-self:center}
+.app-catalog-grid .app-card-meta{grid-column:4;grid-row:1 / span 2;margin:0;padding:0;border:0;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.app-catalog-grid .app-menu{position:absolute;right:12px;top:10px}
+.app-catalog-grid .health{font-size:8px;white-space:nowrap}
+@media(max-width:760px){.app-catalog-grid .app-card{grid-template-columns:38px minmax(0,1fr);gap:8px 12px;padding:14px 40px 14px 14px}.app-catalog-grid .app-card-top>.app-icon{grid-column:1;grid-row:1 / span 2}.app-catalog-grid .app-card h3{grid-column:2;grid-row:1;align-self:end}.app-catalog-grid .app-card p{grid-column:2;grid-row:2}.app-catalog-grid .app-card-meta{grid-column:2;grid-row:3;justify-content:flex-start;flex-wrap:wrap;margin-top:3px;padding-top:9px;border-top:1px solid #edf0f2}}
+.app2-workspace{background:#f4f2ec}
+.app2-sidebar{background:#203d36!important;color:#f7f3e9;border-right:0!important;padding:20px 15px 16px!important}
+@media(min-width:641px){.app2-sidebar{position:sticky;top:0;align-self:flex-start;flex:0 0 240px;width:240px;height:calc(100vh / 1.2 - 41px);min-height:0;max-height:calc(100vh / 1.2 - 41px);overflow-y:auto;overscroll-behavior:contain}}
+.app2-sidebar .back-link{color:#c1cec3!important}
+.app2-sidebar .back-link:hover{color:#e9b176!important}
+.app2-brand{display:flex;align-items:center;gap:10px;padding:0 9px 20px;border-bottom:1px solid rgba(235,241,229,.16);margin-bottom:22px}
+.app2-brand-mark{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:#e9b176;color:#203d36}
+.app2-brand-mark svg{width:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.app2-brand strong,.app2-brand small{display:block}.app2-brand strong{font-size:11px;letter-spacing:1.15px;color:#fff8eb}.app2-brand small{font-size:9px;margin-top:3px;color:#b8c7b9}
+.app2-sidebar .sidebar-caption{font-size:8px;letter-spacing:1.3px;color:#95a89a!important;margin:0 9px 9px}
+.app2-sidebar .nav-item{height:38px;padding-left:10px;color:#c7d2c9!important;border-radius:7px!important;margin:2px 0}
+.app2-sidebar .nav-item svg{width:16px;height:16px}
+.app2-sidebar .nav-item:hover{background:rgba(255,255,255,.07)!important;color:#fff!important}
+.app2-sidebar .nav-item.active{background:#e9b176!important;color:#203d36!important;border:0!important;padding-left:10px!important;font-weight:700}
+.app2-nav-count{font-style:normal;font-size:9px;margin-left:auto;width:18px;height:18px;display:grid;place-items:center;border-radius:50%;background:#c36d50;color:white}
+.app2-sidebar .nav-item.active .app2-nav-count{background:#203d36;color:#fff}
+.app2-sidebar-note{display:flex;align-items:center;gap:9px;padding:12px 10px;margin-top:19px;border:1px solid rgba(235,241,229,.16);border-radius:8px}
+.app2-note-dot{width:8px;height:8px;border-radius:50%;background:#8cc49b;box-shadow:0 0 0 4px rgba(140,196,155,.12)}
+.app2-sidebar-note strong,.app2-sidebar-note small{display:block}.app2-sidebar-note strong{font-size:9px;color:#f7f3e9}.app2-sidebar-note small{font-size:8px;margin-top:3px;color:#aebfb1}
+.app2-sidebar .sidebar-bottom{border-top-color:rgba(235,241,229,.16)!important;padding-top:15px!important}
+.app2-sidebar .help-card{background:rgba(255,255,255,.06)!important}.app2-sidebar .help-card strong{color:#fff8eb!important}.app2-sidebar .help-card p{color:#b7c5b8!important}.app2-sidebar .help-card button{color:#e9b176!important}
+.app2-sidebar .app2-back-link{display:flex;align-items:center;gap:8px;width:100%;margin-top:12px;padding:10px 9px;border:1px solid rgba(235,241,229,.16);border-radius:7px;background:transparent;text-align:left;font-size:9px;font-weight:600}
+.app2-sidebar .app2-back-link svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.app2-content{background:#f4f2ec!important;padding:30px clamp(22px,3.1vw,48px) 44px!important;color:#263a33}
+.app2-content .mobile-menu-button{color:#a94f36!important}
+.app2-dashboard,.app2-page{width:min(1280px,100%);margin:0 auto}
+.app2-welcome{position:relative;overflow:hidden;min-height:152px;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:25px 30px;border-radius:13px;background:#25463d;color:#fff8eb}
+.app2-welcome:after{content:"";position:absolute;width:280px;height:280px;border:1px solid rgba(238,196,151,.2);border-radius:50%;right:13%;top:-176px;box-shadow:0 0 0 25px rgba(238,196,151,.035),0 0 0 54px rgba(238,196,151,.035)}
+.app2-kicker{display:block;color:#a16a4c;font-size:9px;font-weight:700;letter-spacing:1.2px}
+.app2-welcome .app2-kicker{color:#e6b485}
+.app2-welcome h1{font-size:27px;letter-spacing:-.8px;margin:8px 0 4px;color:#fff8eb}.app2-welcome h1 span{color:#e6b485}.app2-welcome p{margin:0;color:#ced9cf;font-size:11px}
+.app2-primary,.app2-outline{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:6px;padding:10px 14px;font-size:10px;font-weight:700;white-space:nowrap}
+.app2-primary{border:1px solid #b75d43;background:#b75d43;color:white}.app2-primary:hover{background:#9f4d37}.app2-primary svg,.app2-outline svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.app2-welcome .app2-primary{z-index:1;background:#e9b176;border-color:#e9b176;color:#263c34}.app2-welcome .app2-primary:hover{background:#f2c38f}
+.app2-welcome-stamp{z-index:1;position:absolute;right:30px;top:25px;color:rgba(255,248,235,.15);font-size:9px;line-height:1.05;letter-spacing:2px;font-weight:700}.app2-welcome-stamp b{font-size:16px}.app2-welcome-stamp i{font-style:normal;color:#e9b176;margin-left:4px}
+.app2-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:15px 0 17px;background:#fff;border:1px solid #e7e3d9;border-radius:11px;overflow:hidden}
+.app2-metrics article{padding:17px 20px;border-right:1px solid #eeeae1;min-width:0}.app2-metrics article:last-child{border:0}.app2-metrics article>span,.app2-metrics article>strong,.app2-metrics article>small{display:block}.app2-metrics article>span{font-size:9px;color:#78847a}.app2-metrics article>strong{font-size:25px;line-height:1.2;letter-spacing:-.8px;color:#263e35;margin:7px 0 4px}.app2-metrics article>strong em{font-style:normal;font-size:12px;color:#95a096;letter-spacing:0}.app2-metrics article>small{font-size:8px;color:#818b82}.app2-metrics article>small b{color:#538365}.app2-metrics article>small.app2-warning{color:#b36545}
+.app2-dashboard-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:15px;margin-bottom:15px}.app2-panel{background:#fff;border:1px solid #e7e3d9;border-radius:11px;padding:18px 20px;min-width:0}.app2-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.app2-panel-head h2{font-size:14px;letter-spacing:-.25px;color:#263e35;margin:5px 0 0}.app2-panel-head .app2-kicker{font-size:8px}.app2-panel-head>button{border:1px solid #e8e5dd;background:white;border-radius:5px;padding:7px 9px;color:#5f6e64;font-size:9px}
+.app2-bars{height:117px;display:flex;align-items:flex-end;gap:clamp(13px,3vw,34px);padding:10px 12px 0;border-bottom:1px solid #edeae2;margin-top:10px}.app2-bar-col{height:100%;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;position:relative}.app2-bar-col span{font-size:8px;color:#839087}.app2-bar-col i{width:min(34px,62%);min-height:4px;border-radius:5px 5px 1px 1px;background:#d88b68}.app2-bar-col:nth-child(2n) i{background:#77977d}.app2-bar-col small{position:absolute;bottom:-17px;font-size:8px;color:#7c887f}.app2-chart-foot{display:flex;justify-content:space-between;align-items:center;margin-top:24px;font-size:8px;color:#7d887f}.app2-chart-foot>span{display:flex;align-items:center;gap:6px}.app2-chart-foot i{width:7px;height:7px;border-radius:50%;background:#d88b68}.app2-chart-foot>strong{font-size:9px;color:#538365}.app2-chart-foot>strong small{font-size:8px;font-weight:400;color:#89938a}
+.app2-badge{padding:5px 8px;border-radius:20px;background:#f8e9df;color:#ad5e43;font-size:8px;font-weight:700}.app2-task{width:100%;display:flex;align-items:center;gap:10px;padding:12px 0;border:0;border-bottom:1px solid #f0ede6;background:white;text-align:left;color:#34473e}.app2-task:first-of-type{margin-top:9px}.app2-task:last-of-type{border-bottom:0}.app2-task-icon{width:29px;height:29px;display:grid;place-items:center;border-radius:8px;background:#e9f0e7;color:#538365;flex:none}.app2-task-icon.warm{background:#faeee3;color:#ba704c}.app2-task-icon svg{width:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.app2-task>span:nth-child(2){flex:1}.app2-task strong,.app2-task small{display:block}.app2-task strong{font-size:9px}.app2-task small{font-size:8px;color:#839087;margin-top:4px}.app2-task>b{font-size:9px;color:#a45b41}.app2-inline-link{border:0;background:transparent;padding:7px 0;color:#a6533c;font-size:9px;font-weight:700}.app2-inline-link span{margin-left:6px}.app2-attention>.app2-inline-link{margin-top:5px}
+.app2-recent{padding-bottom:5px}.app2-supplier-list{margin-top:8px}.app2-supplier-row{display:flex;align-items:center;gap:11px;min-height:47px;border-top:1px solid #f0ede6}.app2-monogram{width:27px;height:27px;border-radius:8px;display:grid;place-items:center;flex:none;background:#f3e8dc;color:#a25c42;font-size:8px;font-style:normal;font-weight:700}.app2-supplier-name{flex:1;min-width:0}.app2-supplier-name strong,.app2-supplier-name small{display:block}.app2-supplier-name strong{font-size:9px;color:#33463d}.app2-supplier-name small{font-size:8px;color:#879187;margin-top:3px}.app2-supplier-date{font-size:8px;color:#8b958d;min-width:76px}.app2-status{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;border-radius:20px;padding:5px 8px;background:#e8f1e8;color:#4c7b59;font-size:8px;font-weight:700}.app2-status:before{content:"";width:5px;height:5px;background:currentColor;border-radius:50%}.app2-status.review{background:#fbefdf;color:#aa7042}.app2-status.docs{background:#f7e7e1;color:#ae5944}
+.app2-page{padding:3px 0}.app2-page-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 0 21px}.app2-page-heading h1{margin:6px 0 3px;font-size:25px;letter-spacing:-.7px;color:#263e35}.app2-page-heading p{margin:0;color:#79857b;font-size:10px}.app2-page-heading .app2-kicker{font-size:8px}
+.app2-directory-summary{display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border:1px solid #e7e3d9;border-radius:9px;margin-bottom:14px}.app2-directory-summary>div{padding:13px 17px;border-right:1px solid #eeeae1}.app2-directory-summary>div:last-child{border:0}.app2-directory-summary strong{font-size:18px;color:#294238;margin-right:9px}.app2-directory-summary span{font-size:8px;color:#818b82}
+.app2-filter-row{display:flex;gap:8px;align-items:center;margin-bottom:10px}.app2-filter-row>button,.app2-contract-toolbar button{height:32px;display:flex;align-items:center;gap:6px;padding:0 10px;border:1px solid #e5e1d7;border-radius:5px;background:#fff;color:#647168;font-size:9px;white-space:nowrap}.app2-filter-row>button svg,.app2-contract-toolbar button svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.7}.app2-search{height:32px;display:flex;align-items:center;gap:7px;flex:1;max-width:420px;padding:0 10px;border:1px solid #e5e1d7;border-radius:5px;background:white;color:#98a097}.app2-search svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8}.app2-search input{border:0;outline:0;min-width:0;flex:1;font-size:9px;color:#34473e}.app2-search input::placeholder{color:#99a197}.app2-filter-count{display:grid;place-items:center;width:14px;height:14px;border-radius:50%;background:#f4e5dc;color:#a6533c;font-size:8px}
+.app2-table-wrap{background:#fff;border:1px solid #e7e3d9;border-radius:9px;overflow:auto}.app2-table{border-collapse:collapse;width:100%;min-width:720px;text-align:left}.app2-table th{height:36px;padding:0 14px;background:#faf9f5;color:#889188;font-size:7px;letter-spacing:.8px;font-weight:700}.app2-table td{height:49px;padding:0 14px;border-top:1px solid #f0ede6;color:#6e7a70;font-size:9px;white-space:nowrap}.app2-table td:first-child{color:#33463d}.app2-company{display:flex;align-items:center;gap:9px}.app2-company .app2-monogram{width:25px;height:25px}.app2-company b{font-size:9px;font-weight:600}.app2-more{border:0;background:transparent;color:#758278;font-weight:700;font-size:16px}.app2-table-footer{display:flex;justify-content:space-between;padding:12px 15px;border-top:1px solid #f0ede6;color:#879087;font-size:8px}.app2-table-footer b{color:#a6533c}
+.app2-outline{border:1px solid #ded9ce;background:transparent;color:#56675c}.app2-outline:hover{background:#fff}
+.app2-review-banner{display:flex;align-items:center;gap:12px;padding:14px 16px;margin-bottom:15px;border:1px solid #ead7c7;border-radius:9px;background:#f8eee4}.app2-review-symbol{width:31px;height:31px;display:grid;place-items:center;border-radius:8px;background:#f2ddc9;color:#a76042}.app2-review-symbol svg{width:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.app2-review-banner>div{flex:1}.app2-review-banner strong,.app2-review-banner small{display:block}.app2-review-banner strong{font-size:10px;color:#744c37}.app2-review-banner small{font-size:8px;color:#94725b;margin-top:4px}.app2-review-banner button{border:0;background:transparent;color:#9b573b;font-size:9px;font-weight:700}.app2-review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.app2-review-card{background:#fff;border:1px solid #e7e3d9;border-radius:9px;padding:15px}.app2-review-top{display:flex;align-items:center;justify-content:space-between}.app2-review-top .app2-monogram{width:32px;height:32px}.app2-review-card h3{margin:12px 0 4px;font-size:12px;color:#34483e}.app2-review-card>p{margin:0;color:#89928a;font-size:8px}.app2-score{display:flex;align-items:baseline;justify-content:space-between;margin-top:15px;color:#718075;font-size:8px}.app2-score>b{font-size:16px;color:#365f49}.app2-score>b small{font-size:8px;color:#89938a;font-weight:500}.app2-score-track{height:4px;margin-top:6px;border-radius:5px;background:#edf0e9}.app2-score-track i{height:100%;display:block;border-radius:5px;background:#75977c}.app2-review-card-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:10px;border-top:1px solid #f0ede6}.app2-review-card-foot small{font-size:8px;color:#a17354}.app2-review-card-foot button{border:0;background:transparent;color:#a6533c;font-size:8px;font-weight:700}
+.app2-contract-totals{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:2px 0 21px}.app2-contract-totals>div{padding:14px 16px;background:#fff;border:1px solid #e7e3d9;border-radius:8px}.app2-contract-totals span,.app2-contract-totals strong,.app2-contract-totals small{display:block}.app2-contract-totals span{font-size:8px;color:#7d887f}.app2-contract-totals strong{font-size:20px;color:#2d463a;margin:5px 0 3px}.app2-contract-totals small{font-size:8px;color:#879087}.app2-contract-totals .urgent{background:#fbf2e8;border-color:#eedbca}.app2-contract-totals .urgent strong,.app2-contract-totals .urgent small{color:#a85f41}
+.app2-contract-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}.app2-contract-toolbar h2{font-size:12px;color:#30473b}.app2-contract-toolbar h2 span{display:inline-grid;place-items:center;width:19px;height:19px;margin-left:5px;border-radius:50%;background:#e9eee6;color:#607464;font-size:8px}.app2-contract-toolbar>div{display:flex;gap:7px}.app2-contract-list{background:white;border:1px solid #e7e3d9;border-radius:9px;overflow:hidden}.app2-contract-row{display:flex;align-items:center;gap:13px;min-height:68px;padding:10px 14px;border-bottom:1px solid #f0ede6}.app2-contract-row:last-child{border:0}.app2-contract-icon{width:30px;height:30px;display:grid;place-items:center;border-radius:8px;background:#eaf0e8;color:#52775c;flex:none}.app2-contract-icon svg{width:15px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.app2-contract-main{flex:1;min-width:120px}.app2-contract-main strong,.app2-contract-main small,.app2-contract-due small,.app2-contract-due strong,.app2-contract-value small,.app2-contract-value strong{display:block}.app2-contract-main strong{font-size:9px;color:#35483d}.app2-contract-main small{margin-top:4px;font-size:8px;color:#8a948b}.app2-contract-main small i{font-style:normal;padding:0 3px}.app2-contract-due,.app2-contract-value{min-width:86px}.app2-contract-due small,.app2-contract-value small{font-size:6px;letter-spacing:.6px;color:#99a097;margin-bottom:5px}.app2-contract-due strong,.app2-contract-value strong{font-size:8px;color:#526257}.app2-contract-row>.app2-status{font-size:7px}.app2-contract-row>.app2-more{font-size:12px}
+.app2-settings-layout{display:grid;grid-template-columns:180px minmax(0,1fr);gap:14px;align-items:start}.app2-settings-nav{display:grid;gap:3px;padding:6px}.app2-settings-nav button{display:flex;justify-content:space-between;padding:10px;border:0;border-radius:6px;background:transparent;color:#718076;text-align:left;font-size:9px}.app2-settings-nav button.selected{background:#e7ece4;color:#355c43;font-weight:700}.app2-settings-card{padding:20px;background:#fff;border:1px solid #e7e3d9;border-radius:9px}.app2-settings-title{display:flex;justify-content:space-between;align-items:center;padding-bottom:15px;border-bottom:1px solid #f0ede6}.app2-settings-title h2{margin:0;color:#30463a;font-size:13px}.app2-settings-title p{margin:5px 0 0;color:#859087;font-size:8px}.app2-settings-mark{width:29px;height:29px;display:grid;place-items:center;border-radius:7px;background:#f5e8df;color:#a95b40}.app2-settings-mark svg{width:15px;fill:none;stroke:currentColor;stroke-width:1.7}.app2-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:17px 0}.app2-form-grid label{display:grid;gap:6px;color:#657369;font-size:8px;font-weight:700}.app2-form-grid input,.app2-form-grid select{width:100%;height:34px;padding:0 9px;border:1px solid #e5e2da;border-radius:5px;background:#fff;color:#405349;font-size:9px}.app2-form-grid input:focus,.app2-form-grid select:focus{outline:2px solid #d9e4d9;border-color:#719579}.app2-settings-divider{height:1px;background:#f0ede6}.app2-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 0}.app2-toggle-row strong,.app2-toggle-row small{display:block}.app2-toggle-row strong{font-size:9px;color:#405349}.app2-toggle-row small{margin-top:4px;font-size:8px;color:#859087}.app2-toggle{width:30px;height:17px;border:0;border-radius:12px;background:#cbd2ca;padding:2px}.app2-toggle i{display:block;width:13px;height:13px;border-radius:50%;background:white}.app2-toggle.on{background:#68896e}.app2-toggle.on i{margin-left:auto}.app2-settings-actions{display:flex;justify-content:flex-end;gap:8px;padding-top:12px;border-top:1px solid #f0ede6}
+@media(max-width:900px){.app2-content{padding:25px 20px 35px!important}.app2-metrics article{padding:14px}.app2-contract-row{gap:8px}.app2-contract-row>.app2-status{white-space:normal;text-align:center}}
+@media(max-width:640px){.app2-welcome{align-items:flex-start;flex-direction:column;padding:21px;min-height:0}.app2-welcome h1{font-size:23px}.app2-welcome-stamp{right:17px;top:15px}.app2-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.app2-metrics article:nth-child(2){border-right:0}.app2-metrics article:nth-child(-n+2){border-bottom:1px solid #eeeae1}.app2-dashboard-grid,.app2-review-grid{grid-template-columns:1fr}.app2-supplier-date{display:none}.app2-directory-summary{grid-template-columns:repeat(2,1fr)}.app2-directory-summary>div:nth-child(2){border-right:0}.app2-directory-summary>div:nth-child(-n+2){border-bottom:1px solid #eeeae1}.app2-filter-row{flex-wrap:wrap}.app2-search{flex-basis:100%;max-width:none}.app2-page-heading{align-items:flex-start;flex-direction:column}.app2-page-heading h1{font-size:22px}.app2-contract-totals{grid-template-columns:1fr}.app2-contract-toolbar{align-items:flex-start;flex-direction:column}.app2-contract-toolbar>div{width:100%;flex-wrap:wrap}.app2-contract-row{flex-wrap:wrap}.app2-contract-main{flex-basis:calc(100% - 55px)}.app2-contract-due,.app2-contract-value{min-width:0;flex:1;padding-left:43px}.app2-contract-row>.app2-status{margin-left:43px}.app2-settings-layout{grid-template-columns:1fr;gap:5px}.app2-settings-nav{display:flex;overflow:auto;padding:0}.app2-settings-nav button{white-space:nowrap}.app2-settings-nav button span{display:none}.app2-form-grid{grid-template-columns:1fr}.app2-content{padding:18px 13px 30px!important}.app2-panel{padding:15px}.app2-supplier-row{gap:7px}.app2-supplier-name strong{font-size:8px}.app2-status{padding:4px 6px;font-size:7px}}
+
+/* Readability scale for application workspaces, matching the agreed 120% page perspective. */
+.app1-content .eyebrow{font-size:11px;letter-spacing:1px}
+.app1-content .app-page-header .page-title{font-size:32px}
+.app1-content .app-page-header .page-subtitle{font-size:14px;line-height:1.5}
+.app1-content .primary-button,.app1-content .secondary-button,.app1-content .filter-button{font-size:13px;min-height:40px;padding:9px 14px}
+.app1-content .metric-label{font-size:13px}
+.app1-content .metric-value{font-size:29px}
+.app1-content .metric-change{font-size:12px}
+.app1-content .section-heading h2{font-size:20px}
+.app1-content .section-heading p{font-size:13px}
+.app1-content .text-link{font-size:13px}
+.app1-content .chart-title h3,.app1-content .panel-heading h3{font-size:16px}
+.app1-content .chart-title>span,.app1-content .chart-legend,.app1-content .rank-name,.app1-content .rank-value{font-size:12px}
+.app1-content .tsc .chart-title h3{font-size:16px}
+.app1-content .tsc-series-name{font-size:12px;padding:5px 9px}
+.app1-content .tsc-total{font-size:12px}
+.app1-content .tsc-total-value{font-size:16px}
+.app1-content .tsc-change{font-size:12px}
+.app1-content .tsc-y-label,.app1-content .tsc-x-label{font-size:12px}
+.app1-content .tsc-value-label{font-size:11px}
+.app1-content .tsc-cat-top{font-size:12px}
+.app1-content .tsc-cat-name{gap:9px}
+.app1-content .tsc-cat-value{font-size:16px}
+.app1-content .tsc-cat-percent{font-size:12px}
+.app1-content .data-table th{font-size:11px;padding:13px 12px}
+.app1-content .data-table td{font-size:12px;padding:13px 12px}
+.app1-content .status-pill{font-size:11px;padding:5px 9px}
+.app1-content .table-toolbar,.app1-content .table-footer{font-size:12px}
+.app1-content .table-search,.app1-content .form-field label,.app1-content .form-field input,.app1-content .form-field select{font-size:13px}
+.app1-content .pagination button{font-size:12px;min-width:30px;min-height:30px}
+
+.app2-content .app2-kicker{font-size:11px;letter-spacing:1px}
+.app2-content .app2-welcome{min-height:172px;padding:28px 32px}
+.app2-content .app2-welcome h1{font-size:32px}
+.app2-content .app2-welcome p{font-size:14px}
+.app2-content .app2-primary,.app2-content .app2-outline{min-height:42px;padding:0 16px;font-size:13px}
+.app2-content .app2-metrics article{padding:20px 22px}
+.app2-content .app2-metrics article>span{font-size:12px}
+.app2-content .app2-metrics article>strong{font-size:30px}
+.app2-content .app2-metrics article>strong em{font-size:15px}
+.app2-content .app2-metrics article>small{font-size:11px}
+.app2-content .app2-panel{padding:21px 22px}
+.app2-content .app2-panel-head h2{font-size:17px}
+.app2-content .app2-panel-head>button,.app2-content .app2-chart-foot,.app2-content .app2-chart-foot>strong{font-size:11px}
+.app2-content .app2-chart-foot>strong small{font-size:10px}
+.app2-content .app2-bars{height:145px}
+.app2-content .app2-bar-col span,.app2-content .app2-bar-col small{font-size:11px}
+.app2-content .app2-badge{font-size:11px}
+.app2-content .app2-task{gap:12px;padding:15px 0}
+.app2-content .app2-task strong,.app2-content .app2-task>b{font-size:12px}
+.app2-content .app2-task small{font-size:11px}
+.app2-content .app2-task-icon{width:34px;height:34px}
+.app2-content .app2-inline-link{font-size:12px}
+.app2-content .app2-supplier-row{min-height:55px;gap:13px}
+.app2-content .app2-monogram{width:32px;height:32px;font-size:10px}
+.app2-content .app2-supplier-name strong{font-size:12px}
+.app2-content .app2-supplier-name small,.app2-content .app2-supplier-date{font-size:10px}
+.app2-content .app2-status{font-size:10px;padding:6px 9px}
+.app2-content .app2-page-heading h1{font-size:31px}
+.app2-content .app2-page-heading p{font-size:13px}
+.app2-content .app2-directory-summary>div{padding:16px 18px}
+.app2-content .app2-directory-summary strong{font-size:22px}
+.app2-content .app2-directory-summary span{font-size:11px}
+.app2-content .app2-filter-row>button,.app2-content .app2-contract-toolbar button{height:38px;padding:0 12px;font-size:11px}
+.app2-content .app2-search{height:38px;padding:0 12px}
+.app2-content .app2-search input{font-size:12px}
+.app2-content .app2-table th{height:42px;padding:0 15px;font-size:9px;letter-spacing:.7px}
+.app2-content .app2-table td{height:56px;padding:0 15px;font-size:12px}
+.app2-content .app2-company b{font-size:12px}
+.app2-content .app2-table-footer{padding:15px 17px;font-size:11px}
+.app2-content .app2-review-banner{padding:17px 18px}
+.app2-content .app2-review-banner strong{font-size:13px}
+.app2-content .app2-review-banner small{font-size:11px}
+.app2-content .app2-review-banner button{font-size:11px}
+.app2-content .app2-review-card{padding:18px}
+.app2-content .app2-review-card h3{font-size:15px}
+.app2-content .app2-review-card>p,.app2-content .app2-score,.app2-content .app2-score>b small,.app2-content .app2-review-card-foot small,.app2-content .app2-review-card-foot button{font-size:11px}
+.app2-content .app2-score>b{font-size:20px}
+.app2-content .app2-score-track{height:6px}
+.app2-content .app2-contract-totals>div{padding:17px 19px}
+.app2-content .app2-contract-totals span,.app2-content .app2-contract-totals small{font-size:11px}
+.app2-content .app2-contract-totals strong{font-size:25px}
+.app2-content .app2-contract-toolbar h2{font-size:15px}
+.app2-content .app2-contract-row{min-height:78px;gap:16px;padding:12px 17px}
+.app2-content .app2-contract-main strong{font-size:12px}
+.app2-content .app2-contract-main small,.app2-content .app2-contract-due small,.app2-content .app2-contract-value small{font-size:9px}
+.app2-content .app2-contract-due strong,.app2-content .app2-contract-value strong{font-size:11px}
+.app2-content .app2-contract-row>.app2-status{font-size:9px}
+.app2-content .app2-settings-nav button{font-size:12px;padding:12px}
+.app2-content .app2-settings-title h2{font-size:17px}
+.app2-content .app2-settings-title p,.app2-content .app2-form-grid label,.app2-content .app2-toggle-row small{font-size:11px}
+.app2-content .app2-form-grid input,.app2-content .app2-form-grid select{height:40px;font-size:12px}
+.app2-content .app2-toggle-row strong{font-size:12px}
+
+@media(max-width:640px){
+  .app1-content .app-page-header .page-title{font-size:26px}
+  .app1-content .metric-label,.app1-content .metric-change,.app1-content .chart-title>span,.app1-content .chart-legend,.app1-content .rank-name,.app1-content .rank-value,.app1-content .data-table td{font-size:11px}
+  .app1-content .tsc-y-label,.app1-content .tsc-x-label{font-size:10px}
+  .app2-content .app2-welcome h1{font-size:26px}
+  .app2-content .app2-welcome p,.app2-content .app2-metrics article>span,.app2-content .app2-task strong,.app2-content .app2-supplier-name strong{font-size:11px}
+  .app2-content .app2-metrics article>small,.app2-content .app2-task small,.app2-content .app2-supplier-name small,.app2-content .app2-supplier-date{font-size:10px}
+  .app2-content .app2-page-heading h1{font-size:25px}
+  .app2-content .app2-table td{font-size:11px}
+}
+
+/* Final app1/app2 type scale aligned with the platform dashboard at 120%. */
+.app1-workspace .app-sidebar .back-link,.app1-workspace .app-sidebar .sidebar-caption{font-size:12px}
+.app1-workspace .app-sidebar .sidebar-app strong{font-size:14px}
+.app1-workspace .app-sidebar .sidebar-app small{font-size:12px}
+.app1-workspace .app-sidebar .nav-item{font-size:14px}
+.app1-workspace .app-sidebar .help-card strong{font-size:13px}
+.app1-workspace .app-sidebar .help-card p,.app1-workspace .app-sidebar .help-card button{font-size:12px}
+.app1-content .eyebrow{font-size:12px}
+.app1-content .app-page-header .page-title{font-size:34px}
+.app1-content .app-page-header .page-subtitle{font-size:16px}
+.app1-content .metric-label{font-size:15px}
+.app1-content .metric-value{font-size:32px}
+.app1-content .metric-change{font-size:14px}
+.app1-content .section-heading h2{font-size:23px}
+.app1-content .section-heading p{font-size:15px}
+.app1-content .text-link,.app1-content .primary-button,.app1-content .secondary-button,.app1-content .filter-button{font-size:14px}
+.app1-content .chart-title h3,.app1-content .panel-heading h3{font-size:19px}
+.app1-content .chart-title>span,.app1-content .chart-legend,.app1-content .rank-name,.app1-content .rank-value{font-size:14px}
+.app1-content .tsc .chart-title h3{font-size:19px}
+.app1-content .tsc-series-name{font-size:14px}
+.app1-content .tsc-total,.app1-content .tsc-change,.app1-content .tsc-y-label,.app1-content .tsc-x-label{font-size:14px}
+.app1-content .tsc-total-value,.app1-content .tsc-cat-value{font-size:18px}
+.app1-content .tsc-value-label{font-size:12px}
+.app1-content .tsc-cat-top,.app1-content .tsc-cat-percent{font-size:14px}
+.app1-content .data-table th{font-size:13px}
+.app1-content .data-table td{font-size:14px}
+.app1-content .status-pill,.app1-content .table-toolbar,.app1-content .table-footer{font-size:13px}
+.app1-content .table-search,.app1-content .form-field label,.app1-content .form-field input,.app1-content .form-field select{font-size:15px}
+
+.app2-sidebar .app2-brand strong{font-size:14px}
+.app2-sidebar .app2-brand small,.app2-sidebar .sidebar-caption{font-size:12px!important}
+.app2-sidebar .nav-item{font-size:14px}
+.app2-sidebar .app2-sidebar-note strong{font-size:12px}
+.app2-sidebar .app2-sidebar-note small,.app2-sidebar .help-card p,.app2-sidebar .help-card button{font-size:12px}
+.app2-sidebar .help-card strong{font-size:14px}
+.app2-sidebar .app2-back-link{font-size:13px}
+.app2-content .app2-kicker,.app2-content .app2-page-heading .app2-kicker{font-size:12px}
+.app2-content .app2-welcome h1{font-size:34px}
+.app2-content .app2-welcome p{font-size:15px}
+.app2-content .app2-primary,.app2-content .app2-outline{font-size:14px;min-height:44px}
+.app2-content .app2-metrics article>span{font-size:14px}
+.app2-content .app2-metrics article>strong{font-size:34px}
+.app2-content .app2-metrics article>small{font-size:13px}
+.app2-content .app2-panel-head h2{font-size:19px}
+.app2-content .app2-panel-head>button,.app2-content .app2-badge{font-size:12px}
+.app2-content .app2-bar-col span,.app2-content .app2-bar-col small,.app2-content .app2-chart-foot,.app2-content .app2-chart-foot>strong{font-size:12px}
+.app2-content .app2-chart-foot>strong small{font-size:11px}
+.app2-content .app2-task strong,.app2-content .app2-task>b,.app2-content .app2-supplier-name strong{font-size:14px}
+.app2-content .app2-task small,.app2-content .app2-supplier-name small,.app2-content .app2-supplier-date{font-size:12px}
+.app2-content .app2-inline-link{font-size:13px}
+.app2-content .app2-status{font-size:12px}
+.app2-content .app2-page-heading h1{font-size:34px}
+.app2-content .app2-page-heading p{font-size:15px}
+.app2-content .app2-directory-summary strong{font-size:25px}
+.app2-content .app2-directory-summary span{font-size:13px}
+.app2-content .app2-filter-row>button,.app2-content .app2-contract-toolbar button,.app2-content .app2-search input{font-size:13px}
+.app2-content .app2-table th{font-size:11px}
+.app2-content .app2-table td,.app2-content .app2-company b{font-size:14px}
+.app2-content .app2-table-footer{font-size:13px}
+.app2-content .app2-review-banner strong{font-size:15px}
+.app2-content .app2-review-banner small,.app2-content .app2-review-banner button{font-size:13px}
+.app2-content .app2-review-card h3{font-size:17px}
+.app2-content .app2-review-card>p,.app2-content .app2-score,.app2-content .app2-review-card-foot small,.app2-content .app2-review-card-foot button{font-size:13px}
+.app2-content .app2-score>b{font-size:23px}
+.app2-content .app2-contract-totals span,.app2-content .app2-contract-totals small{font-size:13px}
+.app2-content .app2-contract-totals strong{font-size:28px}
+.app2-content .app2-contract-toolbar h2{font-size:17px}
+.app2-content .app2-contract-main strong{font-size:14px}
+.app2-content .app2-contract-main small,.app2-content .app2-contract-due small,.app2-content .app2-contract-value small{font-size:11px}
+.app2-content .app2-contract-due strong,.app2-content .app2-contract-value strong{font-size:13px}
+.app2-content .app2-contract-row>.app2-status{font-size:11px}
+.app2-content .app2-settings-nav button{font-size:14px}
+.app2-content .app2-settings-title h2{font-size:19px}
+.app2-content .app2-settings-title p,.app2-content .app2-form-grid label,.app2-content .app2-toggle-row small{font-size:13px}
+.app2-content .app2-form-grid input,.app2-content .app2-form-grid select{font-size:14px}
+.app2-content .app2-toggle-row strong{font-size:14px}
+.app1-back-link{display:flex;align-items:center;gap:8px;width:100%;margin-top:12px;padding:10px 9px;border:1px solid rgba(255,255,255,.16);border-radius:6px;background:rgba(255,255,255,.045);color:rgba(255,255,255,.82)!important;text-align:left;font-size:13px;font-weight:600}
+.app1-back-link:hover{background:rgba(255,255,255,.09);color:#ffcc00!important}
+.app1-back-link svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:640px){
+  .app1-workspace .app-sidebar .nav-item{font-size:13px}
+  .app1-content .app-page-header .page-title,.app2-content .app2-page-heading h1{font-size:27px}
+  .app1-content .app-page-header .page-subtitle,.app2-content .app2-page-heading p{font-size:14px}
+  .app1-content .metric-label,.app1-content .metric-change,.app1-content .chart-title>span,.app1-content .chart-legend,.app1-content .rank-name,.app1-content .rank-value,.app1-content .data-table td{font-size:12px}
+  .app1-content .tsc-y-label,.app1-content .tsc-x-label{font-size:11px}
+  .app2-sidebar .nav-item{font-size:13px}
+  .app2-content .app2-welcome h1{font-size:28px}
+  .app2-content .app2-welcome p,.app2-content .app2-metrics article>span,.app2-content .app2-task strong,.app2-content .app2-supplier-name strong{font-size:13px}
+  .app2-content .app2-metrics article>small,.app2-content .app2-task small,.app2-content .app2-supplier-name small,.app2-content .app2-supplier-date,.app2-content .app2-table td{font-size:12px}
+}

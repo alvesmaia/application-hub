@@ -1,0 +1,37 @@
+node_modules/
+.DS_Store
+Thumbs.db
+.vercel/
+
+/platform/target/
+target/
+
+/platform/data/
+
+# Python (sdk-python, demo-apps-py, conformance)
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+/platform/loadtest/results/*/ci-local-*/
+/platform/loadtest/results/*/ui-sweep-*/
+/platform/dist/
+/platform/.ci-local.lock/
+
+# Estado local do Claude Code
+.claude/
+
+# Relatórios do CI local (efêmeros; os resultados de referência ficam em RESULTADOS.md)
+/platform/loadtest/results/*/ci-local-*.md
+/platform/tests-e2e/test-results/
+/platform/tests-e2e/playwright-report/
+*.stackdump
+.tunnel/
+
+# Segredos locais do compose (ex.: COLETOR_ATIVOS_TOKEN)
+/platform/.env
+/platform/.dev.env
+docs/migracao/status/*.log

@@ -1,0 +1,43 @@
+# Instalar: cd platform-py && uv run pre-commit install --hook-type pre-commit --hook-type pre-push
+# Hooks locais via `uv run` (versoes do pyproject.toml, sem deriva).
+default_install_hook_types: [pre-commit, pre-push]
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff check
+        entry: uv run --project platform-py ruff check --no-fix
+        language: system
+        types: [python]
+        exclude: ^platform-py/cli/hub_cli/templates/  # template com marcadores (__PKG__): checado no projeto gerado
+      - id: ruff-format
+        name: ruff format --check
+        entry: uv run --project platform-py ruff format --check
+        language: system
+        types: [python]
+        exclude: ^platform-py/cli/hub_cli/templates/  # template com marcadores (__PKG__): checado no projeto gerado
+      - id: ty
+        name: ty (hub, graphsim, tests, SDK, CLI e apps alterados)
+        entry: uv run --project platform-py hub-check --ty-files
+        language: system
+        files: ^(platform-py/(hub|graphsim|tests|cli)|platform/(sdk-python|demo-apps-py))/.*\.py$
+        exclude: ^platform-py/cli/hub_cli/templates/
+      - id: detect-private-key
+        name: chave privada
+        entry: uv run --project platform-py python -c "import re,sys;b=[f for f in sys.argv[1:] if re.search(r'/(tests?|fixtures)/',f.replace(chr(92),'/'))==None and '-----BEGIN '+'PRIVATE KEY' in open(f,errors='ignore').read().replace('RSA ','').replace('EC ','')];print(*b,sep=chr(10));sys.exit(1 if b else 0)"
+        language: system
+      - id: secret-guard
+        name: segredos (.dev.env, chaves, hubt_, cloudflared)
+        entry: uv run --project platform-py python platform-py/scripts/secret_guard.py
+        language: system
+      - id: large-files
+        name: arquivos grandes (>1 MB)
+        entry: uv run --project platform-py python -c "import os,sys;b=[f for f in sys.argv[1:] if os.path.getsize(f)>1<<20];print(*b,sep=chr(10));sys.exit(1 if b else 0)"
+        language: system
+      - id: hub-check
+        name: hub-check (completo, so hub)
+        entry: uv run --project platform-py hub-check
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]

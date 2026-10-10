@@ -1,0 +1,112 @@
+# Banco dos apps + os 4 apps de exemplo (ativos, fornecedores, servicos, coletor).
+# Os apps só sobem com o perfil `demo-apps` (COMPOSE_PROFILES=demo-apps ou --profile demo-apps); sem ele o hub e o
+# banco dos apps sobem sozinhos (use HUB_APPS_JSON=./apps.empty.json para um catálogo vazio).
+# Portas de depuração no host (HUB_APPDB_PORT, HUB_APP_PORT_<APP>) só em 127.0.0.1.
+services:
+  app-hub-web:
+    environment:
+      HUB_APPS_FILE: /config/apps.json
+    volumes:
+      - ${HUB_APPS_JSON:-./apps.json}:/config/apps.json:ro
+    depends_on:
+      app-hub-app-ativos: { condition: service_started, required: false }
+      app-hub-app-fornecedores: { condition: service_started, required: false }
+      app-hub-app-servicos: { condition: service_started, required: false }
+      app-hub-app-coletor: { condition: service_started, required: false }
+
+  app-hub-app-db:
+    image: postgres:16-alpine
+    container_name: ${HUB_PROJECT:-app-hub}-app-db
+    mem_limit: 1g # = resources.memory dos manifestos e ao `app` do compose Rust; 256m derrubava (OOM) a importação de 200 mil linhas
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hub
+      POSTGRES_PASSWORD: ${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}
+      POSTGRES_DB: hub
+    ports:
+      - "127.0.0.1:${HUB_APPDB_PORT:-15433}:5432"
+    volumes:
+      - app-hub-app-db-data:/var/lib/postgresql/data
+      - ./infra/app-db-init.sh:/docker-entrypoint-initdb.d/10-app-dbs.sh:ro
+    labels: { hub.py: "1" }
+
+  app-hub-app-ativos:
+    image: ${HUB_PROJECT:-app-hub}-ativos
+    profiles: [demo-apps]
+    build:
+      context: ../platform
+      dockerfile: demo-apps-py/ativos/Dockerfile
+    container_name: ${HUB_PROJECT:-app-hub}-app-ativos
+    mem_limit: 1g # = resources.memory dos manifestos e ao `app` do compose Rust; 256m derrubava (OOM) a importação de 200 mil linhas
+    restart: unless-stopped
+    environment: &app-hub-app-env
+      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/ativos # um banco por app (ativos); os demais sobrescrevem
+      HUB_DEMO_E2E_HOSTILE: "1" # só testes: rotas do E2E anti-phishing (ativos/servicos); o compose de produção nunca liga
+      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_ATIVOS:-hubpy-${APP_HUB_APP_TOKEN:-local}-ativos}
+    depends_on: [app-hub-app-db]
+    ports: ["127.0.0.1:${HUB_APP_PORT_ATIVOS:-9101}:8080"]
+    networks: [default, hub-app-ativos]
+    labels: { hub.py: "1" }
+
+  app-hub-app-fornecedores:
+    image: ${HUB_PROJECT:-app-hub}-fornecedores
+    profiles: [demo-apps]
+    build:
+      context: ../platform
+      dockerfile: demo-apps-py/fornecedores/Dockerfile
+    container_name: ${HUB_PROJECT:-app-hub}-app-fornecedores
+    mem_limit: 1g # = resources.memory dos manifestos e ao `app` do compose Rust; 256m derrubava (OOM) a importação de 200 mil linhas
+    restart: unless-stopped
+    environment:
+      <<: *app-hub-app-env
+      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_FORNECEDORES:-hubpy-${APP_HUB_APP_TOKEN:-local}-fornecedores}
+      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/fornecedores # um banco por app
+      HUB_S3_ENDPOINT_FORNECEDORES: http://app-hub-objstore:9000
+      HUB_S3_BUCKET_FORNECEDORES: fornecedores
+      HUB_S3_ACCESS_KEY_FORNECEDORES: hubadmin
+      HUB_S3_SECRET_KEY_FORNECEDORES: ${APP_HUB_OBJSTORE_PASSWORD:-hubpy-objstore-dev}
+    depends_on: [app-hub-app-db, app-hub-objstore]
+    ports: ["127.0.0.1:${HUB_APP_PORT_FORNECEDORES:-9102}:8080"]
+    networks: [default, hub-app-fornecedores]
+    labels: { hub.py: "1" }
+
+  app-hub-app-servicos:
+    image: ${HUB_PROJECT:-app-hub}-servicos
+    profiles: [demo-apps]
+    build:
+      context: ../platform
+      dockerfile: demo-apps-py/servicos/Dockerfile
+    container_name: ${HUB_PROJECT:-app-hub}-app-servicos
+    mem_limit: 1g # = resources.memory dos manifestos e ao `app` do compose Rust; 256m derrubava (OOM) a importação de 200 mil linhas
+    restart: unless-stopped
+    environment:
+      <<: *app-hub-app-env
+      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_SERVICOS:-hubpy-${APP_HUB_APP_TOKEN:-local}-servicos}
+      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/servicos # um banco por app
+    depends_on: [app-hub-app-db]
+    ports: ["127.0.0.1:${HUB_APP_PORT_SERVICOS:-9103}:8080"]
+    networks: [default, hub-app-servicos]
+    labels: { hub.py: "1" }
+
+  app-hub-app-coletor:
+    image: ${HUB_PROJECT:-app-hub}-coletor
+    profiles: [demo-apps]
+    build:
+      context: ../platform
+      dockerfile: Dockerfile.coletor
+    container_name: ${HUB_PROJECT:-app-hub}-app-coletor
+    mem_limit: 1g # = resources.memory dos manifestos e ao `app` do compose Rust; 256m derrubava (OOM) a importação de 200 mil linhas
+    restart: unless-stopped
+    environment:
+      <<: *app-hub-app-env
+      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_COLETOR:-hubpy-${APP_HUB_APP_TOKEN:-local}-coletor}
+      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/coletor # um banco por app
+    depends_on: [app-hub-app-db]
+    ports: ["127.0.0.1:${HUB_APP_PORT_COLETOR:-9105}:8080"]
+    networks: [default, hub-app-coletor]
+    labels: { hub.py: "1" }
+
+volumes:
+  app-hub-app-db-data:
+    name: ${HUB_PROJECT:-app-hub}-app-db-data
+    labels: { hub.py: "1" }

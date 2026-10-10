@@ -1,0 +1,1050 @@
+/* Ajustes do shell SSR: o mockup usava <button>; aqui a navegação é <a> real. */
+a.rail-item,a.open-link,a.primary-button{text-decoration:none}
+a.rail-item{color:inherit}
+a.primary-button{display:inline-block}
+.app-version{font-size:var(--font-size-xs);color:var(--c-gray-55-2);font-weight:600}
+.hub-app-error .primary-button{margin-top:var(--space-8)}
+/* Administração: submenu do rail e chips viram <a> reais; ações lado a lado. */
+a.rail-subitem,a.filter-chip{text-decoration:none}
+.admin-actions{display:flex;gap:var(--space-8);align-items:center;flex-wrap:wrap}
+.admin-actions:empty{display:none}
+.modal-error{color:var(--color-danger);font-size:var(--font-size-base);margin:var(--space-10) 0 0}
+
+/* Apps em single viewport: dentro de um app a página não rola. O workspace fica
+   ancorado abaixo do header e sidebar/conteúdo rolam de forma independente, então
+   o rodapé do sidebar (ajuda, "Voltar à plataforma") nunca sai da tela. Usa
+   position:fixed (e não 100vh) porque o html tem zoom, que distorce unidades vh. */
+body.in-app{overflow:hidden}
+body.in-app .app-root{min-height:0}
+body.in-app .workspace{position:fixed;top:41px;left:0;right:0;bottom:0;min-height:0;height:auto;display:flex;overflow:hidden}
+/* app2/app3 deixam o sidebar sticky com altura própria; no desktop ele ocupa toda a altura
+   (abaixo de 1024px, ou toque em paisagem baixa, ele vira o painel de cima para baixo). */
+@media(min-width:1024px){body.in-app .app-sidebar{position:relative!important;top:auto!important;left:auto;align-self:stretch!important;height:auto!important;max-height:none!important;overflow-y:auto}}
+body.in-app .workspace-content{flex:1;min-width:0;overflow-y:auto}
+/* Área do usuário no header (onda 3): <details> sem JS; o popover reaproveita o do mockup. */
+.hub-user-menu{position:relative}
+.hub-user-menu>summary{list-style:none;cursor:pointer}
+.hub-user-menu>summary::-webkit-details-marker{display:none}
+.hub-user-popover{right:0;top:44px;width:230px}
+.hub-user-popover form{margin:0}
+.hub-user-popover .profile-option{text-decoration:none;cursor:pointer}
+.hub-dev-user .avatar{font-size:var(--font-size-3xs);background:var(--color-highlight);color:var(--color-brand)}
+/* Sino de alertas (onda 5): <details> sem JS, renderizado no servidor. */
+.hub-notif-menu{position:relative}
+.hub-notif-menu>summary{list-style:none;cursor:pointer;display:grid;place-items:center}
+.hub-notif-menu>summary::-webkit-details-marker{display:none}
+.hub-notif-count{position:absolute;right:0;top:0;min-width:16px;height:16px;padding:0 var(--space-4);border-radius:var(--radius-xl);background:var(--c-red-40);color:var(--color-text-inverse);font-size:var(--font-size-2xs);font-weight:700;display:grid;place-items:center;border:1px solid var(--color-border-inverse)}
+.hub-notif-popover{right:-10px;top:44px;width:340px;max-height:420px;overflow-y:auto}
+.hub-notif-item a{color:inherit;text-decoration:none}
+.hub-notif-item.unread{background:var(--c-gray-98-5);margin:0 -8px;padding-left:var(--space-8);padding-right:var(--space-8);border-radius:var(--radius-md)}
+.hub-notif-item[data-level="erro"] strong{color:var(--c-red-41)}
+.hub-notif-popover form{margin:var(--space-8) 0 0}
+.hub-notif-popover .profile-option{border:0;background:none;color:var(--purple);font-weight:600;padding:var(--space-4) 0;cursor:pointer}
+/* Estado amigável "app reiniciando" (hub.js tenta de novo sozinho). */
+.hub-retry{max-width:520px;margin:var(--space-40) auto;text-align:center;color:var(--c-blue-39)}
+.hub-retry h1{font:700 18px var(--font-display);color:var(--color-text-strong)}
+.hub-retry-spinner{width:26px;height:26px;margin:0 auto var(--space-12);border-radius:var(--radius-round);border:3px solid var(--c-violet-93);border-top-color:var(--c-violet-59);animation:hub-spin 1s linear infinite}
+@keyframes hub-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.hub-retry-spinner{animation:none}}
+/* Botões que exigem uma permissão que o usuário não tem somem (o servidor recusa de qualquer forma). */
+body[data-hub-perms]:not([data-hub-perms~="*"]):not([data-hub-perms~="gerenciar_variaveis"]) [data-requires="gerenciar_variaveis"],
+body[data-hub-perms]:not([data-hub-perms~="*"]):not([data-hub-perms~="editar_configuracoes"]) [data-requires="editar_configuracoes"],
+body[data-hub-perms]:not([data-hub-perms~="*"]):not([data-hub-perms~="gerenciar_usuarios"]) [data-requires="gerenciar_usuarios"]{display:none!important}
+
+/* Faixa "vendo staging" (cookie hub_env_<id>=staging): sempre visível acima do app. */
+.env-banner{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-8) var(--space-12);margin:0 0 var(--space-10);padding:var(--space-8) var(--space-14);border-radius:var(--radius-3xl);background:var(--c-yellow-92);color:var(--c-yellow-21);border:1px solid var(--c-yellow-74);font-size:var(--font-size-base)}
+.env-banner strong{letter-spacing:.08em}
+.env-banner a,.env-banner-form{margin-left:auto;color:inherit;font-weight:600}
+.env-banner-button{font:inherit;font-weight:600;color:inherit;background:none;border:1px solid currentColor;border-radius:var(--radius-xl);padding:3px var(--space-10);cursor:pointer}
+
+/* ---- Onda 9: acessibilidade, busca ⌘K, tour, Inbox, Início, Analytics ---- */
+.visually-hidden{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.skip-link{position:absolute;left:var(--space-12);top:-60px;z-index:var(--z-menu);padding:var(--space-10) var(--space-16);background:var(--color-surface);color:var(--color-accent);border:2px solid var(--color-accent);border-radius:var(--radius-xl);font-weight:700;text-decoration:none}
+.skip-link:focus{top:var(--space-12)}
+:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{outline:3px solid var(--color-accent);outline-offset:2px}
+#app-root:focus{outline:none}
+.hidden{display:none!important}
+.app-card .app-card-title{font:700 14px var(--font-display);margin:11px 0 5px;color:var(--color-brand)}
+/* Alvos de toque/clique com pelo menos 24×24 (WCAG 2.2, 2.5.8). */
+.icon-button,.hub-seg-btn,.hub-small-btn,.filter-chip,.profile-option{min-height:24px;min-width:24px}
+.linklike{background:none;border:0;padding:0;font:inherit;color:var(--color-accent);cursor:pointer;text-decoration:underline;text-align:left}
+.hub-select,.hub-input{font:inherit;font-size:var(--font-size-base);color:var(--color-text);background:var(--color-surface);border:1px solid var(--color-border-strong);border-radius:var(--radius-xl);padding:6px var(--space-10);min-height:32px}
+/* Botão de busca do header (abre a paleta). */
+button.header-search.hub-search-trigger{font:inherit;cursor:pointer;text-align:left;height:30px;max-width:420px;color:color-mix(in srgb,var(--color-text-inverse) 85%,transparent)}
+button.header-search.hub-search-trigger .hub-search-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--font-size-sm)}
+button.header-search.hub-search-trigger .hub-kbd{display:inline-block;font:600 var(--font-size-xs) var(--font-mono,monospace);padding:1px 5px;border:1px solid color-mix(in srgb,var(--color-border-inverse) 30%,transparent);border-radius:var(--radius-xs);color:var(--color-text-inverse);background:transparent}
+@media(max-width:760px){button.header-search.hub-search-trigger .hub-search-label,button.header-search.hub-search-trigger .hub-kbd{display:none}button.header-search.hub-search-trigger{flex:0 0 auto;width:36px;justify-content:center}}
+body.hub-modal-open{overflow:hidden}
+.hub-palette-backdrop{position:fixed;inset:0;z-index:var(--z-menu);background:color-mix(in srgb,var(--c-navy-16) 45%,transparent);display:flex;align-items:flex-start;justify-content:center;padding:10vh var(--space-16) var(--space-16)}
+.hub-palette-backdrop[hidden]{display:none}
+.hub-palette{width:min(640px,100%);max-height:70vh;display:flex;flex-direction:column;background:var(--color-surface);color:var(--color-text);border:1px solid var(--color-border-strong);border-radius:var(--radius-5xl);box-shadow:var(--shadow-modal);overflow:hidden}
+.hub-palette-input{display:flex;align-items:center;gap:var(--space-10);padding:var(--space-12) var(--space-14);border-bottom:1px solid var(--color-border)}
+.hub-palette-input svg{width:18px;fill:none;stroke:currentColor;stroke-width:1.8;color:var(--color-text-muted)}
+.hub-palette-input input{flex:1;border:0;background:transparent;color:var(--color-text);font-size:var(--font-size-lg);min-width:0}
+.hub-palette-input input:focus-visible{outline:none}
+.hub-palette-list{overflow-y:auto;padding:var(--space-6)}
+.hub-palette-group{font:700 var(--font-size-xs) var(--font-ui);text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-secondary);padding:var(--space-10) var(--space-10) var(--space-4)}
+.hub-palette-option{display:flex;flex-direction:column;gap:2px;padding:var(--space-8) var(--space-10);border-radius:var(--radius-xl);cursor:pointer}
+.hub-palette-option small{color:var(--color-text-secondary)}
+.hub-palette-option[aria-selected="true"]{background:var(--color-accent-soft);outline:2px solid var(--color-accent);outline-offset:-2px}
+.hub-palette-all span{color:var(--color-accent);font-weight:600}
+.hub-palette-foot{display:flex;justify-content:space-between;gap:var(--space-10);padding:var(--space-8) var(--space-14);border-top:1px solid var(--color-border);font-size:var(--font-size-xs);color:var(--color-text-secondary)}
+/* Tour guiado. */
+.hub-tour{position:fixed;z-index:var(--z-menu);top:90px;left:24px;width:min(330px,calc(100vw - 24px));background:var(--color-surface);color:var(--color-text);border:2px solid var(--color-accent);border-radius:var(--radius-5xl);box-shadow:var(--shadow-modal);padding:var(--space-16)}
+.hub-tour h2{font:700 16px var(--font-display);margin:var(--space-4) 0 var(--space-6)}
+.hub-tour p{margin:0 0 var(--space-10)}
+.hub-tour-step{font-size:var(--font-size-xs);color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.06em}
+.hub-tour-actions{display:flex;gap:var(--space-8);align-items:center}
+.hub-tour-actions span{flex:1}
+.hub-tour-target{outline:3px solid var(--color-accent)!important;outline-offset:3px;border-radius:var(--radius-xl)}
+/* Preferências no menu do usuário. */
+.hub-user-popover{width:270px}
+.hub-pref-form{margin:var(--space-8) 0}
+.hub-pref-form fieldset{border:0;margin:0;padding:0}
+.hub-seg{display:flex;gap:var(--space-4);flex-wrap:wrap}
+.hub-seg-btn{font:inherit;font-size:var(--font-size-sm);border:1px solid var(--color-border-strong);background:var(--color-surface);color:var(--color-text);border-radius:var(--radius-xl);padding:4px var(--space-10);cursor:pointer}
+.hub-seg-btn.active{background:var(--color-accent);border-color:var(--color-accent);color:var(--color-text-inverse)}
+.hub-lang-row{display:flex;gap:var(--space-6)}
+.hub-lang-row .hub-select{flex:1;min-width:0}
+.hub-small-btn{padding:3px var(--space-10);font-size:var(--font-size-sm)}
+.hub-popover-title{font:700 14px var(--font-display);margin:0 0 var(--space-8)}
+.hub-popover-actions{display:flex;justify-content:space-between;gap:var(--space-8);border-top:1px solid var(--color-border);margin-top:var(--space-8);padding-top:var(--space-8)}
+.hub-popover-actions a.profile-option{color:var(--color-accent);font-weight:600;text-decoration:none}
+/* Início. */
+.hub-home-head{align-items:flex-end}
+.hub-home-editor{margin:0 0 var(--space-16);padding:var(--space-12);border:1px dashed var(--color-accent);border-radius:var(--radius-3xl);background:var(--color-accent-soft)}
+.hub-widgets{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:var(--space-16);align-items:start}
+.hub-widget{padding:var(--space-16);margin:0}
+.hub-widget[hidden]{display:none}
+.hub-widgets.editing .hub-widget{outline:1px dashed var(--color-border-strong);cursor:grab}
+.hub-widget.dragging{opacity:.5}
+.hub-widget-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-8);margin-bottom:var(--space-10)}
+.hub-widget-head h2{font:700 15px var(--font-display);margin:0;color:var(--color-text-strong)}
+.hub-widget-tools{display:flex;gap:var(--space-4);align-items:center}
+.hub-widget-tools[hidden]{display:none}
+.hub-grip svg{width:18px;stroke:currentColor;stroke-width:3;stroke-linecap:round;color:var(--color-text-muted)}
+.hub-list{list-style:none;margin:0 0 var(--space-8);padding:0;display:flex;flex-direction:column;gap:var(--space-6)}
+.hub-list li{display:flex;justify-content:space-between;gap:var(--space-8);align-items:center;padding:var(--space-4) 0;border-bottom:1px solid var(--color-divider)}
+.hub-list li:last-child{border-bottom:0}
+.hub-list a{color:var(--color-text);font-weight:600;text-decoration:none}
+.hub-list a:hover{color:var(--color-accent)}
+.hub-list small{color:var(--color-text-secondary);text-align:right}
+.hub-list li.unread a::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--color-accent);margin-right:6px;vertical-align:middle}
+.hub-shortcuts a,.hub-shortcuts .linklike{display:inline-flex;gap:var(--space-8);align-items:center;color:var(--color-text);text-decoration:none;font-weight:600}
+.hub-shortcuts svg{width:18px;fill:none;stroke:currentColor;stroke-width:1.8}
+.hub-fav-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:var(--space-8)}
+.hub-fav{display:flex;flex-direction:column;align-items:flex-start;gap:var(--space-6);padding:var(--space-10);border:1px solid var(--color-border);border-radius:var(--radius-3xl);color:var(--color-text);font-weight:600;text-decoration:none}
+.hub-fav:hover{border-color:var(--color-accent)}
+.hub-progress{height:8px;border-radius:var(--radius-pill);background:var(--color-surface-sunken);overflow:hidden}
+.hub-progress-bar{display:block;height:100%;width:0;background:var(--color-success)}
+.hub-checklist{list-style:none;margin:var(--space-8) 0 var(--space-12);padding:0;display:flex;flex-direction:column;gap:var(--space-8)}
+.hub-checklist li{display:flex;gap:var(--space-8);align-items:center}
+.hub-checklist a,.hub-checklist .linklike{color:var(--color-accent);font-weight:500;text-decoration:none}
+.hub-checklist li.done a,.hub-checklist li.done .linklike{color:var(--color-text-secondary);text-decoration:line-through}
+.hub-check{width:20px;height:20px;border-radius:50%;border:2px solid var(--color-border-strong);display:grid;place-items:center;font-size:12px;font-weight:700;flex:none}
+.hub-checklist li.done .hub-check{background:var(--color-success);border-color:var(--color-success);color:var(--color-text-inverse)}
+.hub-star svg{width:18px;fill:none;stroke:currentColor;stroke-width:1.8}
+.hub-star{margin-left:auto;color:var(--color-text-secondary);background:none;border:0;cursor:pointer}
+.hub-star.on{color:var(--color-warning)}
+.hub-star.on svg{fill:currentColor}
+.app-card-top{gap:var(--space-8)}
+/* Inbox. */
+.hub-inbox-list{list-style:none;margin:0;padding:0}
+.hub-inbox-item{display:flex;gap:var(--space-16);justify-content:space-between;padding:var(--space-14) var(--space-4);border-bottom:1px solid var(--color-divider)}
+.hub-inbox-item.unread{border-left:3px solid var(--color-accent);padding-left:var(--space-10)}
+.hub-inbox-main{flex:1;min-width:0}
+.hub-inbox-meta{display:flex;gap:var(--space-8);align-items:center;color:var(--color-text-secondary)}
+.hub-inbox-title{font:700 15px var(--font-display);margin:var(--space-4) 0}
+.hub-inbox-title a{color:var(--color-text-strong);text-decoration:none}.hub-inbox-title a:hover,.hub-inbox-title a:focus-visible{text-decoration:underline}
+.hub-inbox-main p{margin:0 0 var(--space-6);color:var(--color-text)}
+.hub-inbox-actions{display:flex;flex-direction:column;gap:var(--space-6);align-items:flex-end}
+.hub-badge{display:inline-block;font-size:var(--font-size-xs);font-weight:700;padding:2px var(--space-8);border-radius:var(--radius-pill);background:var(--color-surface-sunken);color:var(--color-text-strong)}
+.hub-approval{display:flex;flex-wrap:wrap;gap:var(--space-8);align-items:center;margin-top:var(--space-6)}
+.hub-decide{display:flex;flex-wrap:wrap;gap:var(--space-8);align-items:center;width:100%}
+.hub-decide label{font-size:var(--font-size-sm);color:var(--color-text-secondary)}
+.hub-decide .hub-input{flex:1;min-width:180px}
+.hub-prefs{margin-top:var(--space-16)}
+.hub-prefs td small{margin-left:var(--space-4);color:var(--color-text-secondary)}
+.hub-check-label{display:inline-flex;gap:var(--space-8);align-items:center}
+.hub-search-form{display:flex;gap:var(--space-8);margin-bottom:var(--space-16)}
+.hub-search-form .hub-input{flex:1}
+.hub-search-group{margin-bottom:var(--space-12)}
+.hub-search-group h2{font:700 15px var(--font-display);margin:0 0 var(--space-8)}
+/* Analytics. */
+.hub-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:var(--space-12);margin-bottom:var(--space-16)}
+.hub-kpi{display:flex;flex-direction:column;gap:var(--space-4);padding:var(--space-16);margin:0}
+.hub-kpi-value{font:800 26px var(--font-display);color:var(--color-text-strong)}
+.hub-kpi-label{color:var(--color-text-secondary)}
+.hub-bars{display:flex;align-items:flex-end;gap:3px;height:120px;padding-top:var(--space-8)}
+.hub-bar{flex:1;background:var(--color-accent);border-radius:3px 3px 0 0;min-height:2px}
+.hub-two-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:var(--space-16);margin:var(--space-16) 0}
+.hub-two-col .panel{margin:0}
+.hub-funnel{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--space-10)}
+.hub-funnel li{display:grid;grid-template-columns:1fr 2fr auto;gap:var(--space-8);align-items:center}
+.hub-funnel-bar{height:12px;border-radius:var(--radius-pill);background:var(--color-accent);width:0}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+/* Onda 12 (2.1): comportamentos declarativos data-hub-* (hub-kit.js). */
+.hub-field-error{display:block;margin-top:4px;color:var(--c-red-41);font-size:var(--font-size-xs)}
+[aria-invalid="true"]{border-color:var(--c-red-41)}
+.hub-pager{display:flex;align-items:center;justify-content:flex-end;gap:var(--space-10);padding:var(--space-10) 0}
+.hub-chart{margin:0}
+.hub-chart-title{font-weight:600;margin-bottom:6px}
+.hub-chart-svg{width:100%;height:auto;display:block}
+.hub-chart-total{font-size:22px;font-weight:700;fill:currentColor}
+.hub-chart-legend{display:flex;flex-wrap:wrap;gap:var(--space-10);list-style:none;margin:6px 0 0;padding:0;font-size:var(--font-size-xs)}
+.hub-chart-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px}
+.modal.hub-confirm{max-width:440px}
+[data-hub-tabs] [data-hub-tab][aria-selected="true"]{font-weight:600}
+
+/* ===== Identidade Alvesmaia (cores, fontes e linhas) — por último de propósito: vale sobre
+ * as camadas herdadas do mockup. Cores só por token (tokens.css); ver docs/DESIGN-TOKENS.md. */
+:root{font-family:var(--font-body);font-size:13px;font-synthesis:none;color:var(--color-text);background:var(--color-bg);--ink:var(--color-text-strong);--muted:var(--color-text-secondary);--line:var(--color-border);--shadow:var(--shadow-popover)}
+body{font-family:var(--font-body);font-size:13px;font-weight:400;letter-spacing:-.005em;color:var(--color-text);background:var(--color-bg)}
+button,input,select,textarea{font-family:inherit}
+code,kbd,pre,samp,.mono,.hub-mono{font-family:var(--font-mono)}
+.brand-name,.page-title,.section-heading h2,.panel-heading h3,.chart-title h3,.modal-header h2,.stat-number,.metric-value,.hub-kpi-value,.auth-title{font-family:var(--font-display)!important}
+.page-title{font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--color-text-strong);line-height:1.15}
+@media (max-height:760px){.page-title{font-size:24px}}
+.app-page-header .page-title{font-size:22px}
+.section-heading h2,.modal-header h2{font-size:16px;font-weight:800;color:var(--color-text-strong);letter-spacing:-.02em}
+.panel-heading h3,.chart-title h3{font-weight:800;letter-spacing:-.02em;color:var(--color-text-strong)}
+.stat-number,.metric-value,.hub-kpi-value{font-size:27px;font-weight:800;letter-spacing:-.02em;color:var(--color-text-strong);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent)}
+/* Cromo: header + rail navy (grafite no escuro); item ativo com barra índigo. */
+.platform-header{background:var(--color-chrome);color:var(--color-chrome-text);border-bottom:1px solid color-mix(in srgb,var(--color-chrome-text) 10%,transparent)}
+.brand,.brand-name{color:var(--color-chrome-text)}
+.brand-name span,.brand-subtitle{color:var(--color-chrome-text-2)!important}
+.platform-header .icon-button,.platform-header .chevron{color:var(--color-chrome-icon)}
+.user-copy strong{color:var(--color-chrome-text)}
+.user-copy small{color:var(--color-chrome-text-2)}
+.header-search,button.header-search.hub-search-trigger{color:var(--color-chrome-text-2);border-radius:8px}
+.header-search input::placeholder{color:var(--color-chrome-text-2)}
+.platform-rail,.rail-restore-button,.sidebar-skeleton,.app-sidebar{background:var(--color-chrome);color:var(--color-chrome-text)}
+.platform-rail{border-right:1px solid color-mix(in srgb,var(--color-chrome-text) 8%,transparent)}
+.rail-item,.rail-subitem,.rail-control{color:var(--color-chrome-icon)}
+.rail-label,.sidebar-caption{color:var(--color-chrome-text-2)}
+.rail-item:hover,.rail-subitem:hover,.rail-control:hover,.nav-item:hover{background:color-mix(in srgb,var(--color-chrome-text) 9%,transparent);color:var(--color-chrome-text)}
+.rail-item.active,.rail-subitem.active,.rail-control.selected,.nav-item.active{background:var(--color-chrome-active-bg);color:var(--color-chrome-text);box-shadow:inset 3px 0 0 var(--color-chrome-active-bar);border-left:0}
+.nav-item.active{padding-left:var(--space-8)}
+.rail-item.active:before{content:none}
+.rail-hidden .rail-display-button,.rail-hidden .platform-header .rail-display-button{color:var(--color-chrome-text);background:var(--color-chrome-active-bg)}
+.nav-item{color:var(--color-chrome-text-2)}
+.back-link:hover,.help-card button{color:var(--color-chrome-icon)}
+.rail-tooltip,.toast,.tsc-tooltip{background:var(--color-chrome-raised);color:var(--color-chrome-text);box-shadow:var(--shadow-popover)}
+.rail-admin-avatar,.avatar,.hub-dev-user .avatar{background:var(--color-accent);color:var(--color-on-accent)}
+.log-live-btn.live{background:var(--color-accent);border-color:var(--color-accent);color:var(--color-on-accent)}
+.mobile-backdrop{background:color-mix(in srgb,var(--am-scrim) 48%,transparent)}
+:root{--tsc-tooltip-bg:var(--color-chrome-raised);--tsc-tooltip-ink:var(--color-chrome-text);--tsc-focus-ring:var(--color-focus)}
+/* Linhas e formas: borda 1px; cartão raio 12 sem sombra. */
+.stat-card,.panel,.app-card,.metric-card,.chart-panel,.content-panel,.team-link-card,.hub-kpi{background:var(--color-surface);border:1px solid var(--color-border);border-radius:12px;box-shadow:none}
+.bottom-grid .panel{border-radius:12px}
+.app-card:hover,.team-link-card:hover{border-color:var(--color-tint-border);box-shadow:none}
+.header-popover,.search-results,.modal{background:var(--color-surface-raised);border:1px solid var(--color-border);box-shadow:var(--shadow-popover)}
+.modal{border-radius:12px}
+.header-popover,.search-results{border-radius:8px}
+/* Botões: altura 36–40, raio 8; primário cheio, secundário com borda índigo clara. */
+.primary-button,.auth-submit{min-height:32px;border:0;border-radius:8px;background:var(--color-accent);color:var(--color-on-accent);font-size:13px;font-weight:500;letter-spacing:0;line-height:1.4;padding:6px 14px;box-shadow:none}
+.primary-button:hover,.auth-submit:hover{background:var(--color-accent-hover)}
+.secondary-button,.filter-button{min-height:32px;border:1px solid var(--color-tint-border);border-radius:8px;background:var(--color-surface);color:var(--color-accent);font-size:13px;font-weight:500;letter-spacing:0;line-height:1.4;padding:5px 13px}
+.secondary-button:hover,.filter-button:hover{background:var(--color-tint)}
+.icon-button,.env-icon-btn{border-radius:8px}
+/* Abas/pílulas raio 16 (30–32px); selos raio 11 com 13px/700. */
+.filter-chip,.hub-seg-btn{min-height:28px;border-radius:16px;border:1px solid var(--color-tint-border);background:var(--color-surface);color:var(--color-accent);font-size:13px;font-weight:500;letter-spacing:0;padding:4px 12px}
+.filter-chip:hover,.hub-seg-btn:hover{background:var(--color-tint)}
+.filter-chip.active,.hub-seg-btn.active{background:var(--color-accent);border-color:var(--color-accent);color:var(--color-on-accent)}
+.status-pill,.hub-badge,.env-chip,.ops-pill{border-radius:11px;font-size:12px;font-weight:600;letter-spacing:0;padding:2px 9px}
+.hub-badge,.env-chip-all{background:var(--color-neutral-soft);color:var(--color-text-secondary)}
+/* Campos: raio 8, altura 36–40, borda de controle (3:1). */
+.form-field input,.form-field select,.form-field textarea,.table-search,.log-field select,.log-field input{border:1px solid var(--color-border-control);border-radius:8px;background:var(--color-surface);color:var(--color-text-ink)}
+.form-field input,.form-field select,.table-search{min-height:32px;font-size:13px}
+.form-field input:focus,.form-field select:focus,.form-field textarea:focus,.table-search:focus{border-color:var(--color-accent-shape)}
+/* Tabelas densas: linha ~38–40px, cabeçalho 13px/700, números alinhados à direita. */
+.data-table th{background:var(--color-surface-muted);color:var(--color-text-secondary);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;padding:8px 12px;border-bottom:1px solid var(--color-border)}
+.data-table td{padding:8px 12px;font-size:13px;color:var(--color-text);border-top:1px solid var(--color-divider)}
+.data-table td:first-child{color:var(--color-text-strong)}
+.data-table tbody tr:hover td{background:var(--color-surface-hover)}
+.data-table td.num,.data-table th.num,.hub-num{text-align:right;font-variant-numeric:tabular-nums}
+.data-table code,.ops-list code,.env-table code,.ops-image code,.ops-cmd code{font-family:var(--font-mono);font-size:13px;background:var(--color-neutral-soft);color:var(--color-text-ink)}
+/* Foco: contorno 2px índigo. */
+:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{outline:2px solid var(--color-focus);outline-offset:2px}
+:where(.data-table,.header-popover,.modal) :where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{outline-offset:-2px}
+/* Barras de rolagem finas. */
+*{scrollbar-width:thin;scrollbar-color:var(--color-scrollbar) transparent}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:var(--color-scrollbar);border-radius:6px}
+::-webkit-scrollbar-track{background:transparent}
+a.primary-button,a.secondary-button,a.filter-button,a.filter-chip{text-decoration:none}
+.status-pill,.hub-badge,.env-chip,.ops-pill{line-height:1.4}
+/* Botões dentro de tabelas: compactos (linha densa). */
+.data-table .secondary-button,.data-table .primary-button,.user-actions .secondary-button,.ops-actions .secondary-button{min-height:28px;padding:3px 10px;font-size:12px}
+.user-actions{flex-wrap:nowrap}
+
+/* ===== Compacto (−15%): sem zoom no html (o zoom 1.2 saiu de styles.css); tamanhos reais,
+ * texto ≥ 12px, alvos ≥ 28px. Por último de propósito. */
+.hub-checklist a:hover,.hub-checklist .linklike:hover,.hub-list a:hover,.hub-shortcuts a:hover,.hub-shortcuts .linklike:hover{color:var(--color-accent-hover);text-decoration:none}
+.hub-checklist li.done a,.hub-checklist li.done .linklike{text-decoration:line-through}
+.hub-checklist{gap:var(--space-6)}
+.hub-check{width:18px;height:18px}
+/* Header: busca centrada na largura total; ícone da marca maior. */
+.platform-header{position:sticky}
+.brand-mark,.brand-mark img,.brand-mark svg{width:34px!important;height:34px!important;min-width:34px}
+.brand-subtitle{font-size:12px;letter-spacing:.1em;font-weight:600}
+.brand-name{font-family:var(--font-brand)!important;font-weight:700;letter-spacing:-.01em}
+@media(min-width:1001px){.platform-header .header-search,button.header-search.hub-search-trigger{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,calc(100% - 680px));min-width:240px;max-width:440px;margin:0}}
+@media(max-width:1000px){.platform-header .header-search,button.header-search.hub-search-trigger{flex:1;max-width:440px}}
+/* Rail e sidebars: itens de 32px, intervalo 2px, ícones na mesma caixa. */
+.rail-nav,.rail-expanded .rail-nav,.rail-submenu,.sidebar-nav{gap:2px}
+.rail-expanded .platform-rail{padding-top:var(--space-8)}
+.rail-expanded .rail-item{height:32px;gap:var(--space-10);padding:0 var(--space-10)}
+.rail-expanded .rail-subitem{height:30px}
+.rail-item,.rail-subitem{font-weight:500}
+.rail-icon{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:none;line-height:0}
+.rail-icon svg{display:block;width:18px;height:18px}
+.rail-subitem .rail-icon,.rail-subitem .rail-icon svg{width:16px;height:16px}
+.rail-icon svg,.rail-subitem .rail-icon svg{stroke-width:1.75!important}
+.rail-name{line-height:1.2}
+.nav-item{min-height:32px;padding:var(--space-6) var(--space-8);font-weight:500;line-height:1.2}
+.nav-item svg{display:block;flex:none;width:16px;height:16px}
+.nav-item.active{font-weight:600}
+.sidebar-caption{padding-top:var(--space-4)}
+/* Pesos: abas 500, ativa 600; cabeçalho de painel. */
+.hub-widget-head h2,.hub-search-group h2,.hub-inbox-title{font-size:15px;font-weight:800;letter-spacing:-.02em}
+h1,h2,h3,h4,h5,h6{font-weight:800;letter-spacing:-.02em}
+.hub-kpi-value,.stat-number,.metric-value,.data-table td.num,.hub-num{font-variant-numeric:tabular-nums}
+.hub-kpi-value{font-size:27px}
+.hub-palette-group{font-weight:600}
+.hub-badge{font-weight:600}
+.app-card .app-card-title{font-weight:700}
+.skip-link{font-weight:600}
+small{font-size:max(12px,.86em)}
+code,kbd,samp{font-size:max(12px,.9em)}
+.env-icon-btn,.row-action,.icon-button{min-width:28px;min-height:28px}
+/* Checkbox/radio/range: cor da marca, fundo do tema (nunca o controle escuro do sistema). */
+input[type=checkbox],input[type=radio],input[type=range],progress{accent-color:var(--color-accent)}
+input[type=checkbox],input[type=radio]{background-color:var(--color-surface)}
+select,input,textarea{color-scheme:inherit}
+/* Botões renderizados como <a>: a cor do texto é a do botão, nunca a do link
+ * (antes, regras de link deixavam o texto da cor do fundo — "Voltar ao início"). */
+/* Só nas telas do hub (fora dos apps, que têm a própria paleta). */
+:is(.page-container,.auth-main,.modal) a.primary-button:is(:link,:visited,:hover,:active){color:var(--color-on-accent);text-decoration:none}
+:is(.page-container,.auth-main,.modal) a.secondary-button:is(:link,:visited,:hover,:active){color:var(--color-text-secondary);background:var(--color-surface);text-decoration:none}
+:is(.page-container,.auth-main,.modal) :is(a.primary-button,a.secondary-button){display:inline-flex;align-items:center;justify-content:center}
+/* Conta › Apps autorizados / Tokens pessoais */
+.acct-flash{background:var(--color-surface);border:1px solid var(--color-border);border-left:3px solid var(--color-accent);border-radius:var(--radius-lg);padding:var(--space-10) var(--space-12);margin:0 0 var(--space-12);font-size:var(--font-size-md);color:var(--color-text)}
+.acct-panel{overflow-x:auto}
+.acct-panel .data-table td{white-space:normal;vertical-align:middle}
+.acct-actions{text-align:right;white-space:nowrap}
+.acct-actions form{margin:0}
+.acct-danger{color:var(--color-danger)}
+.acct-danger-fill,.acct-danger-fill:hover{background:var(--color-danger);color:var(--color-text-inverse);box-shadow:none}
+.acct-empty{display:grid;justify-items:center;gap:var(--space-8);text-align:center;padding:var(--space-40) var(--space-20);color:var(--color-text-muted)}
+.acct-empty h2,.acct-empty h3{margin:0;font-size:var(--font-size-xl);font-weight:700;color:var(--color-text-strong)}
+.acct-empty p{margin:0 0 var(--space-6);max-width:520px;font-size:var(--font-size-md);line-height:1.5}
+.acct-empty-icon{width:40px;height:40px;fill:none;stroke:var(--color-accent);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.acct-dialog{border:0;color:var(--color-text);max-width:min(480px,calc(100vw - 32px))}
+.acct-dialog::backdrop{background:color-mix(in srgb,var(--c-navy-13) 40%,transparent)}
+.acct-dialog h2{margin:0 0 var(--space-6);font-size:17px;color:var(--color-text-strong)}
+.acct-scopes{border:0;padding:0;margin:var(--space-12) 0;display:grid;gap:var(--space-6)}
+.acct-scopes legend{font-size:var(--font-size-xs);font-weight:600;color:var(--color-text);margin-bottom:var(--space-6)}
+.acct-scopes .hub-check-label{font-size:var(--font-size-sm);color:var(--color-text)}
+.acct-dialog .token-secret{display:flex;align-items:center;gap:var(--space-10);flex-wrap:wrap;background:var(--color-warning-soft);border-radius:var(--radius-2xl);padding:var(--space-12)}
+.acct-dialog .token-secret code{flex:1;min-width:200px;word-break:break-all;background:var(--color-surface);color:var(--color-text);padding:var(--space-6) var(--space-8);border-radius:var(--radius-sm)}
+/* Conta › Configurações: subnavegação à esquerda (≥ 1024px) + seções; no celular, atalhos
+ * em linha (rolam na horizontal dentro da própria faixa) acima das seções empilhadas. */
+.acct-settings{display:grid;grid-template-columns:200px minmax(0,1fr);gap:var(--space-16);align-items:start}
+.acct-settings-nav{position:sticky;top:76px;display:grid;gap:2px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-6)}
+.acct-nav-item{display:flex;align-items:center;gap:var(--space-8);min-height:32px;padding:4px var(--space-10);border-radius:var(--radius-sm);color:var(--color-text);text-decoration:none;font-size:var(--font-size-sm);font-weight:500}
+.acct-nav-item:is(:link,:visited){color:var(--color-text);text-decoration:none}
+.acct-nav-item:hover{background:var(--color-surface-hover);color:var(--color-text-strong)}
+.acct-nav-item.active,.acct-nav-item[aria-current=page]{background:color-mix(in srgb,var(--color-accent) 14%,transparent);color:var(--color-text-strong);font-weight:600}
+.acct-nav-item:focus-visible{outline:2px solid var(--color-focus,var(--color-accent));outline-offset:1px}
+.acct-nav-icon{display:inline-grid;place-items:center;width:16px;height:16px;flex:none}
+.acct-nav-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.acct-settings-body{display:grid;gap:var(--space-12);min-width:0}
+.acct-section{scroll-margin-top:76px;display:grid;gap:var(--space-8);padding:var(--space-16) var(--space-20)}
+@media (max-width:640px){.acct-section{padding:var(--space-12) var(--space-14,14px)}}
+.acct-section-title{margin:0;font-size:var(--font-size-lg);font-weight:700;color:var(--color-text-strong)}
+.acct-section-hint{margin:0;font-size:var(--font-size-sm);color:var(--color-text-muted);line-height:1.5}
+.acct-sub-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-12);flex-wrap:wrap}
+.acct-sub-text{display:grid;gap:var(--space-4);min-width:0;flex:1 1 320px}
+.acct-profile{display:flex;align-items:center;gap:var(--space-16);margin-top:var(--space-4)}
+.acct-avatar{flex:none;width:48px;height:48px;border-radius:50%;display:inline-grid;place-items:center;font-size:var(--font-size-lg);font-weight:700}
+.acct-profile-list{margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-12);flex:1;min-width:0}
+.acct-profile-list dt{font-size:var(--font-size-xs);color:var(--color-text-muted);font-weight:600}
+.acct-profile-list dd{margin:2px 0 0;font-size:var(--font-size-md);color:var(--color-text-strong);overflow-wrap:anywhere}
+.acct-appearance{display:flex;align-items:center;gap:var(--space-20);flex-wrap:wrap;margin-top:var(--space-4)}
+.acct-theme-form fieldset{border:0;margin:0;padding:0}
+.acct-theme-seg .hub-theme-btn{display:inline-flex;align-items:center;gap:var(--space-6);min-height:30px;padding:4px var(--space-12);border:0;border-radius:8px;background:transparent;color:var(--color-text-secondary);font-size:var(--font-size-sm);font-weight:500}
+.acct-theme-seg .hub-theme-btn:hover{background:var(--color-surface-hover);color:var(--color-text-strong)}
+.acct-theme-seg .hub-theme-btn.active{background:var(--color-accent);color:var(--color-on-accent)}
+.acct-theme-preview{width:180px;height:104px;border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden;background:var(--color-bg);display:grid;grid-template-rows:18px 1fr}
+.acct-pv-header{background:var(--color-chrome,var(--color-brand));display:flex;align-items:center;gap:6px;padding:0 8px}
+.acct-pv-dot{width:8px;height:8px;border-radius:50%;background:var(--color-accent)}
+.acct-pv-bar{width:48px;height:5px;border-radius:3px;background:color-mix(in srgb,var(--color-text-inverse) 60%,transparent)}
+.acct-pv-body{display:grid;grid-template-columns:34px 1fr;min-height:0}
+.acct-pv-rail{background:var(--color-surface);border-right:1px solid var(--color-border);display:grid;align-content:start;gap:6px;padding:8px 7px}
+.acct-pv-rail span{height:5px;border-radius:3px;background:var(--color-border-strong)}
+.acct-pv-main{display:grid;align-content:start;gap:6px;padding:8px}
+.acct-pv-line{height:5px;border-radius:3px;background:var(--color-text-muted)}
+.acct-pv-line.w60{width:60%}.acct-pv-line.w40{width:40%;opacity:.6}
+.acct-pv-card{height:26px;border-radius:5px;background:var(--color-surface);border:1px solid var(--color-border)}
+.acct-pv-btn{width:36px;height:9px;border-radius:4px;background:var(--color-accent)}
+.acct-lang-form .hub-select{min-width:220px;height:32px;border:1px solid var(--color-border-control);border-radius:8px;background:var(--color-surface);color:var(--color-text-ink);padding:4px 8px;font:inherit;font-size:var(--font-size-sm)}
+.acct-row{display:flex;align-items:center;justify-content:space-between;gap:var(--space-12);flex-wrap:wrap}
+.acct-row-text{display:grid;gap:2px;min-width:0;flex:1 1 280px}
+.acct-row-text strong{font-size:var(--font-size-md);color:var(--color-text-strong)}
+@media (max-width:1023.98px){
+  .acct-settings{grid-template-columns:minmax(0,1fr);gap:var(--space-12)}
+  .acct-settings-nav{position:static;display:flex;overflow-x:auto;gap:var(--space-4);scrollbar-width:thin}
+  .acct-nav-item{flex:none;min-height:36px}
+}
+@media (max-width:640px){
+  .acct-profile{align-items:flex-start}
+  .acct-profile-list{grid-template-columns:minmax(0,1fr)}
+  .acct-lang-form .hub-select{width:100%;min-width:0;min-height:44px;font-size:16px}
+  .acct-theme-seg .hub-theme-btn{min-height:40px}
+  .acct-row .secondary-button{width:100%}
+}
+/* Administração: itens em grupos (rótulo discreto; no rail recolhido, só um divisor). */
+.rail-submenu.open{max-height:1200px}
+.rail-group{display:grid;gap:2px;justify-items:inherit;width:100%}
+.rail-group-label{display:none;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:color-mix(in srgb,var(--color-chrome-text) 72%,transparent);padding:10px 11px 2px;user-select:none}
+.rail-group:first-child .rail-group-label{padding-top:4px}
+.rail-expanded .rail-group-label{display:block}
+.rail-collapsed .rail-group+.rail-group,.rail-hidden .rail-group+.rail-group{border-top:1px solid color-mix(in srgb,var(--color-chrome-text) 16%,transparent);margin-top:4px;padding-top:4px}
+.rail-group-label{width:100%;border:0;background:transparent;text-align:left;cursor:pointer;pointer-events:auto;align-items:center;gap:6px;border-radius:var(--radius-sm)}
+.rail-expanded .rail-group-label{display:flex}
+.rail-group-label:hover{color:var(--color-chrome-text)}
+.rail-group-label:focus-visible{outline:2px solid var(--color-chrome-active-bar);outline-offset:-2px}
+.rail-group-count{display:none;font-weight:500}
+.rail-group-label[aria-expanded="false"] .rail-group-count{display:inline}
+.rail-group-chevron{width:12px;height:12px;margin-left:auto;fill:none;stroke:currentColor;stroke-width:2;transition:transform .18s ease}
+.rail-group-label[aria-expanded="false"] .rail-group-chevron{transform:rotate(-90deg)}
+.rail-group-items{display:grid;gap:2px;justify-items:inherit;width:100%;overflow:hidden}
+.rail-expanded .rail-group-label[aria-expanded="false"]+.rail-group-items{display:none}
+@media (prefers-reduced-motion:reduce){.rail-group-chevron{transition:none}}
+/* Seções administrativas no nível principal do rail (sem o item-pai "Administração"):
+   rótulo com ícone próprio no mesmo recuo dos itens principais; itens recuados. */
+.rail-sections{display:grid;gap:2px;width:100%;justify-items:inherit}
+.rail-group-icon{display:inline-grid;place-items:center;flex:none;width:16px;height:16px}
+.rail-group-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.rail-expanded .rail-group-label{padding:10px 11px 3px;gap:var(--space-8)}
+.rail-expanded .rail-group:first-child .rail-group-label{padding-top:2px}
+.rail-expanded .rail-group-items{padding-left:var(--space-14)}
+.rail-collapsed .rail-group-label{display:grid;place-items:center;position:relative;width:34px;height:24px;padding:0;cursor:default;color:color-mix(in srgb,var(--color-chrome-text) 60%,transparent)}
+.rail-collapsed .rail-group-name,.rail-collapsed .rail-group-count,.rail-collapsed .rail-group-chevron{display:none}
+.rail-collapsed .rail-group-label:hover .rail-tooltip,.rail-collapsed .rail-group-label:focus-visible .rail-tooltip{opacity:1}
+.rail-collapsed .rail-group-label .rail-tooltip{left:44px}
+
+/* ===== Componentes base do hub (page_head, callout, more_info, controles, tabelas,
+ * carregamento) — por último de propósito: vale sobre as camadas herdadas do mockup.
+ * Componentes Rust em crates/hub-shell/src/page.rs. */
+/* Cabeçalho de página: texto à esquerda, ações numa linha à direita. */
+.app-page-header,.page-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-16);align-items:end;margin:0 0 var(--space-20)}
+.page-head-text{min-width:0}
+.page-head .page-subtitle{margin:var(--space-4) 0 0;max-width:820px}
+.page-actions,.app-page-header .admin-actions{display:flex;flex-wrap:wrap;gap:var(--space-8);justify-content:flex-end;align-items:center;margin:0}
+.page-actions:empty{display:none}
+.page-actions>*{margin:0}
+.page-actions form{margin:0;display:inline-flex}
+@media (max-width:760px){.app-page-header,.page-head{grid-template-columns:1fr}.page-actions,.app-page-header .admin-actions{justify-content:flex-start}}
+.eyebrow{margin-bottom:var(--space-4);color:var(--color-accent)}
+/* Aviso (callout): padding de cartão, uma cor por tipo. */
+.callout,.ops-aside,.ops-alert,.ops-banner,.ops-note-box{display:block;background:var(--color-surface);border:1px solid var(--color-border);border-left:3px solid var(--color-accent-shape);border-radius:12px;padding:var(--space-12) var(--space-16);margin:0 0 var(--space-12);color:var(--color-text);line-height:1.5}
+.callout-warn,.ops-banner-warn,.ops-alert{border-left-color:var(--color-warning-shape);background:var(--color-warning-soft);color:var(--color-text)}
+.callout-danger{border-left-color:var(--color-danger-shape);background:var(--color-danger-soft)}
+.callout-ok{border-left-color:var(--color-success-shape);background:var(--color-success-soft)}
+:is(.callout,.ops-aside) p{margin:0}
+:is(.callout,.ops-aside) p+p,:is(.callout,.ops-aside) p+div:not(:empty){margin-top:var(--space-8)}
+.callout-row{display:flex;gap:var(--space-12);align-items:center;justify-content:space-between;flex-wrap:wrap}
+.callout-row>p{flex:1 1 320px}
+/* Detalhes técnicos (recolhível). */
+.hub-more{margin:var(--space-12) 0;color:var(--color-text-secondary);font-size:13px}
+.hub-more>summary{cursor:pointer;display:inline-flex;align-items:center;gap:var(--space-6);color:var(--color-accent);font-weight:600;list-style:none;border-radius:6px;padding:2px 4px}
+.hub-more>summary::-webkit-details-marker{display:none}
+.hub-more>summary::before{content:"";width:6px;height:6px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .15s ease}
+.hub-more[open]>summary::before{transform:rotate(45deg)}
+.hub-more-body{margin-top:var(--space-8);padding:var(--space-12) var(--space-16);border:1px solid var(--color-border);border-radius:8px;background:var(--color-surface);line-height:1.55;color:var(--color-text)}
+.hub-more-body p{margin:0}
+.hub-more-body p+p,.hub-more-body ul{margin-top:var(--space-6)}
+/* Controles: altura única de 32 px; borda neutra (≥ 3:1 nos dois temas); a cor de foco
+ * só aparece em :focus-visible. */
+:is(.page-container,.modal,.auth-main,.header-popover,.acct-dialog,.hub-palette) :is(input:not([type=checkbox],[type=radio],[type=range],[type=file],[type=color],[type=hidden],[type=submit],[type=button]),select){min-height:32px;height:32px;padding:4px 10px;font-size:13px;line-height:1.4;box-sizing:border-box}
+:is(.page-container,.modal,.auth-main,.header-popover,.acct-dialog) :is(input:not([type=checkbox],[type=radio],[type=range],[type=file],[type=color],[type=hidden],[type=submit],[type=button]),select,textarea){border:1px solid var(--color-border-control);border-radius:8px;background:var(--color-surface);color:var(--color-text-ink)}
+:is(.page-container,.modal,.auth-main,.header-popover,.acct-dialog) :is(input,select,textarea):focus:not(:focus-visible){border-color:var(--color-border-control)}
+:is(input,select,textarea):focus-visible{border-color:var(--color-accent-shape)}
+.form-field input:focus,.form-field select:focus,.form-field textarea:focus,.table-search:focus{border-color:var(--color-border-control)}
+.form-field input:focus-visible,.form-field select:focus-visible,.form-field textarea:focus-visible,.table-search:focus-visible{border-color:var(--color-accent-shape)}
+:is(.page-container,.modal,.auth-main) :is(.primary-button,.secondary-button,.filter-button,.danger-button,.auth-submit){min-height:32px}
+.danger-button{min-height:32px;border:1px solid var(--color-danger-strong);border-radius:8px;background:var(--color-danger-strong);color:#fff;font-size:13px;font-weight:600;padding:5px 13px;cursor:pointer}
+.danger-button:hover{filter:brightness(1.08)}
+.secondary-button.danger,.row-menu .danger,.hub-menu-item.danger{color:var(--color-danger)}
+/* Tabelas: cabeçalho de linha (th scope=row) não herda o estilo do cabeçalho. */
+.data-table tbody th,table tbody th[scope=row]{text-transform:none;font-weight:600;color:var(--color-text-strong);background:none;letter-spacing:0;font-size:13px;white-space:normal;text-align:left;padding:8px 12px;border-top:1px solid var(--color-divider);border-bottom:0}
+.data-table{width:100%}
+/* Estados vazios: ícone + texto, centrados. */
+.empty-state{display:grid;justify-items:center;gap:var(--space-8);text-align:center;padding:var(--space-32) var(--space-20);color:var(--color-text-secondary);font-size:13px;line-height:1.5}
+.content-panel .empty-state::before,.panel .empty-state::before,.empty-state.with-icon::before{content:"";width:32px;height:32px;background:var(--color-accent-shape);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 13h5l1.5 3h5L16 13h5'/%3E%3Cpath d='M5 5h14l2 8v6H3v-6Z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 13h5l1.5 3h5L16 13h5'/%3E%3Cpath d='M5 5h14l2 8v6H3v-6Z'/%3E%3C/svg%3E") center/contain no-repeat}
+/* Código: Red Hat Mono, rolagem horizontal em vez de vazar. */
+pre{overflow-x:auto;max-width:100%}
+pre,code,kbd,samp,.mono,.hub-mono,.log-terminal,.log-terminal *{font-family:var(--font-mono)}
+/* Toasts: variantes de sucesso e erro com ícone. */
+.toast.toast-error{background:var(--color-danger-strong);color:#fff}
+.toast.toast-success{background:var(--am-ok);color:#fff}
+.toast.toast-error::before,.toast.toast-success::before{display:inline-block;width:1.2em;margin-right:6px;font-weight:700;text-align:center}
+.toast.toast-error::before{content:"!"}
+.toast.toast-success::before{content:"✓"}
+/* Carregador do app (o do mockup, decisão do dono): % e barra na cor do app (--app-ink, do
+   manifesto; a identidade do app vale dentro da área dele). Com prefers-reduced-motion o
+   brilho da barra e dos skeletons para; a % e os tempos seguem. */
+.app-loading .loader-mark{color:var(--app-ink,var(--color-accent))}
+.app-loading .loader-percentage{color:var(--color-text-strong)}
+.app-loading .loader-fill{background:var(--app-ink,var(--color-accent))}
+.app-loading .loader-track{background:var(--color-surface-hover)}
+.app-loading .loader-footer,.app-loading .loader-message{color:var(--color-text-secondary)}
+@media (prefers-reduced-motion:reduce){.loader-fill::after,.component-loading::after{display:none!important;animation:none!important}.skeleton-block,.skeleton-chart-bars i{animation:none!important}}
+/* Rail: grupo-pai "Administração" sem fundo quando um item filho está ativo (só um destaque). */
+.rail-item.active[data-rail-toggle]{background:transparent;box-shadow:none;color:var(--color-chrome-text);font-weight:700}
+.rail-submenu:not(.open){visibility:hidden}
+.rail-submenu.open{visibility:visible}
+/* Paleta (⌘K): botão fechar visível nos dois temas. */
+.hub-palette-close{color:var(--color-text-secondary)!important;background:transparent!important}
+.hub-palette-close:hover{color:var(--color-text-strong)!important;background:var(--color-surface-hover)!important}
+/* Menu do usuário: seções com respiro, idioma sem truncar, itens de 14 px. */
+.hub-user-popover{width:280px;padding:var(--space-8) 0}
+.hub-user-popover .hub-pref-form{padding:var(--space-8) var(--space-14);border-top:1px solid var(--color-border)}
+.hub-user-popover .hub-pref-form fieldset{border:0;margin:0;padding:0;min-width:0}
+.hub-user-popover .popover-section-label{display:block;margin:0 0 var(--space-6)}
+.hub-user-popover .hub-seg{display:flex;gap:var(--space-4)}
+.hub-user-popover .hub-seg-btn{flex:1;padding:4px 6px}
+.hub-user-popover > .popover-section-label,.hub-user-popover > .popover-row{padding:0 var(--space-14)}
+.hub-user-popover > .popover-row{margin-bottom:var(--space-6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hub-user-popover .hub-user-role{color:var(--color-text-muted);font-weight:400}
+.hub-theme-seg{display:inline-flex!important;gap:2px!important;padding:2px;border:1px solid var(--color-border-control);border-radius:10px;background:var(--color-surface-muted,var(--color-surface))}
+.hub-user-popover .hub-theme-btn{flex:none;display:inline-grid;place-items:center;width:36px;height:28px;min-height:28px;padding:0;border:0;border-radius:8px;background:transparent;color:var(--color-text-secondary)}
+.hub-theme-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hub-user-popover .hub-theme-btn:hover{background:var(--color-surface-hover);color:var(--color-text-strong)}
+.hub-user-popover .hub-theme-btn.active{background:var(--color-accent);color:var(--color-on-accent)}
+.hub-theme-btn:focus-visible{outline:2px solid var(--color-focus,var(--color-accent));outline-offset:1px}
+/* Rail expandido rola sozinho quando a altura não comporta tudo. */
+.rail-expanded .platform-rail{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.rail-expanded .rail-nav{flex:none}
+.hub-user-popover .hub-select{width:100%;height:32px;border:1px solid var(--color-border-control);border-radius:8px;background:var(--color-surface);color:var(--color-text-ink);padding:4px 8px;font-size:13px}
+.hub-user-popover .profile-option{display:flex;align-items:center;width:100%;min-height:34px;padding:var(--space-6) var(--space-14);font-size:14px;color:var(--color-text);border:0;background:none;text-align:left}
+.hub-user-popover .profile-option:hover{background:var(--color-surface-hover);color:var(--color-text-strong)}
+.hub-user-popover > .profile-option:first-of-type,.hub-user-popover form[action="/logout"]{border-top:1px solid var(--color-border)}
+.hub-user-popover form[action="/logout"]{margin-top:var(--space-4);padding-top:var(--space-4)}
+.hub-denied .acct-empty h1{margin:0;font-size:var(--font-size-3xl);font-weight:800;color:var(--color-text-strong)}
+.hub-confirm-overlay{z-index:var(--z-menu)}
+.hub-confirm-msg{margin:var(--space-4) 0 var(--space-16);line-height:1.5;color:var(--color-text)}
+/* Campo de arquivo do hub (hub-ux.js): botão + nome do arquivo, no idioma do usuário. */
+.hub-file{display:flex;align-items:center;gap:var(--space-10);position:relative;min-width:0}
+.hub-file-input{position:absolute;opacity:0;width:1px;height:1px;overflow:hidden;pointer-events:none}
+.hub-file-btn{display:inline-flex;align-items:center;cursor:pointer;white-space:nowrap}
+.hub-file:focus-within .hub-file-btn{outline:2px solid var(--color-focus);outline-offset:2px}
+.hub-file-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--color-text-secondary);font-size:13px}
+/* Variáveis › vínculos: grade aplicação × ambiente com checkboxes nativas. */
+.binding-grid{border:0;padding:0;margin:0 0 var(--space-12);min-width:0}
+.binding-grid legend{font-size:var(--font-size-xs);font-weight:600;color:var(--color-text);margin-bottom:var(--space-6);padding:0}
+.binding-table{width:100%;border-collapse:collapse;border:1px solid var(--color-border);border-radius:8px}
+.binding-table th,.binding-table td{padding:6px 10px;border-top:1px solid var(--color-divider);text-align:center;font-size:13px}
+.binding-table thead th{font-weight:600;color:var(--color-text-secondary);background:var(--color-surface-muted);border-top:0}
+.binding-table tbody th{text-align:left;font-weight:600;color:var(--color-text-strong);background:none;text-transform:none;letter-spacing:0}
+.binding-table input[type=checkbox]{width:16px;height:16px;margin:0}
+.check-row{display:flex;align-items:center;gap:var(--space-8);font-size:13px}
+.check-row input[type=checkbox]{width:16px;height:16px;margin:0;flex:none}
+.row-new td{background:color-mix(in srgb,var(--color-tint) 70%,transparent)!important}
+.panel-pad{padding:var(--space-14) var(--space-16) var(--space-6)}
+.panel-pad h3{margin:0;font-size:15px}
+.panel-copy{margin:0;padding:0 var(--space-16) var(--space-12);color:var(--color-text-secondary);font-size:13px;line-height:1.5}
+td.row-actions{text-align:right;white-space:nowrap}
+td.row-actions>*{display:inline-flex;vertical-align:middle;margin-left:var(--space-6)}
+td.row-actions form{margin:0 0 0 var(--space-6)}
+.hub-palette-option mark,.hub-search-group mark{background:var(--color-tint);color:inherit;font-weight:700;border-radius:2px;padding:0 1px}
+/* Catálogo: grade sem card órfão; versão discreta no rodapé do card. */
+.app-catalog-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))!important}
+.app-card .app-card-meta{display:flex;align-items:center;gap:var(--space-10);flex-wrap:wrap}
+.app-card .app-card-meta .open-link{margin-left:auto}
+.app-card .app-version{font-size:12px;color:var(--color-text-subtle);background:none;padding:0;border:0;font-weight:500}
+/* Funções: o painel aberto cresce com o conteúdo (nada cortado); fechado, sai do Tab. */
+.role-card.open .role-card-body{max-height:none;overflow:visible}
+.role-card:not(.open) .role-card-body{visibility:hidden}
+.content-panel>.ops-note,.content-panel>.ops-muted,.content-panel>form.conn-storage-form{margin:0;padding:var(--space-12) var(--space-16) 0}
+.content-panel>form.conn-storage-form{padding-bottom:var(--space-12);align-items:flex-end;justify-content:flex-start}
+/* `hidden` sempre esconde (campos condicionais dos formulários com display próprio). */
+[hidden]{display:none!important}
+/* Modais: nunca mais altos que a tela; corpo rola e o rodapé (Cancelar/Salvar) fica visível. */
+.overlay .modal{max-height:calc(100dvh - 36px);overflow-y:auto;overscroll-behavior:contain}
+.overlay .modal .modal-actions{position:sticky;bottom:calc(-1 * var(--space-24));margin:19px calc(-1 * var(--space-24)) calc(-1 * var(--space-24));padding:var(--space-12) var(--space-24) var(--space-16);background:var(--color-surface-raised);border-top:1px solid var(--color-border);border-radius:0 0 12px 12px;z-index:1}
+/* Menu "⋯" de linha (details/summary): ações secundárias e destrutivas fora da linha. */
+.hub-row-menu{position:relative;display:inline-block;vertical-align:middle}
+.hub-row-menu>summary{list-style:none;display:inline-flex;align-items:center;justify-content:center;min-width:30px;min-height:30px;border:1px solid var(--color-border);border-radius:8px;cursor:pointer;color:var(--color-text-secondary);font-weight:700;background:var(--color-surface)}
+.hub-row-menu>summary::-webkit-details-marker{display:none}
+.hub-row-menu>summary:hover,.hub-row-menu[open]>summary{background:var(--color-surface-hover);color:var(--color-text-strong)}
+.hub-row-menu-list{position:absolute;right:0;top:calc(100% + 4px);z-index:var(--z-popover);min-width:190px;display:grid;gap:2px;padding:4px;background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:8px;box-shadow:var(--shadow-popover);text-align:left}
+.hub-row-menu-list button,.hub-row-menu-list a{display:flex;align-items:center;width:100%;min-height:32px;padding:6px 10px;border:0;border-radius:6px;background:none;color:var(--color-text);font-size:13px;text-align:left;text-decoration:none;cursor:pointer;white-space:nowrap}
+.hub-row-menu-list button:hover:not(:disabled),.hub-row-menu-list a:hover{background:var(--color-surface-hover);color:var(--color-text-strong)}
+.hub-row-menu-list button.danger{color:var(--color-danger)}
+.hub-row-menu-list button:disabled{color:var(--color-text-secondary);cursor:not-allowed}
+.hub-row-menu-list form{margin:0}
+.user-actions{white-space:nowrap}
+.pw-row{display:flex;gap:var(--space-6);align-items:center}
+.pw-row input{flex:1;min-width:0;font-family:var(--font-mono)}
+.modal .role-permissions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px;border:0;padding:0;margin:0}
+.modal .role-permission{display:flex;align-items:center;gap:8px;padding:2px 0;border:0;min-height:0;font-size:13px}
+.modal .role-permission input{width:16px;height:16px;margin:0}
+.env-icon-placeholder{display:inline-block;width:28px;height:28px}
+.env-actions{display:inline-flex;gap:4px;align-items:center;justify-content:flex-end}
+/* Logs: rótulos em caixa de frase, usuário na cor de destaque, primeira linha inteira. */
+.log-field{text-transform:none!important;letter-spacing:0!important;font-size:12px!important;font-weight:600!important;color:var(--color-text-secondary)!important}
+.log-user{color:var(--am-accent-soft)!important}
+.log-terminal{padding-top:var(--space-10)!important;scroll-padding-top:var(--space-10)}
+.log-terminal code.log-msg{background:none;padding:0;font-size:inherit;color:inherit}
+.log-toolbar [data-log-clear]{display:inline-flex;align-items:center;gap:6px}
+.log-toolbar [data-log-clear] svg{width:14px;height:14px}
+.audit-published{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.info-tip{display:inline-block;vertical-align:middle;position:relative}
+/* Cabeçalho de seção com ações: texto à esquerda, ações alinhadas à direita da tabela. */
+.section-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:var(--space-16);margin:var(--space-24) 0 var(--space-12)}
+.section-heading p{margin:var(--space-4) 0 0;max-width:820px}
+.section-heading .admin-actions{display:flex;flex-wrap:wrap;gap:var(--space-8);justify-content:flex-end;align-items:center;margin:0}
+@media (max-width:760px){.section-heading{grid-template-columns:1fr}.section-heading .admin-actions{justify-content:flex-start}}
+/* Configurações: dois cartões lado a lado (sem vazios); grupos de checkbox rotulados. */
+.settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:var(--space-18);align-items:start}
+.settings-grid .panel{margin:0}
+.check-group{border:1px solid var(--color-border);border-radius:8px;padding:var(--space-8) var(--space-12);margin:var(--space-6) 0 0;display:flex;flex-wrap:wrap;gap:var(--space-6) var(--space-16)}
+.check-group legend{font-size:12px;font-weight:600;color:var(--color-text);padding:0 4px}
+/* Foco visível em checkbox/radio e nos campos dos apps (o CSS do app não remove). */
+input[type=checkbox]:focus-visible,input[type=radio]:focus-visible{outline:2px solid var(--color-focus)!important;outline-offset:2px!important}
+#app-root :is(input,select,textarea):focus-visible{outline:2px solid var(--color-focus)!important;outline-offset:1px!important}
+/* Início › Personalizar: dois grupos (adicionar/restaurar | cancelar/salvar). */
+.hub-home-editor-row{display:flex;justify-content:space-between;align-items:center;gap:var(--space-12);flex-wrap:wrap}
+.hub-home-editor-group{display:flex;align-items:center;gap:var(--space-8);flex-wrap:wrap}
+.hub-home-add{display:inline-flex;gap:var(--space-6);align-items:center}
+.hub-home-role-menu{padding:var(--space-10);gap:var(--space-6);min-width:240px}
+.hub-home-role-menu label{font-size:12px;font-weight:600;color:var(--color-text)}
+.hub-home-role-menu button{justify-content:center;background:var(--color-tint);color:var(--color-accent);font-weight:600}
+/* Início: link da Inbox legível; progresso dos primeiros passos na cor da marca. */
+.hub-widget .open-link{font-size:13px;font-weight:600}
+.hub-progress>span,.hub-steps-bar>span,.hub-checklist-progress>span{background:var(--color-accent-shape)!important}
+.hub-progress-bar{background:var(--color-accent-shape)}
+.filter-row{display:flex;flex-wrap:wrap;gap:var(--space-8);margin:0 0 var(--space-16)}
+/* Títulos de cartão numa escala só (15 px) em todas as telas do hub. */
+.page-container .panel>h2,.page-container .panel>header>h2,.page-container .hub-widget-head h2{font-size:15px;font-weight:800;letter-spacing:-.02em;margin:0 0 var(--space-12);color:var(--color-text-strong)}
+.hub-bars-axis{display:flex;justify-content:space-between;margin-top:6px;font-size:12px;color:var(--color-text-secondary)}
+.hub-bar[data-h="0"]{opacity:.35}
+#app-root :is(.hub-filter,.hub-filters,.table-toolbar) :is(input:not([type=checkbox],[type=radio]),select){border-color:var(--color-border-control)!important}
+/* Busca: "ver todos" por app e grupo interno de administração por último, discreto. */
+.hub-search-more{margin:var(--space-8) 0 0;font-size:13px}
+.hub-search-back{margin:0 0 var(--space-12);font-size:13px}
+.hub-search-partial{margin:0 0 var(--space-12)}
+.hub-search-admin{background:var(--color-surface-muted,var(--color-surface));border-style:dashed}
+.hub-search-admin h2{color:var(--color-text-secondary)}
+/* Ações destrutivas: vermelho também no hover dos menus ⋯ e nos ícones de linha. */
+.hub-row-menu-list button.danger:hover:not(:disabled),.hub-row-menu-list a.danger:hover{background:var(--color-danger-soft);color:var(--color-danger)}
+.hub-row-menu-list a.danger{color:var(--color-danger)}
+.row-action.danger:hover{color:var(--color-danger)}
+/* Auditoria: filtros à esquerda, estado da proteção + ⓘ na mesma linha à direita. */
+.audit-toolbar{display:flex;align-items:center;justify-content:space-between;gap:var(--space-12);flex-wrap:wrap;margin:0 0 var(--space-12)}
+.audit-toolbar .filter-chips{margin:0}
+.audit-toolbar .audit-published{flex-wrap:nowrap;white-space:nowrap;margin:0}
+/* Logs: altura = número inteiro de linhas (23 px) + respiro inferior; rolado até o fim,
+   a 1ª linha visível começa inteira (antes ficava cortada no topo). */
+.log-terminal{line-height:23px;height:calc(14px + 18 * 23px);padding-top:0!important;padding-bottom:14px;scroll-padding-top:0}
+.log-terminal .log-line{min-height:23px;padding:0}
+.log-terminal{overflow-x:hidden}
+/* Tokens de API: painéis empilhados com respiro (o card de clientes de IA encostava). */
+[data-admin-tokens]+.token-secret,[data-admin-tokens]~#oauth,#oauth~.oauth-grants{margin-top:var(--space-16)}
+.oauth-grants{margin-bottom:var(--space-16)}
+/* Conexões › Provisionar armazenamento: botão alinhado à base dos selects. */
+.content-panel>form.conn-storage-form{display:flex;flex-wrap:wrap;gap:var(--space-12);align-items:flex-end}
+.conn-storage-form .form-field{margin:0}
+.conn-storage-form .primary-button{height:32px;min-height:32px;margin:0;align-self:flex-end}
+/* Variáveis › vínculos: cor do app no claro; no escuro, tokens da marca (pastéis gritavam). */
+.env-chip[style]{background:var(--chip-bg);color:var(--chip-ink)}
+:root[data-theme="dark"] .env-chip[style]{background:var(--color-tint);color:var(--color-accent);box-shadow:inset 0 0 0 1px var(--color-tint-border)}
+@media (prefers-color-scheme:dark){:root[data-theme="auto"] .env-chip[style]{background:var(--color-tint);color:var(--color-accent);box-shadow:inset 0 0 0 1px var(--color-tint-border)}}
+/* Seletor "de mentira" dos apps (período/ordenação): mesmo chevron dos selects do hub,
+   desenhado em CSS (sem glifo colado ao texto). */
+.hub-picker{display:inline-flex;align-items:center;gap:8px;min-height:30px;padding:4px 10px;border:1px solid var(--color-border-control);border-radius:8px;background:var(--color-surface);color:var(--color-text-ink);font:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
+.hub-picker::after{content:"";width:6px;height:6px;margin:-3px 2px 0 0;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);opacity:.7}
+.hub-picker:hover{border-color:var(--color-border-strong);background:var(--color-surface-hover)}
+/* Sidebar dos apps: um só componente visual (itens 13 px, rótulo de seção igual ao do
+   rail, nome do app em até 2 linhas com reticências + dica com o nome inteiro). */
+#workspace .app-sidebar .nav-item{height:auto;min-height:32px;font-size:13px!important;line-height:1.25;padding:6px 10px!important;gap:10px;margin:0}
+#workspace .app-sidebar .nav-item svg{width:16px;height:16px;flex:none}
+#workspace .app-sidebar .sidebar-caption{font-size:11px!important;font-weight:600!important;letter-spacing:.05em!important;text-transform:uppercase;margin:0 10px 6px!important;padding:0!important}
+#workspace .app-sidebar .sidebar-app-row>span:last-child{min-width:0;flex:1}
+#workspace .app-sidebar .sidebar-app .app-icon{flex:none}
+#workspace .app-sidebar .sidebar-app strong{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;font-size:13px;line-height:1.25;white-space:normal;overflow:hidden;overflow-wrap:break-word}
+/* Escuro: botão primário índigo saturado com texto branco (o lavanda claro pesava ao lado
+   dos cartões grafite). Branco sobre #3B55E6 = 5,8:1. Links e destaques seguem o accent.
+   Só nas telas do hub: dentro dos apps vale a identidade do app (CONTRATO-APP §29). */
+:root[data-theme="dark"] body:not(.in-app) :is(.primary-button,.auth-submit){background:#3B55E6;border-color:#3B55E6;color:#fff!important}
+:root[data-theme="dark"] body:not(.in-app) :is(.primary-button,.auth-submit):hover{background:#3048D0;border-color:#3048D0;color:#fff!important}
+@media (prefers-color-scheme:dark){
+  :root[data-theme="auto"] body:not(.in-app) :is(.primary-button,.auth-submit){background:#3B55E6;border-color:#3B55E6;color:#fff!important}
+  :root[data-theme="auto"] body:not(.in-app) :is(.primary-button,.auth-submit):hover{background:#3048D0;border-color:#3048D0;color:#fff!important}
+}
+/* Catálogo: grade que se ajusta (4 apps não deixam um card órfão numa linha). */
+.app-grid{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))!important}
+/* Variáveis: o olho só existe nas secretas, mas a coluna de ações fica alinhada (largura
+   fixa e centro vertical) em todas as linhas. */
+.env-actions{min-width:64px;vertical-align:middle}
+.env-table td{vertical-align:middle}
+/* Rail dentro dos apps (botão do header): o workspace fixo do app começa depois do rail
+   expandido/recolhido; oculto = largura toda (padrão dentro dos apps). */
+.rail-toggle{flex:none;margin-right:var(--space-4)}
+.rail-toggle svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.rail-hidden .rail-toggle{color:var(--color-chrome-icon)}
+body.in-app .workspace{transition:left .28s var(--ease-emphasized)}
+body.in-app.rail-expanded .workspace{left:204px}
+body.in-app.rail-collapsed .workspace{left:56px}
+@media(max-width:640px){body.in-app.rail-expanded .workspace{left:190px}body.in-app.rail-collapsed .workspace{left:48px}}
+@media (prefers-reduced-motion:reduce){body.in-app .workspace{transition:none}}
+/* Rail recolhido: as dicas (à direita do ícone) não podem ser cortadas pela rolagem. */
+.rail-collapsed .platform-rail{overflow:visible}
+/* Identidade dos apps (CONTRATO-APP §29): texto e fonte herdados do body são recalculados na
+   área do app, para seguirem os `--app-*` que o app define (no hub, os mesmos valores). */
+#app-root,[data-hub-layer]{font-family:var(--font-body);color:var(--color-text)}
+/* Rail recolhido: só os ícones; cada seção administrativa vira um marcador (ícone) e os itens
+   dela abrem num painel flutuante ao passar o mouse ou focar (teclado) — o rail cabe a 1280×720. */
+.rail-collapsed .rail-group-name,.rail-collapsed .rail-group-count,.rail-collapsed .rail-group-chevron{display:none!important}
+.rail-collapsed .rail-group{position:relative}
+.rail-collapsed .rail-group-label{width:40px;height:34px;border-radius:var(--radius-md);color:var(--color-chrome-icon);cursor:pointer}
+.rail-collapsed .rail-group-label .rail-tooltip{display:none!important}
+.rail-collapsed .rail-group:has(.rail-subitem.active)>.rail-group-label{background:var(--color-chrome-active-bg);color:var(--color-chrome-text);box-shadow:inset 3px 0 0 var(--color-chrome-active-bar)}
+.rail-collapsed .rail-group-items{display:none!important;position:absolute;left:100%;top:-6px;z-index:5;min-width:210px;padding:6px;border-left:12px solid transparent;background:var(--color-chrome-raised);background-clip:padding-box;border-radius:0 var(--radius-xl) var(--radius-xl) 0;box-shadow:var(--shadow-popover)}
+.rail-collapsed .rail-group:hover>.rail-group-items,.rail-collapsed .rail-group:focus-within>.rail-group-items{display:grid!important;gap:2px}
+.rail-collapsed .rail-group-items::before{content:attr(data-rail-title);display:block;padding:4px 10px 6px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--color-chrome-text-2)}
+.rail-collapsed .rail-group-items .rail-subitem{width:100%;height:32px;display:flex;justify-content:flex-start;gap:var(--space-10);padding:0 var(--space-10)}
+.rail-collapsed .rail-group-items .rail-name{position:static;display:inline;max-width:none;opacity:1;transform:none;font-size:var(--font-size-sm)}
+.rail-collapsed .rail-group-items .rail-tooltip{display:none!important}
+.rail-collapsed .rail-group+.rail-group{border-top:1px solid color-mix(in srgb,var(--color-chrome-text) 16%,transparent);margin-top:4px;padding-top:4px}
+
+/* ---- Tabela responsiva → cartões (`.hub-table-cards`; guia em docs/DESIGN-TOKENS.md) ----
+   ≥1024px: tabela normal. 768–1023px: tabela sem as colunas `.hub-col-secondary`.
+   <768px: cada linha vira um cartão: célula `.hub-card-title` (avatar + nome + e-mail) e
+   `.hub-card-actions` (menu "⋯") na primeira linha; as demais células abaixo, com o rótulo
+   vindo de `data-label`. Controles `.hub-hide-cards` somem e `.hub-cards-only` aparecem só
+   nos cartões (ex.: "Editar" dentro do menu). O painel usa `.hub-cards-panel`. */
+.hub-table-cards .hub-avatar,.hub-table-cards .hub-cards-only{display:none}
+.hub-table-cards .hub-truncate{display:block}
+@media(max-width:1023px){
+  .hub-table-cards .hub-col-secondary{display:none}
+  .hub-cards-panel .table-toolbar{min-width:0}
+  .hub-cards-panel .data-table.hub-table-cards{min-width:0}
+}
+@media(max-width:767px){
+  .hub-cards-panel{overflow:visible!important;background:transparent;border:0;box-shadow:none}
+  .hub-cards-panel .table-toolbar{flex-wrap:wrap;padding:0 0 var(--space-12);border-bottom:0}
+  .hub-cards-panel .table-toolbar .table-search{flex:1 1 100%;max-width:none;min-height:40px;font-size:16px}
+  .hub-table-cards,.hub-table-cards tbody{display:block;width:100%;min-width:0}
+  .hub-table-cards thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .hub-table-cards tbody{display:grid;gap:var(--space-8)}
+  .hub-table-cards tr{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:var(--space-6) var(--space-8);padding:var(--space-12);background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-xl);min-width:0}
+  .hub-table-cards tr[hidden]{display:none}
+  .hub-table-cards td{display:flex;align-items:baseline;gap:var(--space-8);grid-column:1/-1;padding:0;border:0;min-width:0;font-size:13px;overflow-wrap:anywhere}
+  .hub-table-cards td.hub-col-secondary{display:flex;font-size:12px;color:var(--color-text-secondary)}
+  .hub-table-cards td[data-label]:not(.hub-card-title):not(.hub-card-actions)::before{content:attr(data-label);flex:0 0 96px;font-size:12px;color:var(--color-text-secondary)}
+  .hub-table-cards td.hub-card-title{grid-column:1;grid-row:1;display:block;padding-bottom:var(--space-4)}
+  .hub-table-cards td.hub-card-actions{grid-column:2;grid-row:1;display:flex;justify-content:flex-end}
+  .hub-table-cards .table-primary{display:flex;align-items:center;gap:var(--space-10);min-width:0}
+  .hub-table-cards .hub-card-id{min-width:0;display:block}
+  .hub-table-cards .hub-truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+  .hub-table-cards .hub-avatar{display:inline-grid;place-items:center;flex:0 0 36px;width:36px;height:36px;border-radius:50%;background:var(--color-tint);color:var(--color-accent);box-shadow:inset 0 0 0 1px var(--color-tint-border);font-size:13px;font-weight:700}
+  .hub-table-cards .hub-hide-cards{display:none}
+  .hub-table-cards .hub-cards-only{display:flex}
+  .hub-table-cards .hub-row-menu>summary{min-width:40px;min-height:40px;font-size:18px}
+  .hub-table-cards .hub-row-menu-list button,.hub-table-cards .hub-row-menu-list a{min-height:40px}
+  /* Ação principal do cabeçalho da página ocupa a largura toda. */
+  .page-head .page-actions{width:100%}
+  .page-head .page-actions>.primary-button{flex:1 1 100%;justify-content:center;min-height:40px}
+}
+/* Menu "⋯" que abriria fora da tela: hub-ux.js vira para cima / alinha à esquerda. */
+.hub-row-menu.hub-row-menu--up .hub-row-menu-list{top:auto;bottom:calc(100% + 4px)}
+.hub-row-menu.hub-row-menu--start .hub-row-menu-list{right:auto;left:0}
+
+/* ---- Modal como folha de tela cheia no celular (`.modal.hub-sheet`) ---- */
+@media(max-width:767px){
+  .overlay:has(>.modal.hub-sheet){padding:0;place-items:stretch}
+  .overlay .modal.hub-sheet{width:100%;max-width:none;height:100dvh;max-height:100dvh;border-radius:0;display:flex;flex-direction:column;padding:var(--space-16) var(--space-16) 0}
+  .overlay .modal.hub-sheet .modal-actions{position:sticky;bottom:0;margin:auto calc(-1 * var(--space-16)) 0;padding:var(--space-12) var(--space-16) calc(var(--space-12) + env(safe-area-inset-bottom));border-radius:0}
+  .overlay .modal.hub-sheet .modal-actions>*{flex:1;min-height:44px}
+  .modal.hub-sheet :is(input:not([type=checkbox],[type=radio],[type=hidden]),select){min-height:44px;height:44px;font-size:16px}
+  .modal.hub-sheet .modal-close{min-width:40px;min-height:40px}
+  .modal.hub-sheet .role-permissions{grid-template-columns:1fr}
+  .modal.hub-sheet .role-permission{min-height:40px}
+  .modal.hub-sheet .pw-row{flex-wrap:wrap}
+  .modal.hub-sheet .pw-row input{flex:1 1 100%}
+  .modal.hub-sheet .pw-row button{flex:1;min-height:40px}
+}
+
+/* ---- Shell em tela estreita (< 1024px, ou toque em paisagem com altura < 600px): sem rail
+   e sem gaveta lateral; menu ☰ no canto direito do header. A mesma consulta está em
+   hub-ux.js (NARROW_Q) — mude nos dois. ----
+   Marca à esquerda; à direita busca (ícone → paleta em tela cheia), notificações e ☰ (o
+   avatar vai para dentro do menu). O ☰ abre o próprio `#hub-rail` como painel de cima para
+   baixo sob o header (`body.hub-drawer-open`, hub-ux.js) e vira ✕. Itens `.hub-drawer-only`
+   (usuário e conta) só aparecem no painel. */
+.hub-drawer-toggle,.hub-search-mobile,.hub-drawer-only{display:none}
+@media(max-width:1023px),(pointer:coarse) and (max-height:600px){
+  .platform-header{gap:var(--space-4);flex-wrap:nowrap;min-width:0}
+  .platform-header .rail-toggle{display:none!important}
+  .platform-header .brand{min-width:0;flex:1 1 auto;overflow:hidden}
+  .platform-header .brand-text{min-width:0}
+  .platform-header .brand-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .platform-header .brand-subtitle{display:none}
+  .platform-header button.header-search.hub-search-trigger{display:none!important}
+  .platform-header .header-actions{flex:none;gap:var(--space-2);margin-left:auto;order:1}
+  .platform-header .hub-user-menu,.platform-header .hub-dev-user{display:none!important}
+  .hub-drawer-toggle{order:2;display:inline-flex;align-items:center;justify-content:center;flex:none;width:44px;height:44px;margin-right:calc(-1 * var(--space-8));padding:0;border:0;background:none;color:inherit;border-radius:var(--radius-lg)}
+  .hub-drawer-toggle svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;overflow:visible}
+  .hub-drawer-toggle svg path{transition:transform .2s ease,opacity .15s ease}
+  .hub-drawer-toggle svg path:nth-child(1){transform-origin:12px 5px}
+  .hub-drawer-toggle svg path:nth-child(3){transform-origin:12px 19px}
+  .hub-drawer-toggle[aria-expanded="true"] svg path:nth-child(1){transform:translateY(7px) rotate(45deg)}
+  .hub-drawer-toggle[aria-expanded="true"] svg path:nth-child(2){opacity:0}
+  .hub-drawer-toggle[aria-expanded="true"] svg path:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+  .hub-search-mobile{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;border:0;background:none;color:inherit}
+  .hub-search-mobile svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+  .platform-header .hub-notif-menu>summary{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+  /* Rail fora da tela até o painel abrir. */
+  body:not(.hub-drawer-open) .platform-rail{display:none!important}
+  body .app-root{margin-left:0!important}
+  body.in-app .workspace{left:0!important}
+  body.hub-drawer-open{overflow:hidden}
+  body.hub-drawer-open .platform-header{z-index:calc(var(--z-overlay) + 2)}
+  body.hub-drawer-open .platform-rail{display:flex!important;position:fixed;top:var(--hub-header-h,41px)!important;left:0;right:0;bottom:auto;width:100%!important;max-height:calc(100dvh - var(--hub-header-h,41px));z-index:calc(var(--z-overlay) + 1);visibility:visible!important;opacity:1!important;transform:none!important;pointer-events:auto!important;align-items:stretch;padding:var(--space-12) var(--space-16) var(--space-16);overflow-y:auto;overscroll-behavior:contain;border-right:0;box-shadow:var(--shadow-popover);animation:hub-panel-down .2s ease-out}
+  body.hub-drawer-open .platform-rail .rail-item,body.hub-drawer-open .platform-rail .rail-subitem{min-height:44px;width:100%}
+  body.hub-drawer-open .platform-rail .rail-group-label{min-height:44px}
+  body.hub-drawer-open .platform-rail .rail-tooltip{display:none!important}
+  body.hub-drawer-open .hub-drawer-only{display:block}
+  .hub-drawer-backdrop{position:fixed;inset:var(--hub-header-h,41px) 0 0;z-index:var(--z-overlay);background:color-mix(in srgb,var(--c-navy-13) 45%,transparent)}
+  .hub-drawer-user{display:flex!important;align-items:center;gap:var(--space-10);padding:var(--space-4) var(--space-6) var(--space-12);margin-bottom:var(--space-8);border-bottom:1px solid color-mix(in srgb,var(--color-chrome-text) 16%,transparent);color:var(--color-chrome-text)}
+  .hub-drawer-user .avatar{flex:none;width:36px;height:36px}
+  .hub-drawer-who{display:grid;min-width:0}
+  .hub-drawer-who strong,.hub-drawer-who small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hub-drawer-who small{color:var(--color-chrome-text-2);font-size:12px}
+  .hub-drawer-account{margin-top:var(--space-12);padding-top:var(--space-8);border-top:1px solid color-mix(in srgb,var(--color-chrome-text) 16%,transparent)}
+  .hub-drawer-account .rail-subitem{display:flex;align-items:center;padding:0 var(--space-10);color:var(--color-chrome-text);text-decoration:none;border-radius:var(--radius-md)}
+  .hub-drawer-account .rail-name{position:static;opacity:1;transform:none;max-width:none}
+  .hub-drawer-account form{margin:var(--space-6) 0}
+  .hub-drawer-account .hub-seg-btn{min-width:44px;min-height:40px}
+  .hub-drawer-account .hub-select{width:100%;min-height:44px;font-size:16px}
+  .hub-drawer-logout{width:100%;border:0;background:none;font:inherit;text-align:left;cursor:pointer}
+  /* Dentro do app: barra "☰ App · Seção" fixa sob o header; abre as seções do app como
+     painel de cima para baixo a partir dela (`.workspace.menu-open`, hub-kit.js). */
+  body.in-app .workspace-content{width:100%;max-width:100%;overflow-x:hidden;padding-top:calc(44px + var(--space-16))!important}
+  body.in-app .mobile-menu-button{position:fixed;top:var(--hub-header-h,41px);left:0;right:0;z-index:calc(var(--z-overlay) + 2);display:flex;align-items:center;gap:var(--space-8);width:100%;min-height:44px;height:44px;margin:0;padding:0 var(--space-16);background:var(--color-surface);border:0;border-bottom:1px solid var(--color-border);color:var(--color-text-strong);font-size:14px;font-weight:600;text-align:left}
+  body.in-app .mobile-menu-button svg{width:18px;flex:none}
+  body.in-app .mobile-menu-button .hub-appbar-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  body.in-app .mobile-menu-button[aria-expanded="true"]{background:var(--color-surface-hover)}
+  body.in-app .app-sidebar{position:fixed!important;z-index:calc(var(--z-overlay) + 1);left:0!important;right:0;top:calc(var(--hub-header-h,41px) + 44px)!important;bottom:auto;width:100%!important;height:auto!important;max-height:calc(100dvh - var(--hub-header-h,41px) - 44px)!important;transform:none!important;visibility:visible;overflow-y:auto;overscroll-behavior:contain;box-shadow:var(--shadow-popover);display:none!important}
+  body.in-app .workspace.menu-open .app-sidebar{display:flex!important;animation:hub-panel-down .2s ease-out}
+  body.in-app .mobile-backdrop{position:fixed;inset:calc(var(--hub-header-h,41px) + 44px) 0 0!important;left:0!important;z-index:var(--z-overlay);background:color-mix(in srgb,var(--c-navy-13) 45%,transparent);display:none}
+  body.in-app .workspace.menu-open .mobile-backdrop{display:block}
+  body.in-app .workspace>.sidebar-skeleton{display:none!important}
+/* Puxar para atualizar (navegador do celular): quem rola é o DOCUMENTO, nunca um contêiner
+     interno; trava de rolagem só com painel aberto (body.hub-drawer-open / .menu-open). */
+  html,body{overscroll-behavior-y:auto}
+  body.in-app:not(.hub-drawer-open){overflow:visible}
+  body.in-app .workspace{position:static;display:block;overflow:visible;min-height:0;height:auto}
+  body.in-app .workspace-content{overflow:visible;min-height:calc(100dvh - var(--hub-header-h,41px))}
+  body.in-app:has(.workspace.menu-open){overflow:hidden}
+}
+/* Paleta (⌘K) em tela cheia no celular. */
+@media(max-width:767px){.hub-palette-backdrop{padding:0}.hub-palette{width:100%;height:100dvh;max-height:none;border-radius:0;border:0}}
+@keyframes hub-panel-down{from{transform:translateY(-12px);opacity:0}to{transform:none;opacity:1}}
+@media(max-width:1023px) and (prefers-reduced-motion:reduce),(pointer:coarse) and (max-height:600px) and (prefers-reduced-motion:reduce){body.hub-drawer-open .platform-rail,body.in-app .workspace.menu-open .app-sidebar{animation:none}.hub-drawer-toggle svg path{transition:none}}
+/* ---- Filtros por coluna (`data-hub-colfilter`, hub-ux.js; guia em docs/DESIGN-TOKENS.md) ---- */
+.hub-cf-th{display:inline-flex;align-items:center;gap:4px}
+.hub-cf-btn{display:inline-grid;place-items:center;width:24px;height:24px;min-width:24px;min-height:24px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--color-text-muted);cursor:pointer}
+.hub-cf-btn svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.hub-cf-btn:hover{background:var(--color-surface-hover);color:var(--color-text-strong)}
+.hub-cf-btn.on{color:var(--color-accent)}
+.hub-cf-btn.on svg{fill:currentColor}
+.hub-cf-btn:focus-visible,.hub-cf-chip-x:focus-visible{outline:2px solid var(--color-focus,var(--color-accent));outline-offset:1px}
+.hub-cf-top{display:none;align-items:center;gap:var(--space-8);flex-wrap:wrap;padding:0 var(--space-12)}
+.hub-cf-top.has-active{display:flex}
+.hub-cf-bar{display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap;padding:var(--space-8) 0;font-size:var(--font-size-sm);color:var(--color-text);min-width:0}
+.hub-cf-bar-label{color:var(--color-text-muted);font-weight:600}
+.hub-cf-chip{display:inline-flex;align-items:center;gap:4px;max-width:100%;padding:2px 4px 2px 10px;border:1px solid var(--color-border-strong);border-radius:14px;background:var(--color-surface);font-size:var(--font-size-sm);color:var(--color-text)}
+.hub-cf-chip>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hub-cf-chip-x{display:inline-grid;place-items:center;width:24px;height:24px;min-height:24px;border:0;border-radius:50%;background:transparent;color:var(--color-text-secondary);cursor:pointer;font-size:12px}
+.hub-cf-chip-x:hover{background:var(--color-surface-hover)}
+.hub-cf-clear-all{border:0;background:transparent;color:var(--color-accent);font:inherit;font-size:var(--font-size-sm);font-weight:600;cursor:pointer;min-height:28px;padding:0 6px}
+.hub-cf-empty{padding:var(--space-20);text-align:center;color:var(--color-text-muted);font-size:var(--font-size-sm)}
+.hub-cf-mobile{display:none}
+.hub-cf-mobile svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.hub-cf-pop{position:absolute;z-index:60;width:260px;max-height:min(420px,70vh);overflow:auto;display:grid;gap:var(--space-8);padding:var(--space-10) var(--space-12);background:var(--color-surface);color:var(--color-text);border:1px solid var(--color-border);border-radius:var(--radius-lg);box-shadow:0 10px 30px rgba(0,0,0,.18);font-size:var(--font-size-sm)}
+.hub-cf-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-8)}
+.hub-cf-head strong{color:var(--color-text-strong)}
+.hub-cf-close{display:inline-grid;place-items:center;width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:var(--color-text-secondary);cursor:pointer}
+.hub-cf-close:hover{background:var(--color-surface-hover)}
+.hub-cf-sorts{display:grid;gap:2px;border-bottom:1px solid var(--color-border);padding-bottom:var(--space-6)}
+.hub-cf-sort,.hub-cf-colpick{text-align:left;border:0;background:transparent;color:var(--color-text);font:inherit;font-size:var(--font-size-sm);min-height:28px;padding:4px 6px;border-radius:6px;cursor:pointer}
+.hub-cf-sort:hover,.hub-cf-colpick:hover{background:var(--color-surface-hover)}
+.hub-cf-sort.active{color:var(--color-accent);font-weight:600}
+.hub-cf-colpick.on{font-weight:700;color:var(--color-accent)}
+.hub-cf-search{width:100%;min-height:30px;border:1px solid var(--color-border-control);border-radius:6px;padding:4px 8px;background:var(--color-surface);color:var(--color-text);font:inherit;font-size:var(--font-size-sm)}
+.hub-cf-list{display:grid;gap:2px;max-height:220px;overflow:auto}
+.hub-cf-opt{display:flex;align-items:center;gap:8px;min-height:28px;padding:2px 4px;border-radius:6px;cursor:pointer}
+.hub-cf-opt[hidden]{display:none}
+.hub-cf-opt:hover{background:var(--color-surface-hover)}
+.hub-cf-all{font-weight:600;border-bottom:1px solid var(--color-border);border-radius:0;padding-bottom:6px}
+.hub-cf-dates{display:grid;gap:var(--space-6)}
+.hub-cf-date{display:grid;gap:2px;font-size:var(--font-size-xs);color:var(--color-text-muted)}
+.hub-cf-date input{min-height:30px;border:1px solid var(--color-border-control);border-radius:6px;padding:2px 6px;background:var(--color-surface);color:var(--color-text);font:inherit;font-size:var(--font-size-sm)}
+.hub-cf-actions{display:flex;justify-content:flex-end;gap:var(--space-8);border-top:1px solid var(--color-border);padding-top:var(--space-8)}
+.hub-cf-backdrop{position:fixed;inset:0;z-index:59;background:rgba(10,20,40,.4)}
+.hub-cf-sheet{position:fixed;left:0;right:0;bottom:0;top:auto;width:auto;max-height:80vh;border-radius:16px 16px 0 0;padding:var(--space-12) var(--space-16) calc(var(--space-16) + env(safe-area-inset-bottom))}
+.hub-cf-sheet .hub-cf-opt,.hub-cf-sheet .hub-cf-sort,.hub-cf-sheet .hub-cf-colpick{min-height:44px;font-size:16px}
+.hub-cf-sheet .hub-cf-actions button{min-height:44px;flex:1}
+@media(max-width:767px){
+  .hub-cf-top{display:flex;padding:0 0 var(--space-8)}
+  .hub-cf-mobile{display:inline-flex;align-items:center;gap:6px;min-height:40px}
+}
+/* Botão principal com menu ("Nova conexão ▾"): <details class="hub-row-menu hub-new-menu">. */
+.hub-new-menu>summary.primary-button{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border:0;border-radius:var(--radius-md,8px);background:var(--color-accent);color:var(--color-on-accent);font-weight:600}
+.hub-new-menu>summary.primary-button:hover,.hub-new-menu[open]>summary.primary-button{background:var(--color-accent-hover,var(--color-accent));color:var(--color-on-accent)}
+.hub-new-menu>summary svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.hub-new-menu .hub-row-menu-list{min-width:240px}
+.hub-new-menu .hub-row-menu-list button,.hub-new-menu .hub-row-menu-list a{gap:8px;text-decoration:none}
+.hub-new-menu .hub-row-menu-list svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;color:var(--color-text-secondary)}
+.hub-menu-sep{border:0;border-top:1px solid var(--color-border);margin:4px 2px}
+/* Onda 13 — recursos do aparelho (hub-device.js): câmera de leitura/foto em tela cheia,
+   flash de retorno e fila offline. Camadas do hub, fora do CSS do app. */
+.hub-camera{position:fixed;inset:0;z-index:90;display:grid;grid-template-rows:auto 1fr auto auto auto;background:#000;color:#fff;font-family:var(--font-ui)}
+.hub-camera-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px}
+.hub-camera-head h2{margin:0;font-size:18px;font-weight:700;color:#fff}
+.hub-camera-close,.hub-camera-torch,.hub-camera-shot{min-height:48px;min-width:48px;padding:0 18px;border-radius:24px;border:2px solid #fff;background:transparent;color:#fff;font:700 16px var(--font-ui);cursor:pointer}
+.hub-camera-close:focus-visible,.hub-camera-torch:focus-visible,.hub-camera-shot:focus-visible{outline:3px solid #ffc20e;outline-offset:2px}
+.hub-camera-torch[aria-pressed="true"]{background:#ffc20e;border-color:#ffc20e;color:#111}
+.hub-camera-shot{background:#fff;color:#111;min-width:160px}
+.hub-camera-shot:disabled{opacity:.5}
+.hub-camera-stage{position:relative;overflow:hidden;min-height:0;container-type:size}
+.hub-camera-stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#111}
+/* Quadro de mira = região lida (hub-device recorta o vídeo nele): barras 80 % × 30 %, QR quadrado 60 % do lado menor. */
+.hub-camera-aim{position:absolute;left:50%;top:50%;width:80cqw;height:30cqh;transform:translate(-50%,-50%);border:1px solid rgba(255,255,255,.35);border-radius:12px;box-shadow:0 0 0 100vmax rgba(0,0,0,.55);pointer-events:none}
+.hub-camera-aim-square{width:60cqmin;height:60cqmin}
+.hub-camera-corner{position:absolute;width:28px;height:28px;border:0 solid #ffc20e}
+.hub-camera-corner-tl{left:-3px;top:-3px;border-left-width:5px;border-top-width:5px;border-top-left-radius:14px}
+.hub-camera-corner-tr{right:-3px;top:-3px;border-right-width:5px;border-top-width:5px;border-top-right-radius:14px}
+.hub-camera-corner-bl{left:-3px;bottom:-3px;border-left-width:5px;border-bottom-width:5px;border-bottom-left-radius:14px}
+.hub-camera-corner-br{right:-3px;bottom:-3px;border-right-width:5px;border-bottom-width:5px;border-bottom-right-radius:14px}
+.hub-camera-laser{position:absolute;left:6%;right:6%;top:50%;height:2px;background:#ff3b3b;box-shadow:0 0 8px #ff3b3b;opacity:.85;animation:hub-laser 1.6s ease-in-out infinite alternate}
+.hub-camera-aim-square .hub-camera-laser{display:none}
+@keyframes hub-laser{from{top:15%}to{top:85%}}
+@media (prefers-reduced-motion:reduce){.hub-camera-laser{animation:none}}
+/* Barra de cima sobre o vídeo: tipo de código, modo do leitor e pausa. */
+.hub-camera-top{position:absolute;left:0;right:0;top:0;z-index:2;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;padding:8px 10px;background:rgba(0,0,0,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.hub-camera-seg{display:flex;border:2px solid #fff;border-radius:24px;overflow:hidden}
+.hub-camera-mode{min-height:44px;min-width:44px;padding:0 14px;border:0;background:transparent;color:#fff;font:700 15px var(--font-ui);cursor:pointer;white-space:nowrap}
+.hub-camera-mode+.hub-camera-mode{border-left:2px solid #fff}
+.hub-camera-mode[aria-pressed="true"]{background:#ffc20e;color:#111}
+.hub-camera-mode:focus-visible,.hub-camera-next:focus-visible{outline:3px solid #ffc20e;outline-offset:-4px}
+.hub-camera-mode[aria-pressed="true"]:focus-visible{outline-color:#fff}
+.hub-camera-pause{display:flex;align-items:center;gap:6px;color:#fff;font:700 15px var(--font-ui)}
+.hub-camera-pause[hidden]{display:none}
+.hub-camera-pause-select{min-height:44px;padding:0 10px;border:2px solid #fff;border-radius:22px;background:#111;color:#fff;font:700 15px var(--font-ui);color-scheme:dark}
+.hub-camera-pause-select:focus-visible{outline:3px solid #ffc20e;outline-offset:2px}
+.hub-camera-next{min-height:56px;min-width:200px;padding:0 24px;border-radius:28px;border:2px solid #ffc20e;background:#ffc20e;color:#111;font:800 18px var(--font-ui);cursor:pointer}
+.hub-camera[data-held] .hub-camera-corner{border-color:#8a8f94}
+.hub-flash{position:fixed;inset:0;z-index:95;pointer-events:none;border:10px solid transparent;animation:hub-flash .45s ease-out forwards}
+.hub-flash-ok{border-color:#1fae55;background:rgba(31,174,85,.18)}
+.hub-flash-warn,.hub-flash-queued{border-color:#e0a100;background:rgba(224,161,0,.18)}
+.hub-flash-error{border-color:#e0262f;background:rgba(224,38,47,.24)}
+@keyframes hub-flash{from{opacity:1}to{opacity:0}}
+@media (prefers-reduced-motion:reduce){.hub-flash{animation:none;opacity:.9}}
+.hub-offline-clear{list-style:none;margin-top:6px}
+/* Impressão (ex.: folha de insumos do Coletor): só o conteúdo do app. */
+@media print{
+  .platform-header,.platform-rail,.app-sidebar,.mobile-menu-button,.mobile-backdrop,.toast,.skip-link,.env-banner,.hub-appbar{display:none!important}
+  body,#app-root,.workspace,.workspace-content{background:#fff!important;margin:0!important;padding:0!important;overflow:visible!important;height:auto!important;position:static!important}
+}
+/* Onda 13 — catálogo de aplicações: a stack do app (manifesto `stack`) aparece no
+   passar do mouse, no foco do teclado e no botão "i" (toque). */
+.app-card{position:relative}
+.hub-stack-toggle{position:relative;z-index:3;flex:none;width:22px;height:22px;min-height:22px;border:0;border-radius:4px;background:transparent;color:var(--color-accent);font:italic 700 17px/1 Georgia,"Times New Roman",serif;display:inline-grid;place-items:center;cursor:pointer;padding:0}
+.hub-stack-toggle:hover,.hub-stack-toggle[aria-expanded="true"]{background:var(--color-tint)}
+.hub-card-actions{display:inline-flex;align-items:center;gap:6px;position:relative}
+.app-card:has(.hub-stack-toggle:hover),.app-card:has(.hub-stack-toggle:focus-visible),.app-card.hub-stack-open{z-index:6}
+/* Balão: abre só no "i" (passar o mouse, foco do teclado ou toque); seta aponta para o "i". */
+.hub-stack{position:absolute;top:calc(100% + 10px);right:-6px;z-index:4;width:max-content;max-width:min(280px,calc(100vw - 32px));margin:0;padding:12px 14px;background:var(--color-surface);color:var(--color-text-ink);border:1px solid var(--color-tint-border);border-radius:10px;box-shadow:0 6px 20px rgb(0 0 0/.18);pointer-events:none;opacity:0;visibility:hidden;transform:translateY(-3px);transition:opacity .16s ease,transform .16s ease,visibility 0s linear .16s}
+.hub-stack::before{content:"";position:absolute;top:-6px;right:14px;width:10px;height:10px;background:var(--color-surface);border-left:1px solid var(--color-tint-border);border-top:1px solid var(--color-tint-border);transform:rotate(45deg)}
+.hub-card-actions:has(.hub-stack-toggle:hover) .hub-stack,.hub-card-actions:has(.hub-stack-toggle:focus-visible) .hub-stack,.app-card.hub-stack-open .hub-stack{opacity:1;visibility:visible;transform:none;transition:opacity .16s ease,transform .16s ease}
+.hub-stack dl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:0;font-size:12px;line-height:16px}
+.hub-stack dt{color:var(--color-text-secondary);font-weight:600}
+.hub-stack dd{margin:0;color:var(--color-text-ink);overflow-wrap:anywhere}
+.hub-stack-title{display:block;margin:0 0 4px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--color-accent)}
+.hub-stack-chips{display:flex;flex-wrap:wrap;gap:4px}
+.hub-stack-chip{display:inline-block;padding:1px 8px;border-radius:10px;background:var(--color-tint);color:var(--color-text-ink);font-size:12px;font-family:var(--font-mono)}
+@media (prefers-reduced-motion:reduce){.hub-stack{transition:none}}
+/* Skeleton de componentes depois do carregador (primeira abertura, ainda sem a sidebar do
+   app): o contêiner do carregador centraliza em linha (flex); o skeleton é em bloco, no
+   layout do mockup — cabeçalho, linha de métricas, gráfico + lista, tabela. */
+.workspace-no-sidebar .workspace-content.component-loading{display:block;align-items:initial;justify-content:initial;width:100%;max-width:1280px;margin:0 auto;padding:var(--space-24) var(--space-32)}
+@media(max-width:767px){.workspace-no-sidebar .workspace-content.component-loading{padding:var(--space-16)}}
+@media(max-width:640px){.chart-skeleton .skeleton-chart-bars{height:90px}}
+/* Tabela larga (nomes longos de cliente, ids): rola dentro do cartão em vez de cortar. */
+.hub-table-scroll{overflow-x:auto;max-width:100%}
+/* Tabelas largas rolam na horizontal dentro do cartão (nada de coluna escondida); popovers
+   dos menus de linha continuam fora do corte (só o painel com tabela direta rola). */
+.page-container{min-width:0}
+.content-panel:has(>table),.content-panel>.hub-table-scroll{overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch}
+.content-panel:has(>table) .data-table:not(.hub-table-cards){min-width:max-content}
+/* Paginador (?page=&per=) */
+.hub-pager{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-12);margin:var(--space-12) 0 var(--space-24);font-size:var(--font-size-sm);color:var(--color-text-muted)}
+.hub-pager-per{display:inline-flex;align-items:center;gap:var(--space-8);margin:0}
+.hub-pager-nav{display:inline-flex;align-items:center;gap:var(--space-8)}
+.hub-pager [aria-disabled=true]{opacity:.5;pointer-events:none}
+@media(max-width:640px){.hub-pager{justify-content:center}}
+/* Esqueleto de página do hub: tabela com linhas mais altas */
+.hub-table-sk .table-line{height:34px;margin-bottom:var(--space-8)}
+
+/* Variáveis de ambiente: nomes longos quebram em vez de estourar a página */
+.ops-container{min-width:0}
+.ops-container .ops-note{overflow-wrap:anywhere}
+
+/* Abas (navegação entre páginas e abas da própria página) */
+.hub-tabbar{display:flex;gap:2px;margin:0 0 var(--space-16);border-bottom:1px solid var(--color-border);overflow-x:auto}
+.hub-tabbar>a,.hub-tabbar>[role=tab]{flex:none;display:inline-flex;align-items:center;min-height:36px;padding:0 var(--space-12);border:0;border-bottom:2px solid transparent;margin-bottom:-1px;background:transparent;color:var(--color-text-secondary);font:inherit;font-size:var(--font-size-sm);font-weight:600;text-decoration:none;cursor:pointer}
+.hub-tabbar>a:hover,.hub-tabbar>[role=tab]:hover{color:var(--color-text-strong)}
+.hub-tabbar>a[aria-current=page],.hub-tabbar>[role=tab][aria-selected=true]{color:var(--color-text-strong);border-bottom-color:var(--color-accent)}
+.hub-tabbar>a:focus-visible,.hub-tabbar>[role=tab]:focus-visible{outline:2px solid var(--color-focus,var(--color-accent));outline-offset:-2px}
+[data-ptab-panel][hidden]{display:none}
+/* Filtro multisseleção */
+.hub-multi{position:relative;display:inline-block}
+.hub-multi>summary{list-style:none;cursor:pointer}
+.hub-multi>summary::-webkit-details-marker{display:none}
+.hub-multi .hub-row-menu-list label{display:flex;align-items:center;gap:var(--space-8);padding:6px var(--space-12);white-space:nowrap;cursor:pointer;min-height:28px}
+tr.multi-off{display:none}
+/* Linha que abre a gaveta de detalhes */
+tr[data-detail-row]{cursor:pointer}
+tr[data-detail-row]:hover{background:var(--color-surface-hover)}
+.row-detail-src{display:none}
+.row-detail-body .ops-facts{margin:0 0 var(--space-16)}
+.row-detail-body .row-actions{display:flex;gap:var(--space-8);flex-wrap:wrap}
+
+/* ---- Padrão único (r2): menu ⋯ de linha, abas, selects ---- */
+/* Menu ⋯: <details class="hub-row-menu"> e o botão [data-row-menu] (menu montado por admin.js) têm o mesmo visual. */
+.hub-row-menu>summary,button.row-action,.env-icon-btn.row-action{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;min-width:30px;min-height:30px;padding:0;border:1px solid var(--color-border);border-radius:8px;background:var(--color-surface);color:var(--color-text-secondary);font-size:16px;font-weight:700;line-height:1;cursor:pointer}
+.hub-row-menu>summary:hover,.hub-row-menu[open]>summary,button.row-action:hover,button.row-action[aria-expanded=true]{background:var(--color-surface-hover);color:var(--color-text-strong)}
+.row-menu{background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:8px;box-shadow:var(--shadow-popover);padding:4px;gap:2px;min-width:190px}
+.row-menu-item{display:flex;align-items:center;width:100%;min-height:32px;padding:6px 10px;border:0;border-radius:6px;background:none;color:var(--color-text);font-size:13px;text-align:left;cursor:pointer;white-space:nowrap}
+.row-menu-item:hover:not(:disabled){background:var(--color-surface-hover);color:var(--color-text-strong)}
+.row-menu-item.danger{color:var(--color-danger)}.row-menu-item.danger:hover:not(:disabled){background:var(--color-danger-soft);color:var(--color-danger)}
+/* Abas: sem barra de rolagem; em tela estreita rolam sem barra visível. */
+.hub-tabbar{border-bottom:0;box-shadow:inset 0 -1px 0 var(--color-border);overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+.hub-tabbar::-webkit-scrollbar{display:none}
+.hub-tabbar>a,.hub-tabbar>[role=tab]{margin-bottom:0;min-height:40px;font-size:14px;font-weight:600;color:var(--color-text-secondary)}
+.hub-tabbar>a:hover,.hub-tabbar>[role=tab]:hover,.hub-tabbar>a[aria-current=page],.hub-tabbar>[role=tab][aria-selected=true]{color:var(--color-text-strong)}
+/* Selects: uma regra só (nativo com chevron próprio; sem borda preta; escuro correto). */
+select:not([multiple]),.hub-select{-webkit-appearance:none!important;appearance:none!important;box-sizing:border-box;min-height:32px;height:32px;padding:4px 36px 4px 10px!important;border:1px solid var(--color-border-control);border-radius:8px;background-color:var(--color-surface);background-image:linear-gradient(45deg,transparent 50%,var(--color-text-secondary) 50%),linear-gradient(135deg,var(--color-text-secondary) 50%,transparent 50%)!important;background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%!important;background-size:5px 5px,5px 5px!important;background-repeat:no-repeat!important;color:var(--color-text-ink);font-size:13px;line-height:1.4;cursor:pointer}
+select:not([multiple]):hover{border-color:var(--color-border-strong)}
+select:not([multiple]):focus-visible,.hub-select:focus-visible{border-color:var(--color-accent-shape);outline:2px solid var(--color-focus);outline-offset:1px}
+select option{background:var(--color-surface);color:var(--color-text-ink)}
+.hub-multi>summary{position:relative;padding:0 36px 0 12px;min-height:32px;font-size:13px;border:1px solid var(--color-border-control);border-radius:8px}
+.hub-multi>summary::after{content:"";position:absolute;right:14px;top:50%;width:6px;height:6px;margin-top:-5px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);opacity:.7}
+.status-banner-bad{color:var(--color-danger)}

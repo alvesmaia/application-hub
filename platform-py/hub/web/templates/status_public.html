@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Status · {{ brand }}</title>
+<link rel="icon" type="image/svg+xml" href="/assets/logo.svg"/>
+<link rel="preload" href="/assets/fonts/nunito-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous"/>
+<link rel="preload" href="/assets/fonts/red-hat-display-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous"/>
+<link rel="stylesheet" href="/assets/tokens.css"/>
+<link rel="stylesheet" href="/assets/theme.css"/>
+<link rel="stylesheet" href="/assets/styles.css"/>
+<link rel="stylesheet" href="/assets/hub.css"/>
+<link rel="stylesheet" href="/assets/ops.css"/>
+</head>
+<body class="rail-hidden status-public">
+<header class="platform-header"><a class="brand" href="/status"><span class="brand-mark"><img src="/assets/logo.svg" alt=""/></span><span class="brand-text"><span class="brand-name">{{ brand }}</span><span class="brand-subtitle">{{ tr('Status das aplicações') }}</span></span></a></header>
+<main class="page-container">
+<h1 class="page-title">{{ tr('Status das aplicações') }}</h1>
+{% include "_status_body.html" %}
+</main>
+</body>
+</html>

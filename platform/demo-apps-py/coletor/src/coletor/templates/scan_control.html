@@ -1,0 +1,6 @@
+{#- Botão da câmera. Tipo de código (Código de barras/QR), modo do leitor (Interativo/Automático)
+    e pausa ficam SÓ dentro da câmera (barra de cima da camada do hub): o botão leva os valores
+    atuais e o hub manda cada troca para /escanear/prefs (lembrado por usuário). -#}
+<section id="scan-control" class="col-card col-scan-control">
+<button type="button" class="col-button col-button-scan" data-hub-scan data-hub-scan-target="#codigo" data-hub-scan-format-target="#formato" data-hub-scan-continuous data-hub-scan-formats="{{ mode_formats }}" data-hub-scan-modes="{{ mode_keys }}" data-hub-scan-mode-labels="{{ mode_labels }}" data-hub-scan-mode="{{ mode }}" data-hub-scan-wrong-hint="{{ mode_hints }}" data-hub-scan-reader="{{ reader.mode }}" data-hub-scan-cooldown="{{ reader.cooldown_ms }}" data-hub-scan-cooldowns="{{ cooldowns | join('|') }}" data-hub-scan-dedup="{{ dedup_ms }}" data-hub-scan-prefs="{{ base }}/escanear/prefs">{{ icon('camera') }}<span>{{ t('Ler com a câmera') }}</span></button>
+</section>

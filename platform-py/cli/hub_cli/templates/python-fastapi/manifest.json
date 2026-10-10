@@ -1,0 +1,19 @@
+{
+  "id": "__APP_ID__",
+  "name": "__APP_NAME__",
+  "version": "0.1.0",
+  "mode": "fragment",
+  "routes": ["/__APP_ID__/*"],
+  "resources": { "cpu": 0.5, "memory": "256Mi", "pids": 100 },
+  "permissions": ["__APP_ID__.read"],
+  "sdk": "1.0",
+  "runtime": { "stack": "python" },
+  "stack": {
+    "language": "Python 3.12",
+    "framework": "FastAPI",
+    "sdk": "hub-sdk-python 1.0",
+    "db": "SQLAlchemy Core + Alembic"
+  },
+  "api": { "enabled": true, "openapi": "/api/openapi.json", "base": "/api/v1" },
+  "requires": __REQUIRES__
+}

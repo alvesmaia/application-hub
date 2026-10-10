@@ -1,0 +1,1 @@
+"""CLI da Application Hub."""

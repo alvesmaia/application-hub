@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b2848" />
+    <meta name="description" content="Portal interno de aplicações corporativas." />
+    <title>Application Hub</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/logo.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/app2.css" />
+    <link rel="stylesheet" href="/css/app3.css" />
+    <link rel="stylesheet" href="/css/ops.css" />
+  </head>
+  <body>
+    <header class="platform-header">
+      <a class="brand" href="/" data-route="/" aria-label="Página inicial">
+        <span class="brand-mark"><img src="/assets/logo.svg" alt="" /></span>
+        <span class="brand-text">
+          <span class="brand-name">Application Hub</span>
+          <span class="brand-subtitle">Workspace</span>
+        </span>
+      </a>
+      <div class="header-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg><input id="global-search" type="search" placeholder="Buscar aplicações, páginas..." autocomplete="off" aria-label="Busca global" /><kbd>⌘ K</kbd><div id="search-results" class="search-results hidden"></div></div>
+      <div class="header-actions">
+        <button class="icon-button rail-display-button" id="rail-display-button" aria-label="Opções da barra lateral" title="Opções da barra lateral"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M14 9h4M14 13h4"/></svg></button>
+        <button class="icon-button notification-button" id="notifications-button" aria-label="Notificações"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"/></svg><span class="notification-dot"></span></button>
+        <span class="header-divider"></span>
+        <button class="user-button" id="user-button"><span class="avatar">JD</span><span class="user-copy"><strong>John Doe</strong><small>Platform Team</small></span><svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button>
+      </div>
+      <div class="header-popover hidden" id="header-popover"></div>
+    </header>
+
+    <aside class="platform-rail" aria-label="Navegação da plataforma">
+      <nav class="rail-nav">
+        <button class="rail-item" data-route="/" data-rail-icon="home" aria-label="Início"><span class="rail-icon"></span><span class="rail-name">Início</span><span class="rail-tooltip">Início</span></button>
+        <button class="rail-item" data-route="/applications" data-rail-icon="apps" aria-label="Aplicações"><span class="rail-icon"></span><span class="rail-name">Aplicações</span><span class="rail-tooltip">Aplicações</span></button>
+        <span class="rail-divider" aria-hidden="true"></span>
+        <button class="rail-item" data-route="/team/people" data-team-section="people" data-rail-icon="groups" aria-label="Pessoas"><span class="rail-icon"></span><span class="rail-name">Pessoas</span><span class="rail-tooltip">Pessoas</span></button>
+        <button class="rail-item" data-rail-toggle="admin-menu" data-team-section="admin" data-rail-icon="adminShield" aria-label="Administração" aria-expanded="false"><span class="rail-icon"></span><span class="rail-name">Administração</span><svg class="rail-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg><span class="rail-tooltip">Administração</span></button>
+        <div class="rail-submenu" data-rail-submenu="admin-menu">
+          <button class="rail-subitem" data-route="/team/admin" data-rail-icon="settings" aria-label="Configurações"><span class="rail-icon"></span><span class="rail-name">Configurações</span><span class="rail-tooltip">Configurações</span></button>
+          <button class="rail-subitem" data-route="/team/admin/env" data-rail-icon="variables" aria-label="Variáveis de ambiente"><span class="rail-icon"></span><span class="rail-name">Variáveis de ambiente</span><span class="rail-tooltip">Variáveis de ambiente</span></button>
+          <button class="rail-subitem" data-route="/team/admin/roles" data-rail-icon="groups" aria-label="Funções e permissões"><span class="rail-icon"></span><span class="rail-name">Funções e permissões</span><span class="rail-tooltip">Funções e permissões</span></button>
+          <button class="rail-subitem" data-route="/team/admin/logs" data-rail-icon="terminal" aria-label="Logs"><span class="rail-icon"></span><span class="rail-name">Logs</span><span class="rail-tooltip">Logs</span></button>
+          <button class="rail-subitem" data-route="/team/admin/audit" data-rail-icon="file" aria-label="Auditoria"><span class="rail-icon"></span><span class="rail-name">Auditoria</span><span class="rail-tooltip">Auditoria</span></button>
+          <button class="rail-subitem" data-route="/team/admin/health" data-rail-icon="check" aria-label="Saúde da plataforma"><span class="rail-icon"></span><span class="rail-name">Saúde da plataforma</span><span class="rail-tooltip">Saúde da plataforma</span></button>
+          <button class="rail-subitem" data-route="/team/admin/deploys" data-rail-icon="play" aria-label="Implantações"><span class="rail-icon"></span><span class="rail-name">Implantações</span><span class="rail-tooltip">Implantações</span></button>
+          <button class="rail-subitem" data-route="/team/admin/runtime" data-rail-icon="box" aria-label="Containers"><span class="rail-icon"></span><span class="rail-name">Containers</span><span class="rail-tooltip">Containers</span></button>
+          <button class="rail-subitem" data-route="/team/admin/backups" data-rail-icon="clock" aria-label="Backups"><span class="rail-icon"></span><span class="rail-name">Backups</span><span class="rail-tooltip">Backups</span></button>
+          <button class="rail-subitem" data-route="/team/admin/sdk" data-rail-icon="book" aria-label="SDK e pacotes"><span class="rail-icon"></span><span class="rail-name">SDK e pacotes</span><span class="rail-tooltip">SDK e pacotes</span></button>
+        </div>
+      </nav>
+      <div class="rail-bottom">
+        <button class="rail-control" data-rail-mode="expanded" aria-label="Expandir barra lateral" title="Expandir barra lateral"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v16M13 8l4 4-4 4"/></svg><span class="rail-control-label">Expandir menu</span></button>
+        <button class="rail-control" data-rail-mode="collapsed" aria-label="Colapsar barra lateral" title="Colapsar barra lateral"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v16M15 8l-4 4 4 4"/></svg><span class="rail-control-label">Colapsar</span></button>
+        <button class="rail-control" data-rail-mode="hidden" aria-label="Ocultar barra lateral" title="Ocultar barra lateral"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM9 5v14"/><path d="m15 9 3 3-3 3"/></svg><span class="rail-control-label">Ocultar menu</span></button>
+      </div>
+    </aside>
+    <main id="app-root" class="app-root"></main>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/js/chart.js"></script>
+    <script src="/js/app.js"></script>
+    <script src="/js/app2.js"></script>
+    <script src="/js/app3.js"></script>
+    <script src="/js/ops.js"></script>
+    <script>
+      window.addEventListener('popstate', function () {
+        applicationLoading = false;
+        componentSkeletonLoading = false;
+        clearTimeout(applicationLoadingTimer);
+        clearTimeout(componentSkeletonTimer);
+      }, true);
+    </script>
+  </body>
+</html>

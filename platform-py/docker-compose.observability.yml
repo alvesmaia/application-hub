@@ -1,0 +1,37 @@
+# Perfil opcional "observability" da pilha Python (F5c): OTel Collector (<= 192 MiB) + Jaeger em memória (<= 256 MiB).
+#   docker compose -p app-hub -f docker-compose.yml -f docker-compose.apps.yml -f docker-compose.observability.yml \
+#     --profile observability up -d     (ou: bash scripts/dev.sh obs-up)
+# O hub exporta OTLP/HTTP quando APP_HUB_OTLP_ENDPOINT está definido (obs-up define). UI do Jaeger: http://127.0.0.1:16696.
+services:
+  app-hub-web:
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${APP_HUB_OTLP_ENDPOINT:-}
+      OTEL_SERVICE_NAME: app-hub
+
+  app-hub-otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.135.0
+    container_name: app-hub-otel-collector
+    profiles: [observability]
+    labels: { hub.py: "1" }
+    command: ["--config=/etc/otelcol/collector.yaml"]
+    volumes:
+      - ./infra/otel/collector.yaml:/etc/otelcol/collector.yaml:ro
+    cpus: 0.25
+    mem_limit: 192m
+    read_only: true
+    security_opt: [no-new-privileges]
+    cap_drop: [ALL]
+    restart: unless-stopped
+
+  app-hub-jaeger:
+    image: jaegertracing/jaeger:2.10.0
+    container_name: app-hub-jaeger
+    profiles: [observability]
+    labels: { hub.py: "1" }
+    ports:
+      - "127.0.0.1:16696:16686"
+    cpus: 0.25
+    mem_limit: 256m
+    security_opt: [no-new-privileges]
+    cap_drop: [ALL]
+    restart: unless-stopped

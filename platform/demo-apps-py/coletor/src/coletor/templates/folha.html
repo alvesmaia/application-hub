@@ -1,0 +1,12 @@
+{% extends "workspace.html" %}
+{% block content %}
+<div class="col-screen col-sheet">
+{% set title = t('Folha de teste') %}{% set subtitle = t('Deixe esta página aberta no computador: os códigos aparecem um de cada vez e o celular (Escanear) lê cada um.') %}
+{% set action %}<button type="button" class="col-button col-button-dark col-noprint" data-hub-print>{{ icon('print') }}<span>{{ t('Imprimir') }}</span></button>{% endset %}
+{% include "_head.html" %}
+{{ notice_html }}
+<div id="col-folha-live" data-hub-ws="{{ base }}/ws/live?view=folha" data-hub-ws-target="#col-folha-state" data-hub-get="{{ base }}/folha/estado" data-hub-trigger="every 2s" data-hub-target="#col-folha-state">
+{% include "folha_state.html" %}
+</div>
+</div>
+{% endblock %}

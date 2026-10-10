@@ -1,0 +1,11 @@
+{
+  "buckets": {
+    "novo-painel:a": 3098,
+    "novo-painel:b": 6054,
+    "novo-painel:leitor@demo.local": 8106,
+    "novo-painel:admin@demo.local": 4246
+  },
+  "user_digests": {
+    "novo-painel:Ana@Demo.local": "sha256:dffe24712b010ef87b9cf15d7cdd1085133885a5722a1afb764856178f4e3d52"
+  }
+}

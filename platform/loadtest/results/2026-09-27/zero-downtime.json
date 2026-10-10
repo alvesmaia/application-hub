@@ -1,0 +1,264 @@
+{
+ "oha": {
+  "summary": {
+   "successRate": 1,
+   "total": 160.00201864,
+   "slowest": 0.243489141,
+   "fastest": 0.000594422,
+   "average": 0.0036424051670312153,
+   "requestsPerSec": 200.0037266529827,
+   "totalData": 125888680,
+   "sizePerRequest": 3934,
+   "sizePerSec": 786794.3234094188
+  },
+  "metrics": {
+   "success_rate": 1,
+   "requests_per_sec": 200.0037266529827,
+   "latency_ms": {
+    "min": 0.594,
+    "mean": 3.642,
+    "p50": 1.349,
+    "p95": 7.881,
+    "p99": 74.632,
+    "max": 243.489
+   }
+  },
+  "responseTimeHistogram": {
+   "0.000594422": 1,
+   "0.0248838939": 31280,
+   "0.04917336579999999": 181,
+   "0.07346283769999999": 207,
+   "0.09775230959999999": 197,
+   "0.12204178149999999": 106,
+   "0.1463312534": 25,
+   "0.1706207253": 2,
+   "0.1949101972": 0,
+   "0.2191996691": 0,
+   "0.243489141": 1
+  },
+  "latencyPercentiles": {
+   "p10": 0.001050001,
+   "p25": 0.001164291,
+   "p50": 0.001348593,
+   "p75": 0.001679879,
+   "p90": 0.006515295,
+   "p95": 0.007880992,
+   "p99": 0.074632222,
+   "p99.9": 0.121026182,
+   "p99.99": 0.139331495
+  },
+  "firstByteHistogram": {
+   "0.000573654": 1,
+   "0.0248596955": 31282,
+   "0.049145737": 180,
+   "0.07343177850000002": 208,
+   "0.09771782000000001": 197,
+   "0.1220038615": 104,
+   "0.14628990300000003": 25,
+   "0.17057594450000002": 2,
+   "0.19486198600000001": 0,
+   "0.2191480275": 0,
+   "0.243434069": 1
+  },
+  "firstBytePercentiles": {
+   "p10": 0.000999631,
+   "p25": 0.001107823,
+   "p50": 0.001279213,
+   "p75": 0.001577813,
+   "p90": 0.006475386,
+   "p95": 0.007811222,
+   "p99": 0.074564178,
+   "p99.9": 0.12096391,
+   "p99.99": 0.139295197
+  },
+  "rps": {
+   "mean": 215.74424396073178,
+   "stddev": 178.16117874026818,
+   "max": 7640.411665550757,
+   "min": 7.351239256476241,
+   "percentiles": {
+    "p10": 103.98703988724824,
+    "p25": 180.49205744695251,
+    "p50": 201.6697041488725,
+    "p75": 212.93995657515885,
+    "p90": 305.68488290434607,
+    "p95": 369.90962737866727,
+    "p99": 502.5400888792347,
+    "p99.9": 2848.791827388449,
+    "p99.99": 5008.966049269904
+   }
+  },
+  "details": {
+   "DNSDialup": {
+    "average": 0.0006294289687500002,
+    "fastest": 0.000074302,
+    "slowest": 0.027553576
+   },
+   "DNSLookup": {
+    "average": 0.0000295315625,
+    "fastest": 0.000006682,
+    "slowest": 0.000071427
+   },
+   "firstByte": {
+    "average": 0.003562319638843762,
+    "fastest": 0.000573654,
+    "slowest": 0.243434069
+   }
+  },
+  "statusCodeDistribution": {
+   "200": 32000
+  },
+  "errorDistribution": {
+   "aborted due to deadline": 1
+  }
+ },
+ "switches": [
+  {
+   "label": "deploy 1 (3.0.764197)",
+   "action": "approve",
+   "ok": true,
+   "acceptedMs": 2,
+   "startedAt": 23.71,
+   "switchedAt": 24.364,
+   "doneAt": 60.085,
+   "runtime": "Container hub-app-ativos substituído sem indisponibilidade (blue/green) · imagem sha256:1110dca62d62 · health check ok · upstream http://hub-app-ativos:8080 · anterior drenado em 35163 ms",
+   "drainMs": 35163,
+   "version": "3.0.764197",
+   "id": 33
+  },
+  {
+   "label": "deploy 2 (3.1.764197)",
+   "action": "approve",
+   "ok": true,
+   "acceptedMs": 32,
+   "startedAt": 74.74,
+   "switchedAt": 76.084,
+   "doneAt": 76.084,
+   "runtime": "Container hub-app-ativos substituído sem indisponibilidade (blue/green) · imagem sha256:41234f2d3aab · health check ok · upstream http://hub-app-ativos:8080 · anterior drenado em 26 ms",
+   "drainMs": 26,
+   "version": "3.1.764197",
+   "id": 34
+  },
+  {
+   "label": "deploy 3 (3.2.764197)",
+   "action": "approve",
+   "ok": true,
+   "acceptedMs": 5,
+   "startedAt": 90.665,
+   "switchedAt": 91.294,
+   "doneAt": 91.864,
+   "runtime": "Container hub-app-ativos substituído sem indisponibilidade (blue/green) · imagem sha256:32ced349d6cb · health check ok · upstream http://hub-app-ativos:8080 · anterior drenado em 26 ms",
+   "drainMs": 26,
+   "version": "3.2.764197",
+   "id": 35
+  },
+  {
+   "label": "rollback (3.2.764197 → anterior)",
+   "action": "rollback",
+   "ok": true,
+   "acceptedMs": 11,
+   "startedAt": 103.877,
+   "switchedAt": 104.798,
+   "doneAt": 104.798,
+   "runtime": "Container hub-app-ativos restaurado do __prev (rollback instantâneo, sem indisponibilidade) · imagem sha256:41234f2d3aab · health check ok · upstream http://hub-app-ativos:8080 · anterior drenado em 0 ms",
+   "drainMs": 0,
+   "version": "3.1.764197",
+   "id": 36
+  }
+ ],
+ "cutover": [
+  {
+   "label": "deploy 1 (3.0.764197)",
+   "from": "3.1.577310",
+   "to": "3.0.764197",
+   "firstNew": 24.32,
+   "lateOld": 0,
+   "lastOld": 24.25
+  },
+  {
+   "label": "deploy 2 (3.1.764197)",
+   "from": "3.0.764197",
+   "to": "3.1.764197",
+   "firstNew": 75.34,
+   "lateOld": 0,
+   "lastOld": 75.31
+  },
+  {
+   "label": "deploy 3 (3.2.764197)",
+   "from": "3.1.764197",
+   "to": "3.2.764197",
+   "firstNew": 91.31,
+   "lateOld": 0,
+   "lastOld": 91.25
+  },
+  {
+   "label": "rollback (3.2.764197 → anterior)",
+   "from": "3.2.764197",
+   "to": "3.1.764197",
+   "firstNew": 104.28,
+   "lateOld": 0,
+   "lastOld": 104.24
+  }
+ ],
+ "byVersion": {
+  "3.1.577310": 340,
+  "3.0.764197": 1214,
+  "3.1.764197": 1989,
+  "3.2.764197": 330
+ },
+ "stagingLeak": 0,
+ "images": {
+  "3.0.764197": "sha256:1110dca62d62205ad2cea38ea844edd9c25bfc48024d59868fe27f5bc09b6cc6",
+  "3.1.764197": "sha256:41234f2d3aab59e53eda7fc6141ee08fe247b910c2b0a09e268522d89967b602",
+  "3.2.764197": "sha256:32ced349d6cb053f36a0e5ccc2da7509bf18b58390b7f4eaa748865986c1e508",
+  "4.0.764197": "sha256:0f1ef6a8ac803daa3cb490b97bacd6ab0664c3c7de28b3a2040116e5f5ead4bf"
+ },
+ "writes": {
+  "total": 1244,
+  "non2xx": 0,
+  "replays": 622,
+  "replaysOk": 622
+ },
+ "export": {
+  "startedAt": 20.702,
+  "status": 200,
+  "bytes": 287422514,
+  "lines": 1000001,
+  "completed": true,
+  "error": "",
+  "chunks": 35311,
+  "doneAt": 109.506
+ },
+ "probe": {
+  "all": {
+   "n": 3873,
+   "non2xx": 0,
+   "p50": 8,
+   "p99": 105,
+   "max": 1902
+  },
+  "staging": {
+   "n": 135,
+   "non2xx": 0,
+   "p50": 4,
+   "p99": 23,
+   "max": 38
+  }
+ },
+ "stagingDeploy": {
+  "app": "ativos",
+  "at": 1790499483889,
+  "commit": "—",
+  "env": "Staging",
+  "id": 37,
+  "image": "hub-demo-apps@sha256:0f1ef6a8ac803daa3cb490b97bacd6ab0664c3c7de28b3a2040116e5f5ead4bf",
+  "note": "",
+  "origin": "Import manual",
+  "package": "ativos-4.0.764197-16e1238a66e8.hubapp",
+  "runtime": "Container hub-app-ativos__staging substituído sem indisponibilidade (blue/green) · imagem sha256:0f1ef6a8ac80 · health check ok · upstream http://hub-app-ativos__staging:8080 · anterior drenado em 0 ms",
+  "sha256": "16e1238a66e8eb023f8d86d60b4207764c7aed3d0fa1e07ef942c408ef1f4407",
+  "status": "Implantado",
+  "version": "4.0.764197"
+ },
+ "prodSame": true
+}

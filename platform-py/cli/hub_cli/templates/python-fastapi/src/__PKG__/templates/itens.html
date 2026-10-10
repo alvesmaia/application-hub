@@ -1,0 +1,25 @@
+{% extends "workspace.html" %}
+{% block content %}
+<div class="app-page-header"><div><div class="eyebrow">{{ t(app.name) }}</div><h1 class="page-title">{{ t('Itens') }}</h1><p class="page-subtitle">{{ t('Cadastre e consulte os itens.') }}</p></div></div>
+<section class="hub-panel">
+<div class="hub-panel-head"><h2>{{ t('Novo item') }}</h2></div>
+<form method="post" action="{{ base }}/itens">
+<div class="hub-form-grid">
+<div class="form-field"><label for="item-name">{{ t('Nome') }}</label><input id="item-name" name="name" required maxlength="80" autocomplete="off"></div>
+<div class="form-field"><label for="item-qty">{{ t('Quantidade') }}</label><input id="item-qty" name="quantity" type="number" min="0" value="1" required></div>
+</div>
+{% if error %}<div class="hub-notice hub-notice-error" role="alert"><p>{{ t(error) }}</p></div>{% endif %}
+<div class="hub-actions"><button type="submit" class="primary-button">{{ t('Adicionar') }}</button></div>
+</form>
+</section>
+<section class="hub-panel">
+<div class="hub-panel-head"><h2>{{ t('Itens cadastrados') }}</h2></div>
+{% if items %}
+<div class="hub-table-scroll"><table class="data-table"><thead><tr><th scope="col">{{ t('Nome') }}</th><th scope="col">{{ t('Quantidade') }}</th></tr></thead><tbody>
+{% for it in items %}<tr><td><span class="table-primary">{{ it.name }}</span></td><td>{{ thousands(it.quantity) }}</td></tr>{% endfor %}
+</tbody></table></div>
+{% else %}
+<div class="empty-state"><p>{{ t('Nenhum item ainda.') }}</p></div>
+{% endif %}
+</section>
+{% endblock %}
