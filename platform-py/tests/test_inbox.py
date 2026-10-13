@@ -527,7 +527,7 @@ def test_password_roundtrip_returns_to_settings_with_new_session(
 
 def test_language_resolution_and_translation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     assert resolve("", "en-US,en;q=0.9,pt;q=0.8") == "en"
-    assert resolve("es", "en") == "es" and resolve("", "fr, es;q=0.5") == "es"
+    assert resolve("es", "pt-BR") == "en" and resolve("", "fr, es;q=0.5") == "en"  # `es` saiu: vira en
     assert resolve("", "en;q=0") == "pt-BR" and resolve("", None) == "pt-BR" and resolve("xx", "") == "pt-BR"
     assert tn("home.subtitle", 1, "en").startswith("1 ") and tr("Cancelar", "en") == "Cancel"
     assert (
@@ -541,13 +541,14 @@ def test_language_resolution_and_translation(tmp_path: Path, monkeypatch: pytest
     assert 'aria-label="Platform navigation"' in en and "Skip to content" in en and ">Home<" in en
     assert 'class="hub-search-label">Search apps, pages and records<' in en
     assert "Pular para o conteúdo" in c.get("/inbox").text  # padrão: pt-BR
-    c.put("/api/me/prefs", json={"lang": "es"}, headers=HDR)
-    es = c.get("/search?q=zzz", headers={"accept-language": "en"}).text  # a preferência vence o navegador
-    assert '<html lang="es"' in es and "Sin resultados para" in es
+    assert c.put("/api/me/prefs", json={"lang": "es"}, headers=HDR).status_code == 400
+    c.put("/api/me/prefs", json={"lang": "en"}, headers=HDR)
+    en = c.get("/search?q=zzz", headers={"accept-language": "pt-BR"}).text  # a preferência vence o navegador
+    assert '<html lang="en"' in en and "Sin resultados para" not in en
     state = json.loads(
         c.get("/").text.split('data-hub-i18n="')[1].split('" data-hub-palette')[0].replace("&#34;", '"')
     )
-    assert state["lang"] == "es"
+    assert state["lang"] == "en"
 
 
 def test_agent_item_links_to_the_approval_page(tmp_path: Path) -> None:

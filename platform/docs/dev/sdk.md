@@ -6,7 +6,7 @@ Gerada das assinaturas e docstrings do pacote `hub_sdk`. Só nomes públicos (se
 
 ## `hub_sdk`
 
-SDK Python (FastAPI) dos apps da Application Hub — espelho do `hub-sdk` em Rust.
+SDK Python (FastAPI) dos apps da Application Hub.
 
 ## `hub_sdk.api`
 
@@ -54,7 +54,7 @@ containers, volume próprio do app) ou o temporário do sistema.
 
 ## `hub_sdk.approvals`
 
-Aprovações pela Inbox do hub (onda 9) — espelho de ``hub_sdk::approvals``.
+Aprovações pela Inbox do hub (onda 9).
 
 ### `valid_id(s: str) -> bool`
 
@@ -207,7 +207,7 @@ Balde estável 0–9999 de ``chave:usuário`` (sha256, 4 primeiros bytes big-end
 
 ### `evaluate(flag: Mapping[str, Any], env: str, user: str, roles: Sequence[str]) -> str`
 
-Valor de ``flag`` no ambiente para o usuário (mesma ordem do Rust: kill switch →
+Valor de ``flag`` no ambiente para o usuário (ordem: kill switch →
 regras → percentual → padrão).
 
 ### class `FlagStore`
@@ -246,7 +246,7 @@ inócuo.
 ## `hub_sdk.idempotency`
 
 ``Idempotency-Key`` para rotas que alteram dados (POST/PUT/PATCH/DELETE) — middleware
-ASGI com a mesma semântica e a **mesma tabela** do SDK Rust (``hub_idempotency``).
+ASGI que usa a tabela ``hub_idempotency`` (formato estável: não mude sem migração).
 
 ### `max_body_from_env() -> int`
 
@@ -260,7 +260,7 @@ Teto do corpo de pedidos com ``Idempotency-Key`` (``HUB_MAX_BODY_MB``, padrão 6
 
 ### class `RequestHasher`
 
-Hash incremental do pedido (idêntico ao ``RequestHasher`` do Rust).
+Hash incremental do pedido.
 
 - `update(data: bytes) -> None`
 - `finish() -> str`
@@ -317,8 +317,7 @@ do FastAPI: ``ident: Identity = Depends(identity_of)``.
 
 ### `user_key(headers_value: str | None) -> str`
 
-Valor cru do cabeçalho, aparado — é o escopo das chaves de idempotência (igual ao
-Rust: a chave de outro usuário nunca devolve a resposta deste).
+Valor cru do cabeçalho, aparado — é o escopo das chaves de idempotência (a chave de outro usuário nunca devolve a resposta deste).
 
 ### `env_of(conn: HTTPConnection) -> str`
 
@@ -326,7 +325,7 @@ Ambiente que o hub declarou (`producao`/`staging`); padrão produção.
 
 ## `hub_sdk.jobs`
 
-Tarefas duráveis na tabela ``hub_jobs`` — mesma tabela, SQL e estados do SDK Rust.
+Tarefas duráveis na tabela ``hub_jobs`` (tabela, SQL e estados têm formato estável: não mude sem migração).
 
 ### `label(status: str) -> str`
 
@@ -435,7 +434,7 @@ tarefa), executa em paralelo, retoma leases vencidos e marca ``dead`` o que esgo
 
 ## `hub_sdk.locale`
 
-Idioma e formatação regional dos fragmentos (onda 9) — espelho de ``hub_sdk::locale``.
+Idioma e formatação regional dos fragmentos (onda 9).
 
 ### `parse(s: str | None) -> str | None`
 
@@ -459,7 +458,7 @@ Fixa o idioma (testes, tarefas); devolve o token para ``reset``.
 
 ### `register(catalog: Mapping[str, Mapping[str, str]]) -> None`
 
-Acrescenta traduções: ``{"texto pt-BR": {"en": "...", "es": "..."}}``.
+Acrescenta traduções: ``{"texto pt-BR": {"en": "..."}}``.
 
 ### `t(text: str, **kw: Any) -> str`
 
@@ -471,11 +470,11 @@ Tradução de ``text`` (pt-BR) no idioma atual, com ``{marcadores}`` preenchidos
 
 ### `money_cents(cents: int | None) -> str`
 
-Centavos → ``R$ 1.234,50`` (pt-BR/es) ou ``BRL 1,234.50`` (en).
+Centavos → ``R$ 1.234,50`` (pt-BR) ou ``BRL 1,234.50`` (en).
 
 ### `date(d: dt.date | None) -> str`
 
-Data curta: ``28/09/2026`` (pt-BR, es) ou ``09/28/2026`` (en).
+Data curta: ``28/09/2026`` (pt-BR) ou ``09/28/2026`` (en).
 
 ### class `LocaleMiddleware`
 
@@ -503,7 +502,7 @@ Requisição HTTP em processo contra uma aplicação ASGI (sem rede, sem httpx).
 
 ## `hub_sdk.outbox`
 
-Outbox transacional (``hub_outbox``) — mesmo esquema e semântica do Rust.
+Outbox transacional (``hub_outbox``).
 
 ### class `Event`
 
@@ -516,7 +515,7 @@ Evento como o hub o recebe (JSON do ``GET /_hub/outbox``).
 ### `audit(user: str, action: str, target: str='', detail: str='') -> Event`
 
 Evento de auditoria (usuário ≤ 120, ação ≤ 80, alvo ≤ 200, detalhe ≤ 500; sem
-caracteres de controle) — mesmos cortes do Rust.
+caracteres de controle).
 
 ### `notification(user: str, title: str, body: str='', link: str='', to_users: list[str] | tuple[str, ...]=(), to_roles: list[str] | tuple[str, ...]=(), level: str='info') -> Event`
 
@@ -609,15 +608,14 @@ começam com ``= + - @`` (mesmo atrás de TAB/CR) ganham ``'``.
 
 ## `hub_sdk.saga`
 
-Sagas (onda 12, item 2.9) — mesma semântica e mesmo formato de estado do SDK Rust
-(``hub_sdk::saga``).
+Sagas (onda 12, item 2.9).
 
 ### `new_state(names: Sequence[str]) -> dict[str, Any]`
 
 ### `next_action(s: dict[str, Any]) -> str`
 
 Próxima ação a partir do estado salvo: ``run:i``, ``compensate:i``, ``complete``,
-``compensated`` ou ``failed`` (mesma regra do Rust).
+``compensated`` ou ``failed``.
 
 ### `state_of(checkpoint: Any, names: Sequence[str]) -> dict[str, Any]`
 
@@ -645,7 +643,7 @@ Definição de uma saga (um tipo de tarefa). Registre como qualquer handler.
 
 ## `hub_sdk.schema`
 
-Tabelas do SDK (idênticas às do `hub-sdk` Rust), ids e utilidades de banco.
+Tabelas do SDK, ids e utilidades de banco.
 
 ### `base(app_id: str) -> str`
 
@@ -681,8 +679,7 @@ Integridade SRI/CSP (``sha384-<base64>``) — a mesma que o hub calcula no impor
 
 ## `hub_sdk.search`
 
-Busca federada (onda 9): ``GET /{app}/_hub/search?q=&limit=`` — espelho de
-``hub_sdk::search``.
+Busca federada (onda 9): ``GET /{app}/_hub/search?q=&limit=``.
 
 ### class `SearchQuery`
 
@@ -700,7 +697,7 @@ Minúsculas sem acentos.
 
 ### `score(text: str, q: str) -> float`
 
-Igual 1, começa 0,8, palavra começa 0,6, contém 0,4, senão 0 (mesma regra do Rust).
+Igual 1, começa 0,8, palavra começa 0,6, contém 0,4, senão 0.
 
 ### `like_pattern(q: str) -> str`
 
@@ -774,8 +771,7 @@ Entrada de ``manifest.stack`` (levanta ``ValueError`` fora das regras do hub).
 
 ## `hub_sdk.storage`
 
-Armazenamento de arquivos do app (onda 10, contrato item 22) — mesma interface do Rust
-(``hub_sdk::storage``): conexões da plataforma pelo **broker do hub** (SharePoint, S3) ou o
+Armazenamento de arquivos do app (onda 10, contrato item 22): conexões da plataforma pelo **broker do hub** (SharePoint, S3) ou o
 bucket próprio do app (**S3 direto**, ``HUB_S3_*``). Trocar de backend é configuração
 (vínculo em Administração › Conexões), não código.
 
@@ -847,9 +843,9 @@ Bucket do app (S3/MinIO) direto, SigV4 com ``UNSIGNED-PAYLOAD``.
 - `async delete(path: str) -> None`
 - `async move(src: str, dst: str) -> Item`
 - `async share_link(path: str, kind: str='view', expires_hours: int=24) -> ShareLink`
-- `presign_get(key: str, secs: int, now: dt.datetime) -> str` — URL pré-assinada de leitura (mesmo resultado do Rust para as mesmas entradas).
+- `presign_get(key: str, secs: int, now: dt.datetime) -> str` — URL pré-assinada de leitura.
 - `presign_put_path(path: str, secs: int, now: dt.datetime | None=None) -> str` — URL pré-assinada de envio (``PUT``) para ``path`` (relativo à pasta-base) — envios em duas fases (onda 12, 2.9).
-- `presign(method: str, key: str, secs: int, now: dt.datetime) -> str` — Assinatura SigV4 por query string (``GET``/``PUT``), igual ao Rust.
+- `presign(method: str, key: str, secs: int, now: dt.datetime) -> str` — Assinatura SigV4 por query string (``GET``/``PUT``).
 
 ### `bound() -> list[tuple[str, str]]`
 
@@ -877,7 +873,7 @@ Bucket próprio do app (S3/MinIO direto).
 
 ## `hub_sdk.telemetry`
 
-Traces do app (onda 8) — mesmo contrato do SDK Rust (``hub_sdk::telemetry``).
+Traces do app (onda 8).
 
 ### class `TraceContext`
 
@@ -918,8 +914,7 @@ Span ``server`` por requisição (filho do ``traceparent`` do hub).
 
 ## `hub_sdk.uploads`
 
-Envio de arquivos em **duas fases** (onda 12, item 2.9) — mesmo contrato do SDK Rust
-(``hub_sdk::uploads``), mesmas tabelas (``hub_uploads``) e o mesmo tipo de tarefa de
+Envio de arquivos em **duas fases** (onda 12, item 2.9), com tabelas (``hub_uploads``) e tipo de tarefa de
 promoção (``hub.upload.promote``).
 
 ### `valid_name(n: str) -> bool`

@@ -1,6 +1,6 @@
 // Onda 12 (2.8) — tradução no navegador (hub-i18n.js) com o mesmo catálogo do servidor
 // (assets/i18n/catalog.json): textos exatos, moldes com partes variáveis e
-// frases dentro de textos maiores; três idiomas completos e com os mesmos marcadores.
+// frases dentro de textos maiores; dois idiomas completos e com os mesmos marcadores.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -26,23 +26,21 @@ function catalogFor(col) {
   return I18n.prepare({ exact, templates });
 }
 
-test('catálogo: três idiomas, sem chave repetida e com os mesmos marcadores', () => {
+test('catálogo: dois idiomas, sem chave repetida e com os mesmos marcadores', () => {
   const seen = new Set();
   for (const r of rows) {
-    assert.equal(r.length, 3);
+    assert.equal(r.length, 2);
     assert.ok(!seen.has(r[0]), `repetida: ${r[0]}`);
     seen.add(r[0]);
     const m = (s) => (s.match(MARK) || []).sort().join('|');
     assert.equal(m(r[1]), m(r[0]), r[0]);
-    assert.equal(m(r[2]), m(r[0]), r[0]);
   }
 });
 
 test('exato, molde e frase', () => {
   const en = catalogFor(1);
-  const es = catalogFor(2);
   assert.equal(I18n.tr(en, 'Variável excluída.'), 'Variable deleted.');
-  assert.equal(I18n.tr(es, '  Variável excluída.\n'), '  Variable eliminada.\n');
+  assert.equal(I18n.tr(en, '  Variável excluída.\n'), '  Variable deleted.\n');
   assert.equal(I18n.tr(en, 'Editar LOG_LEVEL'), 'Edit LOG_LEVEL');
   assert.equal(I18n.tr(en, 'Token sem acesso ao app ativos.'), 'Token has no access to app ativos.');
   // frase conhecida dentro de um texto maior, com limite de palavra

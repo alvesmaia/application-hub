@@ -1,8 +1,8 @@
 """Importação de planilha Excel como **tarefa durável** (``ativos.import``).
 
-Leitura com **python-calamine** (o mesmo leitor ``calamine`` do app Rust); o openpyxl só escreve
+Leitura com **python-calamine** (leitor ``calamine``); o openpyxl só escreve
 (modelo, exportação, planilhas de teste). Antes de abrir, o zip é inspecionado com as mesmas
-regras do Rust (entradas, tamanho descomprimido por item e total, razão de compressão).
+regras (entradas, tamanho descomprimido por item e total, razão de compressão).
 
 - O upload é gravado em ``/scratch`` e a tarefa entra na fila na mesma transação da auditoria e
   da marca de idempotência (reenvio com a mesma ``Idempotency-Key`` devolve a mesma tarefa).
@@ -46,26 +46,26 @@ def _env_int(name: str, default: int) -> int:
         return default
 
 
-# Leitura com python-calamine (bindings do calamine, o mesmo leitor do app Rust). O
+# Leitura com python-calamine (bindings do calamine). O
 # calamine carrega a aba inteira em memória NATIVA (fora do heap Python; medido: ~0,65
 # KiB por linha de 12 colunas → ~130 MiB para 200 mil linhas, praticamente o tamanho
 # descomprimido do XML da aba) e o `iter_rows()` entrega as linhas ao Python uma a uma.
 # Por isso o teto da aba descomprimida é o que limita a memória da importação, e só UMA
 # planilha é carregada por processo por vez (``ATIVOS_IMPORT_PARALLEL``).
 MAX_ROWS = _env_int("HUB_IMPORT_MAX_ROWS", 300_000)
-# Mesmas regras do app Rust (diretório central do zip, sem descomprimir nada):
+# Regras do zip (diretório central, sem descomprimir nada):
 MAX_ZIP_ENTRIES = 2_000
 MAX_ZIP_TOTAL_UNCOMPRESSED = 2560 * 1024 * 1024
 MAX_ZIP_ENTRY_UNCOMPRESSED = 300 * 1024 * 1024
 MAX_ZIP_RATIO = 100
-# Diferença documentada para o Rust (lá a aba é lida em streaming, teto de 2 GiB): aqui a
-# aba vira memória, então o teto é menor (padrão 300 MiB ≈ 460 mil linhas simples).
+# Limitação atual: a aba inteira vira memória (sem leitura em streaming), então o teto é
+# menor (padrão 300 MiB ≈ 460 mil linhas simples).
 MAX_ZIP_SHEET_UNCOMPRESSED = _env_int("ATIVOS_IMPORT_MAX_SHEET_MB", 300) * 1024 * 1024
 _LOAD_SLOTS = asyncio.Semaphore(max(1, _env_int("ATIVOS_IMPORT_PARALLEL", 1)))
 
 
 def check_zip_entries(entries: list[tuple[str, int, int]]) -> None:
-    """Regras sobre (nome, comprimido, descomprimido) de cada entrada (iguais às do Rust)."""
+    """Regras sobre (nome, comprimido, descomprimido) de cada entrada."""
     if len(entries) > MAX_ZIP_ENTRIES:
         raise JobFail(
             f"Arquivo .xlsx inválido: {len(entries)} itens no arquivo compactado (limite {MAX_ZIP_ENTRIES})."
@@ -159,7 +159,7 @@ def actual_entries(path: Path) -> list[tuple[str, int, int]]:
 
 
 def check_zip(path: Path) -> None:
-    """Antes de entregar o arquivo ao calamine: regras do Rust sobre o diretório central
+    """Antes de entregar o arquivo ao calamine: regras sobre o diretório central
     (rápido) e depois sobre os tamanhos REAIS descomprimidos (:func:`actual_entries`)."""
     try:
         with zipfile.ZipFile(path) as z:
@@ -509,9 +509,7 @@ def generate_xlsx(path: Path, rows: int, bad_per_mille: int = 10, prefix: str = 
                 f"Ativo importado {i}",
                 cats[i % 6],
                 locs[i % 6],
-                "Status inválido"
-                if bad
-                else STATUSES[i % len(STATUSES)],  # como o gerador Rust: todos os status
+                "Status inválido" if bad else STATUSES[i % len(STATUSES)],  # o gerador usa todos os status
                 "Marca X",
                 f"Modelo {i % 50}",
                 f"SN{i:010d}",

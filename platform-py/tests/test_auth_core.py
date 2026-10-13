@@ -62,6 +62,11 @@ def test_auth_helpers(tmp_path, monkeypatch):
     assert not control_allowed(request)
     assert client_ip(request) == "192.0.2.1"
     assert control_allowed(Request(scope | {"path": "/"}))
+    # vindo da borda (HUB_EDGE_CIDR), vale o X-Forwarded-For que ela repassa; de fora, o cabeçalho é ignorado
+    monkeypatch.setenv("HUB_EDGE_CIDR", "10.231.250.0/24")
+    edge = scope | {"client": ("10.231.250.2", 1), "headers": [(b"x-forwarded-for", b"10.1.2.3")]}
+    assert client_ip(Request(edge)) == "10.1.2.3" and control_allowed(Request(edge))
+    assert client_ip(Request(scope | {"headers": [(b"x-forwarded-for", b"10.1.2.3")]})) == "192.0.2.1"
 
 
 def test_token_helpers():

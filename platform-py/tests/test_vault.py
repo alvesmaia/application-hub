@@ -10,8 +10,8 @@ from hub.vault import CHUNK, Vault, is_sealed, verify_signature
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_rust_ciphertext_decrypts_in_python(tmp_path: Path) -> None:
-    vector = json.loads((Path(__file__).parent / "vectors/rust-vault-v2.json").read_text())
+def test_legacy_ciphertext_decrypts(tmp_path: Path) -> None:
+    vector = json.loads((Path(__file__).parent / "vectors/vault-v2.json").read_text())
     key = tmp_path / "master.key"
     key.write_text(vector["master_key"], encoding="ascii")
     data = tmp_path / "data"

@@ -1,4 +1,4 @@
-"""Armazenamento do broker: caminhos confinados, URL pré-assinada (vetores do Rust), S3 e Graph com transporte simulado."""
+"""Armazenamento do broker: caminhos confinados, URL pré-assinada (vetores compartilhados com a versão anterior do hub), S3 e Graph com transporte simulado."""
 
 from __future__ import annotations
 
@@ -73,7 +73,7 @@ def s3(handler: Any = None, **kw: Any) -> S3Client:
     return S3Client(cfg, httpx.MockTransport(handler or (lambda r: httpx.Response(404))))
 
 
-def test_presign_matches_rust_vector() -> None:
+def test_presign_matches_legacy_vector() -> None:
     p = VECTORS["presign"]
     cfg = S3Config(
         p["endpoint"], p["bucket"], p["access_key"], p["secret_key"], p["region"], public_url=p["public_url"]

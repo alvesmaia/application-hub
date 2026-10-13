@@ -1,4 +1,4 @@
-"""Componentes da API pública v1 (equivalem aos tipos `utoipa` de `api_types.rs`)."""
+"""Componentes da API pública v1."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field
 EXAMPLES: dict[str, Any] = json.loads((Path(__file__).parent / "examples.json").read_text(encoding="utf-8"))
 
 
-U = Annotated[int, Field(ge=0)]  # inteiro sem sinal (u32/u64 do Rust)
+U = Annotated[int, Field(ge=0)]  # inteiro sem sinal (u32/u64)
 
 
 class Out(BaseModel):
@@ -341,6 +341,19 @@ class AuditEntry(Out):
     icon: str | None = None
 
 
+class UsageRow(Out):
+    user: str
+    name: str
+    email: str
+    app: str
+    app_name: str
+    opens: U
+    sections: U
+    actions: U
+    days: U
+    last: U
+
+
 class AuditVerify(Out):
     ok: bool
     entries: U
@@ -400,7 +413,7 @@ MODELS: tuple[type, ...] = (
     Observability, LogLine, Deployment, Job, ContainerAction, Container, Backup, RotateResult,
     TaskStatus, SagaStep, Saga, Task, TaskActionResult, Binding, VarKind, Variable,
     Connection, ConnectionTest, Storage, StorageChange, DeprovisionRequest, User, UserCreate,
-    UserUpdate, Role, AuditEntry, AuditVerify, InboxItem, Decision, DecideRequest, DecideResult,
+    UserUpdate, Role, AuditEntry, AuditVerify, UsageRow, InboxItem, Decision, DecideRequest, DecideResult,
     SearchHit, SearchGroup, SearchResult,
 )  # fmt: skip
 

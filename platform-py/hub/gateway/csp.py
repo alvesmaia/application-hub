@@ -1,4 +1,4 @@
-"""CSP das páginas de app (port de `csp_with` em apps/hub-web/src/auth.rs)."""
+"""CSP das páginas de app."""
 
 from __future__ import annotations
 

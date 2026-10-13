@@ -1,9 +1,9 @@
-"""Contexto do hub nos fragmentos e tradução do HTML (espelho de ``hub-demo-apps/src/i18n.rs``).
+"""Contexto do hub nos fragmentos e tradução do HTML.
 
 Os fragmentos trazem marcadores (``{{HUB_USER}}``, ``{{HUB_FIRST}}``, ``{{HUB_INITIALS}}``,
 ``{{HUB_TODAY}}``, ``{{HUB_GREETING}}``, ``{{HUB_APP_NAME}}``) que :func:`personalize` troca na
 resposta. O HTML que sai do app passa por :class:`I18nMiddleware`: com idioma diferente de
-pt-BR, textos do catálogo ``i18n.json`` (linhas ``[pt-BR, en, es]``, chave = texto em pt-BR) são
+pt-BR, textos do catálogo ``i18n.json`` (linhas ``[pt-BR, en]``, chave = texto em pt-BR) são
 trocados — só texto entre tags e os atributos ``placeholder``/``title``/``aria-label``/
 ``data-hub-toast``/``alt``; dados (nomes, números, patrimônios) passam intactos.
 """
@@ -28,9 +28,9 @@ HERE = Path(__file__).resolve().parent
 
 
 @lru_cache(maxsize=1)
-def catalog() -> dict[str, tuple[str, str]]:
+def catalog() -> dict[str, str]:
     rows = json.loads((HERE / "i18n.json").read_text("utf-8"))
-    return {r[0]: (r[1], r[2]) for r in rows}
+    return {r[0]: r[1] for r in rows}
 
 
 def tr(loc: str, pt: str) -> str | None:
@@ -38,7 +38,7 @@ def tr(loc: str, pt: str) -> str | None:
     hit = catalog().get(pt)
     if hit is None or loc == "pt-BR":
         return None
-    return hit[0] if loc == "en" else hit[1]
+    return hit
 
 
 def unescape(s: str) -> str:
@@ -267,17 +267,15 @@ _DAYS = {
         "domingo",
     ],
     "en": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-    "es": ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"],
 }
 _MONTHS = {
     "pt-BR": ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"],
     "en": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-    "es": ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"],
 }
 
 
 def today_label(loc: str) -> str:
-    """ "QUARTA-FEIRA, 1 OUT 2026" / "WEDNESDAY, OCT 1 2026" / "MIÉRCOLES, 1 OCT 2026"."""
+    """ "QUARTA-FEIRA, 1 OUT 2026" / "WEDNESDAY, OCT 1 2026"."""
     d = _now_local()
     wd, m = _DAYS[loc][d.weekday()], _MONTHS[loc][d.month - 1]
     s = f"{wd}, {m} {d.day} {d.year}" if loc == "en" else f"{wd}, {d.day} {m} {d.year}"
@@ -290,7 +288,6 @@ def greeting(loc: str) -> str:
     return {
         "pt-BR": ("Bom dia", "Boa tarde", "Boa noite"),
         "en": ("Good morning", "Good afternoon", "Good evening"),
-        "es": ("Buenos días", "Buenas tardes", "Buenas noches"),
     }[loc][i]
 
 

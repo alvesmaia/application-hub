@@ -1,5 +1,4 @@
-"""Gestão de Ativos — app FastAPI da plataforma (port Python do ``hub-demo-apps`` com
-``HUB_DEMO_APP=ativos``; mesmas rotas, mesmo markup, mesma base de dados).
+"""Gestão de Ativos — app FastAPI da plataforma (``HUB_DEMO_APP=ativos``; mesmas rotas, mesmo markup, mesma base de dados).
 
 Rotas (todas sob ``/ativos``; o hub as expõe em ``/_frag/ativos/...``):
 
@@ -86,7 +85,7 @@ def import_max_mb() -> int:
 
 
 def shared_assets_dir() -> Path:
-    """``demo.css`` (o mesmo dos apps Rust): ``ATIVOS_SHARED_ASSETS`` ou ``platform/demo-apps/assets``."""
+    """``demo.css`` compartilhado: ``ATIVOS_SHARED_ASSETS`` ou ``platform/demo-apps/assets``."""
     env = os.environ.get("ATIVOS_SHARED_ASSETS", "")
     return Path(env) if env else HERE.parents[3] / "demo-apps" / "assets"
 
@@ -235,7 +234,7 @@ def make_search(sdk: HubSdk) -> Any:
                     q.q,
                     q.limit,
                 )
-        kind = {"en": "Asset", "es": "Activo"}.get(q.locale, "Ativo")
+        kind = {"en": "Asset"}.get(q.locale, "Ativo")
         return [
             SearchHit(
                 title=r["name"],

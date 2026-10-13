@@ -1,4 +1,4 @@
-"""Modo de desenvolvimento (`devmode.rs`): `HUB_DEV_MODE=1`, só via `scripts/dev.sh` e o overlay
+"""Modo de desenvolvimento: `HUB_DEV_MODE=1`, só via `scripts/dev.sh` e o overlay
 `docker-compose.dev.yml` — nunca em produção.
 
 - assets sempre `no-store` e lidos do disco (já é assim em `hub.app`); código com `uvicorn --reload`;

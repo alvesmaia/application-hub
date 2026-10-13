@@ -18,14 +18,14 @@ def hub(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
 
 @pytest.mark.parametrize(
     ("lang", "new", "title"),
-    [("pt-BR", "Novo usuário", "Usuários"), ("en", "New user", "Users"), ("es", "Nuevo usuario", "Usuarios")],
+    [("pt-BR", "Novo usuário", "Usuários"), ("en", "New user", "Users"), ("es", "New user", "Users")],
 )
 def test_admin_users_per_language(hub: TestClient, lang: str, new: str, title: str) -> None:
     html = hub.get("/admin/users", headers={"accept-language": lang}).text
     assert new in html and f'<h1 class="page-title">{title}</h1>' in html
 
 
-@pytest.mark.parametrize(("lang", "word"), [("en", "Application"), ("es", "Aplicación")])
+@pytest.mark.parametrize(("lang", "word"), [("en", "Application"), ("es", "Application")])
 def test_ops_page_per_language(hub: TestClient, lang: str, word: str) -> None:
     assert word in hub.get("/admin/tasks", headers={"accept-language": lang}).text
 

@@ -1,4 +1,4 @@
-"""Telemetria mínima em processo (`hub-telemetry` + `slo.rs`): métricas RED por app x ambiente, traces e SLOs.
+"""Telemetria mínima em processo (`hub-telemetry` + SLOs): métricas RED por app x ambiente, traces e SLOs.
 
 Baldes de 10 s (1 h, gráficos) e de 5 min (30 dias, SLOs/status; gravados em `metrics.json`); duração em
 histograma de baldes fixos. `HUB_TELEMETRY=0` desliga a coleta (os gateways continuam servindo).
@@ -226,7 +226,7 @@ class Metrics:
         )
 
 
-# ---- SLOs (`slo.rs`) ----------------------------------------------------------------------------
+# ---- SLOs ----------------------------------------------------------------------------
 
 
 def _allowed(target_pct: float) -> float:
@@ -286,7 +286,7 @@ def daily_uptime(m: Metrics, app: str, env: str, days: int, now: int) -> list[tu
     return out
 
 
-# ---- traces (`trace.rs`) --------------------------------------------------------------------------
+# ---- traces --------------------------------------------------------------------------
 
 
 def new_trace_id() -> str:

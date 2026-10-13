@@ -1,5 +1,5 @@
-"""Textos do shell (catálogo do hub Rust: `crates/hub-shell/src/i18n.rs`, extraído em `texts.json`)
-e tradução por catálogo (`catalog.json`, chave = texto em pt-BR) como o `hub_shell::tr`."""
+"""Textos do shell (catálogo extraído em `texts.json`)
+e tradução por catálogo (`catalog.json`, chave = texto em pt-BR)."""
 
 from __future__ import annotations
 
@@ -13,8 +13,8 @@ from typing import Any, cast
 from fastapi import Request, Response
 from fastapi.templating import Jinja2Templates
 
-_LANGS = ("pt-BR", "en", "es")
-LANG_NAMES = {"pt-BR": "Português (Brasil)", "en": "English", "es": "Español"}
+_LANGS = ("pt-BR", "en")
+LANG_NAMES = {"pt-BR": "Português (Brasil)", "en": "English"}
 _WEB = Path(__file__).parent.parent / "web"
 _MARK = r"\{[^{}\s\"]{0,24}\}"  # marcador `{…}` do catálogo
 
@@ -26,7 +26,7 @@ def _table() -> dict[str, list[str]]:
 
 def parse_lang(tag: str) -> str | None:
     head = re.split(r"[-_]", tag.strip().lower())[0]
-    return {"pt": "pt-BR", "en": "en", "es": "es"}.get(head)
+    return {"pt": "pt-BR", "en": "en", "es": "en"}.get(head)  # `es` saiu em 10/2026: vira en
 
 
 def resolve(pref: str, accept: str | None) -> str:

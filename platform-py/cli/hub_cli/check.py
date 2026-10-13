@@ -110,7 +110,24 @@ def _wait(url: str, seconds: float = 60) -> bool:
     return False
 
 
-def conformance(directory: Path, upstream: str, app_id: str) -> list[str]:
+def _why(log: Path) -> str:
+    """Última exceção do log do app (`.hub/check-app.log`): é ela que explica um 500 na conformidade."""
+    try:
+        lines = [
+            ln.rstrip() for ln in log.read_text(encoding="utf-8", errors="replace").splitlines() if ln.strip()
+        ]
+    except OSError:
+        return ""
+    for ln in reversed(lines[-200:]):
+        if m := re.match(r"^\w[\w.]*(Error|Exception|Warning)\b.*", ln):
+            msg = m[0][:180]
+            if "no such column" in msg or "no such table" in msg:
+                msg += " — a migração mudou depois do primeiro `hub check`: apague `.hub/*.db` e rode de novo"
+            return f" — {msg}"
+    return f" (veja {log.name})" if lines else ""
+
+
+def conformance(directory: Path, upstream: str, app_id: str, log: Path | None = None) -> list[str]:
     """Subconjunto do contrato (CONTRATO-APP §2, §3, §3.0, §12–13, §23) pelo hub em processo."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -175,7 +192,7 @@ def step_conformance(directory: Path) -> tuple[bool, str]:
             if not _wait(f"{upstream}/{app_id}/_hub/ready"):
                 dev.stop(proc)
                 return False, f"app não ficou pronto em 60 s: {log.read_text(encoding='utf-8')[-1500:]}"
-            fails = conformance(directory, upstream, app_id)
+            fails = conformance(directory, upstream, app_id, log)
             return not fails, "; ".join(fails) or "ok"
         finally:
             dev.stop(proc)

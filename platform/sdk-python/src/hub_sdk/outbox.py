@@ -1,4 +1,4 @@
-"""Outbox transacional (``hub_outbox``) — mesmo esquema e semântica do Rust.
+"""Outbox transacional (``hub_outbox``).
 
 O app grava o evento **na mesma transação** da ação de negócio (:func:`write`); se a
 transação não confirma, o evento não existe; se confirma, fica pendente até o hub buscá-lo
@@ -69,7 +69,7 @@ def _cut(s: str, n: int) -> str:
 
 def audit(user: str, action: str, target: str = "", detail: str = "") -> Event:
     """Evento de auditoria (usuário ≤ 120, ação ≤ 80, alvo ≤ 200, detalhe ≤ 500; sem
-    caracteres de controle) — mesmos cortes do Rust."""
+    caracteres de controle)."""
     return Event(
         kind=AUDIT,
         user=_cut(user, 120),

@@ -1,6 +1,6 @@
-"""Utilitários de renderização (espelho de ``hub-demo-apps/src/ui.rs``): escape, query string,
+"""Utilitários de renderização: escape, query string,
 avisos, encaixe de conteúdo dinâmico no workspace do mockup e formatação pt-BR (a tradução
-para en/es é feita depois, por :class:`servicos.i18n.I18nMiddleware`)."""
+para en é feita depois, por :class:`servicos.i18n.I18nMiddleware`)."""
 
 from __future__ import annotations
 

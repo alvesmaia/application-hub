@@ -1,4 +1,4 @@
-"""O OpenAPI gerado da tabela de operações equivale a `hub-v1.json` (gerado pelo hub Rust)."""
+"""O OpenAPI gerado da tabela de operações equivale a `hub-v1.json` (gerado pela versão anterior do hub)."""
 
 import json
 from pathlib import Path

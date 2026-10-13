@@ -1,4 +1,4 @@
-"""HTML dinâmico da seção "Ativos" — mesmo markup do app Rust (``ativos/mod.rs``): lista, painéis
+"""HTML dinâmico da seção "Ativos": lista, painéis
 de edição/cadastro, importação e progresso. Textos em pt-BR; o idioma do usuário é aplicado depois
 (:class:`ativos.i18n.I18nMiddleware`). Nenhum JavaScript: só ``data-hub-*`` (hub-kit.js)."""
 

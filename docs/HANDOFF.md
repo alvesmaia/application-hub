@@ -3,10 +3,9 @@
 ## Onde está cada coisa
 - **`main`** (e `stack/python`, branch de trabalho): stack oficial em Python. Hub em `platform-py/`; apps, SDK,
   front-end compartilhado e testes em `platform/`; mockup estático original na raiz.
-- **`stack/rust-topcoat`**: hub Rust + Topcoat **arquivado** (referência histórica). Docs da era Rust:
-  `docs/migracao/historico-rust/` (HANDOFF, PENDENCIAS, IMPLANTACAO, README da plataforma).
+- Histórico da migração e documentos antigos: `docs/migracao/`.
 - **Leia:** `AGENTS.md` (comandos e guardrails), `docs/PENDENCIAS.md` (status e itens em aberto),
-  `docs/PLANO-MIGRACAO-PYTHON.md`, `docs/migracao/status/*.md`, `platform/docs/CONTRATO-APP.md`.
+  `docs/migracao/PLANO-MIGRACAO-PYTHON.md`, `docs/migracao/status/*.md`, `platform/docs/CONTRATO-APP.md`.
 
 ## Layout
 - `platform-py/hub` — hub FastAPI (templates em `hub/web/templates`, catálogo i18n em `hub/web/catalog.json`).

@@ -21,7 +21,7 @@ conferindo o anel de foco nas capturas. Sem teste com leitores de tela reais (NV
 | 8 | Tour | primeiro acesso ao Início | Diálogo com foco em "Próximo"; `→`/`←` navegam, `Esc` interrompe (retomado no próximo acesso), `Tab` circula só entre os botões do tour; alvo destacado com contorno | ✅ |
 | 9 | Aplicações | `Tab` | Estrela de favorito (`aria-pressed`, rótulo "Fixar X nos favoritos"), "Abrir aplicação", "Solicitar acesso" (apps fora da lista) | ✅ |
 | 10 | Inbox (página) | `Tab` | Filtros (`aria-current`), por item: link do deep link, comentário (com rótulo), Aprovar/Recusar, Marcar como lida, Arquivar; preferências em tabela com cabeçalhos | ✅ |
-| 11 | App (fragmento) | `Tab` na sidebar, `Enter` numa seção | Troca de seção leva o foco ao título da página nova (leitor anuncia); sidebar com `aria-current` (apps Python/SDK) | ✅ (apps Rust do mockup: `aria-current` ausente na sidebar gerada — só a classe `active`) |
+| 11 | App (fragmento) | `Tab` na sidebar, `Enter` numa seção | Troca de seção leva o foco ao título da página nova (leitor anuncia); sidebar com `aria-current` (apps Python/SDK) | ✅ |
 | 12 | Modais da Administração/Operações | `Enter` no botão, `Tab`, `Esc` | Abrem com o foco no primeiro campo; `Tab` fica preso no diálogo (genérico no `hub-ux.js` para todo `role=dialog` modal); ao fechar, o foco volta ao botão que abriu | ✅ |
 | 13 | Movimento | sistema com "reduzir movimento" | Spinner, transições e animações desligadas | ✅ (regra global em `hub.css`) |
 | 14 | Alvos | — | Botões de ícone, filtros e opções do menu ≥ 24×24 px | ✅ |

@@ -1,7 +1,7 @@
 """Pool do Postgres (asyncpg) com os codecs que o SDK espera e migração em segundo plano.
 
 - ``HUB_DB_URL`` (ou ``HUB_DB_URL_<ID>``): URL do banco do app, injetada pela plataforma.
-- Pools separados (mesma URL), como no Rust: handlers (``HUB_DB_POOL``, 12),
+- Pools separados (mesma URL): handlers (``HUB_DB_POOL``, 12),
   idempotência (``HUB_IDEM_POOL``, 12) e tarefas (``HUB_JOBS_POOL``, 5) — uma rajada de
   requisições não trava o heartbeat do lease nem se autobloqueia.
 - **Orçamento de conexões**: o papel do app tem ``CONNECTION LIMIT 40`` no hub-db. Os

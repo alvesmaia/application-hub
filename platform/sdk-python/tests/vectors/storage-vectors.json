@@ -1,5 +1,5 @@
 {
-  "_doc": "Vetores compartilhados (onda 10): o confinamento de caminhos e a URL pré-assinada S3 são iguais no hub (Rust, hub-storage), no hub-sdk Rust e no hub_sdk Python. Testados nas três pontas.",
+  "_doc": "Vetores compartilhados (onda 10): o confinamento de caminhos e a URL pré-assinada S3 são iguais no hub e no hub_sdk Python. Testados nas duas pontas.",
   "paths_ok": [
     ["/a//b/c.pdf", "a/b/c.pdf"],
     ["", ""],

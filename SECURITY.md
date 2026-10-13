@@ -11,8 +11,7 @@ com quem reportou.
 
 | Branch | Suporte |
 |---|---|
-| `stack/rust-topcoat` (código em `platform/`) | sim — recebe correções |
-| `main` (mockup estático) | não — só documentação e protótipo |
+| `main` (hub Python em `platform-py/`, apps e SDK em `platform/`) | sim — recebe correções |
 | tags/releases antigas | não |
 
 ## Escopo
@@ -31,6 +30,6 @@ Não há programa de recompensa (bug bounty).
 
 Please **do not open public issues** for vulnerabilities. Report privately through GitHub's
 **Security › Report a vulnerability** (private vulnerability reporting) on this repository, with
-reproduction steps, affected commit and impact. Supported branch: `stack/rust-topcoat` only
-(`main` is a static mockup). Demo credentials and demo apps are public by design and out of scope,
+reproduction steps, affected commit and impact. Supported branch: `main`
+(Python hub in `platform-py/`, apps and SDK in `platform/`). Demo credentials and demo apps are public by design and out of scope,
 as are third-party dependencies and the known limitations in `docs/PENDENCIAS.md`. There is no bug bounty.

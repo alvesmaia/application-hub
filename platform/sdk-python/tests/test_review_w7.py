@@ -135,7 +135,7 @@ async def test_response_is_streamed_not_buffered_and_big_ones_store_only_the_mar
     assert len(sent) == MAX_STORED_BODY + 1 + 4 * (MAX_STORED_BODY // 2)
     async with client(app) as c:
         r = await c.post("/big", headers={HEADER: "chave-stream-001"})
-    # acima do teto de replay: só a marca "concluída" (como no Rust); nada reexecutado
+    # acima do teto de replay: só a marca "concluída"; nada reexecutado
     assert r.status_code == 200 and r.headers[REPLAY_HEADER] == "true"
     assert "Operação já concluída" in r.text and runs == [1]
 

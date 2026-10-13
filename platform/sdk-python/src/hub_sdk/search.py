@@ -1,5 +1,4 @@
-"""Busca federada (onda 9): ``GET /{app}/_hub/search?q=&limit=`` — espelho de
-``hub_sdk::search``.
+"""Busca federada (onda 9): ``GET /{app}/_hub/search?q=&limit=``.
 
 O hub chama este endpoint pela rede interna (token interno) com a identidade de quem busca
 (``x-hub-user``, ``x-hub-locale``); o app devolve só o que essa pessoa pode ver. O SDK
@@ -88,7 +87,7 @@ def fold(s: str) -> str:
 
 
 def score(text: str, q: str) -> float:
-    """Igual 1, começa 0,8, palavra começa 0,6, contém 0,4, senão 0 (mesma regra do Rust)."""
+    """Igual 1, começa 0,8, palavra começa 0,6, contém 0,4, senão 0."""
     t, n = fold(text), fold(q.strip())
     if not n:
         return 0.0

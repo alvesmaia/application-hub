@@ -51,7 +51,7 @@ class TokenIn(BaseModel):
 
 
 def _quirk(_ms: int, _now: int) -> str:
-    # O Rust chama `relative(now, ts)` com os argumentos trocados e mostra sempre "agora mesmo" (paridade).
+    # Argumentos de `relative(now, ts)` trocados: sempre mostra "agora mesmo".
     return "agora mesmo"
 
 

@@ -80,7 +80,7 @@ def test_apps_catalog_status_and_filters(hub: TestClient) -> None:
     app = page["items"][0]
     assert app["id"] == "ativos" and app["stack"] == "python" and app["url"] == "/apps/ativos"
     assert app["api"]["base"] == "/apps/ativos/api/v1" and app["mcp"]["tool_prefix"] == "ativos."
-    assert hub.get("/api/v1/apps?stack=rust").json()["total"] == 0
+    assert hub.get("/api/v1/apps?stack=go").json()["total"] == 0
     assert hub.get("/api/v1/apps?q=SERVICOS").json()["total"] == 1
     assert hub.get("/api/v1/apps/servicos").json()["id"] == "servicos"
     problem(hub.get("/api/v1/apps/nada"), 404, "not-found")
@@ -105,7 +105,7 @@ def test_pagination_and_bad_numbers(hub: TestClient) -> None:
 def test_token_scopes_and_owner_rbac(hub: TestClient) -> None:
     ro = bearer(hub, make_token(hub, ["api:read"]))
     assert ro.get("/api/v1/apps").status_code == 200
-    # sem api:write a superfície de escrita nem aceita o token (como no Rust)
+    # sem api:write a superfície de escrita nem aceita o token
     r = ro.post("/api/v1/containers/x/restart")
     problem(r, 401, "unauthorized")
     assert r.headers["www-authenticate"].startswith("Bearer")

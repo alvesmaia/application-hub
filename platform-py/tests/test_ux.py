@@ -160,7 +160,7 @@ def test_catalog_helpers_and_texts() -> None:
     assert catalog.section_label("assets") == "Inventário de ativos"
     assert t("nao.existe") == "nao.existe"
     assert t("time.now", "en") == "just now"
-    assert tn("home.greeting", "Ana", "es") == "Hola, Ana"
+    assert tn("home.greeting", "Ana", "es") == "Olá, Ana"
     assert ago(0, 30_000) == "agora"
     assert ago(0, 120_000) == "há 2 min"
     assert ago(0, 7_200_000) == "há 2 h"

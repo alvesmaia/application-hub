@@ -12,10 +12,8 @@ sem socket do Docker, porta 8093) e `platform-py/.tmp-instance.env` (senha demo)
 ## Rodar
 
 ```bash
-cd platform
-docker compose up -d                       # + seed (docker wait hub-seed)
-cargo build -p hub-cli                     # `hub pack` usado pelo cenário de Implantações
-cd tests-e2e
+bash platform-py/scripts/tmp-instance.sh up   # instância com usuários demo (acima)
+cd platform/tests-e2e
 npm ci && npx playwright install chromium
 npm run e2e                                # tudo (projetos demo + multitab), headless
 npm run e2e:demo                           # só o roteiro de apresentação
@@ -24,9 +22,9 @@ npm run e2e:report                         # abre o relatório HTML (reports/htm
 ```
 
 Variáveis: `HUB` (padrão `http://localhost:8080`), `HUB_STAGING` (padrão
-`http://staging.localhost:8080`), `HUB_BIN` (binário `hub`; padrão `../target/{release,debug}/hub`),
-`E2E_IMPORT_ROWS` (planilha da importação, padrão 200 000 linhas), `E2E_IMAGE` (imagem do pacote,
-padrão `hub-demo-apps@<Image ID local>`).
+`http://staging.localhost:8080`), `HUB_BIN` (CLI `hub` de `platform-py/cli`; padrão `hub` no PATH),
+`E2E_IMPORT_ROWS` (planilha da importação, padrão 200 000 linhas), `E2E_IMAGE_<APP>`/`E2E_IMAGE` (imagem do pacote,
+`<imagem>@<Image ID local>`, obrigatória nos cenários que empacotam).
 
 Saídas: `reports/html` (relatório), `reports/results.json`, `reports/junit.xml`; na falha,
 `test-results/<teste>/` com screenshot, trace (`npx playwright show-trace …/trace.zip`) e vídeo.

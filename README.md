@@ -9,7 +9,7 @@
 Portal corporativo único (white label) que hospeda várias aplicações internas: um shell global (header + menu) que nunca some, cada aplicação isolada no seu container e composta na tela sem iframe, com Administração, Operações, observabilidade, Inbox e busca global. Tudo também por **API** (`/api/v1`, OpenAPI 3.1, documentação em `/api/docs`) e por **MCP** para assistentes de IA (`/mcp`, com o mesmo controle de acesso das telas).
 
 - **Stack:** Python 3.12 (`uv`), FastAPI + Jinja2 (SSR), asyncpg, PostgreSQL, MinIO, Docker. Hub em [`platform-py/`](platform-py/); apps Python, SDK `hub_sdk`, front-end compartilhado e suíte de conformidade em [`platform/`](platform/).
-- **Branches:** `main` = stack oficial (Python); `stack/python` = branch de trabalho. A **versão Rust + Topcoat foi arquivada** na branch [`stack/rust-topcoat`](../../tree/stack/rust-topcoat) (referência histórica; não evolui).
+- **Branches:** `main` = stack oficial (Python); `stack/python` = branch de trabalho.
 
 ## Documentação
 
@@ -18,12 +18,11 @@ Portal corporativo único (white label) que hospeda várias aplicações interna
 | [`AGENTS.md`](AGENTS.md) | Guia de trabalho: stack, comandos, guardrails |
 | [`docs/HANDOFF.md`](docs/HANDOFF.md) | Estado atual e como rodar |
 | [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md) | Status e itens em aberto |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | O que foi feito, o que está no radar |
 | [`docs/FAQ-ARQUITETURA.md`](docs/FAQ-ARQUITETURA.md) | Decisões de arquitetura |
 | [`docs/IMPLANTACAO.md`](docs/IMPLANTACAO.md) | Checklist de implantação |
 | [`platform/README.md`](platform/README.md) | Mapa de `platform/` (apps, SDK, assets, testes) |
 | [`platform/docs/CONTRATO-APP.md`](platform/docs/CONTRATO-APP.md) | Contrato entre hub e aplicações |
-| [`docs/migracao/`](docs/migracao/) | Histórico da migração Rust → Python (status por etapa; docs da era Rust em `historico-rust/`) |
+| [`docs/migracao/`](docs/migracao/) | Histórico da migração para Python (status por etapa; documentos antigos em `historico-rust/`) |
 
 ## Instalar do zero (só Docker)
 

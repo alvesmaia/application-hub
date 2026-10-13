@@ -37,7 +37,7 @@ class Identity:
     name: str = ""
     email: str = ""
     permissions: tuple[str, ...] = field(default_factory=tuple)
-    # Idioma do usuário (onda 9): ``pt-BR``, ``en`` ou ``es``; vazio em hubs anteriores.
+    # Idioma do usuário (onda 9): ``pt-BR`` ou ``en``; vazio em hubs anteriores.
     locale: str = ""
 
     @property
@@ -114,8 +114,7 @@ def identity_of(conn: HTTPConnection) -> Identity:
 
 
 def user_key(headers_value: str | None) -> str:
-    """Valor cru do cabeçalho, aparado — é o escopo das chaves de idempotência (igual ao
-    Rust: a chave de outro usuário nunca devolve a resposta deste)."""
+    """Valor cru do cabeçalho, aparado — é o escopo das chaves de idempotência (a chave de outro usuário nunca devolve a resposta deste)."""
     return (headers_value or "").strip()
 
 

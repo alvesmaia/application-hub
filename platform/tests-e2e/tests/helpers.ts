@@ -79,14 +79,13 @@ export async function confirmHub(page: Page): Promise<void> {
   if (!ok) throw new Error('modal de confirmação do hub não apareceu');
 }
 
-/** Gera (uma vez) a planilha grande com a própria imagem hub-demo-apps (`gen-xlsx`). */
+/** Gera (uma vez) a planilha grande com o próprio app ativos (`python -m ativos gen-xlsx`). */
 export function bigXlsx(rows: number, prefix: string): string {
   fs.mkdirSync(WORK_DIR, { recursive: true });
   const name = `import-${rows}-${prefix}.xlsx`;
   const file = path.join(WORK_DIR, name);
   if (!fs.existsSync(file)) {
-    // Pilha Python (app-hub-*): o próprio app ativos gera (`python -m ativos gen-xlsx`); Rust: hub-demo-apps.
-    const gen = CP.startsWith('app-hub-') ? [`${CP}ativos`] : ['--entrypoint', '/usr/local/bin/hub-demo-apps', 'hub-demo-apps'];
+    const gen = [`${CP}ativos`];
     execFileSync('docker', ['run', '--rm', '--user', '0', '--mount', `type=bind,source=${WORK_DIR},target=/w`,
       ...gen, 'gen-xlsx', String(rows), `/w/${name}`, '10', prefix],
     { stdio: 'inherit', env: { ...process.env, MSYS_NO_PATHCONV: '1' } });
@@ -102,17 +101,16 @@ export async function newRoleContext(browser: import('@playwright/test').Browser
 
 export const PLATFORM = path.resolve(__dirname, '..', '..');
 
-/** Binário `hub` (crate hub-cli): HUB_BIN, ou target/{debug,release}/hub[.exe]. */
+/** CLI `hub` (Python, `platform-py/cli`): HUB_BIN (relativo a platform/) ou `hub` no PATH. */
 export function hubBin(): string {
-  // Relativo a platform/ (como no CI: HUB_BIN=target/release/hub).
-  if (process.env.HUB_BIN) return path.resolve(PLATFORM, process.env.HUB_BIN);
-  for (const p of ['target/release/hub', 'target/debug/hub']) {
-    for (const ext of ['', '.exe']) {
-      const f = path.join(PLATFORM, p + ext);
-      if (fs.existsSync(f)) return f;
-    }
-  }
-  throw new Error('binário hub não encontrado: cargo build -p hub-cli (ou HUB_BIN)');
+  return process.env.HUB_BIN ? path.resolve(PLATFORM, process.env.HUB_BIN) : 'hub';
+}
+
+/** Imagem local do app para `hub pack --image` (por digest): E2E_IMAGE_<APP> ou E2E_IMAGE. */
+export function appImage(app: string): string {
+  const v = process.env[`E2E_IMAGE_${app.toUpperCase()}`] || process.env.E2E_IMAGE;
+  if (!v) throw new Error(`defina E2E_IMAGE_${app.toUpperCase()}=<imagem>@<id> (ou E2E_IMAGE)`);
+  return v;
 }
 
 /** Empacota `samples/src/<app>` com outra versão, apontando para a imagem local por Image ID. */
@@ -125,7 +123,7 @@ export function packSample(app: string, version: string): string {
   const m = JSON.parse(fs.readFileSync(mf, 'utf8'));
   m.version = version;
   fs.writeFileSync(mf, JSON.stringify(m, null, 2));
-  const image = process.env[`E2E_IMAGE_${app.toUpperCase()}`] || process.env.E2E_IMAGE || `hub-demo-apps@${execFileSync('docker', ['image', 'inspect', '-f', '{{.Id}}', 'hub-demo-apps'], { encoding: 'utf8' }).trim()}`;
+  const image = appImage(app);
   const out = path.join(WORK_DIR, `${app}-${version}.hubapp`);
   execFileSync(hubBin(), ['pack', '--dir', dir, '--image', image, '--out', out], { stdio: 'inherit' });
   return out;
@@ -149,11 +147,11 @@ export async function gotoSafe(page: Page, url: string) {
 }
 
 /**
- * Nomes da pilha em teste. Padrão = pilha Rust (`hub-*`); contra o hub Python (compose `app-hub`) use
- * E2E_CONTAINER_PREFIX=app-hub- E2E_DATA_NETWORK=app-hub_default E2E_OBJSTORE_PASS=<senha do MinIO> E2E_ATIVOS_STACK=python; E2E_IMAGE_<APP>=<imagem local>@<id> (uma por app) e HUB_BIN=<hub.exe do CLI Python>.
+ * Nomes da pilha em teste (padrão: compose `app-hub`). Outro projeto: E2E_CONTAINER_PREFIX/E2E_DATA_NETWORK;
+ * E2E_OBJSTORE_PASS=<senha do MinIO>; E2E_IMAGE_<APP>=<imagem local>@<id> (uma por app) e HUB_BIN=<CLI hub>.
  */
-export const CP = process.env.E2E_CONTAINER_PREFIX || 'hub-';
-export const DATA_NETWORK = process.env.E2E_DATA_NETWORK || 'hub-data';
+export const CP = process.env.E2E_CONTAINER_PREFIX || 'app-hub-';
+export const DATA_NETWORK = process.env.E2E_DATA_NETWORK || 'app-hub_default';
 export const OBJSTORE_PASS = process.env.E2E_OBJSTORE_PASS || 'hubadmin-demo-senha';
 
 /** Implantações: abre a gaveta do app em /admin/deploys e escolhe a versão (as ações valem para a versão escolhida). */

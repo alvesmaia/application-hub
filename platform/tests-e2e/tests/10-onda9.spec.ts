@@ -305,15 +305,14 @@ test('tema escuro e idioma: menu do usuário persiste no servidor; en/es no shel
     await openApp(page, '/apps/ativos/dashboard');
     await expect(page.locator('#app-root .page-title')).toHaveText('Overview');
     await expect(page.locator('#app-root')).toContainText('Back to platform');
-    await prefs(api, { lang: 'es' });
     await openApp(page, '/apps/ativos/settings');
-    await expect(page.locator('#app-root .page-title')).toHaveText('Configuración');
-    // Automático: segue o Accept-Language do navegador.
+    await expect(page.locator('#app-root .page-title')).toHaveText('Settings');
+    // Automático: segue o Accept-Language do navegador (`es` saiu em 10/2026: vira en).
     await prefs(api, { lang: '' });
     const ctx2 = await browser.newContext({ storageState: stateFile('operador'), locale: 'es-ES' });
     const p2 = await ctx2.newPage();
     await p2.goto('/inbox');
-    await expect(p2.locator('html')).toHaveAttribute('lang', 'es');
+    await expect(p2.locator('html')).toHaveAttribute('lang', 'en');
     await ctx2.close();
   } finally {
     await prefs(api, { theme: '', lang: '' });

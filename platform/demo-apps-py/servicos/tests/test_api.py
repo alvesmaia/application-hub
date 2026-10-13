@@ -1,4 +1,4 @@
-"""API v1, OpenAPI (paridade com o do app Rust), MCP interno e idempotência."""
+"""API v1, OpenAPI (igual ao contrato empacotado em samples/), MCP interno e idempotência."""
 
 from __future__ import annotations
 
@@ -22,10 +22,10 @@ def ops(doc: dict[str, Any]) -> dict[tuple[str, str], dict[str, Any]]:
     return {(m.upper(), p): o for p, item in doc["paths"].items() for m, o in item.items()}
 
 
-async def test_openapi_has_the_same_operations_as_the_rust_app(running: Running) -> None:
+async def test_openapi_has_the_same_operations_as_the_packaged_contract(running: Running) -> None:
     py = (await running.client.get("/servicos/api/openapi.json")).json()
-    rust = json.loads((PLATFORM / "samples/src/servicos/openapi.json").read_text("utf-8"))
-    a, b = ops(rust), ops(py)
+    packaged = json.loads((PLATFORM / "samples/src/servicos/openapi.json").read_text("utf-8"))
+    a, b = ops(packaged), ops(py)
     assert set(a) == set(b)
     for k, ro in a.items():
         po = b[k]
@@ -37,8 +37,8 @@ async def test_openapi_has_the_same_operations_as_the_rust_app(running: Running)
         assert pp == rp, k
         assert ("requestBody" in po) == ("requestBody" in ro), k
         assert "4XX" in po["responses"]
-    assert py["openapi"] == rust["openapi"] and py["servers"] == rust["servers"]
-    assert py["security"] == rust["security"] and "Problem" in py["components"]["schemas"]
+    assert py["openapi"] == packaged["openapi"] and py["servers"] == packaged["servers"]
+    assert py["security"] == packaged["security"] and "Problem" in py["components"]["schemas"]
     body = py["components"]["schemas"]["TicketIn"]
     assert set(body["required"]) == {"title", "category", "priority"}
     assert "Aguardando" in py["components"]["schemas"]["StatusIn"]["properties"]["status"]["enum"]

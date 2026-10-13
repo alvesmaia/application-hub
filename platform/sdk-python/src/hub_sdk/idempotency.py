@@ -1,5 +1,5 @@
 """``Idempotency-Key`` para rotas que alteram dados (POST/PUT/PATCH/DELETE) — middleware
-ASGI com a mesma semântica e a **mesma tabela** do SDK Rust (``hub_idempotency``).
+ASGI que usa a tabela ``hub_idempotency`` (formato estável: não mude sem migração).
 
 - Primeira vez: o pedido segue para o handler; a resposta (2xx/3xx/4xx, exceto 408/429)
   é guardada. 5xx/429 não são guardados — salvo se o handler já efetivou a ação
@@ -13,18 +13,18 @@ ASGI com a mesma semântica e a **mesma tabela** do SDK Rust (``hub_idempotency`
   (``boundary`` do multipart normalizado, inclusive partido entre pedaços). Até 1 MiB
   com ``Content-Length`` em memória; acima disso ou sem tamanho (chunked), em streaming
   para um temporário em ``$TMPDIR`` (``/scratch``), reentregue ao handler e apagado no
-  fim — inclusive em exceção. O hash é idêntico ao do Rust (mesmos vetores de teste).
+  fim — inclusive em exceção. O hash segue os vetores de teste fixos.
 - **Teto do corpo** (``HUB_MAX_BODY_MB``, padrão 64): ``Content-Length`` acima do teto →
   **413** sem ler nada; corpo sem tamanho (chunked) que passa do teto → 413 e o temporário
   é apagado na hora. Nada acima do teto chega ao disco.
 - **Resposta com buffer limitado**: até ``MAX_STORED_BODY`` a resposta é registrada antes
   de ir ao cliente; acima disso segue direto ao cliente em streaming (nada é
   acumulado em memória além do teto de replay, 256 KiB) e guarda-se só a marca
-  "concluída" (como no Rust):
+  "concluída":
   a repetição recebe 200 "Operação já concluída".
 
 **Queda no meio** (Postgres): o dono da chave segura um advisory lock de sessão
-(``pg_try_advisory_lock(hashtextextended(rota||chave, 7))`` — o mesmo do Rust) numa
+(``pg_try_advisory_lock(hashtextextended(rota||chave, 7))``) numa
 conexão do pool de idempotência enquanto o handler executa. Se o processo morre, o lock
 morre com a conexão; a nova tentativa encontra ``pending`` sem dono e executa de novo —
 seguro porque a transação de negócio não confirmou (senão o registro estaria
@@ -96,7 +96,7 @@ def split_content_type(ct: str) -> tuple[str, str | None]:
 
 
 class RequestHasher:
-    """Hash incremental do pedido (idêntico ao ``RequestHasher`` do Rust)."""
+    """Hash incremental do pedido."""
 
     def __init__(self, method: str, path: str, query: str, content_type: str) -> None:
         ct, boundary = split_content_type(content_type)
@@ -262,7 +262,7 @@ async def _send_stored(send: Send, r: _Stored, replay: bool) -> None:
 
 class _Captured:
     """``send`` do handler com **buffer limitado**: até ``MAX_STORED_BODY`` a resposta fica
-    em memória e só vai ao cliente depois de registrada (:meth:`flush`) — igual ao Rust, a
+    em memória e só vai ao cliente depois de registrada (:meth:`flush`); a
     repetição que chega logo depois já encontra ``done``. Passou do teto, o que estava no
     buffer é enviado e o resto segue **direto ao cliente** (streaming; nada além do teto
     fica em memória) e só a marca "concluída" é guardada. Se o cliente sumiu (``send``

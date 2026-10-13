@@ -1,5 +1,4 @@
-"""Unidades sem I/O — espelham os testes do app Rust (``model.rs``, ``mod.rs``, ``i18n.rs``,
-``ui.rs``, ``import.rs``)."""
+"""Unidades sem I/O."""
 
 from __future__ import annotations
 
@@ -127,12 +126,12 @@ def test_form_fields_markup() -> None:
     assert 'for="f-name"' in field_html("name", "", False) and "Nome *" in field_html("name", "", False)
 
 
-# ---- i18n (casos do i18n.rs) ----------------------------------------------------------
+# ---- i18n ----------------------------------------------------------
 
 
-def test_catalog_rows_have_three_languages() -> None:
+def test_catalog_rows_have_two_languages() -> None:
     rows = json.loads((Path(i18n.HERE) / "i18n.json").read_text("utf-8"))
-    assert all(len(r) == 3 and all(x.strip() for x in r) for r in rows)
+    assert all(len(r) == 2 and all(x.strip() for x in r) for r in rows)
 
 
 def test_html_translation_keeps_data_and_scripts() -> None:
@@ -197,7 +196,7 @@ def test_reader_roundtrip_with_generated_sheet(tmp_path: Path) -> None:
     importer.generate_xlsx(p, 200, 50, "ZZ-")
     r = importer.count_xlsx(p)
     assert r["total"] == 200 and r["valid"] + r["rejected"] == 200 and 0 < r["rejected"] < 40
-    # F17: como o gerador Rust, a planilha traz todos os status (o E2E exporta só os "Disponível").
+    # F17: a planilha traz todos os status (o E2E exporta só os "Disponível").
     from openpyxl import load_workbook
 
     ws = load_workbook(p, read_only=True).active

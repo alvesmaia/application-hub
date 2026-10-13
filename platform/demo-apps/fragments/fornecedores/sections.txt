@@ -1,5 +1,0 @@
-dashboard
-indicators
-analysis
-reports
-settings

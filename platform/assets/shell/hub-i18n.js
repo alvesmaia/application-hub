@@ -153,7 +153,7 @@
   // ---- DOM --------------------------------------------------------------------------
   const lang = (document.documentElement.getAttribute('lang') || 'pt-BR').toLowerCase();
   if (lang.startsWith('pt')) return;
-  const code = lang.startsWith('es') ? 'es' : 'en';
+  const code = 'en';
   let cat = null;
   const done = new WeakMap(); // nó → texto que nós escrevemos (evita laço)
 

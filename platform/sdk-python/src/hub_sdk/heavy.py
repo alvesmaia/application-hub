@@ -1,6 +1,6 @@
 """Limite de operações pesadas simultâneas por app (importação, exportação, relatório).
 
-Mesma regra do Rust: sem vaga, 429 **imediato** com ``Retry-After`` (o ``hub.js`` mostra
+Sem vaga, 429 **imediato** com ``Retry-After`` (o ``hub.js`` mostra
 "em fila…" e tenta de novo sozinho). A vaga é liberada quando o *permit* é liberado —
 num download em streaming, só no fim do corpo.
 

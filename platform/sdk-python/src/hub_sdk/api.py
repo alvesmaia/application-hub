@@ -59,7 +59,7 @@ def openapi_of(app: FastAPI, app_id: str, title: str, version: str) -> dict[str,
     prefix = f"/{app_id}/api/"
     routes = [r for r in app.routes if isinstance(r, APIRoute) and r.path.startswith(prefix)]
     doc = get_openapi(title=title, version=version, openapi_version="3.1.0", routes=routes)
-    # Onda 12 (2.4): mesmas convenções do SDK Rust — servidor relativo, esquemas de
+    # Onda 12 (2.4): servidor relativo, esquemas de
     # segurança do hub e erros RFC 9457 tipados (``Problem``) em toda operação.
     doc["servers"] = [{"url": "/"}]
     doc["security"] = [{"bearer": []}, {"session": []}]

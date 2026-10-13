@@ -1,3 +1,0 @@
-# Planilhas grandes geradas sob demanda (gerar-planilha.sh); só a pequena é commitada.
-*.xlsx
-!ativos-1000.xlsx

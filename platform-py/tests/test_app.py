@@ -13,7 +13,17 @@ def client() -> TestClient:
 
 def test_healthz_readyz(client: TestClient) -> None:
     assert client.get("/healthz").json() == {"status": "ok", "version": hub.__version__}
-    assert client.get("/readyz").status_code == 200
+    assert client.get("/readyz").json() == {"status": "ready", "version": hub.__version__}
+
+
+def test_readyz_fails_without_data(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import os
+
+    monkeypatch.setenv("HUB_DATA_DIR", str(tmp_path / "data"))
+    c = client_for(create_app())
+    monkeypatch.setattr(os, "access", lambda *_a, **_k: False)
+    r = c.get("/readyz")
+    assert r.status_code == 503 and r.json()["problems"] == ["dados"]
 
 
 @pytest.mark.parametrize(
@@ -82,7 +92,7 @@ def test_pwa_manifest_start_shortcuts_and_offline(client: TestClient) -> None:
 
 
 def test_assets_cache_policy_and_revalidation(client: TestClient) -> None:
-    """F7a: assets revalidam (ETag → 304) em vez de `no-store`; fontes e vendor ficam em cache, como no Rust."""
+    """F7a: assets revalidam (ETag → 304) em vez de `no-store`; fontes e vendor ficam em cache."""
     r = client.get("/assets/hub.css")
     assert r.status_code == 200 and r.headers["cache-control"] == "no-cache" and r.headers.get("etag")
     assert r.headers["cdn-cache-control"] == "no-store"

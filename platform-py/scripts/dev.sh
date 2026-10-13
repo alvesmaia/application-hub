@@ -5,7 +5,7 @@
 #   dev.sh status|logs
 #   dev.sh reload-on|reload-off     recarga ao vivo do navegador (SSE /_dev/reload); vale no próximo dev-up (ou já, se em dev)
 #   dev.sh obs-up|obs-down          perfil observability (OTel Collector + Jaeger :16696) com OTLP ligado no hub
-# Toca só em app-hub-*; nunca no Rust (hub-*) nem no túnel.
+# Toca só em app-hub-*; nunca nos containers hub-* nem no túnel.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 STATE=dist/dev-mode.env

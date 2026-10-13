@@ -1,8 +1,7 @@
 # platform/
 
 Peças compartilhadas da stack Python. O hub em si está em [`../platform-py/`](../platform-py/); comandos e
-guardrails em [`../AGENTS.md`](../AGENTS.md). O guia técnico da era Rust foi arquivado em
-`docs/migracao/historico-rust/platform-README.md` (código na branch `stack/rust-topcoat`).
+guardrails em [`../AGENTS.md`](../AGENTS.md).
 
 | Pasta | Conteúdo |
 |---|---|

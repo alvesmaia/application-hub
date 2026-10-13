@@ -171,9 +171,7 @@ def test_search_contract(cfg: Cfg, internal: httpx.Client) -> None:
     for x in res:
         assert x["title"] and isinstance(x.get("subtitle", ""), str)
         u = x["url"]
-        assert u == f"/apps/{cfg.app}" or u.startswith(
-            (f"/apps/{cfg.app}/", f"/apps/{cfg.app}?")
-        ), u
+        assert u == f"/apps/{cfg.app}" or u.startswith((f"/apps/{cfg.app}/", f"/apps/{cfg.app}?")), u
         assert 0.0 <= float(x.get("score", 0)) <= 1.0
     scores = [float(x.get("score", 0)) for x in res]
     assert scores == sorted(scores, reverse=True), "mais relevantes primeiro"
@@ -214,8 +212,8 @@ def test_locale_from_hub_headers(cfg: Cfg, http: httpx.Client) -> None:
     page = f"/{cfg.app}/{cfg.profile['sections'][0]}"
     en = keep(http.get(page, headers={"x-hub-locale": "en"}))
     assert en.status_code == 200 and loc["en"] in en.text, "x-hub-locale: en"
-    es = keep(http.get(page, headers={"x-hub-user": _ident_full("conf@x", [], "es")}))
-    assert loc["es"] in es.text, "locale do x-hub-user"
+    ident = keep(http.get(page, headers={"x-hub-user": _ident_full("conf@x", [], "en")}))
+    assert loc["en"] in ident.text, "locale do x-hub-user"
     al = keep(http.get(page, headers={"accept-language": "en-US,en;q=0.9"}))
     assert loc["en"] in al.text, "Accept-Language como último recurso"
     pt = keep(http.get(page))

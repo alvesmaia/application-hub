@@ -1,5 +1,4 @@
-"""Armazenamento de arquivos do app (onda 10, contrato item 22) — mesma interface do Rust
-(``hub_sdk::storage``): conexões da plataforma pelo **broker do hub** (SharePoint, S3) ou o
+"""Armazenamento de arquivos do app (onda 10, contrato item 22): conexões da plataforma pelo **broker do hub** (SharePoint, S3) ou o
 bucket próprio do app (**S3 direto**, ``HUB_S3_*``). Trocar de backend é configuração
 (vínculo em Administração › Conexões), não código.
 
@@ -583,7 +582,7 @@ class S3Connection(Connection):
         return ShareLink(url=self.presign_get(self._key(p), secs, now), kind="view", expires=exp)
 
     def presign_get(self, key: str, secs: int, now: dt.datetime) -> str:
-        """URL pré-assinada de leitura (mesmo resultado do Rust para as mesmas entradas)."""
+        """URL pré-assinada de leitura."""
         return self.presign("GET", key, secs, now)
 
     def presign_put_path(self, path: str, secs: int, now: dt.datetime | None = None) -> str:
@@ -593,7 +592,7 @@ class S3Connection(Connection):
         return self.presign("PUT", self._key(p), secs, now or dt.datetime.now(dt.UTC))
 
     def presign(self, method: str, key: str, secs: int, now: dt.datetime) -> str:
-        """Assinatura SigV4 por query string (``GET``/``PUT``), igual ao Rust."""
+        """Assinatura SigV4 por query string (``GET``/``PUT``)."""
         amz, date = now.strftime("%Y%m%dT%H%M%SZ"), now.strftime("%Y%m%d")
         base = (self.cfg.public_url or self.cfg.endpoint).rstrip("/")
         host = urlsplit(base).netloc

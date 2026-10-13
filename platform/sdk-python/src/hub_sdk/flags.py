@@ -74,7 +74,7 @@ def _off_value(flag: Mapping[str, Any]) -> str:
 
 
 def evaluate(flag: Mapping[str, Any], env: str, user: str, roles: Sequence[str]) -> str:
-    """Valor de ``flag`` no ambiente para o usuário (mesma ordem do Rust: kill switch →
+    """Valor de ``flag`` no ambiente para o usuário (ordem: kill switch →
     regras → percentual → padrão)."""
     r = (flag.get("envs") or {}).get(env)
     if not r or not r.get("enabled"):

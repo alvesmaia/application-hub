@@ -71,7 +71,18 @@ def hub_steps(fast: bool) -> list[tuple[str, list[str], Path]]:
         cov = [f"--cov={m}" for m in COV]
         steps += [
             ("audit", ["uv", "audit", "--preview-features", "audit-command"]),
-            ("pytest", [*run, "pytest", "-q", *cov, "--cov-report=term-missing", "--cov-fail-under=80"]),
+            (
+                "pytest",
+                [
+                    *run,
+                    "pytest",
+                    "-q",
+                    *cov,
+                    "--cov-branch",
+                    "--cov-report=term-missing",
+                    "--cov-fail-under=80",
+                ],
+            ),
         ]
     return [(f"hub/{n}", c, ROOT) for n, c in steps]
 

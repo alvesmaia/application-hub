@@ -19,8 +19,7 @@ and over **MCP** for AI assistants (`/mcp`, same access control as the UI).
 - Python apps, the `hub_sdk` SDK, shared front-end assets (`platform/assets`) and the conformance suite live in `platform/`.
 - Apps are separate upstreams reached only through the gateway (`/apps/<id>/…`, `/_frag/<id>/…`); the shell composes
   their HTML fragments (sanitized, same origin, no app JavaScript unless approved). Contract: `platform/docs/CONTRATO-APP.md`.
-- Branches: `main` = official Python stack; `stack/python` = working branch. **The Rust + Topcoat version is archived on
-  branch `stack/rust-topcoat`** (historical reference only).
+- Branches: `main` = official Python stack; `stack/python` = working branch.
 
 ## Install from scratch (Docker only)
 
@@ -56,7 +55,7 @@ bash scripts/dev.sh up     # dev mode (code from disk, --reload)
 | `docs/FAQ-ARQUITETURA.md` | Architecture decisions (Q&A) |
 | `docs/IMPLANTACAO.md` | Deployment checklist |
 | `platform/docs/CONTRATO-APP.md` | Hub ↔ app contract |
-| `docs/migracao/` | Rust → Python migration history (Rust-era docs in `historico-rust/`) |
+| `docs/migracao/` | Python migration history (older docs in `historico-rust/`) |
 
 ## License
 

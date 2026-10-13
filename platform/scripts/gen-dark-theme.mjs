@@ -154,9 +154,9 @@ const roleDecls = (theme) => Object.entries(roles).map(([k, v]) => [`--am-${k}`,
 // 3. Contraste das identidades dos apps de demonstração: `--app-<papel>` do `:root` (claro)
 //    e do `:root[data-theme="dark"]` de cada CSS de app, nos mesmos pares conferidos no hub.
 const APP_CSS = [
-  'demo-apps/assets/ativos.css',
-  'demo-apps/assets/app2.css',
-  'demo-apps/assets/app3.css',
+  'demo-apps-py/ativos/src/ativos/assets/app.css',
+  'demo-apps-py/fornecedores/src/fornecedores/assets/app.css',
+  'demo-apps-py/servicos/src/servicos/assets/app.css',
   'demo-apps-py/coletor/src/coletor/assets/app.css',
 ];
 for (const rel of APP_CSS) {

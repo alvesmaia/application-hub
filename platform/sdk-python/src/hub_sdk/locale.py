@@ -1,4 +1,4 @@
-"""Idioma e formatação regional dos fragmentos (onda 9) — espelho de ``hub_sdk::locale``.
+"""Idioma e formatação regional dos fragmentos (onda 9).
 
 O hub resolve o idioma do usuário (preferência salva → ``Accept-Language`` → pt-BR) e o
 repassa em ``x-hub-locale`` e no campo ``locale`` do ``x-hub-user``. :func:`from_headers`
@@ -23,14 +23,14 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from hub_sdk.identity import parse_identity
 
 LOCALE_HEADER = "x-hub-locale"
-SUPPORTED = ("pt-BR", "en", "es")
+SUPPORTED = ("pt-BR", "en")
 DEFAULT = "pt-BR"
 
 
 def parse(s: str | None) -> str | None:
     """Código suportado para um código/prefixo (``pt``, ``pt-PT``, ``en-US``…) ou ``None``."""
     lang = (s or "").strip().lower().replace("_", "-").split("-")[0]
-    return {"pt": "pt-BR", "en": "en", "es": "es"}.get(lang)
+    return {"pt": "pt-BR", "en": "en", "es": "en"}.get(lang)  # `es` saiu em 10/2026: vira en
 
 
 def from_accept_language(v: str | None) -> str | None:
@@ -78,7 +78,7 @@ def use(code: str) -> contextvars.Token[str]:
 
 
 def register(catalog: Mapping[str, Mapping[str, str]]) -> None:
-    """Acrescenta traduções: ``{"texto pt-BR": {"en": "...", "es": "..."}}``."""
+    """Acrescenta traduções: ``{"texto pt-BR": {"en": "..."}}``."""
     for k, v in catalog.items():
         _catalog.setdefault(k, {}).update(v)
 
@@ -106,7 +106,7 @@ def thousands(n: int) -> str:
 
 
 def money_cents(cents: int | None) -> str:
-    """Centavos → ``R$ 1.234,50`` (pt-BR/es) ou ``BRL 1,234.50`` (en)."""
+    """Centavos → ``R$ 1.234,50`` (pt-BR) ou ``BRL 1,234.50`` (en)."""
     if cents is None:
         return ""
     code = current()
@@ -115,7 +115,7 @@ def money_cents(cents: int | None) -> str:
 
 
 def date(d: dt.date | None) -> str:
-    """Data curta: ``28/09/2026`` (pt-BR, es) ou ``09/28/2026`` (en)."""
+    """Data curta: ``28/09/2026`` (pt-BR) ou ``09/28/2026`` (en)."""
     if d is None:
         return ""
     return d.strftime("%m/%d/%Y") if current() == "en" else d.strftime("%d/%m/%Y")
@@ -143,34 +143,30 @@ class LocaleMiddleware:
 # Textos do próprio SDK (workspace, 404, skeleton, 429).
 register(
     {
-        "Aplicação interna": {"en": "Internal application", "es": "Aplicación interna"},
-        "Workspace": {"en": "Workspace", "es": "Espacio de trabajo"},
-        "Navegação": {"en": "Navigation", "es": "Navegación"},
-        "Conectado como": {"en": "Signed in as", "es": "Conectado como"},
-        "Precisa de ajuda?": {"en": "Need help?", "es": "¿Necesita ayuda?"},
+        "Aplicação interna": {"en": "Internal application"},
+        "Workspace": {"en": "Workspace"},
+        "Navegação": {"en": "Navigation"},
+        "Conectado como": {"en": "Signed in as"},
+        "Precisa de ajuda?": {"en": "Need help?"},
         "Consulte a documentação ou fale com o time de suporte.": {
             "en": "Check the documentation or talk to the support team.",
-            "es": "Consulte la documentación o hable con el equipo de soporte.",
         },
         "O suporte entrará em contato em breve.": {
             "en": "Support will contact you shortly.",
-            "es": "El soporte se pondrá en contacto pronto.",
         },
-        "Acessar central de ajuda →": {"en": "Open help center →", "es": "Abrir centro de ayuda →"},
-        "Voltar à plataforma": {"en": "Back to the platform", "es": "Volver a la plataforma"},
-        "Menu da aplicação": {"en": "Application menu", "es": "Menú de la aplicación"},
-        "Navegação da aplicação": {"en": "Application navigation", "es": "Navegación de la aplicación"},
-        "Página não encontrada": {"en": "Page not found", "es": "Página no encontrada"},
-        "Esta seção não existe.": {"en": "This section does not exist.", "es": "Esta sección no existe."},
-        "Voltar ao início do app": {"en": "Back to the app home", "es": "Volver al inicio de la aplicación"},
-        "Carregando {name}": {"en": "Loading {name}", "es": "Cargando {name}"},
+        "Acessar central de ajuda →": {"en": "Open help center →"},
+        "Voltar à plataforma": {"en": "Back to the platform"},
+        "Menu da aplicação": {"en": "Application menu"},
+        "Navegação da aplicação": {"en": "Application navigation"},
+        "Página não encontrada": {"en": "Page not found"},
+        "Esta seção não existe.": {"en": "This section does not exist."},
+        "Voltar ao início do app": {"en": "Back to the app home"},
+        "Carregando {name}": {"en": "Loading {name}"},
         "Muitas operações pesadas em andamento": {
             "en": "Too many heavy operations in progress",
-            "es": "Demasiadas operaciones pesadas en curso",
         },
         "{what} não pôde começar agora porque o limite de operações simultâneas deste app foi atingido. Tente novamente em alguns segundos.": {
             "en": "{what} could not start now because this app's concurrent operation limit was reached. Try again in a few seconds.",
-            "es": "{what} no pudo comenzar ahora porque se alcanzó el límite de operaciones simultáneas de esta aplicación. Inténtelo de nuevo en unos segundos.",
         },
     }
 )

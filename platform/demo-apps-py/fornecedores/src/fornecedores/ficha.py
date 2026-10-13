@@ -1,4 +1,4 @@
-"""Ficha do fornecedor em PDF (espelho de ``ficha_pdf`` do ``fornecedores/mod.rs``)."""
+"""Ficha do fornecedor em PDF."""
 
 from __future__ import annotations
 

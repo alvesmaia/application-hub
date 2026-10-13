@@ -1,4 +1,4 @@
-"""Gerador mínimo de PDF 1.4 (espelho de ``hub-demo-apps/src/pdf.rs``): texto Helvetica
+"""Gerador mínimo de PDF 1.4: texto Helvetica
 (WinAnsi), retângulos e linhas, várias páginas A4."""
 
 from __future__ import annotations

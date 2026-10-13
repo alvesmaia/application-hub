@@ -1,4 +1,4 @@
-"""Aprovações pela Inbox do hub (onda 9) — espelho de ``hub_sdk::approvals``.
+"""Aprovações pela Inbox do hub (onda 9).
 
 1. O app publica o pedido no outbox (:func:`hub_sdk.outbox.approval_request`).
 2. O hub mostra o pedido a quem pode decidir (permissão ``aprovar_solicitacoes``, destino do

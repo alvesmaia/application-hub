@@ -2,7 +2,7 @@
  * Design tokens da plataforma — identidade Alvesmaia (cores, fontes, linhas). Fonte
  * única de cor, espaçamento, raio, tipografia, sombras, camadas (z-index) e movimento.
  * Carregado ANTES de styles.css pelo shell (hub-web e hub dev); os fragmentos dos apps
- * (Rust e Python) rodam no mesmo documento e usam as mesmas variáveis.
+ * rodam no mesmo documento e usam as mesmas variáveis.
  *
  * Camadas:
  *   0. Papéis da identidade (--am-<papel>: page, surface, title, primary, chrome…) com

@@ -11,7 +11,7 @@ Variáveis (injetadas pela plataforma — ver ``docs/CONTRATO-APP.md``): ``HUB_A
 ``HUB_SCRATCH_DIR``/``TMPDIR``, ``HUB_HEAVY_MAX``, ``HUB_JOB_LEASE_S``,
 ``HUB_APP_VERSION_MARKER``, ``HUB_JOBS_MODE``.
 
-Sem banco: outbox e idempotência em memória, sem tarefas duráveis (igual ao Rust).
+Sem banco: outbox e idempotência em memória, sem tarefas duráveis.
 
 **Onde as tarefas rodam** (``HUB_JOBS_MODE``, diferença da stack Python medida na onda 7):
 

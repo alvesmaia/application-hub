@@ -47,6 +47,9 @@ def _context(root: Path) -> list[tuple[str, bytes]]:
     return [("build/" + p.relative_to(root).as_posix(), p.read_bytes()) for p in files]
 
 
+MAX_PACKAGE_BYTES = 20 * 1024 * 1024  # = hub/ops/pipeline.py (um teste exige a igualdade)
+
+
 def pack(dir_: Path, image: str | None, out: Path, build_dir: Path | None = None,
          dockerfile: str = "Dockerfile") -> str:  # fmt: skip
     """Escreve o pacote em `out` e devolve o sha256 do arquivo. Com `build_dir` o pacote leva o contexto de
@@ -95,5 +98,14 @@ def pack(dir_: Path, image: str | None, out: Path, build_dir: Path | None = None
         for n, b in entries:
             z.writestr(zipfile.ZipInfo(n, (1980, 1, 1, 0, 0, 0)), b, zipfile.ZIP_DEFLATED)
     data = buf.getvalue()
+    if len(data) > MAX_PACKAGE_BYTES:  # o hub recusaria com 400; diga aqui o que pesa
+        big = sorted(((len(b), n) for n, b in entries), reverse=True)[:3]
+        raise PackError(
+            f"pacote com {len(data) / 1024 / 1024:.1f} MB; o hub aceita até "
+            f"{MAX_PACKAGE_BYTES // 1024 // 1024} MB. Maiores arquivos: "
+            + ", ".join(f"{n} ({sz / 1024 / 1024:.1f} MB)" for sz, n in big)
+            + ". As dependências se instalam no build, não viajam no pacote: não deixe .venv/ nem vendor/ "
+            "em build/ (use .dockerignore)"
+        )
     out.write_bytes(data)
     return _sha(data)

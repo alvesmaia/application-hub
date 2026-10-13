@@ -23,7 +23,7 @@ from hub.ux.texts import ago, t, tn, tr
 _WEB = Path(__file__).parent.parent / "web"
 _ICONS = cast(dict[str, str], json.loads((_WEB / "icons.json").read_text(encoding="utf-8")))
 _THEMES = ("", "light", "dark", "auto")
-_LANGS = ("", "pt-BR", "en", "es")
+_LANGS = ("", "pt-BR", "en")
 
 
 class PrefsIn(BaseModel):

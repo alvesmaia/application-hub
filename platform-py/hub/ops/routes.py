@@ -480,7 +480,13 @@ def mount_ops(
             raise OpsError("Selecione um arquivo .hubapp (campo package).")
         data = await up.read()
         if not data or len(data) > pl.MAX_PACKAGE_BYTES:
-            raise OpsError("O pacote deve ter entre 1 byte e 20 MB.")
+            raise OpsError(
+                f"O pacote tem {len(data) / 1024 / 1024:.1f} MB; o limite é "
+                f"{pl.MAX_PACKAGE_BYTES // 1024 // 1024} MB. Dependências entram no build, não no pacote: "
+                "não copie .venv/ nem vendor/ para build/."
+                if data
+                else "Selecione um arquivo .hubapp (campo package)."
+            )
         raw_env = request.query_params.get("env") or str(form.get("env") or "")
         env = {"staging": "staging", "producao": "producao", "produção": "producao"}.get(raw_env.lower())
         if env is None:

@@ -1,6 +1,4 @@
-// F7a — zero downtime e caos contra a pilha Python (`app-hub-*`, hub em :8090). O `zero-downtime.mjs` e os
-// `chaos/*.mjs` são da pilha Rust (containers `hub-*`, rede hub-edge, gerador `oha`, crate hub-cli); este faz o
-// equivalente só com `app-hub-*`, sem tocar em `hub-*`/`apphub-devtunnel`:
+// F7a — zero downtime e caos contra a pilha Python (`app-hub-*`, hub em :8090). Só mexe em `app-hub-*`; não toca em `hub-*` nem em `apphub-devtunnel`:
 //
 //   HUB=http://localhost:8090 HUB_USER=… HUB_PASSWORD=… node loadtest/py-resilience.mjs zd|chaos [--rps 60] [--out arq.md]
 //

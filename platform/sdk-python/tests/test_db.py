@@ -1,5 +1,5 @@
 """Testes com Postgres real (``HUB_DB_TEST_URL``): tarefas duráveis, outbox e
-idempotência — mesma semântica dos testes ``hub-sdk/tests/db.rs``."""
+idempotência."""
 
 from __future__ import annotations
 

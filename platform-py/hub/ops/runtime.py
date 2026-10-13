@@ -137,6 +137,16 @@ def own(name: str) -> str:
     return name
 
 
+_PODMAN: dict[str, tuple[bool, bool]] = {}  # por daemon; a delegação de cgroup não muda com o hub no ar
+
+
+def tmpfs_podman(opts: str) -> str:
+    """`rw,size=256m,uid=10001,gid=10001` → `rw,size=256m,U` (o Podman não aceita uid/gid em tmpfs)."""
+    parts = [o for o in opts.split(",") if o]
+    keep: list[str] = [o for o in parts if not o.startswith(("uid=", "gid="))]
+    return ",".join([*keep, "U"] if len(keep) < len(parts) else keep)
+
+
 class _Containers:
     def __init__(self, real: Any) -> None:
         self._r = real
@@ -153,6 +163,19 @@ class Guarded:
 
     def __init__(self, real: Any) -> None:
         self._cl, self.containers = real, _Containers(real.containers)
+
+    def podman(self) -> tuple[bool, bool]:
+        """(é Podman, tem o controlador `cpu`). Podman rootless no RHEL 9 delega só `memory pids` ao usuário: com
+        limite de CPU todo `RUN` do build e a criação do contêiner falham. Docker: (False, True)."""
+        base = str(getattr(getattr(self._cl, "api", None), "base_url", ""))
+        if base not in _PODMAN:
+            try:
+                r = self._cl.api._get(base + "/v4.0.0/libpod/info")
+                ctl = r.json()["host"]["cgroupControllers"] if r.status_code == 200 else None
+                _PODMAN[base] = (ctl is not None, ctl is None or "cpu" in ctl)
+            except Exception:  # sem resposta: assume Docker (comportamento de antes)
+                return (False, True)
+        return _PODMAN[base]
 
     def version(self) -> dict[str, Any]:
         return dict(self._cl.version())
@@ -171,8 +194,10 @@ class Guarded:
     def build_stream(self, path: str, tag: str, dockerfile: str, memory: int, cpus: int = 0) -> Any:
         """Constrói `tag` (só `app-hub-*`) com teto de memória/swap (e CPUs) e devolve o fluxo do daemon."""
         own(tag.split(":", 1)[0])
-        limits: dict[str, Any] = {"memory": memory, "memswap": memory, "cpushares": 512}
-        if cpus > 0:
+        limits: dict[str, Any] = {"memory": memory, "memswap": memory}
+        if self.podman()[1]:
+            limits["cpushares"] = 512
+        if cpus > 0 and self.podman()[1]:
             limits["cpusetcpus"] = f"0-{cpus - 1}" if cpus > 1 else "0"
         return self._cl.api.build(
             path=path, tag=tag, dockerfile=dockerfile, rm=True, forcerm=True, decode=True, container_limits=limits,
@@ -198,6 +223,16 @@ class Guarded:
 
     def create(self, image: str, name: str, **spec: Any) -> Any:
         own(name)
+        podman, cpu = self.podman()
+        host = spec.get("host_config")
+        if isinstance(host, dict) and podman:
+            host = dict(host)
+            if not cpu:
+                for k in ("NanoCpus", "CpuShares", "CpuQuota", "CpuPeriod", "CpusetCpus"):
+                    host.pop(k, None)
+            if host.get("Tmpfs"):  # Podman recusa `uid=`/`gid=`; `U` dá o tmpfs ao usuário do contêiner
+                host["Tmpfs"] = {path: tmpfs_podman(opts) for path, opts in host["Tmpfs"].items()}
+            spec["host_config"] = host
         self._cl.api.create_container(image, name=name, **spec)
         return self.containers.get(name)
 
@@ -330,7 +365,10 @@ class Engine:
             except Exception:
                 return False
             mem = memory_bytes(memory)
-            c.update(nano_cpus=int(cpu * 1e9), mem_limit=mem, memswap_limit=mem, pids_limit=pids)
+            lim: dict[str, Any] = {"mem_limit": mem, "memswap_limit": mem, "pids_limit": pids}
+            if cl.podman()[1]:
+                lim["nano_cpus"] = int(cpu * 1e9)
+            c.update(**lim)
             return True
 
         return bool(await self._run(go))

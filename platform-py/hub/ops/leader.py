@@ -1,6 +1,5 @@
 """Liderança entre réplicas (lease `hub-leader` do `hub-state`, relógio do banco, fence): só o líder roda o que precisa
-ser único (coleta do outbox, agendador de backups, varreduras, alertas). Sem banco de estado: réplica única = sempre líder.
-Porta de `apps/hub-web/src/replicas.rs`."""
+ser único (coleta do outbox, agendador de backups, varreduras, alertas). Sem banco de estado: réplica única = sempre líder."""
 
 from __future__ import annotations
 

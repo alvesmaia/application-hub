@@ -7,7 +7,7 @@ import { apiAs, autoConfirm, docker, gotoSafe, json, newRoleContext, openApp, WO
 // sharepoint-sim do compose): criar a conexão pela tela, "Testar conexão" (token, site,
 // biblioteca, pasta-base, gravar/ler/apagar a sonda), vincular a app × ambiente,
 // "Aplicar (reiniciar)" e usar pelo app — documentos do contrato (contratos, Python) e
-// anexos do fornecedor (Rust) — sem que o app receba a credencial. Segurança: o broker só
+// anexos do fornecedor — sem que o app receba a credencial. Segurança: o broker só
 // atende o token do app a partir da rede do app, e só as conexões vinculadas a ele.
 //
 // Compose no ar com o simulador:

@@ -112,7 +112,7 @@ def display_value(var: dict[str, Any]) -> str:
 
 
 def masked(var: dict[str, Any]) -> dict[str, Any]:
-    """Cópia para listagens, na ordem de campos da API do Rust; o valor de segredos nunca sai daqui."""
+    """Cópia para listagens, na ordem de campos da API da versão anterior do hub; o valor de segredos nunca sai daqui."""
     out: dict[str, Any] = {
         "name": var["name"],
         "value": display_value(var),
@@ -478,7 +478,14 @@ class ConfigOps:
             for raw in items:
                 if any(e["name"] == raw["name"] for e in d["env"]):
                     continue
-                v = self._check_env(raw["name"], raw, True)
+                # A carga é um arquivo da instalação, não entrada de usuário: um vínculo com app fora do catálogo
+                # (ex.: instalar sem os apps de exemplo) descarta o vínculo, nunca derruba o hub no boot.
+                if binds := raw.get("bindings"):
+                    kept = [b for b in binds if str(b.get("app", "")) in self.apps]
+                    if not kept:
+                        continue
+                    raw = dict(raw) | {"bindings": kept}
+                v = self._check_env(str(raw["name"]), raw, True)
                 _conflicts(d["env"], v)
                 d["env"].append(v)
                 n += 1

@@ -1,5 +1,4 @@
-"""Onda 11: OpenAPI no caminho do contrato e MCP interno gerado dele (mesmo contrato do
-SDK Rust ``hub_sdk::api``/``hub_sdk::mcp``)."""
+"""Onda 11: OpenAPI no caminho do contrato e MCP interno gerado dele."""
 
 from __future__ import annotations
 
@@ -180,7 +179,7 @@ def test_every_platform_openapi_document_is_valid() -> None:
 
 def test_openapi_has_hub_conventions_and_typed_problem() -> None:
     """Onda 12 (2.4): pydantic tipa corpo/resposta; o SDK acrescenta servidor, esquemas
-    de segurança e ``Problem`` (RFC 9457) em toda operação — igual ao SDK Rust."""
+    de segurança e ``Problem`` (RFC 9457) em toda operação."""
     from hub_sdk.api import openapi_of
 
     app = make_app()

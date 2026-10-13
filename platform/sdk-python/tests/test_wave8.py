@@ -1,5 +1,5 @@
 """Onda 8: traces (traceparent hub → app → banco), telemetria pelo canal interno e
-feature flags (mesmo algoritmo e vetores do crate Rust ``hub-flags``)."""
+feature flags (algoritmo e vetores de teste fixos)."""
 
 from __future__ import annotations
 
@@ -80,7 +80,7 @@ def test_traceparent_parse() -> None:
         assert TraceContext.parse(bad) is None
 
 
-def test_bucket_vectors_match_rust() -> None:
+def test_bucket_vectors() -> None:
     v = json.loads(VECTORS.read_text(encoding="utf-8"))
     for k, want in v["buckets"].items():
         key, user = k.split(":", 1)
@@ -163,7 +163,7 @@ def test_user_digest_vector_and_hashed_rules_match() -> None:
     assert fl.evaluate(flag, "producao", "bia@demo.local", []) == "off"
 
 
-def test_redact_target_matches_rust_rules() -> None:
+def test_redact_target_rules() -> None:
     from hub_sdk.telemetry import redact_target
 
     assert redact_target("/ativos/itens/42?q=segredo#x") == "/ativos/itens/:id"

@@ -1,5 +1,5 @@
 """Onda 9: idioma (x-hub-locale / identidade / Accept-Language), busca federada e
-aprovações pelo canal interno, notificações/pedidos no outbox — mesmos contratos do Rust."""
+aprovações pelo canal interno, notificações/pedidos no outbox."""
 
 from __future__ import annotations
 
@@ -29,11 +29,11 @@ def ident(perms: tuple[str, ...] = (), locale: str = "") -> str:
 
 
 def test_locale_resolution_and_formatting() -> None:
-    assert loc.from_accept_language("fr,es;q=0.9,en;q=0.8") == "es"
+    assert loc.from_accept_language("fr,es;q=0.9,en;q=0.8") == "en"  # `es` saiu: vira en
     assert loc.from_accept_language("de, en;q=0") is None
     assert loc.from_headers({"accept-language": "en-US"}) == "en"
-    assert loc.from_headers({"x-hub-user": ident(locale="es"), "accept-language": "en"}) == "es"
-    assert loc.from_headers({"x-hub-locale": "pt-BR", "x-hub-user": ident(locale="es")}) == "pt-BR"
+    assert loc.from_headers({"x-hub-user": ident(locale="en"), "accept-language": "pt-BR"}) == "en"
+    assert loc.from_headers({"x-hub-locale": "pt-BR", "x-hub-user": ident(locale="en")}) == "pt-BR"
     assert loc.from_headers({}) == "pt-BR"
     tok = loc.use("en")
     try:
@@ -122,11 +122,11 @@ async def test_internal_search_uses_identity_and_locale() -> None:
     async with client(make_app()) as c:
         r = await c.get(
             "/demo/_hub/search?q=note&limit=50",
-            headers={internal.TOKEN_HEADER: TOKEN, "x-hub-user": ident(), "x-hub-locale": "es"},
+            headers={internal.TOKEN_HEADER: TOKEN, "x-hub-user": ident(), "x-hub-locale": "en"},
         )
         assert r.status_code == 200
         res = r.json()["results"]
-        assert len(res) == 1 and res[0]["title"] == "note ana@x es Volver a la plataforma"
+        assert len(res) == 1 and res[0]["title"] == "note ana@x en Back to the platform"
         assert (
             await c.get("/demo/_hub/search?q=", headers={internal.TOKEN_HEADER: TOKEN})
         ).status_code == 400

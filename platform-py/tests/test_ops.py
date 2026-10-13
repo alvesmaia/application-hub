@@ -735,12 +735,10 @@ def test_sdk_page_and_manifest_validate(hub: TestClient) -> None:
 
 
 def test_i18n_json_errors_and_js_catalog(hub: TestClient) -> None:
-    """F7a: erro JSON no idioma do navegador (como o Rust) e catálogo do hub-i18n.js em /assets/i18n/<lang>.json."""
-    es = hub.get("/api/v1/jobs/999999", headers={"accept-language": "es-ES"})
+    """F7a: erro JSON no idioma do navegador e catálogo do hub-i18n.js em /assets/i18n/<lang>.json."""
+    es = hub.get("/api/v1/jobs/999999", headers={"accept-language": "es-ES"})  # `es` saiu: vira en
     assert (
-        es.status_code == 404
-        and es.json()["title"] == "No encontrado"
-        and es.headers["content-language"] == "es"
+        es.status_code == 404 and es.json()["title"] == "Not found" and es.headers["content-language"] == "en"
     )
     assert (
         hub.get("/api/v1/jobs/999999", headers={"accept-language": "pt-BR"}).json()["title"]
@@ -751,6 +749,7 @@ def test_i18n_json_errors_and_js_catalog(hub: TestClient) -> None:
         cat["lang"] == "en" and cat["exact"]["Variável excluída."] == "Variable deleted." and cat["templates"]
     )
     assert hub.get("/assets/i18n/pt-BR.json").status_code == 404
+    assert hub.get("/assets/i18n/es.json").status_code == 404
 
 
 def test_same_origin_post_with_opaque_origin(hub: TestClient) -> None:
@@ -777,7 +776,7 @@ def test_bearer_with_stray_session_cookie_skips_csrf_check(hub: TestClient) -> N
 
 
 def test_forbidden_page_is_inside_the_shell_and_loader_text(hub: TestClient) -> None:
-    """F7a: 403 de página com cabeçalho de página (eyebrow da seção + título) e o texto do carregador como no Rust."""
+    """F7a: 403 de página com cabeçalho de página (eyebrow da seção + título) e o texto do carregador."""
     reader = add_user(hub, "leitor-f7a", ["Leitor"])
     r = reader.get("/admin/users")
     assert r.status_code == 403

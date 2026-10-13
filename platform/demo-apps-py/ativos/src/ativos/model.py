@@ -1,7 +1,6 @@
 """Colunas do cadastro de ativos (banco, planilha), validação/normalização e esquema SQL.
 
-Espelha ``hub-demo-apps`` (``ativos/model.rs``): mesmas 30 colunas, cabeçalhos, limites e
-mensagens de erro; o esquema é o mesmo (a mesma base serve aos dois apps).
+30 colunas, com cabeçalhos, limites e mensagens de erro fixos (a planilha e o banco usam os mesmos).
 """
 
 from __future__ import annotations
@@ -354,7 +353,7 @@ CREATE INDEX IF NOT EXISTS assets_value ON assets (acquisition_value_cents, id);
 -- (hub_sdk::SCHEMA_SQL), aplicadas junto. A antiga import_jobs não é mais usada.
 """
 
-# Carga inicial (a mesma do app Rust): lotes gerados no próprio Postgres, sem memória no app.
+# Carga inicial: lotes gerados no próprio Postgres, sem memória no app.
 SEED_SQL = """
 INSERT INTO assets (tag, name, category, location, status, brand, model, serial_number, supplier, supplier_cnpj,
   cost_center, department, responsible, building, room, acquisition_date, acquisition_value_cents,

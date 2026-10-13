@@ -52,7 +52,7 @@ class Flag(BaseModel):
         return OFF if self.kind == "boolean" else (self.variants[0] if self.variants else OFF)
 
     def validate_rules(self) -> None:
-        """Levanta `ValueError` com a mensagem do hub Rust."""
+        """Levanta `ValueError` com a mensagem da versão anterior do hub."""
         if not valid_token(self.key):
             raise ValueError("Chave inválida: use letras minúsculas, números, '.', '_' ou '-' (até 64).")
         if len(self.description) > 200:
@@ -77,7 +77,7 @@ class Flag(BaseModel):
                 raise ValueError("Regras demais (até 20, com até 100 funções/usuários cada).")
 
     def dump(self) -> dict[str, Any]:
-        """Como o serde do Rust: envs em ordem de chave, `rollout` ausente quando vazio."""
+        """Envs em ordem de chave, `rollout` ausente quando vazio (formato da versão anterior do hub)."""
         d = self.model_dump(exclude_none=True)
         d["envs"] = dict(sorted(d["envs"].items()))
         return d

@@ -1,4 +1,4 @@
-"""Rust-compatible local users, sessions, API tokens, and route permissions."""
+"""Usuários locais, sessões, tokens de API e permissões de rota (formato compatível com a versão anterior do hub)."""
 
 from __future__ import annotations
 
@@ -536,7 +536,7 @@ class AuthStore:
 
 
 def user_view(u: dict[str, Any], now: int, locked: bool = False) -> dict[str, Any]:
-    """Usuário como a API o mostra (campos e ordem do `UserView` do Rust; nunca o hash da senha)."""
+    """Usuário como a API o mostra (campos e ordem do `UserView` da versão anterior do hub; nunca o hash da senha)."""
     until = u.get("locked_until")
     until = until if until and until > now else None
     return {
@@ -595,7 +595,8 @@ def roles_for(data_dir: Path) -> list[dict[str, Any]]:
 
 def client_ip(request: Request) -> str:
     peer = request.client.host if request.client else ""
-    trusted = _cidrs(os.getenv("HUB_TRUSTED_PROXIES", ""))
+    # HUB_EDGE_CIDR = rede da borda (app-hub-edge, do próprio compose): sempre confiável, como os proxies declarados
+    trusted = _cidrs(os.getenv("HUB_TRUSTED_PROXIES", "") + "," + os.getenv("HUB_EDGE_CIDR", ""))
     try:
         source = ipaddress.ip_address(peer)
     except ValueError:
@@ -675,6 +676,7 @@ _ADMIN_REQUIRED = {
     "env": ("gerenciar_variaveis", "editar_configuracoes"),
     "observability": ("editar_configuracoes", "ver_auditoria"),
     "analytics": ("editar_configuracoes", "ver_auditoria"),
+    "usage": ("editar_configuracoes", "ver_auditoria"),
     "health": ("editar_configuracoes", "ver_auditoria"),
 }
 
@@ -696,7 +698,9 @@ def api_required(method: str, segs: list[str]) -> tuple[str, ...]:
         if res in ("audit", "logs", "outbox"):
             return ("ver_auditoria",)
         safe = method in ("GET", "HEAD", "OPTIONS")
-        if res in ("analytics", "analytics.csv", "notifications") or (res in ("slos", "incidents") and safe):
+        if res in ("analytics", "analytics.csv", "usage", "usage.csv", "notifications") or (
+            res in ("slos", "incidents") and safe
+        ):
             return ("editar_configuracoes", "ver_auditoria")
         if res == "health" and (safe or (method == "POST" and segs[2:3] == ["check"])):
             return ("editar_configuracoes", "ver_auditoria")

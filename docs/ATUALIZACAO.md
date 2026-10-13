@@ -9,6 +9,31 @@ dc() { docker compose --env-file .prod.env -f docker-compose.yml -f docker-compo
 curl -s http://127.0.0.1:${HUB_PORT:-8090}/healthz     # {"status":"ok","version":"<atual>"}
 ```
 
+## Sem parada (recomendado)
+
+A porta do hub é da borda (`<projeto>-edge`, Caddy), que só manda tráfego a quem responde ao `/healthz`. O
+comando abaixo faz o backup, sobe uma cópia com a versão nova, troca o hub enquanto a cópia atende, observa por
+5 min e, se a versão nova falhar, **volta sozinho** para a anterior:
+
+```bash
+git fetch --tags && git checkout v<versão>      # ou: git pull na main
+python scripts/hub_update.py --build             # constrói do código atual
+python scripts/hub_update.py --image <imagem>    # ou: imagem pronta (GHCR)
+python scripts/hub_update.py --rollback          # voltar depois, à mão
+```
+
+Opções: `--project` (HUB_PROJECT, padrão `app-hub`), `--watch <s>` (observação, padrão 300), `--no-backup`,
+`--backup-dir` (padrão `~/backup-hub/<data-hora>`). Conexões abertas (SSE, WebSocket) caem na troca e reconectam
+sozinhas. A volta automática desfaz o código, não os dados: se a versão nova mudou o formato dos dados, restaure o
+backup (§5). Por isso as migrações do hub são só aditivas (a versão anterior continua lendo os dados).
+
+**Primeira vez com a borda** (instalações anteriores à 0.3.0): o `dc up -d` do §3 cria a borda, que assume a
+`HUB_PORT` do hub (uma parada de ~10 s, só desta vez). Depois disso, use o `hub_update.py`.
+
+Aviso de versão nova em Administração › Saúde: `HUB_UPDATE_CHECK=1` no `.prod.env`.
+
+Os passos abaixo são o caminho manual (com parada curta).
+
 ## 1. Backup (sempre)
 
 ```bash

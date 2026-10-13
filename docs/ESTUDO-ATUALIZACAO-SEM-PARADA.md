@@ -1,5 +1,9 @@
 # Estudo: atualização sem parada e com reversão automática
 
+> **Implementado em 2026-10-10** com uma simplificação: em vez de duas cores fixas e troca pela API do Caddy, uma
+> cópia temporária (`<proj>-web-next`) atende enquanto o `<proj>-web` é recriado; a borda escolhe pela saúde. O
+> nome do hub não muda (scripts e docs seguem valendo). Uso: `docs/ATUALIZACAO.md`, "Sem parada".
+
 Situação em 2026-10-10. Hoje, `dc up -d` recria o `app-hub-web` e o hub fica fora do ar de 3 a 11 s. Nesse
 intervalo param o portal, o gateway dos apps, a API/MCP e as conexões SSE e WebSocket. A volta atrás é
 manual (`docs/ATUALIZACAO.md` §5).

@@ -1,8 +1,10 @@
 # Implantação — hub Python (platform-py): servidor novo
 
-Checklist curto (o checklist da pilha Rust arquivada está em `docs/migracao/historico-rust/IMPLANTACAO.md`). A partir de `platform-py/`, Docker Compose >= 2.24.
+Checklist curto. A partir de `platform-py/`, Docker Compose >= 2.24.
 
-**Atalho:** `bash scripts/install.sh --admin-email voce@empresa.com --public-url https://hub.empresa.com` faz os
+**Atalho:** `bash scripts/install.sh` num terminal pergunta cada opção (admin, porta, bind, URL pública, projeto,
+faixa de rede, apps de exemplo), mostra um resumo e pede confirmação. Com opções ou `--yes` não pergunta nada:
+`bash scripts/install.sh --admin-email voce@empresa.com --public-url https://hub.empresa.com` faz os
 passos abaixo (segredos novos, imagens do código-fonte, chave mestra, primeiro administrador, subida). Depois siga do
 item "Túnel/proxy TLS" em diante. Atualizações: [`ATUALIZACAO.md`](ATUALIZACAO.md).
 
@@ -35,6 +37,49 @@ entrada `version`) e publica `ghcr.io/<dono>/app-hub-{web,minio,mc,ativos,fornec
 - [ ] Túnel/proxy TLS para `127.0.0.1:8090`; conferir `/healthz`, login, `/apps/<id>` e `/.well-known/oauth-authorization-server`.
 - [ ] Backup antes de qualquer mudança: volume `app-hub-data` + `pg_dumpall` de `app-hub-db` e `app-hub-app-db`.
 - [ ] E2E/ui-sweep só em instância temporária (`scripts/tmp-instance.sh`), nunca com contas demo em produção.
+
+## Dimensionamento (usuários simultâneos)
+
+Medido com `platform/loadtest/py-load.mjs` numa pilha isolada (`install.sh --project app-hub-load`), em 13/10/2026,
+versão 0.2.0. Roteiro de uma pessoa real (Início, catálogo, abrir o app ativos, navegar, buscar, Inbox) com ~2 s de
+pausa entre cliques; critério p95 < 300 ms e erros < 0,1%.
+
+| Usuários simultâneos | req/s | p50 | p95 | p99 | Erros |
+|---|---|---|---|---|---|
+| 25 | 11,8 | 12 ms | 87 ms | 112 ms | 0% |
+| 50 | 23,4 | 13 ms | 83 ms | 112 ms | 0% |
+| 100 | 46,9 | 18 ms | 120 ms | 218 ms | 0% |
+| 200 | 84,4 | 129 ms | 1020 ms | 1361 ms | 0% (lento) |
+
+**Uma instância atende ~100 usuários simultâneos** (na ordem de 1.000 usuários cadastrados com uso normal ao
+longo do dia). O limite é o hub rodar num único processo (um núcleo de CPU); a memória ficou em ~110 MiB.
+Acima disso, a próxima medição é com mais processos/réplicas do hub. Repita a medição após mudanças no gateway,
+na sessão ou no banco:
+
+```bash
+HUB=http://127.0.0.1:<porta> HUB_DEMO_PASSWORD=… node platform/loadtest/py-load.mjs --steps 25,50,100,200
+```
+
+## Podman rootless (RHEL, Rocky, Fedora)
+
+Testado em Rocky 9 com Podman 5.8, usuário sem root/sudo (`docs/TESTE-IMPLANTACAO-RHEL-ROOTLESS.md`).
+
+Pedir à TI (root, uma vez):
+- `dnf install podman podman-docker git` e `loginctl enable-linger <usuário>` (sem linger o hub cai no logout);
+- delegar CPU ao usuário — o RHEL 9 delega só `memory pids`; sem isso os limites de CPU dos apps ficam desligados:
+  `/etc/systemd/system/user@.service.d/delegate.conf` com `[Service]` e `Delegate=cpu cpuset io memory pids`,
+  depois `systemctl daemon-reload` e novo login do usuário.
+
+Como o usuário:
+- `systemctl --user enable --now podman.socket`;
+- compose sem root: o `install.sh` oferece baixá-lo (ou rode com `--get-compose`) — binário oficial em versão fixa,
+  sha256 conferido, em `~/.local/bin/docker-compose`; o `docker compose` do `podman-docker` o usa;
+- `bash platform-py/scripts/install.sh …` detecta o Podman rootless e grava no `.prod.env`
+  `HUB_CONTAINER_SOCKET_HOST=$XDG_RUNTIME_DIR/podman/podman.sock` e `DOCKER_GID=0`. Com `--bind` fora do loopback
+  grava também `HUB_BIND6` (o Podman já ocupa o IPv6).
+
+O hub detecta o Podman pela API: tmpfs dos apps com `U` (o Podman não aceita `uid=`) e, sem o controlador `cpu`
+delegado, constrói e cria os contêineres sem limite de CPU (memória e pids seguem limitados).
 
 ## Registrar o app no Entra ID
 

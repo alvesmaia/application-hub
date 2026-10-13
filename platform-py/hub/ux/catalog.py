@@ -110,9 +110,7 @@ def stack_rows(e: AppEntry, version: str, lang: str = "pt-BR") -> tuple[list[tup
                 rows.append((t(label, lang), stack[key]))
         libs = list(stack.get("libs") or [])
     elif m and m.runtime:
-        name = {"rust": "Rust", "python": "Python"}.get(
-            m.runtime.get("stack", ""), m.runtime.get("stack", "")
-        )
+        name = {"python": "Python"}.get(m.runtime.get("stack", ""), m.runtime.get("stack", ""))
         rows.append((t("apps.stack_lang", lang), name))
     api_on = (m.api.get("enabled", True)) if m else True
     mcp_on = api_on and (m.mcp.get("enabled", True) if m else True)

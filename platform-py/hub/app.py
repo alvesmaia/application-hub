@@ -95,7 +95,7 @@ STAGING_BAR_CSS = (
     "box-shadow:0 4px 14px rgb(0 0 0/.15)}\n"
 )
 
-# Mesma CSP do hub Rust (apps/hub-web/src/auth.rs); 'self' cobre /assets/ e /hub-sw.js.
+# Mesma CSP da versão anterior do hub; 'self' cobre /assets/ e /hub-sw.js.
 _CSP = (
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; "
     "img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; "
@@ -259,7 +259,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
     async def translate_errors(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        """Mensagens de erro JSON do servidor no idioma do usuário (como a camada i18n do hub Rust)."""
+        """Mensagens de erro JSON do servidor no idioma do usuário."""
         resp = await call_next(request)
         path = request.url.path
         ct = resp.headers.get("content-type", "").split(";")[0]
@@ -428,7 +428,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
             host = request.headers.get("host", "")
             fetch_site = request.headers.get("sec-fetch-site")
             bearer_only = token is not None  # a identidade vem do token (o cookie, se vier junto, é ignorado)
-            # `Sec-Fetch-Site: same-origin` basta (como no Rust): com `Referrer-Policy: no-referrer` (consentimento
+            # `Sec-Fetch-Site: same-origin` basta: com `Referrer-Policy: no-referrer` (consentimento
             # OAuth) o navegador manda `Origin: null` num POST do próprio hub.
             if (
                 not bearer_only
@@ -500,9 +500,20 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
         return {"status": "ok", "version": __version__}
 
     @app.get("/readyz")
-    async def readyz() -> dict[str, str]:
-        # F1: checar o Postgres; na F0 o processo de pé é a prontidão.
-        return {"status": "ready"}
+    async def readyz() -> Response:
+        """Pronto para receber tráfego: banco de estado responde e `/data` é legível (a borda e o
+        `hub-update` só mandam tráfego a uma cópia pronta)."""
+        problems = []
+        if (db := auth_store.db) is not None:
+            try:
+                await asyncio.wait_for(db.pool.fetchval("SELECT 1"), 3)
+            except Exception:
+                problems.append("banco de estado")
+        if not os.access(data_dir, os.R_OK | os.X_OK):
+            problems.append("dados")
+        if problems:
+            return JSONResponse({"status": "not-ready", "problems": problems, "version": __version__}, 503)
+        return JSONResponse({"status": "ready", "version": __version__})
 
     def brand_color() -> str:
         try:
@@ -525,7 +536,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
 
     @app.get("/assets/i18n/{file}")
     async def i18n_catalog(file: str) -> Response:
-        if file not in ("en.json", "es.json"):
+        if file != "en.json":
             raise HTTPException(404)
         return JSONResponse(js_catalog(file[:-5]), headers={"cache-control": "no-cache"})
 
@@ -563,7 +574,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
         if got is None:
             raise HTTPException(404)
         body, mt, etag = got
-        # Como o hub Rust: fontes 7 dias, vendor 1 dia, o resto revalida (ETag → 304); modo dev: sem cache.
+        # Fontes 7 dias, vendor 1 dia, o resto revalida (ETag → 304); modo dev: sem cache.
         cache = (
             "no-store"
             if devmode.enabled()

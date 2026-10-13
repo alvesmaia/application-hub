@@ -805,3 +805,75 @@ def test_flags_page_removed_and_pager(hub: TestClient) -> None:
     req = Request({"type": "http", "query_string": b"x=1&page=3&per=10"})
     rows, p = paginate(req, list(range(45)))
     assert rows == list(range(20, 30)) and p["pages"] == 5 and p["next"] == "?x=1&page=4&per=10"
+
+
+def test_usage_per_user_store(tmp_path: Path) -> None:
+    from hub.insight.usage import Usage
+
+    u, now = Usage(tmp_path), 1_790_000_000_000
+    u.record("u1", "ativos", "open", now=now - 86_400_000)
+    u.record("u1", "ativos", "action", now=now)
+    u.record("u2", "ativos", "section", now=now)
+    u.record("u2", "=x", "open", now=now)
+    q = u.query(now)
+    assert q["rows"][0]["last"] == now and len(q["rows"]) == 3
+    r1 = next(r for r in q["rows"] if r["user"] == "u1")
+    assert (r1["opens"], r1["actions"], r1["days"]) == (1, 1, 2)
+    assert next(a for a in q["by_app"] if a["app"] == "ativos")["users"] == 2
+    assert [r["user"] for r in u.query(now, user="u2")["rows"]] == ["u2", "u2"]
+    assert len(u.query(now, days=1, app="ativos")["rows"]) == 2
+    assert '"\'=x"' in u.csv(now) and u.csv(now).startswith("usuario;")
+    u.flush(30, now)
+    assert len(Usage(tmp_path).query(now)["rows"]) == 3
+    u.flush(30, now + 40 * 86_400_000)
+    assert u.days == {}
+    off = Usage(None, enabled=False)
+    off.record("u", "a", "open")
+    assert off.days == {}
+
+
+def test_usage_tracking_page_and_rbac(hub: TestClient) -> None:
+    hub.get("/apps/ativos")
+    hub.get("/_frag/ativos/assets", headers={"x-hub-nav": "1"})
+    hub.post("/_frag/ativos/acao", headers={"sec-fetch-site": "same-origin"})
+    hub.get("/applications")
+    q = hub.get("/api/admin/usage").json()
+    row = next(r for r in q["rows"] if r["app"] == "ativos")
+    assert (row["opens"], row["sections"], row["actions"]) == (1, 1, 1) and row["email"]
+    assert any(r["app"] == "_hub" and r["app_name"] == "Hub" for r in q["rows"])
+    assert hub.get("/api/admin/usage", params={"app": "nada"}).json()["rows"] == []
+    page = hub.get("/admin/usage")
+    assert page.status_code == 200 and "data-usage-rows" in page.text
+    assert hub.get("/api/admin/usage.csv").text.startswith("﻿usuario;")
+    assert "/admin/usage" in hub.get("/admin").text
+    colab = add_user(hub, "colab", ["Colaborador"])
+    assert colab.get("/admin/usage").status_code == 403
+    assert colab.get("/api/admin/usage").status_code == 403
+    assert colab.get("/api/admin/usage.csv").status_code == 403
+    po = add_user(hub, "po", ["Product Owner"])
+    assert po.get("/api/admin/usage").status_code == 200
+
+
+def test_usage_ignores_analytics_opt_out_and_keeps_deleted_users(hub: TestClient) -> None:
+    # decisão deliberada: o opt-out vale só para o analytics anônimo; o admin vê o uso de todos
+    hub.put("/api/me/prefs", json={"analytics_opt_out": True})
+    hub.get("/apps/ativos")
+    assert any(r["app"] == "ativos" for r in hub.get("/api/admin/usage").json()["rows"])
+    # usuário excluído: as linhas ficam (histórico), sem nome nem e-mail
+    ins = hub.app.state.insight  # type: ignore[attr-defined]
+    ins.usage.record("u-excluido", "ativos", "open")
+    row = next(r for r in hub.get("/api/admin/usage").json()["rows"] if r["user"] == "u-excluido")
+    assert (row["name"], row["email"], row["opens"]) == ("", "", 1)
+    page = hub.get("/admin/usage").text
+    assert "u-excluido" in page
+
+
+def test_usage_page_period_filter(hub: TestClient) -> None:
+    ins = hub.app.state.insight  # type: ignore[attr-defined]
+    now = int(time.time() * 1000)
+    ins.usage.record("u-antigo", "ativos", "open", now=now - 20 * 86_400_000)
+    assert "u-antigo" in hub.get("/admin/usage?days=30").text
+    assert "u-antigo" not in hub.get("/admin/usage?days=7").text
+    assert "u-antigo" in hub.get("/admin/usage?days=90").text
+    page = hub.get("/admin/usage?days=999").text  # valor fora da lista volta a 30
+    assert 'value="30" selected' in page and "u-antigo" in page

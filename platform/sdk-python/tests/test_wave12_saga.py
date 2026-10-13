@@ -1,7 +1,6 @@
-"""Onda 12 (2.9): sagas e envios em duas fases — mesma semântica do SDK Rust.
+"""Onda 12 (2.9): sagas e envios em duas fases.
 
-Sem Postgres: regra de próximo passo pelos vetores compartilhados
-(vetores do Rust arquivado em ``stack/rust-topcoat``), estado/resumo e o esquema igual ao do Rust.
+Sem Postgres: regra de próximo passo pelos vetores de teste, estado/resumo e o esquema (formato estável: não mude sem migração).
 Com Postgres (``@db``): compensação em ordem inversa, retomada depois de queda (para a
 frente e no meio da compensação) com efeito exatamente uma vez, nova tentativa e
 compensação na última tentativa; envio em duas fases com transação desfeita e limpeza

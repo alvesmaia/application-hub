@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { stateFile } from '../tests/helpers';
 
-// Páginas-chave do hub e dos fragmentos dos apps (Rust e Python). Máscaras cobrem o
+// Páginas-chave do hub e dos fragmentos dos apps. Máscaras cobrem o
 // que muda sozinho (horários relativos, console de logs, gráficos ao vivo).
 const PAGES: [string, string][] = [
   ['inicio', '/'],

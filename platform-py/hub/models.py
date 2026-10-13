@@ -1,4 +1,4 @@
-"""Pydantic models for Rust-compatible JSON boundaries."""
+"""Modelos Pydantic das fronteiras JSON (formato compatível com a versão anterior do hub)."""
 
 from __future__ import annotations
 

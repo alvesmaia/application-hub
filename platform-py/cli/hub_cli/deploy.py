@@ -158,6 +158,8 @@ def deploy(directory: Path, env: str, hub: str | None, token: str | None, env_fi
         job = r.json()
     except ValueError:
         job = {"message": r.text[:300]}
+    if not job.get("message"):  # recusa do hub: a razão vem em `error` (ex.: tamanho do pacote)
+        job["message"] = str(job.get("error") or "")[:300]
     ok = r.status_code in (200, 201) and bool(job.get("ok"))
     result = {"ok": ok, "app": m["id"], "version": m["version"], "env": env, "sha256": sha,
               "status": r.status_code, "message": job.get("message", ""), "provisioned": job.get("provisioned", {}),

@@ -34,19 +34,19 @@ test.describe('inglês', () => {
   });
 });
 
-test.describe('espanhol', () => {
+test.describe('navegador em espanhol', () => {
   test.use({ storageState: stateFile('admin'), locale: 'es-ES' });
 
-  test('Operações em espanhol e erro da API v1 traduzido @core', async ({ page }) => {
+  test('espanhol (fora do produto) cai em inglês, também no erro da API v1 @core', async ({ page }) => {
     await page.goto('/admin/backups');
-    await expect(page.locator('html')).toHaveAttribute('lang', 'es');
-    await expect(page.getByText('Copias de seguridad y snapshots').first()).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    await expect(page.getByText('Backups and snapshots').first()).toBeVisible();
     const api = await apiAs('admin');
     const r = await api.get('/api/v1/jobs/999999', { headers: { 'accept-language': 'es-ES' } });
     expect(r.status()).toBe(404);
     const p = await r.json();
-    expect(p.title).toBe('No encontrado');
-    expect(p.detail).toBe('Job no encontrado.');
+    expect(p.title).toBe('Not found');
+    expect(p.detail).toBe('Job not found.');
     // pt-BR continua igual.
     const pt = await (await api.get('/api/v1/jobs/999999', { headers: { 'accept-language': 'pt-BR' } })).json();
     expect(pt.title).toBe('Não encontrado');

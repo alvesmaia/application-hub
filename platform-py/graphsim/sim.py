@@ -1,4 +1,4 @@
-"""Simulador do Graph e do login do Entra ID (porte do `hub-graphsim` do Rust).
+"""Simulador do Graph e do login do Entra ID (porte do `hub-graphsim`).
 
 Rotas: token (segredo ou asserção RS256 do certificado configurado), site/bibliotecas, item/exclusão/
 mover, download (302 para URL pré-autenticada), upload simples e em sessão, listagem paginada, pasta,

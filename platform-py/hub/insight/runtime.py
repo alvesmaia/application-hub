@@ -1,4 +1,4 @@
-"""Instrumentação do gateway e tarefas em segundo plano (`telemetry.rs`): métricas, traces, sondas, SLOs, analytics."""
+"""Instrumentação do gateway e tarefas em segundo plano: métricas, traces, sondas, SLOs, analytics."""
 
 from __future__ import annotations
 
@@ -30,6 +30,7 @@ from hub.insight.metrics import (
 )
 from hub.insight.ops import InsightOps
 from hub.insight.otlp import Exporter, endpoint_from_env
+from hub.insight.usage import PLATFORM, Usage
 from hub.vault import Vault
 
 _SENSITIVE = frozenset(
@@ -98,6 +99,7 @@ class Insight:
             self.tel.metrics.listener = self.otlp.on_observe
         self.analytics = Analytics(data_dir, vault, os.environ.get("HUB_ANALYTICS") != "0")
         self.analytics.ux = ux
+        self.usage = Usage(data_dir, os.environ.get("HUB_USAGE") != "0")
         self.admin, self.registry = admin, registry
         self.ops = InsightOps(admin)
         self.tasks: list[asyncio.Task[None]] = []
@@ -205,16 +207,20 @@ class Insight:
                 ok = sec and re.fullmatch(r"[A-Za-z0-9_-]{1,64}", sec) and not sec.startswith(("_", "e2e"))
                 if request.headers.get("x-hub-nav") and ok and can_app(segs[1]):
                     rec(uid, "section", segs[1], sec)
+                    self.usage.record(uid, segs[1], "section")
             elif segs[0] in ("api", "assets", "account"):
                 return
             elif (key := page_key(segs)) is not None:
                 rec(uid, "page", key)
+                self.usage.record(uid, PLATFORM, "page")
             elif (
                 segs[0] == "apps" and 2 <= len(segs) <= 3 and self.registry.get(segs[1]) and can_app(segs[1])
             ):
                 rec(uid, "open", segs[1])
+                self.usage.record(uid, segs[1], "open")
         elif segs[0] == "_frag" and len(segs) > 1:
             rec(uid, "action", segs[1])
+            self.usage.record(uid, segs[1], "action")
 
     # ---- tarefas ---------------------------------------------------------------------------------------
     def start(self, client: httpx.AsyncClient) -> None:
@@ -235,11 +241,13 @@ class Insight:
                 await t
         self.tel.metrics.save()
         self.analytics.flush()
+        self.usage.flush(self.analytics.retention)
 
     async def _housekeeping(self) -> None:
         while True:
             await asyncio.sleep(30)
             self.analytics.flush()
+            self.usage.flush(self.analytics.retention)
             self.tel.metrics.save()
 
     def targets(self) -> list[tuple[str, str]]:

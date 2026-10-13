@@ -108,8 +108,8 @@ def test_developers_languages(hub: TestClient) -> None:
         and "Follow the instructions at" in en
         and "This documentation is in Portuguese" in en
     )
-    es = hub.get("/developers/cli/hub-dev", headers={"accept-language": "es"}).text
-    assert "Guías" in es and ">Copiar<" in es
+    es = hub.get("/developers/cli/hub-dev", headers={"accept-language": "es"}).text  # `es` saiu: vira en
+    assert "Guides" in es and ">Copy<" in es
 
 
 def test_render_md_anchors_code_and_no_html() -> None:

@@ -1,7 +1,6 @@
 """Onda 12 (2.9): envio em duas fases com Postgres (``HUB_DB_TEST_URL``) e MinIO real
 descartável (``DOCKER_AVAILABLE=1``; container ``hub-itest-upl-py``, rótulo ``hub.ci=1``,
-imagens ``HUB_MINIO_IMAGE``/``HUB_MC_IMAGE``) — mesmo roteiro do teste Rust
-(``crates/hub-sdk/tests/uploads.rs`` na branch ``stack/rust-topcoat``): confirmar + promover, transação desfeita, queda
+imagens ``HUB_MINIO_IMAGE``/``HUB_MC_IMAGE``): confirmar + promover, transação desfeita, queda
 entre as fases com limpeza do órfão, ``PUT`` pré-assinado."""
 
 # ruff: noqa: S603, S607 — o teste controla o Docker com argumentos fixos

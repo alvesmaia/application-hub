@@ -225,3 +225,36 @@ def test_pack_build_dir(tmp_path: Path):
     with pytest.raises(PackError, match="build-dir"):
         pack(d, None, out)
     assert main(["pack", "--dir", str(d), "--build-dir", str(ctx), "--out", str(out)]) == 0
+
+
+def test_pack_too_big_says_what_weighs(tmp_path: Path):
+    """O hub recusa acima de MAX_PACKAGE_BYTES com 400; a CLI avisa antes de enviar e aponta os maiores arquivos."""
+    from hub_cli.pack import MAX_PACKAGE_BYTES
+
+    d = app(tmp_path / "a")
+    b = d / "build"
+    b.mkdir()
+    (b / "Dockerfile").write_text("FROM scratch\n")
+    (b / "vendor.bin").write_bytes(os.urandom(MAX_PACKAGE_BYTES + 1024 * 1024))  # zip não comprime aleatório
+    out = tmp_path / "o.hubapp"
+    with pytest.raises(PackError, match=r"build/vendor.bin.*vendor/"):
+        pack(d, None, out, b, "Dockerfile")
+    assert not out.exists()  # nada de pacote inútil no disco
+
+
+def test_check_conformance_points_to_cause(tmp_path: Path):
+    """§3 sem causa não ajuda: `_why` traz a última exceção de .hub/check-app.log (e a dica do banco antigo)."""
+    from hub_cli.check import _why
+
+    log = tmp_path / "check-app.log"
+    log.write_text(
+        "INFO: started\nTraceback (most recent call last):\n"
+        "sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: items.bought\n"
+        "INFO: 500 Internal Server Error\n",
+        encoding="utf-8",
+    )
+    why = _why(log)
+    assert "no such column: items.bought" in why and ".hub/*.db" in why
+    assert _why(tmp_path / "nao-existe.log") == ""
+    log.write_text("INFO: nada de exceção\n", encoding="utf-8")
+    assert _why(log) == " (veja check-app.log)"

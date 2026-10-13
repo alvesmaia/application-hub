@@ -1,5 +1,4 @@
-"""Rede de Fornecedores — app FastAPI da plataforma (port Python do ``hub-demo-apps`` com
-``HUB_DEMO_APP=fornecedores``; mesmas rotas e mesmo markup).
+"""Rede de Fornecedores — app FastAPI da plataforma (``HUB_DEMO_APP=fornecedores``; mesmas rotas e mesmo markup).
 
 Rotas (todas sob ``/fornecedores``; o hub as expõe em ``/_frag/fornecedores/...``):
 
@@ -71,7 +70,7 @@ NOUNS = ("fornecedor", "fornecedores", "supplier", "suppliers", "proveedor", "pr
 
 
 def shared_assets_dir() -> Path:
-    """``demo.css`` (o mesmo dos apps Rust): ``FORNECEDORES_SHARED_ASSETS`` ou ``platform/demo-apps/assets``."""
+    """``demo.css`` compartilhado: ``FORNECEDORES_SHARED_ASSETS`` ou ``platform/demo-apps/assets``."""
     env = os.environ.get("FORNECEDORES_SHARED_ASSETS", "")
     return Path(env) if env else HERE.parents[3] / "demo-apps" / "assets"
 
@@ -117,7 +116,7 @@ def generic_term(q: str) -> bool:
 
 
 def search_hits(q: SearchQuery) -> list[SearchHit]:
-    kind = {"en": "Supplier", "es": "Proveedor"}.get(q.locale, "Fornecedor")
+    kind = {"en": "Supplier"}.get(q.locale, "Fornecedor")
     generic = generic_term(q.q)
     hits = []
     for s in SUPPLIERS:

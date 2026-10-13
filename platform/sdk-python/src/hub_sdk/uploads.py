@@ -1,5 +1,4 @@
-"""Envio de arquivos em **duas fases** (onda 12, item 2.9) — mesmo contrato do SDK Rust
-(``hub_sdk::uploads``), mesmas tabelas (``hub_uploads``) e o mesmo tipo de tarefa de
+"""Envio de arquivos em **duas fases** (onda 12, item 2.9), com tabelas (``hub_uploads``) e tipo de tarefa de
 promoção (``hub.upload.promote``).
 
 1. :meth:`Uploads.begin` registra o envio (``pending``, com validade) e devolve a chave de

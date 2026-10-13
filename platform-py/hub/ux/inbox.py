@@ -346,7 +346,7 @@ class InboxStore:
             apps = self.grants.setdefault(it["by_id"], [])
             if it["app"] not in apps:
                 apps.append(it["app"])
-        if it["kind"] == "access":  # a pessoa que pediu recebe o resultado na Inbox (como no hub Rust)
+        if it["kind"] == "access":  # a pessoa que pediu recebe o resultado na Inbox
             name = app_name or it["app"]
             self.push(
                 item_of(

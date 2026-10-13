@@ -1,4 +1,4 @@
-"""Traces do app (onda 8) — mesmo contrato do SDK Rust (``hub_sdk::telemetry``).
+"""Traces do app (onda 8).
 
 - :class:`TraceMiddleware` (ASGI puro, funciona com respostas em streaming): lê o
   ``traceparent`` que o gateway injeta (o do navegador é descartado pelo hub), abre o span

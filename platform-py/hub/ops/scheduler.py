@@ -1,5 +1,5 @@
 """Agendador de backups (só no líder): a cada tick lê as políticas, decide por app×ambiente (`schedule.plan`: esperar,
-rodar, pular execução perdida) e dispara o mesmo job do "Backup agora". Porta de `hub-ops/src/scheduler.rs`."""
+rodar, pular execução perdida) e dispara o mesmo job do "Backup agora"."""
 
 from __future__ import annotations
 

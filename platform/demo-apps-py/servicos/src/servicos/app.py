@@ -1,5 +1,4 @@
-"""Central de Serviços — app FastAPI da plataforma (port Python do ``hub-demo-apps`` com
-``HUB_DEMO_APP=servicos``; mesmas rotas, mesmo markup, mesma base de dados).
+"""Central de Serviços — app FastAPI da plataforma (``HUB_DEMO_APP=servicos``; mesmas rotas, mesmo markup, mesma base de dados).
 
 Chamados no Postgres (milhões de linhas, alto volume de escrita), relatório gerencial agregado
 com exportação CSV e cache de sessão por usuário em memória (LRU limitado).
@@ -97,7 +96,7 @@ def to_i64(s: str) -> int | None:
 
 
 def shared_assets_dir() -> Path:
-    """``demo.css`` (o mesmo dos apps Rust): ``SERVICOS_SHARED_ASSETS`` ou ``platform/demo-apps/assets``."""
+    """``demo.css`` compartilhado: ``SERVICOS_SHARED_ASSETS`` ou ``platform/demo-apps/assets``."""
     env = os.environ.get("SERVICOS_SHARED_ASSETS", "")
     return Path(env) if env else HERE.parents[3] / "demo-apps" / "assets"
 
@@ -202,7 +201,7 @@ def make_search(sdk: HubSdk) -> Any:
                     like_pattern(q.q),
                     q.limit,
                 )
-        kind = {"en": "Ticket", "es": "Ticket"}.get(q.locale, "Chamado")
+        kind = {"en": "Ticket"}.get(q.locale, "Chamado")
         return [
             SearchHit(
                 title=r["title"],

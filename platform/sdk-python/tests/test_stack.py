@@ -10,7 +10,7 @@ from hub_sdk.stack import declare
 
 
 def test_declare_minimal_and_full() -> None:
-    assert declare("Rust 1.89") == {"language": "Rust 1.89"}
+    assert declare("Go 1.23") == {"language": "Go 1.23"}
     d = declare(
         "Python 3.12", framework="FastAPI", sdk="hub-sdk-python 1.0", db="PostgreSQL 16", libs=["segno"]
     )
@@ -28,8 +28,8 @@ def test_declare_minimal_and_full() -> None:
     [
         {"language": ""},
         {"language": "x" * 49},
-        {"language": "Rust", "framework": "a\x07"},
-        {"language": "Rust", "libs": [f"l{i}" for i in range(13)]},
+        {"language": "Go", "framework": "a\x07"},
+        {"language": "Go", "libs": [f"l{i}" for i in range(13)]},
     ],
 )
 def test_declare_rejects(kw: dict[str, Any]) -> None:

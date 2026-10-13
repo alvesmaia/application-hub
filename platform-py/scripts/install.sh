@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Instalação do zero do Application Hub numa máquina que só tem Docker (Compose >= 2.24), git e bash.
 #
-#   git clone https://github.com/alvesmaia/application-hub.git && cd application-hub
+#   git clone https://github.com/alvesmaia/application-hub-public.git application-hub && cd application-hub
 #   bash platform-py/scripts/install.sh --admin-email voce@empresa.com
 #   # ou, sem clonar antes:  bash install.sh --clone [--ref main] [--dir ./application-hub] ...
 #
@@ -22,32 +22,114 @@
 #   --subnet A.B         faixa das redes dos apps A.B.<n>.0/24 (padrão 10.231)
 #   --no-demo-apps       não sobe os 4 apps de exemplo (padrão: sobem, para a primeira avaliação)
 #   --clone              clona o repositório antes (--repo URL, --ref REF, --dir PASTA)
+#   --get-compose        baixa o docker-compose oficial (versão fixa, sha256 conferido) em ~/.local/bin — para
+#                        RHEL/Rocky sem root, onde a distribuição não traz provedor de compose
+#   --yes                não pergunta nada (padrões + opções da linha de comando); num terminal sem opções
+#                        de instância o script pergunta cada uma, com o padrão entre [colchetes]
 set -euo pipefail
 export MSYS_NO_PATHCONV=1
 
 EMAIL=admin@example.com PUBLIC_URL="" PORT=8090 BIND=127.0.0.1 PROJECT=app-hub SUBNET=10.231 DEMO=1
-CLONE=0 REPO=https://github.com/alvesmaia/application-hub.git REF=main DIR=./application-hub
+CLONE=0 REPO=https://github.com/alvesmaia/application-hub-public.git REF=main DIR=./application-hub
+GET_COMPOSE=0 YES=0 ASKED=0 PUBLIC_URL_IN=''
+COMPOSE_VER=v2.29.7
+COMPOSE_SHA=383ce6698cd5d5bbf958d2c8489ed75094e34a77d340404d9f32c4ae9e12baf0
 while [ $# -gt 0 ]; do
   case "$1" in
-    --admin-email) EMAIL=$2; shift ;;
-    --public-url) PUBLIC_URL=$2; shift ;;
-    --port) PORT=$2; shift ;;
-    --bind) BIND=$2; shift ;;
-    --project) PROJECT=$2; shift ;;
-    --subnet) SUBNET=$2; shift ;;
-    --no-demo-apps) DEMO=0 ;;
+    --admin-email) EMAIL=$2; shift; ASKED=1 ;;
+    --public-url) PUBLIC_URL=$2; shift; ASKED=1 ;;
+    --port) PORT=$2; shift; ASKED=1 ;;
+    --bind) BIND=$2; shift; ASKED=1 ;;
+    --project) PROJECT=$2; shift; ASKED=1 ;;
+    --subnet) SUBNET=$2; shift; ASKED=1 ;;
+    --no-demo-apps) DEMO=0; ASKED=1 ;;
     --clone) CLONE=1 ;;
     --repo) REPO=$2; shift ;;
     --ref) REF=$2; shift ;;
     --dir) DIR=$2; shift ;;
-    -h | --help) sed -n '2,27p' "$0"; exit 0 ;;
+    --get-compose) GET_COMPOSE=1 ;;
+    -y | --yes) YES=1 ;;
+    -h | --help) sed -n '2,31p' "$0"; exit 0 ;;
     *) echo "opção desconhecida: $1" >&2; exit 2 ;;
   esac
   shift
 done
+ask() { # ask <variável> <pergunta> [validador]; EOF ou 3 erros = fica no padrão
+  local cur ans i=0
+  eval "cur=\$$1"
+  while [ "$i" -lt 3 ]; do
+    i=$((i + 1))
+    printf '%s [%s]: ' "$2" "$cur" > /dev/tty
+    IFS= read -r ans < /dev/tty || { eval "$1=\$cur"; echo > /dev/tty; return 0; }
+    [ -z "$ans" ] && ans=$cur
+    if [ -z "${3:-}" ] || echo "$ans" | grep -Eq "$3"; then eval "$1=\$ans"; return 0; fi
+    echo "valor inválido" > /dev/tty
+  done
+  eval "$1=\$cur"
+  echo "usando o padrão: $cur" > /dev/tty
+}
+if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && [ -t 0 ] && [ -r /dev/tty ]; then
+  echo "Instalação do Application Hub — Enter aceita o valor entre [colchetes]."
+  ask EMAIL "E-mail do primeiro administrador" '^[^@ ]+@[^@ ]+\.[^@ ]+$'
+  ask PORT "Porta do hub no host" '^[0-9]{2,5}$'
+  ask BIND "Endereço de escuta (127.0.0.1 = só esta máquina)" '^[0-9.]+$|^::$'
+  ask PUBLIC_URL_IN "URL vista pelo navegador (vazio = http://localhost:<porta>)" '^$|^https?://'
+  [ -n "${PUBLIC_URL_IN:-}" ] && PUBLIC_URL=$PUBLIC_URL_IN
+  ask PROJECT "Projeto/prefixo dos contêineres" '^app-hub(-[a-z0-9-]+)?$'
+  ask SUBNET "Faixa das redes dos apps (A.B em A.B.<n>.0/24)" '^[0-9]+\.[0-9]+$'
+  DEMO_IN=$([ "$DEMO" = 1 ] && echo s || echo n)
+  ask DEMO_IN "Subir os 4 apps de exemplo? (s/n)" '^[snSN]$'
+  case "$DEMO_IN" in s | S) DEMO=1 ;; *) DEMO=0 ;; esac
+  echo
+  echo "Resumo: admin=$EMAIL  porta=$PORT  bind=$BIND  url=${PUBLIC_URL:-http://localhost:$PORT}"
+  echo "        projeto=$PROJECT  subnet=$SUBNET.<n>.0/24  apps de exemplo=$([ "$DEMO" = 1 ] && echo sim || echo não)"
+  printf 'Instalar com estas opções? (s/n) [s]: ' > /dev/tty
+  IFS= read -r a < /dev/tty || a=s
+  case "${a:-s}" in s | S) ;; *) echo "cancelado"; exit 1 ;; esac
+fi
 case "$PROJECT" in app-hub | app-hub-*) ;; *) echo "--project deve começar com app-hub (trava do hub)" >&2; exit 2 ;; esac
-command -v docker >/dev/null || { echo "Docker não encontrado" >&2; exit 1; }
-docker compose version >/dev/null || { echo "Docker Compose v2 não encontrado" >&2; exit 1; }
+command -v docker >/dev/null || { echo "Docker não encontrado (Podman: instale podman-docker)" >&2; exit 1; }
+get_compose() { # binário oficial em ~/.local/bin (sem root); versão fixa e sha256 conferido
+  local url=https://github.com/docker/compose/releases/download/$COMPOSE_VER/docker-compose-linux-x86_64
+  local dest=$HOME/.local/bin/docker-compose tmp
+  mkdir -p "$HOME/.local/bin"
+  tmp=$(mktemp)
+  echo "baixando docker-compose $COMPOSE_VER para $dest"
+  curl -fsSL -o "$tmp" "$url" || { rm -f "$tmp"; echo "download falhou: $url" >&2; return 1; }
+  if command -v sha256sum >/dev/null; then
+    local got
+    got=$(sha256sum "$tmp" | cut -d' ' -f1)
+    [ "$got" = "$COMPOSE_SHA" ] || { rm -f "$tmp"; echo "sha256 do docker-compose não confere (esperado $COMPOSE_SHA, obtido $got)" >&2; return 1; }
+  fi
+  chmod +x "$tmp" && mv "$tmp" "$dest"
+  case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) PATH="$HOME/.local/bin:$PATH"; export PATH;
+    echo "aviso: acrescente \$HOME/.local/bin ao PATH do seu shell (~/.bashrc)" >&2 ;; esac
+}
+if ! docker compose version >/dev/null 2>&1; then
+  if [ "$GET_COMPOSE" = 0 ] && [ "$YES" = 0 ] && [ -t 0 ] && [ -r /dev/tty ]; then
+    printf 'Docker Compose v2 não encontrado. Baixar o binário oficial %s em ~/.local/bin? (s/n) [s]: ' "$COMPOSE_VER" > /dev/tty
+    IFS= read -r a < /dev/tty || a=s
+    case "${a:-s}" in s | S) GET_COMPOSE=1 ;; esac
+  fi
+  if [ "$GET_COMPOSE" = 1 ]; then
+    get_compose || exit 1
+  else
+    echo "Docker Compose v2 não encontrado. Sem root (ex.: RHEL com Podman): rode de novo com --get-compose," >&2
+    echo "  ou baixe docker-compose-linux-x86_64 de github.com/docker/compose/releases para ~/.local/bin (chmod +x)." >&2
+    exit 1
+  fi
+  docker compose version >/dev/null 2>&1 || { echo "o docker ainda não encontra o provedor de compose" >&2; exit 1; }
+fi
+# Podman rootless (RHEL/Rocky/Fedora): o socket é o do usuário, não /var/run/docker.sock
+ROOTLESS_SOCK=""
+if docker --version 2>/dev/null | grep -qi podman && [ "$(podman info --format '{{.Host.Security.Rootless}}' 2>/dev/null)" = true ]; then
+  ROOTLESS_SOCK="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/podman/podman.sock"
+  [ -S "$ROOTLESS_SOCK" ] || { echo "Podman rootless sem socket: rode  systemctl --user enable --now podman.socket" >&2; exit 1; }
+  loginctl show-user "$(id -un)" -p Linger 2>/dev/null | grep -q yes ||
+    echo "aviso: sem linger o hub cai no logout — peça à TI: loginctl enable-linger $(id -un)" >&2
+  grep -qw cpu "/sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/cgroup.controllers" 2>/dev/null ||
+    echo "aviso: controlador cpu não delegado ao usuário; os limites de CPU dos apps não serão aplicados (TI: Delegate=cpu cpuset io memory pids em user@.service, docs/IMPLANTACAO.md)" >&2
+fi
 
 if [ "$CLONE" = 1 ]; then
   [ -d "$DIR/.git" ] || git clone --depth 1 --branch "$REF" "$REPO" "$DIR"
@@ -75,6 +157,7 @@ if [ ! -f "$ENVF" ]; then
     echo "HUB_PROJECT=$PROJECT"
     echo "HUB_PORT=$PORT"
     echo "HUB_BIND=$BIND"
+    [ "$BIND" != 127.0.0.1 ] && echo "HUB_BIND6=$BIND"
     echo "HUB_SUBNET=$SUBNET"
     echo "HUB_MINIO_IMAGE=$PROJECT-minio:0.10.0"
     echo "HUB_MC_IMAGE=$PROJECT-mc:0.10.0"
@@ -87,8 +170,13 @@ if [ ! -f "$ENVF" ]; then
     fi
     if [ "$DEMO" = 1 ]; then echo "COMPOSE_PROFILES=demo-apps"; else echo "HUB_APPS_JSON=./apps.empty.json"; fi
   } >> "$ENVF"
-  [ -n "${DOCKER_GID:-}" ] && echo "DOCKER_GID=$DOCKER_GID" >> "$ENVF"
-  [ "$(uname -s)" = Linux ] && [ -z "${DOCKER_GID:-}" ] && echo "DOCKER_GID=$(stat -c %g /var/run/docker.sock)" >> "$ENVF"
+  if [ -n "$ROOTLESS_SOCK" ]; then # dono do socket = o usuário = root dentro do namespace
+    { echo "HUB_CONTAINER_SOCKET_HOST=$ROOTLESS_SOCK"; echo "DOCKER_GID=0"; } >> "$ENVF"
+  elif [ -n "${DOCKER_GID:-}" ]; then
+    echo "DOCKER_GID=$DOCKER_GID" >> "$ENVF"
+  elif [ "$(uname -s)" = Linux ]; then
+    echo "DOCKER_GID=$(stat -c %g /var/run/docker.sock)" >> "$ENVF"
+  fi
   echo "segredos novos em platform-py/$ENVF (0600)"
 else
   echo "usando platform-py/$ENVF existente (segredos mantidos)"

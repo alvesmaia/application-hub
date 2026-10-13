@@ -1,5 +1,4 @@
-"""Sagas (onda 12, item 2.9) — mesma semântica e mesmo formato de estado do SDK Rust
-(``hub_sdk::saga``).
+"""Sagas (onda 12, item 2.9).
 
 Uma saga é uma sequência de **passos** (ação + compensação) executada como tarefa durável
 (:mod:`hub_sdk.jobs`): mesma fila, lease, ``attempt_token``, checkpoint e visibilidade em
@@ -17,8 +16,7 @@ Operações › Tarefas.
 - Fim: ``completed`` → tarefa ``done``; ``compensated`` → ``failed`` com o motivo;
   compensação com erro definitivo → ``failed`` (intervenção manual).
 
-A regra de próximo passo (:func:`next_action`) usa os vetores de
-vetores da era Rust (branch ``stack/rust-topcoat``, ``crates/hub-sdk/saga-vectors.json``).
+A regra de próximo passo (:func:`next_action`) é coberta por vetores de teste fixos.
 """
 
 from __future__ import annotations
@@ -40,7 +38,7 @@ def new_state(names: Sequence[str]) -> dict[str, Any]:
 
 def next_action(s: dict[str, Any]) -> str:
     """Próxima ação a partir do estado salvo: ``run:i``, ``compensate:i``, ``complete``,
-    ``compensated`` ou ``failed`` (mesma regra do Rust)."""
+    ``compensated`` ou ``failed``."""
     steps = s.get("steps") or []
     st = s.get("state")
     if st == "running":

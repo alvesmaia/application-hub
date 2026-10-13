@@ -1634,6 +1634,73 @@
         ],
         "type": "string"
       },
+      "UsageRow": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "actions": 9,
+            "app": "ativos",
+            "app_name": "Ativos",
+            "days": 6,
+            "email": "ana@empresa.com",
+            "last": 1790773398576,
+            "name": "Ana Souza",
+            "opens": 12,
+            "sections": 40,
+            "user": "u-7f3a"
+          }
+        ],
+        "properties": {
+          "actions": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "app": {
+            "type": "string"
+          },
+          "app_name": {
+            "type": "string"
+          },
+          "days": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "email": {
+            "type": "string"
+          },
+          "last": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "opens": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sections": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "user": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "user",
+          "name",
+          "email",
+          "app",
+          "app_name",
+          "opens",
+          "sections",
+          "actions",
+          "days",
+          "last"
+        ],
+        "type": "object"
+      },
       "User": {
         "additionalProperties": true,
         "examples": [
@@ -4977,6 +5044,139 @@
         "summary": "Reprocessa uma tarefa",
         "tags": [
           "Tarefas"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/usage": {
+      "get": {
+        "operationId": "usage_query",
+        "parameters": [
+          {
+            "description": "Período em dias (padrão 30)",
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "maximum": 400,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Id do usuário",
+            "in": "query",
+            "name": "user",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Id do app",
+            "in": "query",
+            "name": "app",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Itens por página",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Deslocamento",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Texto em qualquer campo",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": [
+                    {
+                      "actions": 9,
+                      "app": "ativos",
+                      "app_name": "Ativos",
+                      "days": 6,
+                      "email": "ana@empresa.com",
+                      "last": 1790773398576,
+                      "name": "Ana Souza",
+                      "opens": 12,
+                      "sections": 40,
+                      "user": "u-7f3a"
+                    }
+                  ],
+                  "limit": 50,
+                  "next": null,
+                  "offset": 0,
+                  "total": 1
+                },
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Page"
+                    },
+                    {
+                      "properties": {
+                        "items": {
+                          "items": {
+                            "$ref": "#/components/schemas/UsageRow"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Página da lista"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Uso por usuário e app (aberturas, navegações, ações, último acesso)",
+        "tags": [
+          "Auditoria"
         ],
         "x-hub-destructive": false,
         "x-hub-mcp": true

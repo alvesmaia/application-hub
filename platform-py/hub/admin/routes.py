@@ -61,7 +61,7 @@ def initials(name: str) -> str:
 
 
 def dumps(value: Any) -> str:
-    """JSON como o `serde_json::json!` do Rust (chaves em ordem alfabética, compacto)."""
+    """JSON compacto com chaves em ordem alfabética (formato da versão anterior do hub)."""
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
 
 
@@ -79,7 +79,7 @@ async def json_only(request: Request) -> None:
 
 async def json_or_empty(request: Request) -> None:
     """Como `json_only`, mas sem corpo (ações como "provisionar armazenamento") dispensa o Content-Type: a defesa
-    de CSRF é o teste de mesma origem do guard de autenticação, e o Rust não exige JSON nessas rotas."""
+    de CSRF é o teste de mesma origem do guard de autenticação, e estas rotas não exigem JSON."""
     if request.headers.get("content-length", "0") in ("", "0") and "transfer-encoding" not in request.headers:
         return
     await json_only(request)

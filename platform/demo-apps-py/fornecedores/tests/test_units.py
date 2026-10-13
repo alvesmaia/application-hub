@@ -102,7 +102,6 @@ def test_search_hits_and_generic_terms() -> None:
     assert len(search_hits(sq("fornecedores"))) == 6 and generic_term("Proveedores")
     assert not generic_term("for") and search_hits(sq("zzzz")) == []
     assert search_hits(sq("norte", "en"))[0].kind == "Supplier"
-    assert search_hits(sq("norte", "es"))[0].kind == "Proveedor"
     assert len(search_hits(sq("são paulo"))) == 2  # cidade (peso 0,6)
 
 

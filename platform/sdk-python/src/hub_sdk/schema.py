@@ -1,4 +1,4 @@
-"""Tabelas do SDK (idênticas às do `hub-sdk` Rust), ids e utilidades de banco."""
+"""Tabelas do SDK, ids e utilidades de banco."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import hmac
 import secrets
 from typing import Any
 
-# Mesmo texto do `hub_sdk::SCHEMA_SQL` (Rust): idempotente, aplicado junto com as
+# ``SCHEMA_SQL``: idempotente, aplicado junto com as
 # migrações do app.
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS hub_jobs (
@@ -83,7 +83,7 @@ ALTER TABLE hub_uploads ADD COLUMN IF NOT EXISTS size bigint;
 ALTER TABLE hub_uploads ADD COLUMN IF NOT EXISTS etag text;
 """
 
-# Retenção do outbox confirmado (igual ao Rust).
+# Retenção do outbox confirmado.
 APPS_PREFIX = "/apps"
 """Prefixo público das páginas dos apps (onda 13): o navegador vê ``/apps/{id}/…``; o app
 continua servindo ``/{id}/…`` (o hub traduz). Links do app usam :func:`base`."""
@@ -96,7 +96,7 @@ def base(app_id: str) -> str:
 
 OUTBOX_RETENTION = "7 days"
 
-# Lock das migrações (o mesmo número dos apps Rust: dois processos do mesmo app — ou um
+# Lock das migrações (dois processos do mesmo app — ou um
 # seed e o app — não migram ao mesmo tempo).
 MIGRATION_LOCK = 424242
 

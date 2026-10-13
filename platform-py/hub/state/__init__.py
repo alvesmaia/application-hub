@@ -630,7 +630,7 @@ class StateDb:
 
 
 class Lease:
-    """Background lease renewal with the same 80% local fencing margin as Rust."""
+    """Renovação do lease em segundo plano, com a mesma margem local de fencing de 80%."""
 
     def __init__(self, db: StateDb, name: str, holder: str, ttl_ms: int) -> None:
         self.db, self.name, self.holder = db, name, holder

@@ -1,4 +1,4 @@
-"""Analytics de uso (`analytics.rs`): só agregados por dia e ids opacos (HMAC com chave no cofre).
+"""Analytics de uso: só agregados por dia e ids opacos (HMAC com chave no cofre).
 
 Nada de e-mail, nome ou IP no disco. A chave dos ids troca a cada período de retenção (e sob demanda).
 `HUB_ANALYTICS=0` desliga; o opt-out por usuário vem das preferências.

@@ -11,6 +11,7 @@ from fastapi import FastAPI
 
 from hub.admin.store import OutboxIngest
 from hub.api.mcp import sweep as mcp_sweep
+from hub.ops import updates
 from hub.ops.leader import Leader
 from hub.ops.model import now_ms
 from hub.ops.outbox import Outbox
@@ -47,6 +48,10 @@ class Background:
         sched.start()
         sup.start()
         self.parts = [sup, sched, outbox, leader]
+        if updates.enabled():  # aviso de versão nova (opcional)
+            st.update_check = chk = updates.UpdateCheck()
+            chk.start()
+            self.parts.append(chk)
         if db:
             self.watch = asyncio.create_task(self._inbox_refresh())
 

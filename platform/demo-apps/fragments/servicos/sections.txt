@@ -1,5 +1,0 @@
-dashboard
-requests
-approvals
-knowledge
-settings

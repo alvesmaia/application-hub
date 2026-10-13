@@ -1,5 +1,5 @@
-"""hub_sdk.storage (onda 10): confinamento de caminhos (vetores compartilhados com o Rust),
-URL pré-assinada S3 idêntica à do Rust e o cliente do broker contra um broker falso."""
+"""hub_sdk.storage (onda 10): confinamento de caminhos (vetores compartilhados),
+URL pré-assinada S3 e o cliente do broker contra um broker falso."""
 
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ def test_paths_bad(raw: str) -> None:
     assert e.value.status == 400
 
 
-def test_presign_matches_rust_vector() -> None:
+def test_presign_matches_vector() -> None:
     p = VECTORS["presign"]
     c = storage.S3Connection(
         "s3",

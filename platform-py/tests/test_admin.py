@@ -8,7 +8,7 @@ from hub.admin.store import AdminStore, LogBus, OutboxIngest
 from hub.vault import Vault
 
 
-def test_rust_entry_format_and_append(tmp_path):
+def test_legacy_entry_format_and_append(tmp_path):
     event = {
         "id": 1,
         "at": 1700000000000,
@@ -92,7 +92,7 @@ async def test_outbox_validation_and_log_subscribers(tmp_path):
 
 
 def test_chain_writes_signed_checkpoints_every_100_events(tmp_path):
-    """F7a: a exportação de auditoria traz checkpoints assinados (`"t":"c"`), como no hub Rust."""
+    """F7a: a exportação de auditoria traz checkpoints assinados (`"t":"c"`)."""
     (tmp_path / "vault").mkdir()
     (tmp_path / "master.key").write_text("00" * 32, encoding="ascii")
     vault = Vault.open(tmp_path / "vault", tmp_path / "master.key")

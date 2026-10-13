@@ -2,7 +2,7 @@
 ``POST /{app}/_hub/mcp`` (JSON-RPC 2.0, MCP 2025-06-18) — só para o hub, pela rede
 interna, com ``x-hub-internal-token`` (o gateway recusa ``/_hub/*`` do navegador).
 
-Igual ao SDK Rust (``hub_sdk::mcp``): cada operação sob ``/{app}/api/`` vira uma
+Cada operação sob ``/{app}/api/`` vira uma
 ferramenta (``operationId``), com entrada = parâmetros + ``body``; ``tools/call`` executa a
 operação **dentro do próprio app** (chamada ASGI em processo, mesmos middlewares),
 repassando a identidade que o hub mandou. ``HUB_MCP_ENABLED=0`` desliga (404).

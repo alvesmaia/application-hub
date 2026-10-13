@@ -2,8 +2,8 @@ from hub_sdk.idempotency import RequestHasher, request_hash, split_content_type,
 
 MP = "multipart/form-data; boundary="
 
-# Mesmos vetores do teste `hash_vectors_match_the_python_sdk` do hub-sdk (Rust).
-RUST_VECTORS = [
+# Vetores de hash (formato estável: não mude sem migração).
+HASH_VECTORS = [
     (
         ("POST", "/x", "", MP + "AAA111", b"--AAA111\r\nconteudo\r\n--AAA111--"),
         "035fbd2375bd0dc7b330332fbf79dff42945b24a42516b01594307f2a34d06f5",
@@ -15,8 +15,8 @@ RUST_VECTORS = [
 ]
 
 
-def test_same_hash_as_the_rust_sdk() -> None:
-    for args, want in RUST_VECTORS:
+def test_hash_matches_vectors() -> None:
+    for args, want in HASH_VECTORS:
         assert request_hash(*args) == want
 
 

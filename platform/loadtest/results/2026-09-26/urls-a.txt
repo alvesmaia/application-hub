@@ -1,2 +1,0 @@
-http://hub-web:8080/_frag/ativos/dashboard
-http://hub-web:8080/_frag/ativos/_load?cpu_ms=5&mem_mb=2

@@ -17,7 +17,7 @@ def test_declare_follows_hub_rules() -> None:
         scripts.declare("editor.js", "curto")
 
 
-def test_integrity_matches_rust_and_browsers() -> None:
+def test_integrity_matches_browsers() -> None:
     assert scripts.integrity(b"abc") == (
         "sha384-ywB1P0WjXou1oD1pmsZQBycsMqsO3tFjGotgWkP/W+2AhgcroefMI1i67KE0yCWn"
     )

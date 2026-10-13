@@ -5,9 +5,6 @@ Tudo o que um app precisa implementar para rodar no hub. O hub só conversa com 
 Python `hub_sdk`; outras linguagens são aceitas se passarem na **suíte de conformidade**
 (`platform/conformance`, item 16), sem suporte oficial.
 
-> O SDK Rust foi descontinuado e removido da `main` (arquivado na branch `stack/rust-topcoat`). As menções
-> a `hub_sdk::…` (Rust) e `hub-demo-apps` abaixo são históricas; use o equivalente Python `hub_sdk.…`.
-
 Palavras-chave: **deve** (obrigatório — a suíte verifica), **deveria** (recomendado).
 
 ## 1. Visão geral
@@ -35,10 +32,9 @@ das suas dependências `hub-deps-<id>` (banco, object store). Não tem porta pub
     enquanto não pode (aquecendo, migrando, banco fora, encerrando por SIGTERM).
   Sem token interno (não expõe dados; o gateway recusa `/_frag/{id}/_hub/*` vindo do
   navegador), `Content-Type: application/json`, `Cache-Control: no-store`, cada
-  verificação com tempo máximo (≤ 1,5 s nos SDKs). Os SDKs trazem a rota ligada por
-  padrão: Rust `hub_sdk::ready::Readiness` (os apps de exemplo ligam `shutdown` + `db` =
-  migrações aplicadas e `SELECT 1`), Python `HubSdk.readiness()` (idem; verificações
-  extras em `sdk.ready_checks`).
+  verificação com tempo máximo (≤ 1,5 s no SDK). O SDK traz a rota ligada por
+  padrão: `HubSdk.readiness()` (os apps de exemplo ligam `shutdown` + `db` = migrações
+  aplicadas e `SELECT 1`; verificações extras em `sdk.ready_checks`).
 - **Uso pelo hub**: o blue/green (produção **e** staging, implantação, "Aplicar
   (reiniciar)", rollback e religar depois de uma restauração) só troca o tráfego para o
   candidato depois de um 200 em `/_hub/ready`; um 503 mantém o atual atendendo e o motivo
@@ -46,7 +42,7 @@ das suas dependências `hub-deps-<id>` (banco, object store). Não tem porta pub
   candidato não implementa GET /{id}/_hub/ready … implantação recusada"): falha dura, não
   aviso. A suíte de conformidade exige as duas rotas.
 - **Compatibilidade**: o cabeçalho `x-hub-ready: 0` (onda 7) continua valendo como "ainda
-  não pronto" e os SDKs seguem enviando-o durante as migrações; só ele **não** basta mais
+  não pronto" e o SDK segue enviando-o durante as migrações; só ele **não** basta mais
   (sem `/_hub/ready` o app é recusado). Motivo da prontidão: no zero-downtime de 28/09 o
   container novo passou no health check com as migrações ainda esperando um lock, e as
   primeiras gravações nele receberam 503.
@@ -70,7 +66,7 @@ navegador acessa o app sempre por `/_frag/{id}/…` (gateway); o app recebe `/{i
 
 - O app **monta todo link, `action`, `formaction` e `data-hub-get/post/poll` com a base
   pública** `/apps/{id}`. O gateway envia essa base no cabeçalho **`x-hub-base`**
-  (`/apps/{id}`); os SDKs têm `hub_sdk::base(id)` / `hub_sdk.base(id)` e, nos templates do
+  (`/apps/{id}`); o SDK tem `hub_sdk.base(id)` e, nos templates do
   SDK Python, a variável `{{ base }}`. Links de notificações (§20) e resultados de busca
   (§19) também usam `/apps/{id}/…` (o hub ainda aceita o antigo `/{id}/…` e converte).
 - `Location` de redirecionamento do app para `/{id}/…` é reescrito pelo gateway para
@@ -122,7 +118,7 @@ Respostas dinâmicas **devem** ter `Cache-Control: no-store`.
 - Exibição: `name` (senão `user`). O workspace **deve** mostrar o usuário
   (`hub-user-note`: "Conectado como …").
 - `x-hub-env`: `producao` (padrão) ou `staging`.
-- `x-hub-locale` (onda 9): idioma do usuário resolvido pelo hub (`pt-BR`, `en` ou `es`),
+- `x-hub-locale` (onda 9): idioma do usuário resolvido pelo hub (`pt-BR` ou `en`),
   repetido no campo `locale` do `x-hub-user`. O app **deve** usar, nesta ordem,
   `x-hub-locale` → `locale` da identidade → `Accept-Language` (o gateway repassa o do
   navegador) → `pt-BR` (ver item 21).
@@ -185,8 +181,8 @@ Toda rota que altera dados (POST/PUT/PATCH/DELETE) **deve** honrar `Idempotency-
   devolve a resposta deste);
 - **hash do pedido**: SHA-256 de `método\0caminho\0query\0content-type-sem-boundary\0` +
   corpo **inteiro** (o `boundary` do multipart substituído por `<boundary>`, inclusive quando
-  partido entre pedaços; corpos grandes/chunked em streaming, sem ficar na memória). Os SDKs
-  Rust e Python produzem o **mesmo** hash (vetores fixos nos testes das duas stacks);
+  partido entre pedaços; corpos grandes/chunked em streaming, sem ficar na memória). O SDK
+  produz sempre o **mesmo** hash (vetores fixos nos testes);
 - primeira vez: executa e guarda a resposta (2xx/3xx/4xx, exceto 408/429; 5xx/429 não são
   guardados — o cliente tenta de novo — salvo se a ação já foi efetivada);
 - repetição com o mesmo pedido: devolve a resposta guardada com `idempotent-replay: true`
@@ -371,8 +367,7 @@ Quando nenhum `data-hub-*` resolve (ex.: editor rico), o app declara o arquivo n
 - o script roda depois de cada troca de conteúdo pelo evento `hub:mount` no `document`
   (`event.detail.root` = trecho novo). Ele continua sujeito ao Trusted Types (use
   `HubSafe.setHTML(el, html, { app })` para inserir HTML) e ao `connect-src` do app;
-- SDKs: `hub_sdk::scripts::{declare, integrity}` (Rust) e `hub_sdk.scripts.declare/integrity`
-  (Python) geram a entrada do manifesto e o `sha384-…` idêntico ao do hub.
+- SDK: `hub_sdk.scripts.declare/integrity` geram a entrada do manifesto e o `sha384-…` idêntico ao do hub.
 
 ## 14. Manifesto
 
@@ -388,7 +383,7 @@ Quando nenhum `data-hub-*` resolve (ex.: editor rico), o app declara o arquivo n
   "env": [], "permissions": ["contratos.read"],
   "jobs": [{ "name": "contratos.import", "max_duration_s": 3600, "max_attempts": 5 }],
   "sdk": "1.0",                      // major suportado: 1
-  "runtime": { "stack": "python" },  // informativo: "rust" | "python" (validado)
+  "runtime": { "stack": "python" },  // informativo
   "stack": {                         // opcional, informativo (onda 13): cartão do catálogo
     "language": "Python 3.12", "framework": "FastAPI", "sdk": "hub-sdk-python 1.0",
     "db": "PostgreSQL 16", "libs": ["python-barcode", "segno"]
@@ -410,17 +405,15 @@ SQLite em `.hub/dev.db` (`hub_sdk.db.engine()`/`upgrade()`, SQLAlchemy Core + Al
 `.hub/storage/` pela mesma API `hub_sdk.storage.connection()` (`HUB_STORAGE_LOCAL_DIR`).
 
 `runtime.stack` é informativo (o hub trata toda stack igual pelo contrato; aparece no passo
-*Contrato* e orienta o dimensionamento); valores fora de `rust`/`python` são recusados —
-outra linguagem omite o campo.
+*Contrato* e orienta o dimensionamento).
 
 `stack` (onda 13) também é **só informativo**: o catálogo de aplicações (`/applications`)
 mostra a tecnologia do app ao passar o mouse, no foco do teclado e no botão "i" (toque) —
 linguagem · framework, SDK, banco, bibliotecas notáveis, API/MCP ligados (de `api`/`mcp`) e a
 versão implantada. Regras: `language` obrigatório; `framework`, `sdk`, `db` opcionais; até 12
 `libs`; cada texto com 1–48 caracteres, sem caracteres de controle; campo desconhecido é
-recusado. Sem `stack`, o cartão mostra só a linguagem de `runtime.stack`. SDKs:
-`hub_sdk::stack::declare` (Rust) e `hub_sdk.stack.declare` (Python) montam a entrada com as
-mesmas regras.
+recusado. Sem `stack`, o cartão mostra só a linguagem de `runtime.stack`. SDK:
+`hub_sdk.stack.declare` monta a entrada com as mesmas regras.
 
 ## 15. Imagem e container
 
@@ -439,7 +432,7 @@ em `$PORT` (8080), escrever só em `/scratch`/`$TMPDIR` e ter o `HEALTHCHECK` do
 - criar spans `client` para o banco (nome `db <operação>`, `db.system=postgresql`) filhos
   do span `server` e, **recomendado**, prefixar o SQL com o comentário *sqlcommenter*
   `/*traceparent='00-…'*/` (o trace aparece no `pg_stat_activity`/logs do Postgres);
-- guardar os spans num buffer limitado (SDKs: 5000) e entregá-los em `GET /_hub/telemetry`
+- guardar os spans num buffer limitado (SDK: 5000) e entregá-los em `GET /_hub/telemetry`
   (o hub busca a cada 2 s pela rede interna; o app **não** exporta nada sozinho — não
   alcança o plano de controle). O hub reexporta via OTLP quando configurado.
 
@@ -463,8 +456,7 @@ CPU/memória pelo runtime. O app não precisa expor métricas.
    valor dela; rollout se `bucket < percentual × 100` (convidado nunca entra) → valor do
    rollout; senão o padrão. Vetores: `platform-py/tests/vectors/flags-vectors.json`.
 
-SDKs: Rust `hub_sdk::telemetry` (`layer`, `db`, `sql_comment`) e `hub_sdk::flags`
-(`from_headers`, `FlagStore`); Python `hub_sdk.telemetry` (`TraceMiddleware`, `db`,
+SDK: `hub_sdk.telemetry` (`TraceMiddleware`, `db`,
 `sql_comment`) e `hub_sdk.flags`. Conformidade: itens 18 (propagação hub → app → banco,
 formato da telemetria, `/_hub/flags`, UI controlada pelo cabeçalho no app de exemplo).
 
@@ -482,8 +474,7 @@ interna, com o token interno, `x-hub-user` (quem busca) e `x-hub-locale`.
   no máximo `HUB_SEARCH_TIMEOUT_MS` (padrão 800 ms) por app, lê até 64 KiB e segue sem ele
   (resultado parcial). Um 404 tira o app das buscas por 5 min.
 - Consultas com custo limitado: índice (trigram/prefixo) ou uma janela recente (ex.: os
-  últimos 20 mil chamados do `servicos`). SDKs: Rust `hub_sdk::search` (`SearchFn`,
-  `score`, `like_pattern`, `sanitize`), Python `hub_sdk.search`.
+  últimos 20 mil chamados do `servicos`). SDK: `hub_sdk.search`.
 
 ## 20. Notificações e aprovações pela Inbox (onda 9)
 
@@ -538,19 +529,17 @@ endpoint **deve** ser idempotente (409 com o estado atual).
 (`HUB_INBOX_RCPT_RATE`), 1 000 informativos retidos por app, 500 pedidos pendentes por app;
 teto global de 5 000 itens que **nunca** remove pedidos pendentes.
 
-SDKs: Rust `hub_sdk::outbox::{notification, approval_request, Notice}` e
-`hub_sdk::approvals` (`ApprovalFn`, `ApprovalError`); Python `hub_sdk.outbox.notification`/
+SDK: `hub_sdk.outbox.notification`/
 `approval_request` e `hub_sdk.approvals` (`NotFound`, `AlreadyDecided`, `Forbidden`).
-Tarefas: `Handler::final_events` (Rust) / `final_events` (Python) gravam notificações no
+Tarefas: `final_events` grava notificações no
 estado final da tarefa (ex.: "Importação concluída").
 
 ## 21. Idioma e formatação (onda 9)
 
-Idiomas: `pt-BR` (padrão), `en`, `es` — ordem de resolução no item 4. O app **deve**
+Idiomas: `pt-BR` (padrão) e `en` (`es` saiu em 10/2026; o hub entrega `en`) — ordem de resolução no item 4. O app **deve**
 traduzir o que exibe (ao menos navegação e rótulos) e formatar números, valores e datas no
 idioma (`1.234,56`/`1,234.56`; `28/09/2026`/`09/28/2026`). Valores de dados (status
-gravados, categorias) continuam no idioma do banco; só o rótulo exibido muda. SDKs: Rust
-`hub_sdk::locale::Locale` (`from_headers`, `number`, `money_brl`, `date`, `pick`); Python
+gravados, categorias) continuam no idioma do banco; só o rótulo exibido muda. SDK:
 `hub_sdk.locale` (`LocaleMiddleware` instalado pelo `HubSdk.install`, `t()` com o texto em
 pt-BR como chave, `register`, `number`, `money_cents`, `date`; nos templates `t`, `money`,
 `thousands`, `date`).
@@ -644,10 +633,7 @@ a tela avisa quando sobrescritos).
 | Limitação do provedor derruba o app | 429/503 tratados no hub (Retry-After/backoff); o app recebe 503 + `Retry-After` e responde 503 ao usuário (nunca 500) |
 | Desvinculação/rotação não vale até reiniciar | O broker consulta os vínculos a cada pedido: desvincular corta o acesso **na hora** |
 
-**SDKs**: Rust `hub_sdk::storage` (`connection(nome)`, `Connection::s3_direct`,
-`for_user(&headers)` (repassa `x-hub-user` e `x-hub-user-sig`), `upload`/`upload_bytes`, `download` → stream, `list`, `meta`, `delete`,
-`move_item`, `share_link`; `StorageError { status, message, retry_after }`), Python
-`hub_sdk.storage` (`connection`, `s3_direct(S3Config)`, `for_user(x_hub_user, x_hub_user_sig)`, `upload` de bytes ou
+**SDK**: `hub_sdk.storage` (`connection`, `s3_direct(S3Config)`, `for_user(x_hub_user, x_hub_user_sig)`, `upload` de bytes ou
 arquivo, `download().chunks()`, `list`, `meta`, `delete`, `move`, `share_link`; sem
 dependências novas). Exemplos: anexos do `fornecedores` (conexão `fornecedores-anexos` se
 vinculada, senão o bucket do app) e documentos do `contratos` (`contratos-docs`).
@@ -678,7 +664,7 @@ Todo app expõe uma **API JSON versionada** além das telas. Manifesto (padrões
 "api": { "enabled": true, "openapi": "/api/openapi.json", "base": "/api/v1" }
 ```
 
-- `GET /{id}/api/openapi.json` devolve o documento **OpenAPI 3.x** (3.1 nos SDKs) só com as
+- `GET /{id}/api/openapi.json` devolve o documento **OpenAPI 3.x** (3.1 no SDK) só com as
   operações da API (`/{id}/api/...`), cada uma com `operationId` (vira o nome da ferramenta
   MCP) e `responses`. **Leitura** = só `GET`/`HEAD` (ou `x-hub-readonly: true`, para uma
   consulta feita por `POST`); **toda mutação** (`POST`/`PUT`/`PATCH`/`DELETE`) é tratada como
@@ -691,9 +677,8 @@ Todo app expõe uma **API JSON versionada** além das telas. Manifesto (padrões
   o documento do pacote (OpenAPI 3.x, `info`, ao menos uma operação, todos os caminhos sob
   `/{id}/api/`, `responses` em cada operação, até 200 operações) sem subir o container; a
   suíte de conformidade confere, com o app no ar, que o documento servido é válido
-  (openapi-spec-validator) e que as leituras declaradas respondem. Os SDKs geram os dois
-  a partir do código (Rust: `hub-demo-apps openapi <id>`; Python: `python -m contratos
-  openapi`) e os testes dos apps comparam o gerado com o arquivo do pacote.
+  (openapi-spec-validator) e que as leituras declaradas respondem. O SDK gera os dois
+  a partir do código (ex.: `python -m contratos openapi`) e os testes dos apps comparam o gerado com o arquivo do pacote.
 - **Sem API** (`api.enabled: false`): o pipeline reprova, salvo se a plataforma permitir
   (`[apps].allow_without_api = true` no arquivo de configuração do hub — o passo fica
   "atenção"). MCP exige API.
@@ -705,8 +690,7 @@ Todo app expõe uma **API JSON versionada** além das telas. Manifesto (padrões
   escopo `app-api` restrito ao app (`Authorization: Bearer hubt_…`; o token nunca chega ao
   app: o gateway troca pela identidade do dono assinada, `x-hub-user` + `x-hub-user-sig`).
   Tokens só valem em `/{id}/api/*` (nunca nas telas nem em `/_hub/*`).
-- SDKs: Rust `hub_sdk::api` (`ApiSpec`/`ApiOp`, `problem`, `missing_user`); Python
-  `hub_sdk.api` (`install_api`, `DESTRUCTIVE`, `NO_MCP`, `problem`, `require_user`) sobre o
+- SDK: `hub_sdk.api` (`install_api`, `DESTRUCTIVE`, `NO_MCP`, `problem`, `require_user`) sobre o
   OpenAPI nativo do FastAPI.
 
 ## 24. MCP do app (onda 11) — ligado por padrão, só para o hub
@@ -730,9 +714,9 @@ Todo app expõe uma **API JSON versionada** além das telas. Manifesto (padrões
   pelo app): leitura só `GET`/`HEAD`/`x-hub-readonly`; **toda mutação exige aprovação**
   (§ `destructive_actions` no hub), inclusive ferramentas que o documento não conhece
   (renomeadas/novas no app no ar). O nome publicado pelo app só localiza a **operação** do
-  documento (nome → `operationId`/método/caminho, mesma regra dos SDKs); a chamada leva
-  `x-hub-mcp-op: <MÉTODO> <caminho>` e os SDKs (Rust e Python) **recusam** se o app no ar
-  mapear aquele nome para outra operação. `HEAD` é leitura no hub, no pipeline e nos SDKs.
+  documento (nome → `operationId`/método/caminho, mesma regra do SDK); a chamada leva
+  `x-hub-mcp-op: <MÉTODO> <caminho>` e o SDK **recusa** se o app no ar
+  mapear aquele nome para outra operação. `HEAD` é leitura no hub, no pipeline e no SDK.
   A única dispensa é `mcp.confirm_exempt` no manifesto, e **só para mutações presentes no
   documento do pacote**: nomes que não são mutação do documento são **ignorados** pelo hub e
   aparecem no passo Contrato do pipeline como "IGNORADO"; os válidos aparecem como
@@ -786,8 +770,7 @@ Todo app expõe uma **API JSON versionada** além das telas. Manifesto (padrões
   reautenticação passa a exigir o autenticador físico —, `destructive_actions = "deny"`
   onde não houver revisão humana, e, no futuro, servir os apps numa **origem separada** do
   hub (registrado em PENDENCIAS).
-- SDKs: Rust `hub_sdk::mcp::McpServer` (`new(app, token, &openapi)`, `router()`, `bind(router)`);
-  Python `hub_sdk.mcp.router` (instalado por `HubSdk.install`, usa o documento de
+- SDK: `hub_sdk.mcp.router` (instalado por `HubSdk.install`, usa o documento de
   `install_api`).
 
 ### 24.1 Clientes de IA → MCP do hub (onda 12, item 2.2)
@@ -1018,16 +1001,16 @@ mudança (vale com várias réplicas).
 
 ## 27. Sagas e envios em duas fases (onda 12, item 2.9)
 
-Opcionais, nos dois SDKs com a mesma semântica e as mesmas tabelas (`hub_saga_once`, `hub_uploads` no `SCHEMA_SQL`).
+Opcionais no SDK, com as tabelas (`hub_saga_once`, `hub_uploads` no `SCHEMA_SQL`).
 
-- **Saga** (`hub_sdk::saga::Saga` / `hub_sdk.saga.Saga`): um tipo de tarefa durável com passos `ação + compensação`. O estado vai no checkpoint da tarefa (`{"saga": {"v": 1, "state", "steps": [{"name", "state", "output"}], "reason"}}`) e o hub o mostra em Operações › Tarefas (`GET /{app}/_hub/jobs` já devolve o checkpoint; o hub expõe só `{state, steps: [{name, state}], reason}`). Falha definitiva (ou transitória na última tentativa) compensa em ordem inversa, a partir do passo que falhou; queda → outro worker retoma (para a frente ou compensando). Cada passo recebe a chave `<tarefa>:<passo>` (`…:undo` na compensação) para idempotência externa; efeitos no banco do app devem usar `StepCtx::once` (exatamente uma vez). Compensações precisam ser idempotentes e tolerar "nada a desfazer". Mudar a lista de passos com sagas em andamento falha essas sagas (definitivo).
-- **Envio em duas fases** (`hub_sdk::uploads::Uploads` / `hub_sdk.uploads.Uploads`): `begin` → arquivo em `_staging/<id>/<nome>` (pelo app/broker ou por `PUT` pré-assinado no S3 direto) → `commit(tx, id, caminho_final)` **na transação que grava o registro** (enfileira a tarefa `hub.upload.promote`, que move para o caminho final) → `location(id)` diz onde ler. Não confirmados vencem (24 h padrão) e `cleanup` apaga vencidos e órfãos do staging; registre `promote_handler()` no worker e rode `spawn_cleanup`.
+- **Saga** (`hub_sdk.saga.Saga`): um tipo de tarefa durável com passos `ação + compensação`. O estado vai no checkpoint da tarefa (`{"saga": {"v": 1, "state", "steps": [{"name", "state", "output"}], "reason"}}`) e o hub o mostra em Operações › Tarefas (`GET /{app}/_hub/jobs` já devolve o checkpoint; o hub expõe só `{state, steps: [{name, state}], reason}`). Falha definitiva (ou transitória na última tentativa) compensa em ordem inversa, a partir do passo que falhou; queda → outro worker retoma (para a frente ou compensando). Cada passo recebe a chave `<tarefa>:<passo>` (`…:undo` na compensação) para idempotência externa; efeitos no banco do app devem usar `StepCtx::once` (exatamente uma vez). Compensações precisam ser idempotentes e tolerar "nada a desfazer". Mudar a lista de passos com sagas em andamento falha essas sagas (definitivo).
+- **Envio em duas fases** (`hub_sdk.uploads.Uploads`): `begin` → arquivo em `_staging/<id>/<nome>` (pelo app/broker ou por `PUT` pré-assinado no S3 direto) → `commit(tx, id, caminho_final)` **na transação que grava o registro** (enfileira a tarefa `hub.upload.promote`, que move para o caminho final) → `location(id)` diz onde ler. Não confirmados vencem (24 h padrão) e `cleanup` apaga vencidos e órfãos do staging; registre `promote_handler()` no worker e rode `spawn_cleanup`.
 
 ## 28. OpenAPI tipado (onda 12, item 2.4)
 
 **Parâmetros de caminho:** nunca contêm `/`, `\` nem `.`/`..` como segmento, nem as formas codificadas `%2F`, `%5C`, `%2E` — o hub recusa com **400** qualquer caminho não canônico (segmentos `.`/`..`, `//`, `%2e`/`%2f`/`%5c`, `\`) em todas as rotas, inclusive `/{app}/api/*` e `/_frag/{app}/*`. Use ids em forma de slug; dados livres vão na query ou no corpo.
 
-O `openapi.json` do pacote (§23) deve tipar corpo e resposta de cada operação: no Rust com `#[derive(utoipa::ToSchema)]` e `ApiOp::body_type::<T>()`/`returns_type::<T>()`/`returns_page::<T>()` (componentes em `components.schemas`, referenciados por `$ref`; o MCP resolve as referências); no Python o FastAPI/pydantic já tipa e o SDK acrescenta `servers`, `securitySchemes` e o `Problem` (RFC 9457) em toda operação. O lint `@redocly/cli` roda sobre os documentos dos apps de demonstração no CI local.
+O `openapi.json` do pacote (§23) deve tipar corpo e resposta de cada operação (componentes em `components.schemas`, referenciados por `$ref`; o MCP resolve as referências): o FastAPI/pydantic já tipa e o SDK acrescenta `servers`, `securitySchemes` e o `Problem` (RFC 9457) em toda operação. O lint `@redocly/cli` roda sobre os documentos dos apps de demonstração no CI local.
 
 ## 29. Identidade visual do app (temas próprios)
 

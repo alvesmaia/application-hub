@@ -1,4 +1,4 @@
-"""Utilitários de renderização (espelho de ``hub-demo-apps/src/ui.rs``)."""
+"""Utilitários de renderização."""
 
 from __future__ import annotations
 

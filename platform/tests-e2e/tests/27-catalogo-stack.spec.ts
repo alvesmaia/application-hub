@@ -18,12 +18,10 @@ test('aplicações: balão da stack só no "i" (hover, foco, toque; Esc fecha) @
   await expect(stack).toBeHidden();
   await t.hover();
   await expect(stack).toBeVisible();
-  // Desde a migração (F7) o ativos é Python/FastAPI; a pilha Rust foi arquivada (E2E_ATIVOS_STACK=rust para a referência).
-  const py = process.env.E2E_ATIVOS_STACK !== 'rust';
-  await expect(stack).toContainText(py ? 'Python 3.12 · FastAPI' : 'Rust · Axum');
-  await expect(stack).toContainText(py ? 'hub-sdk-python 1.0' : 'hub-sdk 1.0');
+  await expect(stack).toContainText('Python 3.12 · FastAPI');
+  await expect(stack).toContainText('hub-sdk-python 1.0');
   await expect(stack).toContainText('PostgreSQL 16');
-  await expect(stack.locator('.hub-stack-chip')).toContainText([py ? 'python-calamine' : 'tokio-postgres']);
+  await expect(stack.locator('.hub-stack-chip')).toContainText(['python-calamine']);
   await expect(stack).toContainText(/API ligada · MCP ligado/);
   await expect(stack).toContainText(/v\d+\.\d+\.\d+/);
   await expect(card.locator('.open-link')).toBeVisible();

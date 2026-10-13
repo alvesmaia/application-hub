@@ -1,4 +1,4 @@
-"""Registro de apps lido de apps.json / apps.compose.json (HUB_APPS_FILE), como o hub Rust."""
+"""Registro de apps lido de apps.json / apps.compose.json (HUB_APPS_FILE)."""
 
 from __future__ import annotations
 

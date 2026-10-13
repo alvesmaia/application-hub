@@ -80,8 +80,8 @@ async def test_flag_banner_and_locale(running: Running) -> None:
     en = await c.get("/ativos/settings", headers={"x-hub-locale": "en"})
     assert "Settings" in en.text and "Configurações" not in en.text.split("app-sidebar")[0]
     assert 'class="nav-item active"' in en.text
-    es = await c.get("/ativos/dashboard", headers={"x-hub-locale": "es"})
-    assert "Resumen" in es.text and es.headers["content-type"].startswith("text/html")
+    en = await c.get("/ativos/dashboard", headers={"x-hub-locale": "en"})
+    assert "Overview" in en.text and en.headers["content-type"].startswith("text/html")
 
 
 def form(**over: str) -> dict[str, str]:

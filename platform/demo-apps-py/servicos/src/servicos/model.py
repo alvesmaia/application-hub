@@ -1,5 +1,4 @@
-"""Domínio da Central de Serviços: listas fechadas, esquema do banco, SLA e a carga inicial
-(espelho de ``hub-demo-apps/src/{servicos,db,seed}.rs``)."""
+"""Domínio da Central de Serviços: listas fechadas, esquema do banco, SLA e a carga inicial."""
 
 from __future__ import annotations
 

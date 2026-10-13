@@ -7,14 +7,47 @@ Versões 0.x = pré-1.0: a API pode mudar entre versões menores.
 
 ## [Unreleased]
 
+### Removido
+- Idioma espanhol (`es`): o hub e o SDK ficam em pt-BR e inglês. Quem tinha `es` salvo ou navegador em espanhol
+  passa a ver inglês; `PUT /api/me/prefs` com `lang: "es"` responde 400.
+- Vestígios da stack anterior: ferramenta de paridade (`platform-py/parity`), cópias dos apps antigos em
+  `platform/demo-apps` (fica só `assets/demo.css` e o jsdom dos testes JS), exemplos de SDK que não é Python no
+  Contrato e nos guias; E2E e `hub pack` dos testes passam a usar a pilha `app-hub` e a CLI Python. Só Python.
+
 ### Adicionado
+- Uso por usuário (Configurações › Uso por usuário, `/admin/usage`): aberturas, navegações, ações, dias ativos e
+  último acesso por usuário e por app, com filtro de período/usuário/app e CSV. Coletado no gateway, sem exigir nada
+  dos apps; ligado por padrão (`HUB_USAGE=0` desliga), mesma retenção do analytics. API `GET /api/v1/usage`
+  (`usage_query`, também no MCP); acesso com "Editar configurações" ou "Ver auditoria".
+- `install.sh`: modo interativo (sem opções, num terminal) — pergunta admin, porta, bind, URL pública, projeto,
+  faixa de rede e apps de exemplo com o padrão entre colchetes, mostra um resumo e pede confirmação; `--yes` mantém
+  o modo não interativo do CI. `--get-compose` baixa o docker-compose oficial (versão fixa, sha256 conferido) em
+  `~/.local/bin`, para RHEL/Rocky sem root.
 - Tempo real declarativo por SSE: `data-hub-sse` (mesmo formato de mensagem do `data-hub-ws`, polling de reserva,
   sem JavaScript de app); guia "Tempo real" com canal completo (SSE, WebSocket, `LISTEN`/`NOTIFY`).
 - Documentação: índice para agentes em `/dev/llms.txt` e `/llms.txt`; índices de CLI, SDK e Contrato com resumo e
   link do texto completo; trilho ativo animado no «Nesta página»; testes à mão por `curl` no "Primeiro app".
-- Estudo de atualização sem parada (`docs/ESTUDO-ATUALIZACAO-SEM-PARADA.md`).
+- Atualização sem parada: borda `app-hub-edge` (Caddy) na `HUB_PORT`, `scripts/hub_update.py` (backup, cópia
+  com a versão nova, troca, observação e volta automática; `--rollback`), `/readyz` que confere banco e dados,
+  aviso opcional de versão nova em Saúde (`HUB_UPDATE_CHECK=1`). Testado sob carga: 0 pedidos perdidos.
+
+### Atenção
+- A `HUB_PORT` passa do `app-hub-web` para a borda `app-hub-edge`: o primeiro `up -d` desta versão tem uma
+  parada de ~10 s. Proxies próprios na frente continuam iguais (o destino é a mesma porta).
 
 ### Corrigido
+- Instalar sem os apps de exemplo (`HUB_APPS_JSON=./apps.empty.json`) derrubava o hub no boot
+  (`Aplicação desconhecida: ativos`): a carga inicial de variáveis descarta vínculo de app fora do catálogo.
+- `hub deploy`: a recusa do hub volta com o motivo (a razão vem no campo `error`) — antes um pacote grande dizia só
+  `400`. `hub pack` recusa antes de enviar acima de 20 MB e aponta os maiores arquivos; o hub diz o tamanho e o
+  limite. Limite documentado no guia de publicação.
+- `hub check`: a falha de conformidade `§3 página`/`§3 fragmento` traz o status e a última exceção de
+  `.hub/check-app.log` (e, em `no such column`/`no such table`, a dica de apagar `.hub/*.db`).
+- Podman rootless (RHEL/Rocky): apps sobem — tmpfs `/scratch` com `U` em vez de `uid=`/`gid=` (recusados pelo
+  Podman); sem o controlador `cpu` delegado ao usuário, build e contêineres saem sem limite de CPU em vez de todo `RUN`
+  falhar; socket do compose configurável (`HUB_CONTAINER_SOCKET_HOST`) e `install.sh` que detecta o Podman rootless,
+  avisa sobre linger/CPU e grava o socket; `HUB_BIND6` evita o conflito do `[::1]` com `--bind 0.0.0.0`;
+  `install.sh --clone` usa o repositório público. Guia em docs/IMPLANTACAO.md (Podman rootless).
 - `hub dev`: repassa WebSocket; usa o mesmo token interno do app (sem 401 em `/_hub/*`); console em UTF-8.
 - Modelos da CLI: `uvicorn[standard]`; formatados mesmo com id de 32 caracteres; mensagem clara do
   `openapi.json` desatualizado. `hub check` mostra o comando de correção do lint e da formatação.

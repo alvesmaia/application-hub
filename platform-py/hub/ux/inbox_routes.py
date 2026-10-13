@@ -51,7 +51,7 @@ class RevokeIn(BaseModel):
     @field_validator("item", mode="before")
     @classmethod
     def _item_id(cls, v: object) -> object:
-        """Aceita o id como a Inbox o mostra (`"i:16"`) ou só o número, como o hub Rust."""
+        """Aceita o id como a Inbox o mostra (`"i:16"`) ou só o número."""
         return int(v.removeprefix("i:")) if isinstance(v, str) and v.removeprefix("i:").isdigit() else v
 
 

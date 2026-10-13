@@ -144,3 +144,25 @@ def test_engine_build_guard_and_pin_swallow(fake: FD) -> None:  # noqa: F811
     with pytest.raises(OpsError):
         rt.Guarded(fake).pin("sha256:x", "hub-evil", "t")
     assert READY is not None
+
+
+@pytest.mark.parametrize("ctl", [["cpuset", "cpu", "memory", "pids"], ["memory", "pids"], None])
+def test_podman_rootless_tmpfs_and_cpu(ctl: list[str] | None) -> None:
+    """Podman recusa `uid=` em tmpfs; sem o controlador `cpu` delegado (padrão RHEL 9 rootless) limite de CPU quebra
+    o build e a criação. Docker (`/libpod/info` 404) segue igual."""
+    seen: dict[str, Any] = {}
+    info = SimpleNamespace(status_code=200 if ctl else 404, json=lambda: {"host": {"cgroupControllers": ctl}})
+    api = SimpleNamespace(
+        base_url=f"http+docker://t{ctl}", _get=lambda url: info,
+        create_container=lambda image, name, **kw: seen.update(create=kw),
+        build=lambda **kw: seen.update(build=kw["container_limits"]) or iter(()),
+    )  # fmt: skip
+    g = rt.Guarded(SimpleNamespace(api=api, containers=SimpleNamespace(get=lambda n: n)))
+    host = {"NanoCpus": 10**9, "Memory": 1, "Tmpfs": {"/scratch": "rw,size=256m,uid=10001,gid=10001"}}
+    g.create("img", "app-hub-app-x", host_config=host)
+    g.build_stream(".", "app-hub-app-x:1", "Dockerfile", 1, cpus=2)
+    made = seen["create"]["host_config"]
+    podman, cpu = ctl is not None, ctl is None or "cpu" in ctl
+    assert made["Tmpfs"]["/scratch"] == ("rw,size=256m,U" if podman else "rw,size=256m,uid=10001,gid=10001")
+    assert ("NanoCpus" in made) is cpu and ("cpushares" in seen["build"]) is cpu and made["Memory"] == 1
+    assert host["Tmpfs"]["/scratch"].endswith("gid=10001")  # o molde do chamador não muda

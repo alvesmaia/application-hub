@@ -142,7 +142,7 @@ _VIEW = [
 
 
 def view(c: dict[str, Any]) -> dict[str, Any]:
-    """Visão da tela e da API (campos e ordem do `ConnView` do Rust): sem segredo nem certificado."""
+    """Visão da tela e da API (campos e ordem do `ConnView` da versão anterior do hub): sem segredo nem certificado."""
     out = {k: c[k] for k in _VIEW}
     out["secret"] = MASK if c["secret"] or c["certificate"] else ""
     return out

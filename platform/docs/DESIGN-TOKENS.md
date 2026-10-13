@@ -2,7 +2,7 @@
 
 Fonte única do visual da plataforma: **`assets/shell/tokens.css`**, servido em
 `/assets/tokens.css` pelo hub-web e pelo `hub dev` e carregado **antes** de `styles.css`.
-Os fragmentos dos apps (Rust e Python) são renderizados dentro do mesmo documento do shell,
+Os fragmentos dos apps são renderizados dentro do mesmo documento do shell,
 então usam as mesmas variáveis sem importar nada.
 
 ```
@@ -49,7 +49,7 @@ tabelas, popovers e modais).
 **Fontes** (as mesmas do site da Alvesmaia), servidas pelo próprio hub em `/assets/fonts/`
 (woff2 variáveis, `font-display: swap`; licença SIL OFL 1.1 em `/assets/fonts/OFL-NunitoSans.txt`
 e `/assets/fonts/OFL.txt`). **Nunito Sans** (eixo 400–900, subconjunto latin — cobre os acentos
-de pt-BR/es; `format("woff2-variations")`) em toda a interface: `--font-body`, `--font-ui` e
+de pt-BR; `format("woff2-variations")`) em toda a interface: `--font-body`, `--font-ui` e
 `--font-display` (títulos, KPIs). **Red Hat Display** só no nome da aplicação no header
 (`--font-brand`, `.brand-name`). `--font-mono` **Red Hat Mono** (chaves, valores, IDs, código).
 O shell pré-carrega Nunito Sans e Red Hat Display; CSP `font-src 'self'`; reservas
@@ -151,7 +151,7 @@ servidor, mesmo com o SO escuro — sem flash; `<meta name="color-scheme">` acom
 
 - Use as semânticas (`var(--color-text-muted)`, `var(--space-12)`, `var(--radius-xl)`…) e
   `var(--app-ink)`/`var(--app-color)` para a identidade do seu app.
-- O SDK Python (`templates/*.html`) e os fragmentos Rust usam só classes do shell e tokens;
+- O SDK Python (`templates/*.html`) e os fragmentos dos apps usam só classes do shell e tokens;
   o CSS próprio de cada app (`demo.css`, `app.css`, `app2.css`, `app3.css`) também.
 
 ## Celular e tabelas responsivas (hub)

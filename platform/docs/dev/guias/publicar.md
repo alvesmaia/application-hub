@@ -31,6 +31,11 @@ hub pack --build-dir .
 
 Gera o `.hubapp` para envio manual na tela Implantações (mesmo pipeline e provisionamento).
 
+O pacote vai até **20 MB**. Ele leva o manifesto, o `openapi.json`, a pasta `ui/` e o contexto de build
+(`build/**`) — **não** as dependências: quem as instala é o `Dockerfile`, durante o build no hub. Se estourar o
+limite, o `hub pack` diz quais são os maiores arquivos; o caso comum é um `.venv/` ou um `vendor/` copiado para
+`build/` (acrescente ao `.dockerignore`).
+
 ## Códigos de saída
 
 `0` ok · `1` pacote rejeitado · `2` validação · `3` token recusado · `4` hub inacessível.

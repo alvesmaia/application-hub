@@ -1,4 +1,4 @@
-"""O shell no idioma do usuário: menu, textos do JS e paleta Ctrl+K (catálogos pt-BR/en/es) e o tema."""
+"""O shell no idioma do usuário: menu, textos do JS e paleta Ctrl+K (catálogos pt-BR/en) e o tema."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from typing import Any, cast
 from hub.ux.texts import _LANGS, _table, t, tr
 
 _WEB = Path(__file__).parent.parent / "web"
-# rótulos do menu que o Rust traduz por chave (os demais vêm do catálogo)
+# rótulos do menu traduzidos por chave (os demais vêm do catálogo)
 _KEYED = {
     "Início": "shell.home",
     "Aplicações": "shell.apps",
@@ -20,7 +20,7 @@ _KEYED = {
 }
 
 
-_GROUPS = {"Operação": ("Operations", "Operación"), "Governança": ("Governance", "Gobernanza")}
+_GROUPS = {"Operação": ("Operations",), "Governança": ("Governance",)}
 
 
 def label(text: str, lang: str) -> str:
@@ -73,7 +73,7 @@ def theme_of(pref: str) -> tuple[str, str]:
 
 
 def visible_nav(nav: dict[str, Any], perms: list[str]) -> dict[str, Any]:
-    """Menu de Administração só com o que o usuário pode abrir (como o shell do Rust)."""
+    """Menu de Administração só com o que o usuário pode abrir."""
     from hub.auth import admin_required
 
     def ok(href: str) -> bool:
@@ -112,7 +112,7 @@ def tabs_for(path: str, tab: str, perms: list[str]) -> list[tuple[str, str, bool
 
 
 def eyebrow_for(path: str, lang: str) -> str:
-    """Linha acima do título de uma página: o grupo do menu da rota (`/admin/users` → "Acesso"), como no Rust."""
+    """Linha acima do título de uma página: o grupo do menu da rota (`/admin/users` → "Acesso")."""
     path = path.split("?")[0]
     if path == "/admin" or path.startswith("/admin/"):
         best: tuple[int, str] | None = None

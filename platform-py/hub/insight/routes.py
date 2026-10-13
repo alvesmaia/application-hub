@@ -20,6 +20,8 @@ from hub.admin.store import AdminStore
 from hub.insight.fmt import num, pc2
 from hub.insight.metrics import enabled, slo_status
 from hub.insight.runtime import Insight
+from hub.insight.usage import PLATFORM
+from hub.ops import updates
 from hub.ux.pager import paginate
 from hub.ux.texts import page_response
 
@@ -391,6 +393,7 @@ def mount_insight(
             has_latency=any(r["latency"] != "—" for r in rows),
             slo_meta=dumps(app_ids_meta()),
             meta=meta_json(),
+            update=updates.notice(request.app.state),
             **await obs_ctx(request, app_q, env, win),
         )
 
@@ -629,6 +632,62 @@ def mount_insight(
             icon="settings",
         )
         return {"ok": True}
+
+    # ---- Uso por usuário --------------------------------------------------------------------------------
+    us = insight.usage
+
+    async def usage_query(days: int, user: str, app_id: str) -> dict[str, Any]:
+        q = us.query(int(time.time() * 1000), days, user.strip(), app_id.strip())
+        async with app.state.auth.locked() as d:
+            people = {u["id"]: (u.get("name") or "", u.get("email") or "") for u in d["users"]}
+        names = {a["id"]: a["short"] for a in refs()} | {PLATFORM: "Hub"}
+        for r in q["rows"] + q["by_user"] + q["by_app"]:
+            if "user" in r:
+                r["name"], r["email"] = people.get(r["user"], ("", ""))
+            if "app" in r:
+                r["app_name"] = names.get(r["app"], r["app"])
+        return q | {"enabled": us.enabled}
+
+    @api.get("/usage")
+    async def usage_get(days: int = 30, user: str = "", app_id: str = Query("", alias="app")) -> Any:
+        return await usage_query(days, user, app_id)
+
+    @app.get("/api/admin/usage.csv")
+    async def usage_csv(days: int = 30, user: str = "", app_id: str = Query("", alias="app")) -> Response:
+        return Response(
+            "﻿" + us.csv(int(time.time() * 1000), days, user.strip(), app_id.strip()),
+            media_type="text/csv; charset=utf-8",
+            headers={"content-disposition": 'attachment; filename="uso-por-usuario.csv"'},
+        )
+
+    @app.get("/admin/usage", response_class=HTMLResponse)
+    async def usage_page(
+        request: Request, days: int = 30, user: str = "", app_id: str = Query("", alias="app")
+    ) -> Response:
+        days = days if days in (7, 30, 90) else 30
+        q = await usage_query(days, user, app_id)
+        now = int(time.time() * 1000)
+        for r in q["rows"] + q["by_user"] + q["by_app"]:
+            r["when"] = relative(r["last"], now)
+        rows, pager = paginate(request, q["rows"])
+        async with app.state.auth.locked() as d:
+            people = sorted((u["id"], u.get("name") or u.get("email") or u["id"]) for u in d["users"])
+        apps = [(a["id"], a["short"]) for a in refs()] + [(PLATFORM, "Hub")]
+        return render(
+            request,
+            "admin_usage.html",
+            "Governança",
+            "Uso por usuário",
+            "Quem usa cada aplicação: aberturas, navegações, ações e último acesso, coletados pelo gateway.",
+            q=q,
+            rows=rows,
+            pager=pager,
+            days=days,
+            user=user,
+            app_id=app_id,
+            people=sorted(people, key=lambda p: p[1].lower()),
+            apps=apps,
+        )
 
     @app.middleware("http")
     async def api_spans(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:

@@ -1,52 +1,43 @@
-# FAQ — Arquitetura do Hub (Rust + Topcoat)
+# FAQ — Arquitetura do Hub
 
-> Nota (08/10/2026): a stack oficial passou a ser Python (`platform-py/`); o código Rust citado abaixo foi removido da `main` e está arquivado na branch `stack/rust-topcoat`.
+## 1. Com que tecnologia o hub é feito?
 
-> Topcoat está em 0.9 (experimental, jul/2026). Respostas assumem essa maturidade.
+**Python para a plataforma; as aplicações seguem o contrato HTTP.**
 
-## 1. Isso funciona completamente com Topcoat e Rust?
-
-**Sim para a plataforma; não é necessário (nem desejável) para as aplicações.**
-
-| Parte | Rust/Topcoat cobre? | Observação |
+| Parte | Como | Observação |
 |---|---|---|
-| Shell (header, rail, catálogo, admin) | Sim | SSR com `view!`, shards e WebSocket |
-| Gateway/proxy `/appN/*` | Sim | Axum/Tower (mesmo runtime Tokio) |
-| SSO, RBAC, auditoria, segredos, flags | Sim | Serviços Rust + Toasty/Postgres |
-| Composição de fragmentos HTML | Sim | Hub busca e injeta no layout |
-| SDK JS dos apps (Web Components) | Parcial | Precisa ser JS/TS — roda no browser do app |
-| Gráficos/libs JS ricas | Parcial | Servidas como assets via `asset!` |
-
-Riscos: breaking changes do Topcoat; reatividade client-side ainda inicial (usar htmx/Alpine como fallback).
+| Shell (header, rail, catálogo, admin) | FastAPI + Jinja2 (SSR) | HTML do servidor; JS do shell em `platform/assets/shell` |
+| Gateway/proxy `/apps/{id}/*` | FastAPI + httpx | mesmo processo do hub |
+| SSO, RBAC, auditoria, segredos, flags | módulos do hub + PostgreSQL | `platform-py/hub` |
+| Composição de fragmentos HTML | hub busca e injeta no layout | sanitizado (`hub-safe.js`) |
+| Comportamento dos apps no navegador | atributos `data-hub-*` (`hub-kit.js`) | apps sem JavaScript próprio |
 
 ## 2. Como ficam as stacks?
 
 **Plataforma (hub)**
-- Rust + Topcoat (shell, UI admin) + Axum (gateway/APIs)
-- Toasty + PostgreSQL (registro de apps, permissões, auditoria)
-- Vault/Key Vault (segredos), OpenTelemetry (observabilidade)
-- OIDC (Entra ID/Keycloak) para SSO
-- Tailwind/tokens CSS para tema e white label
-- SDK JS/TS leve (`@hub/sdk`) + CLI de empacotamento (`hub` CLI, em Rust)
+- Python 3.12 (`uv`), FastAPI + Jinja2 (shell, telas de admin, gateway, APIs)
+- PostgreSQL (estado, registro de apps, permissões, auditoria)
+- Cofre próprio (AES-GCM), OpenTelemetry (observabilidade)
+- OIDC (Entra ID) para SSO
+- Tokens CSS para tema e white label
+- CLI `hub` (Python, `platform-py/cli`) para criar, testar, empacotar e publicar
 
 **Aplicações**
-- **Oficialmente suportadas (onda 7): Rust (Axum + `hub-sdk`) e Python ≥ 3.11 (FastAPI +
-  `hub-sdk-python`, pacote `hub_sdk`)** — as duas com SDK que já cumpre o contrato, mesmas
-  tabelas (tarefas, idempotência, outbox) e o mesmo hash de idempotência; exemplos `ativos`,
-  `fornecedores`, `servicos` (Rust) e `contratos` (Python). O manifesto declara
-  `"runtime": {"stack": "rust" | "python"}` (informativo, validado; aparece no passo *Contrato*).
+- **Oficialmente suportada: Python ≥ 3.11 (FastAPI + `hub-sdk-python`, pacote `hub_sdk`)** — o SDK
+  já cumpre o contrato (tarefas, idempotência, outbox, API/MCP); exemplos `ativos`, `fornecedores`,
+  `servicos` e `coletor`. O manifesto declara `"runtime": {"stack": "python"}` (informativo; aparece
+  no passo *Contrato*). Outras stacks oficiais: reavaliar numa expansão futura.
 - **Qualquer outra stack com servidor HTTP** (.NET, Java, Node, Go…) é aceita implementando o
   contrato formal `platform/docs/CONTRATO-APP.md` e passando na **suíte de conformidade**
   `platform/conformance` (caixa-preta por HTTP: fragmentos, `x-hub-user`, `/_hub/*` com token,
   idempotência, auditoria, tarefas, 429 + `Retry-After`, SIGTERM, cookies/CSP) — sem SDK oficial.
 - Front-end em um dos modos:
-  - **Fragmento HTML** (SSR: Razor, Thymeleaf, Topcoat, Jinja2, Django…) — padrão.
+  - **Fragmento HTML** (SSR: Razor, Thymeleaf, Jinja2, Django…) — padrão.
   - **Web Component** (React, Vue, Svelte, Lit) — front-end rico.
 - Obrigações: manifest, endpoint de health (`GET /<id>` → 200), aceitar a identidade do hub
   (`x-hub-user`, JSON base64url), CSS com escopo, sem script inline — detalhes no contrato.
 
-**Diferenças práticas entre as stacks oficiais** (medidas na onda 7, ver
-`platform/loadtest/RESULTADOS.md`): Rust usa todos os núcleos num processo; Python escala por
+**Escala do app Python:** escala por
 processos (`UVICORN_WORKERS`), com o semáforo de operações pesadas por processo e a aba do Excel
 carregada em memória nativa pelo `python-calamine` (teto configurável).
 
@@ -82,7 +73,7 @@ minha-app.hubapp
 - Import manual: upload na tela Aplicações → passa pela mesma validação do item 3.
 - Versões imutáveis; rollback = reativar versão anterior.
 
-**Implementado hoje** (`platform/crates/hub-manifest`, `hub-cli`, `hub-ops`; ver `platform/README.md`): `hub pack` gera o `.hubapp` (manifest, `runtime.json` com imagem por digest, `ui/`, `checksums.txt`) e `POST /api/ops/packages` (UI ou CI) roda o pipeline real. O manifest declara recursos (padrão da plataforma **1 vCPU / 1 GiB / 100 processos**; política até 4 vCPU / 8 GiB), `limits.max_upload_mb`, variáveis requeridas, permissões, `sdk` e o contrato das **tarefas duráveis** (`jobs: [{name: "<id>.<nome>", max_duration_s ≤ 24 h, max_attempts ≤ 20}]`), validado pelo `hub-manifest` e pelo passo *Contrato* (tarefas exigem `sdk` 1.x). Variáveis e connection strings **não** vão no pacote: ficam na Administração, vinculadas ao app e ao ambiente, e são injetadas no container em cada implantação. Ainda não há: `hub publish`/`hub promote` na CLI (a API existe), `icon.svg`/SBOM obrigatórios. A assinatura (cosign) e o scan de vulnerabilidades existem desde a onda 4, opcionais por configuração (ver item 5).
+**Implementado hoje** (`platform-py/hub/ops`, `platform-py/cli`): `hub pack` gera o `.hubapp` (manifest, `runtime.json` com imagem por digest, `ui/`, `checksums.txt`) e `POST /api/ops/packages` (UI ou CI) roda o pipeline real. O manifest declara recursos (padrão da plataforma **1 vCPU / 1 GiB / 100 processos**; política até 4 vCPU / 8 GiB), `limits.max_upload_mb`, variáveis requeridas, permissões, `sdk` e o contrato das **tarefas duráveis** (`jobs: [{name: "<id>.<nome>", max_duration_s ≤ 24 h, max_attempts ≤ 20}]`), validado pelo passo *Contrato* (tarefas exigem `sdk` 1.x). Variáveis e connection strings **não** vão no pacote: ficam na Administração, vinculadas ao app e ao ambiente, e são injetadas no container em cada implantação. Ainda não há: `hub publish`/`hub promote` na CLI (a API existe), `icon.svg`/SBOM obrigatórios. A assinatura (cosign) e o scan de vulnerabilidades existem desde a onda 4, opcionais por configuração (ver item 5).
 
 ## 5. Pacote próprio ou Dockerfile?
 
@@ -102,7 +93,7 @@ minha-app.hubapp
 
 Evitar Dockerfile como artefato de import: exige build no hub, lento e inseguro. Importar sempre imagem já construída e assinada.
 
-**Implementado hoje (onda 4):** o `.hubapp` referencia a imagem **por digest** e o pipeline verifica a imagem, não só o pacote: o passo *Assinatura* roda `cosign verify` da imagem por digest quando `HUB_COSIGN_PUBKEY` (chave) ou `HUB_COSIGN_IDENTITY`/`HUB_COSIGN_ISSUER` (keyless) estão definidos — configurado e sem assinatura válida (ou sem o binário) → rejeita; o passo *Segurança* mantém a busca de segredos e o SBOM e, com `HUB_SCANNER=trivy|grype` (binário, ou container `HUB_SCANNER_IMAGE` fixado por digest), faz o scan de vulnerabilidades da imagem com política `HUB_SCAN_FAIL_ON=LOW|MEDIUM|HIGH|CRITICAL` (valor inválido impede a partida) e `HUB_SCAN_MODE=block|warn`, mostrando a contagem por severidade e os principais CVEs no passo. Sem configuração, os dois mostram "não configurado". A verificação é feita invocando os binários oficiais (sem crate sigstore em Rust: menos superfície própria de criptografia). Ver `platform/README.md`, "Assinatura e scan de vulnerabilidades". Ainda não há: política de publicadores por app (quem pode assinar o quê), verificação de atestados SLSA/SBOM assinado, cache/banco offline do scanner.
+**Implementado hoje (onda 4):** o `.hubapp` referencia a imagem **por digest** e o pipeline verifica a imagem, não só o pacote: o passo *Assinatura* roda `cosign verify` da imagem por digest quando `HUB_COSIGN_PUBKEY` (chave) ou `HUB_COSIGN_IDENTITY`/`HUB_COSIGN_ISSUER` (keyless) estão definidos — configurado e sem assinatura válida (ou sem o binário) → rejeita; o passo *Segurança* mantém a busca de segredos e o SBOM e, com `HUB_SCANNER=trivy|grype` (binário, ou container `HUB_SCANNER_IMAGE` fixado por digest), faz o scan de vulnerabilidades da imagem com política `HUB_SCAN_FAIL_ON=LOW|MEDIUM|HIGH|CRITICAL` (valor inválido impede a partida) e `HUB_SCAN_MODE=block|warn`, mostrando a contagem por severidade e os principais CVEs no passo. Sem configuração, os dois mostram "não configurado". A verificação é feita invocando os binários oficiais (menos superfície própria de criptografia). Ainda não há: política de publicadores por app (quem pode assinar o quê), verificação de atestados SLSA/SBOM assinado, cache/banco offline do scanner.
 
 ## 6. Cada app pode rodar em container exclusivo, com recursos definidos, sem impactar os demais?
 
@@ -110,7 +101,7 @@ Evitar Dockerfile como artefato de import: exige build no hub, lento e inseguro.
 
 **Compatibilidade de runtime**
 - O hub fala com a **Docker Engine API** — Docker nativamente e Podman via `podman.socket` (API compatível).
-- Cliente Rust: `bollard` (funciona com os dois apontando para o socket).
+- Cliente: SDK `docker` do Python (funciona com os dois apontando para o socket).
 - Configuração: `HUB_CONTAINER_SOCKET` (`/var/run/docker.sock` ou `/run/podman/podman.sock`; rootless: `$XDG_RUNTIME_DIR/podman/podman.sock`).
 - Usar apenas recursos comuns aos dois (imagens OCI, limites cgroups, redes bridge, volumes, restart policy). Nada de Swarm nem Quadlet como requisito.
 - Escala multi-host: mesmo manifest traduzido para Kubernetes/Nomad (adaptador separado).
@@ -149,9 +140,9 @@ Evitar Dockerfile como artefato de import: exige build no hub, lento e inseguro.
 
 ## 7. O dev consegue testar localmente (sem Docker e sem plataforma) de forma similar à produção?
 
-**Sim, via `hub dev`** (binário Rust do SDK, mesmo código do shell em modo dev).
+**Sim, via `hub dev`** (CLI `hub`, mesmo código do shell em modo dev).
 
-1. App roda nativo com a própria stack (`dotnet run`, `npm run dev`, `cargo run`, `python -m contratos`/`uvicorn`…).
+1. App roda nativo com a própria stack (`dotnet run`, `npm run dev`, `python -m contratos`/`uvicorn`…).
 2. `hub dev` na pasta do app:
    - lê o `manifest.json` (menu, rotas, permissões);
    - faz proxy de `/<app-id>/*` para o processo local;
@@ -168,11 +159,11 @@ Evitar Dockerfile como artefato de import: exige build no hub, lento e inseguro.
 | | SO/dependências nativas → `--container` ou CI |
 | | SSO/Vault reais → staging |
 
-**Implementado hoje** (`platform/crates/hub-cli`, ver `platform/README.md`): `hub dev` serve o mesmo shell do hub-web (crate `hub-shell`: header, carregamento, composição de fragmentos via `/_frag`), faz proxy só para o app do manifest, injeta a identidade de dev no header `x-hub-user` (não um JWT) com `--role`, repassa só as variáveis de `.hub/dev.env` declaradas no manifest e aplica `--limits`. Ainda não há: distinção pública/secreta das variáveis, simulação de serviços da plataforma nem validação em tempo real de CSS/CSP/health; o `--container` também não existe.
+**Implementado hoje** (`platform-py/cli`): `hub dev` serve o mesmo shell do hub (header, carregamento, composição de fragmentos via `/_frag`), faz proxy só para o app do manifest, injeta a identidade de dev no header `x-hub-user` (não um JWT) com `--role`, repassa só as variáveis de `.hub/dev.env` declaradas no manifest e aplica `--limits`. Ainda não há: distinção pública/secreta das variáveis, simulação de serviços da plataforma nem validação em tempo real de CSS/CSP/health; o `--container` também não existe.
 
 ## 8. É possível limitar recursos do app em desenvolvimento para simular produção?
 
-**Sim.** Rust não tem isso na linguagem, mas o `hub dev --limits` inicia o app como processo filho com limites do SO, lidos do manifest (`resources: { cpu: 0.5, memory: "512Mi", pids: 100 }`).
+**Sim.** O `hub dev --limits` inicia o app como processo filho com limites do SO, lidos do manifest (`resources: { cpu: 0.5, memory: "512Mi", pids: 100 }`).
 
 | SO | Mecanismo | Crate | Limita |
 |---|---|---|---|
@@ -200,7 +191,7 @@ Limitações:
 - AppLocker/WDAC podem bloquear o binário: distribuir `hub.exe` assinado (Winget/Intune).
 - WSL2/Docker Desktop costumam exigir admin para instalar; fidelidade total fica no staging.
 
-**Implementado hoje** (`platform/crates/hub-cli`, ver `platform/README.md`; vale também para o app Python — `hub dev --limits -- .venv/Scripts/python -m contratos`, o launcher do venv e o intérprete ficam no mesmo job): criação suspensa + `AssignProcessToJobObject` + retomada das threads; `JOB_OBJECT_LIMIT_JOB_MEMORY` (memória comprometida do job), CPU hard cap, processos ativos e `KILL_ON_JOB_CLOSE`. Ao atingir o limite de memória o `hub dev` avisa ("limite de memória atingido"), mas não encerra o job.
+**Implementado hoje** (`platform-py/cli`; ex.: `hub dev --limits -- .venv/Scripts/python -m contratos`, o launcher do venv e o intérprete ficam no mesmo job): criação suspensa + `AssignProcessToJobObject` + retomada das threads; `JOB_OBJECT_LIMIT_JOB_MEMORY` (memória comprometida do job), CPU hard cap, processos ativos e `KILL_ON_JOB_CLOSE`. Ao atingir o limite de memória o `hub dev` avisa ("limite de memória atingido"), mas não encerra o job.
 
 ## 10. O hub consegue gerenciar backup/snapshots das aplicações?
 
@@ -312,7 +303,7 @@ Limites:
 
 **Validação:** teste de caos — derrubar o container no meio de uma importação grande e de uma rajada de gravações e verificar: importação conclui a partir do checkpoint, zero duplicados/parciais, zero eventos de auditoria perdidos.
 
-**Implementado hoje** (`platform/crates/hub-sdk`, usado pelos três apps de demonstração; ver `platform/README.md`): tarefas duráveis no Postgres do app (lease + `SKIP LOCKED`, heartbeat, backoff exponencial com jitter, tempo máximo por tentativa, checkpoint na transação do lote, cancelamento, dead-letter, evento final no outbox), middleware `Idempotency-Key` (repetição devolve a mesma resposta; efetivação marcada na transação de negócio; 409 em paralelo, 422 com pedido diferente) — o `hub.js` envia uma chave por submissão e repete com a mesma em falha transitória —, outbox transacional coletado pelo hub pela rede interna com token por app (o gateway recusa `/_frag/<app>/_hub/*`; o antigo cabeçalho `x-hub-audit` saiu), desligamento gracioso e o semáforo de operações pesadas. Importação e exportação Excel do `ativos` são tarefas; **Operações › Tarefas** lista as de todos os apps com reprocessar/cancelar auditados. O **teste de caos** (`platform/loadtest/chaos/chaos.mjs`: 250 mil linhas + 420 cadastros com novas tentativas, `docker kill` 2× com requisições em voo) passou em todas as verificações — ver `platform/loadtest/results/2026-09-27/chaos.md`. **Onda 7:** SDK Python (`platform/sdk-python`, FastAPI) com a mesma semântica e as mesmas tabelas, usado pelo app `contratos`; o teste de caos do app Python (`loadtest/chaos/chaos-contratos.mjs`) passou em todas as verificações (efeito exatamente uma vez, nenhuma auditoria perdida). Ainda não há: saga com compensação, arquivos em duas fases com limpeza de órfãos, SDK oficial para outras linguagens (elas seguem `platform/docs/CONTRATO-APP.md` + suíte de conformidade), limpeza automática de uploads de tarefas que falharam.
+**Implementado hoje** (`platform/sdk-python`, usado pelos apps de demonstração): tarefas duráveis no Postgres do app (lease + `SKIP LOCKED`, heartbeat, backoff exponencial com jitter, tempo máximo por tentativa, checkpoint na transação do lote, cancelamento, dead-letter, evento final no outbox), middleware `Idempotency-Key` (repetição devolve a mesma resposta; efetivação marcada na transação de negócio; 409 em paralelo, 422 com pedido diferente) — o `hub.js` envia uma chave por submissão e repete com a mesma em falha transitória —, outbox transacional coletado pelo hub pela rede interna com token por app (o gateway recusa `/_frag/<app>/_hub/*`; o antigo cabeçalho `x-hub-audit` saiu), desligamento gracioso e o semáforo de operações pesadas. Importação e exportação Excel do `ativos` são tarefas; **Operações › Tarefas** lista as de todos os apps com reprocessar/cancelar auditados. O **teste de caos** (`platform/loadtest/chaos/chaos.mjs`: 250 mil linhas + 420 cadastros com novas tentativas, `docker kill` 2× com requisições em voo) passou em todas as verificações — ver `platform/loadtest/results/2026-09-27/chaos.md`. O teste de caos do app Python (`loadtest/chaos/chaos-contratos.mjs`) passou em todas as verificações (efeito exatamente uma vez, nenhuma auditoria perdida). Ainda não há: saga com compensação, arquivos em duas fases com limpeza de órfãos, SDK oficial para outras linguagens (elas seguem `platform/docs/CONTRATO-APP.md` + suíte de conformidade), limpeza automática de uploads de tarefas que falharam.
 
 ## 14. Como funciona o login e o SSO?
 
@@ -332,7 +323,7 @@ Limites:
 
 **Como funciona (onda 8):**
 - **Métricas RED por app × ambiente** (taxa de pedidos, erros 5xx, latência p50/p95/p99), pedidos em curso, CPU e memória de cada container (lidos do Docker), vagas de operações pesadas e fila de tarefas (informadas pelo app). Guardadas em memória no próprio hub (última hora em baldes de 10 s; 30 dias em baldes de 5 min, gravados em disco) — sem servidor extra.
-- **Traces (padrão W3C/OpenTelemetry):** o gateway abre um "span" por pedido e manda o `traceparent` ao app; o SDK (Rust ou Python) continua o trace e cria um span para cada consulta ao banco, colocando o `traceparent` no comentário do SQL (aparece no Postgres). O app **não** manda nada para fora (continua sem acesso ao plano de controle): o hub busca os spans pela rede interna, como já faz com a auditoria. Ações de Administração/Operações e jobs (implantação, backup) também viram spans.
+- **Traces (padrão W3C/OpenTelemetry):** o gateway abre um "span" por pedido e manda o `traceparent` ao app; o SDK continua o trace e cria um span para cada consulta ao banco, colocando o `traceparent` no comentário do SQL (aparece no Postgres). O app **não** manda nada para fora (continua sem acesso ao plano de controle): o hub busca os spans pela rede interna, como já faz com a auditoria. Ações de Administração/Operações e jobs (implantação, backup) também viram spans.
 - **Exportar para outras ferramentas (opcional):** com `OTEL_EXPORTER_OTLP_ENDPOINT` o hub envia traces e métricas por OTLP. O compose tem o perfil `observability` (OpenTelemetry Collector + Jaeger, ~450 MiB de teto — cabe na VM de destino como opcional): `OTEL_EXPORTER_OTLP_ENDPOINT=http://hub-otel-collector:4318 docker compose --profile observability up -d` e a UI do Jaeger em `http://127.0.0.1:16686`. Grafana LGTM foi descartado por pesar ~1,5 GB.
 - **SLOs e status page:** em **Saúde da plataforma** cada app × ambiente pode ter metas (ex.: 99,5% sem erro e 95% dos pedidos em até 500 ms, janela de 7 ou 30 dias); o hub calcula o "orçamento de erro" que resta e avisa no sino (e abre um incidente) quando ele está queimando rápido demais. **/status** mostra para qualquer usuário logado (ou para todos, se ligado em Configurações) o estado atual, barras de disponibilidade dos últimos 30 dias e os incidentes — automáticos (queda em laço, falta de memória, implantação que falhou, SLO queimando) e notas da equipe.
 
@@ -378,7 +369,7 @@ Limites:
 
 **Como funciona (onda 8):**
 - O **hub avalia** as flags para o usuário de cada pedido e manda o resultado ao app no cabeçalho `x-hub-flags` (ex.: `novo-resumo=on`). Como o gateway apaga qualquer `x-hub-*` vindo do navegador, o app pode confiar nele como confia na identidade (`x-hub-user`).
-- Para tarefas em segundo plano (sem usuário no pedido), o hub **empurra** as definições para o app pela rede interna (`/_hub/flags`) e o SDK avalia localmente com o **mesmo algoritmo** (Rust e Python testados com os mesmos vetores).
+- Para tarefas em segundo plano (sem usuário no pedido), o hub **empurra** as definições para o app pela rede interna (`/_hub/flags`) e o SDK avalia localmente com o **mesmo algoritmo** (testado com os mesmos vetores do hub).
 - Escolhemos o hub avaliar (e não o app buscar as regras no hub) porque os apps **não alcançam** o plano de controle — isso continua verdade.
 - Tudo é auditado (criar, alterar regras, ligar/desligar) no escopo do app. Exemplos: `novo-resumo` no Gestão de Ativos e `vencimentos-destaque` no Gestão de Contratos.
 
@@ -409,11 +400,11 @@ Limites:
 
 ## 20. A plataforma é acessível? Tem tema escuro e outros idiomas?
 
-**Em linguagem simples:** sim. No menu do seu nome você escolhe o **tema** (claro, escuro ou "Sistema", que segue o computador) e o **idioma** (português, inglês ou espanhol; "Automático" segue o navegador). A escolha fica salva na sua conta — vale em qualquer computador. Tudo funciona **só com o teclado** (Tab, Enter, setas, Esc), com leitor de tela e com "reduzir movimento" do sistema.
+**Em linguagem simples:** sim. No menu do seu nome você escolhe o **tema** (claro, escuro ou "Sistema", que segue o computador) e o **idioma** (português ou inglês; "Automático" segue o navegador). A escolha fica salva na sua conta — vale em qualquer computador. Tudo funciona **só com o teclado** (Tab, Enter, setas, Esc), com leitor de tela e com "reduzir movimento" do sistema.
 
 **Como funciona (onda 9):**
 - **Tema escuro** gerado a partir dos design tokens: cada cor da paleta ganha a versão escura automaticamente (e as cores próprias dos apps também), e um verificador automático (axe) confere o contraste nos dois temas. O topo e o menu lateral continuam iguais nos dois temas (já são escuros).
-- **Idiomas**: o hub traduz o shell (topo, menus, Início, Aplicações, Inbox, busca, tour, login) e **avisa o idioma às aplicações** (`x-hub-locale`); os SDKs Rust e Python trazem a tradução e a formatação de números, valores e datas. O app Gestão de Contratos está totalmente traduzido; as telas de Administração e os apps do protótipo seguem em português (pendência registrada).
+- **Idiomas**: o hub traduz o shell (topo, menus, Início, Aplicações, Inbox, busca, tour, login) e **avisa o idioma às aplicações** (`x-hub-locale`); o SDK traz a tradução e a formatação de números, valores e datas. O app Gestão de Contratos está totalmente traduzido; as telas de Administração e os apps do protótipo seguem em português (pendência registrada).
 - **Acessibilidade (WCAG 2.2 AA)**: link "Pular para o conteúdo", regiões nomeadas, foco visível, foco levado ao título quando se troca de seção num app e de volta ao botão quando um menu/diálogo fecha, avisos lidos pelo leitor de tela (Inbox, toasts, reordenação do Início), alvos de clique de pelo menos 24 px e animações desligadas com "reduzir movimento". O axe roda nos testes E2E em todas as páginas principais, nos dois temas e em dois idiomas — zero violações sérias ou críticas.
 - **Primeira vez**: um **tour guiado** mostra onde fica cada coisa (só o que você pode usar), e o Início traz "Primeiros passos" que se marcam sozinhos conforme você usa. Dá para pular o tour, parar no meio e continuar depois, ou refazê-lo pelo menu do seu nome.
 
@@ -464,7 +455,7 @@ Limites:
 - **Tudo registrado:** cada uso de ferramenta vai para a auditoria (quem, qual ferramenta, resultado).
 - **Desligar:** `[mcp] enabled = false` no arquivo de configuração do hub (ou `HUB_MCP_ENABLED=0`). Um app específico pode desligar as próprias ferramentas no manifesto (`mcp.enabled: false`).
 
-**E os apps novos?** Todo app precisa ter a sua API (regra da plataforma, com exceção possível só se a administração permitir). Quem usa os SDKs oficiais (Rust ou Python) ganha a API documentada e as ferramentas de IA quase de graça: as ferramentas são **geradas automaticamente** a partir da documentação da API.
+**E os apps novos?** Todo app precisa ter a sua API (regra da plataforma, com exceção possível só se a administração permitir). Quem usa o SDK oficial (Python) ganha a API documentada e as ferramentas de IA quase de graça: as ferramentas são **geradas automaticamente** a partir da documentação da API.
 
 **Como conectar o Claude:** veja `docs/IMPLANTACAO.md` §14 (Claude Desktop, Claude Code e outros clientes).
 
@@ -502,7 +493,7 @@ com os poderes da página. Para quem precisa de mais, o caminho é MFA resistent
 
 ## 24. A plataforma fala outros idiomas nas telas de administração? E como um app desfaz uma operação de vários passos que falhou no meio?
 
-**Idiomas (onda 12):** tudo o que o hub mostra — Administração, Operações, Conexões, Inbox, a tela de autorizar um aplicativo, as telas de conta e as mensagens de erro — aparece em português, inglês ou espanhol, conforme a preferência do usuário (menu do usuário) ou, se ele não escolheu, o idioma do navegador. O que foi digitado por pessoas (nomes, descrições, registros de auditoria) aparece como foi gravado.
+**Idiomas (onda 12):** tudo o que o hub mostra — Administração, Operações, Conexões, Inbox, a tela de autorizar um aplicativo, as telas de conta e as mensagens de erro — aparece em português ou inglês, conforme a preferência do usuário (menu do usuário) ou, se ele não escolheu, o idioma do navegador. O que foi digitado por pessoas (nomes, descrições, registros de auditoria) aparece como foi gravado.
 
 **Operações de vários passos (sagas):** quando um app precisa, por exemplo, cadastrar um ativo, anexar o documento e avisar o responsável, o SDK executa os passos em ordem e grava o progresso. Se um passo falhar de vez, ele desfaz o que já foi feito, do último para o primeiro. Se o servidor cair no meio, outro processo continua de onde parou. Em Operações › Tarefas aparece em que passo a operação está e o que já foi desfeito.
 

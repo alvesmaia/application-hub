@@ -233,8 +233,8 @@ async def test_locale_translation(running: Running) -> None:
     c = running.client
     en = await c.get("/fornecedores/settings", headers={"x-hub-locale": "en"})
     assert "Preferences saved." in en.text and "Preferências salvas." not in en.text
-    es = await c.get("/fornecedores/dashboard", headers={"x-hub-locale": "es"})
-    assert es.status_code == 200 and es.headers["content-type"].startswith("text/html")
+    en = await c.get("/fornecedores/dashboard", headers={"x-hub-locale": "en"})
+    assert en.status_code == 200 and en.headers["content-type"].startswith("text/html")
     ficha = await c.get("/fornecedores/indicators", params={"id": "FOR-0271"}, headers={"x-hub-locale": "en"})
     assert "Attachments" in ficha.text or "Anexos" in ficha.text
 

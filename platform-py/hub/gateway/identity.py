@@ -1,4 +1,4 @@
-"""Identidade `x-hub-user` e sua assinatura (`x-hub-user-sig`), idênticas ao hub Rust (hub-gateway)."""
+"""Identidade `x-hub-user` e sua assinatura (`x-hub-user-sig`), idênticas às da versão anterior do hub."""
 
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ class Identity:
     apps: list[str] | None = None  # só para o gateway; nunca vai ao app
 
     def header_value(self) -> str:
-        """JSON compacto (ordem dos campos do Rust, vazios omitidos) em base64url sem padding."""
+        """JSON compacto (ordem dos campos da versão anterior do hub, vazios omitidos) em base64url sem padding."""
         d: dict[str, object] = {"user": self.user, "roles": self.roles}
         for k in ("id", "name", "email"):
             if v := getattr(self, k):
@@ -71,7 +71,7 @@ def _hmac(key: bytes, data: bytes) -> bytes:
 
 
 def sign_user(key: bytes, app: str, env: str, user_header: str, ts: int) -> str:
-    """`v1.<unix>.<hex(HMAC-SHA256)>` com chave derivada por app (mesmo algoritmo do Rust)."""
+    """`v1.<unix>.<hex(HMAC-SHA256)>` com chave derivada por app (mesmo algoritmo da versão anterior do hub)."""
     k_app = _hmac(key, f"hub-user-sig/v1/{app}".encode())
     mac = _hmac(k_app, f"v1\n{env}\n{ts}\n{user_header}".encode())
     return f"v1.{ts}.{mac.hex()}"

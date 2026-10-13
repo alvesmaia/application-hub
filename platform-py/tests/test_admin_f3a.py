@@ -527,3 +527,21 @@ def test_users_page_markup(hub: TestClient) -> None:
     assert "data-user-toggle" in html.split('data-user-id="bia"')[1]
     hub.put("/api/admin/users/bia", json={"active": False})
     assert "Reativar" in hub.get("/admin/users").text and "Desativado" in hub.get("/admin/users").text
+
+
+def test_bootstrap_ignores_bindings_of_apps_outside_catalog(hub: TestClient) -> None:
+    """Instalação sem os apps de exemplo: a carga inicial cita apps que não existem — descarta o vínculo e segue
+    (antes o hub não subia: AdminError «Aplicação desconhecida»)."""
+    cfg = hub.app.state.admin.cfg  # type: ignore[attr-defined]
+    items = [
+        {"name": "DB_FANTASMA", "kind": "connection_string", "inject_as": "HUB_DB_URL",
+         "value": "postgres://u:p@h/db", "bindings": [{"app": "nao-instalado", "env": "producao"}]},
+        {"name": "DB_MISTO", "kind": "connection_string", "inject_as": "HUB_DB_URL",
+         "value": "postgres://u:p@h/db2",
+         "bindings": [{"app": "nao-instalado", "env": "producao"}, {"app": "ativos", "env": "staging"}]},
+    ]  # fmt: skip
+    assert asyncio.run(cfg.import_bootstrap("plataforma", items)) == 1  # só a mista entra
+    env = asyncio.run(cfg.read())["env"]
+    nomes = {e["name"]: e for e in env}
+    assert "DB_FANTASMA" not in nomes
+    assert nomes["DB_MISTO"]["bindings"] == [{"app": "ativos", "env": "staging"}]

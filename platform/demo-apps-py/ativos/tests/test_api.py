@@ -1,4 +1,4 @@
-"""API v1, OpenAPI (paridade com o do app Rust), MCP interno e a saga "cadastro documentado"."""
+"""API v1, OpenAPI (igual ao contrato empacotado em samples/), MCP interno e a saga "cadastro documentado"."""
 
 from __future__ import annotations
 
@@ -21,10 +21,10 @@ def ops(doc: dict[str, Any]) -> dict[tuple[str, str], dict[str, Any]]:
     return {(m.upper(), p): o for p, item in doc["paths"].items() for m, o in item.items()}
 
 
-async def test_openapi_has_the_same_operations_as_the_rust_app(running: Running) -> None:
+async def test_openapi_has_the_same_operations_as_the_packaged_contract(running: Running) -> None:
     py = (await running.client.get("/ativos/api/openapi.json")).json()
-    rust = json.loads((PLATFORM / "samples/src/ativos/openapi.json").read_text("utf-8"))
-    a, b = ops(rust), ops(py)
+    packaged = json.loads((PLATFORM / "samples/src/ativos/openapi.json").read_text("utf-8"))
+    a, b = ops(packaged), ops(py)
     assert set(a) == set(b)
     for k, ro in a.items():
         po = b[k]
@@ -36,11 +36,11 @@ async def test_openapi_has_the_same_operations_as_the_rust_app(running: Running)
         assert pp == rp, k
         assert ("requestBody" in po) == ("requestBody" in ro), k
         assert "4XX" in po["responses"]
-    assert py["openapi"] == rust["openapi"] and py["servers"] == rust["servers"]
+    assert py["openapi"] == packaged["openapi"] and py["servers"] == packaged["servers"]
     assert {"AssetFields", "AssetUpdate", "AssetRow", "Registration", "Enqueued", "Problem"} <= set(
         py["components"]["schemas"]
     )
-    assert py["security"] == rust["security"]
+    assert py["security"] == packaged["security"]
 
 
 async def test_mcp_tools_come_from_the_openapi(running: Running) -> None:
@@ -157,13 +157,3 @@ async def test_packaged_openapi_matches_the_code(running: Running) -> None:
     text = await asyncio.to_thread(OPENAPI.read_text, "utf-8")
     on_disk = json.loads(text)
     assert on_disk == running.app.state.hub_api_doc(), "regenere: python -m ativos openapi > openapi.json"
-
-
-def test_fragments_css_and_catalog_are_the_rust_apps() -> None:
-    """Paridade de markup das seções estáticas: os arquivos são os do app Rust (sem JS próprio)."""
-    here = Path(__file__).resolve().parents[1] / "src" / "ativos"
-    rust = PLATFORM / "demo-apps"
-    for f in (rust / "fragments" / "ativos").iterdir():
-        assert (here / "fragments" / f.name).read_bytes() == f.read_bytes(), f.name
-    assert (here / "assets" / "app.css").read_bytes() == (rust / "assets" / "ativos.css").read_bytes()
-    assert (here / "i18n.json").read_bytes() == (rust / "i18n.json").read_bytes()

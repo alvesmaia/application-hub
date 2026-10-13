@@ -1,4 +1,4 @@
-"""Só para testes (E2E de anti-phishing, como `hostile.rs` do app Rust): um fragmento "malicioso" e os scripts
+"""Só para testes (E2E de anti-phishing): um fragmento "malicioso" e os scripts
 do teste de aprovação. Ligado apenas com `HUB_DEMO_E2E_HOSTILE=1` (compose de demonstração/testes); desligado, as
 rotas nem existem (404 como qualquer seção desconhecida). Nunca ligar em produção."""
 

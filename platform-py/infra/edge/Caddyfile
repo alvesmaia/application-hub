@@ -1,0 +1,25 @@
+# Borda do hub (app-hub-edge): única dona da HUB_PORT. Repassa para o hub (`app-hub-web`) e, durante uma
+# atualização sem parada (scripts/hub-update.sh), também para `app-hub-web-next`: só quem responde ao /healthz
+# recebe tráfego, e uma conexão recusada é tentada de novo na outra cópia (nenhum pedido se perde na troca).
+{
+	admin off
+	log {
+		level WARN # a sonda do app-hub-web-next (ausente fora das atualizações) não polui o log
+	}
+	servers {
+		# cloudflared/proxies na frente chegam por IP privado: os X-Forwarded-* deles seguem até o hub
+		trusted_proxies static private_ranges
+	}
+}
+
+:8090 {
+	reverse_proxy app-hub-web:8090 app-hub-web-next:8090 {
+		lb_policy first
+		lb_try_duration 20s
+		lb_try_interval 250ms
+		health_uri /healthz
+		health_interval 1s
+		health_timeout 2s
+		flush_interval -1
+	}
+}

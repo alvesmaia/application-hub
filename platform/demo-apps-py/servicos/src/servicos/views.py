@@ -1,4 +1,4 @@
-"""Markup das telas dinâmicas da Central de Serviços (string a string como o ``servicos/mod.rs``)."""
+"""Markup das telas dinâmicas da Central de Serviços."""
 
 from __future__ import annotations
 

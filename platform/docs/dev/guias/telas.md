@@ -35,3 +35,21 @@ painéis `hub-panel` e `hub-panel-head`; formulários `hub-form-grid`, `form-fie
 modelo do `hub project create` usa todas. Cores só por tokens (`var(--…)`).
 
 Lista completa e regras: Contrato §25 ([Contrato](/developers/contrato)).
+
+## Testar sem navegador
+
+O certo é abrir a tela no hub (`hub dev` e depois `/apps/<id>`). Para um teste rápido por linha de comando,
+chame o **fragmento**, não a página: os formulários do hub enviam para `/_frag/<id>/…`. A página `/apps/<id>/…`
+não aceita POST (`405`), e o fragmento exige os cabeçalhos que o shell manda — sem eles vem `403`, e um POST
+sem `Idempotency-Key` de 8 a 128 caracteres vem `400`.
+
+```bash
+hub dev &                                     # http://localhost:4173
+H='-H Origin:http://localhost:4173 -H Sec-Fetch-Site:same-origin -H X-Requested-With:XMLHttpRequest'
+curl -s $H http://localhost:4173/_frag/<id>/                      # fragmento inicial
+K="-H Idempotency-Key:$(date +%s)-teste"      # POST: chave de 8 a 128 caracteres
+curl -s $H $K -d "name=Arroz&quantity=2" http://localhost:4173/_frag/<id>/itens
+```
+
+Troque `<id>` pelo id do app. A conformidade do `hub check` usa exatamente essas rotas.
+

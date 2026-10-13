@@ -287,6 +287,18 @@
    "status": "queued"
   }
  },
+ "UsageRow": {
+  "actions": 9,
+  "app": "ativos",
+  "app_name": "Ativos",
+  "days": 6,
+  "email": "ana@empresa.com",
+  "last": 1790773398576,
+  "name": "Ana Souza",
+  "opens": 12,
+  "sections": 40,
+  "user": "u-7f3a"
+ },
  "User": {
   "active": true,
   "created_at": 1790773398061,

@@ -358,8 +358,6 @@ AGENTS = (("claude", "Claude Code"), ("codex", "OpenAI Codex"), ("copilot", "Git
 _PROMPTS = {
     "pt-BR": "Siga as instruções em {base}/dev/docs/agente.md para criar e publicar um app neste Application Hub.",
     "en": "Follow the instructions at {base}/dev/docs/agente.md to create and publish an app on this Application Hub.",
-    "es": "Sigue las instrucciones en {base}/dev/docs/agente.md para crear y publicar una aplicación en este "
-    "Application Hub.",
 }
 
 

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { HUB, PLATFORM, USERS, WORK_DIR, apiAs, apiLogin, autoConfirm, hubBin, json, openDeployVersion, stateFile, uniq } from './helpers';
+import { HUB, PLATFORM, USERS, WORK_DIR, apiAs, apiLogin, appImage, autoConfirm, hubBin, json, openDeployVersion, stateFile, uniq } from './helpers';
 
 // Onda 12 (2.1) — anti-phishing com os apps na MESMA origem do hub:
 //  (a) um fragmento hostil (rota SÓ DE TESTE do compose de demonstração,
@@ -145,7 +145,7 @@ function scriptsPackage(app: string, version: string): string {
     { path: 'ui/assets/e2e-tampered.js', reason: 'Teste E2E: o app serve outra versão (SRI)' },
   ];
   fs.writeFileSync(mf, JSON.stringify(m, null, 2));
-  const image = process.env[`E2E_IMAGE_${app.toUpperCase()}`] || process.env.E2E_IMAGE || `hub-demo-apps@${execFileSync('docker', ['image', 'inspect', '-f', '{{.Id}}', 'hub-demo-apps'], { encoding: 'utf8' }).trim()}`;
+  const image = appImage(app);
   const out = path.join(WORK_DIR, `js-${app}-${version}.hubapp`);
   execFileSync(hubBin(), ['pack', '--dir', dir, '--image', image, '--out', out], { stdio: 'inherit' });
   return out;

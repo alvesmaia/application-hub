@@ -1,6 +1,5 @@
 """Cliente da API externa de CNPJ/score com timeout por tentativa, novas tentativas com
-backoff exponencial + jitter (só falhas transitórias) e disjuntor (espelho de
-``fornecedores/lookup.rs``)."""
+backoff exponencial + jitter (só falhas transitórias) e disjuntor."""
 
 from __future__ import annotations
 

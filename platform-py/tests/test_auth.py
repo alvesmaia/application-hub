@@ -74,10 +74,10 @@ def test_rbac_denial_renders_shell() -> None:
     assert r.status_code == 403 and 'class="platform-rail"' in r.text and "Conectado como" in r.text
 
 
-def test_rust_password_and_secret_hash_vectors() -> None:
-    rust_phc = (
+def test_legacy_password_and_secret_hash_vectors() -> None:
+    legacy_phc = (
         "$argon2id$v=19$m=19456,t=2,p=1$3lQtv6poUwlEOEEZ9C/qzw$/+qjFZ9ssXJ2hSWwi8fLrEyp+OfdGfUlzoxaQ8RN7LI"
     )
-    assert verify("Rust-Golden-Password-42!", rust_phc)
+    assert verify("Rust-Golden-Password-42!", legacy_phc)
     assert sha("hubt_t1deadbeef_secret") == "383021d9142e0e710b7ccdbe95d46e1acbace9af0418de4ae661fb0309d0a6ac"
     assert sha("session-cookie-golden") == "558aa802936fe8c2c46d96773cfac8f7342e6833c3ecf9e31c4abd7036c08f1f"

@@ -17,7 +17,7 @@ services:
   app-hub-app-db:
     image: postgres:16-alpine
     container_name: ${HUB_PROJECT:-app-hub}-app-db
-    mem_limit: 1g # = resources.memory dos manifestos e ao `app` do compose Rust; 256m derrubava (OOM) a importação de 200 mil linhas
+    mem_limit: 1g # = resources.memory dos manifestos e ao `app` do compose da versão anterior; 256m derrubava (OOM) a importação de 200 mil linhas
     restart: unless-stopped
     environment:
       POSTGRES_USER: hub
@@ -37,7 +37,7 @@ services:
       context: ../platform
       dockerfile: demo-apps-py/ativos/Dockerfile
     container_name: ${HUB_PROJECT:-app-hub}-app-ativos
-    mem_limit: 1g # = resources.memory dos manifestos e ao `app` do compose Rust; 256m derrubava (OOM) a importação de 200 mil linhas
+    mem_limit: 1g # = resources.memory dos manifestos e ao `app` do compose da versão anterior; 256m derrubava (OOM) a importação de 200 mil linhas
     restart: unless-stopped
     environment: &app-hub-app-env
       HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/ativos # um banco por app (ativos); os demais sobrescrevem
@@ -55,7 +55,7 @@ services:
       context: ../platform
       dockerfile: demo-apps-py/fornecedores/Dockerfile
     container_name: ${HUB_PROJECT:-app-hub}-app-fornecedores
-    mem_limit: 1g # = resources.memory dos manifestos e ao `app` do compose Rust; 256m derrubava (OOM) a importação de 200 mil linhas
+    mem_limit: 1g # = resources.memory dos manifestos e ao `app` do compose da versão anterior; 256m derrubava (OOM) a importação de 200 mil linhas
     restart: unless-stopped
     environment:
       <<: *app-hub-app-env
@@ -77,7 +77,7 @@ services:
       context: ../platform
       dockerfile: demo-apps-py/servicos/Dockerfile
     container_name: ${HUB_PROJECT:-app-hub}-app-servicos
-    mem_limit: 1g # = resources.memory dos manifestos e ao `app` do compose Rust; 256m derrubava (OOM) a importação de 200 mil linhas
+    mem_limit: 1g # = resources.memory dos manifestos e ao `app` do compose da versão anterior; 256m derrubava (OOM) a importação de 200 mil linhas
     restart: unless-stopped
     environment:
       <<: *app-hub-app-env
@@ -95,7 +95,7 @@ services:
       context: ../platform
       dockerfile: Dockerfile.coletor
     container_name: ${HUB_PROJECT:-app-hub}-app-coletor
-    mem_limit: 1g # = resources.memory dos manifestos e ao `app` do compose Rust; 256m derrubava (OOM) a importação de 200 mil linhas
+    mem_limit: 1g # = resources.memory dos manifestos e ao `app` do compose da versão anterior; 256m derrubava (OOM) a importação de 200 mil linhas
     restart: unless-stopped
     environment:
       <<: *app-hub-app-env

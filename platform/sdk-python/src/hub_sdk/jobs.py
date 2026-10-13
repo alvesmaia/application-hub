@@ -1,4 +1,4 @@
-"""Tarefas duráveis na tabela ``hub_jobs`` — mesma tabela, SQL e estados do SDK Rust.
+"""Tarefas duráveis na tabela ``hub_jobs`` (tabela, SQL e estados têm formato estável: não mude sem migração).
 
 Ciclo de vida: ``queued`` → ``running`` → ``done`` | ``failed`` (erro definitivo) |
 ``dead`` (tentativas esgotadas: dead-letter) | ``cancelled``. Falha transitória volta a
@@ -16,7 +16,7 @@ Ciclo de vida: ``queued`` → ``running`` → ``done`` | ``failed`` (erro defini
 - **Tempo máximo** por tentativa; **cancelar**; **evento final** no outbox na mesma
   transação da mudança de estado.
 
-Diferença documentada para o Rust: o trabalho de CPU de um handler Python deve ir para
+Trabalho de CPU de um handler Python deve ir para
 ``asyncio.to_thread`` (o laço de eventos precisa continuar livre para o heartbeat e o
 HTTP); o semáforo :class:`~hub_sdk.heavy.Heavy` é por processo.
 """

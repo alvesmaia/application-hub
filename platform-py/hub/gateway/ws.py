@@ -1,4 +1,4 @@
-"""WebSocket pelo gateway: `/apps/{app}/ws/...` vira túnel navegador <-> upstream (port de ws.rs)."""
+"""WebSocket pelo gateway: `/apps/{app}/ws/...` vira túnel navegador <-> upstream."""
 
 from __future__ import annotations
 

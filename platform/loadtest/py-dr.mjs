@@ -1,5 +1,4 @@
-// F7a — DR contra a pilha Python (`app-hub-*`, hub em :8090). O `dr.mjs` é da pilha Rust (nomes `hub-*`, volume
-// `hub-data`, backups por containers de tarefa); este faz o equivalente sem tocar em nada fora de `app-hub-*`:
+// F7a — DR contra a pilha Python (`app-hub-*`, hub em :8090). Não toca em nada fora de `app-hub-*`:
 //
 //   HUB=http://localhost:8090 HUB_USER=admin@demo.local HUB_PASSWORD=… node loadtest/py-dr.mjs [--out arq.md]
 //

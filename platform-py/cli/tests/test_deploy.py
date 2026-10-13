@@ -142,3 +142,15 @@ def test_collect_values_prompts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     assert deploy.collect_values(m, tmp_path / "nada.env", False) == {"variables": {}, "secrets": {}}
     assert deploy.cred_path().name == "credentials.json"
     assert deploy.load_login() == {}
+
+
+def test_deploy_shows_hub_reason(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A recusa do hub vem em `error` (ex.: pacote grande): antes a CLI mostrava só o código HTTP."""
+    d = app_dir(tmp_path)
+    base = ["deploy", "--dir", str(d), "--hub", "http://localhost:9", "--token", "t", "--env", "staging"]
+    msg = "O pacote tem 22.0 MB; o limite é 20 MB."
+    fake_hub(monkeypatch, lambda r: httpx.Response(400, json={"error": msg}))
+    with pytest.raises(CliError) as e:
+        deploy.deploy(d, "staging", "http://localhost:9", "t", None, False)
+    assert msg in str(e.value)
+    assert main(base) == 1

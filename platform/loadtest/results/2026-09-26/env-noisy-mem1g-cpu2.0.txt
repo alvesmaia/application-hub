@@ -1,4 +1,0 @@
-hub-web cpus=1000000000 mem=1073741824 cpuset=0-3 shares=2048
-hub-app-ativos cpus=2000000000 mem=1073741824 cpuset=0-3 shares=1024
-hub-app-fornecedores cpus=2000000000 mem=1073741824 cpuset=0-3 shares=1024
-hub-app-servicos cpus=2000000000 mem=1073741824 cpuset=0-3 shares=1024

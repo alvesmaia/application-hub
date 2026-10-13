@@ -10,7 +10,7 @@ GET    ``/{app}/_hub/ready``      prontidão: 200 ``{"status": "ready", "checks"
 
 O hub só troca o tráfego do blue/green para um candidato cujo ``/_hub/ready`` respondeu 200;
 sem a rota (404) a implantação é recusada. Sem token interno (não expõem dados; o gateway
-recusa ``/_frag/{app}/_hub/*``); ``Cache-Control: no-store``. Mesmo formato do SDK Rust.
+recusa ``/_frag/{app}/_hub/*``); ``Cache-Control: no-store``.
 """
 
 from __future__ import annotations

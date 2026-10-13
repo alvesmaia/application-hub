@@ -437,8 +437,7 @@ select,input,textarea{color-scheme:inherit}
 .rail-collapsed .rail-group-label .rail-tooltip{left:44px}
 
 /* ===== Componentes base do hub (page_head, callout, more_info, controles, tabelas,
- * carregamento) — por último de propósito: vale sobre as camadas herdadas do mockup.
- * Componentes Rust em crates/hub-shell/src/page.rs. */
+ * carregamento) — por último de propósito: vale sobre as camadas herdadas do mockup. */
 /* Cabeçalho de página: texto à esquerda, ações numa linha à direita. */
 .app-page-header,.page-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-16);align-items:end;margin:0 0 var(--space-20)}
 .page-head-text{min-width:0}

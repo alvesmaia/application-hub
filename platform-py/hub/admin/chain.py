@@ -1,4 +1,4 @@
-"""Rust-compatible append-only audit chain."""
+"""Cadeia de auditoria append-only (formato compatível com a versão anterior do hub)."""
 
 from __future__ import annotations
 
@@ -216,7 +216,7 @@ class AuditChain:
             self.head_error = f"{type(e).__name__}: {e}"[:200]
 
     def _checkpoint_if_due(self, seq: int, digest: str) -> None:
-        """A cada `CHECKPOINT_EVERY` eventos, uma linha assinada (Ed25519) fixa o ponto da cadeia — como no hub Rust."""
+        """A cada `CHECKPOINT_EVERY` eventos, uma linha assinada (Ed25519) fixa o ponto da cadeia."""
         if not self.vault or self.blocked or seq - self.last_checkpoint < CHECKPOINT_EVERY or seq == 0:
             return
         at = time.time_ns() // 1_000_000
@@ -236,7 +236,7 @@ class AuditChain:
         self.last_checkpoint = seq
 
     def report(self) -> dict[str, Any]:
-        """Resultado de "Verificar integridade" no formato do hub Rust (cadeia única, sem segmentos arquivados)."""
+        """Resultado de "Verificar integridade" no formato da versão anterior do hub (cadeia única, sem segmentos arquivados)."""
         v, lines = self.verify(), self._lines()
         anchor = 0
         if self.vault and (raw := self.vault.protected(ANCHOR)):

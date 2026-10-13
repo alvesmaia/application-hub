@@ -20,7 +20,7 @@ def test_toml_and_environment_settings(tmp_path, monkeypatch):
 def test_models_validate_without_changing_rust_json_shapes():
     admin = {"settings": {}, "env": [], "roles": [], "health": [], "audit": [], "next_audit_id": 0}
     assert AdminDocument.model_validate(admin).model_dump(exclude_none=True) == admin
-    keyring = json.loads((Path(__file__).parent / "vectors/rust-vault-v2.json").read_text())["keyring"]
+    keyring = json.loads((Path(__file__).parent / "vectors/vault-v2.json").read_text())["keyring"]
     assert KeyringFile.model_validate(keyring).version == 2
 
 

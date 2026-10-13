@@ -2,7 +2,7 @@
 auditoria, `notification`/`approval_request` para a Inbox (e o SSE). Efeito exatamente uma vez, nesta ordem por página:
 1. grava na auditoria (durável, com `source`); 2. registra os ids "gravados, aguardando confirmação"; 3. confirma ao app
 (`POST …/ack`, só o líder com fence vigente). Reentrega (queda entre 1 e 3) é deduplicada pelo registro e pelo `source`.
-Só o líder coleta. Porta de `hub-admin/src/outbox.rs` e `ux::ingest`."""
+Só o líder coleta."""
 
 from __future__ import annotations
 
