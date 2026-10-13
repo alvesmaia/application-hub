@@ -90,8 +90,13 @@ def backup(proj: str, image: str, dest: Path) -> None:
                 p = subprocess.run(["docker", "exec", db, "pg_dumpall", "-U", "hub"], stdout=fh, check=False)  # noqa: S603, S607
             if p.returncode != 0:
                 raise SystemExit(f"hub-update: backup de {db} falhou; nada foi trocado")
-    run("docker", "run", "--rm", "--entrypoint", "tar", "-v", f"{proj}-data:/d:ro", "-v", f"{dest.resolve()}:/b",
-        image, "czf", "/b/hub-data.tgz", "-C", "/d", ".")  # fmt: skip
+    # O hub segue gravando em /data: o tar sai com 1 se um arquivo mudou durante a leitura (aviso); 2 = erro.
+    p = run("docker", "run", "--rm", "--entrypoint", "tar", "-v", f"{proj}-data:/d:ro", "-v", f"{dest.resolve()}:/b",
+        image, "czf", "/b/hub-data.tgz", "--warning=no-file-changed", "-C", "/d", ".", check=False, quiet=True)  # fmt: skip
+    if p.returncode > 1:
+        raise SystemExit(
+            f"hub-update: backup de {proj}-data falhou; nada foi trocado: {p.stderr.strip()[-300:]}"
+        )
     say(f"backup em {dest}")
 
 
@@ -213,6 +218,12 @@ def main() -> int:
             "(`up -d`): a borda assume a porta (~10 s de parada, uma vez só)."
         )
     current = main_c["Image"]
+    # Tag já: no containerd, a imagem que perde o `latest` some pelo ID (backup, rollback e volta falhariam).
+    prev = f"{repo}:pre-update"
+    if run("docker", "tag", current, prev, check=False, quiet=True).returncode != 0 and inspect(prev) is None:
+        raise SystemExit(
+            f"hub-update: a imagem em execução não tem referência; crie {prev} com a versão atual"
+        )
     if a.rollback:
         if inspect(f"{repo}:rollback") is None:
             raise SystemExit("hub-update: não há imagem anterior (<proj>-web:rollback)")
@@ -233,8 +244,8 @@ def main() -> int:
             say("a imagem nova é a que já está no ar; nada a fazer")
             return 0
         if not a.no_backup:
-            backup(a.project, current, Path(a.backup_dir) / dt.datetime.now().strftime("%Y%m%d-%H%M%S"))
-        run("docker", "tag", current, f"{repo}:rollback")
+            backup(a.project, prev, Path(a.backup_dir) / dt.datetime.now().strftime("%Y%m%d-%H%M%S"))
+        run("docker", "tag", prev, f"{repo}:rollback")
     run("docker", "tag", new, f"{repo}:latest")  # o compose usa <proj>-web(:latest)
 
     try:
@@ -245,7 +256,7 @@ def main() -> int:
         healthy = False
         if (m := inspect(main_name)) is not None and m["Image"] == current:  # o hub nem foi trocado
             drop(next_name)
-            run("docker", "tag", current, f"{repo}:latest")
+            run("docker", "tag", prev, f"{repo}:latest")
             say("nada foi trocado; o hub segue na versão anterior")
             return 1
     if healthy:
@@ -253,9 +264,9 @@ def main() -> int:
         say(f"concluído: versão {version} no ar, sem parada. Volta: hub_update.py --rollback")
         return 0
     say("a versão nova falhou: voltando para a anterior")
-    run("docker", "tag", current, f"{repo}:latest")
+    run("docker", "tag", prev, f"{repo}:latest")
     try:
-        swap(main_name, next_name, current, a.timeout)
+        swap(main_name, next_name, prev, a.timeout)
     finally:
         drop(next_name)
     say(

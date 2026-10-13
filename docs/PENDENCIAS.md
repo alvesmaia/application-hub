@@ -27,10 +27,9 @@ nativa do agente (`docs/migracao/TASKS.md` é o quadro da migração F0–F7, en
 
 - **Login MCP via Entra ID real (com o dono):** o fluxo está coberto contra o Entra falso
   (`platform-py/tests/test_oauth_entra.py`) e o guia dos clientes está em `docs/IMPLANTACAO.md` ("Conectar clientes
-  de IA"). Falta o teste ponta a ponta com um locatário real: registrar o app (redirect
-  `<HUB_PUBLIC_URL>/auth/entra/callback`, permissões `openid profile email`, segredo em arquivo), ligar
-  `HUB_SSO_PROVIDER=entra` + `HUB_ENTRA_*` numa instância e autenticar pelo navegador no Claude Code, no Copilot CLI
-  e no Copilot (VS Code/app desktop — confirmar a configuração do app desktop).
+  de IA"). App registrado em 13/10/2026 no locatário do dono (Azure CLI; "Application Hub", segredo no volume
+  `/data`, só o próprio locatário e domínio `alvesmaia.com`) e `HUB_SSO_PROVIDER=entra` ligado na instância. Falta
+  o dono autenticar pelo navegador no Claude Code, no Copilot CLI e no Copilot (VS Code/app desktop).
 - **Teste com agente de contexto mínimo (Haiku 5.5 `low`, kanban):** rodadas de 2026-10-09 (WebSocket/SSE) e
   2026-10-10 (repetição após as correções: os dois verdes, SSE sem JS próprio; tela conferida em duas abas).
   Correções da 2ª rodada (2026-10-10): guia "Tempo real" com módulo completo testado (SSE, WebSocket,
@@ -38,11 +37,9 @@ nativa do agente (`docs/migracao/TASKS.md` é o quadro da migração F0–F7, en
   formatado mesmo com id de 32 caracteres, mensagem clara do `openapi.json` desatualizado, índices do Contrato,
   SDK e CLI com resumo de cada página e link do texto completo. Falta, se um novo teste pedir: ajuda de servidor
   SSE/WebSocket no SDK; conformidade que espera 60 s sem explicar quando um 204 tem corpo.
-- **Atualização sem parada — falta aplicar na instância do dono:** implementada em 2026-10-10 (borda Caddy,
-  `scripts/hub_update.py`, `/readyz` real, aviso de versão). Testada numa instância separada sob carga (troca,
-  imagem que não sobe, imagem que quebra depois e `--rollback`: 0 pedidos perdidos em ~44 mil). A instância do dono
-  ganha a borda no próximo `up -d` (parada única de ~10 s). Pendências menores: estado em memória por réplica
-  (métricas, `ux.json`, contadores do broker/WebSocket) só diverge durante os segundos da troca.
+- **Atualização sem parada:** em uso na instância do dono desde 13/10/2026 (`hub_update.py --build`, 0 falhas
+  em 194 checagens de `/healthz` durante a troca). Pendência menor: estado em memória por réplica (métricas,
+  `ux.json`, contadores do broker/WebSocket) só diverge durante os segundos da troca.
 - **Repositório público:** cópia achatada publicada em 2026-10-10 (opção A de `docs/PUBLICACAO.md`); este
   repositório segue privado com o histórico completo.
 - `hub check` roda só um subconjunto da conformidade; a completa é `platform-py/scripts/conformance.sh` — F22.

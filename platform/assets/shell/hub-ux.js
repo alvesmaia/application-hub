@@ -570,8 +570,7 @@
     document.body.append(box);
     tour = { steps, i: Math.min(at || 0, steps.length - 1), box };
     box.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') { e.preventDefault(); endTour(`step:${tour.i}`); }
-      else if (e.key === 'ArrowRight') { e.preventDefault(); stepTo(tour.i + 1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); stepTo(tour.i + 1); }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); stepTo(tour.i - 1); }
       else if (e.key === 'Tab') {
         const f = [...box.querySelectorAll('button')];
@@ -586,6 +585,7 @@
       if (b.dataset.tour === 'next') stepTo(tour.i + 1);
       else if (b.dataset.tour === 'back') stepTo(tour.i - 1);
       else if (b.dataset.tour === 'skip') endTour('skipped');
+      else if (b.dataset.tour === 'close') endTour(`step:${tour.i}`);
     });
     feature('tour_start');
     stepTo(tour.i);
@@ -602,7 +602,7 @@
     if (target) target.classList.add('hub-tour-target');
     const [tt, tb] = TOUR[k];
     const last = i === tour.steps.length - 1;
-    tour.box.innerHTML = `<p class="hub-tour-step">${esc(t('js.tour_step', { n: i + 1, t: tour.steps.length }))}</p>
+    tour.box.innerHTML = `<button type="button" class="hub-cf-close hub-tour-close" data-tour="close" aria-label="${esc(t('js.cf_close', 'Fechar'))}">×</button><p class="hub-tour-step">${esc(t('js.tour_step', { n: i + 1, t: tour.steps.length }))}</p>
       <h2 id="hub-tour-title">${esc(t(tt))}</h2><p id="hub-tour-body">${esc(t(tb))}</p>
       <div class="hub-tour-actions"><button type="button" class="secondary-button" data-tour="skip">${esc(t('js.tour_skip'))}</button>
       <span></span>${i > 0 ? `<button type="button" class="secondary-button" data-tour="back">${esc(t('js.tour_back'))}</button>` : ''}
@@ -627,6 +627,10 @@
     if (opener && opener.focus) opener.focus();
   }
 
+  // Esc fecha o tour com o foco em qualquer lugar (o diálogo não é modal).
+  document.addEventListener('keydown', (e) => {
+    if (tour && e.key === 'Escape') endTour(`step:${tour.i}`);
+  });
   document.addEventListener('click', (e) => {
     const b = e.target.closest('[data-hub-tour-start]');
     if (b) { e.preventDefault(); menus.forEach((d) => { d.open = false; }); startTour(0); }

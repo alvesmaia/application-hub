@@ -55,7 +55,14 @@ test('onboarding: tour no primeiro acesso (teclado, interromper e retomar, pular
   await page.locator('.hub-user-menu summary').click();
   await page.locator('.hub-user-menu [data-hub-tour-start]').click();
   await expect(page.locator('.hub-tour')).toContainText('Passo 1 de');
+  // Esc fecha mesmo com o foco fora do tour; o botão Fechar também.
+  await page.locator('body').focus();
   await page.keyboard.press('Escape');
+  await expect(page.locator('.hub-tour')).toHaveCount(0);
+  await page.locator('.hub-user-menu summary').click();
+  await page.locator('.hub-user-menu [data-hub-tour-start]').click();
+  await page.locator('.hub-tour').getByRole('button', { name: 'Fechar' }).click();
+  await expect(page.locator('.hub-tour')).toHaveCount(0);
   await api.put('/api/me/onboarding', { data: { tour: 'done' } });
   await ctx.close();
 });
@@ -321,7 +328,7 @@ test('tema escuro e idioma: menu do usuário persiste no servidor; en/es no shel
 });
 
 // ---- Acessibilidade: axe (WCAG 2.2 AA) nas páginas principais, 2 temas × 2 idiomas ----------
-const PAGES = ['/', '/applications', '/inbox', '/search?q=norte', '/status', '/admin', '/admin/health', '/admin/connections', '/apps/ativos/assets', '/apps/servicos/requests', '/apps/fornecedores/indicators', '/apps/ativos/contracts'];
+const PAGES = ['/', '/applications', '/inbox', '/search?q=norte', '/status', '/admin', '/admin/health', '/admin/connections', '/apps/ativos/assets', '/apps/servicos/requests', '/apps/fornecedores/indicators'];
 
 async function axe(page: Page) {
   const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();

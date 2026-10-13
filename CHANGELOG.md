@@ -40,6 +40,11 @@ Versões 0.x = pré-1.0: a API pode mudar entre versões menores.
   parada de ~10 s. Proxies próprios na frente continuam iguais (o destino é a mesma porta).
 
 ### Corrigido
+- `hub_update.py`: no Docker com containerd, o `--build` falhava no backup porque a imagem em execução perdia a
+  referência ao ganhar `latest` nova; agora ela recebe a tag `<proj>-web:pre-update` antes (backup, rollback e volta
+  usam a tag). O backup do volume de dados não reprova mais quando um arquivo muda durante a cópia.
+- Tour guiado do Início: Esc fecha com o foco em qualquer lugar da tela (antes só dentro do tour) e há botão
+  Fechar (×); os dois guardam o passo para retomar depois.
 - MCP 2026-07-28: listas trazem `ttlMs` e `cacheScope` (o Claude Code recusava o `tools/list`); o SDK não perde
   mais os tipos de esquemas fundos ao montar ferramentas a partir do OpenAPI do app.
 - Instalar sem os apps de exemplo (`HUB_APPS_JSON=./apps.empty.json`) derrubava o hub no boot
