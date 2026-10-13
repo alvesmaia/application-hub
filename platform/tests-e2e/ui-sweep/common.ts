@@ -45,7 +45,7 @@ export function patternOf(p: string): string {
 }
 
 /** Telas de credencial/consentimento: fora do shell por desenho. */
-export const CREDENTIAL_PAGES = [/^\/login/, /^\/account\/password/, /^\/account\/agent-approval/, /^\/oauth\/authorize/, /^\/account\/staging\/confirm/, /step-up|reauth|consent/];
+export const CREDENTIAL_PAGES = [/^\/login/, /^\/account\/password/, /^\/oauth\/authorize/, /^\/account\/staging\/confirm/, /step-up|reauth|consent/];
 
 // light = padrão do hub (sem forçar nada); os-dark = padrão do hub com o SO escuro (deve
 // continuar claro); dark = escolha explícita; auto = "Automático (sistema)" com o SO escuro.

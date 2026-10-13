@@ -295,7 +295,7 @@ CSP de uma página de app (`/{id}`, `/{id}/{seção}`):
 | `script-src` | `https://hub/assets/` (+ `'sha384-…'` e a URL exata de cada script **aprovado**, §13.1) | só os scripts do hub (servidos pelo binário do hub); nada de `/_frag/{id}/assets/`, `'unsafe-inline'`, `'unsafe-eval'` nem origens de app |
 | `require-trusted-types-for` | `'script'` | toda inserção de HTML/URL de script passa pelas políticas do `hub-safe.js` |
 | `trusted-types` | `hub-parse hub-svg hub-script default` | só as políticas do hub existem |
-| `form-action` | `/{id}`, `/{id}/…` + os formulários do header (`/logout`, `/account/prefs`, `/account/notifications/read`) | um formulário do app **nunca** envia para `/login`, `/account/password`, `/account/agent-approval/*`, `/oauth/*` |
+| `form-action` | `/{id}`, `/{id}/…` + os formulários do header (`/logout`, `/account/prefs`, `/account/notifications/read`) | um formulário do app **nunca** envia para `/login`, `/account/password`, `/oauth/*` |
 | `connect-src` | `/_frag/{id}` e abaixo + `ws(s)://<hub>/apps/{id}/ws/` (§25) | o `fetch`/`EventSource` do shell só alcança o gateway do próprio app; o WebSocket, só a rota `ws` dele |
 | `object-src` / `base-uri` / `frame-ancestors` | `'none'` | sem plugins, sem `<base>`, sem moldura |
 
@@ -746,30 +746,17 @@ Todo app expõe uma **API JSON versionada** além das telas. Manifesto (padrões
 - **Modelo de ameaça**: (1) navegador/cliente externo → MCP do app: impossível (rede interna
   + `/_hub` bloqueado no gateway + token interno); (2) usuário sem acesso ao app → ferramentas
   do app: filtradas pelo hub (allowlist da função + escopo do token); (3) cliente de IA
-  enganado por conteúdo (prompt injection) → ação que altera algo: no padrão
-  `approve_in_hub` só roda depois de o **dono aprovar na página dedicada**
-  `/account/agent-approval/{id}` **reautenticando-se** (senha da conta, ou login novo no
-  SSO com `prompt=login`/`max_age=0` e `auth_time` conferido). A página mostra os
-  argumentos **completos** (pedidos com argumentos acima de 16 KiB nem são criados), rotula
-  cliente/descrição/argumentos como não confiáveis, não tem JavaScript (`script-src 'none'`)
-  e não pode ser emoldurada. Só depois da reautenticação o hub emite um token de step-up
-  (uso único, 120 s, 128 bits do gerador do sistema, amarrado a usuário + pedido + hash dos
-  argumentos), exigido por `POST /api/me/inbox/{id}/decide` para **aprovar** item de
-  agente: nem o token do cliente de IA nem a **sessão sozinha** aprovam (um `fetch` de
-  mesma origem recebe 403). Pedidos vencidos — e, na partida do hub, todos os pendentes (a
-  aprovação em memória não sobrevive a um reinício) — ficam **"expirado"** na Inbox. Com
-  `confirm` a proteção depende da UI de aprovação do cliente de IA; com `deny` nem
-  aparece; conteúdo do app rotulado como não confiável; tudo auditado; (4) app malicioso →
+  enganado por conteúdo (prompt injection) → ação que altera algo: no padrão `confirm` a
+  1ª chamada só devolve um `confirm_token` (uso único, 5 min, amarrado a usuário +
+  ferramenta + hash dos argumentos) e a ação roda na 2ª chamada com ele. A proteção depende
+  da confirmação do cliente de IA (o Claude Code, por exemplo, pergunta antes de cada
+  ferramenta): o próprio modelo consegue reenviar o token. Com `deny` essas ferramentas nem
+  aparecem; conteúdo do app rotulado como não confiável; tudo auditado; (4) app malicioso →
   o hub valida nomes de ferramentas, classifica pelo documento do pacote e só aceita
   respostas limitadas em tamanho e tempo; o app nunca recebe o token do usuário (só a
-  identidade assinada, válida 15 min e só para ele). **Risco residual (mesma origem)**: o
-  JavaScript dos apps roda na origem do hub. Ele não consegue aprovar sem a senha, mas pode
-  **imitar** a tela e tentar capturar a senha do usuário (phishing na própria origem), e um
-  agente que dirige o navegador do dono pode preencher a senha se a tiver. Para instalações
-  de alta segurança: SSO com MFA resistente a phishing (WebAuthn/passkey) no IdP — a
-  reautenticação passa a exigir o autenticador físico —, `destructive_actions = "deny"`
-  onde não houver revisão humana, e, no futuro, servir os apps numa **origem separada** do
-  hub (registrado em PENDENCIAS).
+  identidade assinada, válida 15 min e só para ele). Aprovação humana no próprio hub
+  (pedido na Inbox) é ideia futura em PENDENCIAS; onde não houver revisão humana no
+  cliente, use `destructive_actions = "deny"`.
 - SDK: `hub_sdk.mcp.router` (instalado por `HubSdk.install`, usa o documento de
   `install_api`).
 

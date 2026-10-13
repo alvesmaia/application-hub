@@ -290,10 +290,9 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
     ) -> Response:
         resp = await call_next(request)
         path = request.url.path
-        if (
-            path in ("/login", "/account/password", "/oauth/authorize")
-            or path.startswith("/account/agent-approval/")
-        ) and resp.headers.get("content-type", "").startswith("text/html"):
+        if path in ("/login", "/account/password", "/oauth/authorize") and resp.headers.get(
+            "content-type", ""
+        ).startswith("text/html"):
             # Telas de credencial abrem em grupo de navegação próprio: `window.open` de um script de app
             # recebe uma janela sem acesso ao DOM (não lê os campos).
             resp.headers["cross-origin-opener-policy"] = "noopener-allow-popups"

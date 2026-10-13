@@ -33,7 +33,6 @@ class IdsIn(BaseModel):
 class DecideIn(BaseModel):
     decision: str
     comment: str = ""
-    step_up: str = ""
 
 
 class AccessIn(BaseModel):
@@ -269,21 +268,7 @@ def mount_inbox(
         )
 
     async def decide(request: Request, who: Who, item_id: int, b: DecideIn) -> str:
-        it = inbox.item(item_id)
         comment = "".join(c for c in b.comment if c.isprintable())[:500]
-        if b.decision == "approve" and it and it["kind"] == "agent":
-            h = (it["agent"] or {}).get("args_hash", "")
-            if not b.step_up or not h or not inbox.stepup_consume(b.step_up, who.id, item_id, h):
-                await audit(
-                    request,
-                    "Aprovação de ação do agente recusada",
-                    f"pedido i:{item_id} · reautenticação ausente",
-                )
-                raise InboxError(
-                    403,
-                    "Aprovar uma ação do agente exige confirmar sua identidade de novo: "
-                    f"abra /account/agent-approval/{item_id}.",
-                )
         target = inbox.items.get(item_id)
         entry = request.app.state.gateway.registry.get(target["app"]) if target else None
         it = inbox.begin(who, item_id, b.decision, comment, entry.name if entry else "")

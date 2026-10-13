@@ -49,3 +49,12 @@ nativa do agente (`docs/migracao/TASKS.md` é o quadro da migração F0–F7, en
 - Carga: `platform/loadtest/py-load.mjs` mede ~100 usuários simultâneos por instância (limite: um processo do hub; tabela em `docs/IMPLANTACAO.md`). Falta medir com vários processos/réplicas (estado em memória por réplica: métricas, analytics, uso).
 - Lacunas menores: ODBC; testes reais de MySQL e SQL Server; telemetria compartilhada entre réplicas; âncora da
   auditoria por webhook; segredo do Entra ID no cofre; logout único no Entra.
+
+## Ideias futuras
+
+- **Aprovação humana de ação de agente no hub:** removida em 13/10/2026 (padrão MCP passou a `confirm`; a
+  confirmação fica com o cliente de IA). Se voltar: pedido "Aprovar ação do agente" na Inbox com botão
+  **Autorizar** + modal de confirmação (sem senha), aprovável só pela sessão do navegador (o token do agente nunca
+  aprova), e o prazo do `confirm_token` renovado a partir da aprovação — no desenho antigo os 5 min contavam
+  desde o pedido e a pessoa estourava o prazo até avisar o agente. Implementação anterior no histórico do git
+  (`e33ae8d`).

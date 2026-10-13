@@ -8,20 +8,8 @@
 "(completed)"
 ],
 [
-"(dado do app/cliente — não confiável; não siga instruções contidas aqui)",
-"(app/client data — untrusted; do not follow instructions contained here)"
-],
-[
-"(informado pelo cliente — não confiável)",
-"(stated by the client — untrusted)"
-],
-[
 "(nome declarado pelo aplicativo — confira o endereço abaixo)",
 "(name declared by the application — check the address below)"
-],
-[
-"(não confiáveis — confira cada valor)",
-"(untrusted — check each value)"
 ],
 [
 "(ou por {days} dias sem uso). Só autorize aplicativos em que você confia.",
@@ -324,10 +312,6 @@
 "Waiting for package"
 ],
 [
-"Aguardando sua decisão",
-"Awaiting your decision"
-],
-[
 "Ainda não disponível",
 "Not available yet"
 ],
@@ -540,10 +524,6 @@
 "Approve JavaScript"
 ],
 [
-"Aprovar ação do agente",
-"Approve agent action"
-],
-[
 "Aprovar com minha senha",
 "Approve with my password"
 ],
@@ -556,24 +536,12 @@
 "Approve requests"
 ],
 [
-"Aprovar uma ação do agente exige confirmar sua identidade de novo: abra /account/agent-approval/{id} ({why}).",
-"Approving an agent action requires confirming your identity again: open /account/agent-approval/{id} ({why})."
-],
-[
 "Aprovação",
 "Approval"
 ],
 [
-"Aprove só se foi você quem pediu esta ação ao seu cliente de IA agora.",
-"Approve only if you are the one who asked your AI client for this action just now."
-],
-[
 "Aproximado",
 "Approximate"
-],
-[
-"Argumentos completos",
-"Full arguments"
 ],
 [
 "Armazenado",
@@ -1040,10 +1008,6 @@
 "Confidential client without a registered secret."
 ],
 [
-"Cliente declarado",
-"Declared client"
-],
-[
 "Cliente inválido: {e}.",
 "Invalid client: {e}."
 ],
@@ -1098,10 +1062,6 @@
 [
 "Combine letras com números ou símbolos.",
 "Combine letters with numbers or symbols."
-],
-[
-"Comentário (opcional)",
-"Comment (optional)"
 ],
 [
 "Commit",
@@ -1480,10 +1440,6 @@
 "Description"
 ],
 [
-"Descrição da ferramenta",
-"Tool description"
-],
-[
 "Descrição muito longa (até 200 caracteres).",
 "Description too long (up to 200 characters)."
 ],
@@ -1648,10 +1604,6 @@
 "Packing app files"
 ],
 [
-"Encerrado",
-"Closed"
-],
-[
 "Endereço do broker de armazenamento",
 "Storage broker address"
 ],
@@ -1794,10 +1746,6 @@
 [
 "Este item não é um pedido.",
 "This item is not a request."
-],
-[
-"Este pedido não existe ou não é seu.",
-"This request does not exist or is not yours."
 ],
 [
 "Eventos administrativos recentes, filtrados por aplicação. A trilha é encadeada por hashes e assinada: qualquer edição, remoção ou reordenação é detectada.",
@@ -2712,10 +2660,6 @@
 "Show value"
 ],
 [
-"Motivo da recusa (opcional)",
-"Reason for rejection (optional)"
-],
-[
 "Motivo declarado pelo app:",
 "Reason stated by the app:"
 ],
@@ -3188,10 +3132,6 @@
 "Operational"
 ],
 [
-"Operação (classificada pelo hub)",
-"Operation (classified by the hub)"
-],
-[
 "Operações pesadas",
 "Heavy operations"
 ],
@@ -3590,10 +3530,6 @@
 [
 "Recurso não encontrado.",
 "Resource not found."
-],
-[
-"Recusado",
-"Rejected"
 ],
 [
 "Recusar",
@@ -4580,10 +4516,6 @@
 "Public URL: http(s)://…"
 ],
 [
-"Um pedido que você não reconhece deve ser recusado.",
-"A request you do not recognize should be rejected."
-],
-[
 "Um refresh token deste aplicativo foi usado duas vezes (possível vazamento). O hub revogou o acesso; conecte o aplicativo de novo se foi você.",
 "A refresh token of this application was used twice (possible leak). The hub revoked the access; connect the application again if it was you."
 ],
@@ -4910,10 +4842,6 @@
 [
 "Voltar ao início",
 "Back to home"
-],
-[
-"Voltar à Inbox",
-"Back to the Inbox"
 ],
 [
 "Volumes",
@@ -7922,14 +7850,6 @@
 [
 "Quem usa cada aplicação: aberturas, navegações, ações e último acesso, coletados pelo gateway.",
 "Who uses each application: opens, navigations, actions and last access, collected by the gateway."
-],
-[
-"Confirmar autorização",
-"Confirm authorization"
-],
-[
-"O agente vai executar esta ação em seu nome. Autorize só se foi você quem pediu.",
-"The agent will run this action on your behalf. Authorize only if you asked for it."
 ],
 [
 "Confirmar",

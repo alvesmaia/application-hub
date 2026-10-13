@@ -67,20 +67,6 @@
       "reason": "Mesmo caso: app 'contratos' removido; o link vem de itens de teste na Inbox e abre uma resposta 404."
     },
     {
-      "check": "http-status",
-      "route": "^/account/agent-approval/\\d+$",
-      "role": "^(operador|leitor)$",
-      "message": "HTTP 404",
-      "reason": "Esperado: a aprovação de agente só existe para o dono do pedido; para outro usuário o hub responde 404 de propósito (não revela que o item existe). A varredura apenas reaproveita o link visto pelo admin."
-    },
-    {
-      "check": "console",
-      "route": "^/account/agent-approval/\\d+$",
-      "role": "^(operador|leitor)$",
-      "message": "status of 404",
-      "reason": "Mesmo caso: o 404 intencional da aprovação de agente para quem não é o dono."
-    },
-    {
       "check": "console",
       "route": "^/apps/servicos(/|$)",
       "message": "e2e-tampered|integrity",

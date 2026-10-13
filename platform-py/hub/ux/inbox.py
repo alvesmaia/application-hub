@@ -1,4 +1,4 @@
-"""Inbox: notificações e pedidos de aprovação dos apps, pedidos de acesso e ações de agente.
+"""Inbox: notificações e pedidos de aprovação dos apps e pedidos de acesso.
 
 Estado em `inbox.json` (escrita atômica). Cada pessoa vê só o que a alcança (`targets`); a leitura e o
 arquivamento são por usuário. Mudanças acordam quem escuta o SSE (`/api/me/stream`)."""
@@ -8,7 +8,6 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-import secrets
 import time
 from collections.abc import Callable
 from contextlib import suppress
@@ -23,7 +22,6 @@ from hub.ux.texts import ago
 MAX_ITEMS = 5000
 ACCESS_PENDING_MAX = 5
 ACCESS_COOLDOWN_MS = 24 * 3600 * 1000
-STEPUP_TTL_MS = 120_000
 OPEN = ("pending", "sending", "error")
 
 
@@ -69,8 +67,6 @@ def targets(item: dict[str, Any], who: Who) -> bool:
     match item["kind"]:
         case "access":
             return bool(hit or (item["by_id"] and item["by_id"] == who.id))
-        case "agent":
-            return bool(user_hit)
         case _:
             return bool(hit and who.can_app(item["app"]))
 
@@ -82,8 +78,6 @@ def can_decide(item: dict[str, Any], who: Who) -> bool:
             return bool(not_self and "aprovar_solicitacoes" in who.perms and targets(item, who))
         case "access":
             return bool(not_self and "gerenciar_usuarios" in who.perms and who.can_app(item["app"]))
-        case "agent":
-            return bool(who.session and targets(item, who))
     return False
 
 
@@ -104,7 +98,6 @@ def item_of(kind: str, app: str, title: str, **kw: Any) -> dict[str, Any]:
         "to_roles": [],
         "to_perm": "",
         "approval": None,
-        "agent": None,
     }
     return base | kw
 
@@ -141,7 +134,6 @@ class InboxStore:
         self.next_id = 1
         self.watchers: set[asyncio.Queue[None]] = set()
         self.streams: dict[str, int] = {}
-        self._stepup: dict[str, dict[str, Any]] = {}
         self._mtime = 0
         self._load()
 
@@ -149,7 +141,8 @@ class InboxStore:
         with suppress(OSError, ValueError, KeyError):
             self._mtime = self.path.stat().st_mtime_ns
             raw = json.loads(self.path.read_text(encoding="utf-8"))
-            self.items = {int(i["id"]): i for i in raw["items"]}
+            # pedidos de ação de agente (aprovação na Inbox, removida) não são mais exibidos
+            self.items = {int(i["id"]): i for i in raw["items"] if i.get("kind") != "agent"}
             self.states, self.grants, self.next_id = raw["states"], raw["grants"], raw["next_id"]
 
     def reload_if_changed(self) -> bool:
@@ -198,8 +191,6 @@ class InboxStore:
                 if i["source"] == item["source"]:
                     return int(i["id"])
         item = item | {"id": self.next_id}
-        if item.get("kind") == "agent":  # pedido de ação de agente: a tela de aprovação (com reautenticação)
-            item["link"] = f"/account/agent-approval/{item['id']}"
         self.next_id += 1
         self.items[item["id"]] = item
         if len(self.items) > MAX_ITEMS:  # saem os informativos mais antigos; pedidos abertos ficam
@@ -221,8 +212,6 @@ class InboxStore:
                 continue
             st = self.states.get(who.id, {}).get(str(it["id"]), 0)
             ap = it["approval"]
-            if ap and it["agent"] and ap["status"] == "pending" and it["agent"]["expires_at"] <= now:
-                ap = ap | {"status": "expired"}
             decide = bool(ap) and ap["status"] in ("pending", "error") and can_decide(it, who)
             out.append(
                 {
@@ -325,7 +314,7 @@ class InboxStore:
     def begin(
         self, who: Who, item_id: int, decision: str, comment: str, app_name: str = ""
     ) -> dict[str, Any]:
-        """Valida e decide: acesso e agente na hora; pedido de app reserva (`sending`) até o app confirmar."""
+        """Valida e decide: acesso na hora; pedido de app reserva (`sending`) até o app confirmar."""
         it = self.items.get(item_id)
         if not it or not it["approval"] or not targets(it, who):
             raise InboxError(404, "Pedido não encontrado.")
@@ -334,9 +323,6 @@ class InboxStore:
         if not can_decide(it, who):
             raise InboxError(403, "Você não pode decidir este pedido.")
         ap = it["approval"]
-        if it["agent"] and ap["status"] == "pending" and it["agent"]["expires_at"] <= now_ms():
-            ap["status"] = "expired"
-            self._save()
         if ap["status"] not in ("pending", "error"):
             raise InboxError(409, "Este pedido já foi decidido ou expirou.")
         final = "approved" if decision == "approve" else "rejected"
@@ -372,20 +358,3 @@ class InboxStore:
         ap = self.items[item_id]["approval"]
         ap["status"], ap["error"] = status or "error", error
         self._save()
-
-    # step-up: aprovar ação de agente exige confirmar a senha de novo (token de uso único)
-    def stepup_issue(self, user: str, item_id: int, args_hash: str) -> str:
-        tok, now = f"stp_{secrets.token_hex(16)}", now_ms()
-        self._stepup = {k: v for k, v in self._stepup.items() if v["expires"] > now}
-        self._stepup[tok] = {"user": user, "item": item_id, "hash": args_hash, "expires": now + STEPUP_TTL_MS}
-        return tok
-
-    def stepup_consume(self, tok: str, user: str, item_id: int, args_hash: str) -> bool:
-        g = self._stepup.pop(tok, None)
-        return bool(
-            g
-            and g["user"] == user
-            and g["item"] == item_id
-            and g["hash"] == args_hash
-            and g["expires"] > now_ms()
-        )

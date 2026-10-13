@@ -27,7 +27,7 @@ class McpCfg:
     enabled: bool = True
     transports: list[str] = field(default_factory=lambda: ["http", "stdio"])
     path: str = "/mcp"
-    destructive_actions: str = "approve_in_hub"
+    destructive_actions: str = "confirm"
     expose_app_tools: bool = True
     public_network: bool = False
     calls_per_min: int = 120
@@ -129,8 +129,8 @@ def load_cfg(toml: Mapping[str, Any] | None = None, env: Mapping[str, str] | Non
         and all(ch.islower() or ch.isdigit() or ch == "-" for ch in rest)
     ):
         raise ValueError(f'[mcp].path = {p!r}: use "/mcp" ou "/mcp/<nome>"')
-    if m.destructive_actions not in ("approve_in_hub", "confirm", "deny"):
-        raise ValueError("destructive_actions: approve_in_hub, confirm ou deny")
+    if m.destructive_actions not in ("confirm", "deny"):
+        raise ValueError("destructive_actions: confirm ou deny")
     if any(t not in ("http", "stdio") for t in m.transports) or (
         "stdio" in m.transports and "http" not in m.transports
     ):

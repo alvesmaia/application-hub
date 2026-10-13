@@ -91,42 +91,14 @@ test('cliente MCP: ferramentas do hub e dos apps, confirmação de ação destru
   const list = (await rpc('tools/call', { name: 'ativos.assets_list', arguments: {} })).result;
   expect(list.isError).toBe(false);
   expect(list.structuredContent.total).toBeGreaterThan(0);
-  // Mutação de app sem dica (POST no OpenAPI do pacote) também exige aprovação (I3).
+  // Mutação de app sem dica (POST no OpenAPI do pacote) também exige confirmação (I3).
   const appTools = tools.filter((t) => t.name.includes('.'));
   expect(appTools.some((t) => t.annotations.destructiveHint && !t.name.endsWith('_delete')), JSON.stringify(appTools.map((t) => t.name))).toBe(true);
-  // Destrutiva (padrão approve_in_hub): a 1ª chamada cria o pedido na Inbox do dono do token.
+  // Destrutiva (padrão confirm): a 1ª chamada só devolve o confirm_token; a 2ª, com ele, executa.
   const args = { id: `9${RUN}`.replace(/\D/g, '').slice(0, 9) || '999999' };
   const first = (await rpc('tools/call', { name: 'deployments_rollback', arguments: args })).result;
-  expect(first.structuredContent.approval_required, JSON.stringify(first)).toBe(true);
+  expect(first.structuredContent.confirmation_required, JSON.stringify(first)).toBe(true);
   const cft = first.structuredContent.confirm_token;
-  // Sem a aprovação humana, o token não executa.
-  const pending = (await rpc('tools/call', { name: 'deployments_rollback', arguments: { ...args, confirm_token: cft } })).result;
-  expect(pending.isError).toBe(true);
-  expect(pending.content[0].text).toContain('approval_pending');
-  // A pessoa abre o pedido pela Inbox; aprovar exige a página dedicada com reautenticação
-  // (N1/N2): a sessão sozinha (fetch de mesma origem) não aprova.
-  await page.goto('/inbox?filter=approvals');
-  const approvalId = String(first.structuredContent.approval_id);
-  const item = page.locator(`.hub-inbox-item[data-kind="agent"][data-item="${approvalId}"]`);
-  await expect(item).toBeVisible();
-  await expect(item).toContainText('deployments_rollback');
-  await expect(item).toContainText('e2e 1');
-  await expect(item.locator('button[data-decide="approve"]')).toHaveCount(0);
-  const sameOrigin = await page.evaluate(async (id) => {
-    const r = await fetch(`/api/me/inbox/${encodeURIComponent(id)}/decide`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ decision: 'approve' }) });
-    return r.status;
-  }, approvalId);
-  expect(sameOrigin).toBe(403);
-  await item.locator('a[data-agent-review]').click();
-  await expect(page).toHaveURL(new RegExp(`/account/agent-approval/${approvalId.replace(/^i:/, '')}$`));
-  await expect(page.locator('[data-args]')).toContainText(`"id": "${args.id}"`);
-  await expect(page.locator('main')).toContainText('não confiável');
-  await page.locator('input[name="password"]').fill('senha-errada-123');
-  await page.locator('button[data-approve]').click();
-  await expect(page.locator('[role="alert"]')).toBeVisible();
-  await page.locator('input[name="password"]').fill(USERS.admin.password);
-  await page.locator('button[data-approve]').click();
-  await expect(page.locator('dd[data-status]')).toHaveAttribute('data-status', 'approved');
   const second = (await rpc('tools/call', { name: 'deployments_rollback', arguments: { ...args, confirm_token: cft } })).result;
   expect(second.isError).toBe(true); // executou (e a implantação não existe)
   expect(second.content[0].text).toContain('404');

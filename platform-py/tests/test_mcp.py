@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, cast
 
 import pytest
-from api_helper import HDR, add_user, api_hub, bearer, make_token, rpc
+from api_helper import add_user, api_hub, bearer, make_token, rpc
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from fastapi.testclient import TestClient
@@ -253,68 +253,40 @@ def test_app_scoped_token_is_resolved_before_any_approval(hub: TestClient) -> No
 # ---- destrutivas ------------------------------------------------------------------------------------
 
 
-def approve_page(
-    hub: TestClient,
-    item: str,
-    decision: str = "approve",
-) -> int:
-    r = hub.post(f"/account/agent-approval/{item}", data={"decision": decision}, headers=HDR)
-    return int(r.status_code)
-
-
-def test_destructive_needs_approval_in_the_hub(hub: TestClient, agent: TestClient) -> None:
+def test_destructive_needs_confirm_token_by_default(hub: TestClient, agent: TestClient) -> None:
+    """Padrão `confirm`: a 1ª chamada só devolve o token (nada na Inbox); a 2ª, com ele, executa."""
     args = {"app": "ativos", "id": "t1"}
     first = payload(call(agent, "tasks_cancel", args))
-    assert first["approval_required"] is True and first["confirm_token"].startswith("cnf_")
-    item = first["approval_id"]
-    inbox_item = hub.app.state.inbox.item(int(item[2:]))
-    assert inbox_item["kind"] == "agent" and inbox_item["title"] == "Aprovar ação do agente: tasks_cancel"
-    assert inbox_item["agent"]["operation"] == "POST /api/v1/tasks/{app}/{id}/cancel"
-    # antes de aprovar: aguardando (token não é consumido)
-    wait = call(agent, "tasks_cancel", {**args, "confirm_token": first["confirm_token"]})
-    assert wait["isError"] is True and payload(wait)["approval_pending"] is True
-    # outro argumento: recusado
+    assert first["confirmation_required"] is True and first["confirm_token"].startswith("cnf_")
+    assert "approval_id" not in first and hub.app.state.inbox.items == {}
+    # outro argumento: recusado (e o token é consumido)
     changed = call(
         agent, "tasks_cancel", {"app": "ativos", "id": "t2", "confirm_token": first["confirm_token"]}
     )
     assert "argumentos mudaram" in payload(changed)["error"]
-    assert (
-        "inválido ou já usado"
-        in payload(call(agent, "tasks_cancel", {**args, "confirm_token": first["confirm_token"]}))["error"]
-    )
-    # a API (token/sessão) não aprova; só o formulário da página, com sessão no navegador
+    gone = call(agent, "tasks_cancel", {**args, "confirm_token": first["confirm_token"]})
+    assert "inválido ou já usado" in payload(gone)["error"]
+    # mesmo argumento: executa uma vez só
     second = payload(call(agent, "tasks_cancel", args))
-    n = second["approval_id"]
-    assert hub.post(f"/api/v1/inbox/{n}/decide", json={"decision": "approve"}).status_code == 403
-    assert approve_page(hub, n) == 303
     done = call(agent, "tasks_cancel", {**args, "confirm_token": second["confirm_token"]})
-    assert "approval_pending" not in payload(done) and "confirm" not in payload(done).get("error", "")
-    # uso único
-    assert (
-        "inválido ou já usado"
-        in payload(call(agent, "tasks_cancel", {**args, "confirm_token": second["confirm_token"]}))["error"]
-    )
-    # recusado no hub
-    third = payload(call(agent, "tasks_cancel", args))
-    assert approve_page(hub, third["approval_id"], "reject") == 303
-    no = call(agent, "tasks_cancel", {**args, "confirm_token": third["confirm_token"]})
-    assert "recusada no hub" in payload(no)["error"]
+    assert "confirm" not in payload(done).get("error", "")
+    again = call(agent, "tasks_cancel", {**args, "confirm_token": second["confirm_token"]})
+    assert "inválido ou já usado" in payload(again)["error"]
     titles = [e["title"] for e in hub.get("/api/v1/audit?limit=50").json()["items"]]
     assert titles.count("MCP: tasks_cancel") >= 4
 
 
-def test_expired_requests_are_swept(hub: TestClient, agent: TestClient) -> None:
+def test_expired_confirm_tokens_are_swept(hub: TestClient, agent: TestClient) -> None:
     first = payload(call(agent, "tasks_cancel", {"app": "ativos", "id": "t1"}))
-    n = int(first["approval_id"][2:])
-    hub.app.state.inbox.item(n)["agent"]["expires_at"] = 1
     for k, (v, _) in list(hub.app.state.records.mem.items()):
         if k[0] == "mcp.confirm":
             hub.app.state.records.mem[k] = (v | {"expires": 1}, 1)
     import asyncio
 
     asyncio.run(mcpmod.sweep(hub.app))
-    assert hub.app.state.inbox.item(n)["approval"]["status"] == "expired"
-    assert approve_page(hub, f"i:{n}") == 409
+    assert not [k for k in hub.app.state.records.mem if k[0] == "mcp.confirm"]
+    late = call(agent, "tasks_cancel", {"app": "ativos", "id": "t1", "confirm_token": first["confirm_token"]})
+    assert "inválido ou já usado" in payload(late)["error"]
 
 
 def test_confirm_mode_and_deny_mode(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -446,23 +418,17 @@ def test_app_tool_call_acts_as_the_user_and_wraps_the_result(apps_hub: TestClien
     ]
 
 
-def test_app_mutation_needs_approval_and_runs_only_after_it(apps_hub: TestClient) -> None:
+def test_app_mutation_needs_confirmation_and_runs_only_after_it(apps_hub: TestClient) -> None:
     c = bearer(apps_hub, make_token(apps_hub, ["mcp", "api:write"]))
     args = {"nome": "novo"}
     first = payload(call(c, "ativos.items_create", args))
-    assert first["approval_required"] is True
-    item = apps_hub.app.state.inbox.item(int(first["approval_id"][2:]))
-    assert item["agent"]["operation"] == "POST /ativos/api/v1/items" and item["app"] == "ativos"
+    assert first["confirmation_required"] is True
     assert apps_hub.app.state.gateway.client._transport.app.state.calls == []
-    assert approve_page(apps_hub, first["approval_id"]) == 303
     done = call(c, "ativos.items_create", {**args, "confirm_token": first["confirm_token"]})
     assert done["isError"] is False
     sent = apps_hub.app.state.gateway.client._transport.app.state.calls
     assert len(sent) == 1 and sent[0]["params"]["arguments"] == args  # sem confirm_token
-    unknown = payload(call(c, "ativos.sem_documento", {}))
-    assert unknown["approval_required"] is True
-    item = apps_hub.app.state.inbox.item(int(unknown["approval_id"][2:]))
-    assert item["agent"]["operation"].startswith("desconhecida")
+    assert payload(call(c, "ativos.sem_documento", {}))["confirmation_required"] is True
 
 
 def test_app_tools_follow_token_scope_config_and_missing_internal_token(

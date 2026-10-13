@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import html
 import json
 from collections.abc import AsyncGenerator
 from pathlib import Path
@@ -77,10 +76,6 @@ def test_targets_and_decide_rules() -> None:
     assert not can_decide(it | {"by": "boss@x"}, boss)  # ninguém aprova o próprio pedido
     own = item_of("notification", "servicos", "t", by="op@x")  # sem destinatário: só quem causou
     assert targets(own, Who(id="u9", email="OP@x")) and not targets(own, boss)
-    agent = item_of("agent", "platform", "t", to_users=["u1"], approval=approval_of("x"))
-    assert targets(agent, boss) and can_decide(agent, boss)
-    assert not can_decide(agent, Who(id="u1", session=False))  # token de API nunca aprova ação de agente
-    assert not targets(agent, Who(id="u2"))
 
 
 def test_store_push_dedupe_states_and_reload(tmp_path: Path) -> None:
@@ -122,15 +117,6 @@ def test_access_request_rules_and_grant(tmp_path: Path) -> None:
     with pytest.raises(InboxError) as bad:
         store.begin(admin, other, "talvez", "")
     assert bad.value.status == 409 or bad.value.status == 400
-
-
-def test_stepup_is_single_use_and_bound(tmp_path: Path) -> None:
-    store = InboxStore(tmp_path / "inbox.json")
-    tok = store.stepup_issue("u1", 5, "h")
-    assert not store.stepup_consume(tok, "u2", 5, "h")  # outro usuário gasta e perde o token
-    assert not store.stepup_consume(tok, "u1", 5, "h")
-    tok = store.stepup_issue("u1", 5, "h")
-    assert store.stepup_consume(tok, "u1", 5, "h") and not store.stepup_consume(tok, "u1", 5, "h")
 
 
 async def test_sse_delivers_unread_changes(tmp_path: Path) -> None:
@@ -220,53 +206,6 @@ def test_decide_failures(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
     other = approval(mismatch)
     bad = mismatch.post(f"/api/me/inbox/i:{other}/decide", json={"decision": "approve"}, headers=HDR)
     assert bad.status_code == 502 and "diverge" in bad.json()["error"]
-
-
-def test_agent_approval_needs_stepup_page(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    c = make_client(tmp_path, monkeypatch)
-    agent = item_of(
-        "agent",
-        "platform",
-        "Aprovar ação do agente: deployments_rollback",
-        to_users=["u-test"],
-        approval=approval_of("x"),
-        link="/account/agent-approval/1",
-        agent={
-            "tool": "deployments_rollback",
-            "tool_title": "t",
-            "operation": "POST /x",
-            "client": "cli",
-            "args": '{"id": 1}',
-            "args_hash": "abc",
-            "expires_at": 2**62,
-        },
-    )
-    n = c.app.state.inbox.push(agent)  # type: ignore[attr-defined]
-    api = c.post(f"/api/me/inbox/i:{n}/decide", json={"decision": "approve"}, headers=HDR)
-    assert api.status_code == 403 and f"/account/agent-approval/{n}" in api.json()["error"]
-    page = c.get(f"/account/agent-approval/{n}")
-    assert page.status_code == 200 and "script-src 'none'" in page.headers["content-security-policy"]
-    # sem senha: "Autorizar" abre um modal nativo (popover, sem JS) que confirma de novo
-    assert '{"id": 1}' in html.unescape(page.text) and 'type="password"' not in page.text
-    assert (
-        f'popovertarget="agent-confirm-{n}"' in page.text and f'id="agent-confirm-{n}" popover' in page.text
-    )
-    inbox_page = c.get("/inbox?filter=approvals").text
-    assert f'popovertarget="agent-confirm-{n}"' in inbox_page
-    assert f'action="/account/agent-approval/{n}"' in inbox_page
-    # a confirmação do modal volta à Inbox; destino externo é ignorado
-    evil = c.post(
-        f"/account/agent-approval/{n}", data={"decision": "approve", "next": "//evil.example"}, headers=HDR
-    )
-    assert evil.status_code == 303 and evil.headers["location"] == "/inbox?filter=approvals"
-    assert c.get(f"/account/agent-approval/{n}").text.count('data-status="approved"') == 1
-    assert c.get("/account/agent-approval/999").status_code == 404
-    reject = item_of(
-        "agent", "platform", "r", to_users=["u-test"], approval=approval_of("y"), agent=agent["agent"]
-    )
-    m = c.app.state.inbox.push(reject)  # type: ignore[attr-defined]
-    assert c.post(f"/account/agent-approval/{m}", data={"decision": "reject"}, headers=HDR).status_code == 303
-    assert c.get("/api/me/inbox?filter=approvals").json()["items"][0]["approval"]["status"] == "rejected"
 
 
 def test_access_requests_api(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -558,11 +497,13 @@ def test_language_resolution_and_translation(tmp_path: Path, monkeypatch: pytest
     assert state["lang"] == "en"
 
 
-def test_agent_item_links_to_the_approval_page(tmp_path: Path) -> None:
-    """F7a: o item de pedido de agente aponta para /account/agent-approval/<id> (o botão "Revisar" da Inbox)."""
+def test_legacy_agent_items_are_dropped_on_load(tmp_path: Path) -> None:
+    """Pedidos de ação de agente (aprovação na Inbox, removida) gravados antes não voltam a aparecer."""
     store = InboxStore(tmp_path / "inbox.json")
-    i = store.push(item_of("agent", "platform", "t", to_users=["u1"], approval=approval_of("x"), source="s1"))
-    assert store.items[i]["link"] == f"/account/agent-approval/{i}"
+    keep = store.push(item_of("app", "ativos", "fica", to_users=["u1"]))
+    gone = store.push(item_of("agent", "platform", "sai", to_users=["u1"], approval=approval_of("x")))
+    again = InboxStore(tmp_path / "inbox.json")
+    assert keep in again.items and gone not in again.items
 
 
 def test_access_decision_notifies_the_requester(tmp_path: Path) -> None:

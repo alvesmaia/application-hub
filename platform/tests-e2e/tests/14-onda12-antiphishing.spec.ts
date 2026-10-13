@@ -246,7 +246,7 @@ test('(c)+(b) JavaScript próprio: REVISE no pipeline, revisão separada e audit
 });
 
 // ---- (d) telas de credencial de topo (a frase de segurança foi removida) -----------------
-test('(d) consentimento OAuth e aprovação de ação do agente são telas de topo sem script', async ({ page }) => {
+test('(d) consentimento OAuth é tela de topo sem script', async ({ page }) => {
   // Recurso removido: a rota antiga não existe mais e nenhuma tela mostra a faixa.
   const gone = await page.goto('/account/security-phrase');
   expect(gone!.status()).toBe(404);
@@ -262,39 +262,6 @@ test('(d) consentimento OAuth e aprovação de ação do agente são telas de to
   expect(consent!.headers()['content-security-policy']).toContain("frame-ancestors 'none'");
   expect(consent!.headers()['cross-origin-opener-policy']).toBe('noopener-allow-popups');
   await expect(page.locator('[data-hub-phrase], [data-hub-phrase-missing]')).toHaveCount(0);
-
-  // Aprovação de ação do agente (step-up com senha).
-  await page.goto('/admin/tokens');
-  await page.click('[data-token-new]');
-  const m = page.locator('.overlay[data-users-modal] form');
-  await m.locator('input[name="name"]').fill(`Step-up MCP ${RUN}`);
-  for (const a of ['upload', 'status']) await m.locator(`input[name="actions"][value="${a}"]`).uncheck();
-  for (const a of ['mcp', 'api:read', 'api:write']) await m.locator(`input[name="actions"][value="${a}"]`).check();
-  await m.locator('button[type="submit"]').click();
-  await expect(page.locator('[data-token-secret] [data-token-value]')).toHaveText(/^hubt_/);
-  const secret = (await page.locator('[data-token-secret] [data-token-value]').textContent())!.trim();
-  const c = await request.newContext({ baseURL: HUB, extraHTTPHeaders: { authorization: `Bearer ${secret}` } });
-  let session = '';
-  let n = 0;
-  const rpc = async (method: string, params: object = {}) => {
-    const headers: Record<string, string> = { accept: 'application/json, text/event-stream' };
-    if (session) { headers['mcp-session-id'] = session; headers['mcp-protocol-version'] = '2025-06-18'; }
-    const r = await c.post('/mcp', { data: { jsonrpc: '2.0', id: ++n, method, params }, headers });
-    session = r.headers()['mcp-session-id'] || session;
-    return r.json();
-  };
-  await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'e2e-stepup', version: '1' } });
-  const firstRaw = await rpc('tools/call', { name: 'deployments_rollback', arguments: { id: '987654' } });
-  const first = firstRaw.result;
-  expect(first, JSON.stringify(firstRaw)).toBeTruthy();
-  expect(first.structuredContent.approval_required, JSON.stringify(first)).toBe(true);
-  const id = String(first.structuredContent.approval_id).replace(/^i:/, '');
-  const ap = await page.goto(`/account/agent-approval/${id}`);
-  expect(ap!.headers()['content-security-policy']).toContain("script-src 'none'");
-  expect(ap!.headers()['cross-origin-opener-policy']).toBe('noopener-allow-popups');
-  await expect(page.locator('input[name="password"]')).toBeVisible();
-  await expect(page.locator('[data-hub-phrase], [data-hub-phrase-missing]')).toHaveCount(0);
-  await c.dispose();
   await anon.dispose();
 });
 

@@ -1,12 +1,11 @@
-"""Conta: Configurações (`/account/settings`), Tokens pessoais, Apps autorizados, preferências do menu
-e a página de aprovação de ação do agente (credencial: pede a senha de novo, sem JavaScript)."""
+"""Conta: Configurações (`/account/settings`), Tokens pessoais, Apps autorizados e preferências do menu."""
 
 from __future__ import annotations
 
 import time
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta, timezone
-from typing import Any, cast
+from typing import Any
 from urllib.parse import parse_qs
 
 from fastapi import FastAPI, Request
@@ -14,11 +13,9 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
 from hub.auth import OWNED_ACTIONS
-from hub.ux.inbox import InboxError, InboxStore, targets
-from hub.ux.inbox_routes import DecideIn, who_of
 from hub.ux.shell import theme_of
 from hub.ux.store import KINDS
-from hub.ux.texts import LANG_NAMES, ago, t, tn, tr
+from hub.ux.texts import LANG_NAMES, ago, t, tn
 
 _GMT3 = timezone(timedelta(hours=-3))
 _SCOPES = {
@@ -27,10 +24,6 @@ _SCOPES = {
     "mcp": "acct.scope_mcp",
     "app-api": "acct.scope_app_api",
 }
-_AGENT_CSP = (
-    "default-src 'none'; script-src 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self'; "
-    "form-action 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
-)
 
 
 def safe_next(raw: str, default: str = "/") -> str:
@@ -47,7 +40,6 @@ def mount_account(
     page_ctx: Callable[[Request], dict[str, Any]],
     icon: Callable[[str], str],
 ) -> None:
-    inbox = cast(InboxStore, app.state.inbox)
 
     def frame(request: Request, tab: str) -> dict[str, Any]:
         """Contexto comum das três abas: Perfil, Segurança e Acessos."""
@@ -137,99 +129,3 @@ def mount_account(
         if msg:
             return Response(msg, status_code=400)
         return RedirectResponse(safe_next(next), 303)
-
-    # ---- aprovação de ação do agente ----------------------------------------------------------------
-    def agent_page(request: Request, item_id: int, alert: str = "", status: int = 200) -> Response:
-        who = who_of(request)
-        it = inbox.item(item_id)
-        if not who.session:
-            return agent_message(
-                request,
-                403,
-                "Só pela sua sessão",
-                "Ações do agente só são aprovadas pela sessão do navegador do dono do token.",
-            )
-        if not it or it["kind"] != "agent":
-            return agent_message(
-                request, 404, "Pedido não encontrado", "Este pedido não existe ou não é seu."
-            )
-        if not targets(it, who):
-            return agent_message(
-                request, 404, "Pedido não encontrado", "Este pedido não existe ou não é seu."
-            )
-        entry = next(
-            (
-                e
-                for e in inbox.entries(who, "pt-BR", lambda _k: True, lambda a: a)
-                if e["id"] == f"i:{item_id}"
-            ),
-            None,
-        )
-        ap = entry["approval"] if entry else it["approval"]
-        left = max(it["agent"]["expires_at"] - int(time.time() * 1000), 0) // 1000
-        ctx = {
-            "brand": app.title,
-            "lang": request.state.lang,
-            "tr": lambda s: tr(s, request.state.lang),
-            "it": it,
-            "agent": it["agent"],
-            "ap": ap,
-            "pending": ap["status"] == "pending" and bool(entry and entry["approval"]["can_decide"]),
-            "left": left,
-            "alert": alert,
-            "id": item_id,
-        }
-        return agent_response(
-            templates.TemplateResponse(request, "agent_approval.html", ctx, status_code=status)
-        )
-
-    def agent_response(r: Response) -> Response:
-        r.headers.update(
-            {
-                "content-security-policy": _AGENT_CSP,
-                "x-frame-options": "DENY",
-                "referrer-policy": "no-referrer",
-                "cache-control": "no-store",
-            }
-        )
-        return r
-
-    def agent_message(request: Request, status: int, title: str, msg: str) -> Response:
-        ctx = {
-            "brand": app.title,
-            "lang": request.state.lang,
-            "tr": lambda s: tr(s, request.state.lang),
-            "title": title,
-            "msg": msg,
-        }
-        return agent_response(
-            templates.TemplateResponse(request, "agent_message.html", ctx, status_code=status)
-        )
-
-    @app.get("/account/agent-approval/{item}", response_class=HTMLResponse)
-    async def agent_show(request: Request, item: str) -> Response:
-        n = item.removeprefix("i:")
-        return agent_page(request, int(n) if n.isdigit() else -1)
-
-    @app.post("/account/agent-approval/{item}")
-    async def agent_decide(request: Request, item: str) -> Response:
-        n = int(item.removeprefix("i:")) if item.removeprefix("i:").isdigit() else -1
-        who, it = who_of(request), inbox.item(n)
-        if not who.session or not it or it["kind"] != "agent":
-            return agent_page(request, n)
-        form = {k: v[0] for k, v in parse_qs((await request.body()).decode("utf-8", "replace")).items()}
-        decision, comment = form.get("decision", ""), form.get("comment", "")
-        step_up = ""
-        if decision == "approve":
-            # confirmação dupla na tela (botão + modal), só por este formulário com a sessão do navegador:
-            # a API (token do agente) continua sem poder aprovar
-            step_up = inbox.stepup_issue(who.id, n, it["agent"]["args_hash"])
-        elif decision != "reject":
-            return agent_page(request, n, "Decisão inválida.", 400)
-        try:
-            await app.state.inbox_decide(
-                request, who, n, DecideIn(decision=decision, comment=comment, step_up=step_up)
-            )
-        except InboxError as e:
-            return agent_page(request, n, e.message, e.status)
-        return RedirectResponse(safe_next(form.get("next", ""), "/inbox?filter=approvals"), 303)

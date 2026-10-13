@@ -13,6 +13,10 @@ Versões 0.x = pré-1.0: a API pode mudar entre versões menores.
 - Vestígios da stack anterior: ferramenta de paridade (`platform-py/parity`), cópias dos apps antigos em
   `platform/demo-apps` (fica só `assets/demo.css` e o jsdom dos testes JS), exemplos de SDK que não é Python no
   Contrato e nos guias; E2E e `hub pack` dos testes passam a usar a pilha `app-hub` e a CLI Python. Só Python.
+- Aprovação de ação de agente na Inbox (`destructive_actions = "approve_in_hub"`, página
+  `/account/agent-approval/{id}`): o padrão passa a `confirm` — a 1ª chamada MCP destrutiva devolve um
+  `confirm_token` e a 2ª executa; quem confirma com a pessoa é o cliente de IA. `approve_in_hub` em configuração
+  agora é recusado na partida (use `confirm` ou `deny`). Pedidos de agente antigos somem da Inbox.
 
 ### Adicionado
 - Uso por usuário (Configurações › Uso por usuário, `/admin/usage`): aberturas, navegações, ações, dias ativos e
@@ -36,6 +40,8 @@ Versões 0.x = pré-1.0: a API pode mudar entre versões menores.
   parada de ~10 s. Proxies próprios na frente continuam iguais (o destino é a mesma porta).
 
 ### Corrigido
+- MCP 2026-07-28: listas trazem `ttlMs` e `cacheScope` (o Claude Code recusava o `tools/list`); o SDK não perde
+  mais os tipos de esquemas fundos ao montar ferramentas a partir do OpenAPI do app.
 - Instalar sem os apps de exemplo (`HUB_APPS_JSON=./apps.empty.json`) derrubava o hub no boot
   (`Aplicação desconhecida: ativos`): a carga inicial de variáveis descarta vínculo de app fora do catálogo.
 - `hub deploy`: a recusa do hub volta com o motivo (a razão vem no campo `error`) — antes um pacote grande dizia só
