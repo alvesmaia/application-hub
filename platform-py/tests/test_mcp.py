@@ -139,6 +139,11 @@ def test_modern_era_headers_discover_and_errors(agent: TestClient) -> None:
     assert d["resultType"] == "complete" and "2026-07-28" in d["supportedVersions"]
     t = result(rpc(agent, "tools/list", {"_meta": META}, **MODERN))
     assert t["resultType"] == "complete" and t["tools"]
+    # listas da 2026-07-28 exigem cache explícito (o Claude Code recusa o resultado sem ele)
+    assert isinstance(t["ttlMs"], int) and t["cacheScope"] == "private"
+    for m in ("resources/list", "resources/templates/list"):
+        x = result(rpc(agent, m, {"_meta": META}, **{**MODERN, "Mcp-Method": m}))
+        assert isinstance(x["ttlMs"], int) and x["cacheScope"] == "private"
     # cabeçalho de método diferente do corpo: 400 -32020
     r = rpc(agent, "tools/list", {"_meta": META}, **{**MODERN, "Mcp-Method": "ping"})
     assert r.status_code == 400 and r.json()["error"]["code"] == -32020

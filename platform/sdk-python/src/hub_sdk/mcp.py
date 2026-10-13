@@ -126,18 +126,18 @@ def tools_from_openapi(doc: dict[str, Any], app_id: str) -> list[ToolDef]:
 def _inline_refs(schema: Any, doc: dict[str, Any], depth: int = 0) -> Any:
     """Resolve ``$ref`` locais (``#/components/schemas/X``) — o cliente MCP recebe o
     esquema autocontido."""
-    if depth > 8:
-        return {}
     if isinstance(schema, dict):
         ref = schema.get("$ref")
         if isinstance(ref, str) and ref.startswith("#/"):
+            if depth > 8:  # só $ref aninhados contam: corta ciclos sem mutilar esquemas fundos
+                return {}
             node: Any = doc
             for part in ref[2:].split("/"):
                 node = node.get(part, {}) if isinstance(node, dict) else {}
             return _inline_refs(node, doc, depth + 1)
-        return {k: _inline_refs(v, doc, depth + 1) for k, v in schema.items()}
+        return {k: _inline_refs(v, doc, depth) for k, v in schema.items()}
     if isinstance(schema, list):
-        return [_inline_refs(v, doc, depth + 1) for v in schema]
+        return [_inline_refs(v, doc, depth) for v in schema]
     return schema
 
 

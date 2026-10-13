@@ -191,3 +191,23 @@ def test_openapi_has_hub_conventions_and_typed_problem() -> None:
         for op in item.values():
             ref = op["responses"]["4XX"]["content"]["application/problem+json"]["schema"]
             assert ref == {"$ref": "#/components/schemas/Problem"}
+
+
+def test_mcp_inline_refs_keeps_deep_nullable_types() -> None:
+    # corpo → $ref → propriedade anulável (anyOf) fica a mais de 8 níveis; os tipos não podem virar {}
+    doc = {
+        "components": {
+            "schemas": {
+                "F": {
+                    "type": "object",
+                    "properties": {"tag": {"anyOf": [{"type": "string"}, {"type": "null"}]}},
+                },
+                "U": {"type": "object", "properties": {"fields": {"$ref": "#/components/schemas/F"}}},
+            }
+        }
+    }
+    s = mcp._inline_refs({"$ref": "#/components/schemas/U"}, doc)
+    assert s["properties"]["fields"]["properties"]["tag"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
+    # ciclo de $ref continua limitado
+    cyc = {"components": {"schemas": {"C": {"properties": {"c": {"$ref": "#/components/schemas/C"}}}}}}
+    assert mcp._inline_refs({"$ref": "#/components/schemas/C"}, cyc)

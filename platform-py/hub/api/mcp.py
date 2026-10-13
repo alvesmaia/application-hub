@@ -698,6 +698,10 @@ async def handle(request: Request) -> Response:
             return rpc_error(id_, e.code, e.message)
         if modern and "resultType" not in result:
             result["resultType"] = "complete"
+        if modern and mth.endswith("/list"):
+            # 2026-07-28: listas dizem por quanto tempo o cliente pode guardá-las; dependem do usuário → private
+            result.setdefault("ttlMs", 0)
+            result.setdefault("cacheScope", "private")
         return {"jsonrpc": "2.0", "id": id_, "result": result}
 
     sse = accepts(h, "text/event-stream") and (
