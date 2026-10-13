@@ -25,6 +25,12 @@ nativa do agente (`docs/migracao/TASKS.md` é o quadro da migração F0–F7, en
 
 ### Outros
 
+- **Login MCP via Entra ID real (com o dono):** o fluxo está coberto contra o Entra falso
+  (`platform-py/tests/test_oauth_entra.py`) e o guia dos clientes está em `docs/IMPLANTACAO.md` ("Conectar clientes
+  de IA"). Falta o teste ponta a ponta com um locatário real: registrar o app (redirect
+  `<HUB_PUBLIC_URL>/auth/entra/callback`, permissões `openid profile email`, segredo em arquivo), ligar
+  `HUB_SSO_PROVIDER=entra` + `HUB_ENTRA_*` numa instância e autenticar pelo navegador no Claude Code, no Copilot CLI
+  e no Copilot (VS Code/app desktop — confirmar a configuração do app desktop).
 - **Teste com agente de contexto mínimo (Haiku 5.5 `low`, kanban):** rodadas de 2026-10-09 (WebSocket/SSE) e
   2026-10-10 (repetição após as correções: os dois verdes, SSE sem JS próprio; tela conferida em duas abas).
   Correções da 2ª rodada (2026-10-10): guia "Tempo real" com módulo completo testado (SSE, WebSocket,
