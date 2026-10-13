@@ -246,19 +246,26 @@ def test_agent_approval_needs_stepup_page(tmp_path: Path, monkeypatch: pytest.Mo
     assert api.status_code == 403 and f"/account/agent-approval/{n}" in api.json()["error"]
     page = c.get(f"/account/agent-approval/{n}")
     assert page.status_code == 200 and "script-src 'none'" in page.headers["content-security-policy"]
-    assert '{"id": 1}' in html.unescape(page.text) and "Confirme sua senha para aprovar" in page.text
-    wrong = c.post(f"/account/agent-approval/{n}", data={"decision": "approve", "password": "x"}, headers=HDR)
-    assert wrong.status_code == 403 and "Não foi possível confirmar" in wrong.text
-    ok = c.post(
-        f"/account/agent-approval/{n}", data={"decision": "approve", "password": "test-password"}, headers=HDR
+    # sem senha: "Autorizar" abre um modal nativo (popover, sem JS) que confirma de novo
+    assert '{"id": 1}' in html.unescape(page.text) and 'type="password"' not in page.text
+    assert (
+        f'popovertarget="agent-confirm-{n}"' in page.text and f'id="agent-confirm-{n}" popover' in page.text
     )
-    assert ok.status_code == 200 and 'data-status="approved"' in ok.text
+    inbox_page = c.get("/inbox?filter=approvals").text
+    assert f'popovertarget="agent-confirm-{n}"' in inbox_page
+    assert f'action="/account/agent-approval/{n}"' in inbox_page
+    # a confirmação do modal volta à Inbox; destino externo é ignorado
+    evil = c.post(
+        f"/account/agent-approval/{n}", data={"decision": "approve", "next": "//evil.example"}, headers=HDR
+    )
+    assert evil.status_code == 303 and evil.headers["location"] == "/inbox?filter=approvals"
+    assert c.get(f"/account/agent-approval/{n}").text.count('data-status="approved"') == 1
     assert c.get("/account/agent-approval/999").status_code == 404
     reject = item_of(
         "agent", "platform", "r", to_users=["u-test"], approval=approval_of("y"), agent=agent["agent"]
     )
     m = c.app.state.inbox.push(reject)  # type: ignore[attr-defined]
-    assert c.post(f"/account/agent-approval/{m}", data={"decision": "reject"}, headers=HDR).status_code == 200
+    assert c.post(f"/account/agent-approval/{m}", data={"decision": "reject"}, headers=HDR).status_code == 303
     assert c.get("/api/me/inbox?filter=approvals").json()["items"][0]["approval"]["status"] == "rejected"
 
 

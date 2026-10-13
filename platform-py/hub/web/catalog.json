@@ -7922,5 +7922,17 @@
 [
 "Quem usa cada aplicação: aberturas, navegações, ações e último acesso, coletados pelo gateway.",
 "Who uses each application: opens, navigations, actions and last access, collected by the gateway."
+],
+[
+"Confirmar autorização",
+"Confirm authorization"
+],
+[
+"O agente vai executar esta ação em seu nome. Autorize só se foi você quem pediu.",
+"The agent will run this action on your behalf. Authorize only if you asked for it."
+],
+[
+"Confirmar",
+"Confirm"
 ]
 ]

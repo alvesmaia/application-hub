@@ -13,7 +13,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
-from hub.auth import OWNED_ACTIONS, verify
+from hub.auth import OWNED_ACTIONS
 from hub.ux.inbox import InboxError, InboxStore, targets
 from hub.ux.inbox_routes import DecideIn, who_of
 from hub.ux.shell import theme_of
@@ -31,7 +31,6 @@ _AGENT_CSP = (
     "default-src 'none'; script-src 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self'; "
     "form-action 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
 )
-_TRIES, _WINDOW_MS = 5, 15 * 60_000
 
 
 def safe_next(raw: str, default: str = "/") -> str:
@@ -49,7 +48,6 @@ def mount_account(
     icon: Callable[[str], str],
 ) -> None:
     inbox = cast(InboxStore, app.state.inbox)
-    stepup_fails: dict[str, list[int]] = {}
 
     def frame(request: Request, tab: str) -> dict[str, Any]:
         """Contexto comum das três abas: Perfil, Segurança e Acessos."""
@@ -223,25 +221,8 @@ def mount_account(
         decision, comment = form.get("decision", ""), form.get("comment", "")
         step_up = ""
         if decision == "approve":
-            now = int(time.time() * 1000)
-            fails = [x for x in stepup_fails.get(who.id, []) if x > now - _WINDOW_MS]
-            if len(fails) >= _TRIES:
-                return agent_page(
-                    request, n, "Muitas tentativas. Aguarde alguns minutos e tente de novo.", 429
-                )
-            if not verify(form.get("password", ""), request.state.user.get("password_hash")):
-                stepup_fails[who.id] = [*fails, now]
-                if admin := getattr(app.state, "admin", None):
-                    await admin.audit(
-                        who.name,
-                        "Aprovação de ação do agente recusada",
-                        f"pedido i:{n} · reautenticação falhou",
-                        icon="users",
-                    )
-                return agent_page(
-                    request, n, "Não foi possível confirmar sua identidade. A ação não foi aprovada.", 403
-                )
-            stepup_fails.pop(who.id, None)
+            # confirmação dupla na tela (botão + modal), só por este formulário com a sessão do navegador:
+            # a API (token do agente) continua sem poder aprovar
             step_up = inbox.stepup_issue(who.id, n, it["agent"]["args_hash"])
         elif decision != "reject":
             return agent_page(request, n, "Decisão inválida.", 400)
@@ -251,4 +232,4 @@ def mount_account(
             )
         except InboxError as e:
             return agent_page(request, n, e.message, e.status)
-        return agent_page(request, n)
+        return RedirectResponse(safe_next(form.get("next", ""), "/inbox?filter=approvals"), 303)

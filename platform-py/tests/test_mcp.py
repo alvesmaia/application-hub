@@ -257,11 +257,8 @@ def approve_page(
     hub: TestClient,
     item: str,
     decision: str = "approve",
-    password: str = "test-password",  # noqa: S107
 ) -> int:
-    r = hub.post(
-        f"/account/agent-approval/{item}", data={"decision": decision, "password": password}, headers=HDR
-    )
+    r = hub.post(f"/account/agent-approval/{item}", data={"decision": decision}, headers=HDR)
     return int(r.status_code)
 
 
@@ -285,12 +282,11 @@ def test_destructive_needs_approval_in_the_hub(hub: TestClient, agent: TestClien
         "inválido ou já usado"
         in payload(call(agent, "tasks_cancel", {**args, "confirm_token": first["confirm_token"]}))["error"]
     )
-    # senha errada não aprova; a sessão sozinha (API) não aprova; senha certa aprova
+    # a API (token/sessão) não aprova; só o formulário da página, com sessão no navegador
     second = payload(call(agent, "tasks_cancel", args))
     n = second["approval_id"]
-    assert approve_page(hub, n, password="errada") == 403
     assert hub.post(f"/api/v1/inbox/{n}/decide", json={"decision": "approve"}).status_code == 403
-    assert approve_page(hub, n) == 200
+    assert approve_page(hub, n) == 303
     done = call(agent, "tasks_cancel", {**args, "confirm_token": second["confirm_token"]})
     assert "approval_pending" not in payload(done) and "confirm" not in payload(done).get("error", "")
     # uso único
@@ -300,7 +296,7 @@ def test_destructive_needs_approval_in_the_hub(hub: TestClient, agent: TestClien
     )
     # recusado no hub
     third = payload(call(agent, "tasks_cancel", args))
-    assert approve_page(hub, third["approval_id"], "reject") == 200
+    assert approve_page(hub, third["approval_id"], "reject") == 303
     no = call(agent, "tasks_cancel", {**args, "confirm_token": third["confirm_token"]})
     assert "recusada no hub" in payload(no)["error"]
     titles = [e["title"] for e in hub.get("/api/v1/audit?limit=50").json()["items"]]
@@ -458,7 +454,7 @@ def test_app_mutation_needs_approval_and_runs_only_after_it(apps_hub: TestClient
     item = apps_hub.app.state.inbox.item(int(first["approval_id"][2:]))
     assert item["agent"]["operation"] == "POST /ativos/api/v1/items" and item["app"] == "ativos"
     assert apps_hub.app.state.gateway.client._transport.app.state.calls == []
-    assert approve_page(apps_hub, first["approval_id"]) == 200
+    assert approve_page(apps_hub, first["approval_id"]) == 303
     done = call(c, "ativos.items_create", {**args, "confirm_token": first["confirm_token"]})
     assert done["isError"] is False
     sent = apps_hub.app.state.gateway.client._transport.app.state.calls
