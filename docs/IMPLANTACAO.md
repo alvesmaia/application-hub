@@ -94,3 +94,28 @@ Login com Microsoft (OIDC código + PKCE, endpoints v2). Opcional: sem configura
 7. Defina `HUB_SSO_PROVIDER=entra` e reinicie o `app-hub-web`. Confira em **Administração › Configurações › Login único (SSO)**.
 
 Regras: o id_token é validado (assinatura pelo JWKS em cache, emissor, audiência, nonce, validade, locatário); `HUB_ENTRA_ALLOWED_DOMAINS` restringe domínios de e-mail; usuário desativado no hub não entra; o primeiro login cria o usuário (origem "Entra ID" em Usuários) ou vincula a um usuário local de mesmo e-mail. Logins SSO e recusas vão para a auditoria. O login local continua ligado (`HUB_LOCAL_LOGIN=1`) para o administrador entrar mesmo se o Entra falhar; `HUB_LOCAL_LOGIN=admins` deixa e-mail/senha só para administradores.
+
+## Conectar clientes de IA (MCP) com login único
+
+O hub é o servidor OAuth 2.1 do próprio `/mcp`: o cliente se registra sozinho, abre o navegador, o usuário entra
+(e-mail/senha ou "Entrar com Microsoft", se o Entra estiver configurado), aprova o consentimento e o cliente recebe
+um token **do hub**, válido só no `/mcp`. Nenhum escopo extra no Entra: só `openid`, `profile`, `email`. O token do
+Entra fica no hub; o cliente nunca chama o Graph. Não cadastre as URIs `localhost` dos clientes no Entra.
+
+Requisitos: `HUB_PUBLIC_URL` em `https://` (é o emissor dos tokens) e `[mcp.oauth] enabled = true` na configuração
+do hub (padrão). Em todos os clientes a URL é `<HUB_PUBLIC_URL>/mcp`, **sem** cabeçalho `Authorization`: sem token,
+o cliente recebe o 401 com a descoberta e inicia o login no navegador.
+
+- **Claude Code:** `claude mcp add --transport http application-hub https://hub.empresa.com.br/mcp`; depois, na
+  sessão, `/mcp` › `application-hub` › *Authenticate*.
+- **GitHub Copilot CLI:** na sessão, `/mcp add` › tipo *HTTP* › URL `https://hub.empresa.com.br/mcp` (sem
+  cabeçalhos) › salvar (Ctrl+S); na primeira chamada o navegador abre para o login. Por arquivo
+  (`~/.copilot/mcp-config.json`): `{"mcpServers": {"application-hub": {"type": "http", "url": "https://hub.empresa.com.br/mcp", "tools": ["*"]}}}`.
+  Em organizações do GitHub, o uso de MCP pode precisar ser liberado pelo administrador da organização.
+- **Copilot no VS Code / app desktop:** *MCP: Add Server* › *HTTP* › a mesma URL; em arquivo, `.vscode/mcp.json`
+  com `{"servers": {"application-hub": {"type": "http", "url": "https://hub.empresa.com.br/mcp"}}}`. O cliente
+  pede para autenticar e abre o navegador.
+
+O usuário vê e revoga as conexões em **Conta › Acessos › Apps autorizados**; o administrador vê os clientes registrados e as
+autorizações em **Credenciais › Clientes de IA**. Cliente sem suporte a OAuth: token pessoal (`hubt_…`) no
+cabeçalho `Authorization: Bearer`. Cenário coberto por `platform-py/tests/test_oauth_entra.py`.
