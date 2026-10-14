@@ -91,10 +91,10 @@ async function appPage(b, { mocks = '', respond, ws } = {}) {
   await page.route('https://hub.test/**', async (route) => {
     const req = route.request();
     const u = new URL(req.url());
-    const file = { '/assets/hub-safe.js': 'hub-safe.js', '/assets/hub-kit.js': 'hub-kit.js', '/assets/hub-device.js': 'hub-device.js', '/assets/hub-device-camera.js': 'hub-device-camera.js', '/assets/hub-device-forms.js': 'hub-device-forms.js', '/assets/hub-device-mount.js': 'hub-device-mount.js' }[u.pathname];
+    const file = { '/assets/hub-safe.js': 'hub-safe.js', '/assets/hub-kit.js': 'hub-kit.js', '/assets/hub-kit-mount.js': 'hub-kit-mount.js', '/assets/hub-device.js': 'hub-device.js', '/assets/hub-device-camera.js': 'hub-device-camera.js', '/assets/hub-device-forms.js': 'hub-device-forms.js', '/assets/hub-device-mount.js': 'hub-device-mount.js' }[u.pathname];
     if (file) return route.fulfill({ contentType: 'text/javascript; charset=utf-8', body: fs.readFileSync(path.join(assets, file)) });
     if (u.pathname === '/coletor/x') {
-      return route.fulfill({ contentType: 'text/html; charset=utf-8', headers: { 'content-security-policy': CSP }, body: `<!doctype html><html><head></head><body><main id="app-root">${APP}</main><div id="toast"></div><script src="/assets/hub-safe.js"></script><script src="/assets/hub-kit.js"></script><script data-hub-app="coletor" data-hub-frag="/_frag" src="/assets/hub-device.js"></script><script src="/assets/hub-device-camera.js"></script><script src="/assets/hub-device-forms.js"></script><script src="/assets/hub-device-mount.js"></script><script src="/assets/boot.js"></script></body></html>` });
+      return route.fulfill({ contentType: 'text/html; charset=utf-8', headers: { 'content-security-policy': CSP }, body: `<!doctype html><html><head></head><body><main id="app-root">${APP}</main><div id="toast"></div><script src="/assets/hub-safe.js"></script><script src="/assets/hub-kit.js"></script><script src="/assets/hub-kit-mount.js"></script><script data-hub-app="coletor" data-hub-frag="/_frag" src="/assets/hub-device.js"></script><script src="/assets/hub-device-camera.js"></script><script src="/assets/hub-device-forms.js"></script><script src="/assets/hub-device-mount.js"></script><script src="/assets/boot.js"></script></body></html>` });
     }
     if (u.pathname === '/assets/boot.js') return route.fulfill({ contentType: 'text/javascript', body: "window.HubKit.mount(document.getElementById('app-root'));" });
     if (u.pathname.startsWith('/_frag/coletor/') && req.method() === 'GET') {

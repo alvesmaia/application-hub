@@ -35,11 +35,11 @@ test('Chromium: data-hub-sse aplica o HTML sanitizado, dispara hub:sse e cai par
     let gets = 0;
     await page.route('https://hub.test/**', async (route) => {
       const u = new URL(route.request().url()); if (process.env.DEBUG_DEV) console.log('req', u.pathname);
-      const file = { '/assets/hub-safe.js': 'hub-safe.js', '/assets/hub-kit.js': 'hub-kit.js' }[u.pathname];
+      const file = { '/assets/hub-safe.js': 'hub-safe.js', '/assets/hub-kit.js': 'hub-kit.js', '/assets/hub-kit-mount.js': 'hub-kit-mount.js' }[u.pathname];
       if (file) return route.fulfill({ contentType: 'text/javascript; charset=utf-8', body: fs.readFileSync(path.join(assets, file)) });
       if (u.pathname === '/assets/boot.js') return route.fulfill({ contentType: 'text/javascript', body: "window.HubKit.mount(document.getElementById('app-root'));" });
       if (u.pathname === '/kanban/x') {
-        return route.fulfill({ contentType: 'text/html; charset=utf-8', headers: { 'content-security-policy': CSP }, body: `<!doctype html><html><body><main id="app-root">${APP}</main><script src="/assets/hub-safe.js"></script><script data-hub-app="kanban" src="/assets/hub-kit.js"></script><script src="/assets/boot.js"></script></body></html>` });
+        return route.fulfill({ contentType: 'text/html; charset=utf-8', headers: { 'content-security-policy': CSP }, body: `<!doctype html><html><body><main id="app-root">${APP}</main><script src="/assets/hub-safe.js"></script><script data-hub-app="kanban" src="/assets/hub-kit.js"></script><script src="/assets/hub-kit-mount.js"></script><script src="/assets/boot.js"></script></body></html>` });
       }
       if (u.pathname === '/_frag/kanban/eventos') {
         streams++;
