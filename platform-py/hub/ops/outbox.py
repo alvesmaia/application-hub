@@ -1,8 +1,8 @@
-"""Coleta do outbox dos apps (`GET {upstream}/{id}/_hub/outbox`, token interno, rede interna): eventos `audit` vão para a
-auditoria, `notification`/`approval_request` para a Inbox (e o SSE). Efeito exatamente uma vez, nesta ordem por página:
-1. grava na auditoria (durável, com `source`); 2. registra os ids "gravados, aguardando confirmação"; 3. confirma ao app
-(`POST …/ack`, só o líder com fence vigente). Reentrega (queda entre 1 e 3) é deduplicada pelo registro e pelo `source`.
-Só o líder coleta."""
+"""Collects the apps' outbox (`GET {upstream}/{id}/_hub/outbox`, internal token, internal network): `audit` events go to the
+audit log, `notification`/`approval_request` to the Inbox (and the SSE). Effect exactly once, in this order per page:
+1. writes to the audit log (durable, with `source`); 2. records the ids "written, awaiting confirmation"; 3. confirms to the app
+(`POST …/ack`, only the leader with a valid fence). A redelivery (a drop between 1 and 3) is deduplicated by the record and by `source`.
+Only the leader collects."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from hub.ux.inbox import approval_of, item_of, now_ms
 from hub.ux.search import safe_app_link
 
 TOKEN_HEADER, PAGE, MAX_BODY = "x-hub-internal-token", 200, 1 << 20
-_ADMIN_PERMS = (1, 2, 3, 4)  # Usuários, Configurações, Auditoria, Variáveis
+_ADMIN_PERMS = (1, 2, 3, 4)  # Users, Settings, Audit, Variables
 _APPROVAL_ID = re.compile(r"^[A-Za-z0-9_.:-]{1,80}$")
 
 
@@ -38,7 +38,7 @@ def str_list(v: Any, n: int) -> list[str]:
 
 
 def allowed_roles(asked: list[str], declared: list[str], admin: list[str]) -> list[str]:
-    """Funções que um app pode endereçar: as do manifesto (`notify_roles`) ou, sem declaração, qualquer não administrativa."""
+    """Roles an app can address: those in the manifest (`notify_roles`) or, with no declaration, any non-administrative one."""
 
     def norm(s: str) -> str:
         return s.strip().lower()
@@ -49,7 +49,7 @@ def allowed_roles(asked: list[str], declared: list[str], admin: list[str]) -> li
 
 
 def item_from_notice(app: str, ev: dict[str, Any], roles: list[str]) -> dict[str, Any] | None:
-    """Item da Inbox; `None` quando os destinatários pedidos foram todos recusados (nunca cai no "quem causou" por engano)."""
+    """Inbox item; `None` when all requested recipients were refused (never falls back to "who caused it" by mistake)."""
     m: dict[str, Any] = ev["meta"] if isinstance(ev.get("meta"), dict) else {}
     to_users = str_list(m.get("to_users"), 50)
     if str_list(m.get("to_roles"), 20) and not roles and not to_users:
@@ -162,7 +162,7 @@ class Outbox:
         return out
 
     async def tick(self) -> None:
-        """Uma rodada: cada app com token interno, várias páginas se houver acúmulo."""
+        """One round: each app with an internal token, several pages if there is a backlog."""
         for e in self.app.state.gateway.registry.entries():
             if not (token := self.app.state.admin.tokens.get(e.id)):
                 continue
@@ -176,7 +176,7 @@ class Outbox:
                     after = p["last_seq"]
                 except (httpx.HTTPError, OSError, ValueError, KeyError) as ex:
                     msg = f"sem resposta ({ex})" if isinstance(ex, httpx.HTTPError) else str(ex)
-                    if self.last_err.get(e.id) != msg:  # um aviso por mudança de estado
+                    if self.last_err.get(e.id) != msg:  # one warning per state change
                         self._warn(e.id, f"[auditoria] outbox indisponível: {msg}")
                         self.last_err[e.id] = msg
                     break

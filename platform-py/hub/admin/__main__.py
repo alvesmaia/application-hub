@@ -1,8 +1,8 @@
-"""Operação offline: `python -m hub.admin create-admin --email E --out ARQUIVO`, `deactivate-demo` e
-`set-entra-secret` (lê o segredo do cliente do Entra ID da entrada padrão e o guarda no cofre).
+"""Offline operation: `python -m hub.admin create-admin --email E --out ARQUIVO`, `deactivate-demo` and
+`set-entra-secret` (reads the Entra ID client secret from stdin and stores it in the vault).
 
-Rode com o hub parado (escreve `auth.json` direto). Nada secreto vai para a saída: a senha temporária
-vai só para o arquivo `--out` (0600). O usuário é obrigado a trocar a senha no primeiro acesso.
+Run with the hub stopped (writes `auth.json` directly). Nothing secret goes to the output: the temporary password
+goes only to the `--out` file (0600). The user must change the password on first access.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ _ALPHABET = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789-_.!@#%+="
 
 
 async def create_admin(store: AuthStore, email: str, name: str) -> str:
-    """Cria/reinicia o administrador e devolve o texto do arquivo de primeiro acesso."""
+    """Creates/resets the administrator and returns the text of the first-access file."""
     email = normalize_email(email)
     password = ""
     while policy(password):

@@ -1,10 +1,10 @@
-"""Backups: credenciais só leitura (`hub_bkp_<db>`, `bkp-<bucket>` no cofre), pacote zip (banco + bucket + volumes) e restauração.
+"""Backups: read-only credentials (`hub_bkp_<db>`, `bkp-<bucket>` in the vault), zip package (database + bucket + volumes) and restore.
 
-Porta de `hub-ops::creds` e do essencial de `dr`: `pg_dump`/`psql` rodam no container do Postgres (`docker exec`),
-o bucket por `mc mirror`. Restauração do banco no modo não transacional (o atual vai "de lado" e volta se falhar),
-cópia externa opcional (`HUB_BACKUP_OFFSITE_URL`) e lista dos bancos de lado; o agendador está em `scheduler.py`."""
+Port of `hub-ops::creds` and the essentials of `dr`: `pg_dump`/`psql` run in the Postgres container (`docker exec`),
+the bucket via `mc mirror`. Database restore in non-transactional mode (the current one goes "aside" and comes back if it fails),
+optional off-site copy (`HUB_BACKUP_OFFSITE_URL`) and the list of side databases; the scheduler is in `scheduler.py`."""
 
-# ruff: noqa: S608 - SQL de administração montado com literais/identificadores escapados (`_lit`/`_qi`)
+# ruff: noqa: S608 - admin SQL built with escaped literals/identifiers (`_lit`/`_qi`)
 from __future__ import annotations
 
 import asyncio
@@ -26,7 +26,7 @@ from hub.connections.provision import ObjectStore
 from hub.ops.model import OpsError, OpsStore, human, now_ms
 from hub.ops.runtime import Engine, exec_in
 
-ROLE_FILE = "/tmp/hub-role.sql"  # noqa: S108 - dentro do container do Postgres
+ROLE_FILE = "/tmp/hub-role.sql"  # noqa: S108 - inside the Postgres container
 RESTORE_FILE = "/tmp/hub-restore.sql"  # noqa: S108
 ADMIN_FILE = "/tmp/hub-admin.sql"  # noqa: S108
 PG_ROLE_PREFIX, S3_BACKUP_PREFIX = "hub_bkp_", "bkp-"
@@ -45,14 +45,14 @@ def _qi(v: str) -> str:
 
 
 def _errtail(out: bytes) -> str:
-    """Linhas de erro do psql (o fim da saída costuma ser só ruído de setval)."""
+    """psql error lines (the end of the output is usually just setval noise)."""
     text = out.decode(errors="replace")
     errs = [ln.strip() for ln in text.splitlines() if "ERROR" in ln or "FATAL" in ln]
     return (" | ".join(errs[:3]) or text[-200:])[-300:]
 
 
 def chown_sql(owner: str) -> str:
-    """Passa ao owner as tabelas, sequências e views do schema public (o dump de clone vem sem donos)."""
+    """Hands ownership of the tables, sequences and views in the public schema to the owner (the clone dump comes without owners)."""
     o = _lit(owner)
     return (
         "DO $$DECLARE r record; BEGIN FOR r IN "
@@ -86,7 +86,7 @@ def bucket_policy(bucket: str, write: bool = False) -> str:
 
 
 def backup_role_sql(db: str, pw: str) -> str:
-    """Bloco `DO` (rodado no banco por administração): papel só leitura, idempotente; papel alheio aborta (`HUB-ALIEN-ROLE`)."""
+    """`DO` block (run on the database by administration): read-only role, idempotent; a foreign role aborts (`HUB-ALIEN-ROLE`)."""
     if db in SYSTEM_DBS or not _DB.match(db):
         raise OpsError(f"Banco recusado para papel de backup: {db}")
     if len(pw) < 16 or not pw.isalnum():
@@ -139,7 +139,7 @@ def _collect(tmp: str) -> dict[str, bytes]:
 
 
 def parse_targets(env_vars: dict[str, str]) -> tuple[str | None, str | None]:
-    """(banco, bucket) do app a partir das variáveis injetadas (`HUB_DB_URL`, `HUB_S3_BUCKET`)."""
+    """(database, bucket) of the app from the injected variables (`HUB_DB_URL`, `HUB_S3_BUCKET`)."""
     url = env_vars.get("HUB_DB_URL", "")
     db = urlsplit(url).path.lstrip("/") if url else ""
     return (db or None), (env_vars.get("HUB_S3_BUCKET") or None)
@@ -219,7 +219,7 @@ class Backups:
     async def create_bundle(
         self, app: str, env: str, volumes: list[str], hooks: bool, progress: Progress
     ) -> tuple[str, str, dict[str, Any]]:  # fmt: skip
-        """Grava `<data>/backups/<app>/<app>-<ms>.zip`; devolve (nome, sha256, manifesto)."""
+        """Writes `<data>/backups/<app>/<app>-<ms>.zip`; returns (name, sha256, manifest)."""
         started = now_ms()
         db, bucket = parse_targets(await self.app_env(app, env))
         parts: list[dict[str, Any]] = []
@@ -300,7 +300,7 @@ class Backups:
                 raise OpsError(f"mc mirror de {bucket} falhou: {redact(out, pw)}")
             return await asyncio.to_thread(_collect, tmp)
 
-    # ---- restauração -----------------------------------------------------------------------------------
+    # ---- restore ---------------------------------------------------------------------------------------
     def read_bundle(self, app: str, env: str, name: str, sha: str) -> tuple[dict[str, Any], dict[str, bytes]]:
         path = self.root / (app if env != "staging" else f"{app}__staging") / Path(name).name
         if not path.is_file():
@@ -349,8 +349,8 @@ class Backups:
     async def clone_to_staging(
         self, app: str, env: str, name: str, sha: str, progress: Progress
     ) -> tuple[int, str]:
-        """Clona o backup para o staging: o dump entra no banco próprio de staging (objetos do papel dele) e os volumes
-        na pasta `<app>__staging`; o banco/bucket de produção não são tocados."""
+        """Clones the backup to staging: the dump goes into staging's own database (objects owned by its role) and the volumes
+        into the `<app>__staging` folder; the production database/bucket are not touched."""
         progress(20, "Conferindo sha256 de cada parte")
         _, files = self.read_bundle(app, env, name, sha)
         sdb, _b = parse_targets(await self.app_env(app, "staging"))
@@ -382,7 +382,7 @@ class Backups:
         return len(files), " · ".join(done) or f"{len(files)} arquivos clonados para staging"
 
     async def _psql(self, db: str, *stmts: str) -> str:
-        """Comandos de administração (cada um em autocommit, como `DROP DATABASE` exige); devolve a saída."""
+        """Administration commands (each in autocommit, as `DROP DATABASE` requires); returns the output."""
         sql = ";\n".join(stmts) + ";\n"
         rc, out = await exec_in(
             self.engine, self.db_container,
@@ -428,13 +428,13 @@ class Backups:
         return f"banco {db} verificado em banco temporário ({human(len(sql))})"
 
     async def _restore_db_aside(self, db: str, sql: bytes) -> str:
-        """Modo não transacional: o banco atual é renomeado "de lado" (`<db>_pre<n>`, intacto), o dump entra num banco
-        novo com o nome original e só no fim o de lado é apagado; qualquer falha devolve o original ao nome."""
+        """Non-transactional mode: the current database is renamed "aside" (`<db>_pre<n>`, intact), the dump goes into a new
+        database with the original name, and only at the end is the aside copy deleted; any failure gives the original its name back."""
         if db in SYSTEM_DBS or db.startswith("pg_") or not _DB.match(db):
             raise OpsError(f"Banco recusado na restauração: {db}")
         aside = f"{db[:40]}_pre{now_ms() % 10_000_000_000}"
         d, a = _lit(db), _lit(aside)
-        had: bool | None = None  # `None` até o rename responder: falha logo depois ainda devolve o original
+        had: bool | None = None  # None until the rename answers: a failure still restores the original
         try:
             out = await self._psql(
                 "postgres",
@@ -463,7 +463,7 @@ class Backups:
                 raise OpsError(_errtail(out2))
             if (
                 owner != self.db_admin
-            ):  # dump sem donos, carregado pelo administrador: os objetos voltam ao papel do app
+            ):  # dump without owners, loaded by the administrator: the objects go back to the app's role
                 await self._psql(db, chown_sql(owner))
         except OpsError as e:
             undo = [f"DROP DATABASE IF EXISTS {_qi(db)} WITH (FORCE)"]
@@ -483,7 +483,7 @@ class Backups:
         return f"banco {db} restaurado (de lado até o fim, {human(len(sql))})"
 
     async def list_aside(self, known: list[tuple[str, str, str]]) -> list[dict[str, Any]]:
-        """Bancos `<db>_pre<n>` que uma restauração interrompida deixou; `known` = (app, env, banco) dos apps."""
+        """`<db>_pre<n>` databases left behind by an interrupted restore; `known` = (app, env, database) of the apps."""
         out = await self._psql(
             "postgres", "SELECT 'hub:db=' || datname FROM pg_database WHERE NOT datistemplate"
         )
@@ -516,8 +516,8 @@ class Backups:
 
     # ---- cópia externa -------------------------------------------------------------------------------------
     async def offsite(self, app: str, env: str, name: str) -> str | None:
-        """Copia o pacote para `HUB_BACKUP_OFFSITE_URL` (`http(s)://chave:segredo@host:porta/bucket[/prefixo]`) e o lê de
-        volta conferindo o sha256. `None` = não configurada; falha levanta `OpsError` (o backup local continua valendo)."""
+        """Copies the package to `HUB_BACKUP_OFFSITE_URL` (`http(s)://key:secret@host:port/bucket[/prefix]`) and reads it back
+        checking the sha256. `None` = not configured; a failure raises `OpsError` (the local backup still counts)."""
         url = os.getenv("HUB_BACKUP_OFFSITE_URL", "").strip()
         if not url:
             return None
@@ -561,7 +561,7 @@ class Backups:
         return f"bucket {bucket} restaurado"
 
     def prune(self, d: dict[str, Any], app: str, env: str, keep: int) -> list[str]:
-        """Retenção: mantém os `keep` backups concluídos mais novos do app×ambiente; os outros viram `Expirado`."""
+        """Retention: keeps the `keep` newest completed backups of the app×environment; the others become `Expired`."""
         mine = [b for b in d["backups"] if b["app"] == app and (b.get("env") or "producao") == env
                 and b["status"] == "Concluído" and b.get("file")]  # fmt: skip
         gone: list[str] = []

@@ -1,4 +1,4 @@
-"""Fábrica do app FastAPI: casca do hub (F0), assets do front-end atual e sondas."""
+"""FastAPI app factory: hub shell (F0), current front-end assets and probes."""
 
 from __future__ import annotations
 
@@ -84,18 +84,18 @@ from hub.vault import Vault
 
 _WEB = Path(__file__).parent / "web"
 _THEME = "#0a2848"
-# Faixa discreta do modo staging (cookie `hub_env`), servida junto com o tema.
+# Discreet strip for staging mode (cookie `hub_env`), served together with the theme.
 STAGING_BAR_CSS = (
     ".hub-staging-bar{display:flex;gap:8px;justify-content:center;align-items:center;padding:4px 16px;"
     "font-size:12px;background:var(--color-warning-soft);color:var(--color-text);"
     "border-bottom:1px solid var(--color-warning-shape)}.hub-staging-bar a{color:var(--color-text);font-weight:600}"
-    # Nas telas de app o workspace cobre o #app-root: a faixa vira um selo flutuante (F17).
+    # On app screens the workspace covers #app-root: the strip becomes a floating badge (F17).
     "html[data-hub-app] .hub-staging-bar{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);"
     "z-index:var(--z-header);border:1px solid var(--color-warning-shape);border-radius:999px;"
     "box-shadow:0 4px 14px rgb(0 0 0/.15)}\n"
 )
 
-# Mesma CSP da versão anterior do hub; 'self' cobre /assets/ e /hub-sw.js.
+# Same CSP as the previous hub version; 'self' covers /assets/ and /hub-sw.js.
 _CSP = (
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; "
     "img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; "
@@ -148,7 +148,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
     apicfg = load_cfg(settings.config)
     gateway = gateway or Gateway(load_registry(), GwOptions(user_sig_key=user_sig_key()))
     data_dir = Path(os.getenv("HUB_DATA_DIR", Path(__file__).resolve().parents[2] / "platform/data"))
-    load_dynamic(data_dir, gateway.registry)  # F22: apps novos implantados pelo hub
+    load_dynamic(data_dir, gateway.registry)  # F22: new apps deployed by the hub
     auth_store = AuthStore(data_dir / "auth.json")
     vault = Vault.open(data_dir)
     admin = AdminStore(data_dir, vault, apps=gateway.registry.ids())
@@ -158,7 +158,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
     srch.token_source = lambda app_id: admin.tokens.get(app_id)
 
     async def startup_admin() -> None:
-        """Variáveis iniciais, token interno de cada app (cofre) e variáveis geridas das conexões."""
+        """Initial variables, each app's internal token (vault) and the connections' managed variables."""
         actor = "plataforma"
         if path := os.getenv("HUB_APP_ENV_FILE"):
             with suppress(OSError, ValueError):
@@ -172,7 +172,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
             tok = os.getenv("HUB_INTERNAL_TOKEN_" + app_id.upper().replace("-", "_"), "").strip()
             return tok if len(tok) >= 16 else None
 
-        # Rotação das senhas de infraestrutura: valores de dev nas variáveis viram as senhas configuradas.
+        # Rotation of infrastructure passwords: dev values in the variables become the configured passwords.
         rotated = await admin.cfg.replace_secret_values(
             actor,
             {
@@ -194,7 +194,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
         auth_store.db = db
         admin.db, admin.chain.db, conns.db = db, db, db
         if (ops_store := getattr(app.state, "ops", None)) is not None:
-            ops_store.db = db  # F19: `ops.json` sob trava entre réplicas
+            ops_store.db = db  # F19: `ops.json` under a lock across replicas
         await admin.reconcile()
         if db:
             async with auth_store.locked(True) as data:
@@ -248,7 +248,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
     )
 
     def public_status() -> set[str] | None:
-        """Apps da status page pública (`None` = página pública desligada em Configurações)."""
+        """Apps of the public status page (`None` = public page turned off in Settings)."""
         try:
             cfg = json.loads((data_dir / "admin.json").read_text(encoding="utf-8")).get("settings", {})
         except (OSError, ValueError):
@@ -259,7 +259,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
     async def translate_errors(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        """Mensagens de erro JSON do servidor no idioma do usuário."""
+        """Server JSON error messages in the user's language."""
         resp = await call_next(request)
         path = request.url.path
         ct = resp.headers.get("content-type", "").split(";")[0]
@@ -293,8 +293,8 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
         if path in ("/login", "/account/password", "/oauth/authorize") and resp.headers.get(
             "content-type", ""
         ).startswith("text/html"):
-            # Telas de credencial abrem em grupo de navegação próprio: `window.open` de um script de app
-            # recebe uma janela sem acesso ao DOM (não lê os campos).
+            # Credential screens open in their own browsing group: `window.open` from an app script
+            # receives a window with no DOM access (it does not read the fields).
             resp.headers["cross-origin-opener-policy"] = "noopener-allow-popups"
         for k, v in _HEADERS.items():
             resp.headers.setdefault(k, v)
@@ -322,14 +322,14 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
                 )
             )
         )
-        if machine_public(path, request.app.state.apicfg.mcp.path):  # descoberta/token/registro: sem sessão
+        if machine_public(path, request.app.state.apicfg.mcp.path):  # discovery/token/register: no session
             c = request.app.state.apicfg.mcp
             if not control_allowed(request, c.public_network, c.path):
                 return Response("Acesso negado: origem não permitida.", status_code=403)
             return await call_next(request)
         if public:
             return await call_next(request)
-        facade = request.scope.get("hub_facade")  # chamada em processo da API v1/MCP (já autorizada)
+        facade = request.scope.get("hub_facade")  # in-process call from API v1/MCP (already authorized)
         store = cast(AuthStore, request.app.state.auth)
         user: dict[str, Any] | None = None
         token: dict[str, Any] | None = None
@@ -397,7 +397,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
         ):
             return await call_next(
                 request
-            )  # documentação pública (só leitura; HUB_PUBLIC_DOCS=0 exige login)  # status page pública (Configurações), só leitura
+            )  # public docs (read-only; HUB_PUBLIC_DOCS=0 needs login); public status page
         if not user or (token is None and authz):
             if path == cfg.mcp.path or path.startswith("/mcp/"):
                 return cast(
@@ -426,9 +426,9 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
             origin = request.headers.get("origin")
             host = request.headers.get("host", "")
             fetch_site = request.headers.get("sec-fetch-site")
-            bearer_only = token is not None  # a identidade vem do token (o cookie, se vier junto, é ignorado)
-            # `Sec-Fetch-Site: same-origin` basta: com `Referrer-Policy: no-referrer` (consentimento
-            # OAuth) o navegador manda `Origin: null` num POST do próprio hub.
+            bearer_only = token is not None  # identity comes from the token (a cookie, if sent, is ignored)
+            # `Sec-Fetch-Site: same-origin` is enough: with `Referrer-Policy: no-referrer` (OAuth consent)
+            # the browser sends `Origin: null` on a POST from the hub itself.
             if (
                 not bearer_only
                 and fetch_site != "same-origin"
@@ -444,7 +444,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
         request.state.lang = resolve(prefs.lang, request.headers.get("accept-language"))
         request.state.theme = prefs.theme
         perms, apps = permissions(user, request.app.state.roles)
-        if apps is not None:  # acessos concedidos por pedido aprovado na Inbox
+        if apps is not None:  # access granted by a request approved in the Inbox
             apps = [*apps, *request.app.state.inbox.grants_for(user["id"])]
         request.state.permissions, request.state.apps = perms, apps
         required: tuple[str, ...] | None = None
@@ -462,7 +462,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
         else:
             required = ("acessar_aplicacoes",)
         if token and token_action(method, path) in token.get("actions", []):
-            required = ()  # token de CI/`hub deploy` (upload/status): a ação do token é a autorização
+            required = ()  # CI token / `hub deploy` (upload/status): the token's action is the authorization
         app_id = segs[1] if segs[0] in ("apps", "_frag") and len(segs) > 1 else segs[0]
         denied = required is not None and required and not any(p in perms for p in required)
         denied = denied or (
@@ -500,8 +500,8 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
 
     @app.get("/readyz")
     async def readyz() -> Response:
-        """Pronto para receber tráfego: banco de estado responde e `/data` é legível (a borda e o
-        `hub-update` só mandam tráfego a uma cópia pronta)."""
+        """Ready to receive traffic: the state database responds and `/data` is readable (the edge and the
+        `hub-update` only send traffic to a ready copy)."""
         problems = []
         if (db := auth_store.db) is not None:
             try:
@@ -524,7 +524,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
 
     @app.get("/assets/theme.css")
     async def theme_css() -> Response:
-        """Camada de tema da instalação (white label): só tokens semânticos, a cor vem validada como #rrggbb."""
+        """Installation theme layer (white label): semantic tokens only; the color is validated as #rrggbb."""
         out = "/* Tema da instalação (Plataforma › Configurações). */\n" + STAGING_BAR_CSS
         if c := brand_color():
             dark = f"--color-accent: color-mix(in srgb, {c} 45%, #ffffff);"
@@ -544,8 +544,8 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
     ] = {}  # path → (conferido, mtime_ns, size, corpo, tipo, etag)
 
     def asset(path: str) -> tuple[bytes, str, str] | None:
-        """Corpo, tipo e ETag; a pasta dos assets costuma estar num bind mount lento (Windows/Docker) —
-        guarda em memória e só reconfere o arquivo a cada 2 s (modo dev: sempre)."""
+        """Body, type and ETag; the assets folder is often on a slow bind mount (Windows/Docker) —
+        keeps them in memory and only rechecks the file every 2 s (dev mode: always)."""
         now = time.monotonic()
         hit = asset_cache.get(path)
         if hit and not devmode.enabled() and now - hit[0] < 2:
@@ -573,7 +573,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
         if got is None:
             raise HTTPException(404)
         body, mt, etag = got
-        # Fontes 7 dias, vendor 1 dia, o resto revalida (ETag → 304); modo dev: sem cache.
+        # Fonts 7 days, vendor 1 day, the rest revalidates (ETag → 304); dev mode: no cache.
         cache = (
             "no-store"
             if devmode.enabled()
@@ -584,7 +584,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
             else "no-cache"
         )
         headers = {"cache-control": cache, "etag": etag}
-        if cache == "no-cache":  # CDN (ex.: Cloudflare) não guarda: senão serve CSS/JS antigo após o deploy
+        if cache == "no-cache":  # CDN (e.g. Cloudflare) must not cache: else old CSS/JS after a deploy
             headers["cdn-cache-control"] = "no-store"
         if cache == "no-cache" and etag in request.headers.get("if-none-match", ""):
             return Response(status_code=304, headers=headers)
@@ -648,7 +648,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
         )
 
     def app_palette(request: Request, lang: str) -> str:
-        """Apps do usuário primeiro, depois as páginas da plataforma (atalho Ctrl+K)."""
+        """User's apps first, then the platform pages (Ctrl+K shortcut)."""
         allowed = getattr(request.state, "apps", None)
         apps = [
             {
@@ -669,10 +669,10 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
         theme, color_scheme = theme_of(getattr(request.state, "theme", ""))
         user = {"name": principal["name"], "initials": initials(principal["name"])}
         unread, bell = bell_of(request) if hasattr(request.state, "user") else (0, [])
-        # Modo do rail guardado à parte dentro dos apps e fora (cookie `hub_rail_<ctx>`, gravado pelo hub-ux.js):
-        # o servidor já desenha a página no modo certo.
+        # The rail mode is stored separately inside and outside apps (cookie `hub_rail_<ctx>`, written by hub-ux.js):
+        # the server already renders the page in the right mode.
         in_app = "in-app" in body_class
-        in_docs = request.url.path.startswith("/developers")  # docs: 3 colunas, rail recolhido por padrão
+        in_docs = request.url.path.startswith("/developers")  # docs: 3 columns, rail collapsed by default
         rail_ctx = "app" if in_app else "docs" if in_docs else "hub"
         chosen = request.cookies.get(f"hub_rail_{rail_ctx}", "")
         default = "hidden" if in_app else "collapsed" if in_docs else "expanded"
@@ -953,7 +953,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
             method = ""
         target = "/login?m=saiu"
         if method == "entra" and (sso := app.state.sso):
-            # Logout único: a Microsoft encerra a sessão dela e volta para o login do hub.
+            # Single logout: Microsoft ends its session and returns to the hub login.
             target = (
                 sso.endpoint("logout", back=False)
                 + "?"
@@ -996,7 +996,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
                 return password_page(request, "Senha atual incorreta.", target, 400)
         except ValueError as e:
             return password_page(request, str(e), target, 400)
-        # As sessões anteriores caíram; esta continua com um id novo e volta para onde a pessoa estava.
+        # The previous sessions were dropped; this one continues with a new id and returns to where the person was.
         resp = RedirectResponse(target, status_code=303)
         resp.set_cookie(
             COOKIE,

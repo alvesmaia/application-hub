@@ -1,4 +1,4 @@
-"""Login com Microsoft Entra ID (OIDC código + PKCE, endpoints v2), configurado só por env/hub.toml `[sso]`."""
+"""Sign-in with Microsoft Entra ID (OIDC code + PKCE, v2 endpoints), configured only via env/hub.toml `[sso]`."""
 
 from __future__ import annotations
 
@@ -20,12 +20,12 @@ from cryptography.hazmat.primitives.hashes import SHA256
 DEFAULT_AUTHORITY = "https://login.microsoftonline.com"
 JWKS_TTL = 3600.0
 SKEW = 120
-# Testes injetam um transporte (provedor falso); produção usa a rede.
+# Tests inject a transport (fake provider); production uses the network.
 TRANSPORT: httpx.AsyncBaseTransport | None = None
 
 
 class SsoError(Exception):
-    """Falha de validação do login SSO (mensagem segura para o usuário, sem segredos)."""
+    """SSO sign-in validation failure (message safe for the user, no secrets)."""
 
 
 def _b64d(s: str) -> bytes:
@@ -43,7 +43,7 @@ def _list(v: Any) -> list[str]:
 
 
 def parse_role_map(raw: Any) -> dict[str, str]:
-    """`{"<groupId|appRole>": "Função"}` em JSON, ou `id=Função,id2=Função`."""
+    """`{"<groupId|appRole>": "Role"}` as JSON, or `id=Role,id2=Role`."""
     if isinstance(raw, dict):
         return {str(k).strip().lower(): str(v).strip() for k, v in raw.items() if str(v).strip()}
     raw = str(raw or "").strip()
@@ -176,7 +176,7 @@ class EntraConfig:
         }
 
 
-VAULT_SECRET = "entra-client-secret"  # noqa: S105 - nome do item no cofre
+VAULT_SECRET = "entra-client-secret"  # noqa: S105 - name of the item in the vault
 
 
 def _get(conf: dict[str, Any], env: str) -> str:
@@ -185,8 +185,8 @@ def _get(conf: dict[str, Any], env: str) -> str:
 
 
 def load(config: dict[str, Any] | None = None, vault: Any = None) -> EntraConfig | None:
-    """Lê `HUB_SSO_PROVIDER=entra` + `HUB_ENTRA_*` (ou `[sso]` do hub.toml). Sem tudo configurado: None.
-    Segredo: variável, arquivo ou, sem os dois, o cofre (`python -m hub.admin set-entra-secret`)."""
+    """Reads `HUB_SSO_PROVIDER=entra` + `HUB_ENTRA_*` (or `[sso]` of hub.toml). If not everything is configured: None.
+    Secret: variable, file or, if neither, the vault (`python -m hub.admin set-entra-secret`)."""
     conf = dict((config or {}).get("sso", {}))
     if _get(conf, "HUB_SSO_PROVIDER").lower() != "entra":
         return None
@@ -218,7 +218,7 @@ def load(config: dict[str, Any] | None = None, vault: Any = None) -> EntraConfig
 
 
 def local_login_mode(config: dict[str, Any] | None = None) -> str:
-    """`on` (padrão), `admins` (só administradores) ou `off` (só vale com SSO configurado)."""
+    """`on` (default), `admins` (administrators only) or `off` (only applies with SSO configured)."""
     v = _get(dict((config or {}).get("sso", {})), "HUB_LOCAL_LOGIN").lower() or "1"
     if v in ("admins", "admin"):
         return "admins"

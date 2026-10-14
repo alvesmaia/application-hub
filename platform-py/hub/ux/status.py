@@ -1,4 +1,4 @@
-"""Dados da página de status: situação atual, barras de 30 dias, SLO e incidentes (métricas do próprio hub)."""
+"""Status page data: current situation, 30-day bars, SLO and incidents (the hub's own metrics)."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ def _label(ms: int) -> str:
 
 
 def current_state(m: Metrics | None, app: str, env: str, open_: list[dict[str, Any]]) -> str:
-    """Incidente aberto > última sonda > tráfego: `down`, `degraded`, `unstable` ou `ok`."""
+    """Open incident > last probe > traffic: `down`, `degraded`, `unstable` or `ok`."""
     mine = [i for i in open_ if i["app"] == app and i["env"] == env]
     if any(i["severity"] == "major" for i in mine):
         return "down"
@@ -60,7 +60,7 @@ def app_states(
     m: Metrics | None = None,
     incidents: list[dict[str, Any]] | None = None,
 ) -> list[tuple[str, str, str]]:
-    """(id, nome, chave de situação) dos apps visíveis em produção."""
+    """(id, name, status key) of the apps visible in production."""
     open_ = [i for i in incidents or [] if i["resolved"] is None]
     return [
         (e.id, e.name, current_state(m, e.id, "producao", open_))

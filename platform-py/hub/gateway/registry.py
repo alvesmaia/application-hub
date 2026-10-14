@@ -1,4 +1,4 @@
-"""Registro de apps lido de apps.json / apps.compose.json (HUB_APPS_FILE)."""
+"""App registry read from apps.json / apps.compose.json (HUB_APPS_FILE)."""
 
 from __future__ import annotations
 
@@ -29,15 +29,15 @@ class AppEntry:
 class Registry:
     def __init__(self, entries: list[AppEntry]) -> None:
         self._apps = {e.id: e for e in entries}
-        self.staging: dict[str, str] = {}  # upstream de staging por app (container `<app>__staging`)
+        self.staging: dict[str, str] = {}  # staging upstream per app (container `<app>__staging`)
 
     def set_upstream(self, app_id: str, url: str, version: str | None = None) -> None:
-        """Troca o destino do app (blue/green): os próximos pedidos já vão ao novo upstream."""
+        """Switches the app's target (blue/green): the next requests already go to the new upstream."""
         if (e := self._apps.get(app_id)) is not None:
             self._apps[app_id] = replace(e, upstream=url, version=e.version if version is None else version)
 
     def add(self, entry: AppEntry) -> None:
-        """App novo implantado pelo hub (kit do desenvolvedor) — `hub.ops.newapp`."""
+        """New app deployed by the hub (developer kit) — `hub.ops.newapp`."""
         self._apps[entry.id] = entry
 
     def get(self, app_id: str) -> AppEntry | None:

@@ -1,6 +1,6 @@
-"""Supervisão dos containers dos apps (só no líder; port enxuto de `hub-ops::supervisor`): religa o que caiu ou ficou
-`unhealthy` (recuo exponencial, laço de quedas vira alerta), alimenta os gráficos de CPU/memória da Observabilidade e
-leva a saída dos containers para o console de logs (origem "container"). Parada pelo operador não é religada."""
+"""Supervision of the apps' containers (leader only; lean port of `hub-ops::supervisor`): restarts what went down or became
+`unhealthy` (exponential backoff; a crash loop becomes an alert), feeds the Observability CPU/memory charts and
+sends the containers' output to the logs console (source "container"). A stop by the operator is not restarted."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ class Supervisor:
     def __init__(self, app: FastAPI, leader: Leader) -> None:
         self.app, self.leader = app, leader
         self.state: dict[str, dict[str, Any]] = {}  # app|env -> restarts, last, next, loop
-        self.seen: dict[str, int] = {}  # container -> epoch s da última linha de log levada ao console
+        self.seen: dict[str, int] = {}  # container -> epoch s of the last log line sent to the console
         self.task: asyncio.Task[None] | None = None
 
     def status(self, app: str, env: str = "producao") -> dict[str, Any] | None:
@@ -46,9 +46,7 @@ class Supervisor:
         if not info["reachable"]:
             return []
         live = {x["name"]: x for x in info["live"]}
-        for e in (
-            reg.entries()
-        ):  # staging do gateway = container `<app>__staging` em execução (vale em toda réplica)
+        for e in reg.entries():  # gateway staging = running `<app>__staging` container (any replica)
             n = rt.container_name(e.id, "staging")
             if n in live and live[n]["state"] == "running":
                 reg.staging[e.id] = st.ops_rollout.url_of(n)
@@ -80,7 +78,7 @@ class Supervisor:
         return out
 
     async def heal_staging(self, e: Any, data: dict[str, Any]) -> str | None:
-        """Recria o `<app>__staging` que sumiu a partir da última implantação de staging (com recuo)."""
+        """Recreates the `<app>__staging` that disappeared, from the last staging deployment (with backoff)."""
         dep = next((x for x in data["deployments"] if x["app"] == e.id and x["env"] == STAGING
                     and x["status"] == IMPLANTADO and x.get("image")), None)  # fmt: skip
         key, now = f"{e.id}|staging", time.time()

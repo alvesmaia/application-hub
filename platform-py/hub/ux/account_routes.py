@@ -1,4 +1,4 @@
-"""Conta: Configurações (`/account/settings`), Tokens pessoais, Apps autorizados e preferências do menu."""
+"""Account: Settings (`/account/settings`), Personal tokens, Authorized apps and menu preferences."""
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ def mount_account(
 ) -> None:
 
     def frame(request: Request, tab: str) -> dict[str, Any]:
-        """Contexto comum das três abas: Perfil, Segurança e Acessos."""
+        """Common context of the three tabs: Profile, Security and Access."""
         items = [("/account", "Perfil", "perfil"), ("/account/security", "Segurança", "seguranca")]
         items.append(("/account/access", "Acessos", "acessos"))
         return page_ctx(request) | {
@@ -100,7 +100,7 @@ def mount_account(
         }
         return templates.TemplateResponse(request, "account.html", ctx)
 
-    # Endereços antigos → aba certa de "Minha conta".
+    # Old addresses → the right tab of "My account".
     @app.get("/account/settings")
     async def old_settings() -> Response:
         return RedirectResponse("/account", 308)

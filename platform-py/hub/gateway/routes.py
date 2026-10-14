@@ -1,4 +1,4 @@
-"""Rotas do gateway: /_frag, /apps/{id}[/{secao}], /apps/{id}/api, /apps/{id}/ws, redirecionamentos antigos."""
+"""Gateway routes: /_frag, /apps/{id}[/{section}], /apps/{id}/api, /apps/{id}/ws, legacy redirects."""
 
 from __future__ import annotations
 
@@ -78,7 +78,7 @@ def mount_gateway(
         await proxy_ws(gw, ws, app_id, f"/ws/{rest}")
 
     async def _ws_user(ws: WebSocket, app_id: str) -> bool:
-        if facade := ws.scope.get("hub_facade"):  # `hub dev`: usuário simulado em processo
+        if facade := ws.scope.get("hub_facade"):  # `hub dev`: simulated user in-process
             user = facade[0]
         elif not (token := ws.cookies.get(COOKIE)):
             return False
@@ -100,7 +100,7 @@ def mount_gateway(
     async def page(request: Request, app_id: str, section: str = "dashboard") -> Response:
         entry = gw.registry.get(app_id)
         ok = section.replace("-", "").replace("_", "").isalnum() and len(section) <= 64
-        if entry is None or not ok:  # HTML (não corpo vazio): o navegador não trata como download
+        if entry is None or not ok:  # HTML (not an empty body): the browser does not treat it as a download
             nf = page_response(templates, request, "not_found.html", page_ctx(request))
             nf.status_code = 404
             return nf
@@ -131,7 +131,7 @@ def mount_gateway(
     async def legacy_redirect(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        """`/{id}/...` antigo de app registrado -> `/apps/{id}/...` (301 GET/HEAD, 308 demais)."""
+        """Legacy `/{id}/...` of a registered app -> `/apps/{id}/...` (301 for GET/HEAD, 308 for the rest)."""
         seg = request.url.path.lstrip("/").split("/", 1)[0]
         if seg and seg != "apps" and gw.registry.get(seg) is not None:
             raw = (request.scope.get("raw_path") or request.url.path.encode()).decode("latin-1")

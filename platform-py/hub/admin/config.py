@@ -1,4 +1,4 @@
-"""Variáveis de ambiente e funções da Administração (`hub-admin::store`): regras, mascaramento e operações."""
+"""Environment variables and Administration functions (`hub-admin::store`): rules, masking and operations."""
 
 from __future__ import annotations
 
@@ -46,7 +46,7 @@ _DEFAULT_ROLES = (
         (1, 0, 0, 0, 0, 0),
     ),
 )
-# Variáveis iniciais do mockup (valem para os três apps originais, em produção salvo a última).
+# Initial mockup variables (they apply to the three original apps; in production, all but the last one).
 _DEFAULT_ENV = (
     ("API_BASE_URL", "https://api.platform.internal", "publica", "all", "producao"),
     ("AUTH_CLIENT_ID", "sk_live_7f3ac82e9b3f9a", "secreta", "all", "producao"),
@@ -64,7 +64,7 @@ _DEFAULT_ENV = (
 _ORIGINAL_APPS = ("ativos", "fornecedores", "servicos")
 
 
-# Senha de dev da pilha (compose) -> variável de ambiente com a senha rotacionada (`.prod.env`).
+# Dev password of the stack (compose) -> environment variable with the rotated password (`.prod.env`).
 DEV_INFRA_PASSWORDS = {
     "APP_HUB_DB_PASSWORD": "hubpy-dev",
     "APP_HUB_APP_DB_PASSWORD": "hubpy-app-dev",
@@ -112,7 +112,7 @@ def display_value(var: dict[str, Any]) -> str:
 
 
 def masked(var: dict[str, Any]) -> dict[str, Any]:
-    """Cópia para listagens, na ordem de campos da API da versão anterior do hub; o valor de segredos nunca sai daqui."""
+    """Copy for listings, in the field order of the previous hub API; a secret's value never leaves here."""
     out: dict[str, Any] = {
         "name": var["name"],
         "value": display_value(var),
@@ -130,7 +130,7 @@ def bound_to(var: dict[str, Any], app: str, env: str | None = None) -> bool:
 
 
 def resolve(vars_: list[dict[str, Any]], app: str, env: str) -> list[dict[str, Any]]:
-    """Variáveis que entram no container de `app` em `env` (com valores: só para a injeção)."""
+    """Variables that go into the `app` container under `env` (with values: for injection only)."""
     out = [
         {"name": injected_name(v), "value": v["value"], "secret": is_secret(v), "source": v["name"]}
         for v in vars_
@@ -167,7 +167,7 @@ def _conflicts(vars_: list[dict[str, Any]], v: dict[str, Any]) -> None:
 
 
 def seed(data: dict[str, Any], apps: list[str], with_env: bool = True) -> bool:
-    """Dados iniciais (variáveis e funções) quando o `admin.json` ainda não os tem; as variáveis só com cofre."""
+    """Initial data (variables and functions) when `admin.json` does not have them yet; variables only with the vault."""
     changed = False
     if with_env and not data.get("env") and not data.get("env_seeded"):
         for name, value, kind, scope, env in _DEFAULT_ENV:
@@ -189,7 +189,7 @@ def seed(data: dict[str, Any], apps: list[str], with_env: bool = True) -> bool:
 
 
 class ConfigOps:
-    """Operações de variáveis e funções sobre o `admin.json` (`AdminStore.cfg`)."""
+    """Variable and function operations on `admin.json` (`AdminStore.cfg`)."""
 
     def __init__(self, store: AdminStore) -> None:
         self.s = store
@@ -199,7 +199,7 @@ class ConfigOps:
         return self.s.apps
 
     async def mutate(self, actor: str, fn: Callable[[dict[str, Any]], tuple[Any, str, str, str, str]]) -> Any:
-        """`fn(data)` altera os dados e devolve `(resultado, título, detalhe, ícone, escopo)` da auditoria."""
+        """`fn(data)` changes the data and returns `(result, title, detail, icon, scope)` for the audit."""
         async with self.s.locked(True) as data:
             out, title, detail, icon, scope = fn(data)
             event = self.s._push_audit(data, actor, title, detail, icon, scope)
@@ -210,7 +210,7 @@ class ConfigOps:
         async with self.s.locked() as data:
             return data
 
-    # ---- variáveis -------------------------------------------------------------------------
+    # ---- variables ----------------------------------------------------------------------
     def _check_bindings(self, raw: Any) -> list[dict[str, str]]:
         out: list[dict[str, str]] = []
         for b in raw or []:
@@ -407,8 +407,8 @@ class ConfigOps:
         return await self.mutate(actor, run)
 
     async def replace_secret_values(self, actor: str, pairs: dict[str, str]) -> list[str]:
-        """Troca senhas antigas (`old → new`) dentro dos valores das variáveis (ex.: DSN com a senha de dev
-        depois da rotação do Postgres/MinIO). Idempotente; devolve só os nomes alterados (nunca valores)."""
+        """Replaces old passwords (`old → new`) inside variable values (e.g. a DSN with the dev password
+        after the Postgres/MinIO rotation). Idempotent; returns only the names changed (never values)."""
         pairs = {o: n for o, n in pairs.items() if o and n and o != n}
         if not pairs or not any(o in str(v["value"]) for v in (await self.read())["env"] for o in pairs):
             return []
@@ -453,7 +453,7 @@ class ConfigOps:
         return await self.rotate_managed(actor, name, secrets.token_hex(32), "Token interno rotacionado")
 
     async def ensure_internal_tokens(self, actor: str, seed_of: Callable[[str], str | None]) -> list[str]:
-        """Um token interno gerido por app (`HUB_INTERNAL_TOKEN_<APP>`); `seed_of` fixa o valor (demo)."""
+        """An internal token managed per app (`HUB_INTERNAL_TOKEN_<APP>`); `seed_of` fixes the value (demo)."""
         created: list[str] = []
         for app in self.apps:
             fixed = seed_of(app)
@@ -472,14 +472,14 @@ class ConfigOps:
         return created
 
     async def import_bootstrap(self, actor: str, items: list[dict[str, Any]]) -> int:
-        """Carga inicial (`HUB_APP_ENV_FILE`): só o que ainda não existe, sem marcar reinício."""
+        """Initial load (`HUB_APP_ENV_FILE`): only what does not exist yet, without marking a restart."""
         async with self.s.locked(True) as d:
             n = 0
             for raw in items:
                 if any(e["name"] == raw["name"] for e in d["env"]):
                     continue
-                # A carga é um arquivo da instalação, não entrada de usuário: um vínculo com app fora do catálogo
-                # (ex.: instalar sem os apps de exemplo) descarta o vínculo, nunca derruba o hub no boot.
+                # The load is an installation file, not user input: a binding to an app outside the catalog
+                # (e.g. installing without the sample apps) drops the binding; it never brings the hub down at boot.
                 if binds := raw.get("bindings"):
                     kept = [b for b in binds if str(b.get("app", "")) in self.apps]
                     if not kept:
@@ -505,7 +505,7 @@ class ConfigOps:
             await self.s.chain.append_shared(event)
         return n
 
-    # ---- funções ---------------------------------------------------------------------------
+    # ---- functions ----------------------------------------------------------------------
     @staticmethod
     def _check_role(i: dict[str, Any], name: str) -> None:
         if not name or len(name) > 60:

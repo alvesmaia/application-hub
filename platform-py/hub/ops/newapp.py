@@ -1,11 +1,11 @@
-"""Apps novos implantados pelo hub (kit do desenvolvedor, F22) e o `requires` do manifesto.
+"""New apps deployed by the hub (developer kit, F22) and the manifest's `requires`.
 
-- Registro: um app que não está no `apps.json` entra no registro na primeira implantação aprovada pelo pipeline e
-  fica salvo em `<dados>/apps.dynamic.json` (recarregado na subida).
-- Container de base: sem container do compose, o candidato nasce de um molde endurecido (raiz só leitura,
-  `cap_drop ALL`, `no-new-privileges`, `/scratch` em tmpfs) na rede dos apps (`HUB_APP_NETWORK`).
-- `requires`: banco (`provision.provision`), armazenamento (gancho das Conexões) e variáveis/segredos enviados
-  pelo `hub deploy` — gravados como variáveis geridas `NOME_<APP>[_STAGING]` injetadas como `NOME`, só escrita.
+- Registry: an app that is not in `apps.json` joins the registry on its first deployment approved by the pipeline and
+  is saved in `<data>/apps.dynamic.json` (reloaded on startup).
+- Base container: without a compose container, the candidate starts from a hardened template (read-only root,
+  `cap_drop ALL`, `no-new-privileges`, `/scratch` on tmpfs) on the apps' network (`HUB_APP_NETWORK`).
+- `requires`: database (`provision.provision`), storage (Connections hook) and variables/secrets sent
+  by `hub deploy` — stored as managed variables `NAME_<APP>[_STAGING]` injected as `NAME`, write-only.
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ def _entry(m: AppManifest) -> AppEntry:
 
 
 def load_dynamic(data_dir: Path, registry: Registry) -> list[str]:
-    """Junta ao registro os apps implantados pelo hub; devolve os ids acrescentados."""
+    """Adds the apps deployed by the hub to the registry; returns the ids added."""
     p = data_dir / DYNAMIC
     if not p.is_file():
         return []
@@ -49,7 +49,7 @@ def load_dynamic(data_dir: Path, registry: Registry) -> list[str]:
 
 
 def register(data_dir: Path, registry: Registry, apps: list[str], manifest: dict[str, Any]) -> bool:
-    """Registra o app novo (registro do gateway, lista de apps da Administração/Conexões e o arquivo)."""
+    """Registers the new app (gateway registry, Administration/Connections app list, and the file)."""
     m = AppManifest.model_validate(manifest)
     if registry.get(m.id) is not None:
         return False
@@ -69,7 +69,7 @@ def is_dynamic(data_dir: Path, app_id: str) -> bool:
 
 
 def base_container() -> dict[str, Any]:
-    """Molde do primeiro container de um app novo (o `rollout` aplica limites e reinício)."""
+    """Template for the first container of a new app (`rollout` applies limits and restart)."""
     net = os.getenv("HUB_APP_NETWORK", "app-hub_default")
     return {
         "Image": "",
@@ -90,7 +90,7 @@ def var_name(app: str, env: str, name: str) -> str:
 
 
 def parse_config(raw: str) -> dict[str, dict[str, str]]:
-    """Campo `config` do envio (`hub deploy`): {"variables": {NOME: valor}, "secrets": {...}}."""
+    """`config` field of the submission (`hub deploy`): {"variables": {NAME: value}, "secrets": {...}}."""
     if not raw.strip():
         return {"variables": {}, "secrets": {}}
     try:
@@ -118,7 +118,7 @@ async def apply_requires(
     database: Callable[[str, str], Awaitable[dict[str, Any]]],
     storage: Callable[[str, str], Awaitable[dict[str, Any]]] | None,
 ) -> dict[str, Any]:
-    """Provisiona o que o manifesto pede e grava variáveis/segredos; devolve um resumo sem valores."""
+    """Provisions what the manifest asks for and stores variables/secrets; returns a summary without values."""
     req = AppRequires.model_validate(manifest.get("requires") or {})
     done: dict[str, Any] = {"database": None, "storage": None, "variables": [], "secrets": []}
     if req.database:

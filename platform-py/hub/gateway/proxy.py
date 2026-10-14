@@ -1,4 +1,4 @@
-"""Proxy HTTP dos apps (port de hub-gateway): streaming nos dois sentidos, cabeçalhos, timeouts."""
+"""HTTP proxy for apps (port of hub-gateway): streaming in both directions, headers, timeouts."""
 
 from __future__ import annotations
 
@@ -50,11 +50,11 @@ class GwOptions:
     user_sig_key: bytes | None = None
 
 
-# --- funções puras --------------------------------------------------------------------
+# --- pure functions ---------------------------------------------------------------------
 
 
 def public_location(app_id: str, loc: str) -> str | None:
-    """`Location` do próprio app (`/{id}`, `/{id}/...`) -> `/apps/{id}...`; outros ficam como vieram."""
+    """The app's own `Location` (`/{id}`, `/{id}/...`) -> `/apps/{id}...`; others are kept as they came."""
     if not loc.startswith("/") or not loc[1:].startswith(app_id):
         return None
     rest = loc[1 + len(app_id) :]
@@ -66,7 +66,7 @@ def has_encoded_percent(path: str) -> bool:
 
 
 def targets_internal(path: str) -> bool:
-    """Algum segmento (decodificado) é `_hub` -> endpoint interno do app, nunca encaminhado."""
+    """Any segment (decoded) is `_hub` -> the app's internal endpoint, never forwarded."""
     return any(unquote(seg).strip().lower() == "_hub" for seg in path.split("/"))
 
 
@@ -126,7 +126,7 @@ def friendly(
 
 
 def _unavailable(app: AppEntry, status: int) -> Response:
-    # `data-hub-unavailable` + Retry-After: o hub.js mostra "reiniciando" e tenta de novo.
+    # `data-hub-unavailable` + Retry-After: hub.js shows "restarting" and tries again.
     return friendly(
         status,
         "Aplicação indisponível",
@@ -236,7 +236,7 @@ class Gateway:
         )
 
     def pre_check(self, request: Request, app_id: str) -> tuple[AppEntry, Identity] | Response:
-        """Valida caminho/identidade/acesso; devolve o app e a identidade ou a resposta de erro."""
+        """Validates path/identity/access; returns the app and the identity, or the error response."""
         raw = request.scope.get("raw_path") or request.url.path.encode()
         raw_path = raw.decode("latin-1")
         if (
@@ -258,13 +258,13 @@ class Gateway:
         return app, ident
 
     async def forward(self, request: Request, app_id: str, rest: str) -> Response:
-        """Encaminha para `{upstream}/{app_id}{rest}` (rest começa com `/` ou é vazio)."""
+        """Forwards to `{upstream}/{app_id}{rest}` (rest starts with `/` or is empty)."""
         checked = self.pre_check(request, app_id)
         if isinstance(checked, Response):
             return checked
         app, ident = checked
         env = "producao"
-        if request.cookies.get("hub_env") == "staging":  # modo staging (ligado em /hub-env), só com permissão
+        if request.cookies.get("hub_env") == "staging":  # staging mode (set at /hub-env); needs permission
             if not ident.can_view_staging():
                 return friendly(403, "Staging restrito", f"Você não tem permissão para ver {app.name} em staging. "
                                 f"Volte para produção em /hub-env?to=producao&next=/apps/{app.id}.")  # fmt: skip
@@ -274,9 +274,7 @@ class Gateway:
             app, env = replace(app, upstream=up), "staging"
         hdrs = {k.lower(): v for k, v in request.headers.items()}
         method = request.method
-        if getattr(request.state, "token", None) is None and not csrf_ok(
-            hdrs, method
-        ):  # token: sem navegador
+        if getattr(request.state, "token", None) is None and not csrf_ok(hdrs, method):  # token: no browser
             return friendly(
                 403,
                 "Requisição bloqueada",
@@ -294,7 +292,7 @@ class Gateway:
             up_headers += self.extra_headers(request, app.id, ident)
         query = request.scope.get("query_string", b"").decode("latin-1")
         raw_path = (request.scope.get("raw_path") or request.url.path.encode()).decode("latin-1")
-        # o caminho do upstream = tudo depois do prefixo público (/_frag ou /apps) do pedido
+        # the upstream path = everything after the request's public prefix (/_frag or /apps)
         tail = raw_path.split("/", 2)[2] if raw_path.count("/") >= 2 else ""
         url = f"{app.upstream.rstrip('/')}/{tail}" + (f"?{query}" if query else "")
 
@@ -329,7 +327,7 @@ class Gateway:
         dl = asyncio.ensure_future(deadline())
         try:
             await asyncio.wait({send, dl}, return_when=asyncio.FIRST_COMPLETED)
-            if not send.done():  # prazo da resposta estourou
+            if not send.done():  # response deadline exceeded
                 send.cancel()
                 return _unavailable(app, 504)
             try:
@@ -345,7 +343,7 @@ class Gateway:
 
         async def stream() -> AsyncIterator[bytes]:
             try:
-                async for chunk in up.aiter_raw():  # ociosidade: read timeout do cliente
+                async for chunk in up.aiter_raw():  # idleness: the client's read timeout
                     yield chunk
             finally:
                 await up.aclose()

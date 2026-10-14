@@ -1,9 +1,9 @@
-"""Conexões SQL (PostgreSQL, MySQL/MariaDB, SQL Server) do broker: consultas dos apps com a credencial do hub.
+"""SQL connections (PostgreSQL, MySQL/MariaDB, SQL Server) of the broker: app queries with the hub's credential.
 
-O app manda ``{"sql", "params"}`` (parâmetros nomeados ``:nome``); o hub converte para o estilo do driver,
-aplica somente leitura (transação READ ONLY onde o banco permite + guarda léxica sempre), limite de linhas
-e de tempo, e devolve ``{"columns", "rows", "truncated", "ms"}``. Nada de dados nem valores de parâmetros
-em log/auditoria: só o hash do SQL, o tamanho e a contagem de linhas."""
+The app sends ``{"sql", "params"}`` (named parameters ``:name``); the hub converts them to the driver's style,
+enforces read-only (READ ONLY transaction where the database allows it + a lexical guard always), a row limit
+and a time limit, and returns ``{"columns", "rows", "truncated", "ms"}``. No data or parameter values
+in logs/audit: only the SQL hash, the size and the row count."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ class SqlError(Exception):
 
 
 def _strip(sql: str) -> str:
-    """SQL sem comentários e com literais/identificadores entre aspas trocados por marcadores."""
+    """SQL without comments, with quoted literals/identifiers replaced by markers."""
     out: list[str] = []
     i, n = 0, len(sql)
     while i < n:
@@ -84,7 +84,7 @@ def _strip(sql: str) -> str:
 
 
 def check_sql(sql: str, readonly: bool) -> str:
-    """Uma única instrução; somente leitura = SELECT/WITH sem palavras de escrita (além da transação RO)."""
+    """A single statement; read-only = SELECT/WITH without write keywords (in addition to the RO transaction)."""
     if not isinstance(sql, str) or not sql.strip():
         raise SqlError("Informe o SQL.")
     if len(sql) > MAX_SQL:
@@ -102,7 +102,7 @@ def check_sql(sql: str, readonly: bool) -> str:
 
 
 def bind(sql: str, params: dict[str, Any], style: str) -> tuple[str, list[Any]]:
-    """``:nome`` → ``$1`` (postgres), ``%s`` (mysql/sqlserver) ou ``?`` (sqlite), fora de aspas e comentários."""
+    """``:name`` → ``$1`` (postgres), ``%s`` (mysql/sqlserver) or ``?`` (sqlite), outside quotes and comments."""
     if len(params) > MAX_PARAMS:
         raise SqlError(f"Até {MAX_PARAMS} parâmetros.")
     for k, v in params.items():
@@ -116,7 +116,7 @@ def bind(sql: str, params: dict[str, Any], style: str) -> tuple[str, list[Any]]:
     values: list[Any] = []
     order: dict[str, int] = {}
 
-    def esc(part: str) -> str:  # drivers "format" aplicam `%` na consulta inteira, inclusive em literais
+    def esc(part: str) -> str:  # "format" drivers apply `%` to the whole query, including literals
         return part.replace("%", "%%") if style == "format" else part
 
     i, n = 0, len(sql)
@@ -186,7 +186,7 @@ def jsonable(v: Any) -> Any:
     if isinstance(v, uuid.UUID):
         return str(v)
     if isinstance(v, bytes | bytearray | memoryview):
-        return None  # binários não saem pelo broker
+        return None  # binaries do not leave through the broker
     return str(v)
 
 
@@ -220,7 +220,7 @@ class QueryResult:
 
 
 class SqlBackend:
-    """Executa consultas com a credencial guardada. Um pool por conexão (Postgres) ou conexão por consulta."""
+    """Runs queries with the stored credential. One pool per connection (Postgres) or one connection per query."""
 
     def __init__(self, cfg: SqlConfig) -> None:
         self.cfg = cfg
@@ -245,7 +245,7 @@ class SqlBackend:
             raise SqlError(f"Consulta passou do limite de {self.cfg.timeout_s} s.", 504) from e
         except SqlError:
             raise
-        except Exception as e:  # erro do driver: mensagem curta, sem SQL nem valores
+        except Exception as e:  # driver error: short message, no SQL or values
             raise SqlError(f"Banco recusou a consulta: {driver_message(e)}", 502) from e
         ms = int((time.monotonic() - t0) * 1000)
         truncated = len(rows) > limit
@@ -318,13 +318,13 @@ class SqlBackend:
                 cols = [a.name for a in stmt.get_attributes()]
                 if cols:
                     rows = await (await stmt.cursor(*values)).fetch(fetch)
-                else:  # escrita/comando: sem linhas
+                else:  # write/command: no rows
                     await stmt.fetch(*values)
                     rows = []
             except BaseException:
                 await tx.rollback()
                 raise
-            # somente leitura: nada fica; leitura e escrita: confirma
+            # read-only: nothing is kept; read and write: commit
             await (tx.rollback() if self.cfg.readonly else tx.commit())
         return cols, [list(r.values()) for r in rows]
 
@@ -377,7 +377,7 @@ class SqlBackend:
                 cur.execute(q, tuple(values))
                 cols = [d[0] for d in (cur.description or [])]
                 rows = [list(r) for r in cur.fetchmany(fetch)] if cols else []
-            # sem transação só de leitura no SQL Server: no modo leitura, o rollback desfaz qualquer escrita
+            # no read-only transaction on SQL Server: in read mode, the rollback undoes any write
             conn.rollback() if self.cfg.readonly else conn.commit()
             return cols, rows
         finally:

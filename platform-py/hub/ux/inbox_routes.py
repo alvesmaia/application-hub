@@ -1,4 +1,4 @@
-"""Inbox (`/inbox`, `/api/me/inbox*`, SSE `/api/me/stream`), pedidos de acesso e busca (`/search`, `/api/me/search`)."""
+"""Inbox (`/inbox`, `/api/me/inbox*`, SSE `/api/me/stream`), access requests and search (`/search`, `/api/me/search`)."""
 
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ class RevokeIn(BaseModel):
     @field_validator("item", mode="before")
     @classmethod
     def _item_id(cls, v: object) -> object:
-        """Aceita o id como a Inbox o mostra (`"i:16"`) ou só o número."""
+        """Accepts the id as the Inbox shows it (`"i:16"`) or just the number."""
         return int(v.removeprefix("i:")) if isinstance(v, str) and v.removeprefix("i:").isdigit() else v
 
 
@@ -72,7 +72,7 @@ def who_of(request: Request) -> Who:
 
 
 def entries_of(request: Request) -> list[dict[str, Any]]:
-    """Itens da Inbox de quem pede (com as preferências de canal e os nomes dos apps)."""
+    """Inbox items of the requester (with channel preferences and app names)."""
     st = cast(UxStore, request.app.state.ux)
     inbox = cast(InboxStore, request.app.state.inbox)
     who, prefs = who_of(request), st.prefs(request.state.user["id"])
@@ -97,7 +97,7 @@ def filter_entries(entries: list[dict[str, Any]], f: str) -> list[dict[str, Any]
 
 
 def bell_of(request: Request) -> tuple[int, list[dict[str, Any]]]:
-    """Contador e itens do sino (até 8, sem os arquivados nem os com canal desligado)."""
+    """Bell counter and items (up to 8, excluding archived ones and those with the channel off)."""
     entries = entries_of(request)
     return InboxStore.unread(entries), [e for e in entries if not e["archived"] and e["in_app"]][:8]
 
@@ -109,7 +109,7 @@ async def stream_events(
     debounce: float = 0.25,
     keepalive: float = 15.0,
 ) -> AsyncIterator[str]:
-    """SSE: `ready` e `inbox {"unread": n}`; só reenvia quando o contador muda."""
+    """SSE: `ready` and `inbox {"unread": n}`; only resends when the counter changes."""
     wake: asyncio.Queue[None] = asyncio.Queue(maxsize=1)
     inbox.watchers.add(wake)
     try:
@@ -148,7 +148,7 @@ def mount_inbox(
         if admin := getattr(app.state, "admin", None):
             await admin.audit(request.state.user["name"], title, detail, icon="users")
 
-    # ---- páginas ---------------------------------------------------------------------------
+    # ---- pages ------------------------------------------------------------------------------
     @app.get("/inbox", response_class=HTMLResponse)
     async def inbox_page(request: Request, filter: str = "all") -> Response:
         entries = entries_of(request)
@@ -228,7 +228,7 @@ def mount_inbox(
         return JSONResponse({"changed": inbox.set_state(who_of(request), ids_of(b.ids), None, on)})
 
     async def call_app(it: dict[str, Any], request: Request, who: Who, decision: str, comment: str) -> str:
-        """Avisa o app (`POST /_hub/approvals/{id}`); devolve o resultado final dele ou levanta `InboxError`."""
+        """Notifies the app (`POST /_hub/approvals/{id}`); returns its final result or raises `InboxError`."""
         entry = reg().get(it["app"])
         token = srch.internal_token(it["app"])
         if entry is None or token is None:

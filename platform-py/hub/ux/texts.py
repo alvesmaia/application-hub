@@ -1,5 +1,5 @@
-"""Textos do shell (catálogo extraído em `texts.json`)
-e tradução por catálogo (`catalog.json`, chave = texto em pt-BR)."""
+"""Shell texts (catalog extracted into `texts.json`)
+and translated via the catalog (`catalog.json`, key = pt-BR text)."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from fastapi.templating import Jinja2Templates
 _LANGS = ("pt-BR", "en")
 LANG_NAMES = {"pt-BR": "Português (Brasil)", "en": "English"}
 _WEB = Path(__file__).parent.parent / "web"
-_MARK = r"\{[^{}\s\"]{0,24}\}"  # marcador `{…}` do catálogo
+_MARK = r"\{[^{}\s\"]{0,24}\}"  # `{…}` placeholder of the catalog
 
 
 @cache
@@ -26,11 +26,11 @@ def _table() -> dict[str, list[str]]:
 
 def parse_lang(tag: str) -> str | None:
     head = re.split(r"[-_]", tag.strip().lower())[0]
-    return {"pt": "pt-BR", "en": "en", "es": "en"}.get(head)  # `es` saiu em 10/2026: vira en
+    return {"pt": "pt-BR", "en": "en", "es": "en"}.get(head)  # `es` was dropped in 10/2026: maps to en
 
 
 def resolve(pref: str, accept: str | None) -> str:
-    """Preferência salva (vazia = automático) → `Accept-Language` (pesos `q`) → pt-BR."""
+    """Saved preference (empty = automatic) → `Accept-Language` (`q` weights) → pt-BR."""
     if lang := parse_lang(pref):
         return lang
     best: tuple[float, int, str] | None = None
@@ -80,7 +80,7 @@ def _catalog() -> tuple[dict[str, list[str]], list[tuple[re.Pattern[str], list[s
 
 
 def tr(text: str, lang: str) -> str:
-    """Traduz um texto em pt-BR pelo catálogo (exato, molde `{…}` ou partes ` · `); o que não consta passa."""
+    """Translates a pt-BR text through the catalog (exact, `{…}` template or ` · ` parts); what is not in it passes through."""
     if lang not in _LANGS[1:] or not text.strip():
         return text
     col, (exact, molds) = _LANGS.index(lang), _catalog()
@@ -111,7 +111,7 @@ def _pt_keys() -> dict[str, list[str]]:
 
 
 def tr_html(html: str, lang: str) -> str:
-    """Traduz os textos e atributos visíveis de uma página já renderizada (templates em pt-BR)."""
+    """Translates the visible texts and attributes of an already rendered page (pt-BR templates)."""
     if lang not in _LANGS[1:]:
         return html
 
@@ -141,8 +141,8 @@ def tr_html(html: str, lang: str) -> str:
 
 
 def page_response(templates: Jinja2Templates, request: Request, name: str, data: dict[str, Any]) -> Response:
-    """`TemplateResponse` com o corpo traduzido para o idioma do usuário."""
-    resp = templates.TemplateResponse(request, name, data)  # corpo já renderizado (bytes)
+    """`TemplateResponse` with the body translated into the user's language."""
+    resp = templates.TemplateResponse(request, name, data)  # body already rendered (bytes)
     lang = data.get("lang", "pt-BR")
     if lang != "pt-BR":
         resp.body = tr_html(bytes(resp.body).decode(), lang).encode()
@@ -154,7 +154,7 @@ _JSON_FIELDS = ("error", "title", "detail", "message", "reason", "hint")
 
 
 def js_catalog(lang: str) -> dict[str, Any]:
-    """Catálogo para o `hub-i18n.js`: `{"lang", "exact": {pt: t}, "templates": [[pt, t]]}`."""
+    """Catalog for `hub-i18n.js`: `{"lang", "exact": {pt: t}, "templates": [[pt, t]]}`."""
     col = _LANGS.index(lang)
     rows = cast(list[list[str]], json.loads((_WEB / "catalog.json").read_text(encoding="utf-8")))
     exact = {r[0]: r[col] for r in rows if not re.search(_MARK, r[0])}
@@ -166,7 +166,7 @@ def js_catalog(lang: str) -> dict[str, Any]:
 
 
 def tr_json(v: Any, lang: str) -> bool:
-    """Traduz no lugar os campos de mensagem de primeiro nível (e `errors`) de um objeto JSON de erro."""
+    """Translates in place the top-level message fields (and `errors`) of a JSON error object."""
     if lang not in _LANGS[1:] or not isinstance(v, dict):
         return False
     changed = False

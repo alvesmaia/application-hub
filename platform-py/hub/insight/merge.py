@@ -1,8 +1,8 @@
-"""Telemetria com várias réplicas no mesmo volume: cada uma soma na memória e, ao gravar, junta com o arquivo.
+"""Telemetry with several replicas on the same volume: each one adds in memory and, when writing, merges with the file.
 
-`merge3(arquivo, meu, base)`: o arquivo traz o que as outras réplicas gravaram; `meu - base` é o que esta réplica
-contou desde a última gravação (base = estado adotado na última junção). Nada se perde e todas convergem a cada
-gravação. Regras: dict por chave; set = união; número = arquivo + (meu - base); lista de números = posição a posição.
+`merge3(file, mine, base)`: the file carries what the other replicas wrote; `mine - base` is what this replica
+counted since the last write (base = state adopted at the last merge). Nothing is lost and all converge on every
+write. Rules: dict per key; set = union; number = file + (mine - base); list of numbers = position by position.
 """
 
 from __future__ import annotations

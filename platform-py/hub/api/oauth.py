@@ -1,9 +1,9 @@
-"""O hub como servidor de autorização OAuth 2.1 e servidor de recurso do `/mcp` (RFC 8414, 9728, 7591, 7009,
+"""The hub as OAuth 2.1 authorization server and resource server for `/mcp` (RFC 8414, 9728, 7591, 7009,
 9207, 8707; PKCE S256 obrigatório).
 
-Estado em `records` (banco de estado ou memória), chave = SHA-256 do segredo: só hashes são guardados. O token de
-acesso (`hubo_…`) é amarrado ao `resource` (o `/mcp` deste hub) e só vale ali; age como o dono (mesmo RBAC da UI);
-os escopos só limitam (`mcp` = leitura; `api:write` = ferramentas que alteram algo)."""
+State in `records` (state database or memory), key = SHA-256 of the secret: only hashes are stored. The access token
+(`hubo_…`) is bound to the `resource` (this hub's `/mcp`) and is valid only there; it acts as the owner (same RBAC as the UI);
+scopes only restrict (`mcp` = read; `api:write` = tools that change something)."""
 
 from __future__ import annotations
 
@@ -81,7 +81,7 @@ def canon(u: str) -> str:
 
 
 def parse_url(u: str) -> tuple[str, str, str | None, str] | None:
-    """(esquema, host, porta, caminho+consulta) ou None (sem credenciais, fragmento, espaços ou controle)."""
+    """(scheme, host, port, path+query) or None (no credentials, fragment, spaces or control characters)."""
     if "://" not in u or "#" in u or any(c.isspace() or not c.isprintable() for c in u):
         return None
     scheme, rest = u.split("://", 1)
@@ -111,7 +111,7 @@ def origin_of_url(u: str) -> str | None:
 
 
 def redirect_ok(u: str, allowed_hosts: list[str]) -> bool:
-    """`redirect_uri` aceitável: HTTPS (host permitido) ou HTTP de loopback."""
+    """Acceptable `redirect_uri`: HTTPS (allowed host) or loopback HTTP."""
     p = parse_url(u) if len(u) <= 2000 else None
     if p is None:
         return False
@@ -123,7 +123,7 @@ def redirect_ok(u: str, allowed_hosts: list[str]) -> bool:
 
 
 def redirect_matches(registered: str, presented: str) -> bool:
-    """Exata; em loopback a porta pode variar (RFC 8252 §7.3)."""
+    """Exact match; on loopback the port may vary (RFC 8252 §7.3)."""
     if registered == presented:
         return True
     a, b = parse_url(registered), parse_url(presented)
@@ -132,7 +132,7 @@ def redirect_matches(registered: str, presented: str) -> bool:
 
 
 def form(s: str) -> dict[str, str]:
-    """Campos urlencoded; parâmetro repetido é erro no OAuth: fica o primeiro e marca `<k>\\0dup`."""
+    """urlencoded fields; a repeated parameter is an error in OAuth: keeps the first and marks `<k>\\0dup`."""
     m: dict[str, str] = {}
     for k, v in parse_qsl(s, keep_blank_values=True):
         if k in m:
@@ -257,7 +257,7 @@ class OAuth:
         return f"{i}{self.hub.mcp.path}" if i else None
 
     def origin_allowed(self, origin: str, request: Request) -> bool:
-        """Origem do `/mcp` (anti DNS rebinding): a da URL pública, `HUB_MCP_ALLOWED_ORIGINS` ou loopback."""
+        """Origin of `/mcp` (anti DNS rebinding): the public URL's, `HUB_MCP_ALLOWED_ORIGINS`, or loopback."""
         import os
 
         o = canon(origin)
@@ -628,7 +628,7 @@ class OAuth:
             out |= {"client_secret": secret, "client_secret_expires_at": 0}
         return self.json_res(201, out)
 
-    # ---- autorização -------------------------------------------------------------------------------
+    # ---- authorization ----------------------------------------------------------------------------
     def back_error(self, redirect_uri: str, iss: str, state: str | None, code: str, desc: str) -> Response:
         q = [("error", code), ("error_description", desc), ("iss", iss)]
         if state is not None:
@@ -986,11 +986,11 @@ class OAuth:
                 )
         elif (a := await self.rec.get(K_ACCESS, key)) and a["client_id"] == client["id"]:
             await self.rec.delete(K_ACCESS, key)
-        return self.json_res(200, {})  # RFC 7009: 200 mesmo para token desconhecido
+        return self.json_res(200, {})  # RFC 7009: 200 even for an unknown token
 
-    # ---- servidor de recurso -----------------------------------------------------------------------
+    # ---- resource server ---------------------------------------------------------------------------
     async def verify_access(self, tok: str, request: Request) -> dict[str, Any] | None:
-        """Token OAuth (`hubo_…`) válido para este `/mcp`: devolve um token sintético com dono."""
+        """OAuth token (`hubo_…`) valid for this `/mcp`: returns a synthetic token with an owner."""
         resource = self.resource(request)
         if not self.on or not tok.startswith("hubo_"):
             return None

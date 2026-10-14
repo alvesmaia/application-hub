@@ -1,8 +1,8 @@
-"""CORS dos endpoints de máquina do MCP/OAuth (`/mcp`, `/.well-known/oauth-*`, `/oauth/{token,register,revoke}`).
+"""CORS for the MCP/OAuth machine endpoints (`/mcp`, `/.well-known/oauth-*`, `/oauth/{token,register,revoke}`).
 
-Só aceitam bearer/autenticação do cliente, nunca cookie: `Allow-Origin: *` é seguro e `Allow-Credentials` nunca
-sai. O preflight responde 204 antes da autenticação; as respostas reais (inclusive 4xx) levam os cabeçalhos para
-o navegador ler o `WWW-Authenticate` do 401. `/oauth/authorize` (tela do navegador) fica de fora."""
+Only accept the client's bearer/authentication, never cookies: `Allow-Origin: *` is safe and `Allow-Credentials` is never
+sent. The preflight answers 204 before authentication; the real responses (including 4xx) carry the headers so
+the browser can read the 401's `WWW-Authenticate`. `/oauth/authorize` (browser screen) is excluded."""
 
 from __future__ import annotations
 
@@ -28,13 +28,13 @@ def methods_for(path: str, mcp_path: str) -> str | None:
 
 
 def machine_public(path: str, mcp_path: str) -> bool:
-    """Endpoints de máquina sem sessão (descoberta, token, registro, revogação): o `/mcp` autentica por bearer."""
+    """Session-less machine endpoints (discovery, token, registration, revocation): `/mcp` authenticates by bearer."""
     m = methods_for(path, mcp_path)
     return m is not None and path != mcp_path
 
 
 class Cors:
-    """Middleware ASGI mais externo (roda antes da autenticação)."""
+    """Outermost ASGI middleware (runs before authentication)."""
 
     def __init__(self, app: ASGIApp, mcp_path: str = "/mcp") -> None:
         self.app, self.mcp_path = app, mcp_path

@@ -1,8 +1,8 @@
-"""Ferramentas MCP dos apps: `<app>.<ferramenta>`, listadas do MCP interno de cada app (`POST {upstream}/{app}/_hub/mcp`,
-só pela rede interna, com o token interno) e chamadas em nome do usuário (identidade assinada).
+"""MCP tools of the apps: `<app>.<tool>`, listed from each app's internal MCP (`POST {upstream}/{app}/_hub/mcp`,
+only over the internal network, with the internal token) and called on behalf of the user (signed identity).
 
-A classificação (leitura x mutação) é do hub, pelo `openapi.json` do app; a descrição e o resultado do app vão rotulados
-como dado não confiável e limitados. Sem documento, nenhuma ferramenta é leitura (todas pedem aprovação)."""
+Classification (read vs. mutation) comes from the hub, via the app's `openapi.json`; the app's description and result are labeled
+as untrusted data and limited. Without a document, no tool counts as read (all require approval)."""
 
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ def sanitize_tool_name(s: str) -> str:
 
 
 def tool_ops(doc: dict[str, Any], app_id: str) -> dict[str, dict[str, Any]]:
-    """Nome da ferramenta -> operação (mesmas regras dos SDKs: `operationId` saneado ou `<método>_<caminho>`)."""
+    """Tool name -> operation (same rules as the SDKs: sanitized `operationId` or `<method>_<path>`)."""
     out: dict[str, dict[str, Any]] = {}
     for path, item in (doc.get("paths") or {}).items():
         if not path.startswith(f"/{app_id}/api/") or not isinstance(item, dict):
@@ -57,7 +57,7 @@ def tool_ops(doc: dict[str, Any], app_id: str) -> dict[str, dict[str, Any]]:
 def tool_destructive(
     m: dict[str, Any], ops: dict[str, dict[str, Any]] | None, name: str, app_hint: bool
 ) -> tuple[bool, bool]:
-    """(destrutiva, leitura): toda mutação do documento exige aprovação, e toda ferramenta que ele não conhece."""
+    """(destructive, read): every mutation in the document requires approval, and so does every tool it does not know."""
     op = (ops or {}).get(name)
     read_only = bool(op and op["read_only"])
     marked = name in m.get("destructive", []) or app_hint
@@ -66,7 +66,7 @@ def tool_destructive(
 
 
 def app_targets(request: Request, p: P) -> list[tuple[Any, str]]:
-    """Apps com MCP que o usuário alcança (e o token cobre), com o token interno de cada um."""
+    """Apps with MCP that the user can reach (and the token covers), with each one's internal token."""
     app = request.app
     if not app.state.apicfg.mcp.expose_app_tools:
         return []
@@ -218,7 +218,7 @@ def wrap_result(app: FastAPI, app_id: str, r: dict[str, Any]) -> dict[str, Any]:
 async def run_app(
     request: Request, p: P, src: dict[str, Any], args: dict[str, Any], text_result: Any
 ) -> dict[str, Any]:
-    """Chama a ferramenta no app em nome do usuário; o resultado volta rotulado como dado do app."""
+    """Calls the tool in the app on behalf of the user; the result comes back labeled as app data."""
     app = request.app
     target = next(((e, t) for e, t in app_targets(request, p) if e.id == src["app"]), None)
     if target is None:

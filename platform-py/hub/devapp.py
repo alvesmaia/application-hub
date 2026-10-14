@@ -1,8 +1,8 @@
-"""`hub dev`: o hub mínimo em processo para rodar UM app sozinho dentro do shell real (FAQ 7).
+"""`hub dev`: the minimal hub in-process to run ONE app on its own inside the real shell (FAQ 7).
 
-É o próprio `create_app` com um registro de um app só, dados temporários e identidade simulada (sem login),
-injetada como chamada em processo (`hub_facade`, a mesma via da API v1/MCP). Os fragmentos vão ao
-`upstream` local; só as variáveis de `.hub/dev.env` declaradas em `manifest.env` seguem como `x-hub-env-*`.
+It is the `create_app` itself with a single-app registry, temporary data and a simulated identity (no login),
+injected as an in-process call (`hub_facade`, the same path as API v1/MCP). Fragments go to the
+local `upstream`; only the `.hub/dev.env` variables declared in `manifest.env` pass through as `x-hub-env-*`.
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ DEV_NAME = "Desenvolvedor (hub dev)"
 
 
 def load_env(directory: Path, declared: list[str]) -> tuple[list[tuple[str, str]], list[str], list[str]]:
-    """`.hub/dev.env` -> (cabeçalhos, chaves encaminhadas, chaves ignoradas)."""
+    """`.hub/dev.env` -> (headers, forwarded keys, ignored keys)."""
     path = directory / ".hub/dev.env"
     if not path.is_file():
         return [], [], []
@@ -66,7 +66,7 @@ def load_app(directory: Path, upstream: str) -> tuple[AppEntry, list[tuple[str, 
 
 
 class _DevIdentity:
-    """ASGI: toda requisição chega como o usuário simulado (já autorizado, como chamada em processo)."""
+    """ASGI: every request arrives as the simulated user (already authorized, as an in-process call)."""
 
     def __init__(self, inner: ASGIApp, role: str) -> None:
         self.inner = inner

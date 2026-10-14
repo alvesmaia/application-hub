@@ -1,4 +1,4 @@
-"""Trava de arquivo entre processos (réplicas no mesmo volume): `<arquivo>.lock` com flock/msvcrt, reentrante."""
+"""Cross-process file lock (replicas on the same volume): `<file>.lock` with flock/msvcrt, reentrant."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ _mu = threading.RLock()
 
 @contextmanager
 def file_lock(path: Path) -> Iterator[None]:
-    """Exclusiva e bloqueante; só para seções curtas e síncronas (sem `await` dentro)."""
+    """Exclusive and blocking; only for short synchronous sections (no `await` inside)."""
     key = str(path)
     with _mu:
         if _held.get(key):

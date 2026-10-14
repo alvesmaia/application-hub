@@ -1,8 +1,8 @@
-"""«Provisionar banco» e «Rotacionar senha do banco» (port de `hub-ops::provision`): papel e banco próprios por app e
-ambiente (`app_<id>`, `app_<id>_staging`), criados só se marcados pelo hub (`COMMENT … hub-managed:app=<id>`); a connection
-string vira variável gerida (`DATABASE_URL_<APP>[_STAGING]` → `HUB_DB_URL`). Os comandos rodam no container do Postgres."""
+"""«Provision database» and «Rotate database password» (port of `hub-ops::provision`): a role and database of its own per app and
+environment (`app_<id>`, `app_<id>_staging`), created only if marked by the hub (`COMMENT … hub-managed:app=<id>`); the connection
+string becomes a managed variable (`DATABASE_URL_<APP>[_STAGING]` → `HUB_DB_URL`). The commands run in the Postgres container."""
 
-# ruff: noqa: S608 - SQL de administração com literais/identificadores escapados
+# ruff: noqa: S608 - admin SQL with escaped literals/identifiers
 from __future__ import annotations
 
 import os
@@ -39,7 +39,7 @@ def host() -> str:
 
 
 async def _state(b: Backups, name: str) -> tuple[str | None, str | None, str | None]:
-    """(comentário do papel | None se não existe, dono do banco, comentário do banco)."""
+    """(role comment | None if it does not exist, database owner, database comment)."""
     n = _lit(name)
     out = await b._psql(
         "postgres",
@@ -97,7 +97,7 @@ async def provision(b: Backups, cfg: Any, actor: str, app: str, env: str) -> dic
     stmts.append(f"GRANT CONNECT, TEMPORARY ON DATABASE {q} TO {q}")
     await b._psql("postgres", *stmts)
     bindings = [{"app": app, "env": env}]
-    if env == "staging":  # staging nunca guarda credencial de banco de produção
+    if env == "staging":  # staging never stores a production database credential
         async with cfg.s.locked(True) as d:
             for v in list(d["env"]):
                 mine = [x for x in v["bindings"] if x["app"] == app and x["env"] == "staging"]

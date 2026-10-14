@@ -1,5 +1,5 @@
-"""Agendador de backups (só no líder): a cada tick lê as políticas, decide por app×ambiente (`schedule.plan`: esperar,
-rodar, pular execução perdida) e dispara o mesmo job do "Backup agora"."""
+"""Backup scheduler (leader only): on each tick reads the policies and decides per app×environment (`schedule.plan`: wait,
+run, skip a missed run) and triggers the same job as the "Backup agora" ("Back up now") action."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ class Scheduler:
         self.task: asyncio.Task[None] | None = None
 
     async def tick(self, now: int | None = None) -> list[str]:
-        """Uma rodada; devolve o que foi feito (para o log)."""
+        """One round; returns what was done (for the log)."""
         now = now_ms() if now is None else now
         st = self.app.state
         store, jobs = st.ops, st.ops_jobs

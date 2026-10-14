@@ -1,10 +1,10 @@
-"""Servidor MCP do hub: Streamable HTTP em `[mcp].path` (padrão `/mcp`), JSON-RPC 2.0 próprio, sem SDK.
+"""Hub MCP server: Streamable HTTP at `[mcp].path` (default `/mcp`), own JSON-RPC 2.0, no SDK.
 
-Duas eras do transporte: **2026-07-28** (metadados por requisição, sem sessão) e as legadas 2025-11-25,
-2025-06-18 e 2025-03-26 (`initialize`, `Mcp-Session-Id`, `GET` SSE, `DELETE`). Só `Authorization: Bearer` (token
-OAuth do hub ou pessoal com o escopo `mcp`); o token age como o dono (mesmo RBAC da UI). Ferramentas do hub =
-as operações `mcp` da tabela de `/api/v1`. Destrutivas: `confirm` (confirm_token; o cliente MCP confirma com o
-usuário) ou `deny` (nem aparecem)."""
+Two transport eras: **2026-07-28** (per-request metadata, no session) and the legacy 2025-11-25,
+2025-06-18 and 2025-03-26 (`initialize`, `Mcp-Session-Id`, `GET` SSE, `DELETE`). Only `Authorization: Bearer` (token
+hub OAuth or personal with the `mcp` scope); the token acts as its owner (same RBAC as the UI). Hub tools =
+the `mcp` operations of the `/api/v1` table. Destructive ones: `confirm` (confirm_token; the MCP client confirms with the
+user) or `deny` (not even listed)."""
 
 from __future__ import annotations
 
@@ -175,7 +175,7 @@ def hub_args(app: FastAPI, op: Op, args: dict[str, Any]) -> Args:
     return a
 
 
-# ---------------------------------------------------------------- sessões e confirmações
+# ---------------------------------------------------------------- sessions and confirmations
 
 
 async def new_session(app: FastAPI, who: str, client: str) -> str:
@@ -213,13 +213,13 @@ async def issue_confirmation(app: FastAPI, who: str, tool: str, args: dict[str, 
 async def check_confirmation(
     app: FastAPI, who: str, tool: str, args: dict[str, Any], token: str
 ) -> str | None:
-    """`None` = pode executar (token consumido); senão, o motivo da recusa."""
+    """`None` = may execute (token consumed); otherwise, the reason for refusal."""
     rec_store, key = app.state.records, sha(token)
     p = await rec_store.get(K_CONFIRM, key)
     if not p:
         return "confirm_token inválido ou já usado"
     if p["who"] != who or p["tool"] != tool:
-        return "confirm_token de outra ferramenta ou de outro usuário"  # não consome
+        return "confirm_token de outra ferramenta ou de outro usuário"  # does not consume
     if await rec_store.take(K_CONFIRM, key) is None:
         return "confirm_token inválido ou já usado"
     if p["expires"] <= now_ms():
@@ -230,7 +230,7 @@ async def check_confirmation(
 
 
 async def sweep(app: FastAPI) -> None:
-    """Apaga os `confirm_token`s vencidos."""
+    """Deletes the expired `confirm_token`s."""
     now = now_ms()
     db = app.state.auth.db
     if db is not None:
@@ -476,7 +476,7 @@ def get_stream(app: FastAPI, sid: str, who: str) -> Response:
 
 
 def classify(msg: Any) -> tuple[Any, str] | dict[str, Any] | None:
-    """`(id, método)`; `None` = notificação/resposta aceita; dict = erro JSON-RPC."""
+    """`(id, method)`; `None` = notification/accepted response; dict = JSON-RPC error."""
     if not isinstance(msg, dict) or msg.get("jsonrpc") != "2.0":
         return rpc_error(
             msg.get("id") if isinstance(msg, dict) else None,
@@ -596,7 +596,7 @@ async def handle(request: Request) -> Response:
         if modern and "resultType" not in result:
             result["resultType"] = "complete"
         if modern and mth.endswith("/list"):
-            # 2026-07-28: listas dizem por quanto tempo o cliente pode guardá-las; dependem do usuário → private
+            # 2026-07-28: lists state how long the client may keep them; they depend on the user → private
             result.setdefault("ttlMs", 0)
             result.setdefault("cacheScope", "private")
         return {"jsonrpc": "2.0", "id": id_, "result": result}

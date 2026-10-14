@@ -1,8 +1,8 @@
-"""Broker de armazenamento: o único caminho dos apps até as conexões (`/_hub/storage/*`).
+"""Storage broker: the only path from apps to the connections (`/_hub/storage/*`).
 
-Serve num endereço separado do shell (`HUB_BROKER_ADDR`; sem a variável fica desligado) e autentica com o token
-gerido por app × ambiente (`HUB_STORAGE_TOKEN`). O app nunca recebe o segredo: o hub executa a operação com a
-credencial guardada, confinada à pasta-base. Toda operação de um app autenticado é auditada."""
+Serves on a separate address from the shell (`HUB_BROKER_ADDR`; without the variable it stays off) and authenticates with the token
+managed per app × environment (`HUB_STORAGE_TOKEN`). The app never receives the secret: the hub runs the operation with the
+stored credential, confined to the base folder. Every operation of an authenticated app is audited."""
 
 from __future__ import annotations
 
@@ -48,7 +48,7 @@ def storage_fail(e: StorageError) -> JSONResponse:
 
 
 def who_of(headers: Any, key: bytes, app: str, env: str, now: int | None = None) -> tuple[str, str]:
-    """(autor, nota): o usuário só vira autor com a assinatura do gateway válida para ESTE app e ambiente."""
+    """(author, note): the user only becomes the author with a valid gateway signature for THIS app and environment."""
     raw = headers.get("x-hub-user")
     claimed = ""
     if raw:
@@ -81,7 +81,7 @@ def parse_cidrs(v: str) -> dict[str, list[ipaddress.IPv4Network]]:
 
 
 def source_allowed(cidrs: dict[str, list[ipaddress.IPv4Network]], app: str, peer: str | None) -> bool:
-    """Vazia = sem checagem de origem; configurada, fecha (app fora da lista é recusado)."""
+    """Empty = no origin check; when configured, it closes (an app not on the list is refused)."""
     if not cidrs:
         return True
     try:
@@ -103,7 +103,7 @@ class Caller:
     note: str
     conn: dict[str, Any]
     backend: (
-        Any  # GraphClient | S3Client nas rotas de arquivo (conexões SQL não passam da checagem de operação)
+        Any  # GraphClient | S3Client on the file routes (SQL connections do not pass the operation check)
     )
     release: Any
     admin: AdminStore
@@ -287,7 +287,7 @@ def build_broker(store: ConnStore, admin: AdminStore, key: bytes) -> FastAPI:
                 async for chunk in stream:
                     yield cast(bytes, chunk)
             finally:
-                c.release()  # a vaga do app só volta quando o corpo termina (ou o app desiste)
+                c.release()  # the app's slot is only released when the body ends (or the app gives up)
 
         headers = {"x-content-type-options": "nosniff", "cache-control": "no-store"}
         if length is not None:
@@ -320,7 +320,7 @@ def build_broker(store: ConnStore, admin: AdminStore, key: bytes) -> FastAPI:
         if not ctype or len(ctype) > 200 or "\r" in ctype or "\n" in ctype:
             ctype = "application/octet-stream"
         try:
-            clean_file(path)  # caminho validado antes de ler o corpo
+            clean_file(path)  # path validated before reading the body
         except StorageError as e:
             return await c.storage_fail("enviar", shown, e)
         detail = f"{shown} · {length} bytes · {ctype}"
@@ -402,8 +402,8 @@ def build_broker(store: ConnStore, admin: AdminStore, key: bytes) -> FastAPI:
 
     @app.post("/_hub/sql/{name}/query")
     async def sql_query(request: Request, name: str) -> Response:
-        """Consulta SQL com a credencial do hub. Auditoria: hash/tamanho do SQL, linhas e tempo — nunca
-        dados nem valores de parâmetros."""
+        """SQL query with the hub's credential. Audit: SQL hash/size, rows and time — never
+        data nor parameter values."""
         c = await authorize(request, name, "consulta SQL", ("query",))
         if isinstance(c, JSONResponse):
             return c
@@ -440,7 +440,7 @@ def build_broker(store: ConnStore, admin: AdminStore, key: bytes) -> FastAPI:
 
 
 async def serve(app: FastAPI, addr: str) -> tuple[Any, asyncio.Task[None]]:
-    """Sobe o broker em `host:porta` (uvicorn no mesmo laço de eventos)."""
+    """Starts the broker on `host:port` (uvicorn in the same event loop)."""
     import uvicorn
 
     host, _, port = addr.rpartition(":")

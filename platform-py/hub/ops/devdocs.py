@@ -1,9 +1,9 @@
-"""F24: portal de documentação do desenvolvedor (`/developers/*`).
+"""F24: developer documentation portal (`/developers/*`).
 
-Conteúdo = Markdown versionado em `platform/docs/dev/` (+ o contrato `platform/docs/CONTRATO-APP.md`),
-renderizado no servidor (HTML do Markdown desligado: o texto nunca injeta marcação). As referências da CLI e do
-SDK (`cli.md`, `sdk.md`) são geradas do argparse da CLI e das docstrings/assinaturas do `hub_sdk`:
-`uv run python -m hub.ops.devdocs` (um teste exige que o arquivo no repositório esteja em dia).
+Content = Markdown versioned in `platform/docs/dev/` (+ the contract `platform/docs/CONTRATO-APP.md`),
+rendered on the server (Markdown HTML turned off: the text never injects markup). The CLI and SDK
+references (`cli.md`, `sdk.md`) are generated from the CLI's argparse and the `hub_sdk` docstrings/signatures:
+`uv run python -m hub.ops.devdocs` (a test requires the file in the repository to be up to date).
 """
 
 from __future__ import annotations
@@ -26,13 +26,13 @@ HUB_MARK = "@HUB@"
 
 @dataclass(frozen=True)
 class Doc:
-    slug: str  # caminho sob /developers ("" = Começar)
+    slug: str  # path under /developers ("" = Getting started)
     section: str  # comecar | cli | sdk | guias | contrato
     title: str
     file: str  # relativo a platform/docs
-    raw: str  # nome em /dev/docs/<raw>.md
-    split: bool = False  # cada `## ` vira uma página própria (como em Guias)
-    part: str = ""  # página derivada: título do `## ` do arquivo do pai
+    raw: str  # name in /dev/docs/<raw>.md
+    split: bool = False  # ` becomes its own page (as in Guides)
+    part: str = ""  # `
 
 
 GUIDES = (
@@ -81,7 +81,7 @@ def _read(doc: Doc) -> str | None:
 
 
 def _split(text: str) -> tuple[str, list[tuple[str, str]]]:
-    """Corta o Markdown nos `## ` (fora de blocos de código): (introdução, [(título, corpo)])."""
+    """Cuts the Markdown at the `## ` headings (outside code blocks): (introduction, [(title, body)])."""
     intro: list[str] = []
     parts: list[tuple[str, list[str]]] = []
     fence = False
@@ -91,7 +91,7 @@ def _split(text: str) -> tuple[str, list[tuple[str, str]]]:
         if not fence and line.startswith("## "):
             parts.append((line[3:].strip(), []))
         elif parts:
-            # a seção vira página: `###` sobe para `##` e assim por diante
+            # the section becomes a page: `###` moves up to `##` and so on
             parts[-1][1].append(line[1:] if not fence and re.match(r"#{3,6} ", line) else line)
         else:
             intro.append(line)
@@ -103,7 +103,7 @@ def _part_slug(title: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", t.lower()).strip("-")[:48].rstrip("-") or "secao"
 
 
-# nome legível das páginas derivadas da CLI e do SDK (o nome técnico aparece logo abaixo do título)
+# readable names of the pages derived from the CLI and the SDK (the technical name appears just below the title)
 PART_TITLES = {
     "hub project create": "Criar um app", "hub project stacks": "Listar stacks", "hub check": "Validar o app",
     "hub pack": "Empacotar", "hub dev": "Rodar localmente", "hub login": "Entrar no hub",
@@ -126,13 +126,13 @@ def _tech(part: str) -> str:
 
 
 def _gist(body: str, limit: int = 140) -> str:
-    """Primeira frase de texto corrido da seção (sem tabela, código, título ou lista), para o índice."""
+    """First sentence of the section's running text (no table, code, heading or list), for the index."""
     for para in re.split(r"\n\s*\n", body):
         t = " ".join(para.split())
         if t and not t.startswith(("|", "```", "#", "<", "-", "*", ">")) and not t[0].isdigit():
             t = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", t)
             t = str(re.split(r"(?<=\.)\s", t, maxsplit=1)[0])  # primeira frase
-            if t.endswith(":"):  # só abre uma lista: não resume nada
+            if t.endswith(":"):  # only opens a list: summarizes nothing
                 return ""
             return " — " + (t if len(t) <= limit else t[:limit].rsplit(" ", 1)[0] + "…")
     return ""
@@ -143,13 +143,13 @@ def _tech_note(d: Doc) -> str:
 
 
 def all_docs() -> tuple[Doc, ...]:
-    """DOCS com as páginas derivadas dos arquivos `split` logo depois do pai."""
+    """DOCS with the pages derived from the `split` files right after the parent."""
     out: list[Doc] = []
     for d in DOCS:
         out.append(d)
         text = _read(d) if d.split else None
         for title, _ in _split(text)[1] if text else []:
-            # sem notas de histórico no título
+            # no history notes in the title
             clean = PART_TITLES.get(_tech(title)) or re.sub(r"\s*\(onda [^)]*\)| — .*", "", _tech(title))
             out.append(Doc(f"{d.slug}/{_part_slug(title)}", d.section, clean, d.file, d.raw, part=title))
     return tuple(out)
@@ -172,7 +172,7 @@ def source(doc: Doc, base: str) -> str | None:
         text = next((f"# {doc.title}\n{tech}{body}" for t, body in _split(text)[1] if t == doc.part), None)
         if text is None:
             return None
-    elif doc.split:  # página do pai: introdução + índice das páginas, com o resumo de cada uma
+    elif doc.split:  # parent page: introduction + index of the pages, with each one's summary
         kids = [d for d in all_docs() if d.part and d.file == doc.file]
         intro, parts = _split(text)
         bodies = dict(parts)
@@ -184,7 +184,7 @@ def source(doc: Doc, base: str) -> str | None:
     return text.replace(HUB_MARK, base)
 
 
-DATES = "dev/dates.json"  # {arquivo: AAAA-MM-DD do último commit}; `python -m hub.ops.devdocs --dates`
+DATES = "dev/dates.json"  # {file: YYYY-MM-DD of the last commit}; `python -m hub.ops.devdocs --dates`
 
 
 @cache
@@ -197,7 +197,7 @@ def _dates() -> dict[str, str]:
 
 
 def updated(doc: Doc) -> str:
-    """Data do último commit do arquivo-fonte (dates.json); sem ele, a data do arquivo."""
+    """Date of the source file's last commit (dates.json); without it, the file's date."""
     import datetime as dt
 
     if d := _dates().get(doc.file):
@@ -233,8 +233,8 @@ _LEXERS = {"bash": "bash", "sh": "bash", "shell": "bash", "console": "bash", "py
 
 
 def _bash_pass(tokens: Any) -> Any:
-    """Pygments marca poucos tokens no Bash: 1ª palavra de cada comando = função, `-f`/`--flag` = opção,
-    `\\` no fim da linha = operador."""
+    """Pygments marks few tokens in Bash: the 1st word of each command = function, `-f`/`--flag` = option,
+    `\\` at the end of the line = operator."""
     from pygments.token import Comment, Keyword, Name, Operator, Punctuation, String, Text
 
     cmd = True
@@ -243,7 +243,7 @@ def _bash_pass(tokens: Any) -> Any:
             yield Operator, val
             continue
         if tok in Keyword or (tok in (Operator, Punctuation) and val.strip() == "$("):
-            # `if`/`then`/`do`/`$(`: a próxima palavra é comando; `for x in a b`: não
+            # `if`/`then`/`do`/`$(`: the next word is a command; `for x in a b`: not
             cmd = val.strip() in ("if", "then", "else", "elif", "do", "while", "until", "$(", "!")
             yield tok, val
             continue
@@ -263,7 +263,7 @@ def _bash_pass(tokens: Any) -> Any:
 
 
 def _guess(code: str) -> str:
-    """Bloco sem linguagem: deduz pela 1ª linha (toda caixa de código sai colorida); o resto vira comando."""
+    """Block without a language: infers from the 1st line (every code box comes out colored); the rest becomes a command."""
     first = code.lstrip()
     if first.startswith(("{", "[")):
         return "json"
@@ -275,7 +275,7 @@ def _guess(code: str) -> str:
 
 
 def highlight(code: str, lang: str) -> str:
-    """Realce no servidor (Pygments → `<span class="hl-*">`); linguagem fora da lista = texto puro."""
+    """Server-side highlighting (Pygments → `<span class="hl-*">`); a language outside the list = plain text."""
     name = _LEXERS.get(lang) if lang else _guess(code)
     if not name:
         return escape(code)
@@ -291,7 +291,7 @@ def highlight(code: str, lang: str) -> str:
 
 @cache
 def _md() -> Any:
-    from markdown_it import MarkdownIt  # import tardio: só as páginas de documentação precisam
+    from markdown_it import MarkdownIt  # lazy import: only the documentation pages need it
 
     md = MarkdownIt("commonmark", {"html": False, "linkify": False}).enable("table")
 
@@ -313,9 +313,9 @@ def _md() -> Any:
 def render_md(
     text: str, labels: tuple[str, str] = ("Copiar", "Copiado")
 ) -> tuple[str, list[tuple[int, str, str]]]:
-    """Markdown → HTML (âncoras nos títulos, botão de copiar nos blocos, tabelas roláveis) + sumário."""
+    """Markdown → HTML (anchors on headings, copy button on blocks, scrollable tables) + summary."""
     md = _md()
-    tokens = md.parse(re.sub(r"(?m)^<!--.*-->\n", "", text))  # comentário de geração não aparece
+    tokens = md.parse(re.sub(r"(?m)^<!--.*-->\n", "", text))  # the generation comment does not appear
     seen: dict[str, int] = {}
     toc: list[tuple[int, str, str]] = []
     for i, tok in enumerate(tokens):
@@ -326,7 +326,7 @@ def render_md(
             seen[base] = n + 1
             hid = base if n == 0 else f"{base}-{n}"
             tok.attrSet("id", hid)
-            if tok.tag in ("h2", "h3"):  # o h1 do Markdown é o título da página
+            if tok.tag in ("h2", "h3"):  # the Markdown h1 is the page title
                 toc.append((int(tok.tag[1]), re.sub(r"`", "", title), hid))
     html = str(
         md.renderer.render(tokens, md.options, {"copy": escape(labels[0]), "copied": escape(labels[1])})
@@ -335,10 +335,10 @@ def render_md(
         "</table>", "</table></div>"
     )
 
-    # título que é só uma assinatura (`f(x: int) -> str`, `class X`): colorido como Python
+    # heading that is only a signature (`f(x: int) -> str`, `class X`): colored as Python
     def sig(m: re.Match[str]) -> str:
         code = highlight(unescape((m[2] or "") + m[3]), "python")
-        if m[2] != "class ":  # o nome da função ganha a cor de função
+        if m[2] != "class ":  # the function name gets the function color
             code = code.replace('class="hl-n"', 'class="hl-nf"', 1)
         return f'{m[1]}<code class="dev-sig">{code}</code>{m[4]}'
 
@@ -365,7 +365,7 @@ def prompt(lang: str, base: str) -> str:
     return _PROMPTS.get(lang, _PROMPTS["pt-BR"]).format(base=base)
 
 
-# ---- geração das referências (CLI e SDK) -----------------------------------------------------------
+# ---- generation of the references (CLI and SDK) -----------------------------------------------------------
 
 _GEN = "<!-- gerado por `uv run python -m hub.ops.devdocs` — não edite à mão -->\n"
 
@@ -484,7 +484,7 @@ def generated() -> dict[Path, str]:
     return {d / "cli.md": cli_reference(), d / "sdk.md": sdk_reference()}
 
 
-def main() -> int:  # pragma: no cover - ferramenta de linha de comando
+def main() -> int:  # pragma: no cover - command-line tool
     if "--dates" in sys.argv:
         import json
 

@@ -1,4 +1,4 @@
-"""Armazenamento do broker (`hub-storage`): caminhos confinados, erros, itens e etapas de teste."""
+"""Broker storage (`hub-storage`): confined paths, errors, items and test steps."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ _STATUS = {
 
 
 class StorageError(Exception):
-    """`kind` define o status devolvido ao app; `detail` (texto do provedor) fica só na auditoria."""
+    """`kind` sets the status returned to the app; `detail` (the provider's text) stays only in the audit."""
 
     def __init__(self, kind: str, message: str, retry_after: int | None = None, detail: str = "") -> None:
         super().__init__(message)
@@ -62,7 +62,7 @@ def _bad(message: str) -> StorageError:
 
 
 def clean(p: str) -> str:
-    """Normaliza um caminho relativo e recusa tudo que poderia escapar da pasta-base."""
+    """Normalizes a relative path and refuses anything that could escape the base folder."""
     if len(p.encode()) > _MAX_TOTAL:
         raise StorageError("invalid", "Caminho longo demais.")
     segs = [s for s in p.split("/") if s]
@@ -129,7 +129,7 @@ def redact(msg: str, secrets: list[str]) -> str:
 
 
 class Steps:
-    """Etapas do teste de conexão: a primeira que falha pula as demais."""
+    """Steps of the connection test: the first one that fails skips the rest."""
 
     def __init__(self) -> None:
         self.steps: list[dict[str, Any]] = []
@@ -155,7 +155,7 @@ def _ms(t0: float) -> int:
 
 
 class Body:
-    """Corpo do envio: leitura exata em blocos e conferência do tamanho declarado."""
+    """Upload body: exact reading in blocks and a check of the declared size."""
 
     def __init__(self, stream: AsyncIterator[bytes]) -> None:
         self.stream, self.carry = stream, b""

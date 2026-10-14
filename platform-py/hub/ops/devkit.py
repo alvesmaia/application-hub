@@ -1,10 +1,10 @@
-"""F22: distribuição do kit do desenvolvedor pelo hub e a tela «Desenvolvedores».
+"""F22: distribution of the developer kit by the hub, and the "Developers" screen.
 
-- `/dev/cli/simple/` — índice PEP 503 (só leitura, sem sessão) com os wheels da `hub-cli` e do `hub-sdk` gerados na
+- `/dev/cli/simple/` — PEP 503 index (read-only, no session) with the wheels of `hub-cli` and `hub-sdk` generated in
   imagem (`scripts/build-cli.sh`): `uv tool install hub-cli --index <hub>/dev/cli/simple/`.
-- `/dev/cli/files/<wheel>` — download direto do wheel (lista fechada: só os arquivos do diretório).
-- `/dev/docs/*.md` — Markdown da documentação (público com `HUB_PUBLIC_DOCS=1`, o padrão; `0` exige login).
-- `/developers` — instalação, comandos, stacks, links (token, contrato, validador de manifesto).
+- `/dev/cli/files/<wheel>` — direct wheel download (closed list: only the files in the directory).
+- `/dev/docs/*.md` — documentation Markdown (public with `HUB_PUBLIC_DOCS=1`, the default; `0` requires login).
+- `/developers` — installation, commands, stacks, links (token, contract, manifest validator).
 """
 
 from __future__ import annotations
@@ -98,9 +98,9 @@ def mount_devkit(app: FastAPI, render: Callable[..., Response], public_url: Call
         return PlainTextResponse(text, media_type="text/markdown; charset=utf-8")
 
     @app.get("/llms.txt")
-    @app.get("/dev/llms.txt")  # sob /dev/*: mesmo acesso público das páginas atrás de proxy/Access
+    @app.get("/dev/llms.txt")  # under /dev/*: same public access as the pages behind proxy/Access
     async def llms(request: Request) -> Response:
-        """Índice para agentes (llmstxt.org): o Markdown cru de cada página, com o código literal."""
+        """Index for agents (llmstxt.org): the raw Markdown of each page, with the literal code."""
         base = public_url(request)
         lines = ["# Application Hub — documentação para desenvolvedores", ""]
         lines += [
@@ -124,7 +124,7 @@ def mount_devkit(app: FastAPI, render: Callable[..., Response], public_url: Call
             "toc": toc,
             "sections": devdocs.SECTIONS,
             "docs": devdocs.all_docs(),
-            # visitante (documentação pública): shell mínimo, sem menus
+            # visitor (public documentation): minimal shell, no menus
             "base_tpl": "base.html" if getattr(request.state, "user", None) else "public_base.html",
             "raw_url": f"/dev/docs/{doc.raw}.md",
             "prompt": devdocs.prompt(lang, base) if doc.slug == "" else "",

@@ -1,4 +1,4 @@
-"""Estado de Operações (`ops.json`, mesmo desenho do `hub-ops`) e transições de implantação como funções puras."""
+"""Operations state (`ops.json`, same design as `hub-ops`) and deployment transitions as pure functions."""
 
 from __future__ import annotations
 
@@ -41,11 +41,11 @@ def default_policy(app: str) -> Data:
 
 
 class OpsStore:
-    """`ops.json` com escrita atômica; segredos de backup selados pelo cofre."""
+    """`ops.json` with atomic writes; backup secrets sealed by the vault."""
 
     def __init__(self, data_dir: Path, apps: list[str], vault: Any = None) -> None:
         self.path, self.vault, self.lock = data_dir / "ops.json", vault, asyncio.Lock()
-        self.db: Any = None  # StateDb: trava `ops.json` entre réplicas (pg_advisory_lock)
+        self.db: Any = None  # StateDb: locks `ops.json` across replicas (pg_advisory_lock)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.apps = apps
 
@@ -88,7 +88,7 @@ class OpsStore:
                     self.write(d)
 
     def secret(self, key: str, rotate: bool = False) -> str:
-        """Segredo no cofre (`ops.json` guarda só o selado); sem cofre, um novo a cada uso."""
+        """Secret in the vault (`ops.json` stores only the sealed one); without a vault, a new one per use."""
         if not self.vault:
             return secrets.token_hex(12)
         d = self.read()
@@ -164,7 +164,7 @@ def promote(d: Data, i: int, now: int) -> Data:
 
 def rollback(d: Data, i: int, now: int) -> Data:
     cur = _find(d, i)
-    if cur["env"] == PRODUCAO and cur["status"] == SUBSTITUIDO:  # volta a esta versão (a escolhida na gaveta)
+    if cur["env"] == PRODUCAO and cur["status"] == SUBSTITUIDO:  # back to this version (chosen in the list)
         if in_progress(d, cur["app"], cur["env"]):
             raise OpsError("Já há uma implantação em andamento neste app e ambiente.")
         act = next((x for x in d["deployments"] if x["app"] == cur["app"] and x["env"] == PRODUCAO

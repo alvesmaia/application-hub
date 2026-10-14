@@ -1,5 +1,5 @@
-"""Registros com validade (sessões MCP, confirmações, OAuth): tabela `records` do banco de estado quando há
-`HUB_STATE_DB_URL` (várias réplicas) ou memória."""
+"""Records with expiry (MCP sessions, confirmations, OAuth): `records` table of the state database when
+`HUB_STATE_DB_URL` is set (several replicas) or in memory."""
 
 from __future__ import annotations
 
@@ -76,7 +76,7 @@ class Records:
         return len(await self.list(kind, flt, 10**9))
 
     async def update(self, kind: str, key: str, fn: Callable[[Any | None], tuple[Change, Any]]) -> Any:
-        """Mudança condicional atômica (linha travada no banco; laço único em memória)."""
+        """Atomic conditional change (row locked in the database; single loop in memory)."""
         now = _now()
         if db := self._db():
             return await db.rec_update(kind, key, now, fn)

@@ -1,4 +1,4 @@
-"""Usuários locais, sessões, tokens de API e permissões de rota (formato compatível com a versão anterior do hub)."""
+"""Local users, sessions, API tokens and route permissions (format compatible with the previous hub version)."""
 
 from __future__ import annotations
 
@@ -252,8 +252,8 @@ class AuthStore:
     async def sso_login(
         self, issuer: str, subject: str, email: str, name: str, roles: list[str] | None, default_role: str
     ) -> tuple[dict[str, Any] | None, bool]:
-        """Usuário do SSO: pelo vínculo (emissor+sujeito), senão pelo e-mail (vincula), senão cria (JIT).
-        `roles` (do mapeamento de grupos) substitui as funções quando não vazio. Desativado: (None, False)."""
+        """SSO user: by link (issuer+subject), otherwise by email (links it), otherwise creates it (JIT).
+        `roles` (from the group mapping) replaces the roles when not empty. Disabled: (None, False)."""
         async with self.locked(True) as d:
             user = next(
                 (u for u in d["users"] if u.get("sso_issuer") == issuer and u.get("sso_subject") == subject),
@@ -279,7 +279,7 @@ class AuthStore:
             if not user["active"]:
                 return None, False
             if user.get("must_change_password"):
-                # Senha temporária nunca trocada: anulada ao vincular (o SSO não exige a troca, e ela não fica ativa).
+                # Temporary password never changed: voided on linking (SSO does not require the change, and it stays inactive).
                 user.update(password_hash=None, must_change_password=False)
             user.update(sso_issuer=issuer, sso_subject=subject, last_login=now_ms(), updated_at=now_ms())
             if roles:
@@ -343,7 +343,7 @@ class AuthStore:
         return user
 
     async def logout(self, token: str) -> str:
-        """Encerra a sessão e devolve como ela foi aberta (`password`, `entra`…; vazio se não existia)."""
+        """Ends the session and returns how it was opened (`password`, `entra`…; empty if it did not exist)."""
         h = sha(token)
         if self.db:
             s = await self.db.session_get(h)
@@ -543,7 +543,7 @@ class AuthStore:
 
 
 def user_view(u: dict[str, Any], now: int, locked: bool = False) -> dict[str, Any]:
-    """Usuário como a API o mostra (campos e ordem do `UserView` da versão anterior do hub; nunca o hash da senha)."""
+    """User as the API shows it (fields and order of the `UserView` of the previous hub version; never the password hash)."""
     until = u.get("locked_until")
     until = until if until and until > now else None
     return {
@@ -602,7 +602,7 @@ def roles_for(data_dir: Path) -> list[dict[str, Any]]:
 
 def client_ip(request: Request) -> str:
     peer = request.client.host if request.client else ""
-    # HUB_EDGE_CIDR = rede da borda (app-hub-edge, do próprio compose): sempre confiável, como os proxies declarados
+    # HUB_EDGE_CIDR = edge network (app-hub-edge, from the compose file itself): always trusted, like the declared proxies
     trusted = _cidrs(os.getenv("HUB_TRUSTED_PROXIES", "") + "," + os.getenv("HUB_EDGE_CIDR", ""))
     try:
         source = ipaddress.ip_address(peer)
@@ -633,7 +633,7 @@ def control_allowed(request: Request, mcp_public: bool = False, mcp_path: str = 
     if mcp_public and (path == mcp_path or path.startswith(("/.well-known/", "/oauth/"))):
         return True
     segs = path.strip("/").split("/")
-    # /oauth/authorize é tela de pessoa (como /account); o resto de /oauth segue o plano de controle.
+    # /oauth/authorize is a person-facing screen (like /account); the rest of /oauth follows the control plane.
     if segs[0] not in ("api", "admin", "mcp", ".well-known", "oauth") or path == "/oauth/authorize":
         return True
     raw = os.getenv("HUB_ADMIN_ALLOWED_CIDRS")
@@ -689,12 +689,12 @@ _ADMIN_REQUIRED = {
 
 
 def admin_required(segment: str) -> tuple[str, ...]:
-    """Permissões que abrem `/admin/<segment>` (qualquer uma serve)."""
+    """Permissions that open `/admin/<segment>` (any one is enough)."""
     return _ADMIN_REQUIRED.get(segment, ("editar_configuracoes",))
 
 
 def api_required(method: str, segs: list[str]) -> tuple[str, ...]:
-    """Permissões que abrem `/api/<segs>` (qualquer uma serve); `segs` vem depois de `api`."""
+    """Permissions that open `/api/<segs>` (any one is enough); `segs` comes after `api`."""
     area, res = (segs[0] if segs else ""), (segs[1] if len(segs) > 1 else "")
     if area == "admin":
         if res == "env":

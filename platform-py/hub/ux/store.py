@@ -1,4 +1,4 @@
-"""Preferências por usuário (tema, passos, layout do Início, favoritos, recentes) e layouts por função."""
+"""Per-user preferences (theme, steps, Home layout, favorites, recents) and per-role layouts."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from hub.filelock import file_lock
 
 WIDGETS = ("onboarding", "favorites", "inbox", "recents", "status", "shortcuts")
-# (chave, permissão exigida, link): "Primeiros passos".
+# (key, required permission, link): "Getting started".
 STEPS: tuple[tuple[str, str | None, str], ...] = (
     ("open_app", None, "/applications"),
     ("theme", None, "#theme"),
@@ -59,8 +59,8 @@ class UxData(BaseModel):
 
 
 class UxStore:
-    """Arquivo JSON único (`ux.json`); a escrita é atômica e acontece só quando algo muda. Réplicas no mesmo
-    volume: cada escrita relê o arquivo sob a trava (`hub.filelock`) e a leitura relê quando o arquivo mudou."""
+    """Single JSON file (`ux.json`); writing is atomic and only happens when something changes. Replicas on the same
+    volume: each write rereads the file under the lock (`hub.filelock`) and a read rereads it when the file changed."""
 
     def __init__(self, path: Path) -> None:
         self.path = path
@@ -132,7 +132,7 @@ class UxStore:
             self._save()
 
     def layout_for(self, user: str, roles: list[str]) -> tuple[list[str], str]:
-        """Layout do usuário, senão o padrão da 1ª função que tem um, senão o global."""
+        """User's layout, else the default of the first role that has one, else the global one."""
         self._reload()
         own = self.data.users.get(user)
         if own and own.layout is not None:

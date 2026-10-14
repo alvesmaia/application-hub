@@ -1,4 +1,4 @@
-"""Administração › Usuários, Funções e permissões e Variáveis de ambiente: páginas e APIs `/api/admin/*`."""
+"""Administration › Users, Roles and permissions and Environment variables: pages and `/api/admin/*` APIs."""
 
 from __future__ import annotations
 
@@ -61,7 +61,7 @@ def initials(name: str) -> str:
 
 
 def dumps(value: Any) -> str:
-    """JSON compacto com chaves em ordem alfabética (formato da versão anterior do hub)."""
+    """Compact JSON with keys in alphabetical order (format of the previous hub version)."""
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
 
 
@@ -70,7 +70,7 @@ def err(status: int, message: str) -> JSONResponse:
 
 
 async def json_only(request: Request) -> None:
-    """Mutações só com `application/json` (mitigação básica de CSRF)."""
+    """Mutations only with `application/json` (basic CSRF mitigation)."""
     if request.method not in ("GET", "HEAD", "OPTIONS") and (
         request.headers.get("content-type", "").split(";")[0].strip().lower() != "application/json"
     ):
@@ -78,8 +78,8 @@ async def json_only(request: Request) -> None:
 
 
 async def json_or_empty(request: Request) -> None:
-    """Como `json_only`, mas sem corpo (ações como "provisionar armazenamento") dispensa o Content-Type: a defesa
-    de CSRF é o teste de mesma origem do guard de autenticação, e estas rotas não exigem JSON."""
+    """Like `json_only`, but without a body (actions such as "provision storage") waive the Content-Type: the defense
+    against CSRF is the same-origin check of the auth guard, and these routes do not require JSON."""
     if request.headers.get("content-length", "0") in ("", "0") and "transfer-encoding" not in request.headers:
         return
     await json_only(request)
@@ -122,7 +122,7 @@ def is_super(request: Request) -> bool:
 
 
 def admin_level(roles: list[dict[str, Any]], role: str) -> bool:
-    """Função "de administrador": o Administrador ou qualquer uma com "Gerenciar usuários"."""
+    """Role "administrator": the Administrator or any role with "Manage users"."""
     r = role.strip().lower()
     return r == ADMIN_ROLE.lower() or any(
         x["name"].lower() == r and len(x.get("permissions", [])) > 1 and x["permissions"][1] for x in roles
@@ -174,7 +174,7 @@ def mount_admin(
         data = page_ctx(request) | {"icon": icon, "eyebrow": eyebrow, "title": title, "subtitle": subtitle}
         return page_response(templates, request, name, data | ctx)
 
-    # ---- usuários --------------------------------------------------------------------------
+    # ---- users ------------------------------------------------------------------------
     async def known_roles() -> list[dict[str, Any]]:
         return await store.cfg.roles()
 
@@ -269,7 +269,7 @@ def mount_admin(
         if before is None:
             raise AdminError("Usuário não encontrado.", 404)
         me = request.state.user.get("id") == user_id
-        # Ninguém muda as próprias funções nem se desativa (nem o Administrador).
+        # Nobody changes their own roles or deactivates themselves (not even the Administrator).
         if me and ((p.roles is not None and not same_roles(p.roles, before["roles"])) or p.active is False):
             raise AdminError("Você não pode alterar as próprias funções nem desativar a própria conta.", 403)
         if not me:
@@ -401,7 +401,7 @@ def mount_admin(
             pager=pager,
         )
 
-    # ---- funções ---------------------------------------------------------------------------
+    # ---- roles ------------------------------------------------------------------------
     async def role_change(request: Request, fn: Callable[..., Any], *args: Any) -> Any:
         if not is_super(request):
             raise AdminError("Só o Administrador altera funções e permissões.", 403)
@@ -495,7 +495,7 @@ def mount_admin(
             meta=meta_json(),
         )
 
-    # ---- variáveis -------------------------------------------------------------------------
+    # ---- variables ----------------------------------------------------------------------
     @api.get("/env")
     async def list_env() -> Any:
         return await store.cfg.env_list()
@@ -515,7 +515,7 @@ def mount_admin(
 
     @app.post("/api/ops/rotate/{app_id}/{what}", dependencies=[Depends(json_only)])
     async def rotate_secret(request: Request, app_id: str, what: str) -> Any:
-        """«Rotacionar token» do card Por aplicação (a senha do banco depende do provisionamento da F5)."""
+        """The "Rotate token" button of the Per application card (the database password depends on the F5 provisioning)."""
         if app_id not in store.apps:
             raise AdminError("Aplicação não encontrada.", 404)
         if what not in ("token", "database"):
@@ -615,7 +615,7 @@ def mount_admin(
 
 
 def bound_summary(v: dict[str, Any], app: str) -> str:
-    """`NOME=valor` (pública) ou `NOME (secreta)`, com os ambientes (S = staging, P = produção)."""
+    """`NAME=value` (public) or `NAME (secret)`, with the environments (S = staging, P = production)."""
     envs = "/".join("P" if b["env"] == "producao" else "S" for b in v["bindings"] if b["app"] == app)
     name = injected_name(v)
     shown = f"{name} ({KIND_LABEL[v['kind']].lower()})" if is_secret(v) else f"{name}={v['value'][:40]}"

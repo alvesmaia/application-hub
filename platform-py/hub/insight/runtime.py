@@ -1,4 +1,4 @@
-"""Instrumentação do gateway e tarefas em segundo plano: métricas, traces, sondas, SLOs, analytics."""
+"""Gateway instrumentation and background tasks: metrics, traces, probes, SLOs, analytics."""
 
 from __future__ import annotations
 
@@ -63,7 +63,7 @@ _UUID = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}
 
 
 def redact_target(path: str) -> str:
-    """`http.target` sem query e com ids, e-mails, tokens e segmentos sensíveis trocados por marcadores."""
+    """`http.target` without the query, with ids, emails, tokens and sensitive segments replaced by markers."""
     prev = ""
     out: list[str] = []
     for s in path.split("?")[0].split("#")[0].split("/"):
@@ -104,10 +104,10 @@ class Insight:
         self.ops = InsightOps(admin)
         self.tasks: list[asyncio.Task[None]] = []
         self.firing: dict[str, bool] = {}
-        self.is_leader: Callable[[], bool] = lambda: True  # só o líder abre/fecha incidentes e alerta
+        self.is_leader: Callable[[], bool] = lambda: True  # only the leader opens/closes incidents and alerts
         self.on_alert: Callable[[str, str, str, str, str], Awaitable[None]] | None = None
         self.hub_jobs: Callable[[], Awaitable[int]] | None = (
-            None  # jobs do hub em andamento (todas as réplicas)
+            None  # hub jobs in progress, counted across every replica
         )
 
     # ---- gateway -----------------------------------------------------------------------------------------
@@ -123,7 +123,7 @@ class Insight:
     async def observed(
         self, request: Request, app_id: str, call: Callable[[], Awaitable[Response]]
     ) -> Response:
-        """Envolve o `/_frag`: span raiz + métricas RED + linha no console de logs."""
+        """Wraps `/_frag`: root span + RED metrics + a line in the logs console."""
         known = self.registry.get(app_id) is not None
         who = getattr(request.state, "user", {"name": "anônimo", "id": ""})
         if known:
@@ -171,7 +171,7 @@ class Insight:
         return resp
 
     def span_for_api(self, request: Request, status: int, started: float, started_us: int) -> None:
-        """Ações do plano de controle (`/api/*` que alteram algo) viram spans do hub."""
+        """Control-plane actions (`/api/*` that change something) become hub spans."""
         path = request.url.path
         area = path.split("/")[2] if path.count("/") >= 2 else ""
         target = redact_target(path)
@@ -254,7 +254,7 @@ class Insight:
         return [(e.id, e.upstream.rstrip("/")) for e in self.registry.entries()]
 
     async def _probes(self, client: httpx.AsyncClient) -> None:
-        """A cada minuto: `GET {upstream}/{id}` (200 em até 2 s) alimenta as barras de disponibilidade."""
+        """Every minute: `GET {upstream}/{id}` (200 within 2 s) feeds the availability bars."""
         while True:
             await asyncio.sleep(60)
             for app_id, up in self.targets():
@@ -265,7 +265,7 @@ class Insight:
                 self.tel.metrics.record_probe(app_id, "producao", ok)
 
     async def _slo_alerts(self) -> None:
-        """Queima rápida do orçamento de erro (1 h e ~10 min, 14,4x) abre um incidente automático."""
+        """Fast burn of the error budget (1 h and ~10 min, 14.4x) opens an automatic incident."""
         while True:
             await asyncio.sleep(60)
             if not self.is_leader():
@@ -297,7 +297,7 @@ class Insight:
         return (e.display.get("short") or e.name) if e else "Plataforma"
 
     async def _app_channel(self, client: httpx.AsyncClient) -> None:
-        """Busca spans e medidores novos de cada app (`/{id}/_hub/telemetry`, token interno)."""
+        """Fetches new spans and meters from each app (`/{id}/_hub/telemetry`, internal token)."""
         every = max(int(os.environ.get("HUB_TELEMETRY_POLL_MS", "2000") or 2000), 200) / 1000
         cursor: dict[str, int] = {}
         pushed: dict[str, tuple[int, float]] = {}
@@ -334,7 +334,7 @@ class Insight:
         version: int,
         pushed: dict[str, tuple[int, float]],
     ) -> None:
-        """Definições das flags no container (tarefas sem usuário): a cada mudança e a cada 30 s."""
+        """Flag definitions in the container (tasks without a user): on every change and every 30 s."""
         last = pushed.get(app_id)
         if last and last[0] == version and time.monotonic() - last[1] < 30:
             return
@@ -349,7 +349,7 @@ class Insight:
             pushed[app_id] = (version, time.monotonic())
 
     def ingest(self, app: str, env: str, payload: dict[str, Any]) -> int:
-        """Grava spans validados (serviço = o app) e medidores; nunca confia no app para falar por outro."""
+        """Stores validated spans (service = the app) and meters; never trusts the app to speak for another."""
         n = 0
         for s in (payload.get("spans") or [])[:2000]:
             if not self._sane(s) or self.tel.traces.owners.setdefault(s["trace_id"], app) != app:
@@ -401,7 +401,7 @@ class Insight:
 
 
 def page_key(segs: list[str]) -> str | None:
-    """Página do hub normalizada para o analytics (sem ids nem query)."""
+    """Hub page normalized for analytics (no ids or query)."""
     if segs == [""]:
         return "/"
     if len(segs) == 1 and segs[0] in ("applications", "inbox", "search", "status", "admin"):

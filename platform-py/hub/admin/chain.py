@@ -1,4 +1,4 @@
-"""Cadeia de auditoria append-only (formato compatível com a versão anterior do hub)."""
+"""Append-only audit chain (format compatible with the previous hub version)."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from hub.vault import Vault, verify_signature
 
 GENESIS = "0" * 64
 ANCHOR = "audit.anchor"
-HEAD_TRANSPORT: httpx.BaseTransport | None = None  # testes trocam o transporte do webhook
+HEAD_TRANSPORT: httpx.BaseTransport | None = None  # tests swap the webhook transport
 
 
 def _json(value: Any) -> str:
@@ -59,14 +59,14 @@ class AuditChain:
         self.blocked: str | None = None
         self.file_error = self.hook_error = ""
         self.last_checkpoint = 0
-        # Webhook da cabeça (HUB_AUDIT_HEAD_URL): uma thread manda sempre a cabeça mais recente.
+        # Head webhook (HUB_AUDIT_HEAD_URL): one thread always sends the most recent head.
         self._hook = threading.Condition()
         self._hook_next: dict[str, Any] | None = None
         self._hook_busy = False
         self._hook_thread: threading.Thread | None = None
         self._hook_stop = False
         v = self.verify()
-        if not db:  # com banco compartilhado, só sob o lock de `append_shared`
+        if not db:  # with a shared database, only under the lock of `append_shared`
             self._checkpoint_if_due(v.last_seq, v.last_hash)
 
     def _lines(self) -> list[dict[str, Any]]:
@@ -195,7 +195,7 @@ class AuditChain:
 
     @staticmethod
     def head_file() -> Path | None:
-        """Âncora externa (`HUB_AUDIT_HEAD_FILE`): JSONL com a cabeça assinada, fora do volume de dados."""
+        """External anchor (`HUB_AUDIT_HEAD_FILE`): JSONL with the signed head, outside the data volume."""
         raw = os.getenv("HUB_AUDIT_HEAD_FILE", "").strip()
         return Path(raw) if raw else None
 
@@ -218,7 +218,7 @@ class AuditChain:
         return os.getenv("HUB_AUDIT_HEAD_URL", "").strip()
 
     def head_target(self) -> str:
-        """Onde a cabeça é publicada (URL e/ou arquivo); vazio = só local."""
+        """Where the head is published (URL and/or file); empty = local only."""
         f = self.head_file()
         return " e ".join(x for x in (self.head_url(), str(f) if f else "") if x)
 
@@ -251,7 +251,7 @@ class AuditChain:
                 self._hook.notify_all()
 
     def flush_head(self, timeout: float) -> bool:
-        """Espera o webhook mandar o que está na fila (testes e desligamento)."""
+        """Waits for the webhook to send what is queued (tests and shutdown)."""
         with self._hook:
             return self._hook.wait_for(lambda: self._hook_next is None and not self._hook_busy, timeout)
 
@@ -279,7 +279,7 @@ class AuditChain:
             self.file_error = f"{type(e).__name__}: {e}"[:200]
 
     def _checkpoint_if_due(self, seq: int, digest: str) -> None:
-        """A cada `CHECKPOINT_EVERY` eventos, uma linha assinada (Ed25519) fixa o ponto da cadeia."""
+        """Every `CHECKPOINT_EVERY` events, a signed line (Ed25519) pins the position in the chain."""
         if not self.vault or self.blocked or seq - self.last_checkpoint < CHECKPOINT_EVERY or seq == 0:
             return
         at = time.time_ns() // 1_000_000
@@ -299,7 +299,7 @@ class AuditChain:
         self.last_checkpoint = seq
 
     def report(self) -> dict[str, Any]:
-        """Resultado de "Verificar integridade" no formato da versão anterior do hub (cadeia única, sem segmentos arquivados)."""
+        """Result of the "Verificar integridade" (Verify integrity) action, in the previous hub format (single chain, no archived segments)."""
         v, lines = self.verify(), self._lines()
         anchor = 0
         if self.vault and (raw := self.vault.protected(ANCHOR)):
@@ -318,7 +318,7 @@ class AuditChain:
         }
 
     def export(self) -> str:
-        """Cadeia inteira (JSONL) e, na última linha, a prova: cabeça assinada, chaves públicas e a verificação."""
+        """Whole chain (JSONL) and, on the last line, the proof: signed head, public keys and the verification."""
         text = self.path.read_text(encoding="utf-8") if self.path.exists() else ""
         try:
             head = json.loads(self.head_path.read_text(encoding="utf-8"))

@@ -1,7 +1,7 @@
-"""Uso por usuário identificado: por dia, (usuário, app) → aberturas, navegações, ações e último acesso.
+"""Usage per identified user: per day, (user, app) → opens, navigations, actions and last access.
 
-Coletado no gateway (nada exigido dos apps). Ligado por padrão; `HUB_USAGE=0` desliga. Sem IP nem conteúdo
-de formulário. A retenção é a mesma do analytics.
+Collected at the gateway (nothing required from the apps). On by default; `HUB_USAGE=0` turns it off. No IP or form
+content. The retention is the same as analytics.
 """
 
 from __future__ import annotations
@@ -17,15 +17,15 @@ from hub.filelock import file_lock
 from hub.insight.analytics import DAY_MS, day_key
 
 KINDS = ("open", "section", "action")
-PLATFORM = "_hub"  # páginas do próprio hub (Início, Inbox, Administração…)
+PLATFORM = "_hub"  # the hub's own pages (Home, Inbox, Administration…)
 
 
 class Usage:
     def __init__(self, directory: Path | None, enabled: bool = True) -> None:
         self.path = directory / "usage.json" if directory else None
         self.enabled, self.dirty = enabled, False
-        # dia → "usuário\tapp" → [aberturas, navegações, ações, último acesso em ms]
-        # Réplicas no mesmo volume: o que esta réplica somou desde a última gravação (mesmo formato).
+        # day → "user\tapp" → [opens, navigations, actions, last access in ms]
+        # Replicas on the same volume: what this replica added since the last write (same format).
         self.pending: dict[str, dict[str, list[int]]] = {}
         self._mtime = 0
         self.days = self._read()
@@ -51,7 +51,7 @@ class Usage:
         self.dirty = True
 
     def query(self, now: int, days: int = 30, user: str = "", app: str = "") -> dict[str, Any]:
-        """Totais no período por (usuário, app), por usuário e por app; filtros exatos."""
+        """Totals in the period per (user, app), per user and per app; exact filters."""
         days = min(max(days, 1), 400)
         keep = day_key(now - (days - 1) * DAY_MS)
         pairs: dict[tuple[str, str], list[Any]] = {}
@@ -113,10 +113,10 @@ class Usage:
             return
         with file_lock(self.path):
             try:
-                other = self.path.stat().st_mtime_ns != self._mtime  # outra réplica gravou depois de nós
+                other = self.path.stat().st_mtime_ns != self._mtime  # another replica wrote after us
             except OSError:
                 other = False
-            if other:  # adota o arquivo e soma por cima só o que esta réplica contou desde a última gravação
+            if other:  # adopts the file and adds on top only what this replica counted since the last write
                 self.days = {d: rows for d, rows in self._read().items() if d >= keep}
                 for d, rows in self.pending.items():
                     for k, add in rows.items():

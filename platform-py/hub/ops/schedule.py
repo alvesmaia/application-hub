@@ -1,4 +1,4 @@
-"""Agendas de backup: rótulos em português ("Diário 02:00", "A cada 6 h", "Manual") ou cron de 5 campos."""
+"""Backup schedules: labels in Portuguese UI text ("Diário 02:00", "A cada 6 h", "Manual") or a 5-field cron."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ def _hm(x: str) -> tuple[int, int]:
 
 
 def normalize(s: str) -> str | None:
-    """Cron de 5 campos, ou `None` para execução manual."""
+    """5-field cron, or `None` for manual execution."""
     t = s.strip()
     low = t.lower()
     if low in ("", "manual", "desligado"):
@@ -77,7 +77,7 @@ def _field(f: str, lo: int, hi: int) -> set[int]:
 
 
 class Cron:
-    """Cron de 5 campos (minuto hora dia-do-mês mês dia-da-semana; 0 e 7 = domingo); dia-do-mês e da-semana: OU."""
+    """5-field cron (minute hour day-of-month month day-of-week; 0 and 7 = Sunday); day-of-month and day-of-week: OR."""
 
     def __init__(self, expr: str) -> None:
         f = expr.split()
@@ -92,7 +92,7 @@ class Cron:
         return dom or dow if not (self.dom_any or self.dow_any) else (dom if self.dow_any else dow)
 
     def next_after(self, after_ms: int, tz: tzinfo) -> int | None:
-        """Próxima ocorrência estritamente depois de `after_ms` (epoch ms), no fuso `tz`."""
+        """Next occurrence strictly after `after_ms` (epoch ms), in the `tz` time zone."""
         t = datetime.fromtimestamp(after_ms // 1000, tz).replace(
             second=0, microsecond=0, tzinfo=None
         ) + timedelta(minutes=1)
@@ -122,7 +122,7 @@ def timezone_of(name: str = "") -> tzinfo:
 
 
 def jitter_ms(app: str, env: str, slot: int, max_s: int) -> int:
-    """Atraso estável por (app, env, slot), de 0 a `max_s` s, para os backups não saírem todos juntos."""
+    """Stable delay per (app, env, slot), from 0 to `max_s` s, so the backups do not all start together."""
     if max_s <= 0:
         return 0
     h = int.from_bytes(hashlib.sha256(f"{app}|{env}|{slot}".encode()).digest()[:8], "big")
@@ -131,7 +131,7 @@ def jitter_ms(app: str, env: str, slot: int, max_s: int) -> int:
 
 def plan(st: dict[str, Any] | None, cron: Cron, tz: tzinfo, now: int, grace_ms: int, missed: str,
          jitter: Callable[[int], int]) -> tuple[dict[str, Any], str, int, bool]:  # fmt: skip
-    """(novo estado, "wait"|"run"|"skip", slot, perdida): decide o que fazer com a agenda de um app×ambiente."""
+    """(new state, "wait"|"run"|"skip", slot, missed): decides what to do with an app×environment's schedule."""
 
     def fresh(frm: int, prev: dict[str, Any] | None) -> dict[str, Any]:
         nxt = cron.next_after(frm, tz) or 0

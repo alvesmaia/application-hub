@@ -1,5 +1,5 @@
-"""Liderança entre réplicas (lease `hub-leader` do `hub-state`, relógio do banco, fence): só o líder roda o que precisa
-ser único (coleta do outbox, agendador de backups, varreduras, alertas). Sem banco de estado: réplica única = sempre líder."""
+"""Leadership across replicas (`hub-leader` lease of `hub-state`, database clock, fence): only the leader runs what must
+be unique (outbox collection, backup scheduler, sweeps, alerts). Without a state database, a single replica is always the leader."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ class Leader:
         self.tasks: list[asyncio.Task[Any]] = []
         self.started = int(time.time() * 1000)
         self.was = False
-        self.runs: dict[str, int] = {}  # tarefas do líder executadas por esta réplica (por nome)
+        self.runs: dict[str, int] = {}  # leader tasks run by this replica (by name)
 
     @property
     def replica(self) -> str:
@@ -36,7 +36,7 @@ class Leader:
         return True if self.db is None else bool(self.lease and self.lease.is_leader)
 
     async def checked(self) -> bool:
-        """`leading()` + fence conferido no banco (antes de ato que mexe em estado compartilhado)."""
+        """`leading()` + fence checked in the database (before any action that touches shared state)."""
         if self.db is None:
             return True
         fence = self.lease.fence if self.lease else None
@@ -46,7 +46,7 @@ class Leader:
         self.runs[name] = self.runs.get(name, 0) + 1
 
     def start(self, takeover: Hook, sweeps: Hook) -> None:
-        """Dentro do loop de eventos: liga a lease, o sinal de vida, o vigia de mudanças e a varredura de 60 s."""
+        """Inside the event loop: starts the lease, the liveness signal, the change watcher and the 60 s sweep."""
         if self.db is None:
             self.was = True
             self.tasks = [asyncio.create_task(self._every(60, sweeps))]
@@ -98,7 +98,7 @@ class Leader:
             with contextlib.suppress(asyncio.CancelledError):
                 await t
         if self.lease:
-            await self.lease.release()  # fim gracioso: outra réplica assume na hora
+            await self.lease.release()  # graceful end: another replica takes over immediately
 
     async def info(self) -> dict[str, Any]:
         li = await self.db.lease_info(LEADER_LEASE) if self.db else None

@@ -1,4 +1,4 @@
-"""CSP das páginas de app."""
+"""CSP for app pages."""
 
 from __future__ import annotations
 
@@ -21,13 +21,13 @@ _provider: Callable[[str, bool], list[tuple[str, str]]] | None = None
 
 
 def set_script_provider(fn: Callable[[str, bool], list[tuple[str, str]]] | None) -> None:
-    """Quem diz quais scripts de app foram aprovados na revisão (o ops, ao montar)."""
+    """Who says which app scripts were approved in review (ops, when assembling)."""
     global _provider
     _provider = fn
 
 
 def approved_scripts(app: str, staging: bool) -> list[tuple[str, str]]:
-    """`(arquivo, "sha384-...")` aprovados na revisão de segurança da versão ativa do app (vazio sem ops)."""
+    """`(file, "sha384-...")` approved in the security review of the app's active version (empty without ops)."""
     return _provider(app, staging) if _provider else []
 
 
@@ -45,7 +45,7 @@ def csp_with(origin: str | None, app: str | None, approved: list[tuple[str, str]
     scripts = o("/assets/")
     for file, sha in approved or []:
         scripts += f" '{sha}'"
-        if origin:  # sem origem só o hash, nunca 'self'
+        if origin:  # without an origin only the hash, never 'self'
             scripts += f" {o(f'/_frag/{app}/assets/{file}')}"
     if origin:
         au = app_url(app)

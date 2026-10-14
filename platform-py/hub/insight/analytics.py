@@ -1,7 +1,7 @@
-"""Analytics de uso: só agregados por dia e ids opacos (HMAC com chave no cofre).
+"""Usage analytics: only aggregates per day and opaque ids (HMAC with a key in the vault).
 
-Nada de e-mail, nome ou IP no disco. A chave dos ids troca a cada período de retenção (e sob demanda).
-`HUB_ANALYTICS=0` desliga; o opt-out por usuário vem das preferências.
+Nothing of email, name or IP on disk. The id key rotates every retention period (and on demand).
+`HUB_ANALYTICS=0` turns it off; the per-user opt-out comes from the preferences.
 """
 
 from __future__ import annotations
@@ -73,7 +73,7 @@ class Analytics:
         self.path = directory / "analytics.json" if directory else None
         self.key_path = directory / "analytics.key" if directory and not vault else None
         self.vault, self.enabled, self.dirty = vault, enabled, True
-        self.ux: Any = None  # UxStore: opt-out por usuário
+        self.ux: Any = None  # UxStore: per-user opt-out
         self.days: dict[str, dict[str, Any]] = {}
         self.raw_terms, self.key_since = False, int(time.time() * 1000)
         self.retention = min(max(int(os.environ.get("HUB_ANALYTICS_RETENTION_DAYS", "90") or 90), 7), 400)
@@ -86,7 +86,7 @@ class Analytics:
                 self.days = {k: self._load_day(v) for k, v in d.get("days", {}).items()}
             except (OSError, ValueError, TypeError):
                 self.days = {}
-        self.base = snapshot(self.days)  # estado adotado na última junção com o arquivo (réplicas)
+        self.base = snapshot(self.days)  # state adopted at the last merge with the file (replicas)
         self.key = self._load_key()
 
     @staticmethod
@@ -135,7 +135,7 @@ class Analytics:
 
     def set_raw_terms(self, on: bool) -> None:
         self.raw_terms, self.dirty = on, True
-        if not on:  # apaga os textos guardados: ficam só as contagens
+        if not on:  # deletes the stored texts: only the counts remain
             for day in self.days.values():
                 old, day["zero_terms"] = day["zero_terms"], {}
                 for t, n in old.items():
@@ -149,7 +149,7 @@ class Analytics:
         self.retention, self.dirty = min(max(days, 7), 400), True
         return self.retention
 
-    # ---- gravação de eventos -------------------------------------------------------------------------
+    # ---- recording events -----------------------------------------------------------------------------
     def record(
         self, user: str, kind: str, a: str = "", b: str = "", n: int = 0, now: int | None = None
     ) -> None:
@@ -288,7 +288,7 @@ class Analytics:
         return json.dumps(doc, separators=(",", ":")).encode()
 
     def flush(self, now: int | None = None) -> None:
-        """Aplica a retenção, troca a chave vencida e grava (se mudou)."""
+        """Applies retention, rotates the expired key and writes (if it changed)."""
         now = int(time.time() * 1000) if now is None else now
         if now - self.key_since >= self.retention * DAY_MS:
             self.rotate_key(now)
@@ -298,7 +298,7 @@ class Analytics:
             self.dirty = True
         if not self.path:
             return
-        with file_lock(self.path):  # réplicas no mesmo volume: junta o que as outras gravaram
+        with file_lock(self.path):  # replicas on the same volume: merges what the others wrote
             file: dict[str, Any] = {}
             try:
                 raw = json.loads(self.path.read_text(encoding="utf-8")).get("days", {})

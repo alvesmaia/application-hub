@@ -98,7 +98,7 @@ class AdminStore:
         return cast(dict[str, Any], data)
 
     def _refresh_tokens(self, data: dict[str, Any]) -> None:
-        """Tokens internos (variáveis geridas) em memória: a busca e a Inbox os leem sem tocar o disco."""
+        """Internal tokens (managed variables) in memory: search and the Inbox read them without touching disk."""
         self.tokens = {
             b["app"]: v["value"]
             for v in data.get("env", [])
@@ -142,7 +142,7 @@ class AdminStore:
             "detail": detail,
             "scope": scope,
         }
-        if source:  # id do evento no outbox do app (deduplica reentregas)
+        if source:  # event id in the app's outbox (deduplicates redeliveries)
             event["source"] = source
         AuditEntry.model_validate(event)
         data["audit"].append(event)
@@ -186,7 +186,7 @@ def log_stamp(ms: int) -> str:
 
 
 class LogBus:
-    """Barramento de logs: buffer circular em memória + broadcast para o SSE (só eventos reais)."""
+    """Log bus: in-memory circular buffer + broadcast to SSE (real events only)."""
 
     def __init__(self) -> None:
         self.lines: deque[dict[str, Any]] = deque(maxlen=1000)
@@ -219,7 +219,7 @@ class LogBus:
 
     @staticmethod
     def matches(line: dict[str, Any], f: dict[str, str], now: int) -> bool:
-        """Filtros do console: `app` (all/platform/id), `minutes`, `user` (substring), `level` e `source` (listas)."""
+        """Console filters: `app` (all/platform/id), `minutes`, `user` (substring), `level` and `source` (lists)."""
         app, user = f.get("app", ""), f.get("user", "").lower()
         mins = f.get("minutes", "")
 

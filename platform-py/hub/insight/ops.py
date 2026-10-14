@@ -1,4 +1,4 @@
-"""Flags, SLOs, incidentes e serviços monitorados no `admin.json` (`hub-admin::store`), tudo auditado."""
+"""Flags, SLOs, incidents and monitored services in `admin.json` (`hub-admin::store`), all audited."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ def _missing(msg: str) -> AdminError:
 
 
 def seed_health(data: dict[str, Any], apps: list[str], now: int) -> None:
-    """Serviços iniciais do mockup (só os apps que existem no registro)."""
+    """Initial services of the mockup (only the apps that exist in the registry)."""
     if data.get("health") or data.get("health_seeded"):
         return
     rows = [
@@ -278,7 +278,7 @@ class InsightOps:
                     i["resolved"] = now_ms()
                     i["notes"].append({"at": now_ms(), "author": "plataforma", "text": note})
 
-    # ---- serviços monitorados ------------------------------------------------------------------------
+    # ---- monitored services ----------------------------------------------------------------------------
     def _check_service(self, raw: dict[str, Any], name: str) -> dict[str, Any]:
         kind, status, app = str(raw.get("kind", "")), str(raw.get("status", "")), raw.get("app") or None
         if not name or len(name) > 60:

@@ -1,7 +1,7 @@
-"""Certificado do app registration (Entra ID): asserção de cliente JWT RS256 (RFC 7523).
+"""App registration certificate (Entra ID): JWT RS256 client assertion (RFC 7523).
 
-Aceita PEM (certificado + chave privada sem senha) ou PFX/PKCS#12 (com senha). Só a chave (PKCS#8) e
-o certificado (DER) são guardados, cifrados no cofre pela camada de conexões; a senha do PFX não.
+Accepts PEM (certificate + private key without a password) or PFX/PKCS#12 (with a password). Only the key (PKCS#8) and
+the certificate (DER) are stored, encrypted in the vault by the connections layer; the PFX password is not.
 """
 
 from __future__ import annotations
@@ -59,7 +59,7 @@ class ClientCert:
         return cls(
             key,
             cert_der,
-            hashlib.sha1(cert_der).hexdigest().upper(),  # noqa: S324 - impressão digital do Entra
+            hashlib.sha1(cert_der).hexdigest().upper(),  # noqa: S324 - Entra's fingerprint
             int(cert.not_valid_after_utc.timestamp()),
             str(cn[0].value) if cn else "",
         )
@@ -135,7 +135,7 @@ def pem_cert_der(pem: str) -> bytes | None:
 
 
 def verify_assertion(jwt: str, cert_der: bytes) -> dict[str, Any] | None:
-    """Confere assinatura RS256 e `x5t` com o certificado; devolve as claims (simulador e testes)."""
+    """Checks the RS256 signature and `x5t` against the certificate; returns the claims (simulator and tests)."""
     try:
         si, sig = jwt.rsplit(".", 1)
         h, c = si.split(".", 1)

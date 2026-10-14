@@ -1,7 +1,7 @@
-"""Exportação OTLP/HTTP em JSON : só com `OTEL_EXPORTER_OTLP_ENDPOINT`.
+"""OTLP/HTTP export in JSON: only with `OTEL_EXPORTER_OTLP_ENDPOINT`.
 
-Spans a cada 5 s em `{endpoint}/v1/traces`; métricas cumulativas a cada 30 s em `{endpoint}/v1/metrics`.
-Sem o SDK do OpenTelemetry (o JSON do OTLP é estável). Falha de envio só gera aviso; a fila é limitada.
+Spans every 5 s to `{endpoint}/v1/traces`; cumulative metrics every 30 s to `{endpoint}/v1/metrics`.
+No OpenTelemetry SDK (the OTLP JSON is stable). A send failure only logs a warning; the queue is bounded.
 """
 
 from __future__ import annotations

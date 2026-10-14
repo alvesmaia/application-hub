@@ -1,4 +1,4 @@
-"""Administração › Configurações (`/admin`) e Tokens de API (`/admin/tokens`, com clientes/concessões OAuth)."""
+"""Administration › Settings (`/admin`) and API tokens (`/admin/tokens`, with OAuth clients and grants)."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ _LOCAL = {"on": "Ativo para todos", "admins": "Só administradores", "off": "Des
 
 
 def sso_status(request: Request) -> dict[str, Any]:
-    """Estado do SSO para Configurações (só leitura; nunca o segredo do cliente)."""
+    """SSO status for Settings (read-only; never the client secret)."""
     sso = getattr(request.app.state, "sso", None)
     local = _LOCAL[getattr(request.app.state, "sso_local", "on")]
     if not sso:
@@ -51,7 +51,7 @@ class TokenIn(BaseModel):
 
 
 def _quirk(_ms: int, _now: int) -> str:
-    # Argumentos de `relative(now, ts)` trocados: sempre mostra "agora mesmo".
+    # Arguments of `relative(now, ts)` swapped: it always shows "just now".
     return "agora mesmo"
 
 
@@ -77,7 +77,7 @@ def mount_tokens(
     store: Any = app.state.admin
     auth: Any = app.state.auth
 
-    # ---- Configurações ----------------------------------------------------------------------
+    # ---- Settings ----------------------------------------------------------------------
     @api.get("/settings")
     async def get_settings() -> dict[str, Any]:
         return await _settings()
@@ -134,7 +134,7 @@ def mount_tokens(
 
     @api.get("/vault")
     async def vault_status() -> Any:
-        """Estado do cofre (nada secreto: impressão digital da chave mestra e ids das chaves)."""
+        """Vault status (nothing secret: master key fingerprint and key ids)."""
         v = store.vault
         if not v:
             return {"enabled": False}
@@ -202,7 +202,7 @@ def mount_tokens(
             usage=usage,
         )
 
-    # ---- Tokens de API ----------------------------------------------------------------------
+    # ---- API tokens ------------------------------------------------------------------
     def view(t: dict[str, Any], now: int) -> dict[str, Any]:
         exp, rev = t.get("expires_at"), t.get("revoked_at")
         out = {k: t.get(k) for k in ("id", "name", "prefix", "apps", "envs", "actions", "created_by")}
@@ -265,7 +265,7 @@ def mount_tokens(
             t = next((x for x in d["tokens"] if x["id"] == token_id), None)
             if not t:
                 raise AdminError("Token não encontrado.", 404)
-            live = t.get("revoked_at") is None  # excluir um token ativo = revogar e remover numa só ação
+            live = t.get("revoked_at") is None  # deleting an active token = revoke and remove in one action
             d["tokens"].remove(t)
         await store.audit(
             actor_of(request),

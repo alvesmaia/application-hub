@@ -1,4 +1,4 @@
-"""Catálogo de apps para as páginas (cartões, stack, versão implantada, situação) e rótulos de recentes."""
+"""App catalog for the pages (cards, stack, deployed version, status) and labels for recents."""
 
 from __future__ import annotations
 
@@ -60,7 +60,7 @@ def section_label(section: str) -> str:
 
 
 def recent_path(path: str) -> str | None:
-    """Caminho canônico de Recentes (`/apps/x/dashboard` = `/apps/x`); `None` para rota só de teste."""
+    """Canonical path for Recents (`/apps/x/dashboard` = `/apps/x`); `None` for a test-only route."""
     path = path.split("?", 1)[0].rstrip("/")
     rel = path.removeprefix("/apps") if path.startswith("/apps/") else path
     segs = rel.lstrip("/").split("/")
@@ -82,7 +82,7 @@ def path_label(reg: Registry, path: str) -> str | None:
 
 
 def deployed_versions(data_dir: Path) -> dict[str, str]:
-    """Release ativa por app: `deployments.json` (legado) e, por cima, a implantação `Implantado` em Produção do `ops.json`."""
+    """Active release per app: `deployments.json` (legacy) and, on top, the `Implantado` (Deployed) deployment in Production from `ops.json`."""
     out: dict[str, str] = {}
     with suppress(OSError, ValueError, AttributeError):
         raw = json.loads((data_dir / "deployments.json").read_text(encoding="utf-8"))

@@ -348,7 +348,7 @@ class StateDb:
             return value or 0
 
     async def rate_like(self, bucket: str, like: str, window_ms: int, now: int, clear: bool = False) -> int:
-        """Soma (ou apaga, com `clear`) as contagens da janela atual das chaves `LIKE` (desbloqueio de conta)."""
+        """Adds (or, with `clear`, deletes) the counts of the current window for the `LIKE` keys (account unlock)."""
         async with self.pool.acquire() as c:
             if clear:
                 await c.execute("DELETE FROM rate_windows WHERE bucket=$1 AND key LIKE $2", bucket, like)
@@ -630,7 +630,7 @@ class StateDb:
 
 
 class Lease:
-    """Renovação do lease em segundo plano, com a mesma margem local de fencing de 80%."""
+    """Background lease renewal, with the same 80% local fencing margin."""
 
     def __init__(self, db: StateDb, name: str, holder: str, ttl_ms: int) -> None:
         self.db, self.name, self.holder = db, name, holder

@@ -1,4 +1,4 @@
-"""Componentes da API pública v1."""
+"""Public API v1 components."""
 
 from __future__ import annotations
 
@@ -12,17 +12,17 @@ from pydantic import BaseModel, ConfigDict, Field
 EXAMPLES: dict[str, Any] = json.loads((Path(__file__).parent / "examples.json").read_text(encoding="utf-8"))
 
 
-U = Annotated[int, Field(ge=0)]  # inteiro sem sinal (u32/u64)
+U = Annotated[int, Field(ge=0)]  # unsigned integer (u32/u64)
 
 
 class Out(BaseModel):
-    """Resposta: campos novos nas rotas internas não quebram clientes."""
+    """Response: new fields on the internal routes do not break clients."""
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
 
 class In(BaseModel):
-    """Corpo de requisição: fechado."""
+    """Request body: closed."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -33,7 +33,7 @@ class Env(StrEnum):
 
 
 class Problem(Out):
-    """Erro no formato RFC 9457 (`application/problem+json`)."""
+    """Error in RFC 9457 format (`application/problem+json`)."""
 
     type: str = Field(json_schema_extra={"format": "uri-reference"})
     title: str
@@ -43,7 +43,7 @@ class Problem(Out):
 
 
 class Page(Out):
-    """Página de uma lista (`items` tipados por operação)."""
+    """Page of a list (`items` typed per operation)."""
 
     items: list[dict[str, Any]]
     total: int = Field(ge=0)
@@ -154,7 +154,7 @@ class Deployment(Out):
 
 
 class Job(Out):
-    """Job assíncrono do hub (implantação, backup, restauração)."""
+    """Asynchronous hub job (deployment, backup, restore)."""
 
     id: int = Field(ge=0)
     kind: str
@@ -421,7 +421,7 @@ _NULL = {"type": "null"}
 
 
 def _clean(v: Any) -> Any:
-    """JSON Schema do pydantic para a forma do utoipa (sem `title`; `anyOf` com null vira nulável)."""
+    """Pydantic JSON Schema for the utoipa shape (no `title`; `anyOf` with null becomes nullable)."""
     if isinstance(v, list):
         return [_clean(x) for x in v]
     if not isinstance(v, dict):
@@ -441,7 +441,7 @@ def _clean(v: Any) -> Any:
 
 
 def schemas() -> dict[str, Any]:
-    """Todos os componentes (`#/components/schemas/<Nome>`), com `examples` quando há."""
+    """All components (`#/components/schemas/<Name>`), with `examples` when present."""
     out: dict[str, Any] = {}
     for m in MODELS:
         if issubclass(m, StrEnum):
@@ -460,7 +460,7 @@ def schemas() -> dict[str, Any]:
 
 
 def inline(name: str) -> dict[str, Any]:
-    """Esquema sem `$ref` (o `inputSchema` das ferramentas MCP)."""
+    """Schema without `$ref` (the `inputSchema` of the MCP tools)."""
     all_ = schemas()
 
     def walk(v: Any, depth: int = 0) -> Any:

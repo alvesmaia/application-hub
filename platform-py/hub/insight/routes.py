@@ -1,4 +1,4 @@
-"""Páginas e APIs de Logs, Auditoria, Saúde/SLOs, Feature flags, Observabilidade e Analytics (`/admin/*`)."""
+"""Pages and APIs for Logs, Audit, Health/SLOs, Feature flags, Observability and Analytics (`/admin/*`)."""
 
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ def ms_text(us: int) -> str:
 
 
 def split_ids(s: str) -> list[tuple[str, bool]]:
-    """Separa identificadores técnicos (`hubt_…`, `HUB_*`) do texto, para exibi-los como código."""
+    """Separates technical identifiers (`hubt_…`, `HUB_*`) from the text, to show them as code."""
     out: list[tuple[str, bool]] = []
     rest = s
     while True:
@@ -239,7 +239,7 @@ def mount_insight(
         return list(reversed((await store.cfg.read()).get("audit", [])))
 
     def usage_of(request: Request) -> dict[str, Any]:
-        """Cartão "Uso da plataforma (30 dias)" (o mesmo das Configurações)."""
+        """The "Platform usage (30 days)" card (the same as in Settings)."""
         sm = an.summary(int(time.time() * 1000))
         names = {a["id"]: a["short"] for a in refs()}
         top = sorted(((names.get(r[0], r[0]), r[3], r[4]) for r in sm["apps"]), key=lambda x: -x[2])[:5]
@@ -307,9 +307,7 @@ def mount_insight(
             if report["ok"]
             else f"{len(report['problems'])} problema(s): {report['problems'][0]}"
         )
-        with contextlib.suppress(
-            RuntimeError
-        ):  # cadeia bloqueada: não dá para registrar (o relatório já diz por quê)
+        with contextlib.suppress(RuntimeError):  # chain blocked: cannot record (the report already says why)
             await store.audit(actor_of(request), "Integridade da auditoria verificada", detail, icon="check")
         return report
 
@@ -323,7 +321,7 @@ def mount_insight(
             headers={"content-disposition": "attachment; filename=auditoria.jsonl"},
         )
 
-    # ---- Saúde, SLOs e incidentes ----------------------------------------------------------------------
+    # ---- Health, SLOs and incidents ----------------------------------------------------------------------
     @app.get("/admin/health", response_class=HTMLResponse)
     async def health_page(
         request: Request,
@@ -460,7 +458,7 @@ def mount_insight(
     # ---- Feature flags ---------------------------------------------------------------------------------
     @app.get("/admin/flags")
     async def flags_page() -> Response:
-        """A tela foi removida da interface (a API `/api/admin/flags` e a avaliação seguem)."""
+        """The screen was removed from the UI (the `/api/admin/flags` API and the evaluation remain)."""
         return RedirectResponse("/admin", status_code=308)
 
     @api.get("/flags")
@@ -499,7 +497,7 @@ def mount_insight(
         return RedirectResponse(f"/admin/health{q}#obs", 308)
 
     async def obs_ctx(request: Request, app_q: str, env: str, min: str) -> dict[str, Any]:
-        """Gráficos e requisições lentas da Saúde (filtros por app, ambiente e janela)."""
+        """Health charts and slow requests (filters by app, environment and window)."""
         allow = getattr(request.state, "apps", None)
         visible = lambda a: allow is None or a in allow  # noqa: E731
         apps_v = [a for a in refs() if visible(a["id"])]
@@ -578,7 +576,7 @@ def mount_insight(
 
     @app.get("/admin/analytics")
     async def old_analytics(request: Request) -> Response:
-        # Quem só tem ver_auditoria (Product Owner) vê o cartão de uso, só leitura, na Auditoria.
+        # Whoever only has view_audit (Product Owner) sees the usage card, read-only, in Audit.
         can_cfg = "editar_configuracoes" in getattr(request.state, "permissions", [])
         return RedirectResponse("/admin#uso" if can_cfg else "/admin/audit#uso", 308)
 
@@ -633,7 +631,7 @@ def mount_insight(
         )
         return {"ok": True}
 
-    # ---- Uso por usuário --------------------------------------------------------------------------------
+    # ---- Usage per user ---------------------------------------------------------------------------------
     us = insight.usage
 
     async def usage_query(days: int, user: str, app_id: str) -> dict[str, Any]:

@@ -1,6 +1,6 @@
-"""Aviso de versão nova (opcional, `HUB_UPDATE_CHECK=1`): uma consulta por dia à última release do repositório
-(`HUB_UPDATE_REPO`, padrão o repositório público do produto) e um aviso em Administração › Saúde. Nada é atualizado
-sozinho: a troca é do administrador (`scripts/hub_update.py`, docs/ATUALIZACAO.md)."""
+"""New version notice (optional, `HUB_UPDATE_CHECK=1`): one query per day to the latest release of the repository
+(`HUB_UPDATE_REPO`, default the product's public repository) and a notice in Administration › Health. Nothing is updated
+on its own: the switch is the administrator's (`scripts/hub_update.py`, docs/ATUALIZACAO.md)."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ def parse(v: str) -> tuple[int, int, int] | None:
 
 
 def newer(latest: str, current: str) -> bool:
-    """Só versões estáveis (sem sufixo) contam; pré-release ou formato estranho nunca avisam."""
+    """Only stable versions (no suffix) count; pre-releases or odd formats never trigger a notice."""
     a, b = parse(latest), parse(current)
     return a is not None and b is not None and a > b
 
@@ -47,13 +47,13 @@ class UpdateCheck:
                 ok = parse(tag) is not None and url.startswith("https://github.com/")
                 self.latest = {"version": tag.lstrip("v"), "url": url} if ok else None
         except (httpx.HTTPError, ValueError):
-            return  # sem rede: tenta de novo amanhã
+            return  # no network: tries again tomorrow
         finally:
             if own:
                 await c.aclose()
 
     def notice(self) -> dict[str, str] | None:
-        """{version, url, current} quando há versão estável mais nova que a do ar."""
+        """{version, url, current} when there is a stable version newer than the running one."""
         if self.latest and newer(self.latest["version"], __version__):
             return {**self.latest, "current": __version__}
         return None

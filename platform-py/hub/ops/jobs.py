@@ -1,4 +1,4 @@
-"""Jobs de Operações em memória (`GET /api/ops/jobs/{id}`) e tarefas duráveis dos apps (`/{id}/_hub/jobs`)."""
+"""In-memory Operations jobs (`GET /api/ops/jobs/{id}`) and the apps' durable tasks (`/{id}/_hub/jobs`)."""
 
 from __future__ import annotations
 
@@ -19,8 +19,8 @@ TOKEN_HEADER = "x-hub-internal-token"  # noqa: S105
 
 
 class Jobs:
-    """Jobs de Operações. Em memória na réplica que os executa; com banco de estado cada mudança também vai para a
-    tabela `jobs` (ids de uma sequência do banco): qualquer réplica responde `GET /api/ops/jobs/{id}`."""
+    """Operations jobs. In memory in the replica that runs them; with the state database, each change also goes to the
+    `jobs` table (ids from a database sequence): any replica answers `GET /api/ops/jobs/{id}`."""
 
     def __init__(self, db: StateDb | None = None) -> None:
         self.items: dict[int, dict[str, Any]] = {}
@@ -52,7 +52,7 @@ class Jobs:
         return self.items.get(i)
 
     async def aget(self, i: int) -> dict[str, Any] | None:
-        """Job desta réplica ou, se for de outra, o gravado no banco."""
+        """This replica's job or, if it belongs to another replica, the one written to the database."""
         if (j := self.items.get(i)) is not None or self.db is None:
             return j
         v = await self.db.job_get(i)
@@ -63,7 +63,7 @@ class Jobs:
             fn(j)
 
     async def flush(self) -> None:
-        """Grava no banco os jobs que mudaram desde a última gravação."""
+        """Writes to the database the jobs that changed since the last write."""
         if not self.db:
             return
         for i, j in list(self.items.items()):
@@ -92,7 +92,7 @@ class Jobs:
             await self.flush()
 
     async def claim(self, app: str) -> None:
-        """Um job de backup/restauração por app (também entre réplicas: confere os jobs abertos no banco)."""
+        """One backup/restore job per app (also across replicas: checks the open jobs in the database)."""
         if app in self.busy:
             raise OpsError("Já existe um job de backup em andamento para esta aplicação.", 409)
         if self.db:
@@ -106,13 +106,13 @@ class Jobs:
         return sum(not j["done"] for j in self.items.values())
 
     async def running_all(self) -> int:
-        """Jobs não terminados de todas as réplicas."""
+        """Unfinished jobs from all replicas."""
         if not self.db:
             return self.running()
         return sum(isinstance(v, dict) and not v.get("done") for v in await self.db.job_list(200))
 
     async def interrupt_dead(self) -> int:
-        """Jobs cuja réplica dona não dá sinal de vida há 30 s viram "interrompidos"."""
+        """Jobs whose owning replica has shown no sign of life for 30 s become "interrupted"."""
         if not self.db:
             return 0
         alive = {r[0] for r in await self.db.replicas(30_000)}
@@ -172,7 +172,7 @@ def saga_summary(cp: Any) -> dict[str, Any] | None:
 async def list_all(
     client: httpx.AsyncClient, targets: list[tuple[str, str, str, str | None]], name_of: Callable[[str], str]
 ) -> dict[str, Any]:
-    """`targets` = (app, env, upstream, token). Tarefas mais recentes primeiro; apps mudos entram em `errors`."""
+    """`targets` = (app, env, upstream, token). Most recent tasks first; silent apps go into `errors`."""
 
     async def one(app: str, env: str, up: str, token: str | None) -> tuple[str, str, Any]:
         if not token:

@@ -1,7 +1,7 @@
-"""Telemetria mínima em processo (`hub-telemetry` + SLOs): métricas RED por app x ambiente, traces e SLOs.
+"""Minimal in-process telemetry (`hub-telemetry` + SLOs): RED metrics per app x environment, traces and SLOs.
 
-Baldes de 10 s (1 h, gráficos) e de 5 min (30 dias, SLOs/status; gravados em `metrics.json`); duração em
-histograma de baldes fixos. `HUB_TELEMETRY=0` desliga a coleta (os gateways continuam servindo).
+10 s buckets (1 h, charts) and 5 min buckets (30 days, SLOs/status; stored in `metrics.json`); duration in
+a histogram of fixed buckets. `HUB_TELEMETRY=0` turns collection off (the gateways keep serving).
 """
 
 from __future__ import annotations
@@ -122,7 +122,7 @@ class Metrics:
         self.path = directory / "metrics.json" if directory else None
         self.series: dict[str, Series] = {}
         self.listener: Callable[[str, str, int, float], None] | None = None
-        # Réplicas no mesmo volume: o que esta réplica somou desde a última gravação (série, t) → acréscimo.
+        # Replicas on the same volume: what this replica added since the last write (series, t) → increment.
         self._pending: dict[tuple[str, int], Bucket] = {}
         self._mtime = 0
         for k, rows in self._read().items():
@@ -146,10 +146,10 @@ class Metrics:
             return
         with file_lock(self.path):
             try:
-                other = self.path.stat().st_mtime_ns != self._mtime  # outra réplica gravou depois de nós
+                other = self.path.stat().st_mtime_ns != self._mtime  # another replica wrote after us
             except OSError:
                 other = False
-            if other:  # adota o arquivo e soma por cima só o que esta réplica contou desde a última gravação
+            if other:  # adopts the file and adds on top only what this replica counted since the last write
                 for k, rows in self._read().items():
                     self._s(*k.split("|", 1)).coarse = rows
                 for (k, t), add in self._pending.items():
@@ -271,7 +271,7 @@ def _allowed(target_pct: float) -> float:
 
 
 def burn_rates(m: Metrics, slo: dict[str, Any], now: int | None = None) -> tuple[float, float, int]:
-    """(queima 1 h, queima ~10 min, requisições na hora)."""
+    """(burn 1 h, burn ~10 min, requests in the hour)."""
     now = now_s() if now is None else now
     a = _allowed(slo["availability"])
     long_ = m.window(slo["app"], slo["env"], now - 3600, now + 1)
@@ -313,7 +313,7 @@ def slo_status(m: Metrics, slo: dict[str, Any], now: int | None = None) -> dict[
 
 
 def daily_uptime(m: Metrics, app: str, env: str, days: int, now: int) -> list[tuple[int, float | None]]:
-    """Uptime por dia, do mais antigo ao de hoje: sondas OK; sem sondas, taxa de sucesso; sem nada, `None`."""
+    """Uptime per day, oldest to today: OK probes; without probes, success rate; without anything, `None`."""
     today = now - now % 86_400
     out: list[tuple[int, float | None]] = []
     for i in range(days - 1, -1, -1):

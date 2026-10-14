@@ -1,4 +1,4 @@
-"""Rotas de Início, Aplicações e Status e as APIs `/api/me/*` (prefs, onboarding, home, favoritos)."""
+"""Routes for Home, Applications and Status, and the `/api/me/*` APIs (prefs, onboarding, home, favorites)."""
 
 from __future__ import annotations
 
@@ -66,7 +66,7 @@ def now_ms() -> int:
 
 
 def visible(request: Request) -> set[str] | None:
-    """Apps que o usuário alcança (`None` = todos)."""
+    """Apps the user can reach (`None` = all)."""
     apps = getattr(request.state, "apps", None)
     return None if apps is None else set(apps)
 
@@ -80,7 +80,7 @@ def mount_ux(
     data_dir: Path,
     public_status: Callable[[], set[str]],
 ) -> Callable[[Request, int], None]:
-    """Registra as rotas; devolve o `track` (observação de uso) que o middleware chama a cada resposta."""
+    """Registers the routes; returns the `track` (usage observation) that the middleware calls on every response."""
     helpers: dict[str, Any] = {"icon": icon}
 
     async def live_states(request: Request, vis: set[str] | None) -> list[tuple[str, str, str]]:
@@ -188,7 +188,7 @@ def mount_ux(
         }
         return templates.TemplateResponse(request, "status.html" if signed_in else "status_public.html", ctx)
 
-    # ---- APIs do usuário -----------------------------------------------------------------
+    # ---- user APIs ------------------------------------------------------------------------
 
     @app.get("/api/me/prefs")
     async def get_prefs(request: Request) -> dict[str, Any]:
@@ -216,7 +216,7 @@ def mount_ux(
         analytics_opt_out: bool | None = None,
         channels: dict[str, Channel] | None = None,
     ) -> str | None:
-        """Grava as preferências (API e formulário do menu); devolve a mensagem de erro, se inválidas."""
+        """Saves the preferences (API and menu form); returns the error message, if invalid."""
         if theme is not None and theme not in _THEMES:
             return "Tema inválido."
         if lang is not None and lang not in _LANGS:
@@ -232,7 +232,7 @@ def mount_ux(
             store.step(uid, "theme")
         if merged:
             store.step(uid, "notifications")
-        app.state.inbox.poke()  # o contador do sino depende dos canais ligados
+        app.state.inbox.poke()  # the bell counter depends on the channels that are on
         return None
 
     app.state.apply_prefs = apply_prefs
@@ -266,7 +266,7 @@ def mount_ux(
             key = StepIn.model_validate(await request.json()).key
         except (ValidationError, ValueError):
             return _err(400, "Passo desconhecido.")
-        if key != "search":  # só passos que acontecem no navegador; o servidor marca os demais
+        if key != "search":  # only steps that happen in the browser; the server marks the others
             return _err(400, "Passo desconhecido.")
         store.step(request.state.user["id"], key)
         return JSONResponse({"ok": True})
@@ -317,7 +317,7 @@ def mount_ux(
         return Response(status_code=204)
 
     def track(request: Request, status_code: int) -> None:
-        """Observação de uso após cada resposta: Recentes do Início e o passo "abrir uma aplicação"."""
+        """Usage observation after each response: Home's Recents and the "open an application" step."""
         user = getattr(request.state, "user", None)
         if not user or request.method != "GET" or not 200 <= status_code < 400:
             return

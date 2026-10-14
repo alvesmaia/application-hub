@@ -1,5 +1,5 @@
-"""Tarefas de fundo do hub (F5a): liderança entre réplicas, coleta do outbox, agendador de backups, varreduras e
-recarga da Inbox entre réplicas. Ligado/desligado pelo `lifespan` (`start(db)` / `stop()`)."""
+"""Hub background tasks (F5a): leadership across replicas, outbox collection, backup scheduler, sweeps and
+Inbox reload across replicas. Turned on/off by the `lifespan` (`start(db)` / `stop()`)."""
 
 from __future__ import annotations
 
@@ -48,7 +48,7 @@ class Background:
         sched.start()
         sup.start()
         self.parts = [sup, sched, outbox, leader]
-        if updates.enabled():  # aviso de versão nova (opcional)
+        if updates.enabled():  # new version notice (optional)
             st.update_check = chk = updates.UpdateCheck()
             chk.start()
             self.parts.append(chk)
@@ -56,7 +56,7 @@ class Background:
             self.watch = asyncio.create_task(self._inbox_refresh())
 
     async def sweeps(self) -> None:
-        """Do líder, a cada minuto: registros vencidos no banco de estado, pedidos/confirmações vencidos, jobs órfãos."""
+        """From the leader, every minute: expired records in the state database, expired requests/confirmations, orphan jobs."""
         st, db = self.app.state, self.app.state.auth.db
         st.leader.ran("sweeps")
         if db:
@@ -66,12 +66,12 @@ class Background:
         await self.recover_dead_restores()
 
     async def takeover(self) -> None:
-        """Ao assumir a liderança: o que a réplica anterior deixou pelo caminho."""
+        """On taking leadership: what the previous replica left behind."""
         await self.app.state.ops_jobs.interrupt_dead()
         await self.recover_dead_restores()
 
     async def recover_dead_restores(self) -> None:
-        """Restauração cuja réplica morreu no meio: o app fica em manutenção, marcado como falha, até alguém conferir."""
+        """Restore whose replica died midway: the app stays in maintenance, marked as failed, until someone checks."""
         st, db = self.app.state, self.app.state.auth.db
         if not db:
             return
@@ -85,7 +85,7 @@ class Background:
                     self.say("WARN", f"restauração interrompida (réplica morta): {k}")
 
     async def _inbox_refresh(self) -> None:
-        """Recarrega a Inbox quando outra réplica gravou `inbox.json` (acorda o SSE desta)."""
+        """Reloads the Inbox when another replica wrote `inbox.json` (wakes this one's SSE)."""
         inbox = self.app.state.inbox
         while True:
             await asyncio.sleep(0.5)

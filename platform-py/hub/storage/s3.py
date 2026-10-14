@@ -1,4 +1,4 @@
-"""Cliente S3/MinIO do broker: SigV4 com `UNSIGNED-PAYLOAD` e URL pré-assinada (vetores em `hub-storage/vectors.json`)."""
+"""S3/MinIO client of the broker: SigV4 with `UNSIGNED-PAYLOAD` and pre-signed URLs (vectors in `hub-storage/vectors.json`)."""
 
 from __future__ import annotations
 
@@ -39,7 +39,7 @@ BLOCKED_MSG = (
 
 
 def blocked_ip(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
-    """Endereços que o endpoint nunca alcança (SSRF para metadados de nuvem); redes privadas e loopback seguem."""
+    """Addresses the endpoint never reaches (SSRF to cloud metadata); private networks and loopback still work."""
     if isinstance(ip, ipaddress.IPv6Address):
         if ip.ipv4_mapped:
             return blocked_ip(ip.ipv4_mapped)
@@ -176,7 +176,7 @@ class S3Client:
         await self.http.aclose()
 
     async def check_endpoint(self) -> None:
-        """Confere (no teste) se o endpoint resolve para um endereço permitido."""
+        """Checks (in the test) whether the endpoint resolves to an allowed address."""
         u = urlsplit(self.cfg.endpoint)
         host = u.hostname or ""
         if endpoint_allowed(host):

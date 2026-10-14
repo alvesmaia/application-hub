@@ -1,5 +1,5 @@
-"""Conexões de armazenamento (SharePoint/Graph e S3): `connections.json` com segredos no cofre, vínculos e
-variáveis geridas do broker (`HUB_CONNECTIONS_*`, `HUB_STORAGE_TOKEN_*`, `HUB_STORAGE_URL`)."""
+"""Storage connections (SharePoint/Graph and S3): `connections.json` with secrets in the vault, links and
+managed broker variables (`HUB_CONNECTIONS_*`, `HUB_STORAGE_TOKEN_*`, `HUB_STORAGE_URL`)."""
 
 from __future__ import annotations
 
@@ -142,7 +142,7 @@ _VIEW = [
 
 
 def view(c: dict[str, Any]) -> dict[str, Any]:
-    """Visão da tela e da API (campos e ordem do `ConnView` da versão anterior do hub): sem segredo nem certificado."""
+    """View for the screen and the API (fields and order of the `ConnView` of the previous hub version): no secret or certificate."""
     out = {k: c[k] for k in _VIEW}
     out["secret"] = MASK if c["secret"] or c["certificate"] else ""
     return out
@@ -158,7 +158,7 @@ def target(c: dict[str, Any]) -> str:
 
 
 def link_policy(c: dict[str, Any], app: str, kind: str, hours: int) -> str:
-    """Alcance efetivo do link de compartilhamento para `app` ou a recusa (pt-BR)."""
+    """Effective reach of the sharing link for `app`, or the refusal (pt-BR)."""
     if kind not in ("view", "edit"):
         raise ConnError("Tipo de link: view ou edit.")
     mx = min(max(c["max_link_hours"], 1), MAX_LINK_HOURS)
@@ -193,7 +193,7 @@ class ConnStore:
         self.clients: dict[str, tuple[int, Backend]] = {}
         self._closing: set[asyncio.Task[None]] = set()
         self.items: list[dict[str, Any]] = []
-        self.storage: list[dict[str, Any]] = []  # armazenamento provisionado (bucket + usuário + conexão)
+        self.storage: list[dict[str, Any]] = []  # provisioned storage (bucket + user + connection)
         self._load()
 
     @property
@@ -274,7 +274,7 @@ class ConnStore:
         self.clients[c["name"]] = (c["rev"], b)
         return b
 
-    # ---- validação -------------------------------------------------------------------------
+    # ---- validation ------------------------------------------------------------------------
     def check_bindings(self, bindings: Any) -> list[dict[str, str]]:
         out: list[dict[str, str]] = []
         for b in bindings:
@@ -345,7 +345,7 @@ class ConnStore:
                     'Links anônimos não podem ser de edição: desmarque "links de edição" ou use outro alcance.'
                 )
         try:
-            make_backend(c)  # valida endpoint/bucket sem rede
+            make_backend(c)  # validates endpoint/bucket without network access
         except StorageError as e:
             raise ConnError(e.message) from e
         return c
@@ -440,10 +440,10 @@ class ConnStore:
             c["secret"], c["credential_updated_at"] = secret, now_ms()
         if c["public_url"] and not c["public_url"].startswith(("http://", "https://")):
             raise ConnError("URL pública: http(s)://…")
-        # URL pré-assinada = só leitura.
+        # pre-signed URL = read-only.
         c.update(auth="secret", share_scope="", allow_edit_links=False)
 
-    # ---- operações -------------------------------------------------------------------------
+    # ---- operations ------------------------------------------------------------------------
     async def create(self, i: dict[str, Any]) -> dict[str, Any]:
         c = self.build(blank(now_ms()), i, True)
         async with self.mutating() as items:
@@ -507,9 +507,9 @@ class ConnStore:
                 if x["name"] == name and x["rev"] == rev:
                     x["last_test"] = last
 
-    # ---- variáveis geridas do broker --------------------------------------------------------
+    # ---- broker managed variables -----------------------------------------------------------
     async def sync_env(self, actor: str, broker_url: str) -> None:
-        """Reflete os vínculos nas variáveis geridas (reinício pendente como as variáveis comuns)."""
+        """Reflects the links in the managed variables (restart pending, as with ordinary variables)."""
         cfg = self.admin.cfg
         bound: dict[tuple[str, str], list[str]] = {}
         for c in self.items:
@@ -560,8 +560,8 @@ class ConnStore:
             await cfg.env_delete(actor, STORAGE_URL_ENV)
 
     async def token_owner(self, token: str) -> tuple[str, str] | None:
-        """(app, ambiente) dono do token do broker: só o token GERIDO e vinculado exatamente a esse par vale;
-        varre todos os pares sem sair cedo (tempo constante)."""
+        """(app, environment) that owns the broker token: only the token MANAGED and linked exactly to that pair counts;
+        scans all pairs without exiting early (constant time)."""
         if len(token) < 16:
             return None
         env = {v["name"]: v for v in (await self.admin.cfg.read())["env"]}

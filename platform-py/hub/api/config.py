@@ -1,4 +1,4 @@
-"""`[api]`, `[mcp]` e `[mcp.oauth]` do hub.toml (padrões = config/hub.example.toml) + variáveis HUB_*."""
+"""`[api]`, `[mcp]` and `[mcp.oauth]` of hub.toml (defaults = config/hub.example.toml) + HUB_* variables."""
 
 from __future__ import annotations
 

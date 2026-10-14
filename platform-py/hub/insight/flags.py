@@ -1,4 +1,4 @@
-"""Feature flags (`hub-flags`): validação, avaliação por usuário/função/percentual e cabeçalho `x-hub-flags`."""
+"""Feature flags (`hub-flags`): validation, evaluation per user/role/percentage and the `x-hub-flags` header."""
 
 from __future__ import annotations
 
@@ -52,7 +52,7 @@ class Flag(BaseModel):
         return OFF if self.kind == "boolean" else (self.variants[0] if self.variants else OFF)
 
     def validate_rules(self) -> None:
-        """Levanta `ValueError` com a mensagem da versão anterior do hub."""
+        """Raises `ValueError` with the message of the previous hub version."""
         if not valid_token(self.key):
             raise ValueError("Chave inválida: use letras minúsculas, números, '.', '_' ou '-' (até 64).")
         if len(self.description) > 200:
@@ -77,7 +77,7 @@ class Flag(BaseModel):
                 raise ValueError("Regras demais (até 20, com até 100 funções/usuários cada).")
 
     def dump(self) -> dict[str, Any]:
-        """Envs em ordem de chave, `rollout` ausente quando vazio (formato da versão anterior do hub)."""
+        """Envs in key order, `rollout` omitted when empty (format of the previous hub version)."""
         d = self.model_dump(exclude_none=True)
         d["envs"] = dict(sorted(d["envs"].items()))
         return d
@@ -103,7 +103,7 @@ def bucket(key: str, user: str) -> int:
 
 
 def evaluate(flag: Flag, env: str, user: str, roles: list[str]) -> str:
-    """Kill switch → regra de usuário/função → percentual → padrão."""
+    """Kill switch → user/role rule → percentage → default."""
     r = flag.envs.get(env)
     if r is None or not r.enabled:
         return flag.off_value()
@@ -139,7 +139,7 @@ def flag_detail(f: Flag) -> str:
 
 
 def for_push(flags: list[Flag], app: str, env: str) -> list[dict[str, Any]]:
-    """O que o hub empurra ao container do ambiente: só as regras de `env`, com usuários trocados por resumos."""
+    """What the hub pushes to the environment's container: only the `env` rules, with users replaced by digests."""
     out = []
     for f in (x for x in flags if x.app == app):
         d = f.model_copy(update={"envs": {k: v for k, v in f.envs.items() if k == env}}, deep=True)

@@ -1,7 +1,7 @@
-"""A tabela de operações da API pública: dela saem as rotas `/api/v1`, o OpenAPI e as ferramentas MCP.
+"""The public API operations table: the `/api/v1` routes, the OpenAPI and the MCP tools are generated from it.
 
-Cada operação é **fachada** de uma rota interna (`/api/ops|admin|me`, os mesmos handlers da UI, chamados em
-processo com a mesma identidade) ou uma leitura nativa pequena (`native`)."""
+Each operation is a **facade** over an internal route (`/api/ops|admin|me`, the same handlers as the UI, called in
+process with the same identity) or a small native read (`native`)."""
 
 from __future__ import annotations
 
@@ -37,14 +37,14 @@ class Op:
     method: str = "GET"
     params: tuple[Param, ...] = ()
     body: str | None = None
-    target: tuple[str, str] | None = None  # (método interno, caminho interno com {param})
+    target: tuple[str, str] | None = None  # (internal method, internal path with {param})
     native: str | None = None
-    list: str | None = None  # chave do array na resposta interna ("" = raiz); None = não é lista
+    list: str | None = None  # key of the array in the internal response ("" = root); None = not a list
     filters: tuple[str, ...] = ()
-    passed: tuple[str, ...] = ()  # parâmetros de consulta repassados à rota interna
+    passed: tuple[str, ...] = ()  # query parameters passed through to the internal route
     destructive: bool = False
     mcp: bool = True
-    need: tuple[str, ...] = ()  # só nativas: qualquer uma das permissões (vazio = autenticado)
+    need: tuple[str, ...] = ()  # native only: any one of these permissions (empty = authenticated)
 
     @property
     def write(self) -> bool:
@@ -197,7 +197,7 @@ TAGS = {
 
 
 def route(method: str, rel: str) -> tuple[Op, dict[str, str]] | bool:
-    """Casa `método caminho` (relativo a /api/v1). `False` = nada; `True` = existe com outro método (405)."""
+    """Matches `method path` (relative to /api/v1). `False` = nothing; `True` = exists with another method (405)."""
     segs = rel.strip("/").split("/")
     hit = False
     for op in OPS:

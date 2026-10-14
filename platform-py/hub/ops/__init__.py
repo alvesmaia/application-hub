@@ -1,1 +1,1 @@
-"""Operações: implantações, containers, tarefas e backups (F3c). Blue/green, agendador e tarefas duráveis ficam na F5."""
+"""Operations: deployments, containers, tasks and backups (F3c). Blue/green, scheduler and durable tasks are in F5."""

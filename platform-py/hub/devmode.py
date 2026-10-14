@@ -1,11 +1,11 @@
-"""Modo de desenvolvimento: `HUB_DEV_MODE=1`, só via `scripts/dev.sh` e o overlay
-`docker-compose.dev.yml` — nunca em produção.
+"""Development mode: `HUB_DEV_MODE=1`, only via `scripts/dev.sh` and the overlay
+`docker-compose.dev.yml` — never in production.
 
-- assets sempre `no-store` e lidos do disco (já é assim em `hub.app`); código com `uvicorn --reload`;
-- recarga ao vivo opcional (`HUB_DEV_RELOAD=1`): SSE `GET /_dev/reload`, que avisa o navegador quando algo em
-  `HUB_DEV_WATCH` muda (a rota **não existe** fora do modo dev com recarga; o shell põe
+- assets always `no-store` and read from disk (already the case in `hub.app`); code with `uvicorn --reload`;
+- optional live reload (`HUB_DEV_RELOAD=1`): SSE `GET /_dev/reload`, which tells the browser when something in
+  `HUB_DEV_WATCH` changes (the route **does not exist** outside dev mode with reload; the shell puts
   `<meta name="hub-dev-reload">` e o `hub-ux.js` escuta);
-- `startup_check` recusa subir com `HUB_DEV_MODE=1` junto de configurações de produção.
+- `startup_check` refuses to start with `HUB_DEV_MODE=1` alongside production settings.
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ def reload_enabled() -> bool:
 
 
 def production_markers(get: Callable[[str], str | None] = os.environ.get) -> list[str]:
-    """Sinais de produção que tornam o modo dev proibido."""
+    """Production signals that make dev mode forbidden."""
 
     def val(k: str) -> str:
         return (get(k) or "").strip().lower()
@@ -60,7 +60,7 @@ def startup_check() -> None:
 
 
 def parse_watch(raw: str) -> list[tuple[Path, float]]:
-    """`caminho[@atraso_ms]` separados por vírgula; o atraso dá tempo de o serviço reiniciar."""
+    """`path[@delay_ms]` separated by commas; the delay gives the service time to restart."""
     out: list[tuple[Path, float]] = []
     for item in (s.strip() for s in raw.split(",")):
         if not item:
@@ -71,7 +71,7 @@ def parse_watch(raw: str) -> list[tuple[Path, float]]:
 
 
 def fingerprint(root: Path) -> int:
-    """Impressão digital de uma árvore (nomes, tamanhos, datas): mudou = algo mudou (sem inotify no Docker)."""
+    """Fingerprint of a tree (names, sizes, dates): changed = something changed (no inotify in Docker)."""
     h, n = 0, 0
     for dirpath, dirs, files in os.walk(root):
         dirs[:] = sorted(d for d in dirs if not d.startswith(".") and d != "__pycache__")
@@ -123,7 +123,7 @@ class Reloader:
 
 
 def mount(app: FastAPI) -> Callable[[], None]:
-    """Registra `/_dev/reload` (só com recarga ligada) e devolve `start()` do vigia (para o lifespan)."""
+    """Registers `/_dev/reload` (only with reload on) and returns the watcher's `start()` (for the lifespan)."""
     if not reload_enabled():
         return lambda: None
     rl = Reloader()

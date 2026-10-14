@@ -1,4 +1,4 @@
-"""Paginação no servidor (`?page=&per=`) das tabelas que crescem; o seletor vem de `_pager.html`."""
+"""Server-side pagination (`?page=&per=`) of the tables that grow; the selector comes from `_pager.html`."""
 
 from __future__ import annotations
 

@@ -1,5 +1,5 @@
-"""Execução da API pública `/api/v1`: autorização, fachada em processo das rotas internas, listas paginadas
-(envelope), limite de taxa, auditoria, erros RFC 9457 e as rotas HTTP. Também serve de motor das ferramentas MCP."""
+"""Execution of the public `/api/v1` API: authorization, in-process facade over the internal routes, paginated lists
+(envelope), rate limit, audit, RFC 9457 errors and the HTTP routes. Also the engine behind the MCP tools."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ _SLUGS = {400: "bad-request", 401: "unauthorized", 403: "forbidden", 404: "not-f
 
 
 class Problem(Exception):
-    """Erro RFC 9457 (`application/problem+json`)."""
+    """RFC 9457 error (`application/problem+json`)."""
 
     def __init__(self, status: int, slug: str, detail: str, retry_after: int | None = None) -> None:
         super().__init__(detail)
@@ -48,7 +48,7 @@ class Problem(Exception):
 
 @dataclass
 class P:
-    """Quem chama: sessão ou token (com o RBAC do dono)."""
+    """Caller: session or token (with the owner's RBAC)."""
 
     user: dict[str, Any]
     token: dict[str, Any] | None
@@ -117,7 +117,7 @@ class Args:
         return next((v for n, v in self.query if n == k), None)
 
 
-# ---------------------------------------------------------------- autorização
+# ---------------------------------------------------------------- authorization
 
 
 def need_of(op: Op) -> tuple[str, ...]:
@@ -145,7 +145,7 @@ def authorize(op: Op, p: P, args: Args | None = None) -> Problem | None:
 
 
 async def target_apps(request: Request, op: Op, args: Args) -> list[str] | None:
-    """Apps afetados, resolvidos dos argumentos (`None` = operação de plataforma). Id inexistente = 404."""
+    """Affected apps, resolved from the arguments (`None` = platform operation). Unknown id = 404."""
     st = request.app.state
 
     def nf(what: str) -> Problem:
@@ -220,7 +220,7 @@ async def _package_of(body: bytes, content_type: str) -> bytes | None:
 
 
 async def authorize_scope(request: Request, op: Op, p: P, args: Args) -> Problem | None:
-    """Escopo de apps do token (e do dono) contra os apps afetados pela chamada."""
+    """Token's (and owner's) app scope, checked against the apps affected by the call."""
     if not p.token or not (p.token_apps() or p.apps is not None):
         return None
     try:
@@ -238,11 +238,11 @@ async def authorize_scope(request: Request, op: Op, p: P, args: Args) -> Problem
     return None
 
 
-# ---------------------------------------------------------------- fachada em processo
+# ---------------------------------------------------------------- in-process facade
 
 
 async def internal(request: Request, p: P, op: Op, args: Args) -> tuple[int, Any]:
-    """Chama a rota interna (mesmos handlers da UI) com a identidade de `p`, sem passar por rede."""
+    """Calls the internal route (same handlers as the UI) with `p`'s identity, without going through the network."""
     if op.target is None:
         raise Problem(500, "error", "operação sem rota interna")
     method, tmpl = op.target
@@ -496,18 +496,18 @@ async def audit(request: Request, p: P, title: str, detail: str, scope: str) -> 
     await request.app.state.admin.audit(p.name, title, detail, scope=scope, icon="settings")
 
 
-# ---------------------------------------------------------------- limite de taxa
+# ---------------------------------------------------------------- rate limit
 
 
 async def take_rate(app: FastAPI, bucket: str, key: str, per: int, window_ms: int = 60_000) -> int | None:
-    """Janela fixa por chave; devolve os segundos a esperar quando estourou (`None` = liberado)."""
+    """Fixed window per key; returns the seconds to wait when exceeded (`None` = allowed)."""
     now = time.time_ns() // 1_000_000
     db = getattr(app.state.auth, "db", None)
     if db is not None:
         try:
             n, retry = await db.rate_hit(bucket, key, window_ms, per, now)
             return None if n is not None else max(1, -(-int(retry) // 1000))
-        except Exception:  # noqa: S110 - banco fora: conta nesta réplica
+        except Exception:  # noqa: S110 - database down: counts in this replica
             pass
     win = now // window_ms
     _memory = cast(dict[str, tuple[int, int]], getattr(app.state, "rate_mem", None) or {})

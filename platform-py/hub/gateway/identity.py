@@ -1,4 +1,4 @@
-"""Identidade `x-hub-user` e sua assinatura (`x-hub-user-sig`), idênticas às da versão anterior do hub."""
+"""`x-hub-user` identity and its signature (`x-hub-user-sig`), identical to the previous hub version."""
 
 from __future__ import annotations
 
@@ -25,10 +25,10 @@ class Identity:
     email: str = ""
     permissions: list[str] = field(default_factory=list)
     locale: str = ""
-    apps: list[str] | None = None  # só para o gateway; nunca vai ao app
+    apps: list[str] | None = None  # gateway only; never sent to the app
 
     def header_value(self) -> str:
-        """JSON compacto (ordem dos campos da versão anterior do hub, vazios omitidos) em base64url sem padding."""
+        """Compact JSON (field order of the previous hub version, empty ones omitted) in base64url without padding."""
         d: dict[str, object] = {"user": self.user, "roles": self.roles}
         for k in ("id", "name", "email"):
             if v := getattr(self, k):
@@ -48,7 +48,7 @@ class Identity:
 
 
 def demo_admin() -> Identity:
-    # TODO F1 (auth): a identidade vem da sessão/RBAC; até lá, admin fixo de demonstração.
+    # TODO F1 (auth): the identity comes from the session/RBAC; until then, a fixed demo administrator.
     return Identity(
         user="admin@demo.local",
         roles=["Administrador"],
@@ -71,7 +71,7 @@ def _hmac(key: bytes, data: bytes) -> bytes:
 
 
 def sign_user(key: bytes, app: str, env: str, user_header: str, ts: int) -> str:
-    """`v1.<unix>.<hex(HMAC-SHA256)>` com chave derivada por app (mesmo algoritmo da versão anterior do hub)."""
+    """`v1.<unix>.<hex(HMAC-SHA256)>` with a key derived per app (same algorithm as the previous hub version)."""
     k_app = _hmac(key, f"hub-user-sig/v1/{app}".encode())
     mac = _hmac(k_app, f"v1\n{env}\n{ts}\n{user_header}".encode())
     return f"v1.{ts}.{mac.hex()}"
@@ -89,6 +89,6 @@ def verify_user(key: bytes, app: str, env: str, user_header: str, sig: str, now:
 
 
 def user_sig_key() -> bytes:
-    """`HUB_USER_SIG_KEY` (>= 32 caracteres) ou chave aleatória do processo."""
+    """`HUB_USER_SIG_KEY` (>= 32 characters) or the process's random key."""
     fixed = os.environ.get("HUB_USER_SIG_KEY", "").strip()
     return (fixed if len(fixed) >= 32 else secrets.token_hex(32)).encode()

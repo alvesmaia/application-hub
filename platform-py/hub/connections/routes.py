@@ -1,4 +1,4 @@
-"""Administração › Conexões: página, API `/api/admin/connections*` e «Provisionar armazenamento»."""
+"""Administration › Connections: page, `/api/admin/connections*` API and «Provision storage»."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ _BAD = "Dados inválidos: verifique os campos enviados."
 
 
 def broker_url() -> str:
-    """Endereço do broker que os apps usam (`HUB_BROKER_PUBLIC_URL`)."""
+    """Address of the broker that the apps use (`HUB_BROKER_PUBLIC_URL`)."""
     return os.getenv("HUB_BROKER_PUBLIC_URL", "").strip() or "http://hub-web:8081"
 
 
@@ -44,7 +44,7 @@ def mount_connections(
     auth = cast(AuthStore, app.state.auth)
 
     async def storage_for_deploy(app_id: str, env: str) -> dict[str, Any]:
-        """F22: `requires.storage` na implantação (mesmo fluxo de «Provisionar armazenamento»)."""
+        """F22: `requires.storage` in the deployment (same flow as «Provision storage»)."""
         _, out = await prov.provision(store, objects, app_id, env, "implantação", broker_url())
         return out
 
@@ -73,7 +73,7 @@ def mount_connections(
         await store.sync_env(who, broker_url())
 
     def permits(request: Request, c: dict[str, Any]) -> bool:
-        """Token restrito a apps só mexe em conexões vinculadas exclusivamente aos seus apps."""
+        """A token restricted to apps only touches connections linked exclusively to its apps."""
         allowed = (request.state.token or {}).get("apps") or []
         return not allowed or (bool(c["bindings"]) and all(b["app"] in allowed for b in c["bindings"]))
 
@@ -251,7 +251,7 @@ def mount_connections(
     app.state.stepup_fails = {}
     app.include_router(api)
 
-    # ---- página ----------------------------------------------------------------------------
+    # ---- page ------------------------------------------------------------------------------
     @app.get("/admin/connections", response_class=HTMLResponse)
     async def connections_page(request: Request) -> Response:
         lang = request.state.lang

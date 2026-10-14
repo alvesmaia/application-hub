@@ -1,6 +1,6 @@
-"""Páginas (`/admin/{deploys,runtime,tasks,backups}`) e API `/api/ops/*` de Operações (F3c).
+"""Pages (`/admin/{deploys,runtime,tasks,backups}`) and the Operations `/api/ops/*` API (F3c).
 
-F5b: blue/green (`rollout.py`), staging, supervisão (`supervisor.py`) e provisionamento de banco (`provision.py`)."""
+F5b: blue/green (`rollout.py`), staging, supervision (`supervisor.py`) and database provisioning (`provision.py`)."""
 
 from __future__ import annotations
 
@@ -128,7 +128,7 @@ def mount_ops(
     app.state.ops, app.state.ops_jobs, app.state.ops_engine = store, jobs, eng
 
     def active_scripts(app_id: str, staging: bool) -> list[tuple[str, str]]:
-        """Scripts próprios aprovados da versão ATIVA do app no ambiente: só esses entram na CSP e no `hub.js`."""
+        """The app's own approved scripts of the ACTIVE version in the environment: only these go into the CSP and `hub.js`."""
         d, env = store.read(), m.STAGING if staging else m.PRODUCAO
         dep = next(
             (
@@ -148,7 +148,7 @@ def mount_ops(
         ]
 
     set_script_provider(active_scripts)
-    app.state.leader = Leader(None)  # troca pela do `lifespan` (Background.start)
+    app.state.leader = Leader(None)  # replaced by the one from the `lifespan` (Background.start)
 
     async def app_env(app_id: str, env: str) -> dict[str, str]:
         data = await admin.cfg.read()
@@ -176,7 +176,7 @@ def mount_ops(
     app.state.ops_rollout = rollout
 
     async def reconcile() -> None:
-        """Ao subir: implantação deixada em andamento (réplica morta há >10 min) vira falha."""
+        """On startup: a deployment left in progress (replica dead for >10 min) becomes a failure."""
         async with store.locked(True) as d:
             for x in d["deployments"]:
                 if x["status"] == m.IMPLANTANDO and now_ms() - x["at"] > 600_000:
@@ -247,7 +247,7 @@ def mount_ops(
             raise OpsError("Dados inválidos: verifique os campos enviados.")
         return v
 
-    # ---- Implantações --------------------------------------------------------------------------------
+    # ---- Deployments ------------------------------------------------------------------------------
     async def run_import(
         job_id: int,
         data: bytes,
@@ -265,7 +265,7 @@ def mount_ops(
         def on_step(steps: list[dict[str, Any]]) -> None:
             jobs.update(job_id, lambda j: j.update(steps=json.loads(json.dumps(steps))))
 
-        # app novo ainda sem container de produção: sem smoke test de upstream (o candidato prova a prontidão)
+        # new app still without a production container: no upstream smoke test (the candidate proves readiness)
         regs = [
             e
             for e in registry.entries()
@@ -283,7 +283,7 @@ def mount_ops(
         provisioned: dict[str, Any] = {}
         if report["passed"] and report["app"] and report.get("manifest"):
             mf = report["manifest"]
-            try:  # F22: app novo entra no registro; `requires` provisionado antes da implantação
+            try:  # F22: new app joins the registry; `requires` provisioned before the deployment
                 if newapp.register(data_dir, registry, admin.cfg.apps, mf):
                     log("INFO", report["app"], actor, "app novo registrado pela implantação")
 
@@ -302,7 +302,7 @@ def mount_ops(
             package = f"{report['app']}-{report['version']}-{sha[:12]}.hubapp"
             (data_dir / "packages").mkdir(parents=True, exist_ok=True)
             (data_dir / "packages" / package).write_bytes(data)
-        auto = report["passed"] and env == "staging"  # staging é aprovado pelo próprio pipeline (passo 7)
+        auto = report["passed"] and env == "staging"  # staging is approved by the pipeline itself (step 7)
         status = m.REJEITADO if not report["passed"] else m.IMPLANTANDO if auto else m.AGUARDANDO
         label = m.STAGING if env == "staging" else m.PRODUCAO
         note = report["reason"]
@@ -314,7 +314,7 @@ def mount_ops(
         if report["passed"] and report["app"]:
             await ensure_baseline(
                 report["app"], "producao"
-            )  # antes do `push`: a versão do compose é a mais antiga (rollback)
+            )  # before the `push`: the compose version is the oldest (rollback)
         async with store.locked(True) as d:
             saved = m.push(d, dep)
         title = {m.REJEITADO: "Pacote rejeitado pelo pipeline de validação",
@@ -337,7 +337,7 @@ def mount_ops(
 
         def fin(j: dict[str, Any]) -> None:
             st = (j.get("steps") or [{}] * 6)[5]
-            if st.get("state") == "running":  # passo do build/candidato em staging
+            if st.get("state") == "running":  # build/candidate step in staging
                 st.update(state="ok" if good else "failed",
                           detail=(f"Imagem {saved['image']} pronta e candidato respondeu à prontidão em staging"
                                   if good else msg))  # fmt: skip
@@ -347,7 +347,7 @@ def mount_ops(
         jobs.update(job_id, fin)
 
     async def ensure_baseline(app_id: str, k: str) -> None:
-        """Primeira implantação de um app: registra a versão que já roda (compose), para o rollback ter a quem voltar."""
+        """First deployment of an app: records the version already running (compose), so rollback has somewhere to go back to."""
         raw = await eng.raw(rt.container_name(app_id, k))
         e = registry.get(app_id)
         if raw is None or e is None or k != "producao":
@@ -368,11 +368,11 @@ def mount_ops(
                        "submitted_by": "", "submitted_by_id": ""})  # fmt: skip
             d["deployments"].append(
                 d["deployments"].pop(d["deployments"].index(base))
-            )  # a mais antiga fica por último
+            )  # the oldest one stays last
 
     async def build_image(dep: Data, job_id: int, actor: str) -> None:
-        """Constrói a imagem do pacote (`build/**`) no daemon, com teto de memória; o log vai ao job, ao console de
-        logs e ao registro da implantação. Imagem da versão já existente (rollback, reenvio) não é refeita."""
+        """Builds the package's image (`build/**`) on the daemon, with a memory cap; the log goes to the job, to the logs console and
+        to the deployment record. The image of an already existing version (rollback, resubmission) is not rebuilt."""
         tag, app_id = dep["image"], dep["app"]
         if await eng.has_image(tag) and dep.get("origin") == "Rollback":
             return
@@ -414,7 +414,7 @@ def mount_ops(
         log("INFO", app_id, actor, f"build concluído · {tag} ({len(lines)} linhas)")
 
     async def run_deploy(dep_id: int, job_id: int, actor: str) -> tuple[bool, str, Data]:
-        """Blue/green da implantação `Implantando`; devolve (ok, mensagem, registro). O ativo só sai depois do candidato pronto."""
+        """Blue/green of the `Implantando` (Deploying) deployment; returns (ok, message, record). The active one only leaves after the candidate is ready."""
         dep = m._find(store.read(), dep_id)
         app_id, k, label = dep["app"], rollout_env(dep["env"]), dep["env"]
         e = registry.get(app_id)
@@ -531,7 +531,7 @@ def mount_ops(
 
     @api.get("/replicas")
     async def replicas() -> Any:
-        """Réplicas vivas, quem lidera e quantas rodadas de cada tarefa do líder esta réplica executou."""
+        """Live replicas, who leads, and how many rounds of each leader task this replica ran."""
         return await app.state.leader.info()
 
     @api.get("/jobs/{job_id}")
@@ -708,7 +708,7 @@ def mount_ops(
         return {"limits": lim, "applied": applied}
 
     def container_of(app_id: str, env: str | None) -> str:
-        if rt.is_platform(app_id):  # contêiner da plataforma: só leitura (logs/inspect)
+        if rt.is_platform(app_id):  # platform container: read-only (logs/inspect)
             return rt.own(app_id)
         need_app(app_id)
         return rt.container_name(app_id, env_key(env))
@@ -914,14 +914,14 @@ def mount_ops(
         return f"{lbl}: {name_of(app_id)} bloqueado até a restauração terminar ou ser liberada em Backups."
 
     async def alert(level: str, title: str, detail: str, app_id: str, link: str = "/admin/backups") -> None:
-        """Alerta da plataforma para quem administra (Inbox + SSE); no máximo um igual por hora."""
+        """Platform alert for the administrators (Inbox + SSE); at most one identical alert per hour."""
         app.state.inbox.push(item_of("alert", app_id, title, body=detail[:500], level=level, to_perm="editar_configuracoes",
                                      link=link, source=f"alert:{app_id}:{title}:{now_ms() // 3_600_000}"))  # fmt: skip
 
     app.state.platform_alert = alert
 
     async def set_maintenance(app_id: str, k: str, kind: str | None, detail: str) -> None:
-        """Liga/desliga "Em manutenção (restauração)" do app×ambiente (`None` = libera)."""
+        """Turns "Em manutenção (restauração)" (Under maintenance, restore) on or off for the app×environment (`None` = releases it)."""
         async with store.locked(True) as dd:
             if kind is None:
                 dd["maintenance"].pop(f"{app_id}|{k}", None)
@@ -930,7 +930,7 @@ def mount_ops(
                                                       "replica": app.state.leader.replica}  # fmt: skip
 
     async def safety_snapshot(app_id: str, k: str, phase: Callable[[int, str], None]) -> str:
-        """Backup "Pré-restauração" do estado atual (restaurável como qualquer outro); falha vira nota, não aborta."""
+        """Backup "Pré-restauração" (Pre-restore) of the current state (restorable like any other); a failure becomes a note, not an abort."""
         if os.getenv("HUB_RESTORE_SAFETY_SNAPSHOT", "1").strip() == "0":
             return ""
         pol = next((p for p in store.read()["policies"] if p["app"] == app_id), None)
@@ -953,7 +953,7 @@ def mount_ops(
         return f" · snapshot Pré-restauração #{rid}"
 
     async def start_backup(app_id: str, k: str, kind: str, actor: str) -> dict[str, Any]:
-        """Cria o job de backup e o executa em segundo plano (manual ou do agendador); `OpsError` se não puder começar."""
+        """Creates the backup job and runs it in the background (manual or from the scheduler); `OpsError` if it cannot start."""
         need_app(app_id)
         d = store.read()
         pol = next((p for p in d["policies"] if p["app"] == app_id), None)
@@ -991,7 +991,7 @@ def mount_ops(
                 try:
                     if dest := await backups.offsite(app_id, k, res[0]):
                         off_note = f" · cópia externa em {dest}"
-                except OpsError as e:  # o backup local vale; a falha vira nota e alerta
+                except OpsError as e:  # the local backup still counts; the failure becomes a note and alert
                     off_note = f" · cópia externa FALHOU: {e.message}"
                     await alert(
                         "error", f"Cópia externa do backup de {name_of(app_id)} falhou", e.message, app_id
@@ -1179,7 +1179,7 @@ def mount_ops(
 
     app.include_router(api)
 
-    # ---- Páginas -------------------------------------------------------------------------------------
+    # ---- Pages ------------------------------------------------------------------------------------
     def render(
         request: Request, name: str, eyebrow: str, title: str, subtitle: str, tab: str = "", **ctx: Any
     ) -> Response:
@@ -1196,7 +1196,7 @@ def mount_ops(
 
     @app.get("/hub-env")
     async def hub_env(to: str = "producao", next: str = "/") -> Response:
-        """Liga/desliga o modo staging do navegador (cookie sem script, SameSite=Strict); o gateway confere a permissão."""
+        """Turns the browser's staging mode on or off (cookie without script, SameSite=Strict); the gateway checks the permission."""
         dest = next if next.startswith("/") and not next.startswith("//") and "\\" not in next else "/"
         r = Response(status_code=303, headers={"location": dest, "cache-control": "no-store"})
         if to == "staging":
@@ -1224,10 +1224,10 @@ def mount_ops(
             })  # fmt: skip
         rows = []
         known = [e.id for e in registry.entries()]
-        for aid in known + [a for a in vers if a not in known]:  # uma linha por aplicação: versão atual
+        for aid in known + [a for a in vers if a not in known]:  # one row per application: current version
             if vs := vers.get(aid, [])[
                 :40
-            ]:  # (produção implantada, senão a implantada, senão a mais recente)
+            ]:  # (deployed production, else the deployed one, else the most recent)
                 cur = next((v for v in vs if v["status"] == m.IMPLANTADO and v["env"] == m.PRODUCAO), None)
                 cur = cur or next((v for v in vs if v["status"] == m.IMPLANTADO), vs[0])
                 rows.append({"app": aid, "name": name_of(aid), "cur": cur, "vers": vs})
@@ -1401,7 +1401,7 @@ def mount_ops(
             try:
                 manual = normalize(p["schedule"]) is None
             except OpsError:
-                manual = False  # agenda inválida: o erro aparece na linha do ambiente
+                manual = False  # invalid schedule: the error appears on the environment's row
             runs = []
             for env in p["envs"]:
                 lbl = "staging" if env == "staging" else "produção"

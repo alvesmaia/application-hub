@@ -1,4 +1,4 @@
-"""Pipeline de validação de pacotes `.hubapp` (7 passos, como o `hub-ops::pipeline`) e leitura defensiva do zip."""
+"""Validation pipeline for `.hubapp` packages (7 steps, like `hub-ops::pipeline`) and defensive reading of the zip."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ def step(i: int) -> dict[str, Any]:
 
 
 def read_zip(data: bytes) -> dict[str, bytes]:
-    """Entradas em memória; recusa zip-slip, links, duplicatas e zip bombs."""
+    """In-memory entries; refuses zip-slip, links, duplicates and zip bombs."""
     try:
         z = zipfile.ZipFile(io.BytesIO(data))
     except zipfile.BadZipFile as e:
@@ -224,7 +224,7 @@ async def run_all(
     data: bytes, env: str, registered: list[Any], probe: Probe | None = None, allow_without_api: bool = False,
     on_step: Callable[[list[dict[str, Any]]], None] | None = None,
 ) -> dict[str, Any]:  # fmt: skip
-    """Roda os 7 passos. `env` = `staging`/`producao`. Devolve o relatório (`passed`, `reason`, `steps`, …)."""
+    """Runs the 7 steps. `env` = `staging`/`producao`. Returns the report (`passed`, `reason`, `steps`, …)."""
     steps = [step(i) for i in range(len(STEPS))]
     scripts: list[dict[str, str]] = []
     files: dict[str, bytes] = {}
@@ -311,8 +311,8 @@ _TAG = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
 
 
 def build_context(files: dict[str, bytes], dockerfile: str = "Dockerfile") -> dict[str, bytes]:
-    """Arquivos de `build/**` sem o que o `build/.dockerignore` do pacote exclui (o Dockerfile e o próprio
-    `.dockerignore` sempre ficam, como no `docker build`)."""
+    """Files under `build/**` minus what the package's `build/.dockerignore` excludes (the Dockerfile and the
+    `.dockerignore` itself always stay, as in `docker build`)."""
     from docker.utils.build import PatternMatcher
 
     raw = files.get("build/.dockerignore", b"").decode("utf-8", "replace")
@@ -333,7 +333,7 @@ def build_tag(app: str, version: str) -> str:
 
 
 def _build_spec(m: dict[str, Any], spec: dict[str, Any], files: dict[str, bytes]) -> tuple[str, str]:
-    """Pacote com contexto de build (`build/**`): o hub constrói `app-hub-app-<id>:<versão>`. (erro, tag)."""
+    """Package with a build context (`build/**`): the hub builds `app-hub-app-<id>:<version>`. (error, tag)."""
     df = spec.get("dockerfile", "Dockerfile")
     if not isinstance(df, str) or not df or df.startswith("/") or ".." in df.split("/") or "\\" in df:
         return "runtime.json: build.dockerfile inválido", ""
@@ -419,7 +419,7 @@ def _frontend(m: dict[str, Any], files: dict[str, bytes]) -> tuple[str, str, lis
     html = css = 0
     for n, b in files.items():
         if n.startswith("build/"):
-            continue  # contexto de build: não é front-end
+            continue  # build context: not front-end
         in_ui = n.startswith("ui/")
         if not in_ui and n not in ROOT_FILES:
             return "failed", f"arquivo fora de ui/: {n}", []

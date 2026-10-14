@@ -1,7 +1,7 @@
-"""«Provisionar armazenamento»: bucket + usuário do MinIO com política restrita a ele + conexão S3 do broker.
+"""«Provision storage»: bucket + MinIO user with a policy restricted to it + the broker's S3 connection.
 
-Fala com o object store da plataforma pelo `mc` (administração: `HUB_S3_ADMIN_URL=http://usuario:senha@host:9000`;
-binário em `HUB_MC_BIN`/PATH). Idempotente; desfaz em ordem inversa se um passo falhar."""
+Talks to the platform's object store through `mc` (administration: `HUB_S3_ADMIN_URL=http://user:password@host:9000`;
+binary at `HUB_MC_BIN`/PATH). Idempotent; rolls back in reverse order if a step fails."""
 
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ async def run_mc(args: list[str], env: dict[str, str]) -> tuple[int, str]:
 
 
 def names(app: str, env: str) -> str:
-    """Nome do bucket (= usuário do MinIO = conexão) de um app × ambiente."""
+    """Bucket name (= MinIO user = connection) of an app × environment."""
     n = f"stg-{app}" if env == "staging" else f"app-{app}"
     if (
         len(n) > 40
@@ -75,14 +75,14 @@ def policy(bucket: str) -> str:
 
 
 class ObjectStore:
-    """Administração do MinIO: bucket, usuário e política (um por bucket)."""
+    """MinIO administration: bucket, user and policy (one per bucket)."""
 
     def __init__(self, admin_url: str | None = None, runner: Runner = run_mc) -> None:
         self.url = admin_url if admin_url is not None else os.getenv("HUB_S3_ADMIN_URL", "").strip()
         self.runner = runner
 
     def available(self) -> str | None:
-        """Motivo da indisponibilidade ou `None`."""
+        """Reason for unavailability, or `None`."""
         if not self.url:
             return "Object store da plataforma não configurado (HUB_S3_ADMIN_URL)."
         if self.runner is run_mc and not (os.getenv("HUB_MC_BIN") or shutil.which("mc")):
@@ -173,8 +173,8 @@ async def provision(
     if await store.bucket_exists(name):
         raise ConnError(f"O bucket {name} já existe e não foi provisionado pelo hub: recusado.", 409)
     secret = secrets.token_hex(24)
-    # O roteiro pode criar o bucket e o usuário antes de falhar: ambos entram no desfazer (o bucket é inexistente aqui;
-    # um usuário que já existia nunca é tocado).
+    # The script may create the bucket and the user before failing: both go into the rollback (the bucket does not exist here;
+    # a user that already existed is never touched).
     done = ["bucket"] + ([] if await store.user_exists(name) else ["user"])
     try:
         await store.ensure(name, name, secret)

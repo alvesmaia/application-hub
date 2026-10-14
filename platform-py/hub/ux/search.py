@@ -1,8 +1,8 @@
-"""Busca global federada: plataforma (apps, páginas, administração) + registros dos apps.
+"""Federated global search: platform (apps, pages, administration) + the apps' records.
 
-Os apps respondem `GET {upstream}/{id}/_hub/search?q=&limit=` (token interno + identidade do usuário),
-em paralelo, cada um com tempo máximo `HUB_SEARCH_TIMEOUT_MS` (padrão 1500 ms). Apps primeiro; o
-interno de administração (usuários, implantações, variáveis) vai num grupo próprio, no fim."""
+The apps answer `GET {upstream}/{id}/_hub/search?q=&limit=` (internal token + the user's identity),
+in parallel, each with a maximum time of `HUB_SEARCH_TIMEOUT_MS` (default 1500 ms). Apps first; the
+administration's internal data (users, deployments, variables) goes in its own group, at the end."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ from hub.ux.texts import t, tr
 PER_APP, PER_APP_ALL, PLATFORM_MAX, ADMIN_MAX = 5, 50, 8, 6
 _BURST, _PER_SEC = 20.0, 4.0
 ADMIN_KINDS = ("Usuário", "Implantação", "Variável de ambiente")
-_unsupported: dict[str, float] = {}  # app sem busca (404): fora da rodada por 5 min
+_unsupported: dict[str, float] = {}  # app without search (404): out of the round for 5 min
 _buckets: dict[str, tuple[float, float]] = {}
 
 
@@ -50,7 +50,7 @@ def score(text: str, q: str) -> float:
 
 
 def mark_split(text: str, q: str) -> tuple[str, str, str]:
-    """(antes, trecho que casa, depois) sem diferenciar maiúsculas e acentos."""
+    """(before, matching snippet, after) without distinguishing case or accents."""
     n = fold(q.strip())
     chars = [fold(c) for c in text]
     i = "".join(chars).find(n) if n else -1
@@ -69,7 +69,7 @@ def mark_split(text: str, q: str) -> tuple[str, str, str]:
 
 
 def search_allowed(user: str, now: float | None = None) -> bool:
-    """Balde de fichas por usuário: cada busca abre uma chamada a cada app."""
+    """Per-user token bucket: each search opens one call to each app."""
     now = time.monotonic() if now is None else now
     tokens, at = _buckets.get(user, (_BURST, now))
     tokens = min(_BURST, tokens + (now - at) * _PER_SEC)
@@ -88,12 +88,12 @@ def timeout_s() -> float:
     return min(max(ms, 100), 1500) / 1000
 
 
-token_source: Callable[[str], str | None] | None = None  # variável gerida do cofre (`AdminStore.tokens`)
+token_source: Callable[[str], str | None] | None = None  # managed vault variable (`AdminStore.tokens`)
 
 
 def internal_token(app: str) -> str | None:
-    """Token dos endpoints `/_hub/*` do app: a variável gerida `HUB_INTERNAL_TOKEN_<APP>` (cofre); só sem ela,
-    o ambiente do hub (`HUB_INTERNAL_TOKEN_<APP>`, usado como semente na partida e no modo dev)."""
+    """App's `/_hub/*` endpoints token: the managed variable `HUB_INTERNAL_TOKEN_<APP>` (vault); only without it,
+    the hub's environment (`HUB_INTERNAL_TOKEN_<APP>`, used as the seed at startup and in dev mode)."""
     key = "HUB_INTERNAL_TOKEN_" + app.upper().replace("-", "_")
     tok = (
         (token_source(app) if token_source else None)
@@ -105,7 +105,7 @@ def internal_token(app: str) -> str | None:
 
 
 def safe_app_link(app: str, link: str) -> str:
-    """Só caminho do próprio app (`/apps/<id>…`); o resto cai na raiz do app."""
+    """Only the app's own path (`/apps/<id>…`); anything else falls back to the app root."""
     base = f"/apps/{app}"
     if link == f"/{app}" or link.startswith((f"/{app}/", f"/{app}?", f"/{app}#")):
         link = "/apps" + link
@@ -155,7 +155,7 @@ class Results:
 
 @dataclass
 class Ctx:
-    """O que a busca precisa saber de quem pergunta e do hub."""
+    """What the search needs to know about the requester and the hub."""
 
     identity: Identity
     perms: list[str]
@@ -235,7 +235,7 @@ def _platform_hits(c: Ctx, q: str) -> tuple[list[dict[str, Any]], list[dict[str,
         if x["score"] < 0:
             s *= 0.5
         elif s > 0 and x["kind"] == t("shell.apps", c.lang):
-            s = min(1.0, s + 0.15)  # só realça o que já casou
+            s = min(1.0, s + 0.15)  # only highlights what already matched
         if s > 0:
             hits.append(x | {"score": round(s, 4)})
     hits.sort(key=lambda h: -h["score"])
@@ -246,7 +246,7 @@ def _platform_hits(c: Ctx, q: str) -> tuple[list[dict[str, Any]], list[dict[str,
 async def _ask_app(
     c: Ctx, app: str, q: str, limit: int, headers: dict[str, str]
 ) -> list[dict[str, Any]] | None:
-    """Registros do app; `None` = app sem busca (404); levanta em falha/timeout."""
+    """App records; `None` = app without search (404); raises on failure or timeout."""
     entry = c.reg.get(app)
     if entry is None:
         return None
@@ -320,7 +320,7 @@ async def search(c: Ctx, q: str, only_app: str | None = None, per_app: int = PER
         return float(max((h["score"] for h in g["hits"]), default=0.0))
 
     groups.sort(key=lambda g: (-best(g), g["label"]))
-    # Plataforma primeiro só quando tem algo tão relevante quanto os registros dos apps.
+    # Platform first only when it has something as relevant as the apps' records.
     first = best(out.groups[0]) if out.groups else 0.0
     if groups and first + 0.05 < best(groups[0]):
         out.groups = groups + out.groups

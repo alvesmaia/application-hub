@@ -1,4 +1,4 @@
-"""Formatação numérica pt-BR das telas de observabilidade (vírgula decimal)."""
+"""pt-BR number formatting for the observability screens (decimal comma)."""
 
 from __future__ import annotations
 

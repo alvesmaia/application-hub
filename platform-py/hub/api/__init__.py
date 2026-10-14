@@ -1,1 +1,1 @@
-"""API pública `/api/v1`, MCP e OAuth 2.1 (F4)."""
+"""Public `/api/v1` API, MCP and OAuth 2.1 (F4)."""

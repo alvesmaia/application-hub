@@ -1,6 +1,6 @@
-"""Blue/green dos apps (port de `hub-ops::rollout`): candidato `<container>__new` com a imagem nova, prontidão
-`GET /{app}/_hub/ready` (candidato sem a rota é recusado), troca do upstream no gateway, esgotamento do antigo,
-remoção e renomeação do candidato para o nome canônico. Falha em qualquer passo: o candidato some e o ativo fica."""
+"""Blue/green of the apps (port of `hub-ops::rollout`): candidate `<container>__new` with the new image, readiness
+`GET /{app}/_hub/ready` (a candidate without the route is refused), upstream switch in the gateway, drain of the old one,
+removal and renaming of the candidate to the canonical name. Failure at any step: the candidate disappears and the active one stays."""
 
 from __future__ import annotations
 
@@ -36,12 +36,12 @@ def ready_path(app: str) -> str:
 
 
 def ready_ok(status: int, headers: Any) -> bool:
-    """200 e sem o cabeçalho antigo `x-hub-ready: 0|false`."""
+    """200 and without the old `x-hub-ready: 0|false` header."""
     return status == 200 and str(headers.get("x-hub-ready", "")).strip() not in ("0", "false")
 
 
 def staging_env_check(env_vars: list[dict[str, Any]], app: str) -> None:
-    """Staging nunca recebe a credencial do banco de produção e precisa de banco próprio (como `staging_env_check`)."""
+    """Staging never receives the production database credential and needs its own database (like `staging_env_check`)."""
     has = lambda v, e: any(b["app"] == app and b["env"] == e for b in v["bindings"])  # noqa: E731
     shared = [
         v["name"]
@@ -59,8 +59,8 @@ def staging_env_check(env_vars: list[dict[str, Any]], app: str) -> None:
 
 
 def host_for(base: dict[str, Any], limits: dict[str, Any], staging: bool) -> dict[str, Any]:
-    """HostConfig do candidato: o do container atual (endurecimento, reinício, volumes) sem portas publicadas,
-    com os limites efetivos; volumes nomeados ganham o sufixo do ambiente em staging."""
+    """HostConfig of the candidate: the current container's (hardening, restart, volumes) without published ports,
+    with the effective limits; named volumes get the environment suffix in staging."""
     h = {k: v for k, v in base.items() if k not in _DROP_HOST and v not in (None, [], {})}
     mem = rt.memory_bytes(str(limits["memory"]))
     h.update(
@@ -78,7 +78,7 @@ class Rollout:
                  app_env: Callable[[str, str], Any], env_vars: Callable[[], Any]) -> None:  # fmt: skip
         self.engine, self.registry, self.client = engine, registry, client
         self.app_env, self.env_vars = app_env, env_vars
-        # F22: molde do primeiro container de um app novo (sem compose) — `hub.ops.newapp.base_container`.
+        # F22: template for the first container of a new app (no compose) — `hub.ops.newapp.base_container`.
         self.fresh: Callable[[str], dict[str, Any] | None] = lambda _app: None
         self.locks: dict[str, asyncio.Lock] = {}
 
@@ -86,7 +86,7 @@ class Rollout:
         return os.getenv("HUB_RUNTIME_UPSTREAM", "http://{name}:8080").format(name=container)
 
     async def probe(self, url: str, app: str, name: str, timeout: float) -> None:
-        """Espera a prontidão; 404 (rota ausente) recusa na hora; container que cai antes também."""
+        """Waits for readiness; a 404 (missing route) is refused right away; so is a container that goes down first."""
         end, last = time.monotonic() + timeout, "sem resposta"
         while time.monotonic() < end:
             raw = await self.engine.raw(name)
@@ -114,7 +114,7 @@ class Rollout:
 
     async def apply(self, app: str, k: str, limits: dict[str, Any], version: str, image: str | None = None,
                     progress: Progress | None = None) -> dict[str, Any]:  # fmt: skip
-        """Blue/green de `app` em `k` (`producao`/`staging`). `image` vazio = a do container atual (aplicar variáveis)."""
+        """Blue/green of `app` in `k` (`producao`/`staging`). Empty `image` = the current container's (applies variables)."""
         lock = self.locks.setdefault(f"{app}|{k}", asyncio.Lock())
         if lock.locked():
             raise OpsError("Já há uma implantação em andamento neste app e ambiente.", 409)
@@ -137,7 +137,7 @@ class Rollout:
         carried: dict[str, str] = {}
         if not staging and base.get(
             "Image"
-        ):  # o que o compose/operador injetou no container atual (além do que a imagem antiga já traz)
+        ):  # what compose/the operator injected into the current container (beyond the image)
             try:
                 _, old_img = await self.engine.image_ref(str(base.get("Image", "")))
             except OpsError:
@@ -150,9 +150,7 @@ class Rollout:
         labels = {a: b for a, b in (base.get("Config", {}).get("Labels") or {}).items()
                   if not staging or not a.startswith("com.docker.compose")}  # fmt: skip
         labels |= {"hub.py": "1", "hub.app": app, "hub.env": k, "hub.version": version, "hub.role": "app"}
-        if (
-            staging
-        ):  # sem isso herda o rótulo de projeto da imagem e o Docker Desktop agrupa num projeto fantasma
+        if staging:  # else it inherits the image's project label; Docker Desktop groups it as a ghost project
             labels["com.docker.compose.project"] = "app-hub"
         cand = f"{name}__new"
         await self.engine.remove(cand, 1)
@@ -170,9 +168,7 @@ class Rollout:
         except BaseException:
             await self.engine.remove(cand, 1)
             raise
-        if (
-            old is not None
-        ):  # imagem anterior fixada com nome: o rollback nunca depende de ela escapar de um prune
+        if old is not None:  # previous image pinned by name: rollback never depends on it escaping a prune
             pre = "keep-stg-" if k == "staging" else "keep-"
             await self.engine.pin(str(old.get("Image", "")), app, f"{pre}{str(old.get('Image', ''))[7:19]}")
             await self.engine.prune_pins(app, int(_num("HUB_KEEP_IMAGES", 3)))

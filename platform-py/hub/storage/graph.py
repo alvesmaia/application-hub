@@ -1,4 +1,4 @@
-"""Cliente do Microsoft Graph (SharePoint) do broker: app-only com segredo do cliente, sem SDK."""
+"""Microsoft Graph (SharePoint) client of the broker: app-only with the client secret, no SDK."""
 
 from __future__ import annotations
 
@@ -51,7 +51,7 @@ class Endpoints:
         return self.login == DEFAULT_LOGIN and self.graph == DEFAULT_GRAPH
 
     def content_url_ok(self, url: str, site: str) -> bool:
-        """Download/upload pré-autenticados só em hosts do Graph, do SharePoint ou do simulador configurado."""
+        """Pre-authenticated download/upload only on Graph, SharePoint or the configured simulator hosts."""
         u = urlsplit(url)
         host = u.hostname or ""
         if not self.is_default():
@@ -284,7 +284,7 @@ class GraphClient:
             v = await self._json("Listagem", await self._call("listagem", "GET", url))
             out += [self._item(it, join(prefix, str(it.get("name", "")))) for it in v.get("value", [])]
             nxt = v.get("@odata.nextLink")
-            # Só segue links do próprio Graph (nada de SSRF por uma resposta forjada).
+            # Only follows links from Graph itself (no SSRF through a forged response).
             url = (
                 nxt
                 if isinstance(nxt, str) and nxt.startswith(self.ep.graph + "/") and len(out) < 5000
@@ -300,7 +300,7 @@ class GraphClient:
             loc = r.headers.get("location", "")
             if not self.ep.content_url_ok(loc, self.cfg.site):
                 raise StorageError("upstream", "Download: redirecionamento inválido do Graph.")
-            r = await self.http.get(loc)  # URL pré-autenticada: sem o token do hub
+            r = await self.http.get(loc)  # pre-authenticated URL: without the hub's token
         if not r.is_success:
             raise self._fail("Download", r)
         n = r.headers.get("content-length", "")
@@ -334,7 +334,7 @@ class GraphClient:
         try:
             return self._item(await self._chunks(up, length, body), rel)
         except StorageError:
-            await self.http.delete(up, timeout=10)  # libera o espaço reservado no provedor
+            await self.http.delete(up, timeout=10)  # frees the space reserved at the provider
             raise
 
     async def _chunks(self, up: str, length: int, body: Body) -> dict[str, Any]:

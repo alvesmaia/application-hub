@@ -1,4 +1,4 @@
-"""Modelos Pydantic das fronteiras JSON (formato compatível com a versão anterior do hub)."""
+"""Pydantic models for the JSON boundaries (format compatible with the previous hub version)."""
 
 from __future__ import annotations
 
@@ -75,8 +75,8 @@ class AdminDocument(CompatibleModel):
 
 
 class AppRequires(BaseModel):
-    """`requires` do manifesto: o que o hub provisiona na implantação (banco, armazenamento) e as
-    variáveis/segredos que o app espera (valores definidos no hub, nunca no pacote)."""
+    """Manifest `requires`: what the hub provisions at deployment (database, storage) and the
+    variables/secrets the app expects (values set in the hub, never in the package)."""
 
     model_config = ConfigDict(extra="forbid")
     database: bool = False
@@ -108,7 +108,7 @@ _ENV_NAME = re.compile(r"^[A-Z][A-Z0-9_]{0,63}$")
 
 
 def requires_error(raw: object) -> str | None:
-    """Mensagem curta se `requires` do manifesto for inválido (None = ok ou ausente)."""
+    """Short message if the manifest's `requires` is invalid (None = ok or absent)."""
     if raw is None:
         return None
     try:

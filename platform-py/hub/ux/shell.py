@@ -1,4 +1,4 @@
-"""O shell no idioma do usuário: menu, textos do JS e paleta Ctrl+K (catálogos pt-BR/en) e o tema."""
+"""The shell in the user's language: menu, JS texts and the Ctrl+K palette (pt-BR/en catalogs), and the theme."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from typing import Any, cast
 from hub.ux.texts import _LANGS, _table, t, tr
 
 _WEB = Path(__file__).parent.parent / "web"
-# rótulos do menu traduzidos por chave (os demais vêm do catálogo)
+# menu labels translated by key (the rest come from the catalog)
 _KEYED = {
     "Início": "shell.home",
     "Aplicações": "shell.apps",
@@ -46,7 +46,7 @@ def nav_for(lang: str) -> dict[str, Any]:
 
 @cache
 def i18n_for(lang: str) -> str:
-    """`data-hub-i18n`: os textos do JS do shell no idioma (`lang` = o próprio código)."""
+    """`data-hub-i18n`: the shell's JS texts in the language (`lang` = the code itself)."""
     base = cast(dict[str, str], json.loads((_WEB / "shell_i18n.json").read_text(encoding="utf-8")))
     col = _LANGS.index(lang) if lang in _LANGS else 0
     table = _table()
@@ -68,12 +68,12 @@ def platform_palette(lang: str) -> list[dict[str, Any]]:
 
 
 def theme_of(pref: str) -> tuple[str, str]:
-    """(`data-theme`, `color-scheme`): o padrão é claro; `auto` segue o sistema."""
+    """(`data-theme`, `color-scheme`): the default is light; `auto` follows the system."""
     return {"dark": ("dark", "dark"), "auto": ("auto", "light dark")}.get(pref, ("light", "light"))
 
 
 def visible_nav(nav: dict[str, Any], perms: list[str]) -> dict[str, Any]:
-    """Menu de Administração só com o que o usuário pode abrir."""
+    """Administration menu, only with what the user can open."""
     from hub.auth import admin_required
 
     def ok(href: str) -> bool:
@@ -88,7 +88,7 @@ def visible_nav(nav: dict[str, Any], perms: list[str]) -> dict[str, Any]:
     return nav | {"groups": groups}
 
 
-# Abas por página: (caminho, valor de ?tab=, rótulo pt-BR). O conjunto inteiro aparece sob o título.
+# Tabs per page: (path, ?tab= value, pt-BR label). The whole set appears under the title.
 TAB_SETS: tuple[tuple[tuple[str, str, str], ...], ...] = (
     (("/admin/users", "", "Usuários"), ("/admin/users", "roles", "Funções")),
     (("/admin/logs", "", "Logs"), ("/admin/audit", "", "Auditoria")),
@@ -97,7 +97,7 @@ TAB_SETS: tuple[tuple[tuple[str, str, str], ...], ...] = (
 
 
 def tabs_for(path: str, tab: str, perms: list[str]) -> list[tuple[str, str, bool]] | None:
-    """Abas (href, rótulo, ativa) da página, só com o que o usuário pode abrir."""
+    """Tabs (href, label, active) of the page, only with what the user can open."""
     from hub.auth import admin_required
 
     for tabs in TAB_SETS:
@@ -112,7 +112,7 @@ def tabs_for(path: str, tab: str, perms: list[str]) -> list[tuple[str, str, bool
 
 
 def eyebrow_for(path: str, lang: str) -> str:
-    """Linha acima do título de uma página: o grupo do menu da rota (`/admin/users` → "Acesso")."""
+    """Line above a page's title: the route's menu group (`/admin/users` → "Access")."""
     path = path.split("?")[0]
     if path == "/admin" or path.startswith("/admin/"):
         best: tuple[int, str] | None = None

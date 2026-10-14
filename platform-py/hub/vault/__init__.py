@@ -1,4 +1,4 @@
-"""Cofre AES-GCM em envelope (formato compatível com a versão anterior do hub)."""
+"""AES-GCM envelope vault (format compatible with the previous hub version)."""
 
 from __future__ import annotations
 

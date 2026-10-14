@@ -1,4 +1,4 @@
-"""Containers: capacidade do host, limites (admission control) e estado/ações reais via Docker SDK (`app-hub-app-*`)."""
+"""Containers: host capacity, limits (admission control) and real state/actions via the Docker SDK (`app-hub-app-*`)."""
 
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ def memory_bytes(s: str) -> int:
 
 
 def resources_of(entry: Any, limits: dict[str, Any]) -> dict[str, Any]:
-    """Limites efetivos: editados em Containers ou os do manifesto."""
+    """Effective limits: edited in Containers or taken from the manifest."""
     if entry.id in limits:
         return dict(limits[entry.id])
     r = (entry.manifest.model_extra or {}).get("resources") if entry.manifest else None
@@ -66,7 +66,7 @@ def _num(name: str) -> float | None:
 
 
 class Host:
-    """Capacidade do host e reservas de sistema/plataforma (vCPU, GiB)."""
+    """Host capacity and system/platform reserves (vCPU, GiB)."""
 
     def __init__(self, cpu: float | None = None, mem_gib: float | None = None) -> None:
         cc, mc = _num("HUB_HOST_CPU"), _num("HUB_HOST_MEMORY_GIB")
@@ -118,30 +118,30 @@ def admit(host: Host, entries: list[Any], limits: dict[str, Any], app: str, new:
         )
 
 
-OWNED = "app-hub-"  # única fatia do daemon que o hub enxerga (nunca hub-*, apphub-devtunnel nem containers de fora)
+OWNED = "app-hub-"  # the only slice of the daemon the hub sees (never hub-*, apphub-devtunnel or others)
 
 
-PLATFORM_DB = "app-hub-app-db"  # banco dos apps: casa com o prefixo dos apps, mas é da plataforma
+PLATFORM_DB = "app-hub-app-db"  # apps' database: matches the apps' prefix but belongs to the platform
 
 
 def is_platform(name: str) -> bool:
-    """Contêiner da própria plataforma (web, bancos, objstore, graphsim…): visível, nunca gerenciável."""
+    """The platform's own container (web, databases, objstore, graphsim…): visible, never manageable."""
     db = os.getenv("HUB_BACKUP_DB_CONTAINER", PLATFORM_DB)
     return name.startswith(OWNED) and (name in (PLATFORM_DB, db) or not name.startswith(prefix()))
 
 
 def own(name: str) -> str:
-    """Recusa (403) qualquer nome fora de `app-hub-*`; todas as operações Docker passam por aqui."""
+    """Refuses (403) any name outside `app-hub-*`; all Docker operations go through here."""
     if not isinstance(name, str) or not name.startswith(OWNED) or "/" in name or ":" in name:
         raise OpsError(f"Operação recusada: o hub só gerencia containers {OWNED}* ({str(name)[:60]!r}).", 403)
     return name
 
 
-_PODMAN: dict[str, tuple[bool, bool]] = {}  # por daemon; a delegação de cgroup não muda com o hub no ar
+_PODMAN: dict[str, tuple[bool, bool]] = {}  # per daemon; cgroup delegation is fixed while the hub runs
 
 
 def tmpfs_podman(opts: str) -> str:
-    """`rw,size=256m,uid=10001,gid=10001` → `rw,size=256m,U` (o Podman não aceita uid/gid em tmpfs)."""
+    """`rw,size=256m,uid=10001,gid=10001` → `rw,size=256m,U` (Podman does not accept uid/gid on tmpfs)."""
     parts = [o for o in opts.split(",") if o]
     keep: list[str] = [o for o in parts if not o.startswith(("uid=", "gid="))]
     return ",".join([*keep, "U"] if len(keep) < len(parts) else keep)
@@ -159,21 +159,21 @@ class _Containers:
 
 
 class Guarded:
-    """Única superfície do cliente Docker que o hub usa: containers só `app-hub-*`, imagens `app-hub-*` na construção."""
+    """The only Docker client surface the hub uses: containers only `app-hub-*`, images `app-hub-*` at build time."""
 
     def __init__(self, real: Any) -> None:
         self._cl, self.containers = real, _Containers(real.containers)
 
     def podman(self) -> tuple[bool, bool]:
-        """(é Podman, tem o controlador `cpu`). Podman rootless no RHEL 9 delega só `memory pids` ao usuário: com
-        limite de CPU todo `RUN` do build e a criação do contêiner falham. Docker: (False, True)."""
+        """(is Podman, has the `cpu` controller). Rootless Podman on RHEL 9 delegates only `memory pids` to the user: with
+        a CPU limit, every build `RUN` and container creation fail. Docker: (False, True)."""
         base = str(getattr(getattr(self._cl, "api", None), "base_url", ""))
         if base not in _PODMAN:
             try:
                 r = self._cl.api._get(base + "/v4.0.0/libpod/info")
                 ctl = r.json()["host"]["cgroupControllers"] if r.status_code == 200 else None
                 _PODMAN[base] = (ctl is not None, ctl is None or "cpu" in ctl)
-            except Exception:  # sem resposta: assume Docker (comportamento de antes)
+            except Exception:  # no response: assumes Docker (the earlier behavior)
                 return (False, True)
         return _PODMAN[base]
 
@@ -192,7 +192,7 @@ class Guarded:
         return self._cl.images.build(path=path, tag=tag, rm=True, **kw)
 
     def build_stream(self, path: str, tag: str, dockerfile: str, memory: int, cpus: int = 0) -> Any:
-        """Constrói `tag` (só `app-hub-*`) com teto de memória/swap (e CPUs) e devolve o fluxo do daemon."""
+        """Builds `tag` (only `app-hub-*`) with a memory/swap cap (and CPUs) and returns the daemon's stream."""
         own(tag.split(":", 1)[0])
         limits: dict[str, Any] = {"memory": memory, "memswap": memory}
         if self.podman()[1]:
@@ -204,7 +204,7 @@ class Guarded:
         )  # fmt: skip
 
     def pinned(self, repo: str) -> builtins.list[tuple[str, str]]:
-        """(tag, LastTagTime) das imagens fixadas de `repo` (`app-hub-app-*`)."""
+        """(tag, LastTagTime) of the pinned images of `repo` (`app-hub-app-*`)."""
         own(repo)
         out: builtins.list[tuple[str, str]] = []
         for im in self._cl.images.list(name=repo):
@@ -217,7 +217,7 @@ class Guarded:
         self._cl.images.remove(ref, noprune=False)
 
     def pin(self, image: str, repo: str, tag: str) -> None:
-        """Etiqueta a imagem como `app-hub-app-*:<tag>`: imagem com nome não é varrida por `image prune`."""
+        """Labels the image as `app-hub-app-*:<tag>`: a named image is not swept by `image prune`."""
         own(repo)
         self._cl.images.get(image).tag(repo, tag)
 
@@ -230,7 +230,7 @@ class Guarded:
             if not cpu:
                 for k in ("NanoCpus", "CpuShares", "CpuQuota", "CpuPeriod", "CpusetCpus"):
                     host.pop(k, None)
-            if host.get("Tmpfs"):  # Podman recusa `uid=`/`gid=`; `U` dá o tmpfs ao usuário do contêiner
+            if host.get("Tmpfs"):  # Podman refuses `uid=`/`gid=`; `U` gives the tmpfs to the container's user
                 host["Tmpfs"] = {path: tmpfs_podman(opts) for path, opts in host["Tmpfs"].items()}
             spec["host_config"] = host
         self._cl.api.create_container(image, name=name, **spec)
@@ -248,7 +248,7 @@ def _default_client() -> Any:
 
 
 class Engine:
-    """Fino sobre o Docker SDK; `factory` é trocável (testes). Nunca lança em `probe`."""
+    """Thin layer over the Docker SDK; `factory` is swappable (tests). Never raises in `probe`."""
 
     def __init__(self, factory: Callable[[], Any] | None = None) -> None:
         self._cache: tuple[float, dict[str, Any]] | None = None
@@ -290,8 +290,8 @@ class Engine:
                 "networks": list(c.attrs.get("NetworkSettings", {}).get("Networks") or {})}  # fmt: skip
 
     async def probe(self, max_age: float | None = None) -> dict[str, Any]:
-        """Estado do daemon em cache (TTL `HUB_RUNTIME_TTL_S`, 8 s); vencido → devolve o antigo e atualiza ao fundo.
-        `max_age=0` força leitura nova (supervisor). Leituras simultâneas dividem uma só chamada."""
+        """Cached daemon state (TTL `HUB_RUNTIME_TTL_S`, 8 s); when expired, returns the old one and refreshes in the background.
+        `max_age=0` forces a fresh read (supervisor). Simultaneous reads share a single call."""
         ttl = float(os.getenv("HUB_RUNTIME_TTL_S", "8") or 8) if max_age is None else max_age
         c = self._cache
         if c and time.monotonic() - c[0] < ttl:
@@ -299,7 +299,7 @@ class Engine:
         if not self._flight or self._flight.done():
             self._flight = asyncio.create_task(self._refresh())
         if c and max_age is None and c[1]["reachable"]:
-            return c[1]  # serve o antigo; a atualização termina ao fundo
+            return c[1]  # serves the old one; the refresh finishes in the background
         return await asyncio.shield(self._flight)
 
     async def _refresh(self) -> dict[str, Any]:
@@ -387,9 +387,9 @@ class Engine:
         except Exception as e:
             raise OpsError(f"Logs indisponíveis: {e}"[:300], 503) from e
 
-    # ---- ciclo de vida (blue/green, staging) ---------------------------------------------------------
+    # ---- lifecycle (blue/green, staging) ---------------------------------------------------------
     async def raw(self, name: str) -> dict[str, Any] | None:
-        """Atributos crus do container (ou `None` se não existe)."""
+        """Raw container attributes (or `None` if it does not exist)."""
 
         def go(cl: Any) -> dict[str, Any] | None:
             try:
@@ -402,7 +402,7 @@ class Engine:
         return await self._run(go)  # type: ignore[no-any-return]
 
     async def image_ref(self, ref: str) -> tuple[str, dict[str, Any]]:
-        """Resolve a imagem do pacote (só locais): `nome@sha256:<hex>` vale pelo digest do repositório ou pelo ID."""
+        """Resolves the package image (local only): `name@sha256:<hex>` is valid by the repository digest or by the ID."""
 
         def go(cl: Any) -> tuple[str, dict[str, Any]]:
             tries = [ref]
@@ -421,8 +421,8 @@ class Engine:
         return await self._run(go)  # type: ignore[no-any-return]
 
     async def prune_pins(self, app: str, keep: int) -> list[str]:
-        """Mantém só as `keep` fixações `keep-*` mais recentes por app/ambiente (`keep-stg-*` = staging); nunca lança.
-        Imagem em uso por um container não é apagada pelo daemon (só perde a etiqueta, se tiver outra)."""
+        """Keeps only the `keep` most recent `keep-*` pins per app/environment (`keep-stg-*` = staging); never raises.
+        An image in use by a container is not deleted by the daemon (it only loses the tag, if it has another one)."""
         repo = f"{prefix()}{app}"
         try:
             tags = await self._run(lambda cl: cl.pinned(repo))
@@ -439,16 +439,16 @@ class Engine:
                 try:
                     await self._run(lambda cl, r=ref: cl.untag(r))
                     gone.append(ref)
-                except Exception:  # noqa: S112 — em uso ou já removida
+                except Exception:  # noqa: S112 — in use or already removed
                     continue
         return gone
 
     async def pin(self, image_id: str, app: str, label: str) -> str:
-        """Fixa `image_id` como `app-hub-app-<app>:<label>` (devolve a referência); nunca lança."""
+        """Pins `image_id` as `app-hub-app-<app>:<label>` (returns the reference); never raises."""
         repo = f"{prefix()}{app}"
         try:
             await self._run(lambda cl: cl.pin(image_id, repo, label))
-        except Exception:  # fixar é cautela; a implantação segue
+        except Exception:  # pinning is a precaution; the deployment continues
             return ""
         return f"{repo}:{label}"
 
@@ -456,7 +456,7 @@ class Engine:
         self, path: str, tag: str, dockerfile: str, memory: int, on_line: Callable[[str], None],
         cpus: int = 0, timeout_s: float = 0,
     ) -> str:  # fmt: skip
-        """Constrói a imagem do pacote com teto de memória/CPU e prazo, repassando o log linha a linha. Devolve o ID."""
+        """Builds the package image with a memory/CPU cap and a deadline, passing the log through line by line. Returns the ID."""
         loop = asyncio.get_running_loop()
         deadline = time.monotonic() + timeout_s if timeout_s > 0 else 0.0
 
@@ -465,7 +465,7 @@ class Engine:
             stream = cl.build_stream(path, tag, dockerfile, memory, cpus)
             for ch in stream:
                 if deadline and time.monotonic() > deadline:
-                    getattr(stream, "close", lambda: None)()  # encerra a conexão: o daemon cancela o build
+                    getattr(stream, "close", lambda: None)()  # closing the stream cancels the build
                     raise OpsError(f"Build falhou: tempo limite de {int(timeout_s)} s excedido", 422)
                 if ch.get("error"):
                     raise OpsError(f"Build falhou: {str(ch['error']).strip()}"[:300], 422)
@@ -529,7 +529,7 @@ class Engine:
         await self._run(go, True)
 
     async def tail_since(self, name: str, since: int) -> list[tuple[int | None, str]]:
-        """Linhas novas (stdout+stderr) desde `since` (epoch s), com o instante em ms."""
+        """New lines (stdout+stderr) since `since` (epoch s), with the instant in ms."""
 
         def go(cl: Any) -> list[tuple[int | None, str]]:
             raw = cl.containers.get(name).logs(since=since, timestamps=True).decode(errors="replace")
@@ -558,7 +558,7 @@ class Engine:
 
 
 def human_duration(sec: float) -> str:
-    """Como o `docker ps` (HumanDuration)."""
+    """Like `docker ps` (HumanDuration)."""
     s = int(sec)
     if s < 1:
         return "Less than a second"
@@ -583,7 +583,7 @@ def human_duration(sec: float) -> str:
 
 
 def _status_text(c: Any) -> str:
-    """`Up 3 hours (healthy)` (texto do `docker ps`), reconstruído do inspect."""
+    """`Up 3 hours (healthy)` (`docker ps` text), rebuilt from the inspect."""
     st = c.attrs.get("State", {})
     if c.status != "running":
         return str(c.status)
@@ -637,7 +637,7 @@ async def exec_in(
     engine: Engine, container: str, cmd: list[str], env: dict[str, str] | None = None,
     files: dict[str, bytes] | None = None, user: str | None = None,
 ) -> tuple[int, bytes]:  # fmt: skip
-    """Roda `cmd` num container (`docker exec`); `files` (caminhos em /tmp) entram antes e saem depois."""
+    """Runs `cmd` in a container (`docker exec`); `files` (paths in /tmp) go in before and come out after."""
 
     def go(cl: Any) -> tuple[int, bytes]:
         c = cl.containers.get(container)

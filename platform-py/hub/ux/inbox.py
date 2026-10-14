@@ -1,7 +1,7 @@
-"""Inbox: notificações e pedidos de aprovação dos apps e pedidos de acesso.
+"""Inbox: app notifications and approval requests, plus access requests.
 
-Estado em `inbox.json` (escrita atômica). Cada pessoa vê só o que a alcança (`targets`); a leitura e o
-arquivamento são por usuário. Mudanças acordam quem escuta o SSE (`/api/me/stream`)."""
+State in `inbox.json` (atomic write). Each person sees only what reaches them (`targets`); reading and
+archiving are per user. Changes wake whoever listens on the SSE (`/api/me/stream`)."""
 
 from __future__ import annotations
 
@@ -33,15 +33,15 @@ class InboxError(Exception):
 
 @dataclass
 class Who:
-    """Quem olha a Inbox (vindo da sessão)."""
+    """Who is looking at the Inbox (from the session)."""
 
     id: str
     email: str = ""
     name: str = ""
     roles: list[str] = field(default_factory=list)
     perms: list[str] = field(default_factory=list)
-    apps: list[str] | None = None  # `None` = todos
-    session: bool = True  # False = token de API
+    apps: list[str] | None = None  # `None` = all
+    session: bool = True  # False = API token
 
     def can_app(self, app: str) -> bool:
         return self.apps is None or app in self.apps
@@ -56,7 +56,7 @@ def now_ms() -> int:
 
 
 def targets(item: dict[str, Any], who: Who) -> bool:
-    """O item é para `who`? Casa por e-mail/id (nunca pelo nome de exibição)."""
+    """Is the item for `who`? Matches by email/id (never by display name)."""
     me = {x for x in (_norm(who.email), _norm(who.id)) if x}
     user_hit = any(_norm(u) in me for u in item["to_users"] if u.strip())
     role_hit = any(_norm(r) in {_norm(x) for x in who.roles} for r in item["to_roles"])
@@ -114,7 +114,7 @@ def approval_of(ext_id: str) -> dict[str, Any]:
 
 
 def _txn[T](fn: Callable[..., T]) -> Callable[..., T]:
-    """Mutação sob a trava de `inbox.json` (réplicas no mesmo volume): relê o que outra réplica gravou antes."""
+    """Mutation under the `inbox.json` lock (replicas on the same volume): rereads what another replica wrote first."""
 
     @wraps(fn)
     def run(self: InboxStore, *a: Any, **k: Any) -> T:
@@ -129,8 +129,8 @@ class InboxStore:
     def __init__(self, path: Path) -> None:
         self.path = path
         self.items: dict[int, dict[str, Any]] = {}
-        self.states: dict[str, dict[str, int]] = {}  # usuário → {id: bit0 lido | bit1 arquivado}
-        self.grants: dict[str, list[str]] = {}  # acessos concedidos por pedido aprovado
+        self.states: dict[str, dict[str, int]] = {}  # user → {id: bit0 read | bit1 archived}
+        self.grants: dict[str, list[str]] = {}  # access granted by an approved request
         self.next_id = 1
         self.watchers: set[asyncio.Queue[None]] = set()
         self.streams: dict[str, int] = {}
@@ -141,12 +141,12 @@ class InboxStore:
         with suppress(OSError, ValueError, KeyError):
             self._mtime = self.path.stat().st_mtime_ns
             raw = json.loads(self.path.read_text(encoding="utf-8"))
-            # pedidos de ação de agente (aprovação na Inbox, removida) não são mais exibidos
+            # agent action requests (approval in the Inbox, now removed) are no longer shown
             self.items = {int(i["id"]): i for i in raw["items"] if i.get("kind") != "agent"}
             self.states, self.grants, self.next_id = raw["states"], raw["grants"], raw["next_id"]
 
     def reload_if_changed(self) -> bool:
-        """Outra réplica gravou `inbox.json` (volume compartilhado): relê e acorda o SSE desta réplica."""
+        """Another replica wrote `inbox.json` (shared volume): rereads it and wakes this replica's SSE."""
         try:
             changed = self.path.stat().st_mtime_ns != self._mtime
         except OSError:
@@ -172,7 +172,7 @@ class InboxStore:
         self.poke()
 
     def poke(self) -> None:
-        """Acorda quem escuta o SSE (algo mudou para alguém)."""
+        """Wakes whoever listens on the SSE (something changed for someone)."""
         for q in self.watchers:
             if q.empty():
                 q.put_nowait(None)
@@ -185,7 +185,7 @@ class InboxStore:
 
     @_txn
     def push(self, item: dict[str, Any]) -> int:
-        """Item novo; a mesma `source` não duplica (devolve o existente)."""
+        """New item; the same `source` is not duplicated (returns the existing one)."""
         if item["source"]:
             for i in self.items.values():
                 if i["source"] == item["source"]:
@@ -193,7 +193,7 @@ class InboxStore:
         item = item | {"id": self.next_id}
         self.next_id += 1
         self.items[item["id"]] = item
-        if len(self.items) > MAX_ITEMS:  # saem os informativos mais antigos; pedidos abertos ficam
+        if len(self.items) > MAX_ITEMS:  # the oldest notices go; open requests stay
             old = sorted(self.items.values(), key=lambda x: x["at"])
             gone = [i["id"] for i in old if not (i["approval"] and i["approval"]["status"] in OPEN)]
             for g in gone[: len(self.items) - MAX_ITEMS]:
@@ -204,7 +204,7 @@ class InboxStore:
     def entries(
         self, who: Who, lang: str, channel_on: Callable[[str], bool], names: Callable[[str], str]
     ) -> list[dict[str, Any]]:
-        """Itens de `who`, mais novos primeiro; `channel_on(tipo)` = canal "no hub" ligado."""
+        """Items for `who`, newest first; `channel_on(kind)` = the "in the hub" channel is on."""
         now = now_ms()
         out = []
         for it in self.items.values():
@@ -314,7 +314,7 @@ class InboxStore:
     def begin(
         self, who: Who, item_id: int, decision: str, comment: str, app_name: str = ""
     ) -> dict[str, Any]:
-        """Valida e decide: acesso na hora; pedido de app reserva (`sending`) até o app confirmar."""
+        """Validates and decides: access immediately; an app request holds a reservation (`sending`) until the app confirms."""
         it = self.items.get(item_id)
         if not it or not it["approval"] or not targets(it, who):
             raise InboxError(404, "Pedido não encontrado.")
@@ -332,7 +332,7 @@ class InboxStore:
             apps = self.grants.setdefault(it["by_id"], [])
             if it["app"] not in apps:
                 apps.append(it["app"])
-        if it["kind"] == "access":  # a pessoa que pediu recebe o resultado na Inbox
+        if it["kind"] == "access":  # the person who asked receives the result in the Inbox
             name = app_name or it["app"]
             self.push(
                 item_of(
@@ -354,7 +354,7 @@ class InboxStore:
 
     @_txn
     def finish(self, item_id: int, status: str | None, error: str = "") -> None:
-        """Fim da chamada ao app: `status` final ou `None` (falhou: volta a `error`, dá para tentar de novo)."""
+        """End of the call to the app: final `status` or `None` (failed: goes back to `error`, can be retried)."""
         ap = self.items[item_id]["approval"]
         ap["status"], ap["error"] = status or "error", error
         self._save()

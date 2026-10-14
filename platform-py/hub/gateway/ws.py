@@ -1,4 +1,4 @@
-"""WebSocket pelo gateway: `/apps/{app}/ws/...` vira túnel navegador <-> upstream."""
+"""WebSocket through the gateway: `/apps/{app}/ws/...` becomes a browser <-> upstream tunnel."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ def _env(name: str, default: int) -> int:
 
 
 def origin_ok(origin: str | None, host: str | None) -> bool:
-    """`Origin` presente e com a mesma autoridade do `Host` (barra CSWSH)."""
+    """`Origin` present and with the same authority as `Host` (CSWSH guard)."""
     if not origin or not host:
         return False
     for pre in ("https://", "http://"):
@@ -120,4 +120,4 @@ async def _pump(ws: WebSocket, up: websockets.ClientConnection, idle: int, max_l
         await asyncio.gather(*tasks, return_exceptions=True)
     if time.monotonic() - started >= max_life and ws.application_state == WebSocketState.CONNECTED:
         with contextlib.suppress(Exception):
-            await ws.close(code=1012)  # vida máxima: o cliente reconecta pela sessão
+            await ws.close(code=1012)  # maximum lifetime: the client reconnects through the session
