@@ -1,5 +1,5 @@
-// Ícones PNG do PWA do hub (manifesto /manifest.webmanifest e apple-touch-icon) gerados
-// a partir do logo (assets/shell/logo.svg). Rodar de platform/tests-e2e:
+// PNG icons for the hub PWA (manifest /manifest.webmanifest and apple-touch-icon), generated
+// from the logo (assets/shell/logo.svg). Run from platform/tests-e2e:
 //   node ../scripts/gen-pwa-icons.mjs
 import { createRequire } from 'node:module';
 const { chromium } = createRequire(path.resolve(process.cwd(), 'package.json'))('@playwright/test');

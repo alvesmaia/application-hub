@@ -1,8 +1,8 @@
-"""Simulador do Graph e do login do Entra ID (porte do `hub-graphsim`).
+"""Graph and Entra ID login simulator (port of `hub-graphsim`).
 
-Rotas: token (segredo ou asserção RS256 do certificado configurado), site/bibliotecas, item/exclusão/
-mover, download (302 para URL pré-autenticada), upload simples e em sessão, listagem paginada, pasta,
-link de compartilhamento e `/_sim/*` (config, stats, reset). Arquivos só em memória.
+Routes: token (secret or RS256 assertion from the configured certificate), site/libraries, item/delete/
+move, download (302 to a pre-authenticated URL), simple and session upload, paginated listing, folder,
+sharing link and `/_sim/*` (config, stats, reset). Files are kept in memory only.
 """
 
 from __future__ import annotations
@@ -198,7 +198,7 @@ class Sim:
         self.seq += 1
         return f"itm-{self.seq:06d}"
 
-    # ---- testes ----------------------------------------------------------------------------
+    # ---- test helpers ----------------------------------------------------------------------------
     def file(self, drive: str, path: str) -> bytes | None:
         n = self.drives.get(drive_id(drive), {}).get(path.strip("/"))
         return None if n is None or n["folder"] else bytes(n["data"])
@@ -206,7 +206,7 @@ class Sim:
     def paths(self, drive: str) -> list[str]:
         return [k for k in self.drives.get(drive_id(drive), {}) if k]
 
-    # ---- entrada ---------------------------------------------------------------------------
+    # ---- entry point ---------------------------------------------------------------------------
     async def handle(self, req: Request) -> Response:
         path, method = req.url.path, req.method
         body = await req.body()

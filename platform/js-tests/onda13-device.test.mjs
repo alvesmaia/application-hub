@@ -1,6 +1,6 @@
-// Onda 13 — recursos do aparelho (hub-device.js): regras puras em node e cada
-// comportamento data-hub-* num Chromium real com a CSP de página de app (Trusted Types),
-// com câmera/BarcodeDetector/vibração/áudio simulados e IndexedDB real. Pulado sem
+// Wave 13 — device features (hub-device.js): pure rules in node and each
+// data-hub-* behavior in real Chromium with the app-page CSP (Trusted Types),
+// with simulated camera/BarcodeDetector/vibration/audio and real IndexedDB. Skipped without
 // Playwright/Chromium.   node --test platform/js-tests/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -88,7 +88,7 @@ test('diagnóstico: relatório; iOS; texto de resposta; luminância', () => {
   assert.deepEqual([...Dev.luminance(new Uint8ClampedArray([255, 255, 255, 255, 0, 0, 0, 255]), 2, 1)], [255, 0]);
 });
 
-// ---- Chromium com a CSP de app ------------------------------------------------------------
+// ---- Chromium with the app CSP ------------------------------------------------------------
 async function browser() {
   let pw;
   try {
@@ -110,8 +110,8 @@ const APP = `<div class="workspace" id="workspace"><section class="workspace-con
 <button id="print" data-hub-print>imprimir</button><button data-hub-install hidden>instalar</button><p data-hub-install-ios hidden>ios</p>
 </section></div>`;
 
-/** Página de app simulada em https://hub.test/coletor/x com os scripts do hub. `mocks`:
- *  init script (câmera/BarcodeDetector/vibração/áudio). `posts` coleta os envios. */
+/** Simulated app page at https://hub.test/coletor/x with the hub scripts. `mocks`:
+ *  init script (camera/BarcodeDetector/vibration/audio). `posts` collects the submissions. */
 async function appPage(b, { mocks = '', respond } = {}) {
   const ctx = await b.newContext({ permissions: ['clipboard-read', 'clipboard-write'] });
   const page = await ctx.newPage();
@@ -173,10 +173,10 @@ test('Chromium: câmera (BarcodeDetector) preenche o campo e envia; contínuo, l
     assert.ok(posts[0].key, 'Idempotency-Key');
     assert.deepEqual(await page.evaluate(() => window.__gum.video.facingMode), { ideal: 'environment' });
     assert.equal(await page.inputValue('#codigo'), '', 'data-hub-clear');
-    // retorno do fragmento: vibração + tom + flash
+    // fragment feedback: vibration + tone + flash
     assert.ok((await page.evaluate(() => window.__vib)).length >= 1);
     assert.ok(await page.evaluate(() => window.__tones) >= 1);
-    // contínuo: COL-0002 duas vezes seguidas conta uma (janela), depois COL-0003
+    // continuous: COL-0002 twice in a row counts once (window), then COL-0003
     await page.click('#scan-c');
     await page.waitForSelector('.hub-camera[data-decoder="nativo"]');
     await page.waitForFunction(() => document.querySelector('.hub-camera')?.dataset.reads === '2', null, { timeout: 10_000 });
@@ -246,7 +246,7 @@ test('Chromium: leitor tipo teclado — rajada + Enter envia uma vez; repetiçã
     await page.waitForFunction(() => document.querySelectorAll('#painel').length && true);
     await page.waitForTimeout(300);
     assert.equal(posts.length, 2, 'digitação humana também envia (Enter normal)');
-    // diagnóstico: o campo de teste do leitor marca OK com o código
+    // diagnostics: the reader test field marks OK with the code
     await page.click('#dw');
     await page.keyboard.type('LOC-A01', { delay: 5 });
     await page.keyboard.press('Enter');

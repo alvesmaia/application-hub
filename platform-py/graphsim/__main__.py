@@ -1,4 +1,4 @@
-"""`python -m graphsim` (porta `PORT`, padrão 8080); `--health` sonda `/_health` (HEALTHCHECK sem curl)."""
+"""`python -m graphsim` (port `PORT`, default 8080); `--health` probes `/_health` (HEALTHCHECK without curl)."""
 
 import os
 import sys

@@ -1,6 +1,6 @@
-// Onda 12 (2.8) — tradução no navegador (hub-i18n.js) com o mesmo catálogo do servidor
-// (assets/i18n/catalog.json): textos exatos, moldes com partes variáveis e
-// frases dentro de textos maiores; dois idiomas completos e com os mesmos marcadores.
+// Wave 12 (2.8) — in-browser translation (hub-i18n.js) with the same server catalog
+// (assets/i18n/catalog.json): exact texts, templates with variable parts and
+// phrases inside larger texts; two complete languages with the same markers.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -43,9 +43,9 @@ test('exato, molde e frase', () => {
   assert.equal(I18n.tr(en, '  Variável excluída.\n'), '  Variable deleted.\n');
   assert.equal(I18n.tr(en, 'Editar LOG_LEVEL'), 'Edit LOG_LEVEL');
   assert.equal(I18n.tr(en, 'Token sem acesso ao app ativos.'), 'Token has no access to app ativos.');
-  // frase conhecida dentro de um texto maior, com limite de palavra
+  // known phrase inside a larger text, with word boundaries
   assert.equal(I18n.tr(en, 'Usuários (3)'), 'Users (3)');
-  // desconhecido e dado do usuário passam intactos
+  // unknown text and user data pass through unchanged
   assert.equal(I18n.tr(en, 'Notebook Latitude 5440'), 'Notebook Latitude 5440');
   assert.equal(I18n.tr(null, 'Variável excluída.'), 'Variável excluída.');
 });
@@ -55,7 +55,7 @@ test('todo molde do catálogo casa com o próprio texto preenchido', () => {
   for (const r of rows) {
     const marks = r[0].match(MARK);
     if (!marks) continue;
-    // moldes quase sem texto fixo ("{} de {}") não são usados na tradução
+    // templates with almost no fixed text ("{} de {}") are not used for translation
     if ((r[0].replace(MARK, '').match(/\p{L}/gu) || []).length < 3) continue;
     let i = 0;
     const vals = {};
@@ -71,7 +71,7 @@ test('todo molde do catálogo casa com o próprio texto preenchido', () => {
       return vals[m][k];
     });
     const got = I18n.tr(en, filled);
-    // outro molde mais específico pode ganhar; basta não sobrar pt-BR literal do molde
+    // a more specific template may win; just make sure no literal pt-BR from the template is left
     if (got !== expected) {
       assert.notEqual(got, filled, `sem tradução: ${r[0]}`);
     }

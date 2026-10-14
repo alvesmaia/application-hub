@@ -1,4 +1,4 @@
-/* Operações da plataforma — implantações, containers, backups e SDK. */
+/* Platform operations — deployments, containers, backups and SDK. */
 (function () {
   const baseAdminContent = window.adminContent;
   const appName = key => (applications[key] ? applications[key].name : key);
@@ -9,7 +9,7 @@
   const toneFor = s => /Implantado|Concluído|Aprovado|Em execução|Válido/.test(s) ? 'ok' : /Validando|Em andamento|Aguardando/.test(s) ? 'warn' : /Rejeitado|Falhou/.test(s) ? 'err' : 'muted';
   const bar = (used, total, tone = '') => `<span class="ops-bar ${tone}"><span style="width:${Math.min(100, Math.round((used / total) * 100))}%"></span></span>`;
 
-  /* ---------- Dados mockados ---------- */
+  /* ---------- Mock data ---------- */
   let deploys = loadCache('deploys', [
     ['app1', '2.4.1', 'Produção', 'GitHub Actions', 'a91f3c2', 'Implantado', 'há 3 h'],
     ['app2', '1.8.0', 'Staging', 'GitHub Actions', '4be07d1', 'Implantado', 'há 5 h'],
@@ -45,7 +45,7 @@
     ['app2', 'Agendado', '—', 'Falhou', '2 dias']
   ]);
 
-  /* ---------- Implantações ---------- */
+  /* ---------- Deployments ---------- */
   function deploysPage() {
     const envOpts = ['Staging', 'Produção'].map(e => `<option>${e}</option>`).join('');
     const rows = deploys.map((d, i) => `<tr><td><span class="table-primary">${esc(appName(d[0]))}</span></td><td><code>${esc(d[1])}</code></td><td>${esc(d[2])}</td><td>${d[3] === 'Import manual' ? pill('Import manual', 'muted') : pill('GitHub Actions', 'info')}</td><td><code>${esc(d[4])}</code></td><td>${pill(esc(d[5]), toneFor(d[5]))}</td><td>${esc(d[6])}</td><td class="ops-actions">${d[5] === 'Implantado' && d[2] === 'Staging' ? `<button class="secondary-button" data-ops-promote="${i}">Promover</button>` : ''}${d[5] === 'Aguardando aprovação' ? `<button class="secondary-button" data-ops-approve="${i}">Aprovar</button>` : ''}${d[5] === 'Implantado' && d[2] === 'Produção' ? `<button class="secondary-button" data-ops-rollback="${i}">Rollback</button>` : ''}</td></tr>`).join('');

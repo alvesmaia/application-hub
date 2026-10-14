@@ -1,7 +1,7 @@
-// Onda 13 — tempo real e leitura (hub-kit data-hub-ws; hub-device: alternância de tipo de
-// código DENTRO da câmera, "Próximo" e pausa entre leituras). Regras puras em node; cada
-// comportamento num Chromium real com a CSP de página de app (Trusted Types) e um servidor
-// WebSocket simulado (page.routeWebSocket). Pulado sem Playwright/Chromium.
+// Wave 13 — real time and reading (hub-kit data-hub-ws; hub-device: code-type toggle
+// INSIDE the camera, "Próximo" and pause between reads). Pure rules in node; each
+// behavior in real Chromium with the app-page CSP (Trusted Types) and a server
+// simulated WebSocket (page.routeWebSocket). Skipped without Playwright/Chromium.
 //   node --test platform/js-tests/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -55,7 +55,7 @@ test('câmera: grupos da alternância, modo atual e pausa', () => {
   assert.equal(Dev.cooldownMs('x'), 0);
 });
 
-// ---- Chromium com a CSP de app ------------------------------------------------------------
+// ---- Chromium with the app CSP ------------------------------------------------------------
 async function browser() {
   let pw;
   try {
@@ -76,8 +76,8 @@ const APP = `<div class="workspace" id="workspace"><section class="workspace-con
 <section id="painel"></section>
 </section></div>`;
 
-/** Página de app simulada (https://hub.test/coletor/x) com hub-safe + hub-kit + hub-device.
- *  `respond(p)` responde os POSTs; `gets` conta os GETs de /_frag (polling). */
+/** Simulated app page (https://hub.test/coletor/x) with hub-safe + hub-kit + hub-device.
+ *  `respond(p)` answers the POSTs; `gets` counts the GETs to /_frag (polling). */
 async function appPage(b, { mocks = '', respond, ws } = {}) {
   const ctx = await b.newContext();
   const page = await ctx.newPage();
@@ -130,31 +130,31 @@ test('Chromium: data-hub-ws aplica fragmentos pelo sanitizador, eventos; cai →
     await page.waitForFunction(() => document.getElementById('live').getAttribute('data-hub-ws-state') === 'open');
     assert.equal(socks.length, 1, 'um socket por URL');
     assert.equal(gets.length, 0, 'sem polling com o socket aberto');
-    // Fragmento empurrado: entra pelo hub-safe (script e on* fora).
+    // Pushed fragment: enters through hub-safe (script and on* removed).
     socks[0].send(JSON.stringify({ target: '#estado', html: '<section id="estado" data-v="1"><b onclick="window.__x=1">novo</b><script>window.__pwned=1</script><img src=x onerror="window.__pwned=1"></section>' }));
     await page.waitForFunction(() => document.querySelector('#estado[data-v="1"]'));
     assert.equal(await page.evaluate(() => document.querySelector('#estado b').getAttribute('onclick')), null);
     assert.equal(await page.evaluate(() => document.querySelectorAll('#estado script').length), 0);
     assert.equal(await page.evaluate(() => window.__pwned), undefined);
-    // Alvo fora do app é ignorado; evento JSON vira hub:ws.
+    // Target outside the app is ignored; JSON event becomes hub:ws.
     await page.evaluate(() => { window.__ev = []; document.addEventListener('hub:ws', (e) => window.__ev.push(e.detail)); });
     socks[0].send(JSON.stringify({ fragments: [{ target: '#toast', html: '<p>x</p>' }, { event: 'leitura', data: { n: 2 } }] }));
     await page.waitForFunction(() => window.__ev.length === 1);
     assert.deepEqual(await page.evaluate(() => window.__ev[0]), { event: 'leitura', data: { n: 2 } });
     assert.equal(await page.evaluate(() => document.getElementById('toast').innerHTML), '');
-    // Socket cai (servidor recusa a reconexão): polling no data-hub-get (every 1s).
+    // Socket drops (server refuses reconnection): polling on data-hub-get (every 1s).
     refuse = true;
     socks[0].close({ code: 1001 });
     await page.waitForFunction(() => document.getElementById('live').getAttribute('data-hub-ws-state') === 'polling');
     await page.waitForFunction(() => /polling/.test(document.getElementById('estado').textContent), null, { timeout: 5000 });
     assert.ok(gets.length >= 1);
-    // Volta: reconexão com espera crescente → socket de novo e o polling para.
+    // Back: reconnection with growing backoff → socket again and polling stops.
     refuse = false;
     await page.waitForFunction(() => document.getElementById('live').getAttribute('data-hub-ws-state') === 'open', null, { timeout: 15_000 });
     const n = gets.length;
     await page.waitForTimeout(2200);
     assert.ok(gets.length <= n + 1, `polling parou (${n} → ${gets.length})`);
-    // data-hub-ws de outra origem: nunca abre socket, só polling.
+    // data-hub-ws from another origin: never opens a socket, only polling.
     assert.equal(await page.getAttribute('#fora', 'data-hub-ws-state'), 'polling');
     assert.equal(socks.length, 2);
     assert.deepEqual(violations, []);
@@ -194,13 +194,13 @@ test('Chromium: alternância Código de barras | QR dentro da câmera troca os f
     assert.equal(await page.getAttribute('.hub-camera', 'data-formats'), 'qr_code,data_matrix');
     assert.ok((await page.getAttribute('.hub-camera-aim', 'class')).includes('hub-camera-aim-square'));
     await page.waitForFunction(() => window.__fmts.some((f) => f.join() === 'qr_code,data_matrix'));
-    // O app fica sabendo (campo + change → data-hub-post do próprio app).
+    // The app learns of it (field + change → the app's own data-hub-post).
     await page.waitForFunction(() => document.getElementById('mf').value === 'qr');
     await page.waitForFunction(() => window.__codes.length === 0 || true);
     const deadline = Date.now() + 5000;
     while (!posts.some((p) => p.path === '/_frag/coletor/modo') && Date.now() < deadline) await page.waitForTimeout(50);
     assert.equal(new URLSearchParams(posts.find((p) => p.path === '/_frag/coletor/modo').body).get('modo'), 'qr');
-    // Câmera continua aberta e lê um QR com o formato novo.
+    // Camera stays open and reads a QR with the new format.
     await page.evaluate(() => window.__codes.push({ rawValue: 'REC-1001', format: 'qr_code' }));
     await page.waitForFunction(() => document.querySelector('.hub-camera')?.dataset.reads === '1');
     assert.ok(await page.isVisible('.hub-camera'));
@@ -235,7 +235,7 @@ test('Chromium: resposta com data-hub-scan-next para a câmera até "Próximo"; 
     while (reads().length < 2 && Date.now() < deadline) await page.waitForTimeout(50);
     assert.ok(posts.some((p) => p.path === '/_frag/coletor/proximo'), 'o botão do app foi acionado');
     assert.deepEqual(reads().slice(0, 2), ['7890000000017', 'COL-0002']);
-    // Automático: pausa de 900 ms antes da próxima leitura.
+    // Automático mode: 900 ms pause before the next read.
     mode = 'cooldown';
     await page.waitForSelector('.hub-camera[data-held]');
     await page.click('.hub-camera-next');

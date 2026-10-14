@@ -1,6 +1,6 @@
-// Onda 9, sem navegador: lógica pura da paleta ⌘K e do tour (hub-ux.js), reordenação de
-// widgets do Início (ux.js), a Inbox ao vivo reaproveitando a conexão compartilhada entre
-// abas (logshare.js com evento `inbox`) e o gerador do tema escuro (contraste).
+// Wave 9, no browser: pure logic of the ⌘K palette and the tour (hub-ux.js), reordering of
+// home-page widgets (ux.js), the live Inbox reusing the connection shared between
+// tabs (logshare.js with the `inbox` event) and the dark-theme generator (contrast).
 //   node --test platform/js-tests/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

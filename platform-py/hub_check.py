@@ -1,4 +1,4 @@
-"""Qualidade multiplataforma: `uv run hub-check [--fast|--all]`. Para na primeira falha."""
+"""Cross-platform quality checks: `uv run hub-check [--fast|--all]`. Stops at the first failure."""
 
 from __future__ import annotations
 
@@ -27,12 +27,12 @@ COV = [
 ]
 
 
-# o `uv run` externo exporta VIRTUAL_ENV (venv do hub); o `ty` dos subprojetos o herdaria e nao acharia o SDK
+# the outer `uv run` exports VIRTUAL_ENV (the hub venv); the subprojects' `ty` would inherit it and not find the SDK
 ENV = {k: v for k, v in os.environ.items() if k != "VIRTUAL_ENV"}
 
 
 def _run(path: Path) -> list[str]:
-    """Prefixo `uv run` do projeto; apps nao resolvem o SDK sozinhos: usa o do repositorio."""
+    """`uv run` prefix for the project; apps do not resolve the SDK on their own: they use the repository one."""
     text = (path / "pyproject.toml").read_text(encoding="utf-8")
     if "hub-sdk" in text:
         sdk = REPO / "platform" / "sdk-python"
@@ -47,7 +47,7 @@ def _projects() -> list[Path]:
 
 
 def ty_files(files: list[str]) -> int:
-    """Gancho do pre-commit: `ty` nos arquivos dados, cada um no ambiente do seu projeto."""
+    """Pre-commit hook: `ty` on the given files, each in its own project environment."""
     groups: dict[Path, list[str]] = {}
     for f in files:
         p = Path(f).resolve()

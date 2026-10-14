@@ -1,10 +1,10 @@
-// Testes das abas múltiplas (onda 5), sem navegador:
+// Multi-tab tests (wave 5), without a browser:
 //   node --test platform/js-tests/
-// - logshare.js: uma conexão SSE para N abas (BroadcastChannel real do node + Web Locks
-//   simulado), failover quando a aba líder fecha, filtros locais;
-// - hub.js: política do loader (deep link, recarregar, sessão, cache por versão) e o
-//   estado "reiniciando" com novas tentativas — executando o hub.js de verdade num DOM
-//   (jsdom de demo-apps/tools; instale com `npm ci --prefix platform/demo-apps/tools`).
+// - logshare.js: one SSE connection for N tabs (real node BroadcastChannel + Web Locks
+//   simulated), failover when the leader tab closes, local filters;
+// - hub.js: loader policy (deep link, reload, session, per-version cache) and the
+//   "reiniciando" state with retries — running the real hub.js in a DOM
+//   (jsdom from demo-apps/tools; install with `npm ci --prefix platform/demo-apps/tools`).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -19,7 +19,7 @@ const { createLogShare, matches } = require(path.join(platform, 'assets/web/logs
 const Policy = require(path.join(platform, 'assets/shell/hub.js'));
 const tick = (ms = 10) => new Promise((r) => setTimeout(r, ms));
 
-/** Web Locks simulado: trava exclusiva por nome, fila FIFO, cancelável por AbortSignal. */
+/** Simulated Web Locks: exclusive lock by name, FIFO queue, cancellable via AbortSignal. */
 function fakeLocks() {
   const queues = new Map();
   const held = new Set();
@@ -48,7 +48,7 @@ function fakeLocks() {
   };
 }
 
-/** EventSource simulado: registra as conexões abertas. */
+/** Simulated EventSource: records the open connections. */
 function sources() {
   const open = [];
   return {
@@ -102,7 +102,7 @@ test('failover: a aba líder fecha e a próxima assume, sem conexão duplicada',
   [a, b, c].forEach((t) => t.share.start());
   await tick();
   const first = src.open[0];
-  a.share.stop(); // aba fechada/pausada: libera a trava
+  a.share.stop(); // tab closed/paused: releases the lock
   await tick();
   assert.ok(first.closed, 'conexão da antiga líder encerrada');
   assert.equal(src.open.length, 1, 'uma conexão depois do failover');
@@ -155,10 +155,10 @@ test('política do carregamento: deep link, novas tentativas e erros', () => {
 const jsdomPath = path.join(platform, 'demo-apps/tools/node_modules/jsdom');
 const hasJsdom = fs.existsSync(jsdomPath);
 const hubJs = fs.readFileSync(path.join(platform, 'assets/shell/hub.js'), 'utf8');
-// Onda 12 (2.1): o hub.js só insere HTML de app pelo sanitizador (hub-safe.js).
+// Wave 12 (2.1): hub.js only inserts app HTML through the sanitizer (hub-safe.js).
 const safeJs = fs.readFileSync(path.join(platform, 'assets/shell/hub-safe.js'), 'utf8');
 
-/** Página de app com o hub.js; `respond(url)` → {status, body} simula o gateway. */
+/** App page with hub.js; `respond(url)` → {status, body} simulates the gateway. */
 function appPage({ url, respond, local = {}, session = {}, navType = 'navigate' }) {
   const { JSDOM } = require(jsdomPath);
   const html = `<!DOCTYPE html><html><head></head><body><main id="app-root"><div class="workspace"><section class="workspace-content"><div class="app-loading"><strong class="loader-percentage">0%</strong><span class="loader-fill"></span></div></section></div></main></body></html>`;
@@ -177,7 +177,7 @@ function appPage({ url, respond, local = {}, session = {}, navType = 'navigate' 
     const r = respond(String(u));
     return { ok: r.status >= 200 && r.status < 300, status: r.status, headers: { get: (k) => (r.headers || {})[k.toLowerCase()] ?? null }, text: async () => r.body };
   };
-  // Assets do app (css/js) carregam na hora.
+  // App assets (css/js) load immediately.
   const append = w.Element.prototype.append;
   w.Element.prototype.append = function (...nodes) {
     append.apply(this, nodes);
@@ -265,7 +265,7 @@ test('líder com EventSource fechado de vez (401/sessão vencida): reconecta com
   await tick();
   assert.equal(a.share.role(), 'líder');
   assert.equal(b.statuses[0].connected, false, 'seguidora não se diz conectada antes de uma líder confirmar');
-  // A conexão da líder fecha de vez três vezes seguidas.
+  // The leader's connection closes for good three times in a row.
   for (let i = 0; i < 3; i++) {
     const s = src.open.find((x) => !x.closed && !x.sessionOk);
     assert.ok(s, `conexão da líder aberta (tentativa ${i + 1})`);
@@ -287,7 +287,7 @@ test('líder com EventSource fechado de vez (401/sessão vencida): reconecta com
   b.share.stop();
 });
 
-// ---- 429 (fila de operações pesadas): novas tentativas com Retry-After + jitter --------
+// ---- 429 (heavy-operation queue): retries honoring Retry-After + jitter --------
 test('política da fila (429): honra Retry-After com jitter, limites e rótulo do app', () => {
   assert.equal(Policy.queued(429), true);
   assert.equal(Policy.queued(502), false);

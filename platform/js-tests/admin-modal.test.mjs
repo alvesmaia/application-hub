@@ -1,6 +1,6 @@
-// Regressão encontrada pelo E2E da onda 6: o modal "Nova variável" (admin.js) não
-// enviava nada — `$(sel).map` (querySelector) lançava TypeError ao ler os vínculos.
-// Executa o admin.js real num DOM (jsdom de demo-apps/tools) e confere o POST.
+// Regression found by the wave 6 E2E: the "Nova variável" modal (admin.js) did not
+// send anything — `$(sel).map` (querySelector) threw a TypeError reading the bindings.
+// Runs the real admin.js in a DOM (jsdom from demo-apps/tools) and checks the POST.
 //   node --test platform/js-tests/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -21,7 +21,7 @@ test('admin.js: "Nova variável" envia nome, tipo, valor e os vínculos marcados
   const { JSDOM } = require(jsdomPath);
   const meta = { apps: [{ id: 'ativos', name: 'Gestão de Ativos', short: 'Ativos' }, { id: 'fornecedores', name: 'Rede de Fornecedores', short: 'Fornecedores' }], permissions: [] };
   const html = `<!DOCTYPE html><html><body><div id="admin-meta" hidden data-admin-meta='${JSON.stringify(meta)}'></div><button type="button" data-admin-add="env">Nova variável</button><div id="toast"></div></body></html>`;
-  // location.reload() do jsdom só registra "not implemented" no console virtual (silenciado).
+  // jsdom's location.reload() only logs "not implemented" to the virtual console (silenced).
   const { VirtualConsole } = require(jsdomPath);
   const dom = new JSDOM(html, { url: 'http://hub.test/admin/env', runScripts: 'outside-only', pretendToBeVisual: true, virtualConsole: new VirtualConsole() });
   const w = dom.window;

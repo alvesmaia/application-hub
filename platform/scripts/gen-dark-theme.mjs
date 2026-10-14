@@ -1,25 +1,25 @@
 #!/usr/bin/env node
-// Paleta da identidade Alvesmaia (claro + escuro grafite) a partir de um mapeamento EXPLÍCITO.
+// Alvesmaia brand palette (light + graphite dark) generated from an EXPLICIT mapping.
 //
-//   node scripts/gen-dark-theme.mjs          # regrava os blocos gerados
-//   node scripts/gen-dark-theme.mjs --check  # falha se algo estiver desatualizado ou sem contraste (CI)
+//   node scripts/gen-dark-theme.mjs          # rewrites the generated blocks
+//   node scripts/gen-dark-theme.mjs --check  # fails if anything is out of date or lacks contrast (CI)
 //
-// Fonte única: `scripts/brand-palette.json`
-//   - `roles`: papéis de cor (`page`, `surface`, `title`, `primary`, `chrome`…) com o valor
-//     claro e o escuro escolhidos à mão (nada é calculado);
-//   - `primitives`: a qual papel cada primitiva `--c-*` herdada do mockup aponta (ou
-//     `{ "fixed": "#hex" }` para cores que não mudam com o tema — ex.: o terminal de logs,
-//     que é escuro nos dois temas);
-//   - `contrast`: pares texto/fundo (≥ 4,5:1) e forma/fundo (≥ 3:1) conferidos nos DOIS temas.
+// Single source: `scripts/brand-palette.json`
+//   - `roles`: color roles (`page`, `surface`, `title`, `primary`, `chrome`…) with the value
+//     for light and dark, hand-picked (nothing is computed);
+//   - `primitives`: which role each `--c-*` primitive inherited from the mockup points to (or
+//     `{ "fixed": "#hex" }` for colors that do not change with the theme, e.g. the log terminal,
+//     which is dark in both themes);
+//   - `contrast`: text/background pairs (≥ 4,5:1) and shape/background pairs (≥ 3:1) checked in BOTH themes.
 //
-// Saídas:
-// 1. `assets/shell/tokens.css`, bloco `paleta:inicio/fim`: `--am-<papel>` (claro) e
-//    `--c-*: var(--am-<papel>)`; bloco `tema-escuro:inicio/fim`: só os `--am-<papel>` escuros
-//    (as primitivas e semânticas seguem por `var()`), em `:root[data-theme="dark"]` e, com
-//    a escolha "Automático (sistema)" (`data-theme="auto"`), em `prefers-color-scheme: dark`.
-// 2. Ponte de temas dos apps (fim de tokens.css): papéis do hub como `var(--app-<papel>, …)`
-//    dentro da área do app — cada app tem a SUA identidade (CONTRATO-APP §29); o script
-//    não reescreve o CSS dos apps, só confere (`--check`) o contraste dos `--app-*` deles.
+// Outputs:
+// 1. `assets/shell/tokens.css`, block `paleta:inicio/fim`: `--am-<papel>` (light) and
+//    `--c-*: var(--am-<papel>)`; block `tema-escuro:inicio/fim`: only the dark `--am-<papel>`
+//    (primitives and semantics follow through `var()`), under `:root[data-theme="dark"]` and, with
+//    the "Automático (sistema)" choice (`data-theme="auto"`), under `prefers-color-scheme: dark`.
+// 2. App theme bridge (end of tokens.css): hub roles as `var(--app-<papel>, …)`
+//    inside the app area; each app has ITS OWN identity (CONTRATO-APP §29); the script
+//    does not rewrite the apps' CSS, it only checks (`--check`) their `--app-*` contrast.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -76,7 +76,7 @@ function write(file, next) {
 const decl = (list) => list.map(([k, v]) => `  ${k}: ${v};`).join('\n');
 const roleDecls = (theme) => Object.entries(roles).map(([k, v]) => [`--am-${k}`, v[theme]]);
 
-// 1. Tokens da plataforma.
+// 1. Platform tokens.
 {
   const file = path.join(root, 'assets/shell/tokens.css');
   const src = fs.readFileSync(file, 'utf8');
@@ -95,18 +95,18 @@ const roleDecls = (theme) => Object.entries(roles).map(([k, v]) => [`--am-${k}`,
   const blk = `${BEGIN}\n:root[data-theme="dark"] {\n  color-scheme: dark;\n${body}\n}\n@media (prefers-color-scheme: dark) {\n  :root[data-theme="auto"] {\n    color-scheme: dark;\n${indent(body)}\n  }\n}\n${END}\n`;
   const k = out.indexOf(BEGIN);
   const base = k >= 0 ? out.slice(0, k).replace(/\n+$/, '\n') : out.replace(/\n*$/, '\n');
-  // O que vem depois do bloco escuro (a ponte de temas dos apps, seção 2) é preservado.
+  // Whatever follows the dark block (the app theme bridge, section 2) is preserved.
   const e = out.indexOf(END);
   const tail = k >= 0 && e >= 0 ? out.slice(e + END.length).replace(/^\n+/, '') : '';
   write(file, `${base}\n${blk}${tail ? `\n${tail}` : ''}`);
 }
 
-// 2. Ponte de temas dos apps (CONTRATO-APP §29), no fim de tokens.css: dentro da área do
-//    app (#app-root e camadas [data-hub-layer]) cada papel do hub vira `var(--app-<papel>,
-//    <valor do hub>)` e os tokens derivados (`--c-*`, `--color-*`, fontes) são redeclarados
-//    ali — o app que define `--app-primary` etc. no seu `:root` (confinado ao #app-root) muda
-//    tudo o que o hub desenha na área dele; sem a variável, vale a identidade do hub.
-//    O script NÃO reescreve o CSS dos apps: só confere o contraste dos `--app-*` deles (3).
+// 2. App theme bridge (CONTRATO-APP §29), at the end of tokens.css: inside the app area
+//    (#app-root and [data-hub-layer] layers) each hub role becomes `var(--app-<papel>,
+//    <valor do hub>)` and the derived tokens (`--c-*`, `--color-*`, fonts) are redeclared
+//    there — an app that defines `--app-primary` etc. in its `:root` (scoped to #app-root) changes
+//    everything the hub draws in its area; without the variable, the hub identity applies.
+//    The script does NOT rewrite the apps' CSS: it only checks the contrast of their `--app-*` (3).
 {
   const file = path.join(root, 'assets/shell/tokens.css');
   const src = fs.readFileSync(file, 'utf8');
@@ -114,7 +114,7 @@ const roleDecls = (theme) => Object.entries(roles).map(([k, v]) => [`--am-${k}`,
   const E2 = '/* temas-dos-apps:fim */';
   const k = src.indexOf(B2);
   const head = k >= 0 ? src.slice(0, k).replace(/\n+$/, '\n') : src.replace(/\n*$/, '\n');
-  // Tokens derivados (fora dos blocos gerados) que dependem de outros por var().
+  // Derived tokens (outside the generated blocks) that depend on others via var().
   const from = head.indexOf(PAL_END) + PAL_END.length;
   const to = head.indexOf(BEGIN) >= 0 ? head.indexOf(BEGIN) : head.length;
   const derived = [...head.slice(from, to).matchAll(/^\s*(--(?:color|focus|font)-[\w-]+)\s*:\s*([^;]*var\([^;]*);/gm)]
@@ -125,8 +125,8 @@ const roleDecls = (theme) => Object.entries(roles).map(([k, v]) => [`--am-${k}`,
     const hub = v;
     return [n, n === '--font-display' ? `var(--app-font-display, var(--app-font, ${hub}))` : `var(--app-font, ${hub})`];
   });
-  // Atalhos do CSS do shell (`--ink`, `--tsc-*` dos gráficos…) declarados em `:root{}` de
-  // styles.css/hub.css a partir dos tokens: também recalculados na área do app.
+  // Shell CSS shortcuts (`--ink`, `--tsc-*` for the charts…) declared in `:root{}` of
+  // styles.css/hub.css from the tokens: also recalculated in the app area.
   const shellVars = new Map();
   for (const name of ['styles.css', 'hub.css']) {
     const css = fs.readFileSync(path.join(root, 'assets/shell', name), 'utf8');
@@ -151,8 +151,8 @@ const roleDecls = (theme) => Object.entries(roles).map(([k, v]) => [`--am-${k}`,
   write(file, `${head}\n${blk}`);
 }
 
-// 3. Contraste das identidades dos apps de demonstração: `--app-<papel>` do `:root` (claro)
-//    e do `:root[data-theme="dark"]` de cada CSS de app, nos mesmos pares conferidos no hub.
+// 3. Contrast of the demo apps' identities: `--app-<papel>` of `:root` (light)
+//    and of `:root[data-theme="dark"]` in each app CSS, for the same pairs checked in the hub.
 const APP_CSS = [
   'demo-apps-py/ativos/src/ativos/assets/app.css',
   'demo-apps-py/fornecedores/src/fornecedores/assets/app.css',

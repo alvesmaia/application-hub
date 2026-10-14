@@ -1,5 +1,5 @@
-// data-hub-sse (hub-kit): EventSource em /_frag/{app}/…, HTML pelo hub-safe.js, evento hub:sse,
-// fluxo fechado → polling no data-hub-get. Chromium real com a CSP de app; pulado sem Playwright.
+// data-hub-sse (hub-kit): EventSource at /_frag/{app}/…, HTML through hub-safe.js, hub:sse event,
+// closed stream → polling on data-hub-get. Real Chromium with the app CSP; skipped without Playwright.
 //   node --test platform/js-tests/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -43,7 +43,7 @@ test('Chromium: data-hub-sse aplica o HTML sanitizado, dispara hub:sse e cai par
       }
       if (u.pathname === '/_frag/kanban/eventos') {
         streams++;
-        if (streams > 1) return route.fulfill({ status: 503, body: '' }); // fecha de vez → polling
+        if (streams > 1) return route.fulfill({ status: 503, body: '' }); // closes for good → polling
         const msg = (o) => `data: ${JSON.stringify(o)}\n\n`;
         return route.fulfill({ contentType: 'text/event-stream', body:
           msg({ html: '<div id="q" data-hub-sse="/apps/kanban/eventos" data-hub-get="/apps/kanban/quadro" data-hub-trigger="every 1s"><section data-v="1"><b onclick="window.__x=1">novo</b><script>window.__pwned=1</script></section></div>' })

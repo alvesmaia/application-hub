@@ -1,7 +1,7 @@
-// Onda 12 (2.1) — anti-phishing na mesma origem: regras puras do sanitizador (hub-safe.js)
-// e dos comportamentos declarativos (hub-kit.js) em node; o CORPUS DE XSS roda num
-// Chromium real (Playwright de tests-e2e/) com a CSP de página de app (Trusted Types
-// obrigatório) — pulado se o Playwright/navegador não estiver instalado.
+// Wave 12 (2.1) — same-origin anti-phishing: pure rules of the sanitizer (hub-safe.js)
+// and of the declarative behaviors (hub-kit.js) in node; the XSS CORPUS runs in a
+// real Chromium (Playwright from tests-e2e/) with the app-page CSP (Trusted Types
+// required) — skipped if Playwright/the browser is not installed.
 //   node --test platform/js-tests/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -33,7 +33,7 @@ test('formulários: só para o próprio app; /login, /account, /oauth e outros a
     assert.ok(!Safe.formTargetOk(bad, 'ativos', o, base), bad);
   }
   assert.ok(!Safe.formTargetOk('/ativos/x', '', o, base), 'sem app, nada');
-  // Onda 13: páginas do app em /apps/{id}/… (o antigo /{id}/… segue aceito).
+  // Wave 13: app pages at /apps/{id}/… (the old /{id}/… is still accepted).
   for (const ok of ['/apps/ativos', '/apps/ativos/itens', `${o}/apps/ativos/x?y=1`]) assert.ok(Safe.formTargetOk(ok, 'ativos', o, base), ok);
   for (const bad of ['/apps/servicos/x', '/apps/ativosx', '/apps', '/apps/', '/apps/ativos/../../login']) assert.ok(!Safe.formTargetOk(bad, 'ativos', o, base), bad);
   assert.ok(Safe.reservedPath('/account/x') && Safe.reservedPath('/oauth') && !Safe.reservedPath('/accounting'));
@@ -73,7 +73,7 @@ test('hub-kit: gatilhos, filtro sem acento, ordenação e páginas', () => {
   assert.equal(Kit.pages(21, 10), 3);
 });
 
-// ---- corpus de XSS num navegador real ----------------------------------------------
+// ---- XSS corpus in a real browser ----------------------------------------------
 const CORPUS = [
   '<script>window.__pwned=1</script>',
   '<img src=x onerror="window.__pwned=1">',
@@ -152,7 +152,7 @@ test('corpus de XSS: nada executa, nada perigoso sobra (Chromium + CSP de app co
           let threw = null;
           try {
             if (how === 'setHTML') window.HubSafe.setHTML(root, vec, { app: 'ativos' });
-            else root.innerHTML = vec; // passa pela política `default` do Trusted Types
+            else root.innerHTML = vec; // goes through the Trusted Types `default` policy
           } catch (e) { threw = String(e); }
           const clk = root.querySelector('#clk');
           try { clk && clk.click(); } catch (_) { /* nada */ }
@@ -181,7 +181,7 @@ test('corpus de XSS: nada executa, nada perigoso sobra (Chromium + CSP de app co
         if (r.formAction) assert.ok(!/login|account|oauth|javascript/i.test(r.formAction), `${ctx} → ${r.formAction}`);
       }
     }
-    // Conteúdo legítimo sobrevive (classes, data-hub-*, SVG, tabela, formulário do app).
+    // Legitimate content survives (classes, data-hub-*, SVG, table, app form).
     const ok = await page.evaluate(() => {
       const root = document.getElementById('app-root');
       window.HubSafe.setHTML(root, '<section class="x" data-hub-get="/ativos/a" data-hub-target="#t"><table class="data-table"><tbody><tr><td>1</td></tr></tbody></table><svg viewBox="0 0 10 10"><path d="M0 0L10 10"/><use href="#i"/></svg><form method="post" action="/ativos/itens" enctype="multipart/form-data"><input name="title" required><select name="status"></select><button>ok</button></form><a href="/ativos/x" target="_blank">x</a><template id="modal-a"><p>modal</p></template></section>', { app: 'ativos' });
@@ -197,7 +197,7 @@ test('corpus de XSS: nada executa, nada perigoso sobra (Chromium + CSP de app co
       };
     });
     assert.deepEqual(ok, { get: '/ativos/a', svg: true, form: '/ativos/itens', rel: 'noopener noreferrer', tpl: 'modal', td: '1', names: 'title,status' });
-    // Trusted Types: script inline e URL de script desconhecida são recusados.
+    // Trusted Types: inline script and unknown script URLs are refused.
     const tt = await page.evaluate(() => {
       const out = {};
       try { const s = document.createElement('script'); s.src = 'http://hub.test/_frag/ativos/assets/x.js'; out.url = s.src ? 'aceito' : 'vazio'; } catch (e) { out.url = 'recusado'; }
@@ -213,8 +213,8 @@ test('corpus de XSS: nada executa, nada perigoso sobra (Chromium + CSP de app co
   }
 });
 
-// Revisão de segurança da 2.1: referências a elementos só por id (H1), nomes de campo que
-// sobrescrevem o <form> (L4) e links externos marcados (L2).
+// Security review of 2.1: element references only by id (H1), field names that
+// shadow the <form> (L4), and external links marked (L2).
 test('H1: data-hub-* só aceita um id puro (nada de seletor montado com texto do app)', () => {
   for (const ok of ['lista', '#lista', 'contract-docs', '#Kb_page-2']) assert.ok(Kit.idToken(ok), ok);
   for (const bad of [', .platform-header', ', body', '#x, header', '#a #b', '.classe', '#', '', '1abc', '#a[b]', 'a:hover', '#app root', '*']) {
@@ -232,7 +232,7 @@ test('L4/L2: campos que sobrescrevem o <form> e links externos', () => {
   assert.equal(Safe.externalHost('mailto:a@b', o, `${o}/ativos`), null);
 });
 
-// Re-revisão (M1): CSS de app confinado com @scope.
+// Re-review (M1): app CSS confined with @scope.
 test('CSS de app: seletores de raiz viram `<raiz> :scope`, pseudo-elementos da raiz saem', () => {
   assert.deepEqual(Safe.splitSelectors(':root:not([data-theme="light"]) :is(.a, .b), .c , [x="1,2"]'), [':root:not([data-theme="light"]) :is(.a, .b)', '.c', '[x="1,2"]']);
   assert.equal(Safe.scopeSelector(':root'), ':root :where(:scope)');

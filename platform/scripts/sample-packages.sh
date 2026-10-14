@@ -4,7 +4,7 @@
 #
 #   valid:      ativos-2.5.0.hubapp, fornecedores-1.9.0.hubapp, servicos-3.2.0.hubapp,
 #              contratos-1.1.0.hubapp, coletor-1.0.0.hubapp (Python/FastAPI)
-#   invalid:    invalido-segredo-ativos-2.5.1.hubapp        (ui/.env with token → Segurança)
+#   invalid:    invalido-segredo-ativos-2.5.1.hubapp        (ui/.env with token → "Segurança" section)
 #              invalido-script-inline-fornecedores-1.9.1.hubapp (inline <script> → Front-end)
 #
 # Image: each package points to its own Python image (e.g. `hub-ativos`):

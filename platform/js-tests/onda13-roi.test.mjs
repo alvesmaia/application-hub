@@ -1,7 +1,7 @@
-// Onda 13 — câmera do hub (hub-device.js): só o QUADRO DE MIRA é lido (recorte do vídeo com
-// object-fit: cover + código ≥ 90 % dentro) e as escolhas (tipo de código, Interativo/Automático,
-// pausa) ficam dentro da camada, avisando o app por data-hub-scan-prefs. Regras puras em node;
-// comportamento num Chromium real com a CSP de página de app. Pulado sem Playwright/Chromium.
+// Wave 13 — hub camera (hub-device.js): only the AIM FRAME is read (video crop with
+// object-fit: cover + code ≥ 90 % inside) and the choices (code type, Interativo/Automático,
+// pause) stay inside the layer, notifying the app through data-hub-scan-prefs. Pure rules in node;
+// behavior in real Chromium with the app-page CSP. Skipped without Playwright/Chromium.
 //   node --test platform/js-tests/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -28,20 +28,20 @@ test('object-fit: cover — celular em pé (390×844) com vídeo 1280×720', () 
   const m = Dev.coverMap(1280, 720, 390, 844);
   near(m.scale, 844 / 720, 1e-9);
   near(m.offY, 0, 1e-9);
-  near(m.offX, (390 - 1280 * (844 / 720)) / 2, 1e-9); // laterais do vídeo cortadas
+  near(m.offX, (390 - 1280 * (844 / 720)) / 2, 1e-9); // video sides cropped
   const aim = Dev.aimRect(390, 844, false);
   const r = Dev.roi(1280, 720, 390, 844, aim, 0);
-  // Mira centralizada no palco = centro do vídeo; tamanho em px do vídeo = px CSS / escala.
+  // Aim centered on the stage = video center; size in video px = CSS px / scale.
   near(r.sx + r.aim.x + r.aim.w / 2, 640, 1);
   near(r.sy + r.aim.y + r.aim.h / 2, 360, 1);
   near(r.aim.w, 312 / m.scale, 0.01);
   near(r.aim.h, (844 * 0.3) / m.scale, 0.01);
   assert.ok(r.sw < 300 && r.sh < 230, `recorte pequeno (${r.sw}×${r.sh}) — menos CPU`);
-  // QR: quadrado de 234 px CSS → ~200 px do vídeo.
+  // QR: 234 CSS px square → ~200 video px.
   const q = Dev.roi(1280, 720, 390, 844, Dev.aimRect(390, 844, true), 0);
   near(q.aim.w, 234 / m.scale, 0.01);
   near(q.aim.w, q.aim.h, 0.01);
-  // Folga de 10 % em cada lado, limitada ao vídeo.
+  // 10 % margin on each side, clamped to the video.
   const f = Dev.roi(1280, 720, 390, 844, aim, 0.1);
   assert.ok(f.sw > r.sw && f.sh > r.sh);
   near(f.aim.x, (f.sw - f.aim.w) / 2, 1.5);
@@ -51,11 +51,11 @@ test('object-fit: cover — palco deitado (1440×700) e vídeo em pé (720×1280
   const m = Dev.coverMap(1280, 720, 1440, 700);
   near(m.scale, 1.125, 1e-9);
   near(m.offX, 0, 1e-9);
-  near(m.offY, (700 - 810) / 2, 1e-9); // topo e base cortados
+  near(m.offY, (700 - 810) / 2, 1e-9); // top and bottom cropped
   const r = Dev.roi(1280, 720, 1440, 700, { x: 0, y: 0, w: 1440, h: 700 }, 0.2);
   assert.deepEqual([r.sx, r.sw], [0, 1280], 'limitado à largura do vídeo');
   assert.ok(r.sy >= 0 && r.sy + r.sh <= 720);
-  near(r.sy + r.aim.y, 55 / 1.125, 1); // a borda de cima do palco é a linha 48,9 do vídeo
+  near(r.sy + r.aim.y, 55 / 1.125, 1); // the top edge of the stage is line 48,9 of the video
   const p = Dev.roi(720, 1280, 390, 844, Dev.aimRect(390, 844, false), 0);
   const mp = Dev.coverMap(720, 1280, 390, 844);
   near(mp.scale, Math.max(390 / 720, 844 / 1280), 1e-9);
@@ -74,7 +74,7 @@ test('código dentro do quadro: ≥ 90 % da caixa (cornerPoints ou boundingBox)'
   assert.equal(Dev.pickInside([fora, quase], aim).rawValue, 'QUASE');
   assert.equal(Dev.pickInside([fora, borda], aim), null);
   assert.equal(Dev.pickInside([{ rawValue: 'SEM-POS' }], aim).rawValue, 'SEM-POS', 'sem posição: o recorte já limitou');
-  // Linha de um código 1D (ZXing devolve dois pontos): 1 px de altura.
+  // Line of a 1D code (ZXing returns two points): 1 px tall.
   assert.equal(Dev.pickInside([{ cornerPoints: [{ x: 120, y: 150 }, { x: 280, y: 150 }] }], aim) !== null, true);
   assert.equal(Dev.pickInside([{ cornerPoints: [{ x: 50, y: 150 }, { x: 280, y: 150 }] }], aim), null);
   near(Dev.insideFraction({ x: 0, y: 0, w: 10, h: 10 }, { x: 5, y: 0, w: 10, h: 10 }), 0.5, 1e-9);
@@ -84,7 +84,7 @@ test('código dentro do quadro: ≥ 90 % da caixa (cornerPoints ou boundingBox)'
   assert.equal(Dev.readerMode('outro'), null);
 });
 
-// ---- Chromium com a CSP de app ------------------------------------------------------------
+// ---- Chromium with the app CSP ------------------------------------------------------------
 async function browser() {
   let pw;
   try {
@@ -102,17 +102,17 @@ const APP = `<div class="workspace" id="workspace"><section class="workspace-con
 <section id="painel"></section>
 </section></div>`;
 
-/** Vídeo falso 1280×720: três "códigos" coloridos — vermelho DENTRO do quadro (centro), azul
- *  FORA (acima do quadro, mas visível na tela) e verde na BORDA (metade para fora). O detector
- *  simulado acha os blocos pela cor NA IMAGEM QUE RECEBE e devolve a caixa de cada um. */
+/** Fake 1280×720 video: three colored "codes" — red INSIDE the frame (center), blue
+ *  OUTSIDE (above the frame, but visible on screen) and green on the EDGE (half outside). The detector
+ *  simulated finds the blocks by color IN THE IMAGE IT RECEIVES and returns each box. */
 const CAMERA = `
   navigator.vibrate = () => true;
   window.AudioContext = undefined;
   const fake = () => { const c = document.createElement('canvas'); c.width = 1280; c.height = 720; const g = c.getContext('2d');
     const draw = () => { g.fillStyle = '#808080'; g.fillRect(0, 0, 1280, 720);
       g.fillStyle = '#ff0000'; g.fillRect(600, 330, 80, 60);   // DENTRO (centro)
-      g.fillStyle = '#0000ff'; g.fillRect(600, 60, 80, 60);    // FORA (acima da mira)
-      g.fillStyle = '#00ff00'; g.fillRect(680, 440, 60, 60); }; // BORDA (base da mira ~468)
+      g.fillStyle = '#0000ff'; g.fillRect(600, 60, 80, 60);    // OUTSIDE (above the aim)
+      g.fillStyle = '#00ff00'; g.fillRect(680, 440, 60, 60); }; // EDGE (bottom of the aim ~468)
     draw(); setInterval(draw, 40);
     return c.captureStream(15); };
   Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: async () => fake() } });
@@ -173,10 +173,10 @@ test('Chromium (celular 390×844, vídeo 1280×720): só o código DENTRO do qua
     await page.click('#scan');
     await page.waitForSelector('.hub-camera[data-decoder="nativo"]');
     await page.waitForFunction(() => document.querySelector('.hub-camera')?.dataset.reads === '1', null, { timeout: 10_000 });
-    await page.waitForTimeout(600); // mais quadros: nada além do DENTRO entra
+    await page.waitForTimeout(600); // more frames: nothing beyond the INSIDE one gets in
     const reads = posts.filter((p) => p.path === '/_frag/coletor/ler').map((p) => new URLSearchParams(p.body).get('codigo'));
     assert.deepEqual([...new Set(reads)], ['DENTRO']);
-    // O detector recebeu o recorte (não o quadro inteiro): bem menor que 1280×720.
+    // The detector received the crop (not the whole frame): much smaller than 1280×720.
     const srcs = await page.evaluate(() => window.__srcs);
     assert.ok(srcs.length > 0 && srcs.every(([w, h]) => w < 640 && h < 300), JSON.stringify(srcs.slice(0, 3)));
     const roi = (await page.getAttribute('.hub-camera', 'data-roi')).split(',').map(Number);
@@ -196,7 +196,7 @@ test('Chromium: tipo de código, Interativo/Automático e pausa ficam na barra d
     const groups = await page.$$eval('.hub-camera-top [role="group"]', (gs) => gs.map((g) => [g.getAttribute('aria-label'), [...g.querySelectorAll('button')].map((x) => `${x.textContent}:${x.getAttribute('aria-pressed')}`)]));
     assert.deepEqual(groups, [['Tipo de código', ['Código de barras:true', 'QR:false']], ['Modo do leitor', ['Interativo:true', 'Automático:false']]]);
     assert.ok(await page.isHidden('.hub-camera-pause'), 'pausa só no Automático');
-    // Alvos de toque grandes.
+    // Large touch targets.
     const hs = await page.$$eval('.hub-camera-top button', (bs) => bs.map((x) => x.getBoundingClientRect().height));
     assert.ok(hs.every((h) => h >= 44), `alvos ≥ 44 px (${hs})`);
     const prefs = () => posts.filter((p) => p.path === '/_frag/coletor/escanear/prefs').map((p) => Object.fromEntries(new URLSearchParams(p.body)));
@@ -213,7 +213,7 @@ test('Chromium: tipo de código, Interativo/Automático e pausa ficam na barra d
       { modo: 'qr', leitor: 'automatico', pausa: '2000' },
     ]);
     assert.ok((await page.getAttribute('.hub-camera-aim', 'class')).includes('square'));
-    // Teclado: Esc fecha; reabrir mostra as escolhas (o botão guardou os valores).
+    // Keyboard: Esc closes; reopening shows the choices (the button kept the values).
     await page.keyboard.press('Escape');
     await page.waitForSelector('.hub-camera', { state: 'detached' });
     assert.equal(await page.getAttribute('#scan', 'data-hub-scan-reader'), 'automatico');
