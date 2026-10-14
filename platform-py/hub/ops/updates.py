@@ -14,7 +14,7 @@ import httpx
 
 from hub import __version__
 
-REPO = "alvesmaia/application-hub-public"
+REPO = "alvesmaia/application-hub"
 EVERY = 24 * 3600
 
 

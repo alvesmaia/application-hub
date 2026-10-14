@@ -2,7 +2,7 @@
 
 Cenário simulado: servidor corporativo Rocky Linux 9.3 (clone do RHEL) com systemd, Podman 5.8.2 da distro
 (`podman-docker` instalado), usuário de serviço `hubsvc` **sem root e sem sudo**, com linger. Fonte: clone do
-repositório público `alvesmaia/application-hub-public` e `bash platform-py/scripts/install.sh` (o caminho documentado).
+repositório público `alvesmaia/application-hub` e `bash platform-py/scripts/install.sh` (o caminho documentado).
 Acesso só por localhost. Depois da implantação, um agente Haiku com contexto mínimo (URL do hub + token de
 desenvolvedor) tentou criar e publicar um app "Lista de compras".
 

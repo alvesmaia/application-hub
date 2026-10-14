@@ -19,7 +19,7 @@ nativa do agente (`docs/migracao/TASKS.md` é o quadro da migração F0–F7, en
 - **Distribuição 0.1.0** (tarefa #23): Apache-2.0 (`LICENSE`, `NOTICE`, `TRADEMARKS.md`), instalação do zero
   `platform-py/scripts/install.sh`, apps de exemplo opcionais (perfil `demo-apps`), nomes/porta/redes configuráveis
   (`HUB_PROJECT`, `HUB_PORT`, `HUB_SUBNET`), versão em `/healthz`, `CHANGELOG.md`, `docs/ATUALIZACAO.md`,
-  `scripts/release.sh`, workflow manual de imagens no GHCR. Varredura do histórico: `docs/PUBLICACAO.md`.
+  `scripts/release.sh`, workflow manual de imagens no GHCR.
 
 ## Em aberto
 
@@ -28,8 +28,8 @@ nativa do agente (`docs/migracao/TASKS.md` é o quadro da migração F0–F7, en
 - **Atualização sem parada:** em uso na instância do dono desde 13/10/2026 (`hub_update.py --build`, 0 falhas
   em 194 checagens de `/healthz` durante a troca). Estado entre réplicas no mesmo volume resolvido em 13/10/2026 (UX, uso, analytics e métricas juntam com
   o arquivo sob trava).
-- **Repositório público:** cópia achatada publicada em 2026-10-10 (opção A de `docs/PUBLICACAO.md`); este
-  repositório segue privado com o histórico completo.
+- **Repositório:** desde 14/10/2026 o público `alvesmaia/application-hub` é o único; o privado antigo (histórico
+  completo e a stack Rust) ficou arquivado como `alvesmaia/application-hub-py`.
 - Carga com réplicas: medida em 13/10/2026 (1 contêiner = 200 usuários; 2 atrás da borda = 300; tabela em
   `docs/IMPLANTACAO.md`). Falta: modo de escala pronto no compose (N cópias do hub + borda em `round_robin`) e
   `uvicorn --workers` (cada processo tenta abrir a porta 8081 do broker e cai).

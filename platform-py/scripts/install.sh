@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Instalação do zero do Application Hub numa máquina que só tem Docker (Compose >= 2.24), git e bash.
 #
-#   git clone https://github.com/alvesmaia/application-hub-public.git application-hub && cd application-hub
+#   git clone https://github.com/alvesmaia/application-hub.git application-hub && cd application-hub
 #   bash platform-py/scripts/install.sh --admin-email voce@empresa.com
 #   # ou, sem clonar antes:  bash install.sh --clone [--ref main] [--dir ./application-hub] ...
 #
@@ -30,7 +30,7 @@ set -euo pipefail
 export MSYS_NO_PATHCONV=1
 
 EMAIL=admin@example.com PUBLIC_URL="" PORT=8090 BIND=127.0.0.1 PROJECT=app-hub SUBNET=10.231 DEMO=1
-CLONE=0 REPO=https://github.com/alvesmaia/application-hub-public.git REF=main DIR=./application-hub
+CLONE=0 REPO=https://github.com/alvesmaia/application-hub.git REF=main DIR=./application-hub
 GET_COMPOSE=0 YES=0 ASKED=0 PUBLIC_URL_IN=''
 COMPOSE_VER=v2.29.7
 COMPOSE_SHA=383ce6698cd5d5bbf958d2c8489ed75094e34a77d340404d9f32c4ae9e12baf0
