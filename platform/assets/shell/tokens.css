@@ -421,6 +421,7 @@
 
 
 
+
 /* tema-escuro:inicio (gerado por scripts/gen-dark-theme.mjs — não editar) */
 :root[data-theme="dark"] {
   color-scheme: dark;
@@ -521,6 +522,9 @@
   }
 }
 /* tema-escuro:fim */
+
+
+
 
 
 

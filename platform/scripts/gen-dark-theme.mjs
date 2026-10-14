@@ -83,7 +83,7 @@ const roleDecls = (theme) => Object.entries(roles).map(([k, v]) => [`--am-${k}`,
   const i = src.indexOf('/* paleta:inicio'), j = src.indexOf(PAL_END);
   if (i < 0 || j < 0) throw new Error('tokens.css sem os marcadores paleta:inicio/fim');
   const prims = Object.entries(primitives).map(([k, v]) => [k, typeof v === 'string' ? `var(--am-${v})` : v.fixed]);
-  const pal = `${PAL_BEGIN}\n:root {\n  /* Papéis da identidade (tema claro). */\n${decl(roleDecls('light'))}\n  /* Primitivas herdadas do mockup → papéis. */\n${decl(prims)}\n}\n${PAL_END}`;
+  const pal = `${PAL_BEGIN}\n:root {\n  /* Identity roles (light theme). */\n${decl(roleDecls('light'))}\n  /* Primitives inherited from the mockup → roles. */\n${decl(prims)}\n}\n${PAL_END}`;
   let out = src.slice(0, i) + pal + src.slice(j + PAL_END.length);
   const extra = [
     ['--shadow-card', 'none'],

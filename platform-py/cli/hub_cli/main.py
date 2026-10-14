@@ -45,9 +45,7 @@ def parser() -> argparse.ArgumentParser:
     p = Parser(prog="hub", description="Application Hub CLI", epilog=EPILOG, formatter_class=fmt)
     sub = p.add_subparsers(dest="cmd", required=True, parser_class=Parser)
 
-    pr = sub.add_parser(
-        "project", help="Create apps from the templates", epilog=EPILOG, formatter_class=fmt
-    )
+    pr = sub.add_parser("project", help="Create apps from the templates", epilog=EPILOG, formatter_class=fmt)
     psub = pr.add_subparsers(dest="pcmd", required=True, parser_class=Parser)
     c = psub.add_parser(
         "create",
@@ -64,7 +62,9 @@ examples:
     c.add_argument("id", nargs="?", help="app id (2–32: a-z, 0-9, '-')")
     c.add_argument("--name", help="display name (default: capitalized id)")
     c.add_argument("--stack", help="stack (see `hub project stacks`; default python-fastapi)")
-    c.add_argument("--db", default=None, help="sqlite (default) or database URL (written to .env DATABASE_URL)")
+    c.add_argument(
+        "--db", default=None, help="sqlite (default) or database URL (written to .env DATABASE_URL)"
+    )
     c.add_argument("--requires", help="what the hub provisions: database,storage (default: database)")
     c.add_argument("--dir", type=Path, help="target folder (default: ./<id>)")
     c.add_argument("--template", choices=project.TEMPLATES, default=None,
@@ -80,9 +80,7 @@ examples:
                         formatter_class=fmt)  # fmt: skip
     ck.add_argument("--dir", type=Path, default=Path())
     ck.add_argument("--only", help="comma-separated steps: " + ",".join(n for n, _ in check_mod.STEPS))
-    ck.add_argument(
-        "--full", action="store_true", help="also the full contract suite (conformance.json)"
-    )
+    ck.add_argument("--full", action="store_true", help="also the full contract suite (conformance.json)")
     ck.add_argument("--json", action="store_true")
 
     k = sub.add_parser("pack", help="Build the .hubapp package from the app folder")
