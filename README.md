@@ -11,6 +11,31 @@ Portal corporativo único (white label) que hospeda várias aplicações interna
 - **Stack:** Python 3.12 (`uv`), FastAPI + Jinja2 (SSR), asyncpg, PostgreSQL, MinIO, Docker. Hub em [`platform-py/`](platform-py/); apps Python, SDK `hub_sdk`, front-end compartilhado e suíte de conformidade em [`platform/`](platform/).
 - **Branches:** `main` = stack oficial (Python); `stack/python` = branch de trabalho.
 
+## Funcionalidades
+
+| Área | Recursos |
+|---|---|
+| **Shell e experiência** | Header e menu globais fixos; Início, catálogo de aplicações, Inbox (aprovações e pedidos de acesso), busca federada (hub + apps), tour guiado, tema claro/escuro, PT-BR/EN/ES, PWA |
+| **Aplicações** | Cada app no seu contêiner, alcançado só pelo gateway e composto na página sem iframe; mesma origem com CSP estrita e HTML sanitizado; tempo real por SSE e WebSocket; leitura de código de barras e câmera (`hub-device`) |
+| **Acesso e segurança** | Login local ou SSO Microsoft Entra ID (com logout único); papéis e permissões por app; tokens de API pessoais com escopos; cofre cifrado para segredos; plano de controle restrito por rede |
+| **Administração** | Usuários, papéis, variáveis por ambiente, conexões (Postgres, MySQL, SQL Server, SharePoint/OneDrive, S3) com broker — o app nunca vê a credencial |
+| **Operações** | Implantação blue/green com prontidão obrigatória e rollback, contêineres, tarefas agendadas, backups com credencial de privilégio mínimo, atualização do hub sem parada |
+| **Observabilidade** | Métricas, SLOs e página de status, uso e analytics, logs, exportação OTLP, auditoria em cadeia verificável (âncora em arquivo ou webhook) |
+| **API e IA** | API pública `/api/v1` (OpenAPI 3.1, docs em `/api/docs`); servidor MCP `/mcp` com OAuth 2.1 — ferramentas do hub e dos apps com o mesmo controle de acesso das telas |
+| **Para desenvolvedores** | SDK Python `hub_sdk`, CLI `hub` (`hub project create`, `hub dev`, `hub check --full` com a suíte de conformidade, `hub deploy`), modo dev com recarga, 4 apps de exemplo (Ativos, Fornecedores, Serviços, Coletor) |
+| **Implantação** | Só Docker: `install.sh` gera segredos, compila tudo do código-fonte e cria o primeiro administrador; várias instâncias no mesmo host; testado em RHEL rootless |
+
+## Roadmap
+
+| Item | Status | Observação |
+|---|---|---|
+| Modo de escala pronto no compose (N cópias do hub atrás da borda em `round_robin`) | Planejado | Hoje: 1 contêiner ≈ 200 usuários simultâneos; 2 contêineres ≈ 300 (montagem manual) |
+| Vários processos por contêiner (`uvicorn --workers`) | Planejado | Cada processo tenta abrir a porta interna do broker (8081) |
+| ODBC no broker SQL | Ideia | Só com o driver de um banco específico (Oracle, DB2…) na imagem; Postgres, MySQL e SQL Server já são nativos |
+| Aprovação humana de ação de agente na Inbox | Ideia | Hoje a confirmação de ações destrutivas fica com o cliente de IA (`confirm_token`) |
+
+Detalhes e histórico: [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md).
+
 ## Documentação
 
 | Documento | Para quê |
@@ -22,7 +47,6 @@ Portal corporativo único (white label) que hospeda várias aplicações interna
 | [`docs/IMPLANTACAO.md`](docs/IMPLANTACAO.md) | Checklist de implantação |
 | [`platform/README.md`](platform/README.md) | Mapa de `platform/` (apps, SDK, assets, testes) |
 | [`platform/docs/CONTRATO-APP.md`](platform/docs/CONTRATO-APP.md) | Contrato entre hub e aplicações |
-| [`docs/migracao/`](docs/migracao/) | Histórico da migração para Python (status por etapa; documentos antigos em `historico-rust/`) |
 
 ## Instalar do zero (só Docker)
 

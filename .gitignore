@@ -34,4 +34,3 @@ __pycache__/
 # Segredos locais do compose (ex.: COLETOR_ATIVOS_TOKEN)
 /platform/.env
 /platform/.dev.env
-docs/migracao/status/*.log

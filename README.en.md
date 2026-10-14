@@ -12,6 +12,31 @@ composed into the page without iframes, plus Administration, Operations, observa
 global search. Everything is also exposed as an **API** (`/api/v1`, OpenAPI 3.1, docs at `/api/docs`)
 and over **MCP** for AI assistants (`/mcp`, same access control as the UI).
 
+## Features
+
+| Area | What you get |
+|---|---|
+| **Shell & UX** | Fixed global header and menu; Home, app catalog, Inbox (approvals and access requests), federated search (hub + apps), guided tour, light/dark theme, PT-BR/EN/ES, PWA |
+| **Applications** | Each app in its own container, reached only through the gateway and composed into the page without iframes; same origin with strict CSP and sanitized HTML; real time via SSE and WebSocket; barcode scanning and camera (`hub-device`) |
+| **Access & security** | Local login or Microsoft Entra ID SSO (with single logout); per-app roles and permissions; scoped personal API tokens; encrypted vault for secrets; network-restricted control plane |
+| **Administration** | Users, roles, per-environment variables, connections (Postgres, MySQL, SQL Server, SharePoint/OneDrive, S3) behind a broker — apps never see credentials |
+| **Operations** | Blue/green deployments with mandatory readiness and rollback, containers, scheduled tasks, least-privilege backups, zero-downtime hub updates |
+| **Observability** | Metrics, SLOs and status page, usage and analytics, logs, OTLP export, verifiable hash-chained audit log (file or webhook anchor) |
+| **API & AI** | Public API `/api/v1` (OpenAPI 3.1, docs at `/api/docs`); MCP server `/mcp` with OAuth 2.1 — hub and app tools under the same access control as the UI |
+| **For developers** | Python SDK `hub_sdk`, `hub` CLI (`hub project create`, `hub dev`, `hub check --full` with the conformance suite, `hub deploy`), dev mode with reload, 4 sample apps (Assets, Suppliers, Services, Collector) |
+| **Deployment** | Docker only: `install.sh` generates secrets, builds everything from source and creates the first admin; multiple instances per host; tested on rootless RHEL |
+
+## Roadmap
+
+| Item | Status | Notes |
+|---|---|---|
+| Built-in scale mode in compose (N hub replicas behind the edge, `round_robin`) | Planned | Today: 1 container ≈ 200 concurrent users; 2 containers ≈ 300 (manual setup) |
+| Multiple processes per container (`uvicorn --workers`) | Planned | Each process tries to bind the broker's internal port (8081) |
+| ODBC in the SQL broker | Idea | Only with a specific database driver (Oracle, DB2…) in the image; Postgres, MySQL and SQL Server are native |
+| Human approval of agent actions in the Inbox | Idea | Today destructive actions are confirmed by the AI client (`confirm_token`) |
+
+Details and history: [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md).
+
 ## Architecture
 
 - **Stack:** Python 3.12 (`uv`), FastAPI + Jinja2 (SSR), asyncpg, PostgreSQL, MinIO, Docker.
@@ -55,7 +80,6 @@ bash scripts/dev.sh up     # dev mode (code from disk, --reload)
 | `docs/FAQ-ARQUITETURA.md` | Architecture decisions (Q&A) |
 | `docs/IMPLANTACAO.md` | Deployment checklist |
 | `platform/docs/CONTRATO-APP.md` | Hub ↔ app contract |
-| `docs/migracao/` | Python migration history (older docs in `historico-rust/`) |
 
 ## License
 

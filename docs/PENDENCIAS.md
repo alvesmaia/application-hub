@@ -1,7 +1,7 @@
 # Pendências — stack Python (atualizado em 09/10/2026)
 
-Lista viva: atualize a cada entrega. Histórico das ondas 1–13 e da migração em [`docs/migracao/`](migracao/). As tarefas em andamento ficam na lista de tarefas
-nativa do agente (`docs/migracao/TASKS.md` é o quadro da migração F0–F7, encerrado).
+Lista viva: atualize a cada entrega. As tarefas em andamento ficam na lista de tarefas
+nativa do agente.
 
 ## Status
 

@@ -6,8 +6,8 @@ Guia para agentes de código (Claude Code, Codex e outros) que trabalham neste r
 
 - **`main`**: stack oficial — o hub em **Python** (`platform-py/`) e os apps Python (`platform/demo-apps-py/`). Desde 2026-10-07 serve a instância de produção do dono. Também guarda o mockup estático original (raiz: `index.html`, `js/`, `css/`) e a documentação de produto (`docs/PLAN.md`, `docs/FAQ-ARQUITETURA.md`).
 - **`stack/python`**: branch de trabalho; acompanha a `main`.
-- Só Python. Outras stacks: reavaliar numa expansão futura. Histórico da migração em `docs/migracao/` (não evoluir).
-- **Leia primeiro:** `docs/PENDENCIAS.md` (estado e o que falta), `docs/migracao/status/*.md` (o que cada etapa entregou e as lacunas — `F7a.md` lista os resíduos conhecidos), `docs/CONTRATO-APP.md` (contrato HTTP dos apps, em `platform/docs/`), `docs/HANDOFF.md`.
+- Só Python. Outras stacks: reavaliar numa expansão futura.
+- **Leia primeiro:** `docs/PENDENCIAS.md` (estado e o que falta), `docs/CONTRATO-APP.md` (contrato HTTP dos apps, em `platform/docs/`), `docs/HANDOFF.md`.
 
 ## Stack (decisões fixas)
 
@@ -15,7 +15,7 @@ Python 3.12 gerenciado por `uv`; FastAPI + Jinja2 (SSR), asyncpg, httpx, Pydanti
 
 ## Comandos (em `platform-py/`)
 
-- Checagem completa: `uv run hub-check` (ruff, ruff format, ty, `uv audit`, pytest com cobertura; `--fast` = só ruff/formato/ty; `--all` = + cli, SDK e cada app). Testes de banco usam um Postgres descartável (ver `docs/migracao/status/F1a.md`).
+- Checagem completa: `uv run hub-check` (ruff, ruff format, ty, `uv audit`, pytest com cobertura; `--fast` = só ruff/formato/ty; `--all` = + cli, SDK e cada app). Testes de banco usam um Postgres descartável.
 - Pilha: projeto compose `app-hub` (imagem selada `app-hub-web`; dev.sh up monta o código) — `app-hub-web` em `127.0.0.1:8090`, `app-hub-db`, `app-hub-objstore` (MinIO), apps `app-hub-app-<id>` (`docker-compose.apps.yml`), segredos de dev em `.dev.env` (gitignored; nunca commitar nem imprimir).
 - Instalação do zero / outra instância no mesmo host: `bash scripts/install.sh [--project app-hub-x --port 8095 --subnet 10.241] [--no-demo-apps]` (compose parametrizado por `HUB_PROJECT`/`HUB_PORT`/`HUB_SUBNET`; apps de exemplo no perfil `demo-apps`). Versão: `hub/__init__.py` (`/healthz`), `CHANGELOG.md`, `scripts/release.sh <versão>`; licença Apache-2.0 (`NOTICE`, `TRADEMARKS.md`).
 - `bash scripts/dev.sh up|down|stop|status|logs|reload-on|reload-off|obs-up|obs-down` — modo dev (uvicorn `--reload`, recarga SSE `/_dev/reload`), perfil observability (OTel Collector + Jaeger).
