@@ -51,10 +51,20 @@ pausa entre cliques; critério p95 < 300 ms e erros < 0,1%.
 | 100 | 46,9 | 18 ms | 120 ms | 218 ms | 0% |
 | 200 | 84,4 | 129 ms | 1020 ms | 1361 ms | 0% (lento) |
 
-**Uma instância atende ~100 usuários simultâneos** (na ordem de 1.000 usuários cadastrados com uso normal ao
-longo do dia). O limite é o hub rodar num único processo (um núcleo de CPU); a memória ficou em ~110 MiB.
-Acima disso, a próxima medição é com mais processos/réplicas do hub. Repita a medição após mudanças no gateway,
-na sessão ou no banco:
+**Uma instância atende ~100 a 200 usuários simultâneos** (na ordem de 1.000 usuários cadastrados com uso normal ao
+longo do dia). O limite é o hub rodar num único processo (um núcleo de CPU); a memória fica em ~110 a 140 MiB.
+
+Remedição em 13/10/2026 (mesma máquina, roteiro e critério; versão com as correções de réplicas):
+
+| Hub | Suporta | Degrau seguinte |
+|---|---|---|
+| 1 contêiner | 200 usuários (p95 185 ms) | 300: p95 885 ms |
+| 2 contêineres atrás da borda (`round_robin`) | 300 usuários (p95 212 ms, 139 req/s) | 400: p95 671 ms |
+
+Mais processos no mesmo contêiner (`uvicorn --workers`) **não** funcionam: cada processo tenta abrir a porta interna
+do broker (8081) e cai. Escalar = mais contêineres do hub atrás da borda, dividindo o banco de estado
+(`HUB_STATE_DB_URL`) e o volume de dados. O compose ainda não traz esse modo pronto (ver `docs/PENDENCIAS.md`).
+Repita a medição após mudanças no gateway, na sessão ou no banco:
 
 ```bash
 HUB=http://127.0.0.1:<porta> HUB_DEMO_PASSWORD=… node platform/loadtest/py-load.mjs --steps 25,50,100,200
@@ -86,9 +96,11 @@ delegado, constrói e cria os contêineres sem limite de CPU (memória e pids se
 Login com Microsoft (OIDC código + PKCE, endpoints v2). Opcional: sem configuração o hub mostra só o login local.
 
 1. Portal do Azure › **Microsoft Entra ID › Registros de aplicativo › Novo registro**. Nome: o do hub. Tipos de conta: "somente este diretório" (um locatário) ou "qualquer diretório organizacional" (multi-locatário).
-2. **URI de redirecionamento**, plataforma **Web**: `<HUB_PUBLIC_URL>/auth/entra/callback` (ex.: `https://hub.empresa.com.br/auth/entra/callback`). Precisa bater exatamente com `HUB_PUBLIC_URL`.
+2. **URI de redirecionamento**, plataforma **Web**: `<HUB_PUBLIC_URL>/auth/entra/callback` (ex.: `https://hub.empresa.com.br/auth/entra/callback`). Acrescente também `<HUB_PUBLIC_URL>/login` (volta do logout único). Precisam bater exatamente com `HUB_PUBLIC_URL`.
 3. Copie **ID do aplicativo (cliente)** → `HUB_ENTRA_CLIENT_ID` e **ID do diretório (locatário)** → `HUB_ENTRA_TENANT_ID` (multi-locatário: `organizations` + `HUB_ENTRA_ALLOWED_TENANTS`).
-4. **Certificados e segredos › Novo segredo do cliente**: grave o valor num arquivo fora do git (`chmod 600`) e aponte `HUB_ENTRA_CLIENT_SECRET_FILE`. Anote a validade e renove antes de vencer.
+4. **Certificados e segredos › Novo segredo do cliente**: guarde o valor no cofre do hub (recomendado; com o `app-hub-web` parado:
+   `docker compose ... run --rm --no-deps -T app-hub-web python -m hub.admin set-entra-secret < arquivo`, depois apague o
+   arquivo) ou num arquivo fora do git (`chmod 600`) apontado por `HUB_ENTRA_CLIENT_SECRET_FILE`. Anote a validade e renove antes de vencer.
 5. **Permissões de API**: `openid`, `profile`, `email` (Microsoft Graph, delegadas) — já vêm por padrão.
 6. Opcional, funções por grupo: **Configuração de token › Adicionar declaração de grupos** (IDs de grupos de segurança) ou crie **Funções do aplicativo** e atribua em *Aplicativos empresariais*. Mapeie em `HUB_ENTRA_ROLE_MAP` (`{"<objectId do grupo ou valor do app role>":"Administrador"}`). Com mapeamento, as funções do usuário são sincronizadas a cada login; sem grupo mapeado, quem entra pela 1ª vez recebe `HUB_ENTRA_DEFAULT_ROLE` (padrão `Colaborador`).
 7. Defina `HUB_SSO_PROVIDER=entra` e reinicie o `app-hub-web`. Confira em **Administração › Configurações › Login único (SSO)**.

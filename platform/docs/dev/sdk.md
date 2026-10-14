@@ -558,6 +558,21 @@ Motivo legível de "não pronto".
 
 ### `router(app_id: str, readiness: Readiness | Callable[[], Readiness]) -> APIRouter`
 
+## `hub_sdk.realtime`
+
+Tempo real (SSE ou WebSocket): acorda as conexões abertas quando os dados mudam.
+
+### class `Canal`
+
+- `async iniciar() -> None` — No lifespan do app. Com Postgres, escuta o aviso de qualquer réplica.
+- `async fechar() -> None`
+- `avisar(engine: Any=None) -> None` — Chame depois do commit (vale em rotas ``def`` e ``async def``). ``engine``: o SQLAlchemy do app; no Postgres o aviso vai por ``pg_notify`` (todas as réplicas).
+- `async mensagens(mensagem: Callable[[], str], ping: float=20.0) -> AsyncGenerator[str | None, None]` — O estado atual na conexão e depois a cada aviso; ``None`` = nada novo em ``ping`` segundos.
+
+### `sse(mensagens: AsyncIterator[str | None]) -> StreamingResponse`
+
+Resposta ``text/event-stream``: cada mensagem vira ``data:``; ``None`` vira ping (mantém a conexão).
+
 ## `hub_sdk.render`
 
 Fragmentos HTML com o visual do shell (Jinja2) e respostas comuns.

@@ -10,6 +10,9 @@
 !platform-py/scripts/build-cli.sh
 !platform/sdk-python
 !platform/demo-apps/assets/demo.css
+!platform/conformance/conftest.py
+!platform/conformance/test_contract.py
+!platform/conformance/pytest.ini
 !platform/docs/CONTRATO-APP.md
 !platform/docs/dev
 platform-py/cli/.venv

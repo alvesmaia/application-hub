@@ -258,3 +258,20 @@ def test_check_conformance_points_to_cause(tmp_path: Path):
     assert _why(tmp_path / "nao-existe.log") == ""
     log.write_text("INFO: nada de exceção\n", encoding="utf-8")
     assert _why(log) == " (veja check-app.log)"
+    # 204 com corpo: o servidor derruba a resposta e o cliente só vê o tempo esgotar.
+    log.write_text(
+        "h11._util.LocalProtocolError: Too much data for declared Content-Length\n", encoding="utf-8"
+    )
+    assert "204" in _why(log) and "sem corpo" in _why(log)
+
+
+def test_check_wait_reports_last_ready_status(monkeypatch):
+    """App que nunca fica pronto: a mensagem diz o que o /_hub/ready respondeu, não só "60 s"."""
+    import httpx
+
+    from hub_cli import check
+
+    monkeypatch.setattr(check.time, "sleep", lambda s: None)
+    monkeypatch.setattr(httpx, "get", lambda *a, **k: httpx.Response(204, content=b""))
+    ok, last = check._wait("http://x/_hub/ready", seconds=0.05)
+    assert not ok and last == "HTTP 204 (esperado 200 com JSON)"

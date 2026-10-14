@@ -13,6 +13,7 @@ import time
 from pathlib import Path
 from typing import Any
 
+from hub.filelock import file_lock
 from hub.insight.analytics import DAY_MS, day_key
 
 KINDS = ("open", "section", "action")
@@ -24,21 +25,29 @@ class Usage:
         self.path = directory / "usage.json" if directory else None
         self.enabled, self.dirty = enabled, False
         # dia → "usuário\tapp" → [aberturas, navegações, ações, último acesso em ms]
-        self.days: dict[str, dict[str, list[int]]] = {}
+        # Réplicas no mesmo volume: o que esta réplica somou desde a última gravação (mesmo formato).
+        self.pending: dict[str, dict[str, list[int]]] = {}
+        self._mtime = 0
+        self.days = self._read()
+
+    def _read(self) -> dict[str, dict[str, list[int]]]:
         if self.path and self.path.is_file():
             try:
-                self.days = json.loads(self.path.read_text(encoding="utf-8")).get("days", {})
+                self._mtime = self.path.stat().st_mtime_ns
+                return dict(json.loads(self.path.read_text(encoding="utf-8")).get("days", {}))
             except (OSError, ValueError, AttributeError):
-                self.days = {}
+                return {}
+        return {}
 
     def record(self, user: str, app: str, kind: str, now: int | None = None) -> None:
         if not self.enabled or not user or not app:
             return
         now = int(time.time() * 1000) if now is None else now
-        row = self.days.setdefault(day_key(now), {}).setdefault(f"{user}\t{app}", [0, 0, 0, 0])
-        if kind in KINDS:
-            row[KINDS.index(kind)] += 1
-        row[3] = max(row[3], now)
+        for days in (self.days, self.pending):
+            row = days.setdefault(day_key(now), {}).setdefault(f"{user}\t{app}", [0, 0, 0, 0])
+            if kind in KINDS:
+                row[KINDS.index(kind)] += 1
+            row[3] = max(row[3], now)
         self.dirty = True
 
     def query(self, now: int, days: int = 30, user: str = "", app: str = "") -> dict[str, Any]:
@@ -100,8 +109,28 @@ class Usage:
         for k in [k for k in self.days if k < keep]:
             del self.days[k]
             self.dirty = True
-        if self.path and self.dirty:
-            tmp = self.path.with_suffix(".json.tmp")
-            tmp.write_text(json.dumps({"days": self.days}, separators=(",", ":")), encoding="utf-8")
-            os.replace(tmp, self.path)
-            self.dirty = False
+        if not self.path:
+            return
+        with file_lock(self.path):
+            try:
+                other = self.path.stat().st_mtime_ns != self._mtime  # outra réplica gravou depois de nós
+            except OSError:
+                other = False
+            if other:  # adota o arquivo e soma por cima só o que esta réplica contou desde a última gravação
+                self.days = {d: rows for d, rows in self._read().items() if d >= keep}
+                for d, rows in self.pending.items():
+                    for k, add in rows.items():
+                        r = self.days.setdefault(d, {}).setdefault(k, [0, 0, 0, 0])
+                        r[0], r[1], r[2], r[3] = (
+                            r[0] + add[0],
+                            r[1] + add[1],
+                            r[2] + add[2],
+                            max(r[3], add[3]),
+                        )
+                self.dirty = True
+            if self.dirty:
+                tmp = self.path.with_suffix(f".json.{os.getpid()}.tmp")
+                tmp.write_text(json.dumps({"days": self.days}, separators=(",", ":")), encoding="utf-8")
+                os.replace(tmp, self.path)
+                self._mtime = self.path.stat().st_mtime_ns
+            self.pending, self.dirty = {}, False

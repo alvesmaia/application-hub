@@ -80,6 +80,9 @@ exemplos:
                         formatter_class=fmt)  # fmt: skip
     ck.add_argument("--dir", type=Path, default=Path())
     ck.add_argument("--only", help="etapas separadas por vírgula: " + ",".join(n for n, _ in check_mod.STEPS))
+    ck.add_argument(
+        "--full", action="store_true", help="também a suíte completa do contrato (conformance.json)"
+    )
     ck.add_argument("--json", action="store_true")
 
     k = sub.add_parser("pack", help="Gera o pacote .hubapp a partir da pasta do app")
@@ -175,10 +178,10 @@ def cmd_stacks(a: argparse.Namespace) -> int:
 
 def cmd_check(a: argparse.Namespace) -> int:
     only = [s.strip() for s in (a.only or "").split(",") if s.strip()] or None
-    known = {n for n, _ in check_mod.STEPS}
+    known = {n for n, _ in check_mod.STEPS} | {check_mod.FULL[0]}
     if only and set(only) - known:
         raise CliError(f"--only: etapas desconhecidas {', '.join(sorted(set(only) - known))}", VALIDATION)
-    results = check_mod.run(a.dir, only)
+    results = check_mod.run(a.dir, only, a.full or bool(only and check_mod.FULL[0] in only))
     ok = all(r["ok"] for r in results)
     if a.json:
         print(json.dumps({"ok": ok, "steps": results}, ensure_ascii=False))

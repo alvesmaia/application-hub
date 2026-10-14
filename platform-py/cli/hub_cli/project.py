@@ -132,6 +132,12 @@ def create(
             out.write_text(text, encoding="utf-8", newline="\n")
             if rel not in files:
                 files.append(rel)
+    # O wheel embute o demo.css; rodando do repositório (instalação editável), ele vem de platform/demo-apps.
+    css = directory / "src" / subst["__PKG__"] / "assets" / "demo.css"
+    repo_css = Path(__file__).resolve().parents[3] / "platform" / "demo-apps" / "assets" / "demo.css"
+    if stack == "python-fastapi" and not css.is_file() and repo_css.is_file():
+        shutil.copy2(repo_css, css)
+        files.append(css.relative_to(directory).as_posix())
     (directory / "vendor").mkdir(exist_ok=True)
     shutil.copy2(wheel, directory / "vendor" / wheel.name)
     files.append(f"vendor/{wheel.name}")

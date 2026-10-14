@@ -8,6 +8,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
+from hub.filelock import file_lock
+
 WIDGETS = ("onboarding", "favorites", "inbox", "recents", "status", "shortcuts")
 # (chave, permissão exigida, link): "Primeiros passos".
 STEPS: tuple[tuple[str, str | None, str], ...] = (
@@ -57,29 +59,45 @@ class UxData(BaseModel):
 
 
 class UxStore:
-    """Arquivo JSON único (`ux.json`); a escrita é atômica e acontece só quando algo muda."""
+    """Arquivo JSON único (`ux.json`); a escrita é atômica e acontece só quando algo muda. Réplicas no mesmo
+    volume: cada escrita relê o arquivo sob a trava (`hub.filelock`) e a leitura relê quando o arquivo mudou."""
 
     def __init__(self, path: Path) -> None:
         self.path = path
         self.data = UxData()
-        with suppress(OSError, ValueError):
-            self.data = UxData.model_validate_json(path.read_text(encoding="utf-8"))
+        self._mtime = 0
+        self._reload()
+
+    def _reload(self) -> None:
+        try:
+            mtime = self.path.stat().st_mtime_ns
+        except OSError:
+            return
+        if mtime != self._mtime:
+            with suppress(OSError, ValueError):
+                self.data = UxData.model_validate_json(self.path.read_text(encoding="utf-8"))
+                self._mtime = mtime
 
     def _save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = self.path.with_suffix(".json.tmp")
+        tmp = self.path.with_suffix(f".json.{os.getpid()}.tmp")
         tmp.write_text(self.data.model_dump_json(), encoding="utf-8")
         os.replace(tmp, self.path)
+        with suppress(OSError):
+            self._mtime = self.path.stat().st_mtime_ns
 
     def prefs(self, user: str) -> Prefs:
+        self._reload()
         return self.data.users.get(user, Prefs()).model_copy(deep=True)
 
     def update(self, user: str, **fields: object) -> Prefs:
-        cur = self.data.users.setdefault(user, Prefs())
-        for k, v in fields.items():
-            setattr(cur, k, v)
-        self._save()
-        return cur.model_copy(deep=True)
+        with file_lock(self.path):
+            self._reload()
+            cur = self.data.users.setdefault(user, Prefs())
+            for k, v in fields.items():
+                setattr(cur, k, v)
+            self._save()
+            return cur.model_copy(deep=True)
 
     def step(self, user: str, key: str) -> None:
         if user and key not in self.prefs(user).steps:
@@ -105,14 +123,17 @@ class UxStore:
         return self.update(user, favorites=favs).favorites
 
     def set_role_layout(self, role: str, widgets: list[str] | None) -> None:
-        if widgets is None:
-            self.data.role_layouts.pop(role, None)
-        else:
-            self.data.role_layouts[role] = widgets
-        self._save()
+        with file_lock(self.path):
+            self._reload()
+            if widgets is None:
+                self.data.role_layouts.pop(role, None)
+            else:
+                self.data.role_layouts[role] = widgets
+            self._save()
 
     def layout_for(self, user: str, roles: list[str]) -> tuple[list[str], str]:
         """Layout do usuário, senão o padrão da 1ª função que tem um, senão o global."""
+        self._reload()
         own = self.data.users.get(user)
         if own and own.layout is not None:
             return list(own.layout), "user"

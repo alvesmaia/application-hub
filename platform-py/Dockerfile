@@ -16,6 +16,7 @@ COPY platform/sdk-python platform/sdk-python
 COPY platform/assets/shell platform/assets/shell
 COPY platform/assets/web platform/assets/web
 COPY platform/demo-apps/assets/demo.css platform/demo-apps/assets/demo.css
+COPY platform/conformance/conftest.py platform/conformance/test_contract.py platform/conformance/pytest.ini platform/conformance/
 RUN sed -i 's/\r$//' platform-py/scripts/build-cli.sh && bash platform-py/scripts/build-cli.sh
 
 FROM python:3.12-slim

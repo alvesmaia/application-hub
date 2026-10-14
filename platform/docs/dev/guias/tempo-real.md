@@ -23,91 +23,25 @@ diferenças: assim, reconectar ou fazer polling dá o mesmo resultado.
 O exemplo abaixo usa o projeto do `hub project create` (`app.py`, `store.py` e `templates/`). Troque
 `quadro` e `store.list_items` pelo que o seu app mostra.
 
-## 1. Canal de avisos (`src/<pacote>/tempo_real.py`)
+## 1. Canal de avisos (`hub_sdk.realtime`)
 
-Copie o arquivo inteiro: o SDK não traz um canal pronto. Com Postgres (no hub), o aviso passa por
-`LISTEN`/`NOTIFY` e alcança todas as réplicas. Com SQLite (no `hub dev`), o aviso fica no próprio processo.
-`asyncpg` e `sqlalchemy` já vêm com o `hub-sdk[sql]` do modelo; não precisa instalar nada.
+O SDK traz o canal pronto: `from hub_sdk.realtime import canal, sse`. Com Postgres (no hub), o aviso passa
+por `LISTEN`/`NOTIFY` e alcança todas as réplicas. Com SQLite (no `hub dev`), o aviso fica no próprio processo.
+Não precisa instalar nada além do `hub-sdk` do modelo.
 
-```python
-"""Tempo real: acorda as conexões abertas (SSE ou WebSocket) quando os dados mudam."""
-
-from __future__ import annotations
-
-import asyncio
-import contextlib
-import os
-from collections.abc import AsyncIterator, Callable
-from typing import Any
-
-import asyncpg
-import sqlalchemy as sa
-
-CANAL_PG = "tempo_real"
-
-
-class Canal:
-    def __init__(self) -> None:
-        self.filas: set[asyncio.Queue[None]] = set()
-        self.loop: asyncio.AbstractEventLoop | None = None
-        self.pg: Any = None
-
-    async def iniciar(self) -> None:
-        """No lifespan do app. Com Postgres, escuta o aviso de qualquer réplica."""
-        self.loop = asyncio.get_running_loop()
-        url = os.environ.get("DATABASE_URL", "")
-        if url.startswith(("postgres://", "postgresql://")):
-            self.pg = await asyncpg.connect(url)
-            await self.pg.add_listener(CANAL_PG, lambda *_: self._acordar())
-
-    async def fechar(self) -> None:
-        if self.pg is not None:
-            await self.pg.close()
-
-    def _acordar(self) -> None:
-        for fila in self.filas:
-            with contextlib.suppress(asyncio.QueueFull):  # já há um aviso pendente
-                fila.put_nowait(None)
-
-    def avisar(self, engine: sa.Engine) -> None:
-        """Chame depois do commit da mudança (vale em rotas `def` e `async def`)."""
-        if engine.dialect.name == "postgresql":
-            with engine.begin() as c:
-                c.execute(sa.text("SELECT pg_notify(:canal, '')"), {"canal": CANAL_PG})
-        elif self.loop is not None:
-            self.loop.call_soon_threadsafe(self._acordar)
-
-    async def mensagens(self, mensagem: Callable[[], str], ping: float = 20.0) -> AsyncIterator[str | None]:
-        """O estado atual na conexão e depois a cada aviso; ``None`` = nada novo em ``ping`` segundos."""
-        fila: asyncio.Queue[None] = asyncio.Queue(maxsize=1)
-        self.filas.add(fila)
-        try:
-            yield await asyncio.to_thread(mensagem)
-            while True:
-                try:
-                    await asyncio.wait_for(fila.get(), ping)
-                except TimeoutError:
-                    yield None
-                    continue
-                yield await asyncio.to_thread(mensagem)
-        finally:
-            self.filas.discard(fila)
-
-
-canal = Canal()
-```
+- `await canal.iniciar()` / `await canal.fechar()` no lifespan;
+- `canal.mensagens(funcao)` entrega o estado atual na conexão e de novo a cada aviso (`None` = ping);
+- `sse(canal.mensagens(...))` devolve a resposta `text/event-stream` pronta;
+- `canal.avisar(engine)` depois do commit de cada mudança.
 
 ## 2. Rotas e lifespan (`app.py`)
 
 ```python
 import contextlib
 import json
-from collections.abc import AsyncIterator
-
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
-
-from <pacote>.tempo_real import canal
+from hub_sdk.realtime import canal, sse
 
 # dentro de create_app(), no lifespan que já existe:
     async with sdk.lifespan(app):
@@ -123,12 +57,7 @@ from <pacote>.tempo_real import canal
     @app.get(f"/{APP_ID}/eventos")
     async def eventos(req: Request) -> StreamingResponse:
         base = public_base(req)
-
-        async def fluxo() -> AsyncIterator[str]:
-            async for m in canal.mensagens(lambda: mensagem_do_quadro(base)):
-                yield f"data: {m}\n\n" if m is not None else ": ping\n\n"  # o ping mantém a conexão viva
-
-        return StreamingResponse(fluxo(), media_type="text/event-stream", headers={"Cache-Control": "no-store"})
+        return sse(canal.mensagens(lambda: mensagem_do_quadro(base)))  # o ping mantém a conexão viva
 
     @app.websocket(f"/{APP_ID}/ws/quadro")  # só se usar data-hub-ws
     async def ws_quadro(ws: WebSocket) -> None:
@@ -189,7 +118,7 @@ WebSocket. Sem `data-hub-target`, a resposta troca a página toda, e a rota devo
 ```python
 import asyncio
 
-from <pacote>.tempo_real import Canal
+from hub_sdk.realtime import Canal
 
 
 def test_canal_acorda_as_conexoes() -> None:

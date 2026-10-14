@@ -176,19 +176,25 @@ class EntraConfig:
         }
 
 
+VAULT_SECRET = "entra-client-secret"  # noqa: S105 - nome do item no cofre
+
+
 def _get(conf: dict[str, Any], env: str) -> str:
     key = env.removeprefix("HUB_").removeprefix("ENTRA_").removeprefix("SSO_").lower()
     return str(os.getenv(env) or conf.get(key) or "").strip()
 
 
-def load(config: dict[str, Any] | None = None) -> EntraConfig | None:
-    """Lê `HUB_SSO_PROVIDER=entra` + `HUB_ENTRA_*` (ou `[sso]` do hub.toml). Sem tudo configurado: None."""
+def load(config: dict[str, Any] | None = None, vault: Any = None) -> EntraConfig | None:
+    """Lê `HUB_SSO_PROVIDER=entra` + `HUB_ENTRA_*` (ou `[sso]` do hub.toml). Sem tudo configurado: None.
+    Segredo: variável, arquivo ou, sem os dois, o cofre (`python -m hub.admin set-entra-secret`)."""
     conf = dict((config or {}).get("sso", {}))
     if _get(conf, "HUB_SSO_PROVIDER").lower() != "entra":
         return None
     secret = _get(conf, "HUB_ENTRA_CLIENT_SECRET")
     if not secret and (f := _get(conf, "HUB_ENTRA_CLIENT_SECRET_FILE")) and Path(f).is_file():
         secret = Path(f).read_text(encoding="utf-8").strip()
+    if not secret and vault is not None:
+        secret = (vault.protected(VAULT_SECRET) or "").strip()
     tenant, client = _get(conf, "HUB_ENTRA_TENANT_ID"), _get(conf, "HUB_ENTRA_CLIENT_ID")
     if not (tenant and client and secret):
         return None

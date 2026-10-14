@@ -2,17 +2,19 @@
 
 Etapas: ruff, ruff format, ty, openapi.json (gerado do código), pytest + cobertura, manifesto (mesmas regras do
 pipeline do hub) e conformidade local (subconjunto do contrato contra o app de pé atrás do hub em processo).
+Com `--full`, também a suíte completa do contrato (`platform/conformance`) contra o app, com o `conformance.json`.
 """
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import re
 import subprocess
 import time
 import warnings
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
 
@@ -28,11 +30,13 @@ def _env() -> dict[str, str]:
     return {k: v for k, v in os.environ.items() if k != "VIRTUAL_ENV"}
 
 
-def _uv_raw(directory: Path, *args: str) -> subprocess.CompletedProcess[str]:
+def _uv_raw(
+    directory: Path, *args: str, extra: dict[str, str] | None = None
+) -> subprocess.CompletedProcess[str]:
     cmd = ["uv", "run", "-q", "--project", str(directory), *args]
     try:
         return subprocess.run(cmd, cwd=directory, capture_output=True, text=True, encoding="utf-8",  # noqa: S603
-                              errors="replace", env=_env(), check=False, timeout=900)  # fmt: skip
+                              errors="replace", env=_env() | (extra or {}), check=False, timeout=900)  # fmt: skip
     except FileNotFoundError as e:
         raise CliError("uv não encontrado no PATH (https://docs.astral.sh/uv/)", 1) from e
 
@@ -98,16 +102,19 @@ def step_openapi(directory: Path) -> tuple[bool, str]:
     return True, "openapi.json em dia"
 
 
-def _wait(url: str, seconds: float = 60) -> bool:
-    end = time.monotonic() + seconds
+def _wait(url: str, seconds: float = 60) -> tuple[bool, str]:
+    """Espera o 200 do /_hub/ready; sem ele, devolve a última resposta (ou erro) para explicar a demora."""
+    end, last = time.monotonic() + seconds, "sem resposta"
     while time.monotonic() < end:
         try:
-            if httpx.get(url, timeout=2).status_code == 200:
-                return True
-        except httpx.HTTPError:
-            pass
+            code = httpx.get(url, timeout=2).status_code
+            if code == 200:
+                return True, ""
+            last = f"HTTP {code} (esperado 200 com JSON)"
+        except httpx.HTTPError as e:
+            last = f"{type(e).__name__}: {e}"[:160]
         time.sleep(0.3)
-    return False
+    return False, last
 
 
 def _why(log: Path) -> str:
@@ -121,6 +128,8 @@ def _why(log: Path) -> str:
     for ln in reversed(lines[-200:]):
         if m := re.match(r"^\w[\w.]*(Error|Exception|Warning)\b.*", ln):
             msg = m[0][:180]
+            if "Content-Length" in msg:
+                msg += " — uma resposta 204 (ou 304) foi enviada com corpo: devolva 204 sem corpo (Response(status_code=204))"
             if "no such column" in msg or "no such table" in msg:
                 msg += " — a migração mudou depois do primeiro `hub check`: apague `.hub/*.db` e rode de novo"
             return f" — {msg}"
@@ -176,7 +185,9 @@ def conformance(directory: Path, upstream: str, app_id: str, log: Path | None = 
     return fails
 
 
-def step_conformance(directory: Path) -> tuple[bool, str]:
+@contextlib.contextmanager
+def _running_app(directory: Path) -> Iterator[tuple[str, str, dict[str, str], Path, str]]:
+    """Sobe o app (SQLite em .hub/) e entrega (upstream, id, env, log, erro); erro != "" = não ficou pronto."""
     app_id = str(_manifest(directory)["id"])
     port = dev.free_port()
     env = dev.app_env(directory, app_id, port)
@@ -189,13 +200,55 @@ def step_conformance(directory: Path) -> tuple[bool, str]:
         proc = dev.spawn(cmd, directory, env, out)
         try:
             upstream = f"http://127.0.0.1:{port}"
-            if not _wait(f"{upstream}/{app_id}/_hub/ready"):
-                dev.stop(proc)
-                return False, f"app não ficou pronto em 60 s: {log.read_text(encoding='utf-8')[-1500:]}"
-            fails = conformance(directory, upstream, app_id, log)
-            return not fails, "; ".join(fails) or "ok"
+            ready, last = _wait(f"{upstream}/{app_id}/_hub/ready")
+            err = ""
+            if not ready:
+                tail = log.read_text(encoding="utf-8")[-1500:]
+                err = f"app não ficou pronto em 60 s (último /_hub/ready: {last}){_why(log)}: {tail}"
+            yield upstream, app_id, env, log, err
         finally:
             dev.stop(proc)
+
+
+def step_conformance(directory: Path) -> tuple[bool, str]:
+    with _running_app(directory) as (upstream, app_id, _env_app, log, err):
+        if err:
+            return False, err
+        fails = conformance(directory, upstream, app_id, log)
+        return not fails, "; ".join(fails) or "ok"
+
+
+def suite_dir() -> Path:
+    """A suíte completa: embutida no wheel (`_conformance`) ou, no repositório, `platform/conformance`."""
+    here = Path(__file__).resolve().parent
+    for d in (here / "_conformance", here.parents[2] / "platform" / "conformance"):
+        if (d / "test_contract.py").is_file():
+            return d
+    raise CliError("suíte de conformidade não encontrada nesta instalação da CLI", 1)
+
+
+def step_full_conformance(directory: Path) -> tuple[bool, str]:
+    profile = directory.resolve() / "conformance.json"
+    if not profile.is_file():
+        return False, (
+            "falta conformance.json (perfil da suíte: seções, durable, jobs e, se houver, a ação que grava dados);"
+            " o `hub project create` gera um modelo"
+        )
+    suite = suite_dir()
+    with _running_app(directory) as (upstream, app_id, env, _log, err):
+        if err:
+            return False, err
+        conf = {
+            "CONF_APP": app_id,
+            "CONF_URL": upstream,
+            "CONF_TOKEN": env.get("HUB_INTERNAL_TOKEN", ""),
+            "CONF_PROFILE": str(profile),
+        }
+        p = _uv_raw(directory, "--with", "asyncpg==0.31.0", "--with", "openapi-spec-validator==0.9.0",
+                    "pytest", "-q", "-c", str(suite / "pytest.ini"), "--rootdir", str(suite), str(suite),
+                    extra=conf)  # fmt: skip
+        out = (p.stdout + p.stderr).strip()
+        return p.returncode == 0, "\n".join(out.splitlines()[-40:])
 
 
 STEPS: list[Step] = [
@@ -213,9 +266,12 @@ STEPS: list[Step] = [
 FIX = {"ruff": "uv run ruff check --fix .", "formato": "uv run ruff format ."}
 
 
-def run(directory: Path, only: list[str] | None = None) -> list[dict[str, Any]]:
+FULL: Step = ("conformidade-completa", lambda d: step_full_conformance(d))
+
+
+def run(directory: Path, only: list[str] | None = None, full: bool = False) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
-    for name, fn in STEPS:
+    for name, fn in [*STEPS, FULL] if full else STEPS:
         if only and name not in only:
             continue
         t0 = time.monotonic()

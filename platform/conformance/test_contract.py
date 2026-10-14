@@ -294,6 +294,14 @@ def test_outbox_page_shape_and_limit_cap(cfg: Cfg, internal: httpx.Client) -> No
     assert r.status_code == 200 and r.json() == {"acked": 0}
 
 
+def mutation(cfg: Cfg) -> dict[str, Any]:
+    """Ação que grava dados (idempotência + auditoria); perfil sem ela pula esses testes."""
+    m = cfg.profile.get("mutation")
+    if not m:
+        pytest.skip("perfil sem ação que grava dados (mutation)")
+    return m
+
+
 def mine(cfg: Cfg, internal: httpx.Client, needle: str) -> list[dict[str, Any]]:
     """Eventos pendentes desta execução (usuário da suíte + marca ``uniq``)."""
     out: list[dict[str, Any]] = []
@@ -320,7 +328,7 @@ def send(
     header: str | None = None,
     uniq: str | None = None,
 ) -> httpx.Response:
-    m = cfg.fill(cfg.profile["mutation"], uniq)
+    m = cfg.fill(mutation(cfg), uniq)
     h: dict[str, str] = {}
     if key:
         h["idempotency-key"] = key
@@ -348,7 +356,7 @@ def send(
 def test_idempotency_replay_mismatch_scope_and_audit_exactly_once(
     cfg: Cfg, http: httpx.Client, internal: httpx.Client
 ) -> None:
-    m = cfg.profile["mutation"]
+    m = mutation(cfg)
     key = f"conf-{uuid.uuid4()}"
     r1 = send(cfg, http, key)
     assert r1.status_code in m["ok"], (r1.status_code, r1.text[:300])

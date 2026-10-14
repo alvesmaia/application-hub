@@ -61,13 +61,14 @@ hub project stacks [-h] [--json]
 ruff, ty, pytest+cobertura, manifesto, openapi e conformidade local.
 
 ```
-hub check [-h] [--dir DIR] [--only ONLY] [--json]
+hub check [-h] [--dir DIR] [--only ONLY] [--full] [--json]
 ```
 
 | Parâmetro | Descrição | Padrão |
 |---|---|---|
 | `--dir` |  | `.` |
 | `--only` | etapas separadas por vírgula: manifesto,ruff,formato,ty,openapi,pytest,conformidade |  |
+| `--full` | também a suíte completa do contrato (conformance.json) |  |
 | `--json` |  |  |
 
 Exemplos:

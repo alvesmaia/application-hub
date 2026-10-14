@@ -8,7 +8,8 @@ Configuração (variáveis de ambiente):
 - ``CONF_URL`` — base do app (ex.: ``http://hub-app-contratos:8080`` na rede do app, ou
   ``http://127.0.0.1:9104`` nativo);
 - ``CONF_TOKEN`` — ``HUB_INTERNAL_TOKEN`` do app;
-- ``CONF_DB_URL`` — opcional: banco do app (verificações de esquema e de efeitos).
+- ``CONF_DB_URL`` — opcional: banco do app (verificações de esquema e de efeitos);
+- ``CONF_PROFILE`` — opcional: caminho do perfil (o ``hub check --full`` usa o ``conformance.json`` do app).
 
 O hub **não** deve estar coletando o outbox do app durante a suíte (o ``run.sh`` para o
 ``hub-web``): a suíte confere os eventos pendentes e as confirmações ela mesma.
@@ -45,7 +46,8 @@ class Cfg:
         self.url = os.environ.get("CONF_URL", "").rstrip("/")
         self.token = os.environ.get("CONF_TOKEN", "")
         self.db_url = os.environ.get("CONF_DB_URL", "")
-        self.profile: dict[str, Any] = json.loads((HERE / "profiles" / f"{self.app}.json").read_text("utf-8"))
+        prof = Path(os.environ.get("CONF_PROFILE") or HERE / "profiles" / f"{self.app}.json")
+        self.profile: dict[str, Any] = json.loads(prof.read_text("utf-8"))
         self.uniq = secrets.token_hex(4).upper()
         self.user = f"conformidade-{self.uniq.lower()}@teste.local"
         self.name = "Conformidade <Zé>"

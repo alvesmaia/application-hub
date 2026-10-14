@@ -305,3 +305,110 @@ def test_real_postgres_readonly_transaction() -> None:
     assert isinstance(r.rows[0][2], str) and len(r.rows) == 3
     assert steps[0]["ok"] is True and "PostgreSQL" in steps[0]["detail"]
     assert "ReadOnly" in err.message
+
+
+# ---- Bancos reais (descartáveis): bash platform-py/scripts/db-tests.sh -------------------------------------
+# Somente leitura: nada fica (transação READ ONLY ou rollback). Leitura e escrita: a escrita é confirmada.
+
+MYSQL_URL = os.getenv("HUB_MYSQL_TEST_URL")  # mysql://root:senha@127.0.0.1:3306/mysql
+MSSQL_URL = os.getenv("HUB_MSSQL_TEST_URL")  # sqlserver://sa:senha@127.0.0.1:1433/master
+
+
+def _cfg(kind: str, url: str) -> SqlConfig:
+    u = urlsplit(url)
+    return SqlConfig(
+        kind, u.hostname or "", u.port or 0, u.path.lstrip("/"), u.username or "", u.password or "",
+        ssl="disable", max_rows=3, timeout_s=5,
+    )  # fmt: skip
+
+
+def _write_modes(cfg: SqlConfig, setup: str, write: str, probe: str, cleanup: str) -> tuple[str, Any, Any]:
+    """(erro da escrita no modo leitura, linhas depois dela, linhas depois da escrita no modo leitura e escrita)."""
+
+    async def go() -> tuple[str, Any, Any]:
+        ro, rw = SqlBackend(cfg), SqlBackend(dataclasses.replace(cfg, readonly=False))
+        try:
+            await rw.query(cleanup)
+            await rw.query(setup)
+            try:
+                await ro._run(write, {}, 1)  # sem a guarda léxica: só a transação/rollback protege
+                refused = ""
+            except Exception as e:
+                refused = str(e)
+            after_ro = (await ro.query(probe)).rows
+            r = await rw.query(write)
+            assert r.columns == [] and r.rows == [], "instrução sem linhas devolve resultado vazio"
+            after_rw = (await ro.query(probe)).rows
+            await rw.query(cleanup)
+            return refused, after_ro, after_rw
+        finally:
+            await ro.close()
+            await rw.close()
+
+    return run(go())
+
+
+@pytest.mark.skipif(not PG_URL, reason="HUB_DB_TEST_URL not set")
+def test_real_postgres_write_modes() -> None:
+    refused, after_ro, after_rw = _write_modes(
+        _cfg("postgres", str(PG_URL)),
+        "CREATE TABLE hub_sql_probe(a int)",
+        "INSERT INTO hub_sql_probe VALUES (1)",
+        "SELECT count(*) FROM hub_sql_probe",
+        "DROP TABLE IF EXISTS hub_sql_probe",
+    )
+    assert "read-only" in refused.lower() and after_ro == [[0]] and after_rw == [[1]]
+
+
+@pytest.mark.skipif(not MYSQL_URL, reason="HUB_MYSQL_TEST_URL not set")
+def test_real_mysql_read_limit_and_write_modes() -> None:
+    cfg = _cfg("mysql", str(MYSQL_URL))
+
+    async def read() -> tuple[QueryResult, list[dict[str, Any]]]:
+        b = SqlBackend(cfg)
+        try:
+            sql = "WITH RECURSIVE s(g) AS (SELECT 1 UNION ALL SELECT g + 1 FROM s WHERE g < :n) SELECT g, g * 2 AS dobro FROM s"
+            return await b.query(sql, {"n": 10}), await b.test()
+        finally:
+            await b.close()
+
+    r, steps = run(read())
+    assert r.columns == ["g", "dobro"] and r.rows[0] == [1, 2] and r.truncated is True and len(r.rows) == 3
+    assert steps[0]["ok"] is True
+    refused, after_ro, after_rw = _write_modes(
+        cfg,
+        "CREATE TABLE mysql.hub_sql_probe(a int)",
+        "INSERT INTO mysql.hub_sql_probe VALUES (1)",
+        "SELECT count(*) FROM mysql.hub_sql_probe",
+        "DROP TABLE IF EXISTS mysql.hub_sql_probe",
+    )
+    assert "READ ONLY" in refused.upper() and after_ro == [[0]] and after_rw == [[1]]
+
+
+@pytest.mark.skipif(not MSSQL_URL, reason="HUB_MSSQL_TEST_URL not set")
+def test_real_sqlserver_read_limit_and_write_modes() -> None:
+    cfg = _cfg("sqlserver", str(MSSQL_URL))
+
+    async def read() -> tuple[QueryResult, list[dict[str, Any]]]:
+        b = SqlBackend(cfg)
+        try:
+            sql = (
+                "SELECT TOP (:n) g, g * 2 AS dobro FROM (SELECT ROW_NUMBER() OVER (ORDER BY object_id) AS g"
+                " FROM sys.all_objects) s ORDER BY g"
+            )
+            return await b.query(sql, {"n": 10}), await b.test()
+        finally:
+            await b.close()
+
+    r, steps = run(read())
+    assert r.columns == ["g", "dobro"] and r.rows[0] == [1, 2] and r.truncated is True and len(r.rows) == 3
+    assert steps[0]["ok"] is True and "SQL Server" in steps[0]["detail"]
+    refused, after_ro, after_rw = _write_modes(
+        cfg,
+        "CREATE TABLE hub_sql_probe(a int)",
+        "INSERT INTO hub_sql_probe VALUES (1)",
+        "SELECT count(*) FROM hub_sql_probe",
+        "IF OBJECT_ID('hub_sql_probe') IS NOT NULL DROP TABLE hub_sql_probe",
+    )
+    # SQL Server não tem transação só de leitura: no modo leitura, o rollback desfaz (use também login só leitura)
+    assert after_ro == [[0]] and after_rw == [[1]], (refused, after_ro, after_rw)

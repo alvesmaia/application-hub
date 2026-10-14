@@ -18,6 +18,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from hub.filelock import file_lock
+from hub.insight.merge import merge3, snapshot
 from hub.vault import Vault
 
 MAX_KEYS, OTHERS, DAY_MS = 300, "(outros)", 86_400_000
@@ -84,6 +86,7 @@ class Analytics:
                 self.days = {k: self._load_day(v) for k, v in d.get("days", {}).items()}
             except (OSError, ValueError, TypeError):
                 self.days = {}
+        self.base = snapshot(self.days)  # estado adotado na última junção com o arquivo (réplicas)
         self.key = self._load_key()
 
     @staticmethod
@@ -293,8 +296,19 @@ class Analytics:
         for k in [k for k in self.days if k < keep]:
             del self.days[k]
             self.dirty = True
-        if self.path and self.dirty:
-            tmp = self.path.with_suffix(".json.tmp")
-            tmp.write_bytes(self._dump())
-            os.replace(tmp, self.path)
-            self.dirty = False
+        if not self.path:
+            return
+        with file_lock(self.path):  # réplicas no mesmo volume: junta o que as outras gravaram
+            file: dict[str, Any] = {}
+            try:
+                raw = json.loads(self.path.read_text(encoding="utf-8")).get("days", {})
+                file = {k: self._load_day(v) for k, v in raw.items()}
+            except (OSError, ValueError, TypeError, AttributeError):
+                pass
+            merged = {k: v for k, v in merge3(file, self.days, self.base).items() if k >= keep}
+            changed = self.dirty or merged != file
+            self.days, self.base, self.dirty = merged, snapshot(merged), False
+            if changed:
+                tmp = self.path.with_suffix(f".json.{os.getpid()}.tmp")
+                tmp.write_bytes(self._dump())
+                os.replace(tmp, self.path)

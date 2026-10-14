@@ -6,10 +6,13 @@ import hashlib
 import json
 import os
 import socket
+import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+import httpx
 
 from hub.models import AuditEntry
 from hub.state import StateDb
@@ -17,6 +20,7 @@ from hub.vault import Vault, verify_signature
 
 GENESIS = "0" * 64
 ANCHOR = "audit.anchor"
+HEAD_TRANSPORT: httpx.BaseTransport | None = None  # testes trocam o transporte do webhook
 
 
 def _json(value: Any) -> str:
@@ -53,8 +57,14 @@ class AuditChain:
         self.path = self.dir / "chain.jsonl"
         self.head_path = self.dir / "head.json"
         self.blocked: str | None = None
-        self.head_error = ""
+        self.file_error = self.hook_error = ""
         self.last_checkpoint = 0
+        # Webhook da cabeça (HUB_AUDIT_HEAD_URL): uma thread manda sempre a cabeça mais recente.
+        self._hook = threading.Condition()
+        self._hook_next: dict[str, Any] | None = None
+        self._hook_busy = False
+        self._hook_thread: threading.Thread | None = None
+        self._hook_stop = False
         v = self.verify()
         if not db:  # com banco compartilhado, só sob o lock de `append_shared`
             self._checkpoint_if_due(v.last_seq, v.last_hash)
@@ -199,7 +209,60 @@ class AuditChain:
         except (OSError, ValueError):
             return None
 
+    @property
+    def head_error(self) -> str:
+        return "; ".join(e for e in (self.hook_error, self.file_error) if e)
+
+    @staticmethod
+    def head_url() -> str:
+        return os.getenv("HUB_AUDIT_HEAD_URL", "").strip()
+
+    def head_target(self) -> str:
+        """Onde a cabeça é publicada (URL e/ou arquivo); vazio = só local."""
+        f = self.head_file()
+        return " e ".join(x for x in (self.head_url(), str(f) if f else "") if x)
+
+    def _queue_head(self, head: dict[str, Any]) -> None:
+        with self._hook:
+            self._hook_next = head
+            if self._hook_thread is None:
+                self._hook_thread = threading.Thread(target=self._hook_loop, name="audit-head", daemon=True)
+                self._hook_thread.start()
+            self._hook.notify_all()
+
+    def _hook_loop(self) -> None:
+        while True:
+            with self._hook:
+                while self._hook_next is None and not self._hook_stop:
+                    self._hook.wait()
+                if self._hook_stop:
+                    return
+                head, self._hook_next, self._hook_busy = self._hook_next, None, True
+            token = os.getenv("HUB_AUDIT_HEAD_TOKEN", "").strip()
+            headers = {"authorization": f"Bearer {token}"} if token else {}
+            try:
+                with httpx.Client(transport=HEAD_TRANSPORT, timeout=5) as c:
+                    r = c.post(self.head_url(), json=head, headers=headers)
+                self.hook_error = "" if r.status_code < 300 else f"webhook respondeu HTTP {r.status_code}"
+            except httpx.HTTPError as e:
+                self.hook_error = f"webhook: {type(e).__name__}: {e}"[:200]
+            with self._hook:
+                self._hook_busy = False
+                self._hook.notify_all()
+
+    def flush_head(self, timeout: float) -> bool:
+        """Espera o webhook mandar o que está na fila (testes e desligamento)."""
+        with self._hook:
+            return self._hook.wait_for(lambda: self._hook_next is None and not self._hook_busy, timeout)
+
+    def close(self) -> None:
+        with self._hook:
+            self._hook_stop = True
+            self._hook.notify_all()
+
     def _publish_head(self, head: dict[str, Any]) -> None:
+        if self.head_url():
+            self._queue_head({**head, "at": time.time_ns() // 1_000_000, "host": socket.gethostname()})
         f = self.head_file()
         if f is None:
             return
@@ -211,9 +274,9 @@ class AuditChain:
                 )
                 out.flush()
                 os.fsync(out.fileno())
-            self.head_error = ""
+            self.file_error = ""
         except OSError as e:
-            self.head_error = f"{type(e).__name__}: {e}"[:200]
+            self.file_error = f"{type(e).__name__}: {e}"[:200]
 
     def _checkpoint_if_due(self, seq: int, digest: str) -> None:
         """A cada `CHECKPOINT_EVERY` eventos, uma linha assinada (Ed25519) fixa o ponto da cadeia."""

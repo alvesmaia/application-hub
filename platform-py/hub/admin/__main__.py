@@ -1,4 +1,5 @@
-"""Operação offline: `python -m hub.admin create-admin --email E --out ARQUIVO` e `deactivate-demo`.
+"""Operação offline: `python -m hub.admin create-admin --email E --out ARQUIVO`, `deactivate-demo` e
+`set-entra-secret` (lê o segredo do cliente do Entra ID da entrada padrão e o guarda no cofre).
 
 Rode com o hub parado (escreve `auth.json` direto). Nada secreto vai para a saída: a senha temporária
 vai só para o arquivo `--out` (0600). O usuário é obrigado a trocar a senha no primeiro acesso.
@@ -8,12 +9,14 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import getpass
 import os
 import secrets
 import sys
 from pathlib import Path
 
-from hub.auth import PH, AuthStore, normalize_email, now_ms, policy
+from hub.auth import PH, AuthStore, entra, normalize_email, now_ms, policy
+from hub.vault import Vault
 
 _ALPHABET = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789-_.!@#%+="
 
@@ -67,7 +70,20 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser(
         "deactivate-demo", help="desativa contas @demo.local (mantém a auditoria) e revoga tokens ativos"
     )
+    sub.add_parser(
+        "set-entra-secret", help="guarda no cofre o segredo do cliente do Entra ID (entrada padrão)"
+    )
     a = p.parse_args(argv)
+    if a.cmd == "set-entra-secret":
+        secret = (
+            getpass.getpass("Segredo do cliente: ") if sys.stdin.isatty() else sys.stdin.readline()
+        ).strip()
+        if not secret:
+            print("segredo vazio; nada foi gravado", file=sys.stderr)
+            return 1
+        Vault.open(Path(os.getenv("HUB_DATA_DIR", "/data"))).set_protected(entra.VAULT_SECRET, secret)
+        print("segredo do Entra ID guardado no cofre; reinicie o hub")
+        return 0
     store = AuthStore(Path(os.getenv("HUB_DATA_DIR", "/data")) / "auth.json")
     if a.cmd == "create-admin":
         text = asyncio.run(create_admin(store, a.email, a.name))

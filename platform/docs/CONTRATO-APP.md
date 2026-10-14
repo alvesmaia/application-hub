@@ -648,8 +648,9 @@ e mesmo token do broker (`HUB_CONNECTIONS` lista `nome=postgres`…).
 |---|---|
 | `POST /_hub/sql/{c}/query` `{"sql", "params", "max_rows"}` | `{"columns", "rows", "truncated", "ms"}`; parâmetros `:nome` (texto, número, booleano, nulo) |
 
-Somente leitura: uma instrução `SELECT`/`WITH`, guarda léxica + transação `READ ONLY` (Postgres, MySQL) — no SQL
-Server use também um login só de leitura. Erros: 400 (SQL/corpo), 403 (escrita numa conexão somente leitura),
+Somente leitura: uma instrução `SELECT`/`WITH`, guarda léxica + transação `READ ONLY` (Postgres, MySQL) e rollback
+no fim — no SQL Server use também um login só de leitura. Leitura e escrita: uma instrução por chamada, confirmada
+(commit) se der certo; sem linhas de volta (`INSERT`, `UPDATE`, DDL), a resposta vem com `columns` e `rows` vazios. Erros: 400 (SQL/corpo), 403 (escrita numa conexão somente leitura),
 404 (não vinculada), 429 (limite simultâneo), 502 (banco recusou), 504 (tempo). Auditoria «Consulta SQL»: hash e
 tamanho do SQL, número de parâmetros, linhas e tempo — **nunca** dados nem valores. SDK `hub_sdk.sql`
 (`connection`, `from_engine`; no `hub dev`, `.hub/connections.toml`) e `hub_sdk.dashboards` (KPIs, gráficos SVG,

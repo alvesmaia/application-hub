@@ -165,3 +165,14 @@ def test_catalog_helpers_and_texts() -> None:
     assert ago(0, 120_000) == "há 2 min"
     assert ago(0, 7_200_000) == "há 2 h"
     assert ago(0, 3 * 86_400_000) == "há 3 dias"
+
+
+def test_two_replicas_sharing_ux_json_do_not_lose_writes(tmp_path: Path) -> None:
+    """Duas réplicas no mesmo volume: cada escrita relê o arquivo sob trava; a leitura vê o que a outra gravou."""
+    a, b = UxStore(tmp_path / "ux.json"), UxStore(tmp_path / "ux.json")
+    a.update("u1", theme="dark")
+    b.update("u2", theme="light")  # b ainda tinha a versão vazia em memória
+    b.toggle_favorite("u1", "ativos", True)
+    assert UxStore(tmp_path / "ux.json").prefs("u1").theme == "dark"
+    assert UxStore(tmp_path / "ux.json").prefs("u1").favorites == ["ativos"]
+    assert a.prefs("u2").theme == "light" and a.prefs("u1").favorites == ["ativos"]

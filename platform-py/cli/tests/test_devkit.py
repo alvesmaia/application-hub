@@ -46,6 +46,9 @@ def test_create_non_interactive(tmp_path: Path, wheel: Path, capsys: pytest.Capt
     assert check.manifest_problems(m) == []
     assert (d / ".gitignore").is_file() and (d / "vendor" / wheel.name).is_file()
     assert "__APP_ID__" not in (d / "src/estoque/app.py").read_text()
+    # perfil da suíte completa (hub check --full) e o demo.css do shell, também fora do wheel
+    assert json.loads((d / "conformance.json").read_text())["id"] == "estoque"
+    assert (d / "src/estoque/assets/demo.css").is_file()
     assert 'path = "vendor/hub_sdk-1.0.0-py3-none-any.whl"' in (d / "pyproject.toml").read_text()
     # pasta ocupada → validação
     assert main(args) == 2
@@ -196,17 +199,53 @@ def test_check_step_exception_and_uv_missing(tmp_path: Path, monkeypatch: pytest
 
 
 def test_step_conformance_app_never_ready(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    assert check._wait("http://127.0.0.1:1/x", 0.5) is False
+    assert check._wait("http://127.0.0.1:1/x", 0.5)[0] is False
     d = mk_manifest(tmp_path / "a")
     monkeypatch.setattr(
         dev, "app_command", lambda *_a, **_k: [sys.executable, "-c", "import sys; sys.exit(3)"]
     )
-    monkeypatch.setattr(check, "_wait", lambda _u, seconds=60: False)
+    monkeypatch.setattr(check, "_wait", lambda _u, seconds=60: (False, "HTTP 503"))
     ok, detail = check.step_conformance(d)
     assert not ok and "não ficou pronto" in detail
-    monkeypatch.setattr(check, "_wait", lambda _u, seconds=60: True)
+    monkeypatch.setattr(check, "_wait", lambda _u, seconds=60: (True, ""))
     monkeypatch.setattr(check, "conformance", lambda *_a: [])
     assert check.step_conformance(d) == (True, "ok")
+
+
+def test_check_full_runs_the_complete_suite(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: Any
+) -> None:
+    """`hub check --full`: a suíte completa (platform/conformance) contra o app, com o conformance.json do app."""
+    d = mk_manifest(tmp_path / "a")
+    assert "conformidade-completa" not in [n for n, _ in check.STEPS]  # só com --full
+    ok, detail = check.step_full_conformance(d)
+    assert not ok and "conformance.json" in detail
+    (d / "conformance.json").write_text(
+        json.dumps({"id": "xx", "sections": ["inicio"], "durable": True, "jobs": []})
+    )
+    monkeypatch.setattr(
+        dev, "app_command", lambda *_a, **_k: [sys.executable, "-c", "import time; time.sleep(30)"]
+    )
+    monkeypatch.setattr(check, "_wait", lambda _u, seconds=60: (True, ""))
+    seen: dict[str, Any] = {}
+
+    def fake(_d: Path, *args: str, extra: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+        seen.update(args=args, env=extra or {})
+        return done(1, "FAILED test_contract.py::test_skeleton - assert 404 == 200\n1 failed, 20 passed")
+
+    monkeypatch.setattr(check, "_uv_raw", fake)
+    ok, detail = check.step_full_conformance(d)
+    assert not ok and "test_skeleton" in detail
+    suite = Path(seen["args"][-1])
+    assert (suite / "test_contract.py").is_file() and "pytest" in seen["args"]
+    assert seen["env"]["CONF_APP"] == "xx" and seen["env"]["CONF_PROFILE"] == str(
+        (d / "conformance.json").resolve()
+    )
+    assert seen["env"]["CONF_URL"].startswith("http://127.0.0.1:") and seen["env"]["CONF_TOKEN"]
+    monkeypatch.setattr(check, "step_full_conformance", lambda _d: (True, "21 passed"))
+    monkeypatch.setattr(check, "STEPS", [(n, lambda _d: (True, "ok")) for n, _ in check.STEPS])
+    assert main(["check", "--dir", str(d), "--full", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)["steps"][-1]["step"] == "conformidade-completa"
 
 
 def test_dev_project_env_and_command(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -153,3 +153,38 @@ def test_sso_link_drops_unchanged_temporary_password(sso: TestClient) -> None:
     u = next(u for u in users(client) if u["email"] == "ana@contoso.com")
     assert u["must_change_password"] is False and u.get("password_hash") is None
     assert asyncio.run(store.authenticate("ana@contoso.com", "Temporaria-123!")) is None
+
+
+def test_client_secret_from_vault(monkeypatch: pytest.MonkeyPatch, tmp_path: Any) -> None:
+    """Sem HUB_ENTRA_CLIENT_SECRET(_FILE), o segredo vem do cofre (`python -m hub.admin set-entra-secret`)."""
+    import io
+
+    from hub.admin.__main__ import main as admin_main
+    from hub.vault import Vault
+
+    for k, v in {
+        "HUB_SSO_PROVIDER": "entra",
+        "HUB_ENTRA_TENANT_ID": fake_entra.TENANT,
+        "HUB_ENTRA_CLIENT_ID": fake_entra.CLIENT,
+        "HUB_DATA_DIR": str(tmp_path),
+    }.items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.delenv("HUB_ENTRA_CLIENT_SECRET", raising=False)
+    monkeypatch.delenv("HUB_ENTRA_CLIENT_SECRET_FILE", raising=False)
+    assert entra.load({}, Vault.open(tmp_path)) is None
+    monkeypatch.setattr("sys.stdin", io.StringIO("s3gredo-do-cofre\n"))
+    assert admin_main(["set-entra-secret"]) == 0
+    conf = entra.load({}, Vault.open(tmp_path))
+    assert conf is not None and conf.client_secret == "s3gredo-do-cofre"
+    assert "s3gredo" not in "".join(p.read_text(errors="ignore") for p in tmp_path.rglob("*") if p.is_file())
+
+
+def test_logout_of_sso_session_ends_entra_session(sso: TestClient) -> None:
+    """Sessão aberta pelo Entra: o logout encerra também a sessão na Microsoft (logout único)."""
+    client = anon(client_for(create_app()))
+    cookie = flow(client, sso).cookies["hub_session"]
+    r = client.post("/logout", headers={"sec-fetch-site": "same-origin", "cookie": f"hub_session={cookie}"})
+    loc = r.headers["location"]
+    assert r.status_code == 303 and loc.startswith(f"{ISS}/{fake_entra.TENANT}/oauth2/v2.0/logout?")
+    assert "post_logout_redirect_uri=http%3A%2F%2Ftestserver%2Flogin" in loc
+    assert client.get("/", headers={"cookie": f"hub_session={cookie}"}).status_code == 303

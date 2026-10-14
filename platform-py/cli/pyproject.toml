@@ -47,6 +47,9 @@ exclude = ["**/__pycache__", "**/*.pyc", "**/.ruff_cache", "**/.pytest_cache"]
 "../../platform/assets/shell" = "hub_cli/_assets/shell"
 "../../platform/assets/web" = "hub_cli/_assets/web"
 "../../platform/demo-apps/assets/demo.css" = "hub_cli/templates/python-fastapi/src/__PKG__/assets/demo.css"
+"../../platform/conformance/conftest.py" = "hub_cli/_conformance/conftest.py"
+"../../platform/conformance/test_contract.py" = "hub_cli/_conformance/test_contract.py"
+"../../platform/conformance/pytest.ini" = "hub_cli/_conformance/pytest.ini"
 
 [tool.ruff]
 line-length = 110

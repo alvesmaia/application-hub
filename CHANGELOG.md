@@ -7,7 +7,26 @@ Versões 0.x = pré-1.0: a API pode mudar entre versões menores.
 
 ## [Unreleased]
 
+### Adicionado
+- `platform-py/scripts/db-tests.sh`: testes do broker SQL contra PostgreSQL, MySQL e SQL Server reais em
+  contêineres descartáveis.
+- Âncora da auditoria por webhook: `HUB_AUDIT_HEAD_URL` (+ `HUB_AUDIT_HEAD_TOKEN`) recebe a cabeça assinada a
+  cada evento, em segundo plano; falha aparece na tela de Auditoria.
+- `hub check --full`: roda também a suíte completa do contrato (`platform/conformance`, embutida no wheel da
+  CLI) contra o app, com o perfil `conformance.json` (o `hub project create` gera um). Perfil sem `mutation`
+  pula os testes de idempotência/auditoria; `CONF_PROFILE` aponta o perfil.
+- SDK: `hub_sdk.realtime` (`canal`, `sse`): canal de avisos para SSE/WebSocket com `LISTEN`/`NOTIFY` entre
+  réplicas; o guia "Tempo real" passa a usá-lo em vez do arquivo copiado.
+- `hub check`: quando o app não fica pronto, a mensagem traz a última resposta do `/_hub/ready` e explica
+  o caso do 204 enviado com corpo (o servidor derruba a resposta e só se via o tempo esgotar).
+- Logout único no Entra ID: sair de uma sessão aberta pelo Entra encerra também a sessão na Microsoft e volta
+  para `/login` (registre `<HUB_PUBLIC_URL>/login` como URI de redirecionamento do app).
+- Segredo do cliente do Entra ID no cofre: `python -m hub.admin set-entra-secret` (entrada padrão); sem
+  `HUB_ENTRA_CLIENT_SECRET(_FILE)`, o hub o lê do cofre.
+
 ### Validado
+- Carga (13/10/2026): 1 contêiner do hub = 200 usuários simultâneos; 2 contêineres atrás da borda = 300
+  (`docs/IMPLANTACAO.md`). `uvicorn --workers` não é suportado (porta interna do broker).
 - Login MCP via Entra ID real (13/10/2026): locatário do dono, Claude Code e GitHub Copilot CLI autenticados
   pelo navegador (OAuth 2.1 do hub com sessão SSO); tokens com escopos `mcp api:write` registrados na auditoria.
 
@@ -44,6 +63,13 @@ Versões 0.x = pré-1.0: a API pode mudar entre versões menores.
   parada de ~10 s. Proxies próprios na frente continuam iguais (o destino é a mesma porta).
 
 ### Corrigido
+- Várias réplicas no mesmo volume (atualização sem parada, escala): `ux.json` (preferências), `usage.json`,
+  `analytics.json` e `metrics.json` eram regravados inteiros por cada réplica, e uma apagava o que a outra
+  gravou. Agora a escrita acontece sob trava de arquivo: as preferências releem antes de mudar, e a telemetria
+  soma ao arquivo só o que a réplica contou desde a última gravação.
+- Broker SQL: conexões "leitura e escrita" descartavam a escrita (rollback sempre, nos três bancos) e
+  respondiam sucesso; agora confirmam (commit). No SQL Server, instruções sem linhas de volta (`INSERT`, DDL)
+  falhavam com "Previous statement didn't produce any results"; agora devolvem resultado vazio.
 - Login pelo Entra ID de quem ainda tinha a senha temporária (ex.: o primeiro administrador) caía na troca
   obrigatória de senha e o MCP via OAuth recusava o token; agora o vínculo SSO anula a senha temporária nunca trocada.
 - `hub_update.py`: no Docker com containerd, o `--build` falhava no backup porque a imagem em execução perdia a

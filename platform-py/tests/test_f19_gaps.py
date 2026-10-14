@@ -150,6 +150,39 @@ def test_audit_external_head_anchor(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert "chain older than external head anchor" in AuditChain(tmp_path / "audit").verify().problems
 
 
+def test_audit_head_webhook(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """HUB_AUDIT_HEAD_URL: cada cabeça assinada vai por POST (Bearer opcional), em segundo plano; falha vira aviso."""
+    import json
+
+    import httpx
+
+    from hub.admin import chain as chain_mod
+    from hub.vault import Vault
+
+    got: list[tuple[dict[str, object], str]] = []
+    status = {"code": 204}
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        got.append((json.loads(req.content), req.headers.get("authorization", "")))
+        return httpx.Response(status["code"])
+
+    monkeypatch.setattr(chain_mod, "HEAD_TRANSPORT", httpx.MockTransport(handler))
+    monkeypatch.setenv("HUB_AUDIT_HEAD_URL", "https://ancora.example/head")
+    monkeypatch.setenv("HUB_AUDIT_HEAD_TOKEN", "tok-123")
+    ch = chain_mod.AuditChain(tmp_path / "audit", Vault.in_memory(b"k" * 32))
+    ev = {"id": 1, "at": 1, "actor": "a", "title": "t", "detail": "d", "icon": "box", "scope": "platform"}
+    ch.append(ev)
+    ch.append(ev | {"id": 2})
+    assert ch.flush_head(5)
+    body, auth = got[-1]
+    assert body["seq"] == 2 and body["sig"] and body["pk"] and auth == "Bearer tok-123"
+    assert ch.head_error == "" and ch.head_target() == "https://ancora.example/head"
+    status["code"] = 500
+    ch.append(ev | {"id": 3})
+    assert ch.flush_head(5) and "500" in ch.head_error
+    ch.close()
+
+
 def test_product_owner_sees_usage_card_on_audit(hub: TestClient) -> None:
     from admin_helper import add_user
 

@@ -1,0 +1,6 @@
+{
+  "id": "__APP_ID__",
+  "sections": ["inicio", "itens"],
+  "durable": false,
+  "jobs": []
+}

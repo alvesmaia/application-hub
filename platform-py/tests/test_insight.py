@@ -877,3 +877,41 @@ def test_usage_page_period_filter(hub: TestClient) -> None:
     assert "u-antigo" in hub.get("/admin/usage?days=90").text
     page = hub.get("/admin/usage?days=999").text  # valor fora da lista volta a 30
     assert 'value="30" selected' in page and "u-antigo" in page
+
+
+def test_two_replicas_telemetry_files_add_up(tmp_path: Path) -> None:
+    """Réplicas no mesmo volume: cada gravação junta com o arquivo (nada some) e todas convergem."""
+    from hub.insight.merge import merge3
+    from hub.insight.usage import Usage
+
+    assert merge3({"a": 5, "s": {1}}, {"a": 3, "s": {2}}, {"a": 1}) == {"a": 7, "s": {1, 2}}
+    now = 1_790_000_000_000
+    u1, u2 = Usage(tmp_path), Usage(tmp_path)
+    u1.record("ana", "ativos", "open", now)
+    u2.record("ana", "ativos", "open", now + 5)
+    u2.record("bia", "ativos", "action", now)
+    u1.flush(90, now)
+    u2.flush(90, now)
+    u1.flush(90, now)  # nada novo: só adota o que a outra gravou
+    rows = {(r["user"], r["app"]): r for r in Usage(tmp_path).query(now)["rows"]}
+    assert rows[("ana", "ativos")]["opens"] == 2 and rows[("ana", "ativos")]["last"] == now + 5
+    assert rows[("bia", "ativos")]["actions"] == 1
+    assert {(r["user"], r["app"]) for r in u1.query(now)["rows"]} == set(rows)
+
+    a1, a2 = Analytics(tmp_path, None), Analytics(tmp_path, None)
+    a1.record("u1", "login", now=now)
+    a2.record("u2", "login", now=now)
+    a2.record("u2", "search", "contrato", n=0, now=now)
+    a1.flush(now)
+    a2.flush(now)
+    assert Analytics(tmp_path, None).summary(now)["dau"] == 2
+
+    m1, m2 = Metrics(tmp_path), Metrics(tmp_path)
+    t = 1_700_000_000
+    m1.observe("x", "producao", 200, 10.0, t)
+    m2.observe("x", "producao", 500, 30.0, t)
+    m2.observe("x", "producao", 200, 20.0, t)
+    m1.save()
+    m2.save()
+    w = Metrics(tmp_path).window("x", "producao", t - 600, t + 600)
+    assert (w.requests, w.errors) == (3, 1)

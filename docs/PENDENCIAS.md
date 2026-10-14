@@ -25,22 +25,15 @@ nativa do agente (`docs/migracao/TASKS.md` é o quadro da migração F0–F7, en
 
 ### Outros
 
-- **Teste com agente de contexto mínimo (Haiku 5.5 `low`, kanban):** rodadas de 2026-10-09 (WebSocket/SSE) e
-  2026-10-10 (repetição após as correções: os dois verdes, SSE sem JS próprio; tela conferida em duas abas).
-  Correções da 2ª rodada (2026-10-10): guia "Tempo real" com módulo completo testado (SSE, WebSocket,
-  `LISTEN`/`NOTIFY`), "Primeiro app" com teste à mão por `curl` (`Origin`, `Idempotency-Key`, `/_frag`), modelo
-  formatado mesmo com id de 32 caracteres, mensagem clara do `openapi.json` desatualizado, índices do Contrato,
-  SDK e CLI com resumo de cada página e link do texto completo. Falta, se um novo teste pedir: ajuda de servidor
-  SSE/WebSocket no SDK; conformidade que espera 60 s sem explicar quando um 204 tem corpo.
 - **Atualização sem parada:** em uso na instância do dono desde 13/10/2026 (`hub_update.py --build`, 0 falhas
-  em 194 checagens de `/healthz` durante a troca). Pendência menor: estado em memória por réplica (métricas,
-  `ux.json`, contadores do broker/WebSocket) só diverge durante os segundos da troca.
+  em 194 checagens de `/healthz` durante a troca). Estado entre réplicas no mesmo volume resolvido em 13/10/2026 (UX, uso, analytics e métricas juntam com
+  o arquivo sob trava).
 - **Repositório público:** cópia achatada publicada em 2026-10-10 (opção A de `docs/PUBLICACAO.md`); este
   repositório segue privado com o histórico completo.
-- `hub check` roda só um subconjunto da conformidade; a completa é `platform-py/scripts/conformance.sh` — F22.
-- Carga: `platform/loadtest/py-load.mjs` mede ~100 usuários simultâneos por instância (limite: um processo do hub; tabela em `docs/IMPLANTACAO.md`). Falta medir com vários processos/réplicas (estado em memória por réplica: métricas, analytics, uso).
-- Lacunas menores: ODBC; testes reais de MySQL e SQL Server; telemetria compartilhada entre réplicas; âncora da
-  auditoria por webhook; segredo do Entra ID no cofre; logout único no Entra.
+- Carga com réplicas: medida em 13/10/2026 (1 contêiner = 200 usuários; 2 atrás da borda = 300; tabela em
+  `docs/IMPLANTACAO.md`). Falta: modo de escala pronto no compose (N cópias do hub + borda em `round_robin`) e
+  `uvicorn --workers` (cada processo tenta abrir a porta 8081 do broker e cai).
+- Lacunas menores: ODBC.
 
 ## Ideias futuras
 

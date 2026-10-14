@@ -342,13 +342,17 @@ class AuthStore:
             user = next((u.copy() for u in d["users"] if u["id"] == user_id and u["active"]), None)
         return user
 
-    async def logout(self, token: str) -> None:
+    async def logout(self, token: str) -> str:
+        """Encerra a sessão e devolve como ela foi aberta (`password`, `entra`…; vazio se não existia)."""
         h = sha(token)
         if self.db:
+            s = await self.db.session_get(h)
             await self.db.session_delete(h)
-        else:
-            async with self.locked(True) as d:
-                d["sessions"] = [s for s in d["sessions"] if s["id_hash"] != h]
+            return s.method if s else ""
+        async with self.locked(True) as d:
+            old = next((s for s in d["sessions"] if s["id_hash"] == h), None)
+            d["sessions"] = [s for s in d["sessions"] if s["id_hash"] != h]
+        return str(old.get("method", "")) if old else ""
 
     async def create_user(
         self, email: str, name: str, roles: list[str], password: str, must_change: bool = True

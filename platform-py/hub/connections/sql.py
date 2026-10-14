@@ -316,10 +316,16 @@ class SqlBackend:
                 await conn.execute(f"SET LOCAL statement_timeout = {int(self.cfg.timeout_s * 1000)}")
                 stmt = await conn.prepare(q)
                 cols = [a.name for a in stmt.get_attributes()]
-                cur = await stmt.cursor(*values)
-                rows = await cur.fetch(fetch)
-            finally:
-                await tx.rollback()  # leitura: nada fica
+                if cols:
+                    rows = await (await stmt.cursor(*values)).fetch(fetch)
+                else:  # escrita/comando: sem linhas
+                    await stmt.fetch(*values)
+                    rows = []
+            except BaseException:
+                await tx.rollback()
+                raise
+            # somente leitura: nada fica; leitura e escrita: confirma
+            await (tx.rollback() if self.cfg.readonly else tx.commit())
         return cols, [list(r.values()) for r in rows]
 
     def _mysql(self, sql: str, params: dict[str, Any], fetch: int) -> tuple[list[str], list[Any]]:
@@ -345,8 +351,8 @@ class SqlBackend:
                 q, values = bind(sql, params, "format")
                 cur.execute(q, values)
                 cols = [d[0] for d in (cur.description or [])]
-                rows = [list(r) for r in cur.fetchmany(fetch)]
-            conn.rollback()
+                rows = [list(r) for r in cur.fetchmany(fetch)] if cols else []
+            conn.rollback() if self.cfg.readonly else conn.commit()
             return cols, rows
         finally:
             conn.close()
@@ -370,8 +376,9 @@ class SqlBackend:
                 q, values = bind(sql, params, "format")
                 cur.execute(q, tuple(values))
                 cols = [d[0] for d in (cur.description or [])]
-                rows = [list(r) for r in cur.fetchmany(fetch)]
-            conn.rollback()
+                rows = [list(r) for r in cur.fetchmany(fetch)] if cols else []
+            # sem transação só de leitura no SQL Server: no modo leitura, o rollback desfaz qualquer escrita
+            conn.rollback() if self.cfg.readonly else conn.commit()
             return cols, rows
         finally:
             conn.close()

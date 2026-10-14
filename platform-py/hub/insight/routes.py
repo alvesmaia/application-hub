@@ -263,12 +263,12 @@ def mount_insight(
             for e in [e for e in await trail() if not flt or e["scope"] == flt][:100]
         ]
         chain = request.app.state.admin.chain
-        head_file = chain.head_file()
+        target = chain.head_target()
         published = (
-            ("Proteção contra rollback: âncora externa", f"Cabeça assinada publicada em {head_file}.", False)
-            if head_file and not chain.head_error
+            ("Proteção contra rollback: âncora externa", f"Cabeça assinada publicada em {target}.", False)
+            if target and not chain.head_error
             else ("Proteção contra rollback: falha na âncora externa", chain.head_error, True)
-            if head_file
+            if target
             else None
         ) or (
             "Proteção contra rollback: só local",

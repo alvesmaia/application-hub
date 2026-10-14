@@ -17,6 +17,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from hub.filelock import file_lock
+
 BOUNDS = (5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 1000.0, 2500.0, 5000.0, 10000.0, 30000.0)
 NB = len(BOUNDS) + 1
 FINE_S, FINE_KEEP, COARSE_S, COARSE_KEEP = 10, 360, 300, 30 * 24 * 12
@@ -120,20 +122,52 @@ class Metrics:
         self.path = directory / "metrics.json" if directory else None
         self.series: dict[str, Series] = {}
         self.listener: Callable[[str, str, int, float], None] | None = None
-        if self.path and self.path.is_file():
-            try:
-                for k, rows in json.loads(self.path.read_text(encoding="utf-8")).items():
-                    self.series[k] = Series(coarse=deque(Bucket(**r) for r in rows))
-            except (OSError, ValueError, TypeError):
-                self.series = {}
+        # Réplicas no mesmo volume: o que esta réplica somou desde a última gravação (série, t) → acréscimo.
+        self._pending: dict[tuple[str, int], Bucket] = {}
+        self._mtime = 0
+        for k, rows in self._read().items():
+            self.series[k] = Series(coarse=rows)
+
+    def _read(self) -> dict[str, deque[Bucket]]:
+        if not (self.path and self.path.is_file()):
+            return {}
+        try:
+            self._mtime = self.path.stat().st_mtime_ns
+            raw = json.loads(self.path.read_text(encoding="utf-8"))
+            return {k: deque(Bucket(**r) for r in rows) for k, rows in raw.items()}
+        except (OSError, ValueError, TypeError):
+            return {}
+
+    def _pend(self, key: str, t: int) -> Bucket:
+        return self._pending.setdefault((key, t), Bucket(t))
 
     def save(self) -> None:
         if not self.path:
             return
-        data = {k: [b.__dict__ for b in s.coarse] for k, s in self.series.items()}
-        tmp = self.path.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
-        os.replace(tmp, self.path)
+        with file_lock(self.path):
+            try:
+                other = self.path.stat().st_mtime_ns != self._mtime  # outra réplica gravou depois de nós
+            except OSError:
+                other = False
+            if other:  # adota o arquivo e soma por cima só o que esta réplica contou desde a última gravação
+                for k, rows in self._read().items():
+                    self._s(*k.split("|", 1)).coarse = rows
+                for (k, t), add in self._pending.items():
+                    q = self._s(*k.split("|", 1)).coarse
+                    b = next((x for x in reversed(q) if x.t == t), None)
+                    if b is None:
+                        q.append(b := Bucket(t))
+                        if len(q) > 1 and q[-2].t > t:
+                            q = self.series[k].coarse = deque(sorted(q, key=lambda x: x.t))
+                    b.merge(add)
+                    while len(q) > COARSE_KEEP:
+                        q.popleft()
+            data = {k: [b.__dict__ for b in s.coarse] for k, s in self.series.items()}
+            tmp = self.path.with_suffix(f".json.{os.getpid()}.tmp")
+            tmp.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
+            os.replace(tmp, self.path)
+            self._mtime = self.path.stat().st_mtime_ns
+            self._pending.clear()
 
     def _s(self, app: str, env: str) -> Series:
         return self.series.setdefault(f"{app}|{env}", Series())
@@ -144,7 +178,9 @@ class Metrics:
         now = now_s() if now is None else now
         s, err = self._s(app, env), status >= 500
         _slot(s.fine, now - now % FINE_S, FINE_KEEP).add(err, ms)
-        _slot(s.coarse, now - now % COARSE_S, COARSE_KEEP).add(err, ms)
+        tc = now - now % COARSE_S
+        _slot(s.coarse, tc, COARSE_KEEP).add(err, ms)
+        self._pend(f"{app}|{env}", tc).add(err, ms)
 
     def _gauge(self, s: Series, now: int) -> dict[str, Any]:
         t = now - now % FINE_S
@@ -171,9 +207,10 @@ class Metrics:
 
     def record_probe(self, app: str, env: str, up: bool, now: int | None = None) -> None:
         now = now_s() if now is None else now
-        b = _slot(self._s(app, env).coarse, now - now % COARSE_S, COARSE_KEEP)
-        b.probes += 1
-        b.probes_ok += up
+        tc = now - now % COARSE_S
+        for b in (_slot(self._s(app, env).coarse, tc, COARSE_KEEP), self._pend(f"{app}|{env}", tc)):
+            b.probes += 1
+            b.probes_ok += up
 
     def points(self, app: str, env: str, minutes: int) -> list[dict[str, Any]]:
         s = self.series.get(f"{app}|{env}")

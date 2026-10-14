@@ -14,7 +14,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 from typing import Any, cast
-from urllib.parse import parse_qs, quote
+from urllib.parse import parse_qs, quote, urlencode
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request
@@ -718,7 +718,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
         }
 
     try:
-        sso, app.state.sso_reason = entra.load(settings.config), ""
+        sso, app.state.sso_reason = entra.load(settings.config, vault), ""
     except entra.SsoError as e:
         sso, app.state.sso_reason = None, str(e)
         print(f"[hub] {e}", flush=True)
@@ -772,9 +772,11 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
             return RedirectResponse(safe_next(next), status_code=303)
         return login_page(request, next)
 
+    def public_base(request: Request) -> str:
+        return os.getenv("HUB_PUBLIC_URL", "").strip().rstrip("/") or str(request.base_url).rstrip("/")
+
     def sso_redirect_uri(request: Request) -> str:
-        base = os.getenv("HUB_PUBLIC_URL", "").strip().rstrip("/") or str(request.base_url).rstrip("/")
-        return f"{base}/auth/entra/callback"
+        return f"{public_base(request)}/auth/entra/callback"
 
     @app.get("/auth/entra/login")
     async def entra_login(request: Request, next: str = "/") -> Response:
@@ -946,8 +948,18 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
                     f"Logout via {client_ip(request)}",
                     icon="users",
                 )
-            await auth_store.logout(value)
-        resp = RedirectResponse("/login?m=saiu", status_code=303)
+            method = await auth_store.logout(value)
+        else:
+            method = ""
+        target = "/login?m=saiu"
+        if method == "entra" and (sso := app.state.sso):
+            # Logout único: a Microsoft encerra a sessão dela e volta para o login do hub.
+            target = (
+                sso.endpoint("logout", back=False)
+                + "?"
+                + urlencode({"post_logout_redirect_uri": public_base(request) + "/login"})
+            )
+        resp = RedirectResponse(target, status_code=303)
         resp.delete_cookie(COOKIE, path="/")
         return resp
 
