@@ -21,15 +21,18 @@
   - ✅ pytest 494 passed, E2E 06-ops/29 7/7
 - ▶️ 4 · Split the other large hub files (oauth.py, app.py, 15 files 500–720) and clear the hub noqa (69)
   - ✅ oauth.py 1168 → oauth_{util,base,clients,authorize,tokens}.py + oauth.py (all < 300); pytest 494, E2E 13 2/2
-  - ⬜ app.py (1119)
-  - ⬜ 15 files 500–720
-  - ⬜ hub function noqa
+  - ▶️ agent A: app.py, auth, state, connections, insight, vault, storage, graphsim
+  - ▶️ agent B: api (mcp, v1, rest), admin, ops (remaining), ux, gateway
 
 ## SDK, apps, CLI, JS
-- ⬜ 5 · SDK Python: jobs.py, storage.py, idempotency.py, dashboards.py + 17 noqa
-- ⬜ 6 · Sample apps: app.py of ativos/coletor/servicos/fornecedores, ativos/importer.py + 21 noqa
-- ⬜ 7 · CLI and scripts: 9 noqa
-- ⬜ 8 · Shell JS: hub-device.js, hub-ux.js, hub-kit.js, hub.js, ops.js
+- ▶️ 5 · SDK Python: jobs.py, storage.py, idempotency.py, dashboards.py + 17 noqa
+  - ▶️ agent C (worktree)
+- ▶️ 6 · Sample apps: app.py of ativos/coletor/servicos/fornecedores, ativos/importer.py + 21 noqa
+  - ▶️ agent D (worktree)
+- ▶️ 7 · CLI and scripts: 9 noqa
+  - ▶️ agent E (worktree)
+- ▶️ 8 · Shell JS: hub-device.js, hub-ux.js, hub-kit.js, hub.js, ops.js
+  - ▶️ agent F (worktree)
 
 ## Closing
 - ⬜ 9 · Tighten limits (20 statements, complexity 8), empty baseline, heavy validation, CHANGELOG
