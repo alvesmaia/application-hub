@@ -74,6 +74,10 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   Your own proxies in front keep working unchanged (the target is the same port).
 
 ### Fixed
+- Containers page: a container whose image was removed (e.g. by `docker image prune`) blanked the whole page
+  ("Sem conexão" for every app); it now falls back to the image name in the container config.
+- `hub_update.py --build` built the code of the folder that created the container, not of the checkout running the
+  script; updating from a new clone rebuilt the old code.
 - Several replicas on the same volume (zero-downtime update, scaling): `ux.json` (preferences), `usage.json`,
   `analytics.json` and `metrics.json` were rewritten in full by each replica, and one would erase what the other had
   written. Writes now happen under a file lock: preferences are re-read before changing, and telemetry adds to the
