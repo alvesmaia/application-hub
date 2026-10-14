@@ -31,7 +31,7 @@ def broker_url() -> str:
     return os.getenv("HUB_BROKER_PUBLIC_URL", "").strip() or "http://hub-web:8081"
 
 
-def mount_connections(
+def mount_connections(  # noqa: C901, PLR0915
     app: FastAPI,
     templates: Jinja2Templates,
     page_ctx: Callable[[Request], dict[str, Any]],

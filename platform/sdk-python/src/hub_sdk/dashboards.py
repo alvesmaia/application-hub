@@ -385,7 +385,7 @@ def chart(
     return _frame(title, "".join(parts), legend, "; ".join(desc)[:900], kind)
 
 
-def _pie(labels: list[str], s: tuple[str, list[float]], title: str, unit: str, donut: bool) -> Markup:
+def _pie(labels: list[str], s: tuple[str, list[float]], title: str, unit: str, donut: bool) -> Markup:  # noqa: PLR0915
     name, vals = s
     pairs = [(lab, v) for lab, v in zip(labels, vals, strict=False) if v > 0]
     total = sum(v for _, v in pairs)

@@ -223,7 +223,7 @@ class ConfigOps:
                 out.append({"app": app, "env": env})
         return sorted(out, key=lambda b: (b["app"], b["env"]))
 
-    def _check_env(self, name: str, i: dict[str, Any], managed: bool) -> dict[str, Any]:
+    def _check_env(self, name: str, i: dict[str, Any], managed: bool) -> dict[str, Any]:  # noqa: C901
         if not valid_env_name(name):
             raise AdminError("Nome inválido: use letras maiúsculas, números e _ (ex.: MINHA_VARIAVEL).")
         value, kind = str(i.get("value", "")), i.get("kind", "publica")

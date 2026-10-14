@@ -132,7 +132,7 @@ async def stream_events(
         inbox.watchers.discard(wake)
 
 
-def mount_inbox(
+def mount_inbox(  # noqa: C901, PLR0915
     app: FastAPI,
     templates: Jinja2Templates,
     page_ctx: Callable[[Request], dict[str, Any]],

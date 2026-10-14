@@ -316,7 +316,7 @@ class OAuth:
                 "kind": v.get("kind", "dcr"), "auth_method": v.get("token_endpoint_auth_method", "none"),
                 "secret_hash": v.get("secret_hash"), "disabled": bool(v.get("disabled"))}  # fmt: skip
 
-    async def fetch_cimd(self, url: str) -> dict[str, Any]:
+    async def fetch_cimd(self, url: str) -> dict[str, Any]:  # noqa: C901, PLR0912, PLR0915
         now = now_ms()
         if (c := self.cimd_cache.get(url)) and c[1] > now:
             return c[0]
@@ -561,7 +561,7 @@ class OAuth:
         return out if "mcp" in out else ["mcp", *out]
 
     # ---- registro (RFC 7591) -----------------------------------------------------------------------
-    async def register(self, request: Request, body: bytes) -> Response:
+    async def register(self, request: Request, body: bytes) -> Response:  # noqa: C901, PLR0912, PLR0915
         c, app = self.cfg, request.app
         if not c.dynamic_registration:
             return self.oerr(
@@ -635,7 +635,7 @@ class OAuth:
             q.append(("state", state))
         return self.redirect(with_query(redirect_uri, q))
 
-    async def authorize_get(self, request: Request) -> Response:
+    async def authorize_get(self, request: Request) -> Response:  # noqa: C901
         q = form(request.url.query)
         if any(k.endswith("\0dup") for k in q):
             return self.error_page(request, "Parâmetro repetido no pedido de autorização.")
@@ -850,7 +850,7 @@ class OAuth:
             )
         return self.oerr(400, "invalid_request", "grant_type obrigatório.")
 
-    async def code_grant(
+    async def code_grant(  # noqa: C901, PLR0915
         self,
         f: dict[str, str],
         client: dict[str, Any],
@@ -912,7 +912,7 @@ class OAuth:
                          f"{client['name']} · {client['id']} · escopos: {' '.join(grant['scopes'])}")  # fmt: skip
         return self.json_res(200, await self.issue(grant))
 
-    async def refresh_grant(
+    async def refresh_grant(  # noqa: C901
         self, f: dict[str, str], client: dict[str, Any], now: int, grant_err: Callable[[str], Response]
     ) -> Response:
         key = sha(f.get("refresh_token", ""))
@@ -1041,7 +1041,7 @@ class OAuth:
                              f"{g.get('client_name', '')} · {g.get('client_id', '')}")  # fmt: skip
         return True
 
-    async def admin_action(self, path: str, body: bytes, actor: str) -> Response:
+    async def admin_action(self, path: str, body: bytes, actor: str) -> Response:  # noqa: C901
         f = form(body.decode("utf-8", "replace"))
         match path:
             case "/admin/oauth/revoke-grant":
@@ -1095,7 +1095,7 @@ def _unq(x: str) -> str:
     return unquote_plus(x)
 
 
-def mount_oauth(app: FastAPI, templates: Jinja2Templates) -> None:
+def mount_oauth(app: FastAPI, templates: Jinja2Templates) -> None:  # noqa: C901
     oa = cast(OAuth, app.state.oauth)
     oa.templates, oa.inbox = templates, app.state.inbox
     wk = "/.well-known/oauth-protected-resource"

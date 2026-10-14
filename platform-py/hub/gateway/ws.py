@@ -34,7 +34,7 @@ def origin_ok(origin: str | None, host: str | None) -> bool:
     return False
 
 
-async def proxy_ws(gw: Gateway, ws: WebSocket, app_id: str, rest: str) -> None:
+async def proxy_ws(gw: Gateway, ws: WebSocket, app_id: str, rest: str) -> None:  # noqa: PLR0915
     max_per_user = _env("HUB_WS_MAX_PER_USER", 8)
     max_msg = _env("HUB_WS_MAX_MESSAGE_KB", 256) * 1024
     idle = _env("HUB_WS_IDLE_SECS", 60)
@@ -85,7 +85,7 @@ async def proxy_ws(gw: Gateway, ws: WebSocket, app_id: str, rest: str) -> None:
             del _CONNS[slot]
 
 
-async def _pump(ws: WebSocket, up: websockets.ClientConnection, idle: int, max_life: int) -> None:
+async def _pump(ws: WebSocket, up: websockets.ClientConnection, idle: int, max_life: int) -> None:  # noqa: C901
     started = time.monotonic()
 
     async def c2u() -> None:

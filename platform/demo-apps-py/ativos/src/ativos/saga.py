@@ -53,7 +53,7 @@ async def _once_output(c: StepCtx, step: str) -> Any:
     return (r["output"] if r else None) or None
 
 
-def build(pool: Any) -> Saga:
+def build(pool: Any) -> Saga:  # noqa: C901, PLR0915
     async def criar(c: StepCtx) -> Any:
         _injected(c)
         inp = c.input or {}

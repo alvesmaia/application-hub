@@ -83,7 +83,7 @@ class ExportHandler:
     def __init__(self, scratch: Path) -> None:
         self.scratch = scratch
 
-    async def run(self, ctx: JobCtx) -> Any:
+    async def run(self, ctx: JobCtx) -> Any:  # noqa: C901, PLR0915
         from openpyxl import Workbook
         from openpyxl.cell import WriteOnlyCell
         from openpyxl.styles import Font

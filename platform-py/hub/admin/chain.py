@@ -74,7 +74,7 @@ class AuditChain:
             return []
         return [json.loads(s) for s in self.path.read_text(encoding="utf-8").splitlines() if s]
 
-    def verify(self) -> Verification:
+    def verify(self) -> Verification:  # noqa: C901, PLR0912, PLR0915
         seq, previous, event_id, problems = 0, GENESIS, 0, []
         events: list[dict[str, Any]] = []
         try:

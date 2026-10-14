@@ -142,7 +142,7 @@ def _find(settings: Settings, rel: str) -> Path | None:
     return None
 
 
-def create_app(settings: Settings | None = None, gateway: Gateway | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, gateway: Gateway | None = None) -> FastAPI:  # noqa: C901, PLR0915
     devmode.startup_check()
     settings = settings or load_settings()
     apicfg = load_cfg(settings.config)
@@ -188,7 +188,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
         app.state.roles = roles_for(data_dir)
 
     @asynccontextmanager
-    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: PLR0915
         cfg = StateConfig.from_env()
         db = await StateDb.connect(cfg) if cfg else None
         auth_store.db = db
@@ -301,7 +301,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
         return resp
 
     @app.middleware("http")
-    async def authentication(
+    async def authentication(  # noqa: C901, PLR0912, PLR0915
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         path, method = request.url.path, request.method
@@ -796,7 +796,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
         return resp
 
     @app.get("/auth/entra/callback")
-    async def entra_callback(request: Request) -> Response:
+    async def entra_callback(request: Request) -> Response:  # noqa: C901, PLR0915
         if not sso:
             return RedirectResponse("/login", status_code=303)
         q = request.query_params
@@ -864,7 +864,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
         return resp
 
     @app.post("/login")
-    async def login_post(request: Request) -> Response:
+    async def login_post(request: Request) -> Response:  # noqa: C901, PLR0912, PLR0915
         form = parse_qs((await request.body()).decode("utf-8", "replace"))
         try:
             login = LoginInput.model_validate(

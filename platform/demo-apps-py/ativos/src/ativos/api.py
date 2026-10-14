@@ -133,7 +133,7 @@ def asset_json(row: Any) -> dict[str, Any]:
     return out
 
 
-def register_api(app: FastAPI, st: Any) -> None:
+def register_api(app: FastAPI, st: Any) -> None:  # noqa: C901, PLR0915
     from ativos import app as core  # lazy import: the main module is already loaded
 
     def db_ok() -> bool:

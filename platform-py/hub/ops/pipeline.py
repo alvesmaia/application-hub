@@ -117,7 +117,7 @@ def _inline_handler(html: str) -> bool:
     )
 
 
-def _manifest(text: str, registered: list[Any]) -> tuple[dict[str, Any] | None, str, bool]:
+def _manifest(text: str, registered: list[Any]) -> tuple[dict[str, Any] | None, str, bool]:  # noqa: C901
     """(manifesto, detalhe, ok)."""
     try:
         m = json.loads(text)
@@ -160,7 +160,7 @@ def _manifest(text: str, registered: list[Any]) -> tuple[dict[str, Any] | None, 
     return m, detail, True
 
 
-def _checksums(files: dict[str, bytes]) -> tuple[int, str]:
+def _checksums(files: dict[str, bytes]) -> tuple[int, str]:  # noqa: C901
     sums = files.get("checksums.txt")
     if sums is None:
         return 0, "checksums.txt ausente"
@@ -185,7 +185,7 @@ def _checksums(files: dict[str, bytes]) -> tuple[int, str]:
     return len(listed), ""
 
 
-def _openapi(mid: str, raw: bytes) -> tuple[int, int]:
+def _openapi(mid: str, raw: bytes) -> tuple[int, int]:  # noqa: C901
     if len(raw) > 1 << 20:
         raise ValueError(f"openapi.json com {len(raw) // 1024} KiB (máximo 1024 KiB)")
     try:
@@ -220,7 +220,7 @@ def _openapi(mid: str, raw: bytes) -> tuple[int, int]:
     return ops, mut
 
 
-async def run_all(
+async def run_all(  # noqa: C901, PLR0912, PLR0915
     data: bytes, env: str, registered: list[Any], probe: Probe | None = None, allow_without_api: bool = False,
     on_step: Callable[[list[dict[str, Any]]], None] | None = None,
 ) -> dict[str, Any]:  # fmt: skip
@@ -349,7 +349,7 @@ def is_build(image: str) -> bool:
     return bool(image) and "@sha256:" not in image
 
 
-def _contract(m: dict[str, Any], files: dict[str, bytes], allow_without_api: bool) -> tuple[str, str, str]:
+def _contract(m: dict[str, Any], files: dict[str, bytes], allow_without_api: bool) -> tuple[str, str, str]:  # noqa: C901, PLR0912, PLR0915
     rt = files.get("runtime.json")
     if rt is None:
         return "failed", "runtime.json ausente", ""
@@ -414,7 +414,7 @@ def _contract(m: dict[str, Any], files: dict[str, bytes], allow_without_api: boo
     return ("warn" if warn else "ok"), det, image
 
 
-def _frontend(m: dict[str, Any], files: dict[str, bytes]) -> tuple[str, str, list[dict[str, str]]]:
+def _frontend(m: dict[str, Any], files: dict[str, bytes]) -> tuple[str, str, list[dict[str, str]]]:  # noqa: C901, PLR0912
     declared = {s["path"]: s for s in m.get("scripts") or []}
     html = css = 0
     for n, b in files.items():

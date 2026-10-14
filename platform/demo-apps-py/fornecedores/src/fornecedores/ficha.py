@@ -11,7 +11,7 @@ from fornecedores.pdf import A4_W, Pdf
 from fornecedores.suppliers import Supplier
 
 
-def ficha_pdf(
+def ficha_pdf(  # noqa: PLR0915
     sup: Supplier,
     user: str,
     lookup: tuple[CnpjInfo, int] | None,

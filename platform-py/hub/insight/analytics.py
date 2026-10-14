@@ -150,7 +150,7 @@ class Analytics:
         return self.retention
 
     # ---- recording events -----------------------------------------------------------------------------
-    def record(
+    def record(  # noqa: C901
         self, user: str, kind: str, a: str = "", b: str = "", n: int = 0, now: int | None = None
     ) -> None:
         """`kind`: login, page(a), open(a), section(a,b), action(a), search(a=texto, n=resultados), feature(a)."""

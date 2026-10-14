@@ -87,7 +87,7 @@ def _fill(obj: Any, data: Mapping[str, Any]) -> None:
             setattr(obj, k, v)
 
 
-def load_cfg(toml: Mapping[str, Any] | None = None, env: Mapping[str, str] | None = None) -> HubCfg:
+def load_cfg(toml: Mapping[str, Any] | None = None, env: Mapping[str, str] | None = None) -> HubCfg:  # noqa: PLR0915
     toml, env = toml or {}, os.environ if env is None else env
     c = HubCfg()
     api, mcp = dict(toml.get("api", {})), dict(toml.get("mcp", {}))

@@ -375,7 +375,7 @@ def import_form(msg: str = "") -> str:
     return views.import_form(msg, import_max_mb(), importer.MAX_ROWS)
 
 
-def register(app: FastAPI, st: State) -> None:
+def register(app: FastAPI, st: State) -> None:  # noqa: C901, PLR0915
     def dashboard_page(req: Request) -> Response:
         body = st.fragment("dashboard", req)
         if body is None:
@@ -503,7 +503,7 @@ def register(app: FastAPI, st: State) -> None:
 
     # ---- import ------------------------------------------------------------------------
     @app.api_route("/ativos/itens/import", methods=["POST", "GET"])
-    async def start_import(req: Request) -> Response:
+    async def start_import(req: Request) -> Response:  # noqa: C901, PLR0912, PLR0915
         if req.method == "GET":
             return not_found()
         if (n := db_notice(st)) is not None:
@@ -679,7 +679,7 @@ def register(app: FastAPI, st: State) -> None:
 
     # Routes with a parameter go last: `/itens/import` and `/itens/export.*` take precedence.
     @app.api_route("/ativos/itens/{aid}", methods=["POST", "GET"])
-    async def update(req: Request, aid: str) -> Response:
+    async def update(req: Request, aid: str) -> Response:  # noqa: C901, PLR0915
         if req.method == "GET" or not aid.isdigit():
             return not_found()
         aid_n = int(aid)

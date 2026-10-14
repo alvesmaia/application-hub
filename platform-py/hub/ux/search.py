@@ -204,7 +204,7 @@ def _read(path: Path) -> Any:
         return {}
 
 
-def _platform_hits(c: Ctx, q: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def _platform_hits(c: Ctx, q: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:  # noqa: C901
     all_ = platform_entities(c)
     if "gerenciar_usuarios" in c.perms:
         all_ += [
@@ -269,7 +269,7 @@ async def _ask_app(
     return hits[:limit]
 
 
-async def search(c: Ctx, q: str, only_app: str | None = None, per_app: int = PER_APP) -> Results:
+async def search(c: Ctx, q: str, only_app: str | None = None, per_app: int = PER_APP) -> Results:  # noqa: PLR0915
     t0 = time.monotonic()
     q = q.strip()[:100]
     out = Results(q=q)

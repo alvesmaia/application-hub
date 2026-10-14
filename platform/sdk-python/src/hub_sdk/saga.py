@@ -164,7 +164,7 @@ class Saga:
             pool=ctx.pool,
         )
 
-    async def run(self, ctx: JobCtx) -> Any:
+    async def run(self, ctx: JobCtx) -> Any:  # noqa: C901, PLR0912, PLR0915
         names = [s.name for s in self.steps]
         st = state_of(ctx.checkpoint, names)
         last = ctx.job.attempts >= ctx.job.max_attempts

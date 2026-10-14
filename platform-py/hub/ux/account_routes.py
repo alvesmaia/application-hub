@@ -34,7 +34,7 @@ def short_date(ms: int) -> str:
     return datetime.fromtimestamp(ms / 1000, UTC).astimezone(_GMT3).strftime("%d/%m")
 
 
-def mount_account(
+def mount_account(  # noqa: C901
     app: FastAPI,
     templates: Jinja2Templates,
     page_ctx: Callable[[Request], dict[str, Any]],

@@ -50,7 +50,7 @@ def _context(root: Path) -> list[tuple[str, bytes]]:
 MAX_PACKAGE_BYTES = 20 * 1024 * 1024  # = hub/ops/pipeline.py (a test requires equality)
 
 
-def pack(dir_: Path, image: str | None, out: Path, build_dir: Path | None = None,
+def pack(dir_: Path, image: str | None, out: Path, build_dir: Path | None = None,  # noqa: C901, PLR0912, PLR0915
          dockerfile: str = "Dockerfile") -> str:  # fmt: skip
     """Writes the package to `out` and returns the file's sha256. With `build_dir` the package carries the build context
     (`build/**`) and the hub builds the image; without it, `image` by digest is required."""

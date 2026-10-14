@@ -383,7 +383,7 @@ def _cell(s: str) -> str:
     return " ".join(s.split()).replace("|", "\\|")
 
 
-def cli_reference() -> str:
+def cli_reference() -> str:  # noqa: C901, PLR0915
     cli = _REPO / "platform-py" / "cli"
     if str(cli) not in sys.path:
         sys.path.insert(0, str(cli))

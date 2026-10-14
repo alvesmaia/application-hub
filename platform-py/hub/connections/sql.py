@@ -42,7 +42,7 @@ class SqlError(Exception):
         self.message = message
 
 
-def _strip(sql: str) -> str:
+def _strip(sql: str) -> str:  # noqa: C901, PLR0915
     """SQL without comments, with quoted literals/identifiers replaced by markers."""
     out: list[str] = []
     i, n = 0, len(sql)
@@ -101,7 +101,7 @@ def check_sql(sql: str, readonly: bool) -> str:
     return sql.strip().rstrip(";").strip()
 
 
-def bind(sql: str, params: dict[str, Any], style: str) -> tuple[str, list[Any]]:
+def bind(sql: str, params: dict[str, Any], style: str) -> tuple[str, list[Any]]:  # noqa: C901, PLR0912, PLR0915
     """``:name`` → ``$1`` (postgres), ``%s`` (mysql/sqlserver) or ``?`` (sqlite), outside quotes and comments."""
     if len(params) > MAX_PARAMS:
         raise SqlError(f"Até {MAX_PARAMS} parâmetros.")

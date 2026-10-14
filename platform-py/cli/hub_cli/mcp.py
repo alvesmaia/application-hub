@@ -115,7 +115,7 @@ class Bridge:
             h["mcp-protocol-version"] = self.protocol
         return h
 
-    def forward(self, line: str) -> tuple[str, list[Any]]:
+    def forward(self, line: str) -> tuple[str, list[Any]]:  # noqa: C901, PLR0915
         """Returns (`reply`|`accepted`|`disabled`, messages to write)."""
         try:
             msg = json.loads(line)

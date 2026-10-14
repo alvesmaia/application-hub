@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -25,6 +26,51 @@ COV = [
     "hub.ops",
     "hub.api",
 ]
+
+
+MAX_FILE_LINES = 500
+SIZE_BASELINE = ROOT / "size-baseline.json"
+# source code under the size rule (AGENTS.md "Code size"); tests, generated files and vendored code stay out
+SIZE_GLOBS = [
+    "platform-py/hub/**/*.py",
+    "platform-py/graphsim/**/*.py",
+    "platform-py/scripts/**/*.py",
+    "platform-py/cli/hub_cli/**/*.py",
+    "platform/sdk-python/src/**/*.py",
+    "platform/demo-apps-py/*/src/**/*.py",
+    "platform/assets/**/*.js",
+]
+
+
+def oversized(counts: dict[str, int], baseline: dict[str, int]) -> list[str]:
+    """Ratchet: a new file stays within the limit, a baselined one only shrinks, and it leaves the baseline once it fits."""
+    errs = []
+    for f, n in sorted(counts.items()):
+        if f in baseline:
+            if n > baseline[f]:
+                errs.append(f"{f}: {n} lines (baseline {baseline[f]}); split it, do not grow it")
+        elif n > MAX_FILE_LINES:
+            errs.append(f"{f}: {n} lines (limit {MAX_FILE_LINES})")
+    errs += [
+        f"{f}: fits now; remove it from size-baseline.json"
+        for f in sorted(baseline)
+        if counts.get(f, 0) <= MAX_FILE_LINES
+    ]
+    return errs
+
+
+def line_counts() -> dict[str, int]:
+    files = {f for g in SIZE_GLOBS for f in REPO.glob(g) if "vendor" not in f.parts}
+    return {f.relative_to(REPO).as_posix(): len(f.read_bytes().splitlines()) for f in files}
+
+
+def check_sizes() -> int:
+    baseline = json.loads(SIZE_BASELINE.read_text(encoding="utf-8"))
+    errs = oversized(line_counts(), baseline)
+    print(
+        "\n".join(errs) or f"sizes OK (limit {MAX_FILE_LINES} lines; {len(baseline)} files in the baseline)"
+    )
+    return 1 if errs else 0
 
 
 # the outer `uv run` exports VIRTUAL_ENV (the hub venv); the subprojects' `ty` would inherit it and not find the SDK
@@ -63,6 +109,7 @@ def ty_files(files: list[str]) -> int:
 def hub_steps(fast: bool) -> list[tuple[str, list[str], Path]]:
     run = ["uv", "run"]
     steps = [
+        ("sizes", [sys.executable, str(Path(__file__).resolve()), "--sizes"]),
         ("ruff", [*run, "ruff", "check"]),
         ("ruff-format", [*run, "ruff", "format", "--check"]),
         ("ty", [*run, "ty", "check", "hub", "graphsim", "tests"]),
@@ -105,7 +152,10 @@ def main() -> int:
     ap.add_argument("--fast", action="store_true", help="so ruff, formato e ty")
     ap.add_argument("--all", action="store_true", help="tambem cli, sdk e cada app")
     ap.add_argument("--ty-files", nargs="+", metavar="ARQ", help="so ty nesses arquivos (pre-commit)")
+    ap.add_argument("--sizes", action="store_true", help="only the file-size ratchet")
     a = ap.parse_args()
+    if a.sizes:
+        return check_sizes()
     if a.ty_files:
         return ty_files(a.ty_files)
     steps = hub_steps(a.fast)

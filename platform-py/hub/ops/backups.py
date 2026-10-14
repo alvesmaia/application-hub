@@ -218,7 +218,7 @@ class Backups:
     def _volume_dir(self, app: str, vol: str) -> Path:
         return self.data_dir / "apps" / app / vol
 
-    async def create_bundle(
+    async def create_bundle(  # noqa: C901, PLR0915
         self, app: str, env: str, volumes: list[str], hooks: bool, progress: Progress
     ) -> tuple[str, str, dict[str, Any]]:  # fmt: skip
         """Writes `<data>/backups/<app>/<app>-<ms>.zip`; returns (name, sha256, manifest)."""

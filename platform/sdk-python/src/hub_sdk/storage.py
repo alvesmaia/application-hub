@@ -102,7 +102,7 @@ class ShareLink:
     expires: str | None = None
 
 
-def clean_path(p: str, file: bool = True) -> str:
+def clean_path(p: str, file: bool = True) -> str:  # noqa: C901
     """Normalizes a path relative to the base folder (same rules as the hub): no ``..``/``.``,
     ``\\``, ``%``, ``:*?"<>|#``, control characters, Unicode look-alikes of ``.``/``/``; segments without
     leading space nor trailing space/dot in the segment; ≤ 255 bytes per segment, ≤ 32 levels,

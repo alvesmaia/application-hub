@@ -374,7 +374,7 @@ class AuthStore:
             d["users"].append(user)
             return user.copy()
 
-    async def update_user(
+    async def update_user(  # noqa: C901
         self,
         user_id: str,
         *,

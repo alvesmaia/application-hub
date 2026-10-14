@@ -432,7 +432,7 @@ class GraphClient:
         except StorageError:
             return False
 
-    async def test(self) -> list[dict[str, Any]]:
+    async def test(self) -> list[dict[str, Any]]:  # noqa: C901, PLR0915
         s = Steps()
         self._token = self._target = None
 

@@ -139,7 +139,7 @@ def _scrub(text: str, *secrets_: str) -> str:
     return text.strip()
 
 
-async def provision(
+async def provision(  # noqa: PLR0915
     conns: ConnStore, store: ObjectStore, app: str, env: str, who: str, broker_url: str
 ) -> tuple[int, dict[str, Any]]:
     if app not in conns.apps:

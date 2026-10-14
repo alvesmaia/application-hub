@@ -134,7 +134,7 @@ def same_roles(a: list[str], b: list[str]) -> bool:
     return norm(a) == norm(b)
 
 
-def mount_admin(
+def mount_admin(  # noqa: C901, PLR0915
     app: FastAPI,
     templates: Jinja2Templates,
     page_ctx: Callable[[Request], dict[str, Any]],
@@ -259,7 +259,7 @@ def mount_admin(
         return await view_of(u)
 
     @api.put("/users/{user_id}")
-    async def update_user(request: Request, user_id: str) -> Any:
+    async def update_user(request: Request, user_id: str) -> Any:  # noqa: C901
         p = parse(UserPatch, await body(request))
         known = await known_roles()
         if p.roles is not None:

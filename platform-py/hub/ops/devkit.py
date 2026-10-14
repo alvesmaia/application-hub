@@ -63,7 +63,7 @@ def _sha(p: Path) -> str:
     return hashlib.sha256(p.read_bytes()).hexdigest()
 
 
-def mount_devkit(app: FastAPI, render: Callable[..., Response], public_url: Callable[[Request], str]) -> None:
+def mount_devkit(app: FastAPI, render: Callable[..., Response], public_url: Callable[[Request], str]) -> None:  # noqa: C901, PLR0915
     @app.get("/dev/cli/simple/", response_class=HTMLResponse)
     async def simple_root() -> HTMLResponse:
         names = sorted({_project(p) for p in wheels()})

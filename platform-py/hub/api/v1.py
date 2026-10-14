@@ -144,7 +144,7 @@ def authorize(op: Op, p: P, args: Args | None = None) -> Problem | None:
     return None
 
 
-async def target_apps(request: Request, op: Op, args: Args) -> list[str] | None:
+async def target_apps(request: Request, op: Op, args: Args) -> list[str] | None:  # noqa: C901, PLR0912, PLR0915
     """Affected apps, resolved from the arguments (`None` = platform operation). Unknown id = 404."""
     st = request.app.state
 
@@ -241,7 +241,7 @@ async def authorize_scope(request: Request, op: Op, p: P, args: Args) -> Problem
 # ---------------------------------------------------------------- in-process facade
 
 
-async def internal(request: Request, p: P, op: Op, args: Args) -> tuple[int, Any]:
+async def internal(request: Request, p: P, op: Op, args: Args) -> tuple[int, Any]:  # noqa: C901, PLR0912, PLR0915
     """Calls the internal route (same handlers as the UI) with `p`'s identity, without going through the network."""
     if op.target is None:
         raise Problem(500, "error", "operação sem rota interna")
@@ -320,7 +320,7 @@ def _safe_seg(v: str) -> bool:
 # ---------------------------------------------------------------- listas
 
 
-def paginate(op: Op, p: P, args: Args, value: Any, cfg: Any) -> Any:
+def paginate(op: Op, p: P, args: Args, value: Any, cfg: Any) -> Any:  # noqa: C901
     items = value if not op.list else (value or {}).get(op.list, []) if isinstance(value, dict) else []
     if not isinstance(items, list):
         return items
@@ -409,7 +409,7 @@ async def _states(request: Request, vis: Iterable[str] | None) -> list[tuple[str
     )
 
 
-async def native(request: Request, op: Op, p: P, args: Args) -> Any:
+async def native(request: Request, op: Op, p: P, args: Args) -> Any:  # noqa: C901, PLR0915
     from hub.insight.metrics import now_s, slo_status
 
     def nf() -> Problem:
@@ -540,7 +540,7 @@ Clientes de IA: servidor MCP em <code>/mcp</code> (escopo <code>mcp</code>).</p>
 </body></html>"""
 
 
-def mount_v1(app: FastAPI) -> None:
+def mount_v1(app: FastAPI) -> None:  # noqa: C901, PLR0915
     @app.get("/api/docs", include_in_schema=False)
     @app.get("/api/docs/", include_in_schema=False)
     async def docs(request: Request) -> Response:
@@ -554,7 +554,7 @@ def mount_v1(app: FastAPI) -> None:
     @app.api_route(
         "/api/v1/{rest:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"], include_in_schema=False
     )
-    async def v1(request: Request, rest: str) -> Response:
+    async def v1(request: Request, rest: str) -> Response:  # noqa: C901, PLR0912, PLR0915
         cfg, path = request.app.state.apicfg, request.url.path
         if not cfg.api.enabled:
             return Problem(404, "not-found",

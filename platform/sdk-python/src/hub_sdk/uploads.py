@@ -202,7 +202,7 @@ class Uploads:
                         raise
             await c.execute("UPDATE hub_uploads SET state = 'cancelled' WHERE id = $1", upload_id)
 
-    async def promote(self, upload_id: str) -> None:
+    async def promote(self, upload_id: str) -> None:  # noqa: C901, PLR0912, PLR0915
         """Promotes (idempotent) under the row lock: checks the confirmed version
         (size/ETag), does not overwrite an existing target, moves staging → final and verifies."""
         async with self.pool.acquire() as c, c.transaction():
@@ -265,7 +265,7 @@ class Uploads:
     def promote_handler(self) -> PromoteHandler:
         return PromoteHandler(self)
 
-    async def cleanup(self) -> CleanupReport:
+    async def cleanup(self) -> CleanupReport:  # noqa: C901, PLR0912, PLR0915
         """Deletes expired uploads (object + ``expired``) and orphans under the staging prefix."""
         expired = orphans = 0
         async with self.pool.acquire() as c:

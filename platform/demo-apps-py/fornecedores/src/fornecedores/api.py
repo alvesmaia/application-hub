@@ -64,7 +64,7 @@ def sup_json(s: Supplier) -> dict[str, str]:
     }
 
 
-def register_api(app: FastAPI, st: Any) -> None:
+def register_api(app: FastAPI, st: Any) -> None:  # noqa: C901, PLR0915
     from fornecedores import app as core
 
     def no_store() -> Response:

@@ -455,7 +455,7 @@ class Engine:
             return ""
         return f"{repo}:{label}"
 
-    async def build(
+    async def build(  # noqa: C901
         self, path: str, tag: str, dockerfile: str, memory: int, on_line: Callable[[str], None],
         cpus: int = 0, timeout_s: float = 0,
     ) -> str:  # fmt: skip

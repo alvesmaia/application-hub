@@ -453,7 +453,7 @@ def with_cookie(resp: Response, new_sid: str | None) -> Response:
     return resp
 
 
-def register(app: FastAPI, st: State) -> None:
+def register(app: FastAPI, st: State) -> None:  # noqa: C901, PLR0915
     def static(name: str, req: Request) -> Response:
         body = st.page(name, req) if name in SECTIONS else None
         return html(body) if body is not None else not_found()
@@ -484,7 +484,7 @@ def register(app: FastAPI, st: State) -> None:
 
     # ---- list, open and update -----------------------------------------------------------
     @app.get("/servicos/requests")
-    async def requests_page(req: Request) -> Response:
+    async def requests_page(req: Request) -> Response:  # noqa: PLR0915
         key, new_sid = session_key(req)
         q = dict(req.query_params)
         st.sessions.touch(key, lambda s: setattr(s, "last_filters", repr(q)))
@@ -576,7 +576,7 @@ def register(app: FastAPI, st: State) -> None:
             return await c.fetchrow(f"SELECT {TICKET_COLS} FROM tickets WHERE id = $1", tid)
 
     @app.api_route("/servicos/requests/{tid}", methods=["POST", "GET"])
-    async def update_ticket(req: Request, tid: str) -> Response:
+    async def update_ticket(req: Request, tid: str) -> Response:  # noqa: C901
         ident = to_i64(tid)
         if req.method == "GET" or ident is None:
             return not_found()

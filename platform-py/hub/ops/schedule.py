@@ -26,7 +26,7 @@ def _hm(x: str) -> tuple[int, int]:
     return h, m
 
 
-def normalize(s: str) -> str | None:
+def normalize(s: str) -> str | None:  # noqa: C901
     """5-field cron, or `None` for manual execution."""
     t = s.strip()
     low = t.lower()

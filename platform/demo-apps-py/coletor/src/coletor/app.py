@@ -471,7 +471,7 @@ def read_format(form: dict[str, str], value: str) -> tuple[str, str]:
 
 
 # ---- rotas ---------------------------------------------------------------------------
-def register(app: FastAPI, st: State) -> None:
+def register(app: FastAPI, st: State) -> None:  # noqa: C901, PLR0915
     r = st.render
 
     @app.get("/coletor/_skeleton")
@@ -536,7 +536,7 @@ def register(app: FastAPI, st: State) -> None:
         return r.page(req, "escanear.html", "escanear", **ctx)
 
     @app.post("/coletor/escanear/ler")
-    async def escanear_ler(req: Request) -> Response:
+    async def escanear_ler(req: Request) -> Response:  # noqa: C901, PLR0915
         if (n := db_notice(st)) is not None:
             return html(str(n), 503)
         form = {k: str(v) for k, v in (await req.form()).items()}
@@ -727,7 +727,7 @@ def register(app: FastAPI, st: State) -> None:
     actions = ("iniciar", "proximo", "parar", "continuar", "cancelar", "reiniciar", "auto")
 
     @app.post("/coletor/sessao/{acao}")
-    async def sessao(acao: str, req: Request) -> Response:
+    async def sessao(acao: str, req: Request) -> Response:  # noqa: C901, PLR0912, PLR0915
         """Session controls (computer and phone): the state lives on the server, one per
         user; both sides receive the change over the WebSocket."""
         if acao not in actions:
@@ -787,7 +787,7 @@ def register(app: FastAPI, st: State) -> None:
         return json.dumps({"target": target, "swap": "outerHTML", "html": frag})
 
     @app.websocket("/coletor/ws/live")
-    async def ws_live(ws: WebSocket) -> None:
+    async def ws_live(ws: WebSocket) -> None:  # noqa: PLR0915
         """Live state of the user: on each reading/session change, the screen fragment
         (``view=folha`` or ``escanear``) is redrawn and sent (hub-kit ``data-hub-ws``)."""
         view = "escanear" if ws.query_params.get("view") == "escanear" else "folha"

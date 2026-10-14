@@ -74,7 +74,7 @@ def _unavailable(msg: str) -> JSONResponse:
     return r
 
 
-def register_api(app: FastAPI, st: Any) -> None:
+def register_api(app: FastAPI, st: Any) -> None:  # noqa: C901, PLR0915
     from servicos import app as core
 
     DBERR = core.DBERR

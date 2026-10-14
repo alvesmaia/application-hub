@@ -35,7 +35,7 @@ def _app_headers(request: Request, resp: Response, app: str, frag: bool) -> None
         resp.headers["cache-control"] = "private, no-store"
 
 
-def mount_gateway(
+def mount_gateway(  # noqa: C901, PLR0915
     app: FastAPI,
     gw: Gateway,
     templates: Jinja2Templates,

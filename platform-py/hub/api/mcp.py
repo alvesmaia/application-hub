@@ -255,7 +255,7 @@ async def run_hub(request: Request, p: P, op: Op | None, a: Args) -> dict[str, A
         return text_result(app, {"error": "tempo esgotado"}, True)
 
 
-async def tools_call(request: Request, p: P, params: dict[str, Any], client: str) -> dict[str, Any]:
+async def tools_call(request: Request, p: P, params: dict[str, Any], client: str) -> dict[str, Any]:  # noqa: C901, PLR0915
     app, cfg = request.app, request.app.state.apicfg
     name = params.get("name")
     if not isinstance(name, str):
@@ -498,7 +498,7 @@ async def client_of(app: FastAPI, session: str | None, msg: dict[str, Any], h: A
     return "".join(c for c in str(h.get("user-agent", "")) if c.isprintable())[:80]
 
 
-async def handle(request: Request) -> Response:
+async def handle(request: Request) -> Response:  # noqa: C901, PLR0912, PLR0915
     app, cfg, h = request.app, request.app.state.apicfg, request.headers
     if not cfg.mcp_http:
         return plain(404, "O servidor MCP está desligado nesta instalação ([mcp].enabled = false).")

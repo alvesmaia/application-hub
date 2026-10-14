@@ -301,7 +301,7 @@ class ImportHandler:
             with ctx.memory_phase():
                 return await self._run(ctx, path, Path(str(p.get("report_path", ""))))
 
-    async def _run(self, ctx: JobCtx, path: Path, report_path: Path) -> Any:
+    async def _run(self, ctx: JobCtx, path: Path, report_path: Path) -> Any:  # noqa: PLR0915
         ctx.raise_if_stopping()
         cp = dict(ctx.checkpoint or {})
         row = int(cp.get("row", 0))

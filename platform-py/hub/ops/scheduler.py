@@ -22,7 +22,7 @@ class Scheduler:
         self.app, self.leader = app, leader
         self.task: asyncio.Task[None] | None = None
 
-    async def tick(self, now: int | None = None) -> list[str]:
+    async def tick(self, now: int | None = None) -> list[str]:  # noqa: C901, PLR0915
         """One round; returns what was done (for the log)."""
         now = now_ms() if now is None else now
         st = self.app.state

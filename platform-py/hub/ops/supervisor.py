@@ -39,7 +39,7 @@ class Supervisor:
             (s.add if on else s.discard)(f"{app}|{env}")
             d["stopped"] = sorted(s)
 
-    async def tick(self) -> list[str]:
+    async def tick(self) -> list[str]:  # noqa: C901, PLR0915
         st = self.app.state
         eng, reg = st.ops_engine, st.gateway.registry
         info = await eng.probe(0)

@@ -66,7 +66,7 @@ def _kind(c: dict[str, Any]) -> str:
     return f"Registro dinâmico · {m}"
 
 
-def mount_tokens(
+def mount_tokens(  # noqa: C901, PLR0915
     app: FastAPI,
     api: APIRouter,
     render: Callable[..., Response],

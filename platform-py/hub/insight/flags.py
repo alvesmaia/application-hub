@@ -51,7 +51,7 @@ class Flag(BaseModel):
     def off_value(self) -> str:
         return OFF if self.kind == "boolean" else (self.variants[0] if self.variants else OFF)
 
-    def validate_rules(self) -> None:
+    def validate_rules(self) -> None:  # noqa: C901
         """Raises `ValueError` with the message of the previous hub version."""
         if not valid_token(self.key):
             raise ValueError("Chave inválida: use letras minúsculas, números, '.', '_' ou '-' (até 64).")

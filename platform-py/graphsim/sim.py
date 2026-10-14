@@ -382,7 +382,7 @@ class Sim:
             return JSONResponse(drives[0] if drives else None)
         return gerr(404, "itemNotFound", "rota do site desconhecida")
 
-    def graph(self, method: str, g: str, q: dict[str, str], req: Request, body: bytes) -> Response:
+    def graph(self, method: str, g: str, q: dict[str, str], req: Request, body: bytes) -> Response:  # noqa: C901, PLR0912, PLR0915
         if g.startswith("sites/"):
             return self.site(g)
         if not g.startswith("drives/"):
@@ -566,7 +566,7 @@ class Sim:
             m[dest + k[len(path) :]] = n
         return JSONResponse(self.item_json(drive, dest, m[dest]))
 
-    def upload_session(self, method: str, sid: str, req: Request, body: bytes) -> Response:
+    def upload_session(self, method: str, sid: str, req: Request, body: bytes) -> Response:  # noqa: C901
         if "authorization" in req.headers:
             return gerr(401, "unauthenticated", "Do not send Authorization to the upload URL.")
         s = self.sessions.get(sid)

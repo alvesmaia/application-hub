@@ -63,7 +63,7 @@ async def works(b: Backups, name: str, url: str) -> bool:
     return rc == 0
 
 
-async def provision(b: Backups, cfg: Any, actor: str, app: str, env: str) -> dict[str, Any]:
+async def provision(b: Backups, cfg: Any, actor: str, app: str, env: str) -> dict[str, Any]:  # noqa: C901
     name, mark, var = db_name(app, env), marker(app, env), variable(app, env)
     if name in ("postgres", b.db_admin) or name.startswith("pg_"):
         raise OpsError(f"nome reservado para banco/usuário: {name}")

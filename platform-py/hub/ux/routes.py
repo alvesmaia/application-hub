@@ -71,7 +71,7 @@ def visible(request: Request) -> set[str] | None:
     return None if apps is None else set(apps)
 
 
-def mount_ux(
+def mount_ux(  # noqa: C901, PLR0915
     app: FastAPI,
     reg: Registry,
     templates: Jinja2Templates,

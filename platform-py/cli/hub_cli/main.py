@@ -40,7 +40,7 @@ class Parser(argparse.ArgumentParser):
         sys.exit(VALIDATION)
 
 
-def parser() -> argparse.ArgumentParser:
+def parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     fmt = argparse.RawDescriptionHelpFormatter
     p = Parser(prog="hub", description="Application Hub CLI", epilog=EPILOG, formatter_class=fmt)
     sub = p.add_subparsers(dest="cmd", required=True, parser_class=Parser)
@@ -192,7 +192,7 @@ def cmd_check(a: argparse.Namespace) -> int:
     return 0 if ok else FAIL
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None) -> int:  # noqa: C901, PLR0912, PLR0915
     try:
         a = parser().parse_args(argv)
     except SystemExit as e:  # invalid usage (2) or --help (0)

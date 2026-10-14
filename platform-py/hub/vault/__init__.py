@@ -243,7 +243,7 @@ class Vault:
         if persist:
             self._persist()
 
-    def _load(self) -> None:
+    def _load(self) -> None:  # noqa: C901, PLR0915
         if self.keyring_path is None:
             raise ValueError("missing keyring path")
         self._file = json.loads(self.keyring_path.read_text(encoding="utf-8"))
@@ -484,7 +484,7 @@ class Vault:
         os.replace(tmp, dst)
         return total
 
-    def decrypt_file(self, src: Path, dst: Path, aad: str) -> int:
+    def decrypt_file(self, src: Path, dst: Path, aad: str) -> int:  # noqa: PLR0915
         tmp = dst.with_suffix(".part-dec")
         try:
             with src.open("rb") as f:

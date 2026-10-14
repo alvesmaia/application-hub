@@ -257,7 +257,7 @@ class Gateway:
             )
         return app, ident
 
-    async def forward(self, request: Request, app_id: str, rest: str) -> Response:
+    async def forward(self, request: Request, app_id: str, rest: str) -> Response:  # noqa: C901, PLR0912, PLR0915
         """Forwards to `{upstream}/{app_id}{rest}` (rest starts with `/` or is empty)."""
         checked = self.pre_check(request, app_id)
         if isinstance(checked, Response):

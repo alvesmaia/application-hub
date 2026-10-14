@@ -287,7 +287,7 @@ class ConnStore:
                 out.append({"app": app, "env": env})
         return sorted(out, key=lambda b: (b["app"], b["env"]))
 
-    def build(self, c: dict[str, Any], i: dict[str, Any], creating: bool) -> dict[str, Any]:
+    def build(self, c: dict[str, Any], i: dict[str, Any], creating: bool) -> dict[str, Any]:  # noqa: C901, PLR0912, PLR0915
         if creating:
             name = str(i.get("name", "")).strip()
             if not valid_name(name):
@@ -351,7 +351,7 @@ class ConnStore:
         return c
 
     @staticmethod
-    def _sharepoint(c: dict[str, Any], i: dict[str, Any], secret: str, creating: bool) -> None:
+    def _sharepoint(c: dict[str, Any], i: dict[str, Any], secret: str, creating: bool) -> None:  # noqa: C901, PLR0915
         c["tenant_id"] = str(i.get("tenant_id", "")).strip()
         c["client_id"] = str(i.get("client_id", "")).strip().lower()
         c["site"] = str(i.get("site", "")).strip().rstrip("/")
@@ -508,7 +508,7 @@ class ConnStore:
                     x["last_test"] = last
 
     # ---- broker managed variables -----------------------------------------------------------
-    async def sync_env(self, actor: str, broker_url: str) -> None:
+    async def sync_env(self, actor: str, broker_url: str) -> None:  # noqa: C901
         """Reflects the links in the managed variables (restart pending, as with ordinary variables)."""
         cfg = self.admin.cfg
         bound: dict[tuple[str, str], list[str]] = {}

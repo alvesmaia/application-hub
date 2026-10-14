@@ -106,7 +106,7 @@ def backup(proj: str, image: str, dest: Path) -> None:
     say(f"backup em {dest}")
 
 
-def start_next(main: dict[str, Any], image: str, name: str) -> None:
+def start_next(main: dict[str, Any], image: str, name: str) -> None:  # noqa: C901
     """Copy of the hub with the same configuration as the running container (includes all compose overrides)."""
     run("docker", "rm", "-f", name, check=False, quiet=True)
     cfg, host = main["Config"], main["HostConfig"]
@@ -192,7 +192,7 @@ def drop(name: str) -> None:
     run("docker", "rm", "-f", name, check=False, quiet=True)
 
 
-def main() -> int:
+def main() -> int:  # noqa: C901, PLR0912, PLR0915
     for stream in (sys.stdout, sys.stderr):  # accents in the Windows console
         getattr(stream, "reconfigure", lambda **_: None)(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description="Atualiza o hub sem parada (com volta automática).")

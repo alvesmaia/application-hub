@@ -13,7 +13,7 @@ _mu = threading.RLock()
 
 
 @contextmanager
-def file_lock(path: Path) -> Iterator[None]:
+def file_lock(path: Path) -> Iterator[None]:  # noqa: PLR0915
     """Exclusive and blocking; only for short synchronous sections (no `await` inside)."""
     key = str(path)
     with _mu:

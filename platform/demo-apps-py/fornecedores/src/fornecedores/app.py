@@ -338,7 +338,7 @@ async def _search(q: SearchQuery) -> list[SearchHit]:
     return search_hits(q)
 
 
-def register(app: FastAPI, st: State) -> None:
+def register(app: FastAPI, st: State) -> None:  # noqa: C901, PLR0915
     def static(name: str, req: Request) -> Response:
         body = st.fragment(name, req) if name in SECTIONS or name == "_skeleton" else None
         return html(body) if body is not None else not_found()
@@ -405,7 +405,7 @@ def register(app: FastAPI, st: State) -> None:
         return html(lookup_box(sup, outcome_html(o)))
 
     @app.post("/fornecedores/suppliers/{code}/attachments")
-    async def upload(code: str, req: Request) -> Response:
+    async def upload(code: str, req: Request) -> Response:  # noqa: C901, PLR0912, PLR0915
         sup = supplier(code)
         if sup is None:
             return not_found()

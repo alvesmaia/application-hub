@@ -136,7 +136,7 @@ def _why(log: Path) -> str:
     return f" (veja {log.name})" if lines else ""
 
 
-def conformance(directory: Path, upstream: str, app_id: str, log: Path | None = None) -> list[str]:
+def conformance(directory: Path, upstream: str, app_id: str, log: Path | None = None) -> list[str]:  # noqa: PLR0915
     """Subset of the contract (CONTRATO-APP §2, §3, §3.0, §12–13, §23) run by the in-process hub."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")

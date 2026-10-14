@@ -88,7 +88,7 @@ def chart(title: str, unit: str, series: list[tuple[str, str, list[float | None]
     }
 
 
-def mount_insight(
+def mount_insight(  # noqa: C901, PLR0915
     app: FastAPI,
     templates: Jinja2Templates,
     page_ctx: Callable[[Request], dict[str, Any]],

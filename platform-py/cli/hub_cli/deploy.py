@@ -130,7 +130,7 @@ def collect_values(manifest: dict[str, Any], env_file: Path | None, tty: bool) -
     return out
 
 
-def deploy(directory: Path, env: str, hub: str | None, token: str | None, env_file: Path | None,
+def deploy(directory: Path, env: str, hub: str | None, token: str | None, env_file: Path | None,  # noqa: PLR0915
            tty: bool) -> dict[str, Any]:  # fmt: skip
     target = ENVS.get(env)
     if target is None:

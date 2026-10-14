@@ -355,7 +355,7 @@ class IdempotencyMiddleware:
     def idem(self) -> Idempotency:
         return self._idem if isinstance(self._idem, Idempotency) else self._idem()
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # noqa: PLR0915
         if scope["type"] != "http" or scope["method"] not in MUTATING:
             await self.app(scope, receive, send)
             return
@@ -417,7 +417,7 @@ class IdempotencyMiddleware:
                     os.remove(spool_path)
 
 
-async def _read_body(
+async def _read_body(  # noqa: C901, PLR0915
     receive: Receive, hasher: RequestHasher, declared: int | None, max_body: int
 ) -> tuple[bytes | None, str | None]:
     """Small body with a declared size → memory; otherwise a temporary file."""
@@ -507,7 +507,7 @@ SELECT = (
 )
 
 
-async def _pg_flow(
+async def _pg_flow(  # noqa: C901, PLR0912, PLR0915
     idem: Idempotency,
     app: ASGIApp,
     scope: Scope,
@@ -629,7 +629,7 @@ async def _pg_flow(
             await asyncio.shield(pool.release(conn))
 
 
-async def _mem_flow(
+async def _mem_flow(  # noqa: PLR0915
     idem: Idempotency,
     app: ASGIApp,
     scope: Scope,

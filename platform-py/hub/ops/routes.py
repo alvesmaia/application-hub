@@ -109,7 +109,7 @@ def rollout_env(label: str) -> str:
     return "staging" if label in (m.STAGING, "staging") else "producao"
 
 
-def mount_ops(
+def mount_ops(  # noqa: C901, PLR0915
     app: FastAPI,
     templates: Jinja2Templates,
     page_ctx: Callable[[Request], dict[str, Any]],
@@ -248,7 +248,7 @@ def mount_ops(
         return v
 
     # ---- Deployments ------------------------------------------------------------------------------
-    async def run_import(
+    async def run_import(  # noqa: C901, PLR0915
         job_id: int,
         data: bytes,
         env: str,
@@ -370,7 +370,7 @@ def mount_ops(
                 d["deployments"].pop(d["deployments"].index(base))
             )  # the oldest one stays last
 
-    async def build_image(dep: Data, job_id: int, actor: str) -> None:
+    async def build_image(dep: Data, job_id: int, actor: str) -> None:  # noqa: PLR0915
         """Builds the package's image (`build/**`) on the daemon, with a memory cap; the log goes to the job, to the logs console and
         to the deployment record. The image of an already existing version (rollback, resubmission) is not rebuilt."""
         tag, app_id = dep["image"], dep["app"]
@@ -413,7 +413,7 @@ def mount_ops(
                 m._find(d, dep["id"])["build_log"] = lines[-200:]
         log("INFO", app_id, actor, f"build concluído · {tag} ({len(lines)} linhas)")
 
-    async def run_deploy(dep_id: int, job_id: int, actor: str) -> tuple[bool, str, Data]:
+    async def run_deploy(dep_id: int, job_id: int, actor: str) -> tuple[bool, str, Data]:  # noqa: PLR0915
         """Blue/green of the `Implantando` (Deploying) deployment; returns (ok, message, record). The active one only leaves after the candidate is ready."""
         dep = m._find(store.read(), dep_id)
         app_id, k, label = dep["app"], rollout_env(dep["env"]), dep["env"]
@@ -859,7 +859,7 @@ def mount_ops(
                 "timezone": os.getenv("HUB_BACKUP_TZ", "America/Sao_Paulo")}  # fmt: skip
 
     @api.put("/backups/policies/{app_id}")
-    async def put_policy(app_id: str, request: Request) -> Any:
+    async def put_policy(app_id: str, request: Request) -> Any:  # noqa: PLR0915
         need_app(app_id)
         p = await body(request)
         schedule, dest = str(p.get("schedule", "")).strip(), str(p.get("destination", "")).strip()
@@ -952,7 +952,7 @@ def mount_ops(
                                      "detail": f"{man['summary']} · {man['consistency']}", "source": None, "env": k})  # fmt: skip
         return f" · snapshot Pré-restauração #{rid}"
 
-    async def start_backup(app_id: str, k: str, kind: str, actor: str) -> dict[str, Any]:
+    async def start_backup(app_id: str, k: str, kind: str, actor: str) -> dict[str, Any]:  # noqa: C901, PLR0915
         """Creates the backup job and runs it in the background (manual or from the scheduler); `OpsError` if it cannot start."""
         need_app(app_id)
         d = store.read()
@@ -975,7 +975,7 @@ def mount_ops(
         def phase(p: int, msg: str) -> None:
             jobs.update(job["id"], lambda j: j.update(progress=p, message=msg))
 
-        async def go() -> None:
+        async def go() -> None:  # noqa: PLR0915
             t0 = now_ms()
             res: tuple[str, str, dict[str, Any]] | None = None
             err = ""
@@ -1087,7 +1087,7 @@ def mount_ops(
         return {"rotated": len(lines) - failed, "failed": failed, "items": lines}
 
     @api.post("/backups/records/{rec_id}/{action}")
-    async def backup_action(rec_id: int, action: str, request: Request) -> Response:
+    async def backup_action(rec_id: int, action: str, request: Request) -> Response:  # noqa: C901, PLR0915
         d = store.read()
         rec = next((x for x in d["backups"] if x["id"] == rec_id), None)
         if rec is None:
@@ -1110,7 +1110,7 @@ def mount_ops(
         def phase(p: int, msg: str) -> None:
             jobs.update(job["id"], lambda j: j.update(progress=p, message=msg))
 
-        async def go() -> None:
+        async def go() -> None:  # noqa: PLR0915
             t0 = now_ms()
             res: tuple[int, str] | None = None
             err, safety = "", ""
@@ -1239,7 +1239,7 @@ def mount_ops(
                       example=MANIFEST_EXAMPLE, cmds=SDK_CMDS)  # fmt: skip
 
     @app.get("/admin/runtime", response_class=HTMLResponse)
-    async def runtime_page(request: Request) -> Response:
+    async def runtime_page(request: Request) -> Response:  # noqa: C901, PLR0915
         data, info, rows, host = await runtime_state()
         podman = "runtime=podman" in request.url.query
         alloc_cpu, alloc_mem = rt.allocated(registry.entries(), data["limits"])
@@ -1391,7 +1391,7 @@ def mount_ops(
                       rows=rows, errors=errors, summary=summary, pager=pager)  # fmt: skip
 
     @app.get("/admin/backups", response_class=HTMLResponse)
-    async def backups_page(request: Request) -> Response:
+    async def backups_page(request: Request) -> Response:  # noqa: PLR0915
         d, now = store.read(), now_ms()
         tz_name = os.getenv("HUB_BACKUP_TZ", "America/Sao_Paulo")
         policies = []

@@ -205,7 +205,7 @@ def _is_num(raw: Any) -> bool:
 _INT = re.compile(r"^[+-]?\d+$")
 
 
-def normalize(col: Col, raw: Any) -> Any:
+def normalize(col: Col, raw: Any) -> Any:  # noqa: C901, PLR0912, PLR0915
     """Normalized value (``None`` = empty/NULL) — text, date, cents or integer — or
     :class:`Invalid` with the column's error message."""
     if raw is None or (isinstance(raw, str) and not raw.strip()):

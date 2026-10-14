@@ -59,7 +59,7 @@ def _int(v: str | None, default: int) -> int:
         return default
 
 
-def router(
+def router(  # noqa: C901, PLR0915
     app_id: str,
     token: str | None,
     outbox: Outbox | Callable[[], Outbox],
@@ -212,7 +212,7 @@ def router(
         return {"results": [h.to_json() for h in _search.sanitize(app_id, hits, limit)]}
 
     @r.post(base + "/approvals/{approval_id}")
-    async def approval_ep(req: Request, approval_id: str) -> Any:
+    async def approval_ep(req: Request, approval_id: str) -> Any:  # noqa: C901
         if (e := auth(req)) is not None:
             return e
         if approvals is None:

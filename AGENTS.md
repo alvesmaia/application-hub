@@ -5,8 +5,6 @@ Guide for coding agents (Claude Code, Codex and others) working in this reposito
 ## Branches and where to work
 
 - **`main`**: official stack — the hub in **Python** (`platform-py/`) and the Python apps (`platform/demo-apps-py/`). Since 2026-10-07 it serves the owner's production instance. It also keeps the original static mockup (root: `index.html`, `js/`, `css/`) and the product documentation (`docs/PLAN.md`, `docs/FAQ-ARQUITETURA.md`).
-- **`stack/python`**: working branch; tracks `main`.
-- Python only. Other stacks: to be re-evaluated in a future expansion.
 - **Read first:** `docs/PENDENCIAS.md` (status and what is missing), `docs/CONTRATO-APP.md` (HTTP contract of the apps, in `platform/docs/`), `docs/HANDOFF.md`.
 
 ## Stack (fixed decisions)
@@ -21,7 +19,7 @@ Python 3.12 managed by `uv`; FastAPI + Jinja2 (SSR), asyncpg, httpx, Pydantic v2
 - `bash scripts/dev.sh up|down|stop|status|logs|reload-on|reload-off|obs-up|obs-down` — dev mode (uvicorn `--reload`, SSE reload `/_dev/reload`), observability profile (OTel Collector + Jaeger).
 - SharePoint simulator: `docker-compose.graphsim.yml` (profile `sharepoint-sim`, `app-hub-graphsim`).
 - App conformance: `bash scripts/conformance.sh`. CLI: `platform-py/cli` (`hub pack`, `hub mcp`, `hub dev`).
-- E2E and UI sweep against :8090: `platform/tests-e2e` (`npx playwright test`, `node ui-sweep/run.mjs [--quick]`). **Every UI change must pass the ui-sweep.** Resilience: `platform/loadtest/py-dr.mjs`, `py-resilience.mjs` (they only touch `app-hub-*`).
+- E2E and UI sweep against :8090: `platform/tests-e2e` (`npx playwright test`, `node ui-sweep/run.mjs [--quick]`). Resilience: `platform/loadtest/py-dr.mjs`, `py-resilience.mjs` (they only touch `app-hub-*`).
 
 ## Guardrails
 
@@ -30,13 +28,26 @@ Python 3.12 managed by `uv`; FastAPI + Jinja2 (SSR), asyncpg, httpx, Pydantic v2
 - **TDD:** new behavior or a bug starts with a failing test (red), then the minimal code that makes it pass (green), then refactoring with green tests. A fixed bug = a test that reproduces the bug. Edge cases and deliberate decisions (e.g. what is intentionally ignored) also become tests.
 - **Which test each change requires:** pure function/rule → **unit** (pytest). Route, database, vault, gateway or contract (OpenAPI, i18n) → **integration** (pytest with `TestClient`/disposable Postgres). User-visible feature → **scenario** (full flow in one integration test) and, if it has a screen, **E2E** Playwright in `platform/tests-e2e` + ui-sweep. Changed an app or the app contract → conformance. Changed the gateway, session, database or anything on the path of every request → **load** (`platform/loadtest/py-load.mjs`, on an isolated stack, in the heavy validation) without worsening the p95 or error rate of the last recorded measurement in `docs/IMPLANTACAO.md`.
 - **Pydantic v2 at the edges:** forms, API inputs and Administration writes are validated by Pydantic models, not by raw `dict`.
-- **Secrets never** in HTML, API, logs, audit trail or git (`.dev.env` stays out of git).
-- **Every UI change passes the ui-sweep**; new text in both languages (pt-BR, en).
+- **Secrets never** in HTML, API, logs, audit trail or git (`.dev.env` stays out of git); this includes connection credentials.
+- **Every UI change passes the ui-sweep.**
 - **Validation:** light during the day (`--fast`, tests for the affected code, ui-sweep `--quick`); heavy once at the end of the day (full E2E, DR, chaos).
+
+## Code size and clean code
+
+Short and imperative on purpose; based on Akita's "Clean Code for AI Agents".
+
+- **Functions:** 4 to 20 lines, one thing each; split if longer. At most 2 levels of indentation: early returns instead of nested `if`.
+- **Files:** under 500 lines (200–300 is ideal), one responsibility per module; no "god files".
+- **Enforced by `hub-check`:** ruff `C901` (complexity > 10), `PLR0912` (> 12 branches), `PLR0915` (> 30 statements) in every project, and the file-size ratchet (`platform-py/size-baseline.json`). Existing excess is marked `# noqa: C901…` or listed in the baseline: touching such code means shrinking it, never growing it; remove the `noqa`/baseline entry once it fits. Never add a new `noqa` or baseline entry for these rules.
+- **Names:** specific enough to grep (no `data`, `handler`, `Manager`); explicit types (no bare `dict`/`Any` at boundaries).
+- **No duplication:** extract shared logic; reuse what already exists before writing new code.
+- **Errors:** exception messages carry the offending value and the expected shape.
+- **Comments:** WHY, not WHAT; keep existing ones.
+- **Tests:** mock external I/O (API, DB, filesystem) with named fakes, not inline stubs; tests are fast, independent and repeatable.
 
 ## Architecture of the Python hub (`platform-py/hub`)
 
-`auth` (sessions, RBAC, tokens), `vault` (vault), `state` (Postgres: sessions, jobs, leadership), `admin` (stores + chained audit trail), `gateway` (proxy `/apps/{id}`, `/_frag/{id}`, signed identity `x-hub-user`, `x-hub-base`, CSP, WebSocket), `ux` (Home, search, Inbox, settings, i18n), `connections`/`storage` (SharePoint/S3 and broker — credentials never in HTML/API/logs/audit trail), `insight` (logs, flags, SLOs, observability, OTLP), `ops` (deployments, image build, blue/green, staging, supervisor, backups), `api` (single table that generates `/api/v1`, OpenAPI and MCP tools; MCP OAuth 2.1). Templates in `hub/web/templates`. Menu (21 screens): `hub/web/nav.json` (`also` = other routes that light up the item) and tabs in `hub/ux/shell.py` (`TAB_SETS`: Users/Roles `?tab=roles`, Logs/Audit, Variables/Connections; My account = `/account`, `/account/security`, `/account/access`); Observability is a section of Health, usage (MAU) and key rotations ("Security and keys") live in Settings; old routes answer 308.
+`auth` (sessions, RBAC, tokens), `vault` (vault), `state` (Postgres: sessions, jobs, leadership), `admin` (stores + chained audit trail), `gateway` (proxy `/apps/{id}`, `/_frag/{id}`, signed identity `x-hub-user`, `x-hub-base`, CSP, WebSocket), `ux` (Home, search, Inbox, settings, i18n), `connections`/`storage` (SharePoint/S3 and broker), `insight` (logs, flags, SLOs, observability, OTLP), `ops` (deployments, image build, blue/green, staging, supervisor, backups), `api` (single table that generates `/api/v1`, OpenAPI and MCP tools; MCP OAuth 2.1). Templates in `hub/web/templates`. Menu (21 screens): `hub/web/nav.json` (`also` = other routes that light up the item) and tabs in `hub/ux/shell.py` (`TAB_SETS`: Users/Roles `?tab=roles`, Logs/Audit, Variables/Connections; My account = `/account`, `/account/security`, `/account/access`); Observability is a section of Health, usage (MAU) and key rotations ("Security and keys") live in Settings; old routes answer 308.
 
 ## Rules
 

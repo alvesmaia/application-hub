@@ -61,7 +61,7 @@ def _bad(message: str) -> StorageError:
     return StorageError("invalid", f"Caminho inválido: {message}.")
 
 
-def clean(p: str) -> str:
+def clean(p: str) -> str:  # noqa: C901
     """Normalizes a relative path and refuses anything that could escape the base folder."""
     if len(p.encode()) > _MAX_TOTAL:
         raise StorageError("invalid", "Caminho longo demais.")

@@ -105,7 +105,7 @@ class Outbox:
         else:
             self.app.state.inbox.push(item)
 
-    async def pull_app(self, app_id: str, upstream: str, token: str, after: int) -> dict[str, Any]:
+    async def pull_app(self, app_id: str, upstream: str, token: str, after: int) -> dict[str, Any]:  # noqa: C901, PLR0915
         admin, base = self.app.state.admin, f"{upstream.rstrip('/')}/{app_id}/_hub/outbox"
         r = await self.client.get(
             f"{base}?after={after}&limit={PAGE}", headers={TOKEN_HEADER: token}, timeout=10

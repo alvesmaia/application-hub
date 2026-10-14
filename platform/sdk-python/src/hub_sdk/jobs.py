@@ -504,7 +504,7 @@ class Jobs:
         if fin is not None:
             await after_final(handler, fin, fin.status)
 
-    async def _finish_tx(
+    async def _finish_tx(  # noqa: C901, PLR0915
         self, spec: JobSpec, handler: Handler, job: Job, outcome: Any, error: JobError | None
     ) -> Job | None:
         if isinstance(error, JobLostLease):
@@ -701,7 +701,7 @@ class JobCtx:
             raise JobLostLease("lease perdido")
 
 
-async def run_claimed(jobs: Jobs, handler: Handler, job: Job, shutdown: Shutdown) -> None:
+async def run_claimed(jobs: Jobs, handler: Handler, job: Job, shutdown: Shutdown) -> None:  # noqa: C901, PLR0915
     """Runs an already claimed attempt: parallel heartbeat, maximum time, result."""
     spec = handler.spec
     ctx = JobCtx(job, jobs, spec, shutdown)
@@ -795,7 +795,7 @@ class Worker:
     def spawn(self) -> asyncio.Task[None]:
         return asyncio.create_task(self.run())
 
-    async def run(self) -> None:
+    async def run(self) -> None:  # noqa: C901, PLR0915
         specs = [h.spec for h in self.handlers]
         kinds = [s.kind for s in specs]
         while not self.shutdown.triggered:

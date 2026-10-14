@@ -65,7 +65,7 @@ def _tool_name(s: str) -> str:
     return n.strip("_")
 
 
-def tools_from_openapi(doc: dict[str, Any], app_id: str) -> list[ToolDef]:
+def tools_from_openapi(doc: dict[str, Any], app_id: str) -> list[ToolDef]:  # noqa: C901, PLR0912, PLR0915
     prefix = f"/{app_id}/api/"
     out: list[ToolDef] = []
     for path, item in (doc.get("paths") or {}).items():
@@ -201,7 +201,7 @@ def _arg_text(v: Any) -> str:
     return v if isinstance(v, str) else json.dumps(v)
 
 
-def router(
+def router(  # noqa: C901, PLR0915
     app_id: str,
     token: str | None,
     app: Callable[[], Any],
@@ -256,7 +256,7 @@ def router(
         return _result(status, out)
 
     @r.post(f"/{app_id}/_hub/mcp")
-    async def mcp(req: Request) -> Response:
+    async def mcp(req: Request) -> Response:  # noqa: C901
         if not enabled:
             return JSONResponse({"error": "MCP desligado"}, status_code=404)
         if token is None:

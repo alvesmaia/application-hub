@@ -83,7 +83,7 @@ def sdk_wheel() -> Path:
     return whl[-1]
 
 
-def create(
+def create(  # noqa: C901, PLR0915
     app_id: str,
     name: str,
     stack: str,

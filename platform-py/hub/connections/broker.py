@@ -139,7 +139,7 @@ class Caller:
         return storage_fail(e)
 
 
-def build_broker(store: ConnStore, admin: AdminStore, key: bytes) -> FastAPI:
+def build_broker(store: ConnStore, admin: AdminStore, key: bytes) -> FastAPI:  # noqa: C901, PLR0915
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     slots: dict[str, asyncio.Semaphore] = {}
     cidrs = parse_cidrs(os.getenv("HUB_BROKER_APP_CIDRS", ""))
