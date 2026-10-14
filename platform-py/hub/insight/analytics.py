@@ -150,7 +150,7 @@ class Analytics:
         return self.retention
 
     # ---- recording events -----------------------------------------------------------------------------
-    def record(  # noqa: C901
+    def record(
         self, user: str, kind: str, a: str = "", b: str = "", n: int = 0, now: int | None = None
     ) -> None:
         """`kind`: login, page(a), open(a), section(a,b), action(a), search(a=texto, n=resultados), feature(a)."""
@@ -165,6 +165,9 @@ class Analytics:
         day = self.days.setdefault(day_key(now), _new_day())
         day["users"].add(uid)
         self.dirty = True
+        self._tally(day, uid, kind, a, b, n)
+
+    def _tally(self, day: dict[str, Any], uid: int, kind: str, a: str, b: str, n: int) -> None:
         if kind == "login":
             day["f_login"].add(uid)
             _bump(day["events"], "login")

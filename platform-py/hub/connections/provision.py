@@ -139,7 +139,34 @@ def _scrub(text: str, *secrets_: str) -> str:
     return text.strip()
 
 
-async def provision(  # noqa: PLR0915
+async def _recheck(
+    conns: ConnStore,
+    store: ObjectStore,
+    rec: dict[str, Any],
+    existing: dict[str, Any] | None,
+    who: str,
+    url: str,
+) -> tuple[int, dict[str, Any]]:
+    """Already provisioned: re-applies bucket, user and policy and re-links the connection (idempotent)."""
+    app, env, name = rec["app"], rec["env"], names(rec["app"], rec["env"])
+    if existing is None:
+        raise ConnError(
+            f"A conexão {name} do armazenamento provisionado sumiu: desprovisione e provisione de novo.",
+            409,
+        )
+    await store.ensure(rec["bucket"], rec["user"], existing["secret"])
+    b = {"app": app, "env": env}
+    if b not in existing["bindings"]:
+        await conns.set_bindings(name, [*existing["bindings"], b])
+        await conns.sync_env(who, url)
+    return 200, {
+        "changed": False,
+        "storage": rec,
+        "detail": "já provisionado: bucket, usuário, política e conexão conferidos",
+    }
+
+
+async def provision(
     conns: ConnStore, store: ObjectStore, app: str, env: str, who: str, broker_url: str
 ) -> tuple[int, dict[str, Any]]:
     if app not in conns.apps:
@@ -150,21 +177,7 @@ async def provision(  # noqa: PLR0915
     existing = conns.get(name)
     rec = next((p for p in conns.storage if p["app"] == app and p["env"] == env), None)
     if rec:
-        if existing is None:
-            raise ConnError(
-                f"A conexão {name} do armazenamento provisionado sumiu: desprovisione e provisione de novo.",
-                409,
-            )
-        await store.ensure(rec["bucket"], rec["user"], existing["secret"])
-        b = {"app": app, "env": env}
-        if b not in existing["bindings"]:
-            await conns.set_bindings(name, [*existing["bindings"], b])
-            await conns.sync_env(who, broker_url)
-        return 200, {
-            "changed": False,
-            "storage": rec,
-            "detail": "já provisionado: bucket, usuário, política e conexão conferidos",
-        }
+        return await _recheck(conns, store, rec, existing, who, broker_url)
     if existing is not None:
         raise ConnError(
             f"Já existe uma conexão {name} que não foi provisionada pelo hub: renomeie ou exclua-a antes.",

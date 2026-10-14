@@ -2,146 +2,43 @@
 
 from __future__ import annotations
 
-import base64
-import hashlib
 import json
 import os
 import secrets
-import stat
-import struct
 import time
 from pathlib import Path
 from typing import Any, cast
 
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from hub.models import KeyringFile
+from hub.vault.crypto import (
+    _B64,
+    CHUNK,
+    DEFAULT_KEY_FILE,
+    KEYRING_FILE,
+    KEYRING_RELEASE,
+    PREFIX,
+    _aad_dek,
+    _aad_protected,
+    _open,
+    _public,
+    _seal,
+    _unb64,
+    fingerprint,
+    is_encrypted_file,
+    is_sealed,
+    parse_hex_key,
+    read_key_file,
+    secure_remove,
+    verify_signature,
+    write_key_file,
+    write_private,
+)
+from hub.vault.files import decrypt_file, encrypt_file
 
-PREFIX = "vault:v1:"
-KEYRING_FILE = "keyring.json"
-DEFAULT_KEY_FILE = "master.key"
-KEYRING_RELEASE = 2
-CHUNK = 1 << 20
-FILE_MAGIC = b"HUBENC1\n"
-_B64 = base64.b64encode
-
-
-def _unb64(value: str) -> bytes:
-    return base64.b64decode(value, validate=True)
-
-
-def _hex(raw: bytes) -> str:
-    return raw.hex()
-
-
-def _seal(key: bytes, plain: bytes, aad: bytes) -> bytes:
-    nonce = secrets.token_bytes(12)
-    return nonce + AESGCM(key).encrypt(nonce, plain, aad)
-
-
-def _open(key: bytes, sealed: bytes, aad: bytes) -> bytes:
-    if len(sealed) < 28:
-        raise ValueError("ciphertext too short")
-    return AESGCM(key).decrypt(sealed[:12], sealed[12:], aad)
-
-
-def fingerprint(key: bytes) -> str:
-    if len(key) != 32:
-        raise ValueError("master key must be 32 bytes")
-    return hashlib.sha256(b"hub-vault-kek:" + key).digest()[:8].hex()
-
-
-def parse_hex_key(text: str) -> bytes:
-    if len(text) != 64 or any(c not in "0123456789abcdefABCDEF" for c in text):
-        raise ValueError("invalid master key: expected 64 hexadecimal characters (256 bits)")
-    try:
-        return bytes.fromhex(text)
-    except ValueError as exc:
-        raise ValueError("invalid master key: expected 64 hexadecimal characters (256 bits)") from exc
-
-
-def read_key_file(path: Path) -> bytes:
-    return parse_hex_key(path.read_text(encoding="utf-8").strip())
-
-
-def write_private(path: Path, data: bytes) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp-vault")
-    try:
-        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "wb") as f:
-            f.write(data)
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp, path)
-    except OSError:
-        tmp.unlink(missing_ok=True)
-        raise
-
-
-def _private_stream(path: Path) -> Any:
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    if os.name == "posix":
-        os.chmod(path, 0o600)
-    return os.fdopen(fd, "wb")
-
-
-def write_key_file(path: Path, key: bytes) -> None:
-    if len(key) != 32:
-        raise ValueError("master key must be 32 bytes")
-    write_private(path, key.hex().encode() + b"\n")
-
-
-def secure_remove(path: Path) -> None:
-    if stat.S_ISREG(path.lstat().st_mode):
-        with path.open("r+b") as f:
-            remaining = path.stat().st_size
-            while remaining:
-                n = min(remaining, 65536)
-                f.write(bytes(n))
-                remaining -= n
-            f.flush()
-            os.fsync(f.fileno())
-    path.unlink()
-
-
-def is_sealed(value: str) -> bool:
-    return value.startswith(PREFIX)
-
-
-def is_encrypted_file(path: Path) -> bool:
-    try:
-        with path.open("rb") as f:
-            return f.read(8) == FILE_MAGIC
-    except OSError:
-        return False
-
-
-def verify_signature(public_b64: str, message: bytes, signature_b64: str) -> bool:
-    try:
-        Ed25519PublicKey.from_public_bytes(_unb64(public_b64)).verify(_unb64(signature_b64), message)
-        return True
-    except (ValueError, TypeError):
-        return False
-    except Exception:
-        return False
-
-
-def _aad_dek(id: str) -> bytes:
-    return f"hub-vault:dek:{id}".encode()
-
-
-def _aad_protected(name: str, generation: int) -> bytes:
-    return f"hub-vault:meta:v2:{name}:{generation}".encode()
-
-
-def _public(seed: bytes) -> str:
-    key = Ed25519PrivateKey.from_private_bytes(seed)
-    return _B64(
-        key.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
-    ).decode()
+_META_AAD = b"hub-vault:keyring-meta:v2"
+_SEED_AAD = b"hub-vault:audit-seed:v2"
 
 
 class Vault:
@@ -231,19 +128,17 @@ class Vault:
                     "created_ms": time.time_ns() // 1_000_000,
                 }
             ],
-            "audit_seed": self._wrap(seed, b"hub-vault:audit-seed:v2"),
+            "audit_seed": self._wrap(seed, _SEED_AAD),
             "audit_public_keys": [_public(seed)],
             "protected": {},
-            "sealed_meta": self._wrap(
-                json.dumps(self._meta, separators=(",", ":")).encode(), b"hub-vault:keyring-meta:v2"
-            ),
+            "sealed_meta": self._sealed_meta(self._meta),
         }
         self._audit = seed
         self._meta_problems: dict[str, str] = {}
         if persist:
             self._persist()
 
-    def _load(self) -> None:  # noqa: C901, PLR0915
+    def _load(self) -> None:
         if self.keyring_path is None:
             raise ValueError("missing keyring path")
         self._file = json.loads(self.keyring_path.read_text(encoding="utf-8"))
@@ -254,33 +149,34 @@ class Vault:
         legacy = self._file["version"] < 2
         if not legacy and not self._file.get("sealed_meta"):
             raise ValueError("release 2 keyring missing sealed metadata")
-        self._audit = self._unwrap(
-            self._file["audit_seed"], b"hub-vault:audit-seed" if legacy else b"hub-vault:audit-seed:v2"
-        )
+        self._audit = self._unwrap(self._file["audit_seed"], b"hub-vault:audit-seed" if legacy else _SEED_AAD)
         if legacy:
-            self._meta = {
-                "release": 2,
-                "keyring_id": "kr-" + secrets.token_hex(8),
-                "generation": 0,
-                "names": {},
-            }
-            protected: dict[str, str] = {}
-            for name, sealed in self._file.get("protected", {}).items():
-                plain = self._unwrap(sealed, f"hub-vault:meta:{name}".encode())
-                self._meta["generation"] += 1
-                gen = self._meta["generation"]
-                self._meta["names"][name] = gen
-                protected[name] = self._wrap(plain, _aad_protected(name, gen))
-            self._file["protected"] = protected
-            self._file["audit_seed"] = self._wrap(self._audit, b"hub-vault:audit-seed:v2")
-            self._file["version"] = 2
-            self._file["sealed_meta"] = self._wrap(
-                json.dumps(self._meta, separators=(",", ":")).encode(), b"hub-vault:keyring-meta:v2"
-            )
-            self.upgraded_legacy = True
-            self._persist()
+            self._upgrade_legacy()
         else:
-            self._meta = json.loads(self._unwrap(self._file["sealed_meta"], b"hub-vault:keyring-meta:v2"))
+            self._meta = json.loads(self._unwrap(self._file["sealed_meta"], _META_AAD))
+        self._check_meta()
+
+    def _sealed_meta(self, meta: dict[str, Any]) -> str:
+        return self._wrap(json.dumps(meta, separators=(",", ":")).encode(), _META_AAD)
+
+    def _upgrade_legacy(self) -> None:
+        """Release 1 keyring: re-seals the protected metadata under generation-bound AADs and persists."""
+        self._meta = {"release": 2, "keyring_id": "kr-" + secrets.token_hex(8), "generation": 0, "names": {}}
+        protected: dict[str, str] = {}
+        for name, sealed in self._file.get("protected", {}).items():
+            plain = self._unwrap(sealed, f"hub-vault:meta:{name}".encode())
+            self._meta["generation"] += 1
+            gen = self._meta["generation"]
+            self._meta["names"][name] = gen
+            protected[name] = self._wrap(plain, _aad_protected(name, gen))
+        self._file["protected"] = protected
+        self._file["audit_seed"] = self._wrap(self._audit, _SEED_AAD)
+        self._file["version"] = 2
+        self._file["sealed_meta"] = self._sealed_meta(self._meta)
+        self.upgraded_legacy = True
+        self._persist()
+
+    def _check_meta(self) -> None:
         self._meta_problems = {}
         names = self._meta["names"]
         for name, gen in names.items():
@@ -362,14 +258,12 @@ class Vault:
         try:
             for d in file["deks"]:
                 d["wrapped"] = self._wrap(self._deks[d["id"]], _aad_dek(d["id"]))
-            file["audit_seed"] = self._wrap(self._audit, b"hub-vault:audit-seed:v2")
+            file["audit_seed"] = self._wrap(self._audit, _SEED_AAD)
             for name, value in protected.items():
                 gen = self._meta["names"][name]
                 if value is not None:
                     file["protected"][name] = self._wrap(value.encode(), _aad_protected(name, gen))
-            file["sealed_meta"] = self._wrap(
-                json.dumps(self._meta, separators=(",", ":")).encode(), b"hub-vault:keyring-meta:v2"
-            )
+            file["sealed_meta"] = self._sealed_meta(self._meta)
             file["kek_fingerprint"] = fingerprint(new)
             self._file = file
             self._persist()
@@ -419,9 +313,7 @@ class Vault:
         self._file.setdefault("protected", {})[name] = self._wrap(
             value.encode(), _aad_protected(name, generation)
         )
-        self._file["sealed_meta"] = self._wrap(
-            json.dumps(meta, separators=(",", ":")).encode(), b"hub-vault:keyring-meta:v2"
-        )
+        self._file["sealed_meta"] = self._sealed_meta(meta)
         old = self._meta
         self._meta = meta
         try:
@@ -449,88 +341,11 @@ class Vault:
         return list(self._meta_problems.items())
 
     def encrypt_file(self, src: Path, dst: Path, aad: str) -> int:
-        file_key = secrets.token_bytes(32)
         dek = self.active_dek
-        wrapped = _B64(_seal(self._deks[dek], file_key, f"hub-vault:file-key:v2:{aad}".encode())).decode()
-        header = json.dumps(
-            {"alg": "AES-256-GCM-STREAM", "v": 2, "dek": dek, "key": wrapped, "chunk": CHUNK},
-            separators=(",", ":"),
-            sort_keys=True,
-        ).encode()
-        chunk_aad = f"{aad}|hdr:{hashlib.sha256(header).hexdigest()}".encode()
-        tmp = dst.with_suffix(".part-enc")
-        total = counter = 0
-        out_file = _private_stream(tmp)
-        try:
-            with src.open("rb") as source, out_file as out:
-                out.write(FILE_MAGIC + struct.pack(">I", len(header)) + header)
-                chunk = source.read(CHUNK)
-                while True:
-                    nxt = source.read(CHUNK) if len(chunk) == CHUNK else b""
-                    last = not nxt
-                    nonce = bytes([int(last), 0, 0, 0]) + counter.to_bytes(8, "big")
-                    ciphertext = AESGCM(file_key).encrypt(nonce, chunk, chunk_aad)
-                    out.write(struct.pack(">I", len(ciphertext)) + ciphertext)
-                    total += len(chunk)
-                    if last:
-                        break
-                    chunk = nxt
-                    counter += 1
-                out.flush()
-                os.fsync(out.fileno())
-        except Exception:
-            tmp.unlink(missing_ok=True)
-            raise
-        os.replace(tmp, dst)
-        return total
+        return encrypt_file(dek, self._deks[dek], src, dst, aad)
 
-    def decrypt_file(self, src: Path, dst: Path, aad: str) -> int:  # noqa: PLR0915
-        tmp = dst.with_suffix(".part-dec")
-        try:
-            with src.open("rb") as f:
-                if f.read(8) != FILE_MAGIC:
-                    raise ValueError("invalid encrypted file")
-                n = struct.unpack(">I", f.read(4))[0]
-                if n > 4096:
-                    raise ValueError("invalid header")
-                hb = f.read(n)
-                h = json.loads(hb)
-                v2 = h.get("v") == 2
-                dek = self._deks[h["dek"]]
-                key_aad = f"hub-vault:file-key:v2:{aad}".encode() if v2 else b"hub-vault:file-key"
-                file_key = _open(dek, _unb64(h["key"]), key_aad)
-                chunk_aad = f"{aad}|hdr:{hashlib.sha256(hb).hexdigest()}".encode() if v2 else aad.encode()
-                total = counter = 0
-                with _private_stream(tmp) as out:
-                    while True:
-                        size = struct.unpack(">I", f.read(4))[0]
-                        if size < 16 or size > CHUNK + 16:
-                            raise ValueError("invalid chunk")
-                        encrypted = f.read(size)
-                        if len(encrypted) != size:
-                            raise ValueError("truncated chunk")
-                        nonce = bytes([0, 0, 0, 0]) + counter.to_bytes(8, "big")
-                        try:
-                            plain = AESGCM(file_key).decrypt(nonce, encrypted, chunk_aad)
-                            last = False
-                        except Exception:
-                            nonce = bytes([1, 0, 0, 0]) + counter.to_bytes(8, "big")
-                            plain = AESGCM(file_key).decrypt(nonce, encrypted, chunk_aad)
-                            last = True
-                        out.write(plain)
-                        total += len(plain)
-                        if last:
-                            if f.read(1):
-                                raise ValueError("trailing data")
-                            break
-                        counter += 1
-                    out.flush()
-                    os.fsync(out.fileno())
-            os.replace(tmp, dst)
-            return total
-        except Exception:
-            tmp.unlink(missing_ok=True)
-            raise
+    def decrypt_file(self, src: Path, dst: Path, aad: str) -> int:
+        return decrypt_file(self._deks, src, dst, aad)
 
 
 __all__ = [

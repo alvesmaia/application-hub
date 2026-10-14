@@ -42,43 +42,58 @@ class SqlError(Exception):
         self.message = message
 
 
-def _strip(sql: str) -> str:  # noqa: C901, PLR0915
+_CLOSE = {"'": "'", '"': '"', "`": "`", "[": "]"}
+
+
+def _quoted_end(sql: str, i: int) -> int | None:
+    """Index just past the quote opened at `i` (a doubled quote escapes it, except in `[...]`); None if unclosed."""
+    end = _CLOSE[sql[i]]
+    j = i + 1
+    while True:
+        j = sql.find(end, j)
+        if j < 0:
+            return None
+        if end != "]" and sql.startswith(end * 2, j):
+            j += 2
+            continue
+        return j + 1
+
+
+def _skip(sql: str, i: int) -> tuple[int, str] | None:
+    """Comment or quoted text starting at `i`: (index after it, marker that replaces it); None otherwise."""
+    c = sql[i]
+    if sql.startswith("--", i):
+        j = sql.find("\n", i)
+        return (len(sql) if j < 0 else j), ""
+    if sql.startswith("/*", i):
+        j = sql.find("*/", i + 2)
+        if j < 0:
+            raise SqlError("SQL: comentário /* sem fechamento.")
+        return j + 2, " "
+    if c in _CLOSE:
+        j = _quoted_end(sql, i)
+        if j is None:
+            raise SqlError("SQL: texto entre aspas sem fechamento.")
+        return j, "''" if c == "'" else '""'
+    if c == "$" and (m := re.match(r"\$([A-Za-z_]\w*)?\$", sql[i:])):
+        tag = m.group(0)
+        j = sql.find(tag, i + len(tag))
+        if j < 0:
+            raise SqlError("SQL: texto $$ sem fechamento.")
+        return j + len(tag), "''"
+    return None
+
+
+def _strip(sql: str) -> str:
     """SQL without comments, with quoted literals/identifiers replaced by markers."""
     out: list[str] = []
     i, n = 0, len(sql)
     while i < n:
-        c = sql[i]
-        if sql.startswith("--", i):
-            j = sql.find("\n", i)
-            i = n if j < 0 else j
-        elif sql.startswith("/*", i):
-            j = sql.find("*/", i + 2)
-            if j < 0:
-                raise SqlError("SQL: comentário /* sem fechamento.")
-            i = j + 2
-            out.append(" ")
-        elif c in "'\"`[":
-            end = {"'": "'", '"': '"', "`": "`", "[": "]"}[c]
-            j = i + 1
-            while True:
-                j = sql.find(end, j)
-                if j < 0:
-                    raise SqlError("SQL: texto entre aspas sem fechamento.")
-                if end != "]" and sql.startswith(end * 2, j):
-                    j += 2
-                    continue
-                break
-            out.append("''" if c == "'" else '""')
-            i = j + 1
-        elif c == "$" and (m := re.match(r"\$([A-Za-z_]\w*)?\$", sql[i:])):
-            tag = m.group(0)
-            j = sql.find(tag, i + len(tag))
-            if j < 0:
-                raise SqlError("SQL: texto $$ sem fechamento.")
-            out.append("''")
-            i = j + len(tag)
+        if (got := _skip(sql, i)) is not None:
+            i, marker = got
+            out.append(marker)
         else:
-            out.append(c)
+            out.append(sql[i])
             i += 1
     return "".join(out)
 
@@ -101,8 +116,7 @@ def check_sql(sql: str, readonly: bool) -> str:
     return sql.strip().rstrip(";").strip()
 
 
-def bind(sql: str, params: dict[str, Any], style: str) -> tuple[str, list[Any]]:  # noqa: C901, PLR0912, PLR0915
-    """``:name`` → ``$1`` (postgres), ``%s`` (mysql/sqlserver) or ``?`` (sqlite), outside quotes and comments."""
+def _check_params(params: dict[str, Any]) -> None:
     if len(params) > MAX_PARAMS:
         raise SqlError(f"Até {MAX_PARAMS} parâmetros.")
     for k, v in params.items():
@@ -112,6 +126,39 @@ def bind(sql: str, params: dict[str, Any], style: str) -> tuple[str, list[Any]]:
             raise SqlError(f"Parâmetro {k}: use texto, número, booleano ou nulo.")
         if isinstance(v, str) and len(v) > 4000:
             raise SqlError(f"Parâmetro {k}: até 4000 caracteres.")
+
+
+def _literal_end(sql: str, i: int) -> int | None:
+    """End of the comment or quoted text starting at `i` (kept as is; unclosed runs to the end); None otherwise."""
+    n = len(sql)
+    if sql.startswith("--", i):
+        j = sql.find("\n", i)
+        return n if j < 0 else j
+    if sql.startswith("/*", i):
+        j = sql.find("*/", i + 2)
+        return n if j < 0 else j + 2
+    if sql[i] in _CLOSE:
+        return _quoted_end(sql, i) or n
+    return None
+
+
+def _placeholder(
+    name: str, params: dict[str, Any], style: str, values: list[Any], order: dict[str, int]
+) -> str:
+    if name not in params:
+        raise SqlError(f"Parâmetro :{name} sem valor.")
+    if style == "dollar":
+        if name not in order:
+            values.append(params[name])
+            order[name] = len(values)
+        return f"${order[name]}"
+    values.append(params[name])
+    return "%s" if style == "format" else "?"
+
+
+def bind(sql: str, params: dict[str, Any], style: str) -> tuple[str, list[Any]]:
+    """``:name`` → ``$1`` (postgres), ``%s`` (mysql/sqlserver) or ``?`` (sqlite), outside quotes and comments."""
+    _check_params(params)
     out: list[str] = []
     values: list[Any] = []
     order: dict[str, int] = {}
@@ -122,46 +169,14 @@ def bind(sql: str, params: dict[str, Any], style: str) -> tuple[str, list[Any]]:
     i, n = 0, len(sql)
     while i < n:
         c = sql[i]
-        if sql.startswith("--", i):
-            j = sql.find("\n", i)
-            j = n if j < 0 else j
-            out.append(esc(sql[i:j]))
-            i = j
-        elif sql.startswith("/*", i):
-            j = sql.find("*/", i + 2)
-            j = n if j < 0 else j + 2
-            out.append(esc(sql[i:j]))
-            i = j
-        elif c in "'\"`[":
-            end = {"'": "'", '"': '"', "`": "`", "[": "]"}[c]
-            j = i + 1
-            while True:
-                j = sql.find(end, j)
-                if j < 0:
-                    j = n
-                    break
-                if end != "]" and sql.startswith(end * 2, j):
-                    j += 2
-                    continue
-                j += 1
-                break
+        if (j := _literal_end(sql, i)) is not None:
             out.append(esc(sql[i:j]))
             i = j
         elif c == ":" and sql.startswith("::", i):
             out.append("::")
             i += 2
         elif c == ":" and (m := re.match(r":([A-Za-z_]\w*)", sql[i:])):
-            name = m.group(1)
-            if name not in params:
-                raise SqlError(f"Parâmetro :{name} sem valor.")
-            if style == "dollar":
-                if name not in order:
-                    values.append(params[name])
-                    order[name] = len(values)
-                out.append(f"${order[name]}")
-            else:
-                values.append(params[name])
-                out.append("%s" if style == "format" else "?")
+            out.append(_placeholder(m.group(1), params, style, values, order))
             i += len(m.group(0))
         elif c == "%" and style == "format":
             out.append("%%")

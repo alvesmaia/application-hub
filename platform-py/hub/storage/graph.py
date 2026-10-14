@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import os
-import random
 import re
 import time
 from collections.abc import AsyncIterator
@@ -17,7 +16,6 @@ import httpx
 from hub.storage import (
     Body,
     Item,
-    Steps,
     StorageError,
     clean,
     clean_file,
@@ -29,6 +27,7 @@ from hub.storage import (
     split_parent,
 )
 from hub.storage.cert import ClientCert
+from hub.storage.graph_probe import probe
 
 DEFAULT_LOGIN = "https://login.microsoftonline.com"
 DEFAULT_GRAPH = "https://graph.microsoft.com/v1.0"
@@ -432,69 +431,8 @@ class GraphClient:
         except StorageError:
             return False
 
-    async def test(self) -> list[dict[str, Any]]:  # noqa: C901, PLR0915
-        s = Steps()
-        self._token = self._target = None
-
-        async def token() -> tuple[None, str]:
-            await self.token()
-            return None, "Token app-only obtido (segredo do cliente)."
-
-        async def site() -> tuple[tuple[str, str], str]:
-            sid, name = await self._resolve_site()
-            return (sid, name), f'Site "{name}".'
-
-        await s.run("token", token)
-        sid, site_name = await s.run("site", site) or ("", "")
-
-        async def drive() -> tuple[str, str]:
-            did, name = await self._resolve_drive(sid)
-            self._target = (did, site_name, name)
-            return did, f'Biblioteca "{name}".'
-
-        did = await s.run("drive", drive) or ""
-        base = self.cfg.base_folder
-
-        async def folder() -> tuple[None, str]:
-            await self._ensure_folder(did, base)
-            return None, f'Pasta-base "{base}" pronta.' if base else "Raiz da biblioteca."
-
-        await s.run("folder", folder)
-        probe = f".hub-sonda-{random.randrange(16**8):08x}.txt"  # noqa: S311
-        data = bytes(random.choices(b"abcdefghijklmnopqrstuvwxyz0123456789", k=64))  # noqa: S311
-
-        async def feed() -> AsyncIterator[bytes]:
-            yield data
-
-        async def write() -> tuple[None, str]:
-            await self.upload(probe, len(data), "text/plain", Body(feed()))
-            return None, f"Arquivo de sonda {probe} gravado ({len(data)} bytes)."
-
-        async def read() -> tuple[None, str]:
-            _, _, stream = await self.download(probe)
-            if b"".join([c async for c in stream]) != data:
-                raise StorageError("upstream", "O conteúdo lido difere do gravado.")
-            return None, "Conteúdo lido e conferido."
-
-        wrote = await s.run("write", write)
-        await s.run("read", read)
-        if wrote:
-            t0 = time.monotonic()
-            try:
-                await self.delete(probe)
-                s.steps.append(
-                    {
-                        "key": "delete",
-                        "ok": True,
-                        "detail": "Arquivo de sonda apagado.",
-                        "ms": int((time.monotonic() - t0) * 1000),
-                    }
-                )
-            except StorageError as e:
-                s.steps.append({"key": "delete", "ok": False, "detail": e.message, "ms": 0})
-        else:
-            s.steps.append({"key": "delete", "ok": None, "detail": "", "ms": 0})
-        return s.steps
+    async def test(self) -> list[dict[str, Any]]:
+        return await probe(self)
 
     def resolved(self) -> tuple[str, str] | None:
         return (self._target[1], self._target[2]) if self._target else None
