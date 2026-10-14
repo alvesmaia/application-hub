@@ -29,8 +29,8 @@
   - ▶️ agent C (worktree)
 - ▶️ 6 · Sample apps: app.py of ativos/coletor/servicos/fornecedores, ativos/importer.py + 21 noqa
   - ▶️ agent D (worktree)
-- ▶️ 7 · CLI and scripts: 9 noqa
-  - ▶️ agent E (worktree)
+- ✅ 7 · CLI and scripts: 9 noqa
+  - ✅ agent E: 9/9 noqa removed (CLI 36 passed, scripts 7 passed)
 - ▶️ 8 · Shell JS: hub-device.js, hub-ux.js, hub-kit.js, hub.js, ops.js
   - ▶️ agent F (worktree)
 
