@@ -61,28 +61,32 @@ def _bad(message: str) -> StorageError:
     return StorageError("invalid", f"Caminho inválido: {message}.")
 
 
-def clean(p: str) -> str:  # noqa: C901
+def clean(p: str) -> str:
     """Normalizes a relative path and refuses anything that could escape the base folder."""
     if len(p.encode()) > _MAX_TOTAL:
         raise StorageError("invalid", "Caminho longo demais.")
     segs = [s for s in p.split("/") if s]
     for seg in segs:
-        if seg in (".", ".."):
-            raise _bad('".." e "." não são permitidos')
-        if len(seg.encode()) > _MAX_SEGMENT:
-            raise _bad("nome longo demais")
-        if seg.endswith((" ", ".")) or seg.startswith(" "):
-            raise _bad("nomes não podem começar com espaço nem terminar em espaço ou ponto")
-        for c in seg:
-            if ord(c) < 32 or 0x7F <= ord(c) < 0xA0:
-                raise _bad("caractere de controle")
-            if c in _FORBIDDEN:
-                raise _bad(r'caractere não permitido (\ % : * ? " < > | #)')
-            if c in _LOOKALIKES:
-                raise _bad("caractere Unicode parecido com ponto ou barra")
+        _check_segment(seg)
     if len(segs) > _MAX_DEPTH:
         raise StorageError("invalid", "Pastas aninhadas demais.")
     return "/".join(segs)
+
+
+def _check_segment(seg: str) -> None:
+    if seg in (".", ".."):
+        raise _bad('".." e "." não são permitidos')
+    if len(seg.encode()) > _MAX_SEGMENT:
+        raise _bad("nome longo demais")
+    if seg.endswith((" ", ".")) or seg.startswith(" "):
+        raise _bad("nomes não podem começar com espaço nem terminar em espaço ou ponto")
+    for c in seg:
+        if ord(c) < 32 or 0x7F <= ord(c) < 0xA0:
+            raise _bad("caractere de controle")
+        if c in _FORBIDDEN:
+            raise _bad(r'caractere não permitido (\ % : * ? " < > | #)')
+        if c in _LOOKALIKES:
+            raise _bad("caractere Unicode parecido com ponto ou barra")
 
 
 def clean_file(p: str) -> str:
