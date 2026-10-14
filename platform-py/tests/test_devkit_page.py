@@ -156,9 +156,9 @@ def test_split_docs_one_page_per_section(hub: TestClient) -> None:
     assert {d.section for d in kids} == {"cli", "sdk", "contrato"} and len({d.slug for d in kids}) == len(
         kids
     )
-    page = hub.get("/developers/contrato/2-health-e-prontidao").text
+    page = hub.get("/developers/contrato/2-health-and-readiness").text
     assert (
-        "<h1" in page and "Health e prontidão" in page and "Rotas, fragmentos" in page
+        "<h1" in page and "Health and readiness" in page and "Routes, fragments" in page
     )  # 3rd section only in the menu
     cli = hub.get("/developers/cli").text
     assert 'href="/developers/cli/hub-dev"' in cli and "Lightweight local hub" in cli  # index with summary

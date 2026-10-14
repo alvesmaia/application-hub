@@ -1,6 +1,6 @@
 # Third-party dependencies of the hub-contratos image (hub-sdk-python + contratos app) and the
-# build dependencies of the two local packages. Source for requirements.lock (with hashes) — see
-# "Atualizar dependências Python" in platform/README.md.
+# build dependencies of the two local packages. Source for requirements.lock (with hashes) — regenerate with
+# uv pip compile --generate-hashes requirements.in -o requirements.lock
 fastapi==0.141.1
 starlette==1.7.0
 asyncpg==0.31.0

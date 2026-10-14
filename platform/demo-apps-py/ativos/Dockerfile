@@ -14,7 +14,7 @@
 #   transitive ones and the build's setuptools) come from demo-apps-py/ativos/requirements.lock,
 #   installed with --require-hashes; the two local packages are installed with --no-deps
 #   --no-build-isolation --no-index (nothing is resolved or downloaded outside the lock).
-#   To update: "Atualizar dependências Python" in platform/README.md.
+#   To update: uv pip compile --generate-hashes requirements.in -o requirements.lock
 ARG PY_IMAGE=python:3.12-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e
 FROM ${PY_IMAGE} AS builder
 ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
