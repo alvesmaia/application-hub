@@ -24,6 +24,5 @@
   "platform/demo-apps-py/coletor/src/coletor/app.py": 850,
   "platform/demo-apps-py/fornecedores/src/fornecedores/app.py": 560,
   "platform/demo-apps-py/servicos/src/servicos/app.py": 692,
-  "platform/sdk-python/src/hub_sdk/dashboards.py": 625,
-  "platform/sdk-python/src/hub_sdk/idempotency.py": 677
+  "platform/sdk-python/src/hub_sdk/dashboards.py": 625
 }

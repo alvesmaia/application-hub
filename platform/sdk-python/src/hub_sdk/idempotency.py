@@ -40,24 +40,45 @@ import hashlib
 import logging
 import os
 import random
-import tempfile
 import time
-from collections.abc import Awaitable, Callable, MutableMapping
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
 from starlette.requests import HTTPConnection
 
+from hub_sdk._idem_io import CHUNK as CHUNK
+from hub_sdk._idem_io import KEPT_HEADERS as KEPT_HEADERS
+from hub_sdk._idem_io import MAX_HASHED_BODY as MAX_HASHED_BODY
+from hub_sdk._idem_io import MAX_STORED_BODY as MAX_STORED_BODY
+from hub_sdk._idem_io import REPLAY_HEADER as REPLAY_HEADER
+from hub_sdk._idem_io import ASGIApp as ASGIApp
+from hub_sdk._idem_io import Message as Message
+from hub_sdk._idem_io import Receive as Receive
+from hub_sdk._idem_io import Scope as Scope
+from hub_sdk._idem_io import Send as Send
+from hub_sdk._idem_io import (
+    _BodyError,
+    _Captured,
+    _in_progress,
+    _MemEntry,
+    _mismatch,
+    _notice,
+    _read_body,
+    _replayer,
+    _send_stored,
+    _Stored,
+    _TooLarge,
+    _unavailable,
+)
+from hub_sdk._idem_pg import SELECT as SELECT
+from hub_sdk._idem_pg import _pg_answer_existing, _pg_lock, _pg_release
+
 log = logging.getLogger("hub_sdk.idempotency")
 
 HEADER = "idempotency-key"
 USER_HEADER = "x-hub-user"
-REPLAY_HEADER = "idempotent-replay"
-MAX_HASHED_BODY = 1024 * 1024
-MAX_STORED_BODY = 256 * 1024
-KEPT_HEADERS = ("content-type", "location", "retry-after", "cache-control")
 MUTATING = ("POST", "PUT", "PATCH", "DELETE")
-CHUNK = 64 * 1024
 DEFAULT_MAX_BODY_MB = 64
 
 
@@ -68,13 +89,6 @@ def max_body_from_env() -> int:
     except ValueError:
         mb = DEFAULT_MAX_BODY_MB
     return max(1, mb) * 1024 * 1024
-
-
-Scope = MutableMapping[str, Any]
-Message = MutableMapping[str, Any]
-Receive = Callable[[], Awaitable[Message]]
-Send = Callable[[Message], Awaitable[None]]
-ASGIApp = Callable[[Scope, Receive, Send], Awaitable[None]]
 
 
 def valid_key(k: str) -> bool:
@@ -168,20 +182,6 @@ def idem_ctx(conn: HTTPConnection) -> IdemCtx | None:
     return ctx if isinstance(ctx, IdemCtx) else None
 
 
-@dataclass
-class _Stored:
-    status: int
-    headers: list[list[str]]
-    body: bytes | None
-
-
-@dataclass
-class _MemEntry:
-    hash: str
-    resp: _Stored | None
-    expires: float
-
-
 class Idempotency:
     """Backend: Postgres (dedicated ``pool``) or memory (``pool=None``)."""
 
@@ -201,143 +201,6 @@ class Idempotency:
         return cls(None)
 
 
-def _notice(status: int, title: str, text: str, extra: list[tuple[bytes, bytes]] | None = None) -> _Stored:
-    kind = "ok" if 200 <= status < 300 else "error"
-    body = (
-        f'<div class="hub-notice hub-notice-{kind}" role="alert"><strong>{title}</strong><p>{text}</p></div>'
-    ).encode()
-    h = [["content-type", "text/html; charset=utf-8"], ["cache-control", "no-store"]]
-    for k, v in extra or []:
-        h.append([k.decode(), v.decode()])
-    return _Stored(status, h, body)
-
-
-def _already_done() -> tuple[_Stored, bool]:
-    return (
-        _notice(
-            200, "Operação já concluída", "Esta solicitação já tinha sido processada; nada foi repetido."
-        ),
-        True,
-    )
-
-
-def _mismatch() -> _Stored:
-    return _notice(
-        422,
-        "Chave de idempotência reutilizada",
-        "A mesma chave foi usada para uma solicitação diferente. Recarregue a página e tente de novo.",
-    )
-
-
-def _in_progress() -> _Stored:
-    return _notice(
-        409,
-        "Solicitação em andamento",
-        "Esta mesma solicitação ainda está sendo processada. Aguarde alguns segundos.",
-        [(b"retry-after", b"2")],
-    )
-
-
-def _unavailable(e: object) -> _Stored:
-    log.error("hub_sdk: idempotência indisponível: %s", e)
-    return _notice(
-        503,
-        "Serviço temporariamente indisponível",
-        "Não foi possível registrar a solicitação. Tente novamente em instantes.",
-    )
-
-
-async def _send_stored(send: Send, r: _Stored, replay: bool) -> None:
-    if r.body is None:
-        r, replay = _already_done()
-    headers = [(k.encode("latin-1"), v.encode("latin-1")) for k, v in r.headers]
-    if replay:
-        headers.append((REPLAY_HEADER.encode(), b"true"))
-    body = r.body or b""
-    headers = [h for h in headers if h[0].lower() != b"content-length"]
-    headers.append((b"content-length", str(len(body)).encode()))
-    await send({"type": "http.response.start", "status": r.status, "headers": headers})
-    await send({"type": "http.response.body", "body": body, "more_body": False})
-
-
-class _Captured:
-    """The handler's ``send`` with a **limited buffer**: up to ``MAX_STORED_BODY`` the response stays
-    in memory and only goes to the client after being recorded (:meth:`flush`); a
-    replay that arrives right after already finds ``done``. Once over the cap, what was in the buffer is
-    sent and the rest goes **straight to the client** (streaming; nothing beyond the cap stays
-    in memory) and only the "completed" mark is stored. If the client is gone (``send``
-    failed), the handler runs to the end without error — the action may already have been committed and the
-    result still needs to be recorded."""
-
-    def __init__(self, send: Send) -> None:
-        self._send = send
-        self.status = 500
-        self.headers: list[tuple[bytes, bytes]] = []
-        self._pending: list[Message] = []
-        self.size = 0
-        self.overflow = False
-        self.started = False
-        self.client_gone = False
-
-    async def _out(self, msg: Message) -> None:
-        if self.client_gone:
-            return
-        try:
-            await self._send(msg)
-        except OSError:
-            self.client_gone = True
-        except Exception as e:  # client disconnect (Starlette/anyio names)
-            if e.__class__.__name__ in ("ClientDisconnect", "ClosedResourceError", "BrokenResourceError"):
-                self.client_gone = True
-            else:
-                raise
-
-    async def __call__(self, msg: Message) -> None:
-        if msg["type"] == "http.response.start":
-            self.started = True
-            self.status = int(msg["status"])
-            self.headers = list(msg.get("headers", []))
-        elif msg["type"] == "http.response.body" and not self.overflow:
-            self.size += len(msg.get("body", b""))
-            if self.size > MAX_STORED_BODY:
-                self.overflow = True
-                pending, self._pending = self._pending, []
-                for m in pending:
-                    await self._out(m)
-        if self.overflow:
-            await self._out(msg)
-        else:
-            self._pending.append(msg)
-
-    async def flush(self) -> None:
-        """Sends what is in the buffer (call after recording the result)."""
-        pending, self._pending = self._pending, []
-        for m in pending:
-            await self._out(m)
-
-    def stored_body(self) -> bytes | None:
-        """Body for replay (``None`` = above the cap → "completed")."""
-        if self.overflow:
-            return None
-        return b"".join(bytes(m.get("body", b"")) for m in self._pending if m["type"] == "http.response.body")
-
-    def kept(self) -> list[list[str]]:
-        out = []
-        for k, v in self.headers:
-            name = k.decode("latin-1").lower()
-            if name in KEPT_HEADERS:
-                out.append([name, v.decode("latin-1")])
-        return out
-
-
-class _BodyError(Exception):
-    pass
-
-
-class _TooLarge(Exception):
-    pass
-
-
 class IdempotencyMiddleware:
     """``app.add_middleware(IdempotencyMiddleware, idem=Idempotency.postgres(pool))``."""
 
@@ -355,7 +218,14 @@ class IdempotencyMiddleware:
     def idem(self) -> Idempotency:
         return self._idem if isinstance(self._idem, Idempotency) else self._idem()
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # noqa: PLR0915
+    def _too_big(self) -> _Stored:
+        return _notice(
+            413,
+            "Envio muito grande",
+            f"O limite desta aplicação é {self.max_body >> 20} MB por envio.",
+        )
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http" or scope["method"] not in MUTATING:
             await self.app(scope, receive, send)
             return
@@ -372,30 +242,25 @@ class IdempotencyMiddleware:
                 False,
             )
             return
+        declared = _declared_length(headers)
+        if declared is not None and declared > self.max_body:
+            await _send_stored(send, self._too_big(), False)
+            return
         user = headers.get(USER_HEADER, "").strip()
         path = scope.get("path", "")
         route = f"{user}\n{scope['method']} {path}"
         query = scope.get("query_string", b"").decode("latin-1")
         hasher = RequestHasher(scope["method"], path, query, headers.get("content-type", ""))
-        declared: int | None
-        try:
-            declared = int(headers["content-length"]) if "content-length" in headers else None
-        except ValueError:
-            declared = None
-        too_big = _notice(
-            413,
-            "Envio muito grande",
-            f"O limite desta aplicação é {self.max_body >> 20} MB por envio.",
-        )
-        if declared is not None and declared > self.max_body:
-            await _send_stored(send, too_big, False)
-            return
+        await self._keyed(scope, receive, send, _Keyed(route, key, hasher, declared))
+
+    async def _keyed(self, scope: Scope, receive: Receive, send: Send, req: _Keyed) -> None:
+        """Reads (and hashes) the body, then runs the backend's flow; the spooled body never outlives it."""
         spool_path: str | None = None
         try:
             try:
-                body_mem, spool_path = await _read_body(receive, hasher, declared, self.max_body)
+                body_mem, spool_path = await _read_body(receive, req.hasher, req.declared, self.max_body)
             except _TooLarge:
-                await _send_stored(send, too_big, False)
+                await _send_stored(send, self._too_big(), False)
                 return
             except _BodyError:
                 await _send_stored(
@@ -404,84 +269,32 @@ class IdempotencyMiddleware:
                     False,
                 )
                 return
-            digest = hasher.finish()
+            digest = req.hasher.finish()
             replayed = _replayer(receive, body_mem, spool_path)
             idem = self.idem
-            if idem.pool is not None:
-                await _pg_flow(idem, self.app, scope, replayed, send, route, key, digest)
-            else:
-                await _mem_flow(idem, self.app, scope, replayed, send, route, key, digest)
+            flow = _pg_flow if idem.pool is not None else _mem_flow
+            await flow(idem, self.app, scope, replayed, send, req.route, req.key, digest)
         finally:
             if spool_path is not None and spool_path:
                 with contextlib.suppress(OSError):
                     os.remove(spool_path)
 
 
-async def _read_body(  # noqa: C901, PLR0915
-    receive: Receive, hasher: RequestHasher, declared: int | None, max_body: int
-) -> tuple[bytes | None, str | None]:
-    """Small body with a declared size → memory; otherwise a temporary file."""
-    if declared is not None and declared <= MAX_HASHED_BODY:
-        parts: list[bytes] = []
-        total = 0
-        while True:
-            msg = await receive()
-            if msg["type"] == "http.disconnect":
-                raise _BodyError
-            b = msg.get("body", b"")
-            if b:
-                total += len(b)
-                if total > MAX_HASHED_BODY + 1:
-                    raise _BodyError
-                parts.append(bytes(b))
-            if not msg.get("more_body", False):
-                break
-        body = b"".join(parts)
-        hasher.update(body)
-        return body, None
-    fd, path = tempfile.mkstemp(prefix="hub-idem-", dir=tempfile.gettempdir())
-    total = 0
+@dataclass
+class _Keyed:
+    """A mutating request that carries a valid key."""
+
+    route: str
+    key: str
+    hasher: RequestHasher
+    declared: int | None
+
+
+def _declared_length(headers: dict[str, str]) -> int | None:
     try:
-        with os.fdopen(fd, "wb") as f:
-            while True:
-                msg = await receive()
-                if msg["type"] == "http.disconnect":
-                    raise _BodyError
-                b = msg.get("body", b"")
-                if b:
-                    total += len(b)
-                    if total > max_body:
-                        raise _TooLarge
-                    hasher.update(bytes(b))
-                    f.write(b)
-                if not msg.get("more_body", False):
-                    break
-    except BaseException:
-        with contextlib.suppress(OSError):
-            os.remove(path)
-        raise
-    return None, path
-
-
-def _replayer(receive: Receive, body: bytes | None, path: str | None) -> Receive:
-    state: dict[str, Any] = {"done": False, "f": None, "sent_mem": False}
-
-    async def recv() -> Message:
-        if state["done"]:
-            return await receive()
-        if body is not None:
-            state["done"] = True
-            return {"type": "http.request", "body": body, "more_body": False}
-        if state["f"] is None:
-            state["f"] = open(path or "", "rb")  # noqa: SIM115, ASYNC230 — closed at the end; short local read
-        chunk = state["f"].read(CHUNK)
-        if not chunk:
-            state["f"].close()
-            state["done"] = True
-            return {"type": "http.request", "body": b"", "more_body": False}
-        return {"type": "http.request", "body": chunk, "more_body": True}
-
-    return recv
+        return int(headers["content-length"]) if "content-length" in headers else None
+    except ValueError:
+        return None
 
 
 async def _run_app(app: ASGIApp, scope: Scope, receive: Receive, send: Send, ctx: IdemCtx) -> _Captured:
@@ -492,22 +305,7 @@ async def _run_app(app: ASGIApp, scope: Scope, receive: Receive, send: Send, ctx
     return cap
 
 
-def _row_stored(r: Any) -> _Stored:
-    headers = r["headers"] if isinstance(r["headers"], list) else []
-    return _Stored(
-        status=r["status"] or 200,
-        headers=[[str(h[0]), str(h[1])] for h in headers if isinstance(h, list) and len(h) == 2],
-        body=bytes(r["body"]) if r["body"] is not None else None,
-    )
-
-
-SELECT = (
-    "SELECT request_hash, state, status, headers, body FROM hub_idempotency "
-    "WHERE route = $1 AND key = $2 AND expires_at > now()"
-)
-
-
-async def _pg_flow(  # noqa: C901, PLR0912, PLR0915
+async def _pg_flow(
     idem: Idempotency,
     app: ASGIApp,
     scope: Scope,
@@ -524,112 +322,95 @@ async def _pg_flow(  # noqa: C901, PLR0912, PLR0915
     except Exception as e:
         await _send_stored(send, _unavailable(e), False)
         return
-    healthy = True
-    locked = False
+    got: bool | None = False
     try:
-        deadline = time.monotonic() + idem.wait
-        while True:
-            try:
-                got = await conn.fetchval("SELECT pg_try_advisory_lock(hashtextextended($1, 7))", lock_key)
-            except Exception as e:
-                healthy = False
-                await _send_stored(send, _unavailable(e), False)
-                return
-            if got:
-                locked = True
-                break
-            with contextlib.suppress(Exception):
-                r = await conn.fetchrow(SELECT, route, key)
-                if r is not None:
-                    if r["request_hash"] != digest:
-                        await _send_stored(send, _mismatch(), False)
-                        return
-                    if r["state"] == "done":
-                        await _send_stored(send, _row_stored(r), True)
-                        return
-            if time.monotonic() >= deadline:
-                await _send_stored(send, _in_progress(), False)
-                return
-            await asyncio.sleep(0.1)
-        try:
-            existing = await conn.fetchrow(SELECT, route, key)
-        except Exception as e:
-            await _send_stored(send, _unavailable(e), False)
-            return
-        if existing is not None:
-            if existing["request_hash"] != digest:
-                await _send_stored(send, _mismatch(), False)
-                return
-            if existing["state"] == "done":
-                await _send_stored(send, _row_stored(existing), True)
-                return
-            if existing["state"] == "committed":
-                done, rep = _already_done()
-                await _send_stored(send, done, rep)
-                return
-            # pending with no owner: the previous one died before committing
-        try:
+        got = await _pg_lock(idem.wait, conn, send, lock_key, route, key, digest)
+        if got is True:
+            await _pg_owned(idem, conn, app, scope, receive, send, route, key, digest)
+    finally:
+        await _pg_release(pool, conn, lock_key, locked=got is True, healthy=got is not None)
+
+
+async def _pg_owned(
+    idem: Idempotency,
+    conn: Any,
+    app: ASGIApp,
+    scope: Scope,
+    receive: Receive,
+    send: Send,
+    route: str,
+    key: str,
+    digest: str,
+) -> None:
+    """With the key's lock held: answer from the record, or run the handler and record its response."""
+    try:
+        existing = await conn.fetchrow(SELECT, route, key)
+    except Exception as e:
+        await _send_stored(send, _unavailable(e), False)
+        return
+    if existing is not None and await _pg_answer_existing(send, existing, digest):
+        return
+    try:
+        await conn.execute(
+            "INSERT INTO hub_idempotency (route, key, request_hash, state, expires_at) "
+            "VALUES ($1, $2, $3, 'pending', now() + make_interval(secs => $4)) "
+            "ON CONFLICT (route, key) DO UPDATE SET request_hash = excluded.request_hash, "
+            "state = 'pending', status = NULL, headers = NULL, body = NULL, created_at = now(), "
+            "expires_at = excluded.expires_at",
+            route,
+            key,
+            digest,
+            float(idem.ttl),
+        )
+    except Exception as e:
+        await _send_stored(send, _unavailable(e), False)
+        return
+    if random.randrange(256) == 0:  # noqa: S311
+        with contextlib.suppress(Exception):
+            await conn.execute("DELETE FROM hub_idempotency WHERE expires_at < now()")
+    cap = await _run_app(app, scope, receive, send, IdemCtx(route, key, True))
+    await _pg_record(conn, route, key, cap)
+    await cap.flush()
+
+
+async def _pg_record(conn: Any, route: str, key: str, cap: _Captured) -> None:
+    """Stores the response (or drops the pending mark), before it reaches the client."""
+    committed = False
+    with contextlib.suppress(Exception):
+        committed = (
+            await conn.fetchval("SELECT state FROM hub_idempotency WHERE route = $1 AND key = $2", route, key)
+        ) == "committed"
+    try:
+        if storable(cap.status) or committed:
             await conn.execute(
-                "INSERT INTO hub_idempotency (route, key, request_hash, state, expires_at) "
-                "VALUES ($1, $2, $3, 'pending', now() + make_interval(secs => $4)) "
-                "ON CONFLICT (route, key) DO UPDATE SET request_hash = excluded.request_hash, "
-                "state = 'pending', status = NULL, headers = NULL, body = NULL, created_at = now(), "
-                "expires_at = excluded.expires_at",
+                "UPDATE hub_idempotency SET state = 'done', status = $3, headers = $4, body = $5 "
+                "WHERE route = $1 AND key = $2",
                 route,
                 key,
-                digest,
-                float(idem.ttl),
+                cap.status,
+                cap.kept(),
+                cap.stored_body(),
             )
-        except Exception as e:
-            await _send_stored(send, _unavailable(e), False)
-            return
-        if random.randrange(256) == 0:  # noqa: S311
-            with contextlib.suppress(Exception):
-                await conn.execute("DELETE FROM hub_idempotency WHERE expires_at < now()")
-        cap = await _run_app(app, scope, receive, send, IdemCtx(route, key, True))
-        committed = False
-        with contextlib.suppress(Exception):
-            committed = (
-                await conn.fetchval(
-                    "SELECT state FROM hub_idempotency WHERE route = $1 AND key = $2", route, key
-                )
-            ) == "committed"
-        try:
-            if storable(cap.status) or committed:
-                await conn.execute(
-                    "UPDATE hub_idempotency SET state = 'done', status = $3, headers = $4, body = $5 "
-                    "WHERE route = $1 AND key = $2",
-                    route,
-                    key,
-                    cap.status,
-                    cap.kept(),
-                    cap.stored_body(),
-                )
-            else:
-                await conn.execute(
-                    "DELETE FROM hub_idempotency WHERE route = $1 AND key = $2 AND state = 'pending'",
-                    route,
-                    key,
-                )
-        except Exception as e:
-            log.error("hub_sdk: idempotência: resposta não guardada: %s", e)
-        await cap.flush()
-    finally:
-        ok = healthy
-        if locked and ok:  # ty: ignore[redundant-condition-strict]  # `healthy` changes in the except that returns; ty does not see it in the finally
-            try:
-                await asyncio.shield(
-                    conn.execute("SELECT pg_advisory_unlock(hashtextextended($1, 7))", lock_key)
-                )
-            except BaseException:
-                ok = False
-        if not ok:
-            conn.terminate()
-        with contextlib.suppress(Exception):
-            await asyncio.shield(pool.release(conn))
+        else:
+            await conn.execute(
+                "DELETE FROM hub_idempotency WHERE route = $1 AND key = $2 AND state = 'pending'",
+                route,
+                key,
+            )
+    except Exception as e:
+        log.error("hub_sdk: idempotência: resposta não guardada: %s", e)
 
 
-async def _mem_flow(  # noqa: PLR0915
+def _mem_answer(e: _MemEntry | None, digest: str) -> tuple[_Stored, bool]:
+    """Answer for a key that is busy or already has a record (422, replay or 409)."""
+    if e is not None and e.hash != digest:
+        return _mismatch(), False
+    if e is not None and e.resp is not None:
+        return e.resp, True
+    return _in_progress(), False
+
+
+async def _mem_flow(
     idem: Idempotency,
     app: ASGIApp,
     scope: Scope,
@@ -644,34 +425,36 @@ async def _mem_flow(  # noqa: PLR0915
     try:
         await asyncio.wait_for(lock.acquire(), idem.wait)
     except TimeoutError:
-        e = idem._mem.get(ident)
-        if e is not None and e.hash != digest:
-            await _send_stored(send, _mismatch(), False)
-        elif e is not None and e.resp is not None:
-            await _send_stored(send, e.resp, True)
-        else:
-            await _send_stored(send, _in_progress(), False)
+        await _send_stored(send, *_mem_answer(idem._mem.get(ident), digest))
         return
     try:
-        now = time.monotonic()
-        for k in [k for k, v in idem._mem.items() if v.expires <= now]:
-            del idem._mem[k]
-        e = idem._mem.get(ident)
-        if e is not None:
-            if e.hash != digest:
-                await _send_stored(send, _mismatch(), False)
-                return
-            if e.resp is not None:
-                await _send_stored(send, e.resp, True)
-                return
-        idem._mem[ident] = _MemEntry(digest, None, now + idem.ttl)
-        cap = await _run_app(app, scope, receive, send, IdemCtx(route, key, False))
-        if storable(cap.status):
-            idem._mem[ident].resp = _Stored(cap.status, cap.kept(), cap.stored_body())
-        else:
-            idem._mem.pop(ident, None)
-        await cap.flush()
+        await _mem_owned(idem, app, scope, receive, send, ident, digest)
     finally:
         lock.release()
         if not lock.locked():
             idem._locks.pop(ident, None)
+
+
+async def _mem_owned(
+    idem: Idempotency,
+    app: ASGIApp,
+    scope: Scope,
+    receive: Receive,
+    send: Send,
+    ident: tuple[str, str],
+    digest: str,
+) -> None:
+    now = time.monotonic()
+    for k in [k for k, v in idem._mem.items() if v.expires <= now]:
+        del idem._mem[k]
+    e = idem._mem.get(ident)
+    if e is not None and (e.hash != digest or e.resp is not None):
+        await _send_stored(send, *_mem_answer(e, digest))
+        return
+    idem._mem[ident] = _MemEntry(digest, None, now + idem.ttl)
+    cap = await _run_app(app, scope, receive, send, IdemCtx(ident[0], ident[1], False))
+    if storable(cap.status):
+        idem._mem[ident].resp = _Stored(cap.status, cap.kept(), cap.stored_body())
+    else:
+        idem._mem.pop(ident, None)
+    await cap.flush()
