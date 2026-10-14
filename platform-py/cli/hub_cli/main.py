@@ -7,7 +7,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import NoReturn, override
+from typing import TYPE_CHECKING, NoReturn, override
 
 from . import check as check_mod
 from . import deploy as deploy_mod
@@ -40,11 +40,21 @@ class Parser(argparse.ArgumentParser):
         sys.exit(VALIDATION)
 
 
-def parser() -> argparse.ArgumentParser:  # noqa: PLR0915
-    fmt = argparse.RawDescriptionHelpFormatter
-    p = Parser(prog="hub", description="Application Hub CLI", epilog=EPILOG, formatter_class=fmt)
-    sub = p.add_subparsers(dest="cmd", required=True, parser_class=Parser)
+FMT = argparse.RawDescriptionHelpFormatter
+if TYPE_CHECKING:  # argparse exposes no public name for this type
+    Subparsers = argparse._SubParsersAction[Parser]
 
+
+def parser() -> argparse.ArgumentParser:
+    p = Parser(prog="hub", description="Application Hub CLI", epilog=EPILOG, formatter_class=FMT)
+    sub = p.add_subparsers(dest="cmd", required=True, parser_class=Parser)
+    for add in (add_project, add_check, add_pack, add_dev, add_login, add_deploy, add_mcp):
+        add(sub)
+    return p
+
+
+def add_project(sub: Subparsers) -> None:
+    fmt = FMT
     pr = sub.add_parser("project", help="Create apps from the templates", epilog=EPILOG, formatter_class=fmt)
     psub = pr.add_subparsers(dest="pcmd", required=True, parser_class=Parser)
     c = psub.add_parser(
@@ -75,6 +85,9 @@ examples:
     s = psub.add_parser("stacks", help="List the available stacks")
     s.add_argument("--json", action="store_true")
 
+
+def add_check(sub: Subparsers) -> None:
+    fmt = FMT
     ck = sub.add_parser("check", help="ruff, ty, pytest+coverage, manifest, openapi and local conformance",
                         epilog=f"{EXIT_CODES}\n\nexample:\n  hub check --only ruff,pytest --json",
                         formatter_class=fmt)  # fmt: skip
@@ -83,6 +96,8 @@ examples:
     ck.add_argument("--full", action="store_true", help="also the full contract suite (conformance.json)")
     ck.add_argument("--json", action="store_true")
 
+
+def add_pack(sub: Subparsers) -> None:
     k = sub.add_parser("pack", help="Build the .hubapp package from the app folder")
     k.add_argument("--dir", type=Path, default=Path())
     k.add_argument("--image", help="image by digest (name@sha256:…); alternative: --build-dir")
@@ -90,6 +105,9 @@ examples:
     k.add_argument("--dockerfile", default="Dockerfile", help="Dockerfile inside --build-dir")
     k.add_argument("--out", type=Path)
 
+
+def add_dev(sub: Subparsers) -> None:
+    fmt = FMT
     d = sub.add_parser("dev", help="Lightweight local hub (no Docker) with the app inside the shell",
                        epilog="examples:\n  hub dev                       (template project: starts the app with reload)\n"
                        "  hub dev --upstream http://127.0.0.1:9000", formatter_class=fmt)  # fmt: skip
@@ -100,6 +118,9 @@ examples:
     d.add_argument("--limits", action="store_true")
     d.add_argument("command", nargs="*")
 
+
+def add_login(sub: Subparsers) -> None:
+    fmt = FMT
     lg = sub.add_parser("login", help="Save the hub and the token (the token is prompted without echo)",
                         epilog=f"{EXIT_CODES}\n\nexample:\n  hub login --hub https://hub.example.com",
                         formatter_class=fmt)  # fmt: skip
@@ -107,6 +128,10 @@ examples:
     lg.add_argument("--token", help="AVOID: use HUB_TOKEN, --token-file or the no-echo prompt")
     lg.add_argument("--token-file", type=Path, help="file with the token (e.g. provided by the CI vault)")
     lg.add_argument("--json", action="store_true")
+
+
+def add_deploy(sub: Subparsers) -> None:
+    fmt = FMT
     dp = sub.add_parser("deploy", help="Package and send to the hub (production stays pending approval)",
                         epilog=f"{EXIT_CODES}\n\nexamples:\n  hub deploy --env staging\n"
                         "  hub deploy --env production --hub https://hub.example.com --json", formatter_class=fmt)  # fmt: skip
@@ -117,13 +142,15 @@ examples:
     dp.add_argument("--env-file", type=Path, help="values for requires (default: deploy.<env>.env)")
     dp.add_argument("--yes", "-y", action="store_true", help="no questions")
     dp.add_argument("--json", action="store_true")
+
+
+def add_mcp(sub: Subparsers) -> None:
     m = sub.add_parser("mcp", help="stdio MCP server that forwards to the hub MCP with a token")
     m.add_argument("--hub", default=os.environ.get("HUB_URL", "http://localhost:8080"))
     m.add_argument("--token", help="AVOID: use HUB_TOKEN or --token-file")
     tf = os.environ.get("HUB_TOKEN_FILE")
     m.add_argument("--token-file", type=Path, default=Path(tf) if tf else None)
     m.add_argument("--path", default=os.environ.get("HUB_MCP_PATH", "/mcp"))
-    return p
 
 
 def interactive_tty(a: argparse.Namespace) -> bool:
@@ -192,45 +219,66 @@ def cmd_check(a: argparse.Namespace) -> int:
     return 0 if ok else FAIL
 
 
-def main(argv: list[str] | None = None) -> int:  # noqa: C901, PLR0912, PLR0915
+def cmd_project(a: argparse.Namespace) -> int:
+    return cmd_create(a) if a.pcmd == "create" else cmd_stacks(a)
+
+
+def cmd_login(a: argparse.Namespace) -> int:
+    tok = a.token or (a.token_file.read_text(encoding="utf-8").strip() if a.token_file else None)
+    out = deploy_mod.login(a.hub, tok)
+    print(json.dumps(out) if a.json else f"login salvo em {out['saved']} ({out['hub']})")
+    return 0
+
+
+def cmd_deploy(a: argparse.Namespace) -> int:
+    out = deploy_mod.deploy(a.dir, a.env, a.hub, a.token, a.env_file, interactive_tty(a))
+    if a.json:
+        print(json.dumps(out, ensure_ascii=False))
+        return 0
+    print(f"{out['app']} {out['version']} → {out['env']}: {out['message']}")
+    if out.get("url"):
+        print(f"  abrir: {out['url']}")
+    return 0
+
+
+def cmd_pack(a: argparse.Namespace) -> int:
+    m = json.loads((a.dir / "manifest.json").read_text(encoding="utf-8"))
+    out = a.out or Path(f"{m['id']}-{m['version']}.hubapp")
+    print(f"{pack(a.dir, a.image, out, a.build_dir, a.dockerfile)}  {out}")
+    return 0
+
+
+def cmd_dev(a: argparse.Namespace) -> int:
+    if not a.upstream:
+        return dev_mod.run_project(a.dir, a.port, a.role)
+    return dev_mod.run(a.dir, a.upstream, a.port, a.role, a.limits, [c for c in a.command if c != "--"])
+
+
+def cmd_mcp(a: argparse.Namespace) -> int:
+    token, warn = mcp_mod.resolve_token(a.token, a.token_file, os.environ.get("HUB_TOKEN"))
+    if warn:
+        print(f"hub mcp: {warn}", file=sys.stderr)
+    return mcp_mod.run(a.hub, token, a.path)
+
+
+COMMANDS = {
+    "project": cmd_project,
+    "login": cmd_login,
+    "deploy": cmd_deploy,
+    "check": cmd_check,
+    "pack": cmd_pack,
+    "dev": cmd_dev,
+    "mcp": cmd_mcp,
+}
+
+
+def main(argv: list[str] | None = None) -> int:
     try:
         a = parser().parse_args(argv)
     except SystemExit as e:  # invalid usage (2) or --help (0)
         return e.code if isinstance(e.code, int) else VALIDATION
     try:
-        if a.cmd == "project":
-            return cmd_create(a) if a.pcmd == "create" else cmd_stacks(a)
-        if a.cmd == "login":
-            tok = a.token or (a.token_file.read_text(encoding="utf-8").strip() if a.token_file else None)
-            out = deploy_mod.login(a.hub, tok)
-            print(json.dumps(out) if a.json else f"login salvo em {out['saved']} ({out['hub']})")
-            return 0
-        if a.cmd == "deploy":
-            out = deploy_mod.deploy(a.dir, a.env, a.hub, a.token, a.env_file, interactive_tty(a))
-            if a.json:
-                print(json.dumps(out, ensure_ascii=False))
-            else:
-                print(f"{out['app']} {out['version']} → {out['env']}: {out['message']}")
-                if out.get("url"):
-                    print(f"  abrir: {out['url']}")
-            return 0
-        if a.cmd == "check":
-            return cmd_check(a)
-        if a.cmd == "pack":
-            m = json.loads((a.dir / "manifest.json").read_text(encoding="utf-8"))
-            out = a.out or Path(f"{m['id']}-{m['version']}.hubapp")
-            print(f"{pack(a.dir, a.image, out, a.build_dir, a.dockerfile)}  {out}")
-            return 0
-        if a.cmd == "dev":
-            if not a.upstream:
-                return dev_mod.run_project(a.dir, a.port, a.role)
-            return dev_mod.run(
-                a.dir, a.upstream, a.port, a.role, a.limits, [c for c in a.command if c != "--"]
-            )
-        token, warn = mcp_mod.resolve_token(a.token, a.token_file, os.environ.get("HUB_TOKEN"))
-        if warn:
-            print(f"hub mcp: {warn}", file=sys.stderr)
-        return mcp_mod.run(a.hub, token, a.path)
+        return COMMANDS[a.cmd](a)
     except CliError as e:
         if getattr(a, "json", False):
             print(json.dumps({"ok": False, "error": str(e), "code": e.code}, ensure_ascii=False))

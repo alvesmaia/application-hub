@@ -136,22 +136,11 @@ def _why(log: Path) -> str:
     return f" (veja {log.name})" if lines else ""
 
 
-def conformance(directory: Path, upstream: str, app_id: str, log: Path | None = None) -> list[str]:  # noqa: PLR0915
-    """Subset of the contract (CONTRATO-APP §2, §3, §3.0, §12–13, §23) run by the in-process hub."""
+def _conformance_shell(asgi: Any, app_id: str, need: Callable[[bool, str], None]) -> None:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         from starlette.testclient import TestClient
 
-    devapp = dev.devapp_module()
-    asgi, _ = devapp.dev_asgi(directory, upstream, "admin")
-    fails: list[str] = []
-
-    def need(cond: bool, msg: str) -> None:
-        if not cond:
-            fails.append(msg)
-
-    r = httpx.get(f"{upstream}/{app_id}/_hub/ready", timeout=5)
-    need(r.status_code == 200, f"§2 GET /{app_id}/_hub/ready → {r.status_code} (esperado 200)")
     with TestClient(asgi) as c:
         page = c.get(f"/apps/{app_id}")
         need(page.status_code == 200 and "platform-header" in page.text, "§3 página no shell do hub")
@@ -166,22 +155,40 @@ def conformance(directory: Path, upstream: str, app_id: str, log: Path | None = 
             not any(k.startswith("x-hub-") for k in frag.headers), "§12 nenhum cabeçalho x-hub-* na resposta"
         )
         need(c.get(f"/_frag/{app_id}/secao-que-nao-existe").status_code == 404, "§3 seção desconhecida → 404")
+
+
+def _conformance_openapi(upstream: str, app_id: str, need: Callable[[bool, str], None]) -> None:
     oa = httpx.get(f"{upstream}/{app_id}/api/openapi.json", timeout=5)
     try:
         doc = oa.json()
-        paths = doc.get("paths", {})
-        need(str(doc.get("openapi", "")).startswith("3."), "§23 OpenAPI 3.x")
-        need(
-            bool(paths) and all(p.startswith(f"/{app_id}/api/") for p in paths), "§23 caminhos sob /{id}/api/"
-        )
-        ops = [o for item in paths.values() for o in item.values() if isinstance(o, dict)]
-        need(all(o.get("operationId") and o.get("responses") for o in ops), "§23 operationId e responses")
-        for p, item in paths.items():
-            if "get" in item and "{" not in p:
-                code = httpx.get(f"{upstream}{p}", timeout=5).status_code
-                need(code == 401, f"§23 {p} sem identidade → {code} (esperado 401)")
     except ValueError:
-        fails.append(f"§23 /{app_id}/api/openapi.json não é JSON ({oa.status_code})")
+        need(False, f"§23 /{app_id}/api/openapi.json não é JSON ({oa.status_code})")
+        return
+    paths = doc.get("paths", {})
+    need(str(doc.get("openapi", "")).startswith("3."), "§23 OpenAPI 3.x")
+    need(bool(paths) and all(p.startswith(f"/{app_id}/api/") for p in paths), "§23 caminhos sob /{id}/api/")
+    ops = [o for item in paths.values() for o in item.values() if isinstance(o, dict)]
+    need(all(o.get("operationId") and o.get("responses") for o in ops), "§23 operationId e responses")
+    for p, item in paths.items():
+        if "get" in item and "{" not in p:
+            code = httpx.get(f"{upstream}{p}", timeout=5).status_code
+            need(code == 401, f"§23 {p} sem identidade → {code} (esperado 401)")
+
+
+def conformance(directory: Path, upstream: str, app_id: str, log: Path | None = None) -> list[str]:
+    """Subset of the contract (CONTRATO-APP §2, §3, §3.0, §12–13, §23) run by the in-process hub."""
+    devapp = dev.devapp_module()
+    asgi, _ = devapp.dev_asgi(directory, upstream, "admin")
+    fails: list[str] = []
+
+    def need(cond: bool, msg: str) -> None:
+        if not cond:
+            fails.append(msg)
+
+    r = httpx.get(f"{upstream}/{app_id}/_hub/ready", timeout=5)
+    need(r.status_code == 200, f"§2 GET /{app_id}/_hub/ready → {r.status_code} (esperado 200)")
+    _conformance_shell(asgi, app_id, need)
+    _conformance_openapi(upstream, app_id, need)
     return fails
 
 

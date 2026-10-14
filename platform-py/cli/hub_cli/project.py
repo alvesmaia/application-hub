@@ -83,7 +83,39 @@ def sdk_wheel() -> Path:
     return whl[-1]
 
 
-def create(  # noqa: C901, PLR0915
+def _validate_options(name: str, stack: str, db: str, directory: Path) -> None:
+    if not name.strip() or len(name) > 80:
+        raise CliError("--name: informe 1–80 caracteres", 2)
+    if stack not in {s.id for s in STACKS}:
+        raise CliError(f"--stack: {stack!r} desconhecida (veja `hub project stacks`)", 2)
+    if db != "sqlite" and not re.match(r"^(postgres(ql)?(\+\w+)?|sqlite)://", db):
+        raise CliError("--db: use sqlite ou uma URL (postgresql://…)", 2)
+    if directory.exists() and any(directory.iterdir()):
+        raise CliError(f"pasta {directory} já existe e não está vazia", 2)
+
+
+def _substitute(text: str, subst: dict[str, str]) -> str:
+    for k, v in subst.items():
+        text = text.replace(k, v)
+    return text
+
+
+def _copy_layers(layers: list[Path], directory: Path, subst: dict[str, str]) -> list[str]:
+    files: list[str] = []
+    skip = {"__pycache__", ".ruff_cache", ".pytest_cache"}
+    for src in layers:
+        for f in sorted(p for p in src.rglob("*") if p.is_file() and not skip & set(p.parts)):
+            rel = _substitute(f.relative_to(src).as_posix(), subst)
+            rel = RENAMES.get(rel, rel)
+            out = directory / rel
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(_substitute(f.read_text(encoding="utf-8"), subst), encoding="utf-8", newline="\n")
+            if rel not in files:
+                files.append(rel)
+    return files
+
+
+def create(
     app_id: str,
     name: str,
     stack: str,
@@ -95,14 +127,7 @@ def create(  # noqa: C901, PLR0915
     """Copies the stack's template; ``template="dashboard"`` overlays ``<stack>.dashboard`` (files of the dashboard kit:
     dashboard panel with KPIs, charts, table, filter and export + sample data for `hub dev`)."""
     validate_id(app_id)
-    if not name.strip() or len(name) > 80:
-        raise CliError("--name: informe 1–80 caracteres", 2)
-    if stack not in {s.id for s in STACKS}:
-        raise CliError(f"--stack: {stack!r} desconhecida (veja `hub project stacks`)", 2)
-    if db != "sqlite" and not re.match(r"^(postgres(ql)?(\+\w+)?|sqlite)://", db):
-        raise CliError("--db: use sqlite ou uma URL (postgresql://…)", 2)
-    if directory.exists() and any(directory.iterdir()):
-        raise CliError(f"pasta {directory} já existe e não está vazia", 2)
+    _validate_options(name, stack, db, directory)
     pkg = app_id.replace("-", "_")
     wheel = sdk_wheel()
     subst = {
@@ -116,22 +141,7 @@ def create(  # noqa: C901, PLR0915
     layers = [root / stack] + ([root / f"{stack}.dashboard"] if template == "dashboard" else [])
     if template == "dashboard" and not layers[-1].is_dir():
         raise CliError(f"--template dashboard: indisponível para a stack {stack}", 2)
-    files: list[str] = []
-    skip = {"__pycache__", ".ruff_cache", ".pytest_cache"}
-    for src in layers:
-        for f in sorted(p for p in src.rglob("*") if p.is_file() and not skip & set(p.parts)):
-            rel = f.relative_to(src).as_posix()
-            for k, v in subst.items():
-                rel = rel.replace(k, v)
-            rel = RENAMES.get(rel, rel)
-            out = directory / rel
-            out.parent.mkdir(parents=True, exist_ok=True)
-            text = f.read_text(encoding="utf-8")
-            for k, v in subst.items():
-                text = text.replace(k, v)
-            out.write_text(text, encoding="utf-8", newline="\n")
-            if rel not in files:
-                files.append(rel)
+    files = _copy_layers(layers, directory, subst)
     # The wheel bundles demo.css; when running from the repository (editable install) it comes from platform/demo-apps.
     css = directory / "src" / subst["__PKG__"] / "assets" / "demo.css"
     repo_css = Path(__file__).resolve().parents[3] / "platform" / "demo-apps" / "assets" / "demo.css"

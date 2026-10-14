@@ -115,7 +115,7 @@ class Bridge:
             h["mcp-protocol-version"] = self.protocol
         return h
 
-    def forward(self, line: str) -> tuple[str, list[Any]]:  # noqa: C901, PLR0915
+    def forward(self, line: str) -> tuple[str, list[Any]]:
         """Returns (`reply`|`accepted`|`disabled`, messages to write)."""
         try:
             msg = json.loads(line)
@@ -123,14 +123,17 @@ class Bridge:
             return "reply", [rpc_error(None, -32700, f"JSON inválido: {e}")]
         if not isinstance(msg, dict):
             return "reply", [rpc_error(None, -32600, "mensagem JSON-RPC inválida")]
-        id_ = msg.get("id")
-        is_init = msg.get("method") == "initialize"
         params = msg.get("params")
         headers = self._headers(msg.get("method"), params if isinstance(params, dict) else {})
         try:
             res = self.http.post(self.url, json=msg, headers=headers)
         except httpx.HTTPError as e:
-            return "reply", [rpc_error(id_, -32603, f"hub inacessível em {self.url}: {e}")]
+            return "reply", [rpc_error(msg.get("id"), -32603, f"hub inacessível em {self.url}: {e}")]
+        return self._reply(res, msg)
+
+    def _reply(self, res: httpx.Response, msg: dict[str, Any]) -> tuple[str, list[Any]]:
+        id_ = msg.get("id")
+        is_init = msg.get("method") == "initialize"
         st = res.status_code
         if st == 404 and (is_init or self.session is None):
             return "disabled", [rpc_error(id_, -32601, DISABLED)]
@@ -149,6 +152,9 @@ class Bridge:
             if "id" not in msg:
                 return "accepted", []
             return "reply", [rpc_error(id_, -32603, f"hub respondeu {st}")]
+        return self._json_reply(v, id_, st, is_init=is_init)
+
+    def _json_reply(self, v: Any, id_: Any, st: int, *, is_init: bool) -> tuple[str, list[Any]]:
         if isinstance(v, dict) and "jsonrpc" in v:
             r = v.get("result")
             if is_init and isinstance(r, dict) and isinstance(r.get("protocolVersion"), str):

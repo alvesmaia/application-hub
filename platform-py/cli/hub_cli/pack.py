@@ -5,6 +5,7 @@ import io
 import json
 import zipfile
 from pathlib import Path
+from typing import Any
 
 
 class PackError(Exception):
@@ -50,10 +51,7 @@ def _context(root: Path) -> list[tuple[str, bytes]]:
 MAX_PACKAGE_BYTES = 20 * 1024 * 1024  # = hub/ops/pipeline.py (a test requires equality)
 
 
-def pack(dir_: Path, image: str | None, out: Path, build_dir: Path | None = None,  # noqa: C901, PLR0912, PLR0915
-         dockerfile: str = "Dockerfile") -> str:  # fmt: skip
-    """Writes the package to `out` and returns the file's sha256. With `build_dir` the package carries the build context
-    (`build/**`) and the hub builds the image; without it, `image` by digest is required."""
+def _manifest(dir_: Path) -> tuple[bytes, dict[str, Any]]:
     mf = dir_ / "manifest.json"
     if not mf.is_file():
         raise PackError("manifest.json não encontrado")
@@ -64,48 +62,79 @@ def pack(dir_: Path, image: str | None, out: Path, build_dir: Path | None = None
         raise PackError(f"manifest.json inválido: {e}") from e
     if not isinstance(m, dict) or not m.get("id") or not m.get("version"):
         raise PackError("manifest.json sem id/version")
+    return raw, m
+
+
+def _runtime(image: str | None, build_dir: Path | None, dockerfile: str) -> dict[str, object]:
     if build_dir is not None:
         if not (build_dir / dockerfile).is_file():
             raise PackError(f"{dockerfile} não encontrado em {build_dir}")
-        runtime: dict[str, object] = {"build": {"dockerfile": dockerfile}}
-    elif image and "@sha256:" in image:
-        runtime = {"image": image}
-    else:
-        raise PackError("imagem deve ser referenciada por digest (…@sha256:…) ou use --build-dir")
+        return {"build": {"dockerfile": dockerfile}}
+    if image and "@sha256:" in image:
+        return {"image": image}
+    raise PackError("imagem deve ser referenciada por digest (…@sha256:…) ou use --build-dir")
+
+
+def _openapi(dir_: Path, m: dict[str, Any]) -> list[tuple[str, bytes]]:
     api = m.get("api") or {}
     oa = dir_ / "openapi.json"
-    entries: list[tuple[str, bytes]] = [
-        ("manifest.json", raw),
-        ("runtime.json", json.dumps(runtime, indent=2).encode()),
-    ]
     if oa.is_file():
-        entries.append(("openapi.json", oa.read_bytes()))
-    elif api.get("enabled"):
+        return [("openapi.json", oa.read_bytes())]
+    if api.get("enabled"):
         raise PackError(
             f"openapi.json não encontrado em {dir_}: a API é obrigatória (manifesto api.enabled = true). "
             f"Gere o documento do app (ex.: GET /{m['id']}{api.get('openapi', '/api/openapi.json')} com o "
             "app rodando, ou o comando de exportação do SDK) e salve ao lado do manifest.json"
         )
+    return []
+
+
+def _ui(dir_: Path) -> list[tuple[str, bytes]]:
     ui = dir_ / "ui"
-    if ui.is_dir():
-        files = sorted(p.relative_to(dir_).as_posix() for p in ui.rglob("*") if p.is_file())
-        entries += [(n, (dir_ / n).read_bytes()) for n in files]
-    if build_dir is not None:
-        entries += _context(build_dir)
-    entries.append(("checksums.txt", "".join(f"{_sha(b)}  {n}\n" for n, b in entries).encode()))
+    if not ui.is_dir():
+        return []
+    files = sorted(p.relative_to(dir_).as_posix() for p in ui.rglob("*") if p.is_file())
+    return [(n, (dir_ / n).read_bytes()) for n in files]
+
+
+def _zip(entries: list[tuple[str, bytes]]) -> bytes:
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
         for n, b in entries:
             z.writestr(zipfile.ZipInfo(n, (1980, 1, 1, 0, 0, 0)), b, zipfile.ZIP_DEFLATED)
-    data = buf.getvalue()
-    if len(data) > MAX_PACKAGE_BYTES:  # the hub would refuse it with 400; say here what is too heavy
-        big = sorted(((len(b), n) for n, b in entries), reverse=True)[:3]
-        raise PackError(
-            f"pacote com {len(data) / 1024 / 1024:.1f} MB; o hub aceita até "
-            f"{MAX_PACKAGE_BYTES // 1024 // 1024} MB. Maiores arquivos: "
-            + ", ".join(f"{n} ({sz / 1024 / 1024:.1f} MB)" for sz, n in big)
-            + ". As dependências se instalam no build, não viajam no pacote: não deixe .venv/ nem vendor/ "
-            "em build/ (use .dockerignore)"
-        )
+    return buf.getvalue()
+
+
+def _check_size(data: bytes, entries: list[tuple[str, bytes]]) -> None:
+    if len(data) <= MAX_PACKAGE_BYTES:
+        return
+    # the hub would refuse it with 400; say here what is too heavy
+    big = sorted(((len(b), n) for n, b in entries), reverse=True)[:3]
+    raise PackError(
+        f"pacote com {len(data) / 1024 / 1024:.1f} MB; o hub aceita até "
+        f"{MAX_PACKAGE_BYTES // 1024 // 1024} MB. Maiores arquivos: "
+        + ", ".join(f"{n} ({sz / 1024 / 1024:.1f} MB)" for sz, n in big)
+        + ". As dependências se instalam no build, não viajam no pacote: não deixe .venv/ nem vendor/ "
+        "em build/ (use .dockerignore)"
+    )
+
+
+def pack(dir_: Path, image: str | None, out: Path, build_dir: Path | None = None,
+         dockerfile: str = "Dockerfile") -> str:  # fmt: skip
+    """Writes the package to `out` and returns the file's sha256. With `build_dir` the package carries the build context
+    (`build/**`) and the hub builds the image; without it, `image` by digest is required."""
+    raw, m = _manifest(dir_)
+    runtime = _runtime(image, build_dir, dockerfile)
+    entries: list[tuple[str, bytes]] = [
+        ("manifest.json", raw),
+        ("runtime.json", json.dumps(runtime, indent=2).encode()),
+    ]
+    entries += _openapi(dir_, m)
+    entries += _ui(dir_)
+    if build_dir is not None:
+        entries += _context(build_dir)
+    entries.append(("checksums.txt", "".join(f"{_sha(b)}  {n}\n" for n, b in entries).encode()))
+    data = _zip(entries)
+    _check_size(data, entries)
     out.write_bytes(data)
     return _sha(data)

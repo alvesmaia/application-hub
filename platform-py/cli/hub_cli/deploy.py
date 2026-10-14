@@ -130,7 +130,29 @@ def collect_values(manifest: dict[str, Any], env_file: Path | None, tty: bool) -
     return out
 
 
-def deploy(directory: Path, env: str, hub: str | None, token: str | None, env_file: Path | None,  # noqa: PLR0915
+def _package(directory: Path, m: dict[str, Any]) -> tuple[str, str, bytes]:
+    """Regenerates openapi.json (template projects) and packs the build context: (sha256, file name, bytes)."""
+    if (directory / "src").is_dir():
+        ok, detail = check.step_openapi(directory)
+        if not ok:
+            raise CliError(f"openapi.json não gerado: {detail[-500:]}", FAIL)
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / f"{m['id']}-{m['version']}.hubapp"
+        sha = pack(directory, None, out, directory, "Dockerfile")
+        return sha, out.name, out.read_bytes()
+
+
+def _job(r: httpx.Response) -> dict[str, Any]:
+    try:
+        job = r.json()
+    except ValueError:
+        job = {"message": r.text[:300]}
+    if not job.get("message"):  # hub refusal: the reason comes in `error` (e.g. package size)
+        job["message"] = str(job.get("error") or "")[:300]
+    return job
+
+
+def deploy(directory: Path, env: str, hub: str | None, token: str | None, env_file: Path | None,
            tty: bool) -> dict[str, Any]:  # fmt: skip
     target = ENVS.get(env)
     if target is None:
@@ -142,24 +164,12 @@ def deploy(directory: Path, env: str, hub: str | None, token: str | None, env_fi
     h, t = resolve(hub, token)
     env_file = env_file or directory / f"deploy.{env}.env"
     values = collect_values(m, env_file, tty)
-    if (directory / "src").is_dir():
-        ok, detail = check.step_openapi(directory)
-        if not ok:
-            raise CliError(f"openapi.json não gerado: {detail[-500:]}", FAIL)
-    with tempfile.TemporaryDirectory() as tmp:
-        out = Path(tmp) / f"{m['id']}-{m['version']}.hubapp"
-        sha = pack(directory, None, out, directory, "Dockerfile")
-        data = out.read_bytes()
+    sha, name, data = _package(directory, m)
     form = {"env": target, "config": json.dumps(values)}
     with _client(h, t) as c:
         r = _call(c, "POST", "/api/ops/packages", params={"env": target, "wait": "true"},
-                  files={"package": (out.name, data, "application/zip")}, data=form)  # fmt: skip
-    try:
-        job = r.json()
-    except ValueError:
-        job = {"message": r.text[:300]}
-    if not job.get("message"):  # hub refusal: the reason comes in `error` (e.g. package size)
-        job["message"] = str(job.get("error") or "")[:300]
+                  files={"package": (name, data, "application/zip")}, data=form)  # fmt: skip
+    job = _job(r)
     ok = r.status_code in (200, 201) and bool(job.get("ok"))
     result = {"ok": ok, "app": m["id"], "version": m["version"], "env": env, "sha256": sha,
               "status": r.status_code, "message": job.get("message", ""), "provisioned": job.get("provisioned", {}),
