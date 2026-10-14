@@ -33,6 +33,7 @@ Portal corporativo único (white label) que hospeda várias aplicações interna
 | Vários processos por contêiner (`uvicorn --workers`) | Planejado | Cada processo tenta abrir a porta interna do broker (8081) |
 | ODBC no broker SQL | Ideia | Só com o driver de um banco específico (Oracle, DB2…) na imagem; Postgres, MySQL e SQL Server já são nativos |
 | Aprovação humana de ação de agente na Inbox | Ideia | Hoje a confirmação de ações destrutivas fica com o cliente de IA (`confirm_token`) |
+| Chaves do i18n e ids dos apps de exemplo em inglês | Ideia | Código, comentários e docs já estão em inglês; isso mexe em todo texto de tela e exige migração de dados |
 
 Detalhes e histórico: [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md).
 

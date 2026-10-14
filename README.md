@@ -34,6 +34,7 @@ and over **MCP** for AI assistants (`/mcp`, same access control as the UI).
 | Multiple processes per container (`uvicorn --workers`) | Planned | Each process tries to bind the broker's internal port (8081) |
 | ODBC in the SQL broker | Idea | Only with a specific database driver (Oracle, DB2…) in the image; Postgres, MySQL and SQL Server are native |
 | Human approval of agent actions in the Inbox | Idea | Today destructive actions are confirmed by the AI client (`confirm_token`) |
+| English i18n keys and English ids for the sample apps | Idea | Code, comments and docs are already English; these touch every UI string and require data migration |
 
 Details and history: [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md).
 

@@ -36,6 +36,10 @@ native task list.
 
 ## Future ideas
 
+- **English i18n keys:** the catalogs still use the pt-BR text as the key (`t()`/`tr()`); switching keys to English
+  touches every call and template (~4,900 entries). Code, comments and docs are English since 14/10/2026.
+- **English ids for the sample apps** (`ativos`, `fornecedores`, `servicos`, `coletor`): needs database/data migration and
+  breaks existing URLs and MCP tool names.
 - **ODBC in the SQL broker:** out of the roadmap as of 14/10/2026. Postgres, MySQL and SQL Server already have native
   connections; ODBC would only make sense with the driver of a specific database (Oracle, DB2…) inside the hub image.
 - **Human approval of agent actions in the hub:** removed on 13/10/2026 (the MCP default became `confirm`; the
