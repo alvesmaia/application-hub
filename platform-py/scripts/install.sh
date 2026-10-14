@@ -328,12 +328,7 @@ if [ -n "${SP_TENANT:-}" ] && [ -n "${SP_CLIENT_ID:-}" ] && [ -n "${SP_SITE:-}" 
   printf '%s\n' "$SP_SECRET" | dc run --rm --no-deps -T app-hub-web python -m hub.admin add-sharepoint \
     --name backups-sharepoint --tenant "$SP_TENANT" --client-id "$SP_CLIENT_ID" --site "$SP_SITE"
   SP_SECRET=''
-  OFF="HUB_BACKUP_OFFSITE_URL=sharepoint://backups-sharepoint/${SP_FOLDER:-Backups/hub}"
-  if grep -q '^HUB_BACKUP_OFFSITE_URL=' "$ENVF"; then
-    sed -i "s#^HUB_BACKUP_OFFSITE_URL=.*#$OFF#" "$ENVF"
-  else
-    printf '%s\n' "$OFF" >> "$ENVF"
-  fi
+  setv HUB_BACKUP_OFFSITE_URL "sharepoint://backups-sharepoint/${SP_FOLDER:-Backups/hub}"
 fi
 
 if [ -n "${ENTRA_SECRET:-}" ]; then

@@ -112,3 +112,10 @@ def test_every_advanced_answer_reaches_prod_env_and_secrets_stay_off_the_screen(
     assert "segredo-entra-456" not in text  # Entra secret goes to the vault in the install step
     for secret in ("segredo-entra-456", "segredo-s3", "tok-ancora-123"):
         assert secret not in err  # never shown back
+
+
+def test_offsite_url_is_written_without_sed_so_any_folder_name_is_safe() -> None:
+    # a '#' or '&' in SP_FOLDER broke `sed s#...#$OFF#`; setv writes the value verbatim
+    src = (ROOT / "scripts/install.sh").read_text(encoding="utf-8")
+    assert "sed -i" not in src
+    assert 'setv HUB_BACKUP_OFFSITE_URL "sharepoint://backups-sharepoint/' in src
