@@ -1,206 +1,206 @@
-# FAQ — Arquitetura do Hub
+# FAQ — Hub Architecture
 
-## 1. Com que tecnologia o hub é feito?
+## 1. What technology is the hub built with?
 
-**Python para a plataforma; as aplicações seguem o contrato HTTP.**
+**Python for the platform; the applications follow the HTTP contract.**
 
-| Parte | Como | Observação |
+| Part | How | Note |
 |---|---|---|
-| Shell (header, rail, catálogo, admin) | FastAPI + Jinja2 (SSR) | HTML do servidor; JS do shell em `platform/assets/shell` |
-| Gateway/proxy `/apps/{id}/*` | FastAPI + httpx | mesmo processo do hub |
-| SSO, RBAC, auditoria, segredos, flags | módulos do hub + PostgreSQL | `platform-py/hub` |
-| Composição de fragmentos HTML | hub busca e injeta no layout | sanitizado (`hub-safe.js`) |
-| Comportamento dos apps no navegador | atributos `data-hub-*` (`hub-kit.js`) | apps sem JavaScript próprio |
+| Shell (header, rail, catalog, admin) | FastAPI + Jinja2 (SSR) | server-rendered HTML; shell JS in `platform/assets/shell` |
+| Gateway/proxy `/apps/{id}/*` | FastAPI + httpx | same process as the hub |
+| SSO, RBAC, audit trail, secrets, flags | hub modules + PostgreSQL | `platform-py/hub` |
+| HTML fragment composition | the hub fetches and injects into the layout | sanitized (`hub-safe.js`) |
+| Application behavior in the browser | `data-hub-*` attributes (`hub-kit.js`) | apps without their own JavaScript |
 
-## 2. Como ficam as stacks?
+## 2. What do the stacks look like?
 
-**Plataforma (hub)**
-- Python 3.12 (`uv`), FastAPI + Jinja2 (shell, telas de admin, gateway, APIs)
-- PostgreSQL (estado, registro de apps, permissões, auditoria)
-- Cofre próprio (AES-GCM), OpenTelemetry (observabilidade)
-- OIDC (Entra ID) para SSO
-- Tokens CSS para tema e white label
-- CLI `hub` (Python, `platform-py/cli`) para criar, testar, empacotar e publicar
+**Platform (hub)**
+- Python 3.12 (`uv`), FastAPI + Jinja2 (shell, admin screens, gateway, APIs)
+- PostgreSQL (state, app registry, permissions, audit trail)
+- Own vault (AES-GCM), OpenTelemetry (observability)
+- OIDC (Entra ID) for SSO
+- CSS tokens for theme and white label
+- `hub` CLI (Python, `platform-py/cli`) to create, test, package and publish
 
-**Aplicações**
-- **Oficialmente suportada: Python ≥ 3.11 (FastAPI + `hub-sdk-python`, pacote `hub_sdk`)** — o SDK
-  já cumpre o contrato (tarefas, idempotência, outbox, API/MCP); exemplos `ativos`, `fornecedores`,
-  `servicos` e `coletor`. O manifesto declara `"runtime": {"stack": "python"}` (informativo; aparece
-  no passo *Contrato*). Outras stacks oficiais: reavaliar numa expansão futura.
-- **Qualquer outra stack com servidor HTTP** (.NET, Java, Node, Go…) é aceita implementando o
-  contrato formal `platform/docs/CONTRATO-APP.md` e passando na **suíte de conformidade**
-  `platform/conformance` (caixa-preta por HTTP: fragmentos, `x-hub-user`, `/_hub/*` com token,
-  idempotência, auditoria, tarefas, 429 + `Retry-After`, SIGTERM, cookies/CSP) — sem SDK oficial.
-- Front-end em um dos modos:
-  - **Fragmento HTML** (SSR: Razor, Thymeleaf, Jinja2, Django…) — padrão.
-  - **Web Component** (React, Vue, Svelte, Lit) — front-end rico.
-- Obrigações: manifest, endpoint de health (`GET /<id>` → 200), aceitar a identidade do hub
-  (`x-hub-user`, JSON base64url), CSS com escopo, sem script inline — detalhes no contrato.
+**Applications**
+- **Officially supported: Python ≥ 3.11 (FastAPI + `hub-sdk-python`, package `hub_sdk`)** — the SDK
+  already implements the contract (jobs, idempotency, outbox, API/MCP); examples `ativos`, `fornecedores`,
+  `servicos` and `coletor`. The manifest declares `"runtime": {"stack": "python"}` (informational; it appears in the
+  *Contract* step). Other official stacks: to be re-evaluated in a future expansion.
+- **Any other stack with an HTTP server** (.NET, Java, Node, Go…) is accepted by implementing the formal
+  contract `platform/docs/CONTRATO-APP.md` and passing the **conformance suite**
+  `platform/conformance` (black box over HTTP: fragments, `x-hub-user`, `/_hub/*` with token,
+  idempotency, audit trail, jobs, 429 + `Retry-After`, SIGTERM, cookies/CSP) — without an official SDK.
+- Front-end in one of the modes:
+  - **HTML fragment** (SSR: Razor, Thymeleaf, Jinja2, Django…) — default.
+  - **Web Component** (React, Vue, Svelte, Lit) — rich front-end.
+- Obligations: manifest, health endpoint (`GET /<id>` → 200), accept the hub's identity
+  (`x-hub-user`, base64url JSON), scoped CSS, no inline script — details in the contract.
 
-**Escala do app Python:** escala por
-processos (`UVICORN_WORKERS`), com o semáforo de operações pesadas por processo e a aba do Excel
-carregada em memória nativa pelo `python-calamine` (teto configurável).
+**Scaling the Python app:** scales by
+processes (`UVICORN_WORKERS`), with the semaphore for heavy operations per process and the Excel tab
+loaded in native memory by `python-calamine` (configurable ceiling).
 
-## 3. É possível validar a aplicação no deploy?
+## 3. Can the application be validated at deploy time?
 
-**Sim.** Pipeline de admissão do hub (via CLI/API), bloqueante:
+**Yes.** Hub admission pipeline (via CLI/API), blocking:
 
-1. **Manifest**: schema válido, rotas sem conflito, permissões declaradas existentes.
-2. **Assinatura**: pacote/imagem assinados (cosign/Sigstore) por publicador autorizado.
-3. **Segurança**: scan de vulnerabilidades e SBOM (Trivy/Grype), sem segredos no artefato.
-4. **Contrato**: health check, rota do fragmento/Web Component responde, SDK compatível (semver).
-5. **Front-end**: CSS escopado, sem globais JS, CSP compatível com origens declaradas.
-6. **Smoke test**: sobe em staging, hub renderiza a rota de entrada e verifica erro/latência.
-7. **Aprovação**: gate manual opcional por ambiente (ex.: produção) e registro em auditoria.
+1. **Manifest**: valid schema, no route conflicts, declared permissions exist.
+2. **Signature**: package/image signed (cosign/Sigstore) by an authorized publisher.
+3. **Security**: vulnerability scan and SBOM (Trivy/Grype), no secrets in the artifact.
+4. **Contract**: health check, the fragment/Web Component route responds, SDK compatible (semver).
+5. **Front-end**: scoped CSS, no JS globals, CSP compatible with the declared origins.
+6. **Smoke test**: starts in staging, the hub renders the entry route and checks errors/latency.
+7. **Approval**: optional manual gate per environment (e.g. production) and a record in the audit trail.
 
-Falhou em qualquer etapa → deploy rejeitado com relatório.
+Failure at any step → deploy rejected with a report.
 
-## 4. O SDK pode definir um formato de pacote importável (manual ou via API)?
+## 4. Can the SDK define an importable package format (manual or via API)?
 
-**Sim.** Proposta: `.hubapp` (zip assinado, estilo `.nupkg`/`.msapp`):
+**Yes.** Proposal: `.hubapp` (signed zip, in the style of `.nupkg`/`.msapp`):
 
 ```
-minha-app.hubapp
-├── manifest.json        # id, versão, rotas, menu, permissões, variáveis requeridas, modo (fragment|webcomponent)
-├── ui/                  # bundle do Web Component ou assets estáticos
-├── runtime.json         # referência da imagem OCI (registry@sha256:...)
+my-app.hubapp
+├── manifest.json        # id, version, routes, menu, permissions, required variables, mode (fragment|webcomponent)
+├── ui/                  # Web Component bundle or static assets
+├── runtime.json         # reference to the OCI image (registry@sha256:...)
 ├── sbom.spdx.json
 ├── icon.svg
-└── signature            # assinatura do conteúdo
+└── signature            # content signature
 ```
 
-- Gerado por `hub pack`, publicado por `hub publish` ou `POST /api/apps/packages`.
-- Import manual: upload na tela Aplicações → passa pela mesma validação do item 3.
-- Versões imutáveis; rollback = reativar versão anterior.
+- Generated by `hub pack`, published by `hub publish` or `POST /api/apps/packages`.
+- Manual import: upload on the Applications screen → goes through the same validation as item 3.
+- Immutable versions; rollback = reactivate the previous version.
 
-**Implementado hoje** (`platform-py/hub/ops`, `platform-py/cli`): `hub pack` gera o `.hubapp` (manifest, `runtime.json` com imagem por digest, `ui/`, `checksums.txt`) e `POST /api/ops/packages` (UI ou CI) roda o pipeline real. O manifest declara recursos (padrão da plataforma **1 vCPU / 1 GiB / 100 processos**; política até 4 vCPU / 8 GiB), `limits.max_upload_mb`, variáveis requeridas, permissões, `sdk` e o contrato das **tarefas duráveis** (`jobs: [{name: "<id>.<nome>", max_duration_s ≤ 24 h, max_attempts ≤ 20}]`), validado pelo passo *Contrato* (tarefas exigem `sdk` 1.x). Variáveis e connection strings **não** vão no pacote: ficam na Administração, vinculadas ao app e ao ambiente, e são injetadas no container em cada implantação. Ainda não há: `hub publish`/`hub promote` na CLI (a API existe), `icon.svg`/SBOM obrigatórios. A assinatura (cosign) e o scan de vulnerabilidades existem desde a onda 4, opcionais por configuração (ver item 5).
+**Implemented today** (`platform-py/hub/ops`, `platform-py/cli`): `hub pack` generates the `.hubapp` (manifest, `runtime.json` with the image by digest, `ui/`, `checksums.txt`) and `POST /api/ops/packages` (UI or CI) runs the real pipeline. The manifest declares resources (platform default **1 vCPU / 1 GiB / 100 processes**; policy up to 4 vCPU / 8 GiB), `limits.max_upload_mb`, required variables, permissions, `sdk` and the contract for **durable jobs** (`jobs: [{name: "<id>.<name>", max_duration_s ≤ 24 h, max_attempts ≤ 20}]`), validated by the *Contract* step (jobs require `sdk` 1.x). Variables and connection strings are **not** in the package: they stay in Administration, bound to the app and the environment, and are injected into the container on each deployment. Not yet available: `hub publish`/`hub promote` in the CLI (the API exists), mandatory `icon.svg`/SBOM. The signature (cosign) and the vulnerability scan have existed since wave 4, optional by configuration (see item 5).
 
-## 5. Pacote próprio ou Dockerfile?
+## 5. Package or Dockerfile?
 
-**Os dois, com papéis diferentes. Recomendado: pacote `.hubapp` + imagem OCI.**
+**Both, with different roles. Recommended: `.hubapp` package + OCI image.**
 
-| Critério | Só pacote (.hubapp com código) | Só Dockerfile/imagem | `.hubapp` + imagem OCI |
+| Criterion | Package only (.hubapp with code) | Dockerfile/image only | `.hubapp` + OCI image |
 |---|---|---|---|
-| Qualquer stack | Não (hub teria que saber executar cada uma) | Sim | Sim |
-| Metadados de plataforma (menu, permissões, variáveis) | Sim | Não (labels são pobres) | Sim |
-| Import manual/API | Sim | Difícil (imagem grande) | Sim (pacote leve referencia a imagem) |
-| Validação/assinatura | Sim | Sim | Sim |
-| Runtime padrão (K8s, Container Apps) | Não | Sim | Sim |
+| Any stack | No (the hub would have to know how to run each one) | Yes | Yes |
+| Platform metadata (menu, permissions, variables) | Yes | No (labels are poor) | Yes |
+| Manual import/API | Yes | Hard (large image) | Yes (light package references the image) |
+| Validation/signature | Yes | Yes | Yes |
+| Standard runtime (K8s, Container Apps) | No | Yes | Yes |
 
-- **Dockerfile** fica no repositório do app e gera a imagem (execução).
-- **`.hubapp`** descreve a integração com o hub e aponta para a imagem por digest (governança).
-- Apps só de front-end (Web Component estático) podem ir apenas no `.hubapp`, sem imagem.
+- The **Dockerfile** stays in the app's repository and produces the image (execution).
+- The **`.hubapp`** describes the integration with the hub and points to the image by digest (governance).
+- Front-end-only apps (static Web Component) may ship only as a `.hubapp`, with no image.
 
-Evitar Dockerfile como artefato de import: exige build no hub, lento e inseguro. Importar sempre imagem já construída e assinada.
+Avoid a Dockerfile as an import artifact: it requires a build on the hub, which is slow and insecure. Always import an image that is already built and signed.
 
-**Implementado hoje (onda 4):** o `.hubapp` referencia a imagem **por digest** e o pipeline verifica a imagem, não só o pacote: o passo *Assinatura* roda `cosign verify` da imagem por digest quando `HUB_COSIGN_PUBKEY` (chave) ou `HUB_COSIGN_IDENTITY`/`HUB_COSIGN_ISSUER` (keyless) estão definidos — configurado e sem assinatura válida (ou sem o binário) → rejeita; o passo *Segurança* mantém a busca de segredos e o SBOM e, com `HUB_SCANNER=trivy|grype` (binário, ou container `HUB_SCANNER_IMAGE` fixado por digest), faz o scan de vulnerabilidades da imagem com política `HUB_SCAN_FAIL_ON=LOW|MEDIUM|HIGH|CRITICAL` (valor inválido impede a partida) e `HUB_SCAN_MODE=block|warn`, mostrando a contagem por severidade e os principais CVEs no passo. Sem configuração, os dois mostram "não configurado". A verificação é feita invocando os binários oficiais (menos superfície própria de criptografia). Ainda não há: política de publicadores por app (quem pode assinar o quê), verificação de atestados SLSA/SBOM assinado, cache/banco offline do scanner.
+**Implemented today (wave 4):** the `.hubapp` references the image **by digest** and the pipeline verifies the image, not just the package. The *Signature* step runs `cosign verify` on the image by digest when `HUB_COSIGN_PUBKEY` (key) or `HUB_COSIGN_IDENTITY`/`HUB_COSIGN_ISSUER` (keyless) are set — configured and without a valid signature (or without the binary) → rejects; the *Security* step keeps the secret search and the SBOM and, with `HUB_SCANNER=trivy|grype` (binary, or container `HUB_SCANNER_IMAGE` pinned by digest), scans the image for vulnerabilities with the policy `HUB_SCAN_FAIL_ON=LOW|MEDIUM|HIGH|CRITICAL` (an invalid value prevents startup) and `HUB_SCAN_MODE=block|warn`, showing the count by severity and the main CVEs in the step. Without configuration, both show "not configured". Verification is done by invoking the official binaries (less of our own cryptography surface). Not yet available: per-app publisher policy (who can sign what), verification of SLSA attestations/signed SBOM, scanner cache/offline database.
 
-## 6. Cada app pode rodar em container exclusivo, com recursos definidos, sem impactar os demais?
+## 6. Can each app run in its own container, with defined resources, without impacting the others?
 
-**Sim.** Compatível com **Docker e Podman** (não exclusivo de nenhum).
+**Yes.** Compatible with **Docker and Podman** (not exclusive to either).
 
-**Compatibilidade de runtime**
-- O hub fala com a **Docker Engine API** — Docker nativamente e Podman via `podman.socket` (API compatível).
-- Cliente: SDK `docker` do Python (funciona com os dois apontando para o socket).
-- Configuração: `HUB_CONTAINER_SOCKET` (`/var/run/docker.sock` ou `/run/podman/podman.sock`; rootless: `$XDG_RUNTIME_DIR/podman/podman.sock`).
-- Usar apenas recursos comuns aos dois (imagens OCI, limites cgroups, redes bridge, volumes, restart policy). Nada de Swarm nem Quadlet como requisito.
-- Escala multi-host: mesmo manifest traduzido para Kubernetes/Nomad (adaptador separado).
+**Runtime compatibility**
+- The hub speaks the **Docker Engine API** — Docker natively and Podman via `podman.socket` (compatible API).
+- Client: the Python `docker` SDK (works with both pointing to the socket).
+- Configuration: `HUB_CONTAINER_SOCKET` (`/var/run/docker.sock` or `/run/podman/podman.sock`; rootless: `$XDG_RUNTIME_DIR/podman/podman.sock`).
+- Use only features common to both (OCI images, cgroups limits, bridge networks, volumes, restart policy). No Swarm or Quadlet as a requirement.
+- Multi-host scale: the same manifest translated to Kubernetes/Nomad (separate adapter).
 
-**Provisionamento automático**
-1. `.hubapp` aprovado → hub faz pull da imagem por digest.
-2. Cria container exclusivo `hub-app-<id>` com limites do manifest (clampados pela política da plataforma).
-3. Rede própria por app; acesso só via gateway do hub.
-4. Health check + `restart: unless-stopped`; hub monitora e reinicia/alerta.
+**Automatic provisioning**
+1. `.hubapp` approved → the hub pulls the image by digest.
+2. Creates the exclusive container `hub-app-<id>` with the manifest limits (clamped by the platform policy).
+3. Dedicated network per app; access only through the hub's gateway.
+4. Health check + `restart: unless-stopped`; the hub monitors and restarts/alerts.
 
-**Limites por container (cgroups v2, ambos os runtimes)**
+**Per-container limits (cgroups v2, both runtimes)**
 
-| Recurso | Opção |
+| Resource | Option |
 |---|---|
 | CPU | `--cpus`, `--cpu-shares` |
-| Memória | `--memory`, `--memory-swap` (OOM afeta só o container) |
-| Processos | `--pids-limit` |
-| Disco (I/O) | `--device-read-bps`, `--device-write-bps` |
-| Disco (espaço) | volume por app com cota |
-| Rede | rede dedicada; banda via `tc`/CNI |
+| Memory | `--memory`, `--memory-swap` (OOM affects only the container) |
+| Processes | `--pids-limit` |
+| Disk (I/O) | `--device-read-bps`, `--device-write-bps` |
+| Disk (space) | per-app volume with a quota |
+| Network | dedicated network; bandwidth via `tc`/CNI |
 
-**Proteção da plataforma**
-- Hub e seus serviços com recursos reservados (cgroup/slice próprio).
-- Reserva para o sistema operacional.
-- Admission control: não sobe app se a soma dos limites excede a capacidade do host.
+**Platform protection**
+- The hub and its services with reserved resources (own cgroup/slice).
+- Reserve for the operating system.
+- Admission control: does not start an app if the sum of limits exceeds the host's capacity.
 
-**Segurança**
-- Rootless (Podman) ou userns-remap (Docker); `--cap-drop=ALL`, `--security-opt no-new-privileges`, seccomp padrão, `--read-only`.
-- Apps não confiáveis: runtime gVisor (`runsc`) ou Kata — ambos plugáveis em Docker e Podman.
+**Security**
+- Rootless (Podman) or userns-remap (Docker); `--cap-drop=ALL`, `--security-opt no-new-privileges`, default seccomp, `--read-only`.
+- Untrusted apps: gVisor (`runsc`) or Kata runtime — both pluggable in Docker and Podman.
 
-**Limites do isolamento**
-- Kernel compartilhado (mitigar com gVisor/Kata).
-- Contenção residual de cache de CPU, I/O e banda — mitigar com limites de I/O e nós dedicados para apps pesados.
+**Isolation limits**
+- Shared kernel (mitigate with gVisor/Kata).
+- Residual contention of CPU cache, I/O and bandwidth — mitigate with I/O limits and dedicated nodes for heavy apps.
 
-**Onda 5 — quedas em laço e OOM:** o hub supervisiona cada container de app (eventos `die`/`oom` do engine + consulta de `OOMKilled`, `RestartCount`, código de saída e health check). Uma queda isolada o engine religa na hora (`unless-stopped`); OOM ou 2 quedas em 10 min deixam o app **Degradado** (Saúde e Containers mostram o motivo e a ação sugerida, ex.: aumentar a memória), a restart policy vira `no` e o hub religa com espera crescente (5 s → 10 s → 20 s … teto 5 min); estável por 60 s volta a `Disponível`. Alerta no sino dos administradores, auditoria e log. Para o usuário, o app mostra "reiniciando" dentro do shell e recarrega sozinho quando volta. Correções da revisão: a supervisão reconhece o container pelas labels e pelo id — recriado por uma implantação ou "Aplicar" com o app ainda degradado, volta aos reinícios pelo hub e só é dado como recuperado (com alerta) depois de estável; nunca espera uma implantação longa de outro app nem age durante uma restauração. Prova: `platform/loadtest/results/2026-09-27/oom.md`. (256 MiB aplicados pela tela, redeploy com o app degradado até o alerta de recuperação).
+**Wave 5 — crash loops and OOM:** the hub supervises each app container (engine `die`/`oom` events + query of `OOMKilled`, `RestartCount`, exit code and health check). An isolated crash is restarted immediately by the engine (`unless-stopped`); OOM or 2 crashes within 10 min leave the app **Degraded** (Health and Containers show the reason and the suggested action, e.g. increase memory), the restart policy becomes `no` and the hub restarts it with increasing back-off (5 s → 10 s → 20 s … ceiling 5 min); stable for 60 s returns it to `Available`. Alert on the administrators' bell, audit trail and log. For the user, the app shows "restarting" inside the shell and reloads on its own when it returns. Review fixes: supervision recognizes the container by its labels and id — recreated by a deployment or by "Apply" while the app is still degraded, it returns to hub-managed restarts and is only considered recovered (with an alert) after it is stable; it never waits for a long deployment of another app nor acts during a restore. Proof: `platform/loadtest/results/2026-09-27/oom.md`. (256 MiB applied through the screen, redeploy with the app degraded until the recovery alert.)
 
-## 7. O dev consegue testar localmente (sem Docker e sem plataforma) de forma similar à produção?
+## 7. Can the developer test locally (without Docker and without the platform) in a way similar to production?
 
-**Sim, via `hub dev`** (CLI `hub`, mesmo código do shell em modo dev).
+**Yes, via `hub dev`** (`hub` CLI, same shell code in dev mode).
 
-1. App roda nativo com a própria stack (`dotnet run`, `npm run dev`, `python -m contratos`/`uvicorn`…).
-2. `hub dev` na pasta do app:
-   - lê o `manifest.json` (menu, rotas, permissões);
-   - faz proxy de `/<app-id>/*` para o processo local;
-   - compõe fragmento/Web Component dentro do shell real (header, rail, tema);
-   - injeta identidade simulada (JWT de dev, `--role admin`);
-   - fornece variáveis de `.hub/dev.env`, respeitando pública/secreta;
-   - simula serviços da plataforma (notificações, auditoria, flags, busca);
-   - valida em tempo real as regras de deploy (manifest, CSS escopado, CSP, health).
-3. Acesso em `localhost:4173/<app-id>` com hot reload da stack do app.
+1. The app runs natively with its own stack (`dotnet run`, `npm run dev`, `python -m contratos`/`uvicorn`…).
+2. `hub dev` in the app's folder:
+   - reads `manifest.json` (menu, routes, permissions);
+   - proxies `/<app-id>/*` to the local process;
+   - composes the fragment/Web Component inside the real shell (header, rail, theme);
+   - injects a simulated identity (dev JWT, `--role admin`);
+   - provides variables from `.hub/dev.env`, respecting public/secret;
+   - simulates platform services (notifications, audit trail, flags, search);
+   - validates the deploy rules in real time (manifest, scoped CSS, CSP, health).
+3. Access at `localhost:4173/<app-id>` with hot reload of the app's stack.
 
-| Igual à produção | Diferente (como cobrir) |
+| Same as production | Different (how to cover it) |
 |---|---|
-| Manifest, roteamento, shell, identidade/papéis, variáveis, CSP, validações | Limites de container → `hub dev --limits` ou `--container` |
-| | SO/dependências nativas → `--container` ou CI |
-| | SSO/Vault reais → staging |
+| Manifest, routing, shell, identity/roles, variables, CSP, validations | Container limits → `hub dev --limits` or `--container` |
+| | Native OS/dependencies → `--container` or CI |
+| | Real SSO/Vault → staging |
 
-**Implementado hoje** (`platform-py/cli`): `hub dev` serve o mesmo shell do hub (header, carregamento, composição de fragmentos via `/_frag`), faz proxy só para o app do manifest, injeta a identidade de dev no header `x-hub-user` (não um JWT) com `--role`, repassa só as variáveis de `.hub/dev.env` declaradas no manifest e aplica `--limits`. Ainda não há: distinção pública/secreta das variáveis, simulação de serviços da plataforma nem validação em tempo real de CSS/CSP/health; o `--container` também não existe.
+**Implemented today** (`platform-py/cli`): `hub dev` serves the same hub shell (header, loading, fragment composition via `/_frag`), proxies only to the app in the manifest, injects the dev identity into the `x-hub-user` header (not a JWT) with `--role`, passes only the variables from `.hub/dev.env` declared in the manifest and applies `--limits`. Not yet available: public/secret distinction of variables, simulation of platform services or real-time validation of CSS/CSP/health; `--container` does not exist either.
 
-## 8. É possível limitar recursos do app em desenvolvimento para simular produção?
+## 8. Can app resources be limited in development to simulate production?
 
-**Sim.** O `hub dev --limits` inicia o app como processo filho com limites do SO, lidos do manifest (`resources: { cpu: 0.5, memory: "512Mi", pids: 100 }`).
+**Yes.** `hub dev --limits` starts the app as a child process with OS limits, read from the manifest (`resources: { cpu: 0.5, memory: "512Mi", pids: 100 }`).
 
-| SO | Mecanismo | Crate | Limita |
+| OS | Mechanism | Crate | Limits |
 |---|---|---|---|
-| Linux | cgroups v2 (mesmo do Docker/Podman) | `cgroups-rs` / `systemd-run --user --scope` | CPU, memória, PIDs, I/O |
-| Linux/macOS | `setrlimit` | `rlimit`, `nix` | memória virtual, processos, arquivos |
-| Windows | Job Objects | `windows` | memória, CPU (hard cap), processos |
-| macOS | `setrlimit`/`taskpolicy` | `rlimit` | memória, prioridade (CPU exata não confiável) |
+| Linux | cgroups v2 (same as Docker/Podman) | `cgroups-rs` / `systemd-run --user --scope` | CPU, memory, PIDs, I/O |
+| Linux/macOS | `setrlimit` | `rlimit`, `nix` | virtual memory, processes, files |
+| Windows | Job Objects | `windows` | memory, CPU (hard cap), processes |
+| macOS | `setrlimit`/`taskpolicy` | `rlimit` | memory, priority (exact CPU not reliable) |
 
-- Monitora consumo e alerta perto do limite.
-- Sem container ficam de fora: isolamento de rede, banda e filesystem read-only.
+- Monitors consumption and alerts near the limit.
+- Without a container, these are left out: network isolation, bandwidth and read-only filesystem.
 
-## 9. Funciona em Windows sem perfil de administrador?
+## 9. Does it work on Windows without an administrator profile?
 
-**Sim, via Job Objects** — não exigem admin para processos do próprio usuário; jobs aninhados funcionam (Windows 8+); processos filhos herdam o job.
+**Yes, via Job Objects** — they do not require admin for the user's own processes; nested jobs work (Windows 8+); child processes inherit the job.
 
-Fluxo do `hub dev --limits`:
-1. `CreateProcessW` com `CREATE_SUSPENDED`.
-2. Job com `JOB_OBJECT_LIMIT_JOB_MEMORY`/`PROCESS_MEMORY`, `JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP`, `JOB_OBJECT_LIMIT_ACTIVE_PROCESS`, `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`.
+Flow of `hub dev --limits`:
+1. `CreateProcessW` with `CREATE_SUSPENDED`.
+2. Job with `JOB_OBJECT_LIMIT_JOB_MEMORY`/`PROCESS_MEMORY`, `JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP`, `JOB_OBJECT_LIMIT_ACTIVE_PROCESS`, `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`.
 3. `AssignProcessToJobObject` → `ResumeThread`.
-4. `QueryInformationJobObject` para monitorar.
+4. `QueryInformationJobObject` to monitor.
 
-Limitações:
-- I/O de disco e banda de rede podem exigir elevação — tratados como não suportados.
-- Estouro de memória falha a alocação (produção faz OOM kill); o `hub dev` pode encerrar o job para simular.
-- AppLocker/WDAC podem bloquear o binário: distribuir `hub.exe` assinado (Winget/Intune).
-- WSL2/Docker Desktop costumam exigir admin para instalar; fidelidade total fica no staging.
+Limitations:
+- Disk I/O and network bandwidth may require elevation — treated as unsupported.
+- Memory overrun fails the allocation (production does an OOM kill); `hub dev` may terminate the job to simulate it.
+- AppLocker/WDAC may block the binary: distribute a signed `hub.exe` (Winget/Intune).
+- WSL2/Docker Desktop usually require admin to install; full fidelity stays in staging.
 
-**Implementado hoje** (`platform-py/cli`; ex.: `hub dev --limits -- .venv/Scripts/python -m contratos`, o launcher do venv e o intérprete ficam no mesmo job): criação suspensa + `AssignProcessToJobObject` + retomada das threads; `JOB_OBJECT_LIMIT_JOB_MEMORY` (memória comprometida do job), CPU hard cap, processos ativos e `KILL_ON_JOB_CLOSE`. Ao atingir o limite de memória o `hub dev` avisa ("limite de memória atingido"), mas não encerra o job.
+**Implemented today** (`platform-py/cli`; e.g. `hub dev --limits -- .venv/Scripts/python -m contratos`, the venv launcher and the interpreter stay in the same job): suspended creation + `AssignProcessToJobObject` + thread resume; `JOB_OBJECT_LIMIT_JOB_MEMORY` (the job's committed memory), CPU hard cap, active processes and `KILL_ON_JOB_CLOSE`. When the memory limit is reached, `hub dev` warns ("memory limit reached"), but does not terminate the job.
 
-## 10. O hub consegue gerenciar backup/snapshots das aplicações?
+## 10. Can the hub manage backup/snapshots of the applications?
 
-**Sim.** Containers são stateless; o backup cobre o estado:
+**Yes.** Containers are stateless; the backup covers the state:
 
-- **Versão**: `.hubapp` + digest da imagem.
-- **Dados**: volumes do app.
-- **Bancos**: dump consistente via hooks.
-- **Configuração**: variáveis, permissões, metadados (segredos só como referência ao Vault).
+- **Version**: `.hubapp` + image digest.
+- **Data**: app volumes.
+- **Databases**: consistent dump via hooks.
+- **Configuration**: variables, permissions, metadata (secrets only as a reference to the Vault).
 
 Manifest:
 ```json
@@ -212,31 +212,31 @@ Manifest:
 }
 ```
 
-Execução (Docker e Podman):
-- Container auxiliar efêmero monta o volume (API comum aos dois).
-- restic/Kopia: incremental, deduplicado, criptografado.
-- Destino S3 compatível (MinIO, Azure Blob, S3), fora do host.
-- Snapshots de storage opcionais (ZFS/Btrfs/LVM, disco de nuvem).
-- Job de backup com CPU/memória/I/O limitados — não impacta outros apps.
+Execution (Docker and Podman):
+- An ephemeral auxiliary container mounts the volume (API common to both).
+- restic/Kopia: incremental, deduplicated, encrypted.
+- S3-compatible destination (MinIO, Azure Blob, S3), outside the host.
+- Optional storage snapshots (ZFS/Btrfs/LVM, cloud disk).
+- Backup job with limited CPU/memory/I/O — does not impact other apps.
 
-No hub: agendamento, retenção, backup sob demanda (UI, `hub backup`, API); restore completo ou só dados; clonar para staging; teste periódico de restore com alerta; auditoria.
+In the hub: scheduling, retention, on-demand backup (UI, `hub backup`, API); full restore or data only; clone to staging; periodic restore test with alert; audit trail.
 
-Limites:
-- Sem hooks, o backup é apenas crash-consistent.
-- Bancos externos só se registrados no manifest com credencial de backup.
-- Dev local: `hub dev --seed` para dados de exemplo.
+Limits:
+- Without hooks, the backup is only crash-consistent.
+- External databases only if registered in the manifest with a backup credential.
+- Local dev: `hub dev --seed` for sample data.
 
-**Onda 5 — implementado:** agendador (cron de 5 campos no fuso `HUB_BACKUP_TZ`, padrão America/Sao_Paulo; por app × ambiente; jitter; um job por app; execução perdida `executar`/`pular`); cada backup é um pacote com o banco do app (`pg_dump -Fc`), o bucket (`mc mirror`), os arquivos e um manifesto com sha256 de tudo, feito por containers de tarefa descartáveis na rede `hub-data` (credenciais de administração nunca na rede dos apps); hooks `backup.pre/post` do manifesto; restauração com o app parado e religado com health check; cópia externa S3 opcional; falhas viram alerta. Teste de DR: `platform/loadtest/results/2026-09-27/dr.md` (1,79 M linhas + 15 anexos restaurados byte a byte, RTO ≈ 51 s, RPO = intervalo da agenda). **Correções da revisão:** a restauração é atômica — segura a trava do app, mostra "Em manutenção (restauração)" (bloqueia implantação, aplicar, iniciar, backup e a supervisão), tira um snapshot de segurança antes, põe o banco atual de lado e só o apaga no fim; qualquer falha desfaz tudo e, se nem isso der, o app fica parado em manutenção com alerta (nunca volta com dados pela metade); app parado pelo operador continua parado; credenciais das tarefas só em arquivos 0600. DR reexecutado com as correções: RTO ≈ 57 s.
+**Wave 5 — implemented:** scheduler (5-field cron in the time zone `HUB_BACKUP_TZ`, default America/Sao_Paulo; per app × environment; jitter; one job per app; lost run `executar`/`pular` (run/skip)); each backup is a package with the app's database (`pg_dump -Fc`), the bucket (`mc mirror`), the files and a manifest with sha256 of everything, produced by disposable task containers on the `hub-data` network (administration credentials never on the apps' network); manifest hooks `backup.pre/post`; restore with the app stopped and restarted with a health check; optional external S3 copy; failures become alerts. DR test: `platform/loadtest/results/2026-09-27/dr.md` (1.79 M rows + 15 attachments restored byte by byte, RTO ≈ 51 s, RPO = schedule interval). **Review fixes:** the restore is atomic — it holds the app's lock, shows "In maintenance (restore)" (blocks deployment, apply, start, backup and supervision), takes a safety snapshot beforehand, sets the current database aside and only deletes it at the end; any failure undoes everything and, if even that fails, the app stays stopped in maintenance with an alert (it never comes back with half the data); an app stopped by the operator stays stopped; task credentials only in 0600 files. DR rerun with the fixes: RTO ≈ 57 s.
 
-**Onda 12 (2.6) — backups com privilégio mínimo:** o `pg_dump` de cada banco roda com um papel **só leitura** próprio (`hub_bkp_<banco>`: `CONNECT` só naquele banco, `SELECT` em tabelas/sequências, privilégios padrão para as futuras, sessão somente leitura) e o `mc mirror` com uma chave **só leitura daquele bucket** (`bkp-<bucket>`); senhas/chaves no cofre, com rotação pela tela de Backups. Só a **restauração** usa a credencial de administração, num caminho separado e explícito. Buckets novos de apps vêm de Conexões → "Provisionar armazenamento" (onda 12, 2.7): bucket + usuário do MinIO restrito ao bucket + conexão do broker — o app nunca recebe a chave.
+**Wave 12 (2.6) — least-privilege backups:** each database's `pg_dump` runs with its own **read-only** role (`hub_bkp_<banco>`: `CONNECT` only to that database, `SELECT` on tables/sequences, default privileges for future ones, read-only session) and the `mc mirror` with a key **read-only for that bucket** (`bkp-<bucket>`); passwords/keys in the vault, rotated from the Backups screen. Only the **restore** uses the administration credential, in a separate and explicit path. New app buckets come from Connections → "Provision storage" (Provisionar armazenamento) (wave 12, 2.7): bucket + MinIO user restricted to the bucket + broker connection — the app never receives the key.
 
-## 11. Deploys são suportados tanto por import no hub quanto por CI/CD?
+## 11. Are deployments supported both by import into the hub and by CI/CD?
 
-**Sim.** Ambos usam a mesma API e o mesmo pipeline de validação (item 3).
+**Yes.** Both use the same API and the same validation pipeline (item 3).
 
-**Import no hub (UI)**
-- Aplicações → Importar: upload do `.hubapp` ou URL do pacote/imagem.
-- Relatório de validação, escolha de ambiente, aprovação manual se configurada.
+**Import into the hub (UI)**
+- Applications → Import (Aplicações → Importar): upload of the `.hubapp` or URL of the package/image.
+- Validation report, environment choice, manual approval if configured.
 
 **CI/CD**
 ```yaml
@@ -246,255 +246,254 @@ Limites:
 - run: hub pack --image ghcr.io/org/minha-app@${{ steps.push.outputs.digest }}
 - run: hub publish minha-app.hubapp --env staging --wait
 ```
-- Autenticação via OIDC do GitHub (sem segredo fixo), confiança por repositório/branch.
-- `--wait` falha o job se o deploy for rejeitado.
-- `hub promote minha-app@1.4.0 --to prod` promove a mesma versão validada, sem rebuild.
-- Também aplicável a Azure DevOps e GitLab.
 
-**Regras comuns**
-- Pacotes assinados; versões imutáveis.
-- RBAC de deploy por app e ambiente; aprovação obrigatória para produção (opcional).
-- Rollback via UI ou `hub rollback`.
-- Auditoria: quem, origem (UI/CI), commit.
+- Authentication via GitHub OIDC (no fixed secret), trust per repository/branch.
+- `--wait` fails the job if the deployment is rejected.
+- `hub promote minha-app@1.4.0 --to prod` promotes the same validated version, without a rebuild.
+- Also applicable to Azure DevOps and GitLab.
 
-**Recomendação:** restringir import manual a staging ou a apps sem repositório, com aprovação obrigatória — assim o CI permanece a fonte da verdade em produção.
+**Common rules**
+- Signed packages; immutable versions.
+- Deploy RBAC per app and environment; mandatory approval for production (optional).
+- Rollback via UI or `hub rollback`.
+- Audit trail: who, origin (UI/CI), commit.
 
-**Atualização (28/09/2026) — CI local, sem GitHub Actions:** o GitHub Actions deixou de ser usado neste projeto; build, testes e publicação rodam localmente (`platform/scripts/ci-local.sh`, `platform/scripts/release.sh`). O **endpoint de CI continua o mesmo e vale para qualquer CI** — Azure DevOps, GitLab, Jenkins, um runner self-hosted ou o próprio script local (`platform/scripts/ci-publish.sh`: token de API, `hub pack`, `POST /api/ops/packages?origin=ci&commit=…&wait=true` com Bearer, aprovação). A única exigência de rede é o chamador estar dentro de `HUB_ADMIN_ALLOWED_CIDRS` (rede corporativa/VPN). O YAML acima é ilustrativo; a federação OIDC do GitHub deixou de ser um objetivo.
+**Recommendation:** restrict manual import to staging or to apps without a repository, with mandatory approval — this keeps CI as the source of truth in production.
 
-**Implementado hoje (onda 3):** o CI autentica com **token de API** (Administração › Tokens de API: escopo por apps, ambientes e ações `upload`/`status`, validade, revogação; guardado só como hash) em `Authorization: Bearer` no `POST /api/ops/packages`; fora do escopo → 403, revogado/vencido → 401, e a auditoria registra `token:<nome>`. A federação OIDC do GitHub (sem segredo fixo) segue pendente.
+**Update (28/09/2026) — local CI, no GitHub Actions:** GitHub Actions is no longer used in this project; build, tests and publication run locally (`platform/scripts/ci-local.sh`, `platform/scripts/release.sh`). The **CI endpoint stays the same and works with any CI** — Azure DevOps, GitLab, Jenkins, a self-hosted runner or the local script itself (`platform/scripts/ci-publish.sh`: API token, `hub pack`, `POST /api/ops/packages?origin=ci&commit=…&wait=true` with Bearer, approval). The only network requirement is that the caller is inside `HUB_ADMIN_ALLOWED_CIDRS` (corporate network/VPN). The YAML above is illustrative; GitHub OIDC federation is no longer a goal.
 
-**Implementado hoje (onda 4 + correções da revisão):** staging e produção são containers separados (`hub-app-<id>__staging` / `hub-app-<id>`; o separador `__` não existe em ids, e a posse é conferida pelas labels antes de mexer em qualquer container), cada um com as suas variáveis (vínculo app × ambiente), volume, rede de dependências (`hub-deps-<id>__staging` / `hub-deps-<id>`), upstream no gateway e banco próprio (`app_<id>_staging`) — staging **nunca** recebe a credencial do banco de produção: sem banco de staging, a implantação em staging falha com a instrução de provisioná-lo; o gateway serve produção e só mostra staging a quem tem "Editar configurações" e ligou o modo staging **na sessão** (POST same-origin com gesto do usuário, no servidor, 30 min; faixa STAGING na tela e ações de administração bloqueadas enquanto isso). Implantações ficam "Implantando" até o runtime confirmar, são gravadas passo a passo e reconciliadas se o hub reiniciar no meio; falha ao renomear containers desfaz a troca. Aprovar/promover/rollback respondem **202 + job** (o CI acompanha em `GET /api/ops/jobs/{id}`, ou usa `?wait=true`). Toda ativação é **blue/green sem indisponibilidade**: o novo container sobe ao lado do atual, passa no health check, recebe o tráfego numa troca atômica do upstream, o anterior é drenado (requisições em curso, inclusive downloads/uploads em streaming, terminam nele) e fica como `__prev` para **rollback instantâneo** (só se nasceu com as variáveis atuais; com segredo rotacionado ele é removido e o rollback reimplanta). Prova sob carga: `platform/loadtest/results/2026-09-27/zero-downtime.md`. Assinatura cosign e scan de vulnerabilidades: opcionais por configuração (item 5). **Onda 5 (e correções):** staging agora só num host próprio (`HUB_STAGING_HOST`) com sessão própria amarrada à sessão principal (sair do hub encerra o staging) e ticket com prova de posse (o link de staging não funciona repassado a outra pessoa). Atenção: o `/api/*` continua atrás de `HUB_ADMIN_ALLOWED_CIDRS` — runners hospedados do GitHub precisam de runner self-hosted na rede permitida, VPN/túnel ou liberação das faixas de `api.github.com/meta`.
+**Implemented today (wave 3):** CI authenticates with an **API token** (Administração › Tokens de API — Administration › API tokens: scope by apps, environments and the `upload`/`status` actions, expiry, revocation; stored only as a hash) in `Authorization: Bearer` on `POST /api/ops/packages`; out of scope → 403, revoked/expired → 401, and the audit trail records `token:<name>`. GitHub OIDC federation (no fixed secret) remains pending.
 
-## 12. O usuário pode abrir várias aplicações, uma em cada aba? E a mesma aplicação em várias abas (uma página por aba)?
+**Implemented today (wave 4 + review fixes):** staging and production are separate containers (`hub-app-<id>__staging` / `hub-app-<id>`; the `__` separator does not exist in ids, and ownership is checked through the labels before touching any container), each with its own variables (app × environment binding), volume, dependency network (`hub-deps-<id>__staging` / `hub-deps-<id>`), gateway upstream and its own database (`app_<id>_staging`) — staging **never** receives the production database credential: without a staging database, the staging deployment fails with the instruction to provision it; the gateway serves production and shows staging only to those with "Editar configurações" (Edit settings) who turned on staging mode **in the session** (same-origin POST with a user gesture, on the server, 30 min; STAGING band on screen and administration actions blocked meanwhile). Deployments show "Implantando" (Deploying) until the runtime confirms, are recorded step by step and reconciled if the hub restarts midway; a failure to rename containers undoes the swap. Approve/promote/rollback respond **202 + job** (CI follows them at `GET /api/ops/jobs/{id}`, or uses `?wait=true`). Every activation is **blue/green with no downtime**: the new container starts beside the current one, passes the health check, receives traffic through an atomic upstream switch, the previous one is drained (requests in progress, including streaming downloads/uploads, finish on it) and kept as `__prev` for **instant rollback** (only if it was born with the current variables; with a rotated secret it is removed and the rollback redeploys). Load proof: `platform/loadtest/results/2026-09-27/zero-downtime.md`. Cosign signature and vulnerability scan: optional by configuration (item 5). **Wave 5 (and fixes):** staging now runs only on its own host (`HUB_STAGING_HOST`) with its own session tied to the main session (logging out of the hub ends staging) and a ticket with proof of possession (the staging link does not work when passed on to another person). Note: `/api/*` remains behind `HUB_ADMIN_ALLOWED_CIDRS` — GitHub-hosted runners need a self-hosted runner on the allowed network, a VPN/tunnel, or the release of the `api.github.com/meta` ranges.
 
-**Sim para os dois casos.**
+## 12. Can the user open several applications, one per tab? And the same application in several tabs (one page per tab)?
 
-- Cada página de app tem URL real sob `/apps/` (`/apps/ativos`, `/apps/ativos/assets`, `/apps/servicos/requests`…; desde a onda 13 — os caminhos antigos `/ativos/…` respondem 301/308 para o novo, com a query). O servidor entrega o shell para essa URL e o `hub.js` busca o fragmento da seção pelo gateway (`/_frag/...`). Por isso funcionam: abrir em nova aba, Ctrl/⌘+clique ou clique do meio no sidebar (o `hub.js` não intercepta cliques com modificadores), favoritos, recarregar e compartilhar link.
-- Cada aba é independente: navegação, filtros e estado de tela ficam na aba. O estado de negócio (Administração, Operações, dados dos apps) fica no servidor e é o mesmo para todas as abas.
-- Várias aplicações ao mesmo tempo: cada aba carrega só os assets do seu app, e os apps não compartilham JS global (isolamento do SDK).
+**Yes for both cases.**
 
-**Cuidados**
+- Each app page has a real URL under `/apps/` (`/apps/ativos`, `/apps/ativos/assets`, `/apps/servicos/requests`…; since wave 13 — the old paths `/ativos/…` answer 301/308 to the new one, keeping the query string). The server delivers the shell for that URL and `hub.js` fetches the section's fragment through the gateway (`/_frag/...`). That is why these work: opening in a new tab, Ctrl/⌘+click or middle-click on the sidebar (`hub.js` does not intercept clicks with modifiers), bookmarks, reloading and sharing a link.
+- Each tab is independent: navigation, filters and screen state stay in the tab. Business state (Administration, Operations, app data) lives on the server and is the same for all tabs.
+- Several applications at the same time: each tab loads only the assets of its own app, and the apps do not share global JS (SDK isolation).
 
-| Ponto | Situação | Encaminhamento |
+**Caveats**
+
+| Point | Situation | Handling |
 |---|---|---|
-| Tela de carregamento (~4 s) repete em cada aba | **Onda 5:** só na primeira abertura do app sem assets desta versão em cache; deep link, recarregar/voltar, app já aberto na sessão ou assets em cache vão direto ao conteúdo | Implementado |
-| Edição do mesmo registro em duas abas | Última gravação vence | Controle otimista (versão/ETag) nas APIs de escrita |
-| Logs em tempo real (SSE) abertos em muitas abas | **Onda 5:** uma conexão para todas as abas (Web Locks elege a líder, BroadcastChannel repassa; failover quando a líder fecha) | Implementado |
-| Sessão | Cookie `hub_session` compartilhado entre abas: login, logout e expiração (30 min ocioso, 12 h no total) valem para todas; aba com sessão vencida volta ao login e depois à mesma página (`next`) | Implementado na onda 3 |
+| Loading screen (~4 s) repeats in each tab | **Wave 5:** only on the first opening of the app without this version's assets in cache; deep link, reload/back, app already open in the session or assets in cache go straight to the content | Implemented |
+| Editing the same record in two tabs | Last save wins | Optimistic concurrency control (version/ETag) in the write APIs |
+| Real-time logs (SSE) open in many tabs | **Wave 5:** one connection for all tabs (Web Locks elects the leader, BroadcastChannel relays; failover when the leader closes) | Implemented |
+| Session | `hub_session` cookie shared among tabs: login, logout and expiry (30 min idle, 12 h total) apply to all; a tab with an expired session returns to login and then to the same page (`next`) | Implemented in wave 3 |
 
-## 13. Existe uma arquitetura que garanta a conclusão das ações/transações mesmo se o app cair (ex.: estouro de memória)?
+## 13. Is there an architecture that guarantees actions/transactions complete even if the app crashes (e.g. memory overflow)?
 
-**Sim — a queda não é evitável, mas o resultado é garantido se nenhum trabalho importante viver só na memória do processo.** Padrões, oferecidos prontos pelo **SDK da plataforma** (`hub-sdk`):
+**Yes — the crash cannot be avoided, but the result is guaranteed as long as no important work lives only in the process's memory.** Patterns, provided ready-made by the **platform SDK** (`hub-sdk`):
 
-| Padrão | Garante | Uso típico |
+| Pattern | Guarantees | Typical use |
 |---|---|---|
-| Transação no banco | Tudo-ou-nada; queda no meio não deixa estado parcial | CRUD, abertura de chamado |
-| Chave de idempotência | Repetir o pedido após queda devolve o mesmo resultado, sem duplicar | Toda ação que grava; o gateway gera e repassa `Idempotency-Key` |
-| Tarefas duráveis (fila no Postgres com *lease*, retentativa com backoff e *checkpoint*) | Operação longa retoma de onde parou em outro worker | Importar Excel, relatórios, exportações grandes |
-| Outbox transacional | Efeito colateral (auditoria, notificação, integração) é entregue depois, exatamente uma vez em efeito | Auditoria para a plataforma, e-mails, webhooks |
-| Saga com compensação | Ação em vários sistemas termina ou é desfeita de forma controlada | Cadastro + API externa |
-| Arquivos em duas fases | Upload só "existe" quando concluído; órfãos são limpos | Anexos |
-| Proteção preventiva | Queda vira exceção: limite de operações pesadas simultâneas, streaming, desligamento gracioso | Todos os apps |
+| Database transaction | All-or-nothing; a crash in the middle leaves no partial state | CRUD, opening a ticket |
+| Idempotency key | Repeating the request after a crash returns the same result, without duplicating | Every action that writes; the gateway generates and forwards `Idempotency-Key` |
+| Durable jobs (Postgres queue with *lease*, retry with backoff and *checkpoint*) | A long operation resumes where it stopped on another worker | Importing Excel, reports, large exports |
+| Transactional outbox | A side effect (audit trail, notification, integration) is delivered later, exactly once in effect | Platform audit trail, e-mails, webhooks |
+| Saga with compensation | An action across several systems either completes or is undone in a controlled way | Registration + external API |
+| Two-phase files | An upload only "exists" when complete; orphans are cleaned up | Attachments |
+| Preventive protection | A crash becomes an exception: limit on simultaneous heavy operations, streaming, graceful shutdown | All apps |
 
-**Na plataforma**
-- Operações ganha a aba **Tarefas** (estado, progresso, tentativas, reprocessar/cancelar).
-- O manifest declara as tarefas do app (nome, tempo máximo, tentativas); o pipeline de implantação valida o contrato.
-- Auditoria migra do cabeçalho de resposta para o **outbox**: o hub busca os eventos pendentes do app pela rede interna (hub → app; o app continua sem acesso ao plano de controle) e confirma o recebimento.
+**On the platform**
+- Operations gets the **Tasks** tab (state, progress, attempts, retry/cancel).
+- The manifest declares the app's jobs (name, maximum time, attempts); the deployment pipeline validates the contract.
+- The audit trail moves from the response header to the **outbox**: the hub fetches the app's pending events over the internal network (hub → app; the app still has no access to the control plane) and confirms receipt.
 
-**Validação:** teste de caos — derrubar o container no meio de uma importação grande e de uma rajada de gravações e verificar: importação conclui a partir do checkpoint, zero duplicados/parciais, zero eventos de auditoria perdidos.
+**Validation:** chaos test — kill the container in the middle of a large import and a burst of writes, then verify: the import completes from the checkpoint, zero duplicates/partials, zero lost audit events.
 
-**Implementado hoje** (`platform/sdk-python`, usado pelos apps de demonstração): tarefas duráveis no Postgres do app (lease + `SKIP LOCKED`, heartbeat, backoff exponencial com jitter, tempo máximo por tentativa, checkpoint na transação do lote, cancelamento, dead-letter, evento final no outbox), middleware `Idempotency-Key` (repetição devolve a mesma resposta; efetivação marcada na transação de negócio; 409 em paralelo, 422 com pedido diferente) — o `hub.js` envia uma chave por submissão e repete com a mesma em falha transitória —, outbox transacional coletado pelo hub pela rede interna com token por app (o gateway recusa `/_frag/<app>/_hub/*`; o antigo cabeçalho `x-hub-audit` saiu), desligamento gracioso e o semáforo de operações pesadas. Importação e exportação Excel do `ativos` são tarefas; **Operações › Tarefas** lista as de todos os apps com reprocessar/cancelar auditados. O **teste de caos** (`platform/loadtest/chaos/chaos.mjs`: 250 mil linhas + 420 cadastros com novas tentativas, `docker kill` 2× com requisições em voo) passou em todas as verificações — ver `platform/loadtest/results/2026-09-27/chaos.md`. O teste de caos do app Python (`loadtest/chaos/chaos-contratos.mjs`) passou em todas as verificações (efeito exatamente uma vez, nenhuma auditoria perdida). Ainda não há: saga com compensação, arquivos em duas fases com limpeza de órfãos, SDK oficial para outras linguagens (elas seguem `platform/docs/CONTRATO-APP.md` + suíte de conformidade), limpeza automática de uploads de tarefas que falharam.
+**Implemented today** (`platform/sdk-python`, used by the demo apps): durable jobs in the app's Postgres (lease + `SKIP LOCKED`, heartbeat, exponential backoff with jitter, maximum time per attempt, checkpoint in the batch transaction, cancellation, dead-letter, final event in the outbox), `Idempotency-Key` middleware (repetition returns the same response; effect marked in the business transaction; 409 in parallel, 422 with a different request) — `hub.js` sends one key per submission and repeats with the same key on transient failure —, transactional outbox collected by the hub over the internal network with a per-app token (the gateway refuses `/_frag/<app>/_hub/*`; the old `x-hub-audit` header is gone), graceful shutdown and the semaphore for heavy operations. The Excel import and export of `ativos` are jobs; **Operações › Tarefas** (Operations › Tasks) lists those of all apps with audited retry/cancel. The **chaos test** (`platform/loadtest/chaos/chaos.mjs`: 250k rows + 420 registrations with retries, `docker kill` 2× with requests in flight) passed all checks — see `platform/loadtest/results/2026-09-27/chaos.md`. The chaos test of the Python app (`loadtest/chaos/chaos-contratos.mjs`) passed all checks (effect exactly once, no lost audit events). Not yet available: saga with compensation, two-phase files with orphan cleanup, an official SDK for other languages (they follow `platform/docs/CONTRATO-APP.md` + the conformance suite), automatic cleanup of uploads from failed jobs.
 
-## 14. Como funciona o login e o SSO?
+## 14. How do login and SSO work?
 
-**Login local, com SSO (OIDC) pronto e desligado por configuração** (`HUB_SSO_ENABLED=false`).
+**Local login, with SSO (OIDC) ready and turned off by configuration** (`HUB_SSO_ENABLED=false`).
 
-- **Login local:** e-mail e senha (Argon2id). Erro sempre "E-mail ou senha incorretos." e mesmo custo e mesmas respostas para conta real, inexistente ou desativada, de qualquer IP (não revela se a conta existe). Sem bloqueio rígido da conta: limite por IP+conta (5 em 15 min) e por IP (30), mais um atraso curto na conta (2 s dobrando, teto 60 s) que não afeta os IPs de onde o dono já entrou — um atacante não tranca o usuário legítimo. "Desbloquear" limpa tudo. A troca de senha também tem limite. O primeiro administrador vem de `HUB_BOOTSTRAP_ADMIN_EMAIL/PASSWORD` ou de uma senha aleatória gravada uma vez em `bootstrap-admin.txt`.
-- **Sessão:** cookie opaco `hub_session` (HttpOnly, SameSite=Lax, Secure em HTTPS), guardado no servidor (sobrevive a reinícios); expira em 30 min sem uso ou 12 h; troca a cada login; cai no logout, na troca de senha e ao desativar o usuário.
-- **Permissões:** as da tela *Funções e permissões* valem de verdade em cada rota (páginas, `/api/*`, `/_frag/*`), com 403 amigável e menu filtrado; cada função pode limitar as aplicações que abre. Mutações exigem mesma origem (CSRF). O **Administrador é superusuário**: só ele altera Funções e permissões, atribui funções de administrador e mexe em contas de administradores; ninguém altera as próprias funções.
-- **Credenciais não vazam para os apps:** o gateway remove o cookie de sessão do hub (e qualquer `hub_*`) e o `Authorization` antes de repassar a requisição, e não deixa o app gravar cookies do hub; a identidade chega só pelo `x-hub-user`.
-- **Usuários:** Administração › Usuários (criar com senha provisória, editar funções, desativar, redefinir senha, desbloquear) — tudo auditado com o usuário real. Sem convite por e-mail.
-- **Apps:** recebem a identidade real no `x-hub-user` (login, nome, funções, permissões), no mesmo formato de antes; o `hub dev` continua sem login, com identidade de desenvolvimento marcada no header.
-- **SSO:** Authorization Code + PKCE com descoberta, `state`/`nonce`, ID token validado pelo JWKS (RS256/ES256). Vincula por emissor + `sub`; ao usuário local pelo e-mail só com e-mail verificado pelo IdP (`email_verified`), nunca a um Administrador e nunca sobrescrevendo um vínculo; grupos do IdP podem definir as funções; criação automática opcional. Para ligar: `HUB_SSO_ENABLED=true` + emissor, cliente e URL de retorno (ver `platform/README.md`). Testado contra um provedor falso nos testes, sem IdP externo.
+- **Local login:** e-mail and password (Argon2id). The error is always "E-mail ou senha incorretos." (Incorrect e-mail or password.), with the same cost and the same responses for a real, non-existent or deactivated account, from any IP (does not reveal whether the account exists). No hard account lockout: a limit per IP+account (5 in 15 min) and per IP (30), plus a short delay on the account (2 s doubling, ceiling 60 s) that does not affect the IPs from which the owner has already signed in — an attacker cannot lock out the legitimate user. "Desbloquear" (Unlock) clears everything. Password change is also rate-limited. The first administrator comes from `HUB_BOOTSTRAP_ADMIN_EMAIL/PASSWORD` or from a random password written once to `bootstrap-admin.txt`.
+- **Session:** opaque `hub_session` cookie (HttpOnly, SameSite=Lax, Secure over HTTPS), stored on the server (survives restarts); expires after 30 min of inactivity or 12 h; rotated on every login; ends on logout, on password change and when the user is deactivated.
+- **Permissions:** those in the *Funções e permissões* (Roles and permissions) screen apply for real on every route (pages, `/api/*`, `/_frag/*`), with a friendly 403 and a filtered menu; each role can limit the applications it opens. Mutations require same origin (CSRF). The **Administrator is a superuser**: only they change Roles and permissions, assign administrator roles and touch administrator accounts; nobody changes their own roles.
+- **Credentials do not leak to the apps:** the gateway removes the hub session cookie (and any `hub_*`) and the `Authorization` header before forwarding the request, and does not let the app write hub cookies; identity arrives only via `x-hub-user`.
+- **Users:** Administração › Usuários (Administration › Users) (create with a temporary password, edit roles, deactivate, reset password, unlock) — everything audited with the real user. No e-mail invitations.
+- **Apps:** they receive the real identity in `x-hub-user` (login, name, roles, permissions), in the same format as before; `hub dev` still has no login, with a development identity marked in the header.
+- **SSO:** Authorization Code + PKCE with discovery, `state`/`nonce`, ID token validated by the JWKS (RS256/ES256). Links by issuer + `sub`; to a local user by e-mail only with an e-mail verified by the IdP (`email_verified`), never to an Administrator and never overwriting an existing link; IdP groups can define roles; optional automatic creation. To turn it on: `HUB_SSO_ENABLED=true` + issuer, client and return URL (see `platform/README.md`). Tested against a fake provider in the tests, with no external IdP.
 
-## 15. Como sei se as aplicações estão saudáveis e rápidas? (observabilidade)
+## 15. How do I know whether the applications are healthy and fast? (observability)
 
-**Em linguagem simples:** o hub é a porta de entrada de todos os apps, então ele mede cada pedido que passa por ele — quantos chegaram, quantos deram erro e quanto demoraram — e mostra isso em gráficos na tela **Operações › Observabilidade**. Quando alguém reclama "ficou lento", dá para abrir o pedido lento e ver, numa linha do tempo, quanto tempo foi gasto no hub, no app e em cada consulta ao banco.
+**In plain language:** the hub is the entry point of all apps, so it measures every request that passes through it — how many arrived, how many failed and how long they took — and shows this in charts on the **Operações › Observabilidade** (Operations › Observability) screen. When someone complains "it got slow", you can open the slow request and see, on a timeline, how much time was spent in the hub, in the app and in each database query.
 
-**Como funciona (onda 8):**
-- **Métricas RED por app × ambiente** (taxa de pedidos, erros 5xx, latência p50/p95/p99), pedidos em curso, CPU e memória de cada container (lidos do Docker), vagas de operações pesadas e fila de tarefas (informadas pelo app). Guardadas em memória no próprio hub (última hora em baldes de 10 s; 30 dias em baldes de 5 min, gravados em disco) — sem servidor extra.
-- **Traces (padrão W3C/OpenTelemetry):** o gateway abre um "span" por pedido e manda o `traceparent` ao app; o SDK continua o trace e cria um span para cada consulta ao banco, colocando o `traceparent` no comentário do SQL (aparece no Postgres). O app **não** manda nada para fora (continua sem acesso ao plano de controle): o hub busca os spans pela rede interna, como já faz com a auditoria. Ações de Administração/Operações e jobs (implantação, backup) também viram spans.
-- **Exportar para outras ferramentas (opcional):** com `OTEL_EXPORTER_OTLP_ENDPOINT` o hub envia traces e métricas por OTLP. O compose tem o perfil `observability` (OpenTelemetry Collector + Jaeger, ~450 MiB de teto — cabe na VM de destino como opcional): `OTEL_EXPORTER_OTLP_ENDPOINT=http://hub-otel-collector:4318 docker compose --profile observability up -d` e a UI do Jaeger em `http://127.0.0.1:16686`. Grafana LGTM foi descartado por pesar ~1,5 GB.
-- **SLOs e status page:** em **Saúde da plataforma** cada app × ambiente pode ter metas (ex.: 99,5% sem erro e 95% dos pedidos em até 500 ms, janela de 7 ou 30 dias); o hub calcula o "orçamento de erro" que resta e avisa no sino (e abre um incidente) quando ele está queimando rápido demais. **/status** mostra para qualquer usuário logado (ou para todos, se ligado em Configurações) o estado atual, barras de disponibilidade dos últimos 30 dias e os incidentes — automáticos (queda em laço, falta de memória, implantação que falhou, SLO queimando) e notas da equipe.
+**How it works (wave 8):**
+- **RED metrics per app × environment** (request rate, 5xx errors, latency p50/p95/p99), in-flight requests, CPU and memory of each container (read from Docker), heavy-operation slots and the job queue (reported by the app). Kept in memory in the hub itself (last hour in 10 s buckets; 30 days in 5 min buckets, written to disk) — no extra server.
+- **Traces (W3C/OpenTelemetry standard):** the gateway opens a "span" per request and sends the `traceparent` to the app; the SDK continues the trace and creates a span for each database query, putting the `traceparent` in the SQL comment (visible in Postgres). The app does **not** send anything outside (it still has no access to the control plane): the hub fetches the spans over the internal network, as it already does with the audit trail. Administration/Operations actions and jobs (deployment, backup) also become spans.
+- **Export to other tools (optional):** with `OTEL_EXPORTER_OTLP_ENDPOINT` the hub sends traces and metrics via OTLP. The compose file has the `observability` profile (OpenTelemetry Collector + Jaeger, ~450 MiB ceiling — fits on the target VM as an option): `OTEL_EXPORTER_OTLP_ENDPOINT=http://hub-otel-collector:4318 docker compose --profile observability up -d` and the Jaeger UI at `http://127.0.0.1:16686`. Grafana LGTM was ruled out because it weighs ~1.5 GB.
+- **SLOs and status page:** in **Saúde da plataforma** (Platform health) each app × environment can have targets (e.g. 99.5% error-free and 95% of requests within 500 ms, over a 7- or 30-day window); the hub calculates the remaining "error budget" and warns on the bell (and opens an incident) when it is burning too fast. **/status** shows any logged-in user (or everyone, if enabled in Settings) the current state, 30-day availability bars and incidents — automatic ones (crash loops, out of memory, failed deployment, SLO burning) and notes from the team.
 
-**Custo:** medido sob a carga realista em `platform/loadtest/RESULTADOS.md` (Onda 8) — o hub continua dentro de 1 vCPU / 1 GB com folga.
+**Cost:** measured under realistic load in `platform/loadtest/RESULTADOS.md` (Wave 8) — the hub stays within 1 vCPU / 1 GB with room to spare.
 
-## 16. Onde ficam as senhas e segredos? E se alguém copiar o disco?
+## 16. Where are passwords and secrets kept? And what if someone copies the disk?
 
-**Em linguagem simples:** segredos (senhas de banco, connection strings, tokens internos) ficam **cifrados** no disco do hub, e os backups também. Quem copiar o volume de dados sem a **chave mestra** vê só texto embaralhado.
+**In plain language:** secrets (database passwords, connection strings, internal tokens) are **encrypted** on the hub's disk, and so are the backups. Whoever copies the data volume without the **master key** sees only scrambled text.
 
-**Como funciona (onda 8):**
-- **Criptografia envelope:** uma **chave mestra** (arquivo `HUB_MASTER_KEY_FILE`, 256 bits — recomendada fora do volume de dados, com permissão restrita/ACL) cifra as **chaves de dados**; as chaves de dados cifram cada valor com AES-256-GCM, "amarrado" ao nome da variável (um valor copiado para outra variável não abre). Sem `HUB_MASTER_KEY_FILE`, o hub gera `master.key` na primeira partida e avisa para guardar uma cópia fora do servidor.
-- **Migração automática:** na primeira partida da onda 8, segredos em texto claro do `admin.json` são cifrados; o arquivo antigo fica guardado **cifrado** (`admin.json.pre-vault-*.enc`) e o novo é relido e conferido antes de seguir.
-- **Rotação:** "Rotacionar chave de dados" (Administração › Configurações) cria uma chave nova e recifra os segredos (as antigas continuam abrindo backups antigos); a chave mestra troca com o hub parado: `hub-web --rotate-master-key [arquivo-novo]` (só recifra o chaveiro; queda no meio é concluída na próxima partida).
-- **Backups cifrados:** cada parte do pacote (arquivos, dump do banco, objetos do bucket) é cifrada com uma chave própria logo depois de criada; restaurar decifra, confere o sha256 e apaga o texto claro no fim. Qualquer byte alterado impede a restauração **antes** de parar o app. A cópia externa (S3) é **lida de volta** e conferida arquivo a arquivo.
-- **Senhas de usuários e tokens de API** continuam só como hash (Argon2id/SHA-256) no `auth.json` — não há o que decifrar.
-- **KMS externo (HashiCorp Vault, KMS de nuvem):** o cofre embrulha as chaves de dados por uma interface (`KeyWrapper`); um adaptador para KMS externo encaixa aí (documentado, não implementado).
-- **Auditoria imutável:** cada evento da trilha entra numa cadeia de hashes (cada um inclui o hash do anterior), com checkpoints assinados (Ed25519) a cada 100 eventos e a "cabeça" assinada a cada gravação. **Auditoria › Verificar integridade** detecta qualquer edição, remoção, reordenação ou corte do fim; **Exportar** gera um JSONL com as provas (chave pública, manifesto e a verificação).
-- **Quem pode assinar:** só a chave derivada da semente guardada cifrada no chaveiro. Uma chave pública acrescentada à mão no `keyring.json` é ignorada e denunciada na verificação (correção da revisão da onda 8).
-- **Começo e retenção:** a cadeia só é aceita se começar do gênese ou do "piso" registrado no **manifesto de arquivamento assinado** (`audit/archive/manifest.json`). Apagar as primeiras linhas até um checkpoint, ou um segmento arquivado, é acusado. Remover histórico antigo só pelo caminho assinado: `hub-web --audit-prune-before <seq>`.
-- **Apagar ou voltar a cadeia no tempo:** o chaveiro guarda, cifrado e autenticado pela chave mestra, a **âncora** da cadeia: marcador "cadeia inicializada", seq/hash da última cabeça, piso e segmentos arquivados. Cadeia/cabeça ausentes ou mais velhas → a cadeia fica **bloqueada** (nada é reconstruído sozinho), a verificação falha e um alerta crítico aparece no sino. Recomeço só explícito, depois de confirmar a perda: `hub-web --audit-reinit-chain`.
-- **A âncora é obrigatória:** o chaveiro tem um registro selado (release 2) que lembra quais valores protegidos existem e em que **geração** cada um foi gravado (a geração só sobe e entra na autenticação do valor). Por isso apagar a âncora do `keyring.json`, repor um valor antigo dela ou "rebaixar" o chaveiro para o formato antigo **bloqueia** a auditoria (com alerta) em vez de aceitar o estado atual. O estado existente só é adotado uma vez: no chaveiro novo, ou no primeiro uso de um chaveiro anterior a esta versão.
-- **Janela local:** para não regravar o chaveiro a cada evento, a âncora é gravada nos checkpoints (a cada 100 eventos), no arquivamento, na partida/desligamento e no máximo a cada 30 s. Um corte dentro dessa janela só é pego pela cabeça assinada e pela âncora externa. A versão anterior do chaveiro fica em `keyring.json.prev`.
-- **Limite do que é local:** tudo que fica só no diretório de dados pode ser voltado **inteiro** para uma cópia antiga (chaveiro junto), e aí tudo confere. A tela de Auditoria mostra **"Proteção contra rollback: LOCAL APENAS (configure publicação externa)"** enquanto a publicação externa estiver desligada.
-- **Âncora externa (a proteção real):** a cada evento, a cabeça assinada (seq, hash, id do último evento, chave pública, host e horário) sai do servidor pelo `HUB_AUDIT_HEAD_URL` (webhook HTTP(S) com `POST` JSON, `HUB_AUDIT_HEAD_TOKEN` opcional como `Bearer`; em segundo plano, sempre a cabeça mais recente) e/ou pelo `HUB_AUDIT_HEAD_FILE` (uma linha JSONL num armazenamento de outra máquina; o compose de produção já liga). Uma falha de publicação aparece em Administração › Auditoria ("falha na âncora externa") sem travar a auditoria. Quem recebe confere a assinatura com a chave pública e guarda o maior `seq`: uma cadeia restaurada mais velha que ele denuncia o rollback.
-- **Conferir a série fora do servidor** (em outra máquina, por exemplo num agendamento diário): `hub-web --audit-verify-published <arquivo-ou-url> [chave-pública|-] [intervalo-máx-s]`. A chave pública está em Exportar › prova e deve ser fixada na primeira vez. O comando confere:
-  - a assinatura de cada documento;
-  - que a chave e o chaveiro são sempre os mesmos;
-  - que o horário só cresce;
-  - que seq, id de evento, piso, arquivados e geração nunca descem;
-  - que o mesmo seq tem sempre o mesmo hash;
-  - buracos maiores que o intervalo informado;
-  - publicações `blocked`.
+**How it works (wave 8):**
+- **Envelope encryption:** a **master key** (file `HUB_MASTER_KEY_FILE`, 256 bits — recommended outside the data volume, with restricted permissions/ACL) encrypts the **data keys**; the data keys encrypt each value with AES-256-GCM, "bound" to the variable name (a value copied to another variable does not open). Without `HUB_MASTER_KEY_FILE`, the hub generates `master.key` on first start and warns to keep a copy outside the server.
+- **Automatic migration:** on the first start of wave 8, plaintext secrets in `admin.json` are encrypted; the old file is kept **encrypted** (`admin.json.pre-vault-*.enc`) and the new one is re-read and checked before proceeding.
+- **Rotation:** "Rotacionar chave de dados" (Rotate data key) (Administração › Configurações — Administration › Settings) creates a new key and re-encrypts the secrets (the old ones still open old backups); the master key is changed with the hub stopped: `hub-web --rotate-master-key [arquivo-novo]` (only re-encrypts the keyring; a crash midway is completed on the next start).
+- **Encrypted backups:** each part of the package (files, database dump, bucket objects) is encrypted with its own key right after it is created; restoring decrypts, checks the sha256 and deletes the plaintext at the end. Any altered byte prevents the restore **before** the app is stopped. The external copy (S3) is **read back** and checked file by file.
+- **User passwords and API tokens** remain only as hashes (Argon2id/SHA-256) in `auth.json` — there is nothing to decrypt.
+- **External KMS (HashiCorp Vault, cloud KMS):** the vault wraps the data keys through an interface (`KeyWrapper`); an adapter for an external KMS fits there (documented, not implemented).
+- **Immutable audit trail:** each event of the trail enters a hash chain (each one includes the hash of the previous one), with checkpoints signed (Ed25519) every 100 events and the "head" signed on every write. **Auditoria › Verificar integridade** (Audit › Verify integrity) detects any edit, removal, reordering or truncation of the end; **Exportar** (Export) generates a JSONL with the proofs (public key, manifest and the verification).
+- **Who can sign:** only the key derived from the seed stored encrypted in the keyring. A public key added by hand to `keyring.json` is ignored and reported on verification (review fix of wave 8).
+- **Start and retention:** the chain is only accepted if it starts from the genesis or from the "floor" recorded in the **signed archive manifest** (`audit/archive/manifest.json`). Deleting the first lines up to a checkpoint, or an archived segment, is flagged. Remove old history only through the signed path: `hub-web --audit-prune-before <seq>`.
+- **Deleting or rolling back the chain in time:** the keyring stores, encrypted and authenticated by the master key, the chain's **anchor**: an "chain initialized" marker, seq/hash of the last head, floor and archived segments. Chain/head missing or older → the chain is **blocked** (nothing is rebuilt on its own), verification fails and a critical alert appears on the bell. Restarting only explicitly, after confirming the loss: `hub-web --audit-reinit-chain`.
+- **The anchor is mandatory:** the keyring has a sealed record (release 2) that remembers which protected values exist and in which **generation** each one was written (the generation only goes up and enters the value's authentication). So deleting the anchor from `keyring.json`, restoring an old value of it, or "downgrading" the keyring to the old format **blocks** the audit (with an alert) instead of accepting the current state. The existing state is adopted only once: in the new keyring, or on the first use of a keyring prior to this version.
+- **Local window:** to avoid rewriting the keyring on every event, the anchor is written at checkpoints (every 100 events), on archiving, on start/shutdown and at most every 30 s. A cut inside that window is only caught by the signed head and the external anchor. The previous version of the keyring is kept in `keyring.json.prev`.
+- **Limit of what is local:** everything that lives only in the data directory can be rolled back **entirely** to an old copy (keyring included), and then everything checks out. The Audit screen shows **"Proteção contra rollback: LOCAL APENAS (configure publicação externa)"** (Rollback protection: LOCAL ONLY (configure external publication)) while external publication is off.
+- **External anchor (the real protection):** on every event, the signed head (seq, hash, id of the last event, public key, host and time) leaves the server via `HUB_AUDIT_HEAD_URL` (HTTP(S) webhook with JSON `POST`, `HUB_AUDIT_HEAD_TOKEN` optional as `Bearer`; in the background, always the latest head) and/or via `HUB_AUDIT_HEAD_FILE` (one JSONL line on storage on another machine; the production compose already enables it). A publication failure appears in Administração › Auditoria ("falha na âncora externa" — external anchor failure) without blocking the audit. Whoever receives it checks the signature with the public key and keeps the highest `seq`: a chain restored older than that reports the rollback.
+- **Check the series outside the server** (on another machine, for example in a daily schedule): `hub-web --audit-verify-published <file-or-url> [public-key|-] [intervalo-máx-s]`. The public key is in Exportar › prova (Export › proof) and must be pinned the first time. The command checks:
+  - the signature of each document;
+  - that the key and the keyring are always the same;
+  - that the time only grows;
+  - that seq, event id, floor, archived segments and generation never go down;
+  - that the same seq always has the same hash;
+  - gaps larger than the given interval;
+  - `blocked` publications.
 
-  Sai com 0 quando está tudo certo e com 1 quando há problema. Um rollback do diretório inteiro aparece como regressão ou, se o atacante segurar as publicações, como buraco na série.
-- **Arquivamento à prova de queda:** se o hub cair no meio de um arquivamento (segmento já movido, manifesto ainda sem ele), a próxima partida confere o segmento e o registra no manifesto assinado. A conferência verifica o encadeamento e o checkpoint final assinado.
-- **Arquivos temporários e memória:** arquivos cifrados, decifrados e temporários nascem com permissão 0600 (Linux) e são removidos em erro; chaves ficam em memória zerada ao sair de uso. **No Windows**, proteja o diretório de dados (e o da chave mestra) com ACL, por exemplo: `icacls C:\hub\data /inheritance:r /grant:r "%USERNAME%:(OI)(CI)F"`.
-- **Cópias antigas em claro:** depois da migração, cópias do `admin.json` com segredo em claro e backups em claro anteriores ao cofre (quando já há backup cifrado mais novo) são sobrescritos e apagados, com aviso no sino. Mesmo assim, **rotacione os segredos** que existiam antes do cofre: podem sobrar em blocos do disco (SSD) ou em cópias fora do servidor. `HUB_KEEP_PLAINTEXT_COPIES=1` e `HUB_KEEP_PLAINTEXT_BACKUPS=1` mantêm esses arquivos.
-- **Conexões (onda 10):** segredos do cliente, chaves S3 e certificados (chave privada) das conexões de armazenamento ficam cifrados no mesmo cofre (`connections.json`, amarrados ao nome da conexão e ao campo) e nunca voltam para a tela, API, logs ou auditoria; os apps usam as conexões pelo broker do hub e nunca recebem a credencial (ver item 21).
+  Exits 0 when everything is fine and 1 when there is a problem. A rollback of the whole directory appears as a regression or, if the attacker holds the publications, as a gap in the series.
+- **Crash-safe archiving:** if the hub crashes in the middle of archiving (segment already moved, manifest not yet updated), the next start checks the segment and records it in the signed manifest. The check verifies the chaining and the signed final checkpoint.
+- **Temporary files and memory:** encrypted, decrypted and temporary files are created with 0600 permissions (Linux) and removed on error; keys are kept in memory zeroed when no longer in use. **On Windows**, protect the data directory (and the master key's) with an ACL, for example: `icacls C:\hub\data /inheritance:r /grant:r "%USERNAME%:(OI)(CI)F"`.
+- **Old plaintext copies:** after migration, copies of `admin.json` with plaintext secrets and plaintext backups prior to the vault (when a newer encrypted backup already exists) are overwritten and deleted, with a warning on the bell. Even so, **rotate the secrets** that existed before the vault: they may remain in disk blocks (SSD) or in copies outside the server. `HUB_KEEP_PLAINTEXT_COPIES=1` and `HUB_KEEP_PLAINTEXT_BACKUPS=1` keep these files.
+- **Connections (wave 10):** client secrets, S3 keys and certificates (private key) of the storage connections are encrypted in the same vault (`connections.json`, bound to the connection name and field) and never come back to the screen, API, logs or audit trail; the apps use the connections through the hub's broker and never receive the credential (see item 21).
 
-## 17. Dá para liberar uma função nova só para alguns usuários? (feature flags)
+## 17. Can a new feature be released only to some users? (feature flags)
 
-**Em linguagem simples:** sim. Em **Administração › Feature flags** você cria uma "chave" para um recurso de um app e decide, por ambiente (staging/produção), quem vê: todo mundo, ninguém (o botão **Desligar** funciona como interruptor de emergência), algumas funções (ex.: só Administradores), alguns usuários, ou uma porcentagem das pessoas (sempre as mesmas pessoas — quem entrou nos 10% continua nos 10%). Não precisa implantar versão nova do app para mudar.
+**In plain language:** yes. In **Administração › Feature flags** (Administration › Feature flags) you create a "key" for a feature of an app and decide, per environment (staging/production), who sees it: everyone, nobody (the **Desligar** (Turn off) button works as an emergency switch), some roles (e.g. only Administrators), some users, or a percentage of people (always the same people — whoever is in the 10% stays in the 10%). No need to deploy a new app version to change it.
 
-**Como funciona (onda 8):**
-- O **hub avalia** as flags para o usuário de cada pedido e manda o resultado ao app no cabeçalho `x-hub-flags` (ex.: `novo-resumo=on`). Como o gateway apaga qualquer `x-hub-*` vindo do navegador, o app pode confiar nele como confia na identidade (`x-hub-user`).
-- Para tarefas em segundo plano (sem usuário no pedido), o hub **empurra** as definições para o app pela rede interna (`/_hub/flags`) e o SDK avalia localmente com o **mesmo algoritmo** (testado com os mesmos vetores do hub).
-- Escolhemos o hub avaliar (e não o app buscar as regras no hub) porque os apps **não alcançam** o plano de controle — isso continua verdade.
-- Tudo é auditado (criar, alterar regras, ligar/desligar) no escopo do app. Exemplos: `novo-resumo` no Gestão de Ativos e `vencimentos-destaque` no Gestão de Contratos.
+**How it works (wave 8):**
+- The **hub evaluates** the flags for the user of each request and sends the result to the app in the `x-hub-flags` header (e.g. `novo-resumo=on`). Since the gateway strips any `x-hub-*` coming from the browser, the app can trust it the same way it trusts the identity (`x-hub-user`).
+- For background jobs (no user in the request), the hub **pushes** the definitions to the app over the internal network (`/_hub/flags`) and the SDK evaluates locally with the **same algorithm** (tested with the same vectors as the hub).
+- We chose for the hub to evaluate (and not for the app to fetch the rules from the hub) because apps **cannot reach** the control plane — that remains true.
+- Everything is audited (creating, changing rules, turning on/off) within the app's scope. Examples: `novo-resumo` in Gestão de Ativos (Asset Management) and `vencimentos-destaque` in Gestão de Contratos (Contract Management).
 
-## 18. Como funcionam a Inbox e as aprovações? (notificações dos apps)
+## 18. How do the Inbox and approvals work? (app notifications)
 
-**Em linguagem simples:** o sino no topo virou uma **Inbox** para todo mundo. Ali chegam, num lugar só, os **alertas da plataforma** (para quem cuida dela), os **avisos das aplicações** ("sua importação terminou") e os **pedidos de aprovação** ("aprovar o chamado SD-2026-10000123"). Quem pode decidir aprova ou recusa **ali mesmo**, sem abrir o app, e o resultado volta para a aplicação na hora — o chamado muda de "Aguardando" para "Em atendimento", e quem pediu recebe o aviso. Dá para marcar como lido, arquivar, filtrar (não lidas, aprovações, alertas…) e escolher, por tipo, se quer ver no hub (e-mail e Teams estão previstos, ainda não enviados).
+**In plain language:** the bell at the top has become an **Inbox** for everyone. It brings, in one place, the **platform alerts** (for whoever looks after it), the **application notices** ("your import finished") and the **approval requests** ("approve ticket SD-2026-10000123"). Whoever can decide approves or rejects **right there**, without opening the app, and the result goes back to the application immediately — the ticket changes from "Aguardando" (Waiting) to "Em atendimento" (In progress), and the requester gets a notice. You can mark items as read, archive them, filter (unread, approvals, alerts…) and choose, per type, whether you want to see it in the hub (e-mail and Teams are planned, not yet sent).
 
-**Como funciona (onda 9):**
-- A aplicação grava o aviso ou o pedido no **mesmo outbox** que já usava para a auditoria, **na mesma transação** da ação — se a ação não confirmar, o aviso não existe. O hub busca pela rede interna, entrega na Inbox de quem é destino (usuários e/ou funções) e **só então** confirma ao app (nada se perde nem duplica se o hub cair no meio).
-- Ninguém recebe aviso de um app que não pode abrir (a lista de apps de cada função vale também aqui).
-- **Aprovar é seguro**: só aparece o botão para quem é destino, tem a permissão "Aprovar solicitações", pode abrir o app e **não** foi quem pediu. O hub chama o app pela rede interna (`/_hub/approvals`) com o token interno daquele app e a identidade de quem decidiu; o app confere a permissão de novo, aplica **uma vez** (repetir responde "já decidido") e registra na auditoria. O navegador nunca fala direto com o app para isso.
-- **Pedir acesso**: em **Aplicações**, quem não tem um app vê "Solicitar acesso". O pedido cai na Inbox de quem gerencia usuários; aprovado, o acesso é liberado na hora (e pode ser revogado ali).
-- **Ao vivo**: o contador do sino atualiza sozinho por **uma única conexão** por navegador, compartilhada entre abas (o mesmo mecanismo do console de logs). Dentro de um app, por segurança (CSP), o sino mostra o estado da abertura da página e o link para a Inbox.
-- **Uma decisão só** (revisão da onda 9): aprovar e recusar ao mesmo tempo não dá dois resultados — o hub reserva o pedido de forma atômica e o segundo clique recebe "já decidido". Num pedido de acesso, o status e a liberação do app são gravados juntos. Se o hub cair enquanto avisa o app, o pedido volta sozinho para "Falha ao avisar o app" com "Tentar de novo". Se o app registrar algo diferente do que foi decidido, o hub não finge que deu certo: marca como divergente e alerta a administração.
-- **Um app não afoga os outros**: cada app tem limite de avisos por minuto e de itens guardados; pedidos que ainda esperam decisão (de qualquer app) e pedidos de acesso **nunca** são apagados para dar lugar a avisos. Um app só pode avisar funções administrativas se declarar isso no manifesto (`notify_roles`), e avisos endereçados a pessoas usam login/e-mail (nunca o nome, que pode se repetir).
-- **Pedir acesso** tem limites: um pedido pendente por app, até 5 pendentes por pessoa e 24 h de espera depois de uma recusa. Quem aprova precisa, além de gerenciar usuários, alcançar o app; o acesso liberado aparece na tela de Usuários e só um acesso ativo pode ser revogado.
-- Exemplos na demo: Gestão de Ativos e Gestão de Contratos avisam quando uma importação termina; a Central de Serviços pede aprovação quando o chamado é aberto com "Precisa de aprovação".
+**How it works (wave 9):**
+- The application writes the notice or request into the **same outbox** it already used for the audit trail, **in the same transaction** as the action — if the action does not commit, the notice does not exist. The hub fetches it over the internal network, delivers it to the Inbox of its target (users and/or roles) and **only then** confirms to the app (nothing is lost or duplicated if the hub crashes midway).
+- Nobody receives a notice from an app they cannot open (each role's list of apps applies here too).
+- **Approving is safe:** the button only appears for the target, who has the "Aprovar solicitações" (Approve requests) permission, can open the app and was **not** the requester. The hub calls the app over the internal network (`/_hub/approvals`) with that app's internal token and the identity of whoever decided; the app checks the permission again, applies it **once** (repeating answers "já decidido" — already decided) and records it in the audit trail. The browser never talks directly to the app for this.
+- **Requesting access:** in **Aplicações** (Applications), whoever does not have an app sees "Solicitar acesso" (Request access). The request lands in the Inbox of whoever manages users; once approved, access is granted immediately (and can be revoked there).
+- **Live:** the bell counter updates by itself over **a single connection** per browser, shared among tabs (the same mechanism as the log console). Inside an app, for security (CSP), the bell shows the state of the page opening and the link to the Inbox.
+- **One decision only** (wave 9 review): approving and rejecting at the same time does not give two results — the hub reserves the request atomically and the second click receives "já decidido". For an access request, the status and the release of the app are written together. If the hub crashes while notifying the app, the request automatically goes back to "Falha ao avisar o app" (Failed to notify the app) with "Tentar de novo" (Try again). If the app records something different from what was decided, the hub does not pretend it worked: it marks it as divergent and alerts the administration.
+- **One app does not drown the others:** each app has a limit of notices per minute and of stored items; requests still awaiting a decision (from any app) and access requests are **never** deleted to make room for notices. An app can only notify administrative roles if it declares that in the manifest (`notify_roles`), and notices addressed to people use login/e-mail (never the name, which may repeat).
+- **Requesting access** has limits: one pending request per app, up to 5 pending per person and a 24 h wait after a rejection. Whoever approves must, in addition to managing users, be able to reach the app; the granted access appears on the Users screen and only an active access can be revoked.
+- Examples in the demo: Gestão de Ativos and Gestão de Contratos send notices when an import finishes; the Central de Serviços (Service Center) asks for approval when a ticket is opened with "Precisa de aprovação" (Needs approval).
 
-## 19. Como funciona a busca global (Ctrl+K)?
+## 19. How does the global search (Ctrl+K) work?
 
-**Em linguagem simples:** aperte **Ctrl+K** (⌘K no Mac) ou clique na barra de busca do topo e digite: aparecem as aplicações e páginas da plataforma que você pode abrir e, **das próprias aplicações**, os registros que batem (um ativo pelo patrimônio, um fornecedor pelo nome, um chamado pelo protocolo, um contrato pelo número). Setas escolhem, Enter abre direto no lugar certo, Esc fecha; as últimas buscas ficam guardadas.
+**In plain language:** press **Ctrl+K** (⌘K on Mac) or click the search bar at the top and type: the platform applications and pages you can open appear and, **from the applications themselves**, the matching records (an asset by its tag number, a supplier by name, a ticket by its protocol, a contract by its number). Arrow keys choose, Enter opens directly at the right place, Esc closes; recent searches are kept.
 
-**Como funciona (onda 9):**
-- O hub pergunta a **todas as aplicações que você pode abrir ao mesmo tempo** (endpoint `/_hub/search`, pela rede interna, com a sua identidade — cada app só devolve o que você pode ver). Cada app tem no máximo 0,8 s; quem demorar fica de fora daquela vez (a paleta avisa "algumas aplicações não responderam"), e o resto aparece.
-- Resultados agrupados por aplicação, os mais relevantes primeiro; nomes de usuários só para quem gerencia usuários, implantações só para quem edita configurações e **nomes** de variáveis (nunca valores) só para quem vê Variáveis.
-- Dentro de um app, a paleta busca aplicações e páginas na hora e oferece "Buscar em todas as aplicações" (abre a página de resultados) — a proteção (CSP) não deixa o código de um app consultar a plataforma.
-- Buscas sem resultado entram no **Analytics de uso** só como contagem e um código (hash), para saber quantas vezes algo não foi achado sem guardar o que a pessoa digitou; guardar o texto é opcional (liga-se na API do Analytics, com auditoria). Os ids das pessoas no analytics usam uma chave guardada no cofre e trocada a cada período de retenção. Digitar na busca não grava nada; só a busca "confirmada" (Enter/abrir resultado) é registrada, e há limite de buscas por segundo por pessoa.
+**How it works (wave 9):**
+- The hub asks **all the applications you can open at the same time** (endpoint `/_hub/search`, over the internal network, with your identity — each app returns only what you can see). Each app gets at most 0.8 s; whoever takes longer is left out of that round (the palette warns "algumas aplicações não responderam" — some applications did not respond), and the rest appears.
+- Results grouped by application, most relevant first; user names only for those who manage users, deployments only for those who edit settings and **names** of variables (never values) only for those who see Variáveis (Variables).
+- Inside an app, the palette searches applications and pages instantly and offers "Buscar em todas as aplicações" (Search all applications) (opens the results page) — the protection (CSP) does not let an app's code query the platform.
+- Searches with no results enter the **Usage analytics** only as a count and a code (hash), to know how many times something was not found without storing what the person typed; storing the text is optional (switched on in the Analytics API, with audit). The person IDs in analytics use a key stored in the vault and rotated every retention period. Typing in the search stores nothing; only the "confirmed" search (Enter/opening a result) is recorded, and there is a per-second search limit per person.
 
-## 20. A plataforma é acessível? Tem tema escuro e outros idiomas?
+## 20. Is the platform accessible? Does it have dark theme and other languages?
 
-**Em linguagem simples:** sim. No menu do seu nome você escolhe o **tema** (claro, escuro ou "Sistema", que segue o computador) e o **idioma** (português ou inglês; "Automático" segue o navegador). A escolha fica salva na sua conta — vale em qualquer computador. Tudo funciona **só com o teclado** (Tab, Enter, setas, Esc), com leitor de tela e com "reduzir movimento" do sistema.
+**In plain language:** yes. In the menu under your name you choose the **theme** (light, dark or "Sistema" (System), which follows the computer) and the **language** (Portuguese or English; "Automático" (Automatic) follows the browser). The choice is saved to your account — it applies on any computer. Everything works **keyboard-only** (Tab, Enter, arrows, Esc), with a screen reader and with the system's "reduzir movimento" (reduce motion) setting.
 
-**Como funciona (onda 9):**
-- **Tema escuro** gerado a partir dos design tokens: cada cor da paleta ganha a versão escura automaticamente (e as cores próprias dos apps também), e um verificador automático (axe) confere o contraste nos dois temas. O topo e o menu lateral continuam iguais nos dois temas (já são escuros).
-- **Idiomas**: o hub traduz o shell (topo, menus, Início, Aplicações, Inbox, busca, tour, login) e **avisa o idioma às aplicações** (`x-hub-locale`); o SDK traz a tradução e a formatação de números, valores e datas. O app Gestão de Contratos está totalmente traduzido; as telas de Administração e os apps do protótipo seguem em português (pendência registrada).
-- **Acessibilidade (WCAG 2.2 AA)**: link "Pular para o conteúdo", regiões nomeadas, foco visível, foco levado ao título quando se troca de seção num app e de volta ao botão quando um menu/diálogo fecha, avisos lidos pelo leitor de tela (Inbox, toasts, reordenação do Início), alvos de clique de pelo menos 24 px e animações desligadas com "reduzir movimento". O axe roda nos testes E2E em todas as páginas principais, nos dois temas e em dois idiomas — zero violações sérias ou críticas.
-- **Primeira vez**: um **tour guiado** mostra onde fica cada coisa (só o que você pode usar), e o Início traz "Primeiros passos" que se marcam sozinhos conforme você usa. Dá para pular o tour, parar no meio e continuar depois, ou refazê-lo pelo menu do seu nome.
+**How it works (wave 9):**
+- **Dark theme** generated from the design tokens: each palette color gets its dark version automatically (and the apps' own colors too), and an automatic checker (axe) verifies the contrast in both themes. The top bar and the side menu stay the same in both themes (they are already dark).
+- **Languages:** the hub translates the shell (top bar, menus, Início (Home), Aplicações, Inbox, search, tour, login) and **tells the apps the language** (`x-hub-locale`); the SDK brings the translation and the formatting of numbers, values and dates. The Gestão de Contratos app is fully translated; the Administration screens and the prototype apps remain in Portuguese (recorded as a pending item).
+- **Accessibility (WCAG 2.2 AA):** "Pular para o conteúdo" (Skip to content) link, named regions, visible focus, focus moved to the title when switching sections in an app and back to the button when a menu/dialog closes, announcements read by the screen reader (Inbox, toasts, Home reordering), click targets of at least 24 px and animations turned off with "reduzir movimento". axe runs in the E2E tests on all main pages, in both themes and in two languages — zero serious or critical violations.
+- **First time:** a **guided tour** shows where each thing is (only what you can use), and Início brings "Primeiros passos" (First steps) that tick themselves off as you use the platform. You can skip the tour, stop midway and continue later, or repeat it from the menu under your name.
 
-## 21. Como conectar o SharePoint?
+## 21. How do I connect SharePoint?
 
-**Em linguagem simples:** a TI cadastra **uma vez**, em **Administração › Conexões**, o acesso a uma biblioteca de documentos do SharePoint da empresa (por exemplo "Documentos" do site "Contratos"). Depois é só **vincular** a conexão às aplicações que podem usá-la (como se faz com as connection strings) e clicar em **Aplicar (reiniciar)**. A partir daí, quando alguém envia um documento num app (um anexo de fornecedor, o PDF de um contrato), o arquivo vai direto para aquela pasta do SharePoint — e a aplicação **nunca recebe a senha**: quem fala com a Microsoft é o hub, em nome do app, e só dentro da pasta que a TI escolheu.
+**In plain language:** IT registers **once**, in **Administração › Conexões** (Administration › Connections), the access to a SharePoint document library of the company (for example "Documentos" (Documents) of the "Contratos" (Contracts) site). Then you just **link** the connection to the applications that may use it (as with connection strings) and click **Aplicar (reiniciar)** (Apply (restart)). From then on, when someone sends a document in an app (a supplier attachment, the PDF of a contract), the file goes straight to that SharePoint folder — and the application **never receives the password**: the hub is the one talking to Microsoft, on behalf of the app, and only inside the folder IT chose.
 
-**O que a TI precisa criar na Microsoft (uma vez por conexão):**
-1. **Registro de aplicativo no Entra ID** (portal do Azure → Microsoft Entra ID → *Registros de aplicativo* → *Novo registro*). Anote o **ID do diretório (tenant)** e o **ID do aplicativo (client)**.
-2. **Permissão de aplicativo `Sites.Selected`** do Microsoft Graph (*Permissões de API* → *Adicionar* → Microsoft Graph → *Permissões de aplicativo* → `Sites.Selected`) e **Conceder consentimento do administrador**. Com `Sites.Selected` o app registrado **não vê nenhum site** até receber acesso explícito — é o recomendado (evite `Sites.ReadWrite.All`, que abre todos os sites do tenant).
-3. **Conceder o site** ao app (um administrador do SharePoint/Global faz uma vez): pelo Graph, `POST https://graph.microsoft.com/v1.0/sites/{id-do-site}/permissions` com `{"roles": ["write"], "grantedToIdentities": [{"application": {"id": "<client id>", "displayName": "Hub"}}]}` (Graph Explorer), ou em PowerShell `Grant-PnPAzureADAppSitePermission -AppId <client id> -DisplayName Hub -Site https://empresa.sharepoint.com/sites/Contratos -Permissions Write`.
-4. **Credencial** — escolha uma:
-   - **Certificado (recomendado)**: gere um par de chaves (ex.: `openssl req -x509 -newkey rsa:2048 -nodes -keyout chave.pem -out cert.pem -days 730 -subj "/CN=hub-sharepoint"` ou `New-SelfSignedCertificate` no Windows), envie **só a parte pública** (`cert.pem`/`.cer`) em *Certificados e segredos → Certificados* do registro, e entregue ao hub o **PEM com a chave** (`cert.pem` + `chave.pem` num arquivo só) ou o **PFX com a senha**. O PFX precisa ser **moderno** (AES-256: padrão do OpenSSL 3 em `openssl pkcs12 -export -inkey chave.pem -in cert.pem -out hub.pfx`, ou "AES256-SHA256" na exportação do Windows); PFX com algoritmos legados (RC2, RC4, DES/3DES — o padrão do OpenSSL 1.x e de exportações antigas do Windows) é recusado com a orientação para reexportar, ou envie o PEM. A senha do PFX não é guardada. A chave privada fica no cofre do hub; a Microsoft só guarda a parte pública. Validade típica: 1–2 anos (a tela avisa 30 dias antes).
-   - **Segredo do cliente**: *Certificados e segredos → Segredos do cliente → Novo segredo*; copie o **Valor** na hora (ele não aparece de novo). Vence em até 24 meses — gere outro antes e use **Rotacionar credencial** no hub.
+**What IT needs to create in Microsoft (once per connection):**
+1. **App registration in Entra ID** (Azure portal → Microsoft Entra ID → *App registrations* → *New registration*). Note the **Directory (tenant) ID** and the **Application (client) ID**.
+2. **Application permission `Sites.Selected`** of Microsoft Graph (*API permissions* → *Add a permission* → Microsoft Graph → *Application permissions* → `Sites.Selected`) and **Grant admin consent**. With `Sites.Selected` the registered app **sees no site** until it receives explicit access — this is the recommended setup (avoid `Sites.ReadWrite.All`, which opens every site in the tenant).
+3. **Grant the site** to the app (a SharePoint/Global administrator does it once): via Graph, `POST https://graph.microsoft.com/v1.0/sites/{site-id}/permissions` with `{"roles": ["write"], "grantedToIdentities": [{"application": {"id": "<client id>", "displayName": "Hub"}}]}` (Graph Explorer), or in PowerShell `Grant-PnPAzureADAppSitePermission -AppId <client id> -DisplayName Hub -Site https://empresa.sharepoint.com/sites/Contratos -Permissions Write`.
+4. **Credential** — choose one:
+   - **Certificate (recommended):** generate a key pair (e.g. `openssl req -x509 -newkey rsa:2048 -nodes -keyout chave.pem -out cert.pem -days 730 -subj "/CN=hub-sharepoint"` or `New-SelfSignedCertificate` on Windows), upload **only the public part** (`cert.pem`/`.cer`) under *Certificates & secrets → Certificates* of the registration, and give the hub the **PEM with the key** (`cert.pem` + `chave.pem` in a single file) or the **PFX with the password**. The PFX must be **modern** (AES-256: the default of OpenSSL 3 in `openssl pkcs12 -export -inkey chave.pem -in cert.pem -out hub.pfx`, or "AES256-SHA256" in Windows export); a PFX with legacy algorithms (RC2, RC4, DES/3DES — the default of OpenSSL 1.x and of old Windows exports) is refused with guidance to re-export, or send the PEM. The PFX password is not stored. The private key stays in the hub's vault; Microsoft only keeps the public part. Typical validity: 1–2 years (the screen warns 30 days before).
+   - **Client secret:** *Certificates & secrets → Client secrets → New client secret*; copy the **Value** right away (it does not appear again). It expires within 24 months — generate another one beforehand and use **Rotacionar credencial** (Rotate credential) in the hub.
 
-**No hub:** Administração › **Conexões** → **Nova conexão SharePoint** → nome (ex.: `contratos-docs`, é o que o app usa), Tenant ID, Client ID, certificado ou segredo, **URL do site** (`https://empresa.sharepoint.com/sites/Contratos`), biblioteca (vazio = a padrão, "Documentos") e, se quiser, uma **pasta-base** (ex.: `Hub/Contratos` — o app nunca sai dela). Clique **Testar conexão**: o hub pega o token, acha o site e a biblioteca, cria a pasta-base se preciso e **grava, lê e apaga** um arquivinho de teste — cada etapa aparece com ✓ ou com o motivo do erro em português (segredo expirado, client ID errado, "sem permissão no site: a TI precisa conceder o site ao app", biblioteca inexistente…). Depois **Vínculos** → marque app × ambiente → **Aplicar (reiniciar)** o app.
+**In the hub:** Administração › **Conexões** → **Nova conexão SharePoint** (New SharePoint connection) → name (e.g. `contratos-docs`, which is what the app uses), Tenant ID, Client ID, certificate or secret, **site URL** (`https://empresa.sharepoint.com/sites/Contratos`), library (empty = the default, "Documentos") and, if you want, a **base folder** (e.g. `Hub/Contratos` — the app never leaves it). Click **Testar conexão** (Test connection): the hub gets the token, finds the site and the library, creates the base folder if needed and **writes, reads and deletes** a small test file — each step shows ✓ or the reason for the error in Portuguese (expired secret, wrong client ID, "sem permissão no site: a TI precisa conceder o site ao app" — no permission on the site: IT needs to grant the site to the app, missing library…). Then **Vínculos** (Links) → tick app × environment → **Aplicar (reiniciar)** the app.
 
-**Como funciona por dentro (onda 10):**
-- A credencial fica **cifrada no cofre** do hub e nunca volta para a tela, a API, os logs ou a auditoria (só aparecem "••••••••", a impressão digital e a validade do certificado). "Rotacionar credencial" troca sem mexer nos vínculos.
-- O app recebe só `HUB_CONNECTIONS` (quais conexões pode usar), o endereço do **broker** do hub e um **token próprio** (por app × ambiente). O broker só atende esse token vindo da rede daquele app, só nas conexões vinculadas a ele, só nas operações liberadas (enviar, baixar, listar, excluir, mover; **link de compartilhamento desligado por padrão**) e só dentro da pasta-base; cada operação vai para a **auditoria** com app, usuário, conexão e arquivo. Tirar o vínculo corta o acesso na hora.
-- Arquivos grandes vão em pedaços (sessão de upload do SharePoint, 5 MB por vez) e os downloads passam em streaming — o hub não guarda o arquivo inteiro na memória. Se a Microsoft pedir para esperar (limitação 429/503), o hub respeita o tempo pedido e tenta de novo; se for longo, o app recebe "tente em instantes" (503) e o navegador repete sozinho.
-- O mesmo código do app funciona com o **S3/MinIO** (tipo de conexão "S3") ou com o bucket próprio do app: trocar de destino é configuração. Para testes e demonstração existe um **simulador** do SharePoint (`hub-graphsim`, perfil `sharepoint-sim` do compose) — ele nunca é usado em produção: o hub só fala com ele se `HUB_GRAPH_URL`/`HUB_GRAPH_LOGIN_URL` forem apontadas para lá, e a tela mostra um aviso quando isso acontece.
-- **Links de compartilhamento** (operação desligada por padrão): alcance **da organização** por padrão; "qualquer pessoa com o link" só se a conexão escolher esse alcance **e** o app estiver marcado em "Apps que podem gerar links anônimos" (os demais continuam só na organização); links de **edição** só com a caixa marcada e nunca anônimos; validade máxima por conexão (padrão 7 dias, até 30). Se o tenant ignorar a validade pedida, o hub apaga o link e avisa o app — confira a política de links do tenant (SharePoint admin center → Políticas → Compartilhamento).
-- **Token do broker**: gerado e guardado pelo hub, um por app × ambiente — ninguém cria um "à mão" (os nomes `HUB_STORAGE_TOKEN`, `HUB_STORAGE_URL`, `HUB_CONNECTIONS` e `HUB_INTERNAL_TOKEN` são reservados em Variáveis). Em Conexões › **Vínculos**, "Rotacionar token" troca o de um app × ambiente na hora (depois, **Aplicar** no app).
-- **Auditoria**: toda operação do broker (inclusive falhas, recusas e consultas de metadados) aparece na trilha. O autor é o **usuário** só quando o app repassa a identidade **assinada** pelo hub (`x-hub-user` + `x-hub-user-sig`, o que os SDKs fazem com `for_user`); caso contrário o autor é o app e o usuário aparece como "informado pelo app (não verificado)".
-- **Proteções de rede**: com `HUB_BROKER_APP_CIDRS` configurada, app sem rede na lista é recusado; o endpoint de uma conexão S3 não pode apontar para endereços de metadados da nuvem (`169.254.x.x`, `fd00::/8`… — exceção explícita em `HUB_STORAGE_ALLOW_HOSTS`); o hub só envia/baixa arquivos do SharePoint em endereços do Graph, do site ou `*.sharepoint.com` (nuvens soberanas: `HUB_GRAPH_CONTENT_HOSTS`, ex. `.sharepoint.us`); mensagens de erro do provedor não chegam ao app (ficam na auditoria); memória de upload limitada no hub todo (`HUB_STORAGE_BUFFER_MB`, 256).
-- **Ainda não testado com um SharePoint real** (só com o simulador, que imita as mesmas chamadas do Graph): antes de produção, rode o "Testar conexão" contra o tenant da empresa (ver PENDENCIAS).
+**How it works underneath (wave 10):**
+- The credential is **encrypted in the hub's vault** and never comes back to the screen, the API, the logs or the audit trail (only "••••••••", the fingerprint and the certificate's expiry appear). "Rotacionar credencial" swaps it without touching the links.
+- The app receives only `HUB_CONNECTIONS` (which connections it may use), the address of the hub's **broker** and its **own token** (per app × environment). The broker only answers that token coming from that app's network, only for the connections linked to it, only for the allowed operations (upload, download, list, delete, move; **sharing link off by default**) and only inside the base folder; each operation goes to the **audit trail** with app, user, connection and file. Removing the link cuts access immediately.
+- Large files go in pieces (SharePoint upload session, 5 MB at a time) and downloads are streamed — the hub does not keep the whole file in memory. If Microsoft asks it to wait (429/503 throttling), the hub respects the requested time and retries; if it is long, the app receives "tente em instantes" (try in a moment) (503) and the browser retries on its own.
+- The same app code works with **S3/MinIO** (connection type "S3") or with the app's own bucket: changing the destination is configuration. For tests and demonstration there is a SharePoint **simulator** (`hub-graphsim`, profile `sharepoint-sim` of the compose file) — it is never used in production: the hub only talks to it if `HUB_GRAPH_URL`/`HUB_GRAPH_LOGIN_URL` point there, and the screen shows a warning when that happens.
+- **Sharing links** (operation off by default): reach **of the organization** by default; "qualquer pessoa com o link" (anyone with the link) only if the connection chooses that reach **and** the app is ticked in "Apps que podem gerar links anônimos" (Apps that may create anonymous links) (the others remain organization-only); **edit** links only with the box ticked and never anonymous; maximum validity per connection (default 7 days, up to 30). If the tenant ignores the requested validity, the hub deletes the link and warns the app — check the tenant's link policy (SharePoint admin center → Policies → Sharing).
+- **Broker token:** generated and stored by the hub, one per app × environment — nobody creates one "by hand" (the names `HUB_STORAGE_TOKEN`, `HUB_STORAGE_URL`, `HUB_CONNECTIONS` and `HUB_INTERNAL_TOKEN` are reserved in Variáveis). In Conexões › **Vínculos**, "Rotacionar token" (Rotate token) swaps the token of an app × environment right away (then **Aplicar** (Apply) the app).
+- **Audit:** every broker operation (including failures, refusals and metadata queries) appears in the trail. The author is the **user** only when the app passes on the identity **signed** by the hub (`x-hub-user` + `x-hub-user-sig`, which the SDKs do with `for_user`); otherwise the author is the app and the user appears as "informado pelo app (não verificado)" (reported by the app, not verified).
+- **Network protections:** with `HUB_BROKER_APP_CIDRS` configured, an app outside the listed network is refused; the endpoint of an S3 connection cannot point to cloud metadata addresses (`169.254.x.x`, `fd00::/8`… — explicit exception in `HUB_STORAGE_ALLOW_HOSTS`); the hub only sends/downloads SharePoint files to Graph, site or `*.sharepoint.com` addresses (sovereign clouds: `HUB_GRAPH_CONTENT_HOSTS`, e.g. `.sharepoint.us`); provider error messages do not reach the app (they stay in the audit trail); upload memory is limited across the whole hub (`HUB_STORAGE_BUFFER_MB`, 256).
+- **Not yet tested with a real SharePoint** (only with the simulator, which mimics the same Graph calls): before production, run "Testar conexão" against the company's tenant (see PENDENCIAS).
 
-## 22. API e MCP: dá para outros sistemas e assistentes de IA usarem o hub?
+## 22. API and MCP: can other systems and AI assistants use the hub?
 
-**Sim — e de forma controlada.** A partir da onda 11, tudo o que você faz nas telas do hub também pode ser feito por **programas**, e **assistentes de IA** (Claude, entre outros) podem consultar e operar o hub em seu nome.
+**Yes — and in a controlled way.** From wave 11 on, everything you do on the hub's screens can also be done by **programs**, and **AI assistants** (Claude, among others) can query and operate the hub on your behalf.
 
-**API (para sistemas e scripts).** É uma "porta de serviço" do hub, em `/api/v1`, que fala JSON (o formato que os sistemas trocam entre si). Por ela dá para listar os apps, ver a saúde, acompanhar e aprovar implantações, reiniciar containers, rodar backups, reprocessar tarefas, consultar a auditoria, a Inbox e a busca. A documentação fica em **`/api/docs`** (mesma aparência simples, sem nada vindo da internet) e o "contrato" técnico em `/api/v1/openapi.json` (padrão OpenAPI, que as ferramentas de mercado leem sozinhas).
-- **Quem pode o quê:** exatamente as **mesmas regras da tela**. A API nunca dá a ninguém mais do que a pessoa já pode fazer clicando.
-- **Como um programa se identifica:** com um **token** (uma senha longa, criada em Administração › Tokens de API ou pelo próprio usuário em `/api/me/tokens`). O token **age como a pessoa que o criou** e pode ser limitado: só leitura, leitura e escrita, só alguns apps, com validade. Revelar senhas guardadas (variáveis secretas) exige uma permissão extra no token. Toda alteração feita pela API entra na **auditoria**.
-- **Pode ser desligada?** A parte pública (`/api/v1` e a documentação) pode, pelo arquivo de configuração (`[api] enabled = false`). As telas continuam funcionando normalmente (elas usam rotas internas).
+**API (for systems and scripts).** It is a "service door" of the hub, at `/api/v1`, that speaks JSON (the format systems exchange with each other). Through it you can list the apps, see health, follow and approve deployments, restart containers, run backups, retry jobs, query the audit trail, the Inbox and search. The documentation is at **`/api/docs`** (same simple look, with nothing coming from the internet) and the technical "contract" at `/api/v1/openapi.json` (OpenAPI standard, which market tools read by themselves).
+- **Who can do what:** exactly the **same rules as the screen**. The API never gives anyone more than the person can already do by clicking.
+- **How a program identifies itself:** with a **token** (a long password, created in Administração › Tokens de API or by the user themselves at `/api/me/tokens`). The token **acts as the person who created it** and can be limited: read-only, read and write, only some apps, with an expiry. Revealing stored secrets (secret variables) requires an extra permission on the token. Every change made through the API enters the **audit trail**.
+- **Can it be turned off?** The public part (`/api/v1` and the documentation) can, through the configuration file (`[api] enabled = false`). The screens keep working normally (they use internal routes).
 
-**MCP (para assistentes de IA).** MCP (*Model Context Protocol*) é o "idioma" padrão com que assistentes de IA usam ferramentas. O hub tem um servidor MCP em **`/mcp`**, **ligado por padrão**: conectado ao hub com um token (escopo `mcp`), o assistente pode perguntar "quais apps estão com problema?", "o que tem na minha Inbox?", "procure o contrato X", "reprocessa aquela tarefa" — sempre **como você**, vendo só o que você vê.
-- **Ferramentas dos apps também:** cada app publica as próprias ferramentas (ex.: `ativos.assets_list`, `contratos.contracts_get`). O assistente **nunca fala direto com o app**: pede ao hub, que confere se você tem acesso e chama o app pela rede interna, em seu nome.
-- **Ações perigosas pedem confirmação:** implantar, voltar versão, restaurar backup, parar um app, cancelar tarefa e **qualquer alteração de dados nos apps** (criar, editar, excluir). No padrão (`destructive_actions = "confirm"`), a primeira chamada do assistente não faz nada: só devolve um código de confirmação, válido por 5 minutos, uma vez e só com os mesmos argumentos. A ação roda na segunda chamada. Quem pergunta a você é o próprio cliente de IA (o Claude Code, por exemplo, pede permissão antes de usar cada ferramenta). Sem revisão humana no cliente, use `destructive_actions = "deny"`: essas ferramentas nem aparecem. Aprovação pela Inbox do hub está nas ideias futuras.
-  - Alternativa `"confirm"`: a primeira chamada devolve um "código de confirmação" e a segunda, com o código, executa. **Atenção:** aqui a confirmação depende da tela de aprovação do **próprio cliente de IA** (ex.: o Claude pergunta "permitir?") — o modelo consegue reenviar o código sozinho; não há confirmação humana garantida pelo hub. Use só com clientes que pedem aprovação por ferramenta.
-  - `"deny"`: essas ações nem aparecem para o assistente.
-- **Textos que vêm dos apps não são ordens:** descrições e resultados das ferramentas dos apps chegam ao assistente marcados como *"dado fornecido pelo app — não confiável"* e com tamanho limitado (proteção contra "injeção de instruções" escondidas em dados).
-- **Token limitado a alguns apps vale para tudo:** um token restrito ao app A não mexe no app B por nenhum caminho (nem por número de implantação, backup, job, variável ou pacote enviado) — pela API ou pelo MCP.
-- **Só com token:** o `/mcp` aceita apenas `Authorization: Bearer` (token com escopo `mcp`); a sessão do navegador não vale ali. Tokens pessoais vencem (padrão 90 dias, máximo 365), cada pessoa tem no máximo 20 ativos, e o limite de uso por minuto é **por pessoa** (vários tokens não multiplicam a cota).
-- **API desligada = ferramentas do hub desligadas:** as ferramentas do hub no MCP são a mesma superfície da API; com `[api] enabled = false` elas somem (ficam só as dos apps).
-- **Tudo registrado:** cada uso de ferramenta vai para a auditoria (quem, qual ferramenta, resultado).
-- **Desligar:** `[mcp] enabled = false` no arquivo de configuração do hub (ou `HUB_MCP_ENABLED=0`). Um app específico pode desligar as próprias ferramentas no manifesto (`mcp.enabled: false`).
+**MCP (for AI assistants).** MCP (*Model Context Protocol*) is the standard "language" with which AI assistants use tools. The hub has an MCP server at **`/mcp`**, **on by default**: connected to the hub with a token (scope `mcp`), the assistant can ask "which apps have problems?", "what is in my Inbox?", "look up contract X", "retry that job" — always **as you**, seeing only what you see.
+- **The apps' tools too:** each app publishes its own tools (e.g. `ativos.assets_list`, `contratos.contracts_get`). The assistant **never talks directly to the app**: it asks the hub, which checks whether you have access and calls the app over the internal network, on your behalf.
+- **Dangerous actions ask for confirmation:** deploying, rolling back a version, restoring a backup, stopping an app, cancelling a job and **any data change in the apps** (create, edit, delete). By default (`destructive_actions = "confirm"`), the assistant's first call does nothing: it only returns a confirmation code, valid for 5 minutes, usable once and only with the same arguments. The action runs on the second call. The one asking you is the AI client itself (Claude Code, for example, asks permission before using each tool). Without human review in the client, use `destructive_actions = "deny"`: these tools do not even appear. Approval through the hub's Inbox is among the future ideas.
+  - Alternative `"confirm"`: the first call returns a "código de confirmação" (confirmation code) and the second, with the code, executes. **Warning:** here the confirmation depends on the approval screen of **the AI client itself** (e.g. Claude asks "permitir?" (allow?)) — the model can resend the code on its own; the hub does not guarantee human confirmation. Use only with clients that ask for approval per tool.
+  - `"deny"`: these actions do not even appear for the assistant.
+- **Texts coming from the apps are not orders:** descriptions and results of the apps' tools reach the assistant marked as *"dado fornecido pelo app — não confiável"* (data supplied by the app — not trusted) and with limited size (protection against "instruction injection" hidden in data).
+- **A token limited to some apps applies to everything:** a token restricted to app A cannot touch app B by any route (not even by deployment number, backup, job, variable or uploaded package) — through the API or MCP.
+- **Token only:** `/mcp` accepts only `Authorization: Bearer` (token with scope `mcp`); the browser session does not work there. Personal tokens expire (default 90 days, maximum 365), each person has at most 20 active, and the usage limit per minute is **per person** (several tokens do not multiply the quota).
+- **API off = hub tools off:** the hub's tools in MCP are the same surface as the API; with `[api] enabled = false` they disappear (only the apps' ones remain).
+- **Everything recorded:** every tool use goes to the audit trail (who, which tool, result).
+- **Turning off:** `[mcp] enabled = false` in the hub's configuration file (or `HUB_MCP_ENABLED=0`). A specific app can turn off its own tools in the manifest (`mcp.enabled: false`).
 
-**E os apps novos?** Todo app precisa ter a sua API (regra da plataforma, com exceção possível só se a administração permitir). Quem usa o SDK oficial (Python) ganha a API documentada e as ferramentas de IA quase de graça: as ferramentas são **geradas automaticamente** a partir da documentação da API.
+**And new apps?** Every app must have its own API (a platform rule, with a possible exception only if the administration allows it). Those who use the official SDK (Python) get the documented API and AI tools almost for free: the tools are **generated automatically** from the API documentation.
 
-**Como conectar o Claude:** veja `docs/IMPLANTACAO.md` §14 (Claude Desktop, Claude Code e outros clientes).
+**How to connect Claude:** see `docs/IMPLANTACAO.md` §14 (Claude Desktop, Claude Code and other clients).
 
-**E o Langdock (ou outro assistente na nuvem)? Preciso distribuir tokens?** Não (onda 12). O hub fala a versão atual do MCP e é também o **"porteiro" OAuth**: no Langdock basta colar o endereço `https://<hub>/mcp` e escolher OAuth. Na primeira vez, cada pessoa vê a tela de login do hub (ou do SSO) e depois uma tela **"Conectar um aplicativo ao hub"** mostrando quem está pedindo, para onde a resposta volta e o que ele poderá fazer — dá para tirar a permissão de alterar coisas e deixar só leitura. Autorizou, o assistente passa a agir **como aquela pessoa** (mesmas permissões, mesma confirmação para ações perigosas). A pessoa vê e revoga os aplicativos em **Apps autorizados** (menu do usuário); a administração vê todos e pode bloquear um cliente em **Administração › Tokens de API**. O acesso emitido só vale para o MCP deste hub (não serve na API nem em outro servidor) e se renova sozinho; se alguém copiar e reutilizar a renovação, o hub percebe, corta o acesso e avisa. Quem preferir continua usando um token pessoal no cabeçalho ("API Key" no Langdock). Passo a passo: `docs/IMPLANTACAO.md` §14.
+**And Langdock (or another cloud assistant)? Do I need to distribute tokens?** No (wave 12). The hub speaks the current version of MCP and is also the **OAuth "doorman"**: in Langdock you just paste the address `https://<hub>/mcp` and choose OAuth. The first time, each person sees the hub's (or SSO's) login screen and then a **"Conectar um aplicativo ao hub"** (Connect an application to the hub) screen showing who is asking, where the response goes and what it will be able to do — you can remove permission to change things and leave only read access. Once authorized, the assistant acts **as that person** (same permissions, same confirmation for dangerous actions). The person sees and revokes the applications in **Apps autorizados** (Authorized apps) (user menu); the administration sees all of them and can block a client in **Administração › Tokens de API**. The issued access only works for this hub's MCP (it does not work on the API or on another server) and renews by itself; if someone copies and reuses the renewal, the hub notices, cuts the access and warns. Whoever prefers keeps using a personal token in the header ("API Key" in Langdock). Step by step: `docs/IMPLANTACAO.md` §14.
 
-## 23. Um app pode imitar a tela de login ou de aprovação do hub para roubar a senha? (phishing)
+## 23. Can an app imitate the hub's login or approval screen to steal the password? (phishing)
 
-Os apps rodam no **mesmo endereço** do hub (não há um domínio por app), então a defesa é
-tirar do app a capacidade de agir como o hub:
+The apps run on **the same address** as the hub (there is no domain per app), so the defense is
+to take away from the app the ability to act as the hub:
 
-- **App não roda JavaScript.** Nas páginas de app, o navegador só aceita os scripts do
-  próprio hub (CSP + Trusted Types). Tudo o que o app faria com script — atualizar parte da
-  tela, confirmar, abrir modal, filtrar/ordenar tabela, gráficos, abas, copiar, validar
-  formulário — ele pede por atributos `data-hub-*`, e quem executa é o hub.
-- **O HTML do app é limpo antes de entrar na página:** sem `<script>`, sem `onclick`/
-  `onerror`, sem links `javascript:`, sem `<base>`/`<meta>`/`<iframe>`, e **nenhum
-  formulário do app consegue enviar para o login, a conta ou o OAuth do hub** (bloqueado
-  duas vezes: pelo hub e pela CSP).
-- **Telas de senha e de aprovação são sempre do hub**, abertas em página própria (nunca
-  dentro de um app), sem script, sem moldura (`frame-ancestors 'none'`) e isoladas de quem
-  as abriu (`Cross-Origin-Opener-Policy`). **Regra para os usuários: o hub nunca pede sua
-  senha dentro da área de um app.** (A antiga "frase de segurança" foi removida em
-  01/10/2026 a pedido do produto: a proteção fica com a CSP, as telas de credencial de topo,
-  o COOP e o sanitizador.)
-- **Exceção controlada:** se um app realmente precisar de JavaScript, declara o arquivo no
-  pacote; o hub calcula a impressão digital (sha384), o pipeline mostra "REVISE: App traz
-  JavaScript próprio" e só uma aprovação explícita da administração (separada do deploy e
-  auditada) libera — e o navegador recusa o arquivo se ele mudar.
+- **Apps do not run JavaScript.** On app pages, the browser only accepts the hub's own
+  scripts (CSP + Trusted Types). Everything the app would do with script — update part of the
+  screen, confirm, open a modal, filter/sort a table, charts, tabs, copy, validate
+  a form — it requests through `data-hub-*` attributes, and the hub is the one that executes it.
+- **The app's HTML is cleaned before entering the page:** no `<script>`, no `onclick`/
+  `onerror`, no `javascript:` links, no `<base>`/`<meta>`/`<iframe>`, and **no form of the app can
+  submit to the hub's login, account or OAuth** (blocked twice: by the hub and by the CSP).
+- **Password and approval screens always belong to the hub**, opened on their own page (never
+  inside an app), without script, without a frame (`frame-ancestors 'none'`) and isolated from
+  whoever opened them (`Cross-Origin-Opener-Policy`). **Rule for users: the hub never asks for your
+  password inside an app's area.** (The old "frase de segurança" (security phrase) was removed on
+  01/10/2026 at the product's request: protection rests with the CSP, the top-level credential screens,
+  COOP and the sanitizer.)
+- **Controlled exception:** if an app really needs JavaScript, it declares the file in the
+  package; the hub computes the fingerprint (sha384), the pipeline shows "REVISE: App traz
+  JavaScript próprio" (REVIEW: app ships its own JavaScript) and only an explicit approval by the administration (separate from the deployment and
+  audited) releases it — and the browser refuses the file if it changes.
 
-O que ainda resta: o CSS do app pode desenhar um "cartão" falso **dentro da área do app**
-(por isso a regra "senha só em tela própria do hub" e o bloqueio de envio para o login), e scripts aprovados rodam
-com os poderes da página. Para quem precisa de mais, o caminho é MFA resistente a phishing
-(passkeys/WebAuthn) no provedor de SSO. Detalhes técnicos em `platform/docs/CONTRATO-APP.md`
-§13, §25 e §26.
+What remains: the app's CSS can draw a fake "card" **inside the app's area**
+(hence the rule "password only on a hub-owned screen" and the blocking of submissions to the login), and approved scripts run with
+the page's powers. For those who need more, the path is phishing-resistant MFA
+(passkeys/WebAuthn) at the SSO provider. Technical details in `platform/docs/CONTRATO-APP.md`
+§13, §25 and §26.
 
-## 24. A plataforma fala outros idiomas nas telas de administração? E como um app desfaz uma operação de vários passos que falhou no meio?
+## 24. Does the platform speak other languages on the administration screens? And how does an app undo a multi-step operation that failed midway?
 
-**Idiomas (onda 12):** tudo o que o hub mostra — Administração, Operações, Conexões, Inbox, a tela de autorizar um aplicativo, as telas de conta e as mensagens de erro — aparece em português ou inglês, conforme a preferência do usuário (menu do usuário) ou, se ele não escolheu, o idioma do navegador. O que foi digitado por pessoas (nomes, descrições, registros de auditoria) aparece como foi gravado.
+**Languages (wave 12):** everything the hub shows — Administration, Operations, Connections, Inbox, the screen to authorize an application, the account screens and the error messages — appears in Portuguese or English, according to the user's preference (user menu) or, if they have not chosen, the browser's language. What people typed (names, descriptions, audit records) appears as it was saved.
 
-**Operações de vários passos (sagas):** quando um app precisa, por exemplo, cadastrar um ativo, anexar o documento e avisar o responsável, o SDK executa os passos em ordem e grava o progresso. Se um passo falhar de vez, ele desfaz o que já foi feito, do último para o primeiro. Se o servidor cair no meio, outro processo continua de onde parou. Em Operações › Tarefas aparece em que passo a operação está e o que já foi desfeito.
+**Multi-step operations (sagas):** when an app needs, for example, to register an asset, attach the document and notify the person in charge, the SDK runs the steps in order and records the progress. If a step fails for good, it undoes what was already done, from last to first. If the server crashes midway, another process continues where it stopped. In Operações › Tarefas (Operations › Tasks) you can see which step the operation is at and what has already been undone.
 
-**Arquivos em duas fases:** o arquivo enviado fica numa área temporária até o app gravar o registro que aponta para ele — os dois confirmam juntos. Se a operação não termina, o arquivo temporário vence e é apagado; nunca fica um arquivo "solto" visível.
-
+**Two-phase files:** the uploaded file stays in a temporary area until the app writes the record that points to it — the two confirm together. If the operation does not finish, the temporary file expires and is deleted; a "loose" file never stays visible.

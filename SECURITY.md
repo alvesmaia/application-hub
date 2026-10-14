@@ -1,28 +1,28 @@
-# Política de segurança
+# Security policy
 
-## Como reportar uma vulnerabilidade
+## How to report a vulnerability
 
-**Não abra issue pública.** Use o reporte privado do GitHub: aba **Security › Report a vulnerability**
-(GitHub private vulnerability reporting) deste repositório. Inclua passos para reproduzir, versão/commit
-afetado e impacto esperado. Respondemos assim que possível; a correção e a divulgação são coordenadas
-com quem reportou.
+**Do not open a public issue.** Use GitHub's private reporting: the **Security › Report a vulnerability**
+tab (GitHub private vulnerability reporting) of this repository. Include steps to reproduce, the affected version/commit
+and the expected impact. We respond as soon as possible; the fix and the disclosure are coordinated
+with the reporter.
 
-## Versões suportadas
+## Supported versions
 
-| Branch | Suporte |
+| Branch | Support |
 |---|---|
-| `main` (hub Python em `platform-py/`, apps e SDK em `platform/`) | sim — recebe correções |
-| tags/releases antigas | não |
+| `main` (Python hub in `platform-py/`, apps and SDK in `platform/`) | yes — receives fixes |
+| old tags/releases | no |
 
-## Escopo
+## Scope
 
-- Dentro: o hub (`platform-py/hub`), o SDK (`platform/sdk-python`), a `hub-cli` (`platform-py/cli`),
-  o gateway, a autenticação/RBAC, o MCP/OAuth, o cofre e os scripts de implantação.
-- Fora: as credenciais e os apps **de demonstração** (`docker-compose.yml`, `HUB_DEMO_USERS=1`,
-  senhas `*-demo-*` — são públicas de propósito), dependências de terceiros (reporte ao projeto
-  original) e limitações já listadas em `docs/PENDENCIAS.md` ("Limitações conhecidas").
+- In scope: the hub (`platform-py/hub`), the SDK (`platform/sdk-python`), the `hub-cli` (`platform-py/cli`),
+  the gateway, authentication/RBAC, MCP/OAuth, the vault and the deployment scripts.
+- Out of scope: the **demo** credentials and apps (`docker-compose.yml`, `HUB_DEMO_USERS=1`,
+  `*-demo-*` passwords — these are public on purpose), third-party dependencies (report to the
+  original project) and the limitations already listed in `docs/PENDENCIAS.md` ("Known limitations").
 
-Não há programa de recompensa (bug bounty).
+There is no bug bounty program.
 
 ---
 

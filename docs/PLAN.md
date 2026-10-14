@@ -1,16 +1,16 @@
 # Application Platform — Interactive Mockup
 
-## 1. Objetivo
+## 1. Goal
 
-Construir o mockup interativo de uma **Internal Application Platform** que funcione como um portal corporativo único para todas as aplicações desenvolvidas pelo time de tecnologia.
+Build the interactive mockup of an **Internal Application Platform** that works as a single corporate portal for all the applications developed by the technology team.
 
-A plataforma possui **um único host**:
+The platform has **a single host**:
 
 ```text
 https://plataforma.domain.com
 ```
 
-As aplicações são acessadas como subpaths:
+Applications are accessed as subpaths:
 
 ```text
 https://plataforma.domain.com/app1
@@ -18,11 +18,11 @@ https://plataforma.domain.com/app2
 https://plataforma.domain.com/app3
 ```
 
-A plataforma deve manter seu **header global permanentemente visível**, inclusive enquanto uma aplicação estiver sendo executada.
+The platform must keep its **global header permanently visible**, including while an application is running.
 
-Cada aplicação possui sua própria interface e **sidebar própria**, mas não possui header global próprio.
+Each application has its own interface and **its own sidebar**, but it does not have its own global header.
 
-O conceito é:
+The concept is:
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
@@ -36,9 +36,9 @@ O conceito é:
 │ │ APP SIDEBAR   │ APP CONTENT                             │ │
 │ │               │                                         │ │
 │ │ Dashboard     │                                         │ │
-│ │ Clientes      │                                         │ │
-│ │ Relatórios    │                                         │ │
-│ │ Configuração  │                                         │ │
+│ │ Customers     │                                         │ │
+│ │ Reports       │                                         │ │
+│ │ Settings      │                                         │ │
 │ │               │                                         │ │
 │ └───────────────┴─────────────────────────────────────────┘ │
 │                                                             │
@@ -47,11 +47,11 @@ O conceito é:
 
 ---
 
-# 2. Conceito de Shell
+# 2. Shell Concept
 
-A plataforma deve ser implementada visualmente como um **Application Shell**.
+The platform must be implemented visually as an **Application Shell**.
 
-O shell contém:
+The shell contains:
 
 ```text
 Platform Shell
@@ -62,49 +62,49 @@ Platform Shell
     └── Application Content
 ```
 
-O **Global Header nunca desaparece**.
+The **Global Header never disappears**.
 
-Quando o usuário entra em:
+When the user goes to:
 
 ```text
 /app1
 ```
 
-a plataforma não deve parecer que navegou para outro site.
+the platform must not look like it navigated to another site.
 
-Deve parecer que o usuário abriu uma aplicação dentro da plataforma.
+It must look like the user opened an application inside the platform.
 
 ---
 
-# 3. Estrutura de URL
+# 3. URL Structure
 
-Utilizar:
+Use:
 
 ```text
 /                       → Platform Dashboard
 
 /app1                   → Application 1
 /app1/dashboard         → Application 1 Dashboard
-/app1/clientes          → Application 1 Clientes
-/app1/relatorios        → Application 1 Relatórios
+/app1/clientes          → Application 1 Customers
+/app1/relatorios        → Application 1 Reports
 
 /app2                   → Application 2
 /app2/dashboard         → Application 2 Dashboard
-/app2/configuracoes     → Application 2 Configurações
+/app2/configuracoes     → Application 2 Settings
 ```
 
-As URLs devem ser simuladas no frontend.
+URLs must be simulated in the frontend.
 
-Não utilizar subdomínios para as aplicações.
+Do not use subdomains for applications.
 
-Não utilizar:
+Do not use:
 
 ```text
 app1.plataforma.domain.com
 app2.plataforma.domain.com
 ```
 
-O padrão obrigatório é:
+The mandatory pattern is:
 
 ```text
 plataforma.domain.com/app1
@@ -115,34 +115,34 @@ plataforma.domain.com/app2
 
 # 4. Global Header
 
-O header pertence exclusivamente à plataforma.
+The header belongs exclusively to the platform.
 
-Ele deve permanecer presente em todas as páginas.
+It must remain present on every page.
 
-Exemplo:
+Example:
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│ [LOGO] Application Platform   Search   🔔   Usuário Demo   │
+│ [LOGO] Application Platform   Search   🔔   Demo User      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-Elementos:
+Elements:
 
-* Logo da plataforma
-* Nome da plataforma
-* Busca global
-* Notificações
-* Usuário
-* Menu do usuário
+* Platform logo
+* Platform name
+* Global search
+* Notifications
+* User
+* User menu
 
-O header não deve ser duplicado pelas aplicações.
+The header must not be duplicated by the applications.
 
 ---
 
 # 5. Application Workspace
 
-Quando uma aplicação estiver aberta:
+When an application is open:
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
@@ -165,69 +165,69 @@ Quando uma aplicação estiver aberta:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-A sidebar da aplicação deve ocupar somente o workspace abaixo do header.
+The application sidebar must occupy only the workspace below the header.
 
 ---
 
 # 6. Application Sidebar
 
-Cada aplicação pode possuir seu próprio menu.
+Each application may have its own menu.
 
-Exemplo para `app1`:
+Example for `app1`:
 
 ```text
 APP1
-Gestão de Ativos
+Asset Management
 
 Dashboard
-Ativos
-Movimentações
-Relatórios
-Configurações
+Assets
+Movements
+Reports
+Settings
 ```
 
-Exemplo para `app2`:
+Example for `app2`:
 
 ```text
 APP2
-Central de Solicitações
+Request Center
 
 Dashboard
-Solicitações
-Aprovações
-Relatórios
-Configurações
+Requests
+Approvals
+Reports
+Settings
 ```
 
-O conteúdo do sidebar deve ser específico da aplicação.
+The sidebar content must be specific to the application.
 
 ---
 
 # 7. Application Identity
 
-Ao abrir uma aplicação, mostrar claramente sua identidade.
+When opening an application, clearly show its identity.
 
-Exemplo:
+Example:
 
 ```text
 ┌───────────────────────┐
 │ ◉                     │
-│ Gestão de Ativos      │
+│ Asset Management      │
 │                       │
 │ Dashboard             │
-│ Ativos                │
-│ Movimentações         │
-│ Relatórios            │
+│ Assets                │
+│ Movements             │
+│ Reports               │
 └───────────────────────┘
 ```
 
-O usuário deve conseguir identificar:
+The user must be able to identify:
 
-* Qual aplicação está utilizando.
-* Qual seção está acessando.
-* Como retornar ao portal.
+* Which application is being used.
+* Which section is being accessed.
+* How to return to the portal.
 
-Adicionar no topo do sidebar:
+Add at the top of the sidebar:
 
 ```text
 ← Applications
@@ -235,9 +235,9 @@ Adicionar no topo do sidebar:
 
 ---
 
-# 8. Navegação
+# 8. Navigation
 
-O fluxo principal deve ser:
+The main flow must be:
 
 ```text
 Platform Dashboard
@@ -260,50 +260,50 @@ Open Application
        └── /app1/reports
 ```
 
-O header permanece igual em todas essas rotas.
+The header stays the same across all these routes.
 
 ---
 
 # 9. Application Launcher
 
-No dashboard da plataforma criar uma área:
+On the platform dashboard, create an area:
 
 ```text
 My Applications
 ```
 
-Exemplo:
+Example:
 
 ```text
 ┌────────────────────┐
-│ Gestão de Ativos   │
+│ Asset Management   │
 │ ● Healthy          │
 │                    │
 │ Open Application → │
 └────────────────────┘
 
 ┌────────────────────┐
-│ Indicadores        │
+│ Indicators         │
 │ ● Healthy          │
 │                    │
 │ Open Application → │
 └────────────────────┘
 
 ┌────────────────────┐
-│ Solicitações       │
+│ Requests           │
 │ ● Healthy          │
 │                    │
 │ Open Application → │
 └────────────────────┘
 ```
 
-Ao clicar:
+When clicked:
 
 ```text
 Open Application
 ```
 
-navegar para:
+navigate to:
 
 ```text
 /app1
@@ -313,11 +313,11 @@ navegar para:
 
 # 10. Application Runtime Mock
 
-O mockup deve simular uma aplicação real sendo executada dentro do shell.
+The mockup must simulate a real application running inside the shell.
 
-Criar pelo menos três aplicações mockadas:
+Create at least three mocked applications:
 
-### App 1 — Gestão de Ativos
+### App 1 — Asset Management
 
 ```text
 /app1
@@ -327,12 +327,12 @@ Sidebar:
 
 ```text
 Dashboard
-Ativos
-Movimentações
-Relatórios
+Assets
+Movements
+Reports
 ```
 
-### App 2 — Indicadores
+### App 2 — Indicators
 
 ```text
 /app2
@@ -342,12 +342,12 @@ Sidebar:
 
 ```text
 Dashboard
-Indicadores
-Análises
-Relatórios
+Indicators
+Analyses
+Reports
 ```
 
-### App 3 — Solicitações
+### App 3 — Requests
 
 ```text
 /app3
@@ -357,30 +357,30 @@ Sidebar:
 
 ```text
 Dashboard
-Solicitações
-Aprovações
-Relatórios
+Requests
+Approvals
+Reports
 ```
 
-As três aplicações devem possuir conteúdos visualmente diferentes.
+The three applications must have visually different content.
 
 ---
 
-# 11. Regra fundamental de UX
+# 11. Fundamental UX Rule
 
-Nunca criar:
+Never create:
 
 ```text
 Application Header
 ```
 
-separado do:
+separate from:
 
 ```text
 Platform Header
 ```
 
-O resultado deve ser:
+The result must be:
 
 ```text
 Platform Header
@@ -389,7 +389,7 @@ Platform Header
 Application Sidebar + Application Content
 ```
 
-e não:
+and not:
 
 ```text
 Platform Header
@@ -398,11 +398,11 @@ Application Sidebar
 Application Content
 ```
 
-Isso evita uma interface com dois headers concorrentes.
+This avoids an interface with two competing headers.
 
 ---
 
-# 12. Layout Responsivo
+# 12. Responsive Layout
 
 Desktop:
 
@@ -429,13 +429,13 @@ Mobile:
 └──────────────────────────┘
 ```
 
-No mobile, o sidebar da aplicação pode virar um drawer.
+On mobile, the application sidebar may become a drawer.
 
 ---
 
-# 13. Arquitetura do Frontend
+# 13. Frontend Architecture
 
-Separar explicitamente:
+Explicitly separate:
 
 ```text
 src/
@@ -465,7 +465,7 @@ src/
 └── types/
 ```
 
-O `PlatformShell` deve controlar:
+The `PlatformShell` must control:
 
 ```text
 Global Header
@@ -474,7 +474,7 @@ Global Navigation
 Application Context
 ```
 
-O `ApplicationShell` deve controlar:
+The `ApplicationShell` must control:
 
 ```text
 Application Sidebar
@@ -484,9 +484,9 @@ Application Content
 
 ---
 
-# 14. Regra de composição
+# 14. Composition Rule
 
-A estrutura conceitual deve ser:
+The conceptual structure must be:
 
 ```tsx
 <PlatformShell>
@@ -504,7 +504,7 @@ A estrutura conceitual deve ser:
 </PlatformShell>
 ```
 
-Nunca:
+Never:
 
 ```tsx
 <Application>
@@ -512,45 +512,45 @@ Nunca:
 </Application>
 ```
 
-A aplicação deve ser um módulo executado dentro do shell da plataforma.
+The application must be a module running inside the platform shell.
 
 ---
 
-# 15. Objetivo do Mockup
+# 15. Goal of the Mockup
 
-O mockup deve demonstrar claramente que a plataforma é capaz de:
+The mockup must clearly demonstrate that the platform is capable of:
 
-1. Centralizar aplicações.
-2. Manter uma identidade visual única.
-3. Manter o header global durante a navegação.
-4. Executar aplicações em `/app1`, `/app2`, etc.
-5. Permitir que cada aplicação tenha seu próprio sidebar.
-6. Manter navegação independente dentro de cada aplicação.
-7. Permitir retorno ao catálogo da plataforma.
-8. Compartilhar autenticação e contexto do usuário.
+1. Centralizing applications.
+2. Maintaining a single visual identity.
+3. Keeping the global header during navigation.
+4. Running applications at `/app1`, `/app2`, etc.
+5. Allowing each application to have its own sidebar.
+6. Keeping navigation independent within each application.
+7. Allowing a return to the platform catalog.
+8. Sharing authentication and user context.
 
 ---
 
-# 16. Critério visual de sucesso
+# 16. Visual Success Criterion
 
-Ao navegar de:
+When navigating from:
 
 ```text
 plataforma.domain.com
 ```
 
-para:
+to:
 
 ```text
 plataforma.domain.com/app1
 ```
 
-o usuário deve perceber:
+the user must perceive:
 
-> "Estou abrindo uma aplicação dentro da plataforma."
+> "I am opening an application inside the platform."
 
-e não:
+and not:
 
-> "Fui enviado para outro sistema."
+> "I was sent to another system."
 
-Essa distinção é um requisito central do produto.
+This distinction is a central product requirement.

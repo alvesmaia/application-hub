@@ -1,46 +1,46 @@
-# Pendências — stack Python (atualizado em 09/10/2026)
+# Pending items — Python stack (updated 09/10/2026)
 
-Lista viva: atualize a cada entrega. As tarefas em andamento ficam na lista de tarefas
-nativa do agente.
+Living list: update it with every delivery. In-progress tasks live in the agent's
+native task list.
 
 ## Status
 
-- **Hub Python** (`platform-py/hub`) em produção (instância do dono) desde 07/10/2026 (F16: configuração de
-  produção, contas demo desativadas). Ondas 1–13: gateway, cofre, estado, login/RBAC,
-  Administração, Operações (blue/green, staging, build de imagem, backups), API `/api/v1` + MCP + OAuth 2.1, Inbox,
-  busca, i18n (pt-BR/en), observabilidade, uso por usuário (`/admin/usage`, coletado no gateway; `HUB_USAGE=0`
-  desliga).
-- **Apps oficiais** em Python: `ativos`, `fornecedores`, `servicos`, `coletor` (`platform/demo-apps-py/*`), SDK
-  `hub_sdk` (`platform/sdk-python`). **Só Python** (desde 13/10/2026 sem vestígios da stack anterior);
-  outras stacks: reavaliar numa expansão futura. Idiomas: pt-BR e en (`es` removido em 13/10/2026).
-- **Kit do desenvolvedor** (F22): `hub-cli` (`hub new|dev|check|pack|mcp`) servida em `/dev/cli/simple/`.
-- Front-end compartilhado em `platform/assets/{shell,web,i18n}` e registro de apps em `platform/config/`.
+- **Python hub** (`platform-py/hub`) in production (the owner's instance) since 07/10/2026 (F16: production
+  configuration, demo accounts disabled). Waves 1–13: gateway, vault, state, login/RBAC,
+  Administration, Operations (blue/green, staging, image build, backups), `/api/v1` API + MCP + OAuth 2.1, Inbox,
+  search, i18n (pt-BR/en), observability, per-user usage (`/admin/usage`, collected at the gateway; `HUB_USAGE=0`
+  turns it off).
+- **Official apps** in Python: `ativos`, `fornecedores`, `servicos`, `coletor` (`platform/demo-apps-py/*`), SDK
+  `hub_sdk` (`platform/sdk-python`). **Python only** (since 13/10/2026 with no traces of the previous stack);
+  other stacks: to be re-evaluated in a future expansion. Languages: pt-BR and en (`es` removed on 13/10/2026).
+- **Developer kit** (F22): `hub-cli` (`hub new|dev|check|pack|mcp`) served at `/dev/cli/simple/`.
+- Shared front-end in `platform/assets/{shell,web,i18n}` and app registry in `platform/config/`.
 
-- **Distribuição 0.1.0** (tarefa #23): Apache-2.0 (`LICENSE`, `NOTICE`, `TRADEMARKS.md`), instalação do zero
-  `platform-py/scripts/install.sh`, apps de exemplo opcionais (perfil `demo-apps`), nomes/porta/redes configuráveis
-  (`HUB_PROJECT`, `HUB_PORT`, `HUB_SUBNET`), versão em `/healthz`, `CHANGELOG.md`, `docs/ATUALIZACAO.md`,
-  `scripts/release.sh`, workflow manual de imagens no GHCR.
+- **Distribution 0.1.0** (task #23): Apache-2.0 (`LICENSE`, `NOTICE`, `TRADEMARKS.md`), fresh install
+  `platform-py/scripts/install.sh`, optional sample apps (`demo-apps` profile), configurable names/port/networks
+  (`HUB_PROJECT`, `HUB_PORT`, `HUB_SUBNET`), version in `/healthz`, `CHANGELOG.md`, `docs/ATUALIZACAO.md`,
+  `scripts/release.sh`, manual GHCR image workflow.
 
-## Em aberto
+## Open
 
-### Outros
+### Other
 
-- **Atualização sem parada:** em uso na instância do dono desde 13/10/2026 (`hub_update.py --build`, 0 falhas
-  em 194 checagens de `/healthz` durante a troca). Estado entre réplicas no mesmo volume resolvido em 13/10/2026 (UX, uso, analytics e métricas juntam com
-  o arquivo sob trava).
-- **Repositório:** desde 14/10/2026 o público `alvesmaia/application-hub` é o único; o privado antigo (histórico
-  completo e a stack Rust) ficou arquivado como `alvesmaia/application-hub-py`.
-- Carga com réplicas: medida em 13/10/2026 (1 contêiner = 200 usuários; 2 atrás da borda = 300; tabela em
-  `docs/IMPLANTACAO.md`). Falta: modo de escala pronto no compose (N cópias do hub + borda em `round_robin`) e
-  `uvicorn --workers` (cada processo tenta abrir a porta 8081 do broker e cai).
+- **Zero-downtime update:** in use on the owner's instance since 13/10/2026 (`hub_update.py --build`, 0 failures
+  in 194 `/healthz` checks during the switch). State across replicas on the same volume resolved on 13/10/2026 (UX, usage, analytics and metrics now join
+  the file under a lock).
+- **Repository:** since 14/10/2026 the public `alvesmaia/application-hub` is the only one; the old private one (full
+  history and the Rust stack) was archived as `alvesmaia/application-hub-py`.
+- Load with replicas: measured on 13/10/2026 (1 container = 200 users; 2 behind the edge = 300; table in
+  `docs/IMPLANTACAO.md`). Missing: a scale mode ready in compose (N copies of the hub + edge with `round_robin`) and
+  `uvicorn --workers` (each process tries to open broker port 8081 and fails).
 
-## Ideias futuras
+## Future ideas
 
-- **ODBC no broker SQL:** fora do roadmap em 14/10/2026. Postgres, MySQL e SQL Server já têm conexão nativa; ODBC
-  só faria sentido com o driver de um banco específico (Oracle, DB2…) dentro da imagem do hub.
-- **Aprovação humana de ação de agente no hub:** removida em 13/10/2026 (padrão MCP passou a `confirm`; a
-  confirmação fica com o cliente de IA). Se voltar: pedido "Aprovar ação do agente" na Inbox com botão
-  **Autorizar** + modal de confirmação (sem senha), aprovável só pela sessão do navegador (o token do agente nunca
-  aprova), e o prazo do `confirm_token` renovado a partir da aprovação — no desenho antigo os 5 min contavam
-  desde o pedido e a pessoa estourava o prazo até avisar o agente. Implementação anterior no histórico do git
-  (`e33ae8d`).
+- **ODBC in the SQL broker:** out of the roadmap as of 14/10/2026. Postgres, MySQL and SQL Server already have native
+  connections; ODBC would only make sense with the driver of a specific database (Oracle, DB2…) inside the hub image.
+- **Human approval of agent actions in the hub:** removed on 13/10/2026 (the MCP default became `confirm`; the
+  confirmation stays with the AI client). If it comes back: an "Approve agent action" request in the Inbox with an
+  **Authorize** button + confirmation modal (no password), approvable only through the browser session (the agent token
+  never approves), and the `confirm_token` deadline renewed from the approval — in the old design the 5 min counted
+  from the request and the person would exceed the deadline before telling the agent. Previous implementation in the git
+  history (`e33ae8d`).

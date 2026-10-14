@@ -1,95 +1,94 @@
-# Teste de implantação do zero — RHEL-like, usuário rootless (2026-10-10)
+# Fresh-install test — RHEL-like, rootless user (2026-10-10)
 
-Cenário simulado: servidor corporativo Rocky Linux 9.3 (clone do RHEL) com systemd, Podman 5.8.2 da distro
-(`podman-docker` instalado), usuário de serviço `hubsvc` **sem root e sem sudo**, com linger. Fonte: clone do
-repositório público `alvesmaia/application-hub` e `bash platform-py/scripts/install.sh` (o caminho documentado).
-Acesso só por localhost. Depois da implantação, um agente Haiku com contexto mínimo (URL do hub + token de
-desenvolvedor) tentou criar e publicar um app "Lista de compras".
+Simulated scenario: corporate server Rocky Linux 9.3 (RHEL clone) with systemd, Podman 5.8.2 from the distro
+(`podman-docker` installed), service user `hubsvc` **without root and without sudo**, with linger. Source: clone of the
+public repository `alvesmaia/application-hub` and `bash platform-py/scripts/install.sh` (the documented path).
+Access only from localhost. After the deployment, a Haiku agent with minimal context (hub URL + developer token) tried to
+create and publish a "Lista de compras" (shopping list) app.
 
-| | Cenário A — 4 GB / 2 CPU | Cenário B — 8 GB / 2 CPU |
+| | Scenario A — 4 GB / 2 CPU | Scenario B — 8 GB / 2 CPU |
 |---|---|---|
-| Delegação de cgroup do usuário | padrão RHEL 9: `memory pids` | admin aplicou `Delegate=cpu cpuset io memory pids` |
-| `install.sh` | 3 execuções (2 falhas, contornadas) | 1 execução (contornos já aplicados), 5 min 37 s |
-| Memória da pilha no ar (4 apps demo) | 2,1 GB | 1,9 GB |
-| Build de app pelo hub (`RUN`) | **falha** | ok |
-| Publicação do app pelo Haiku | **falhou** (tmpfs `uid=`) | **falhou** (tmpfs `uid=`) |
-| Haiku: tempo / custo | 16 min / US$ 0,57 | 5,5 min / US$ 0,05 |
+| User cgroup delegation | RHEL 9 default: `memory pids` | admin applied `Delegate=cpu cpuset io memory pids` |
+| `install.sh` | 3 runs (2 failures, worked around) | 1 run (workarounds already applied), 5 min 37 s |
+| Stack memory running (4 demo apps) | 2.1 GB | 1.9 GB |
+| App build by the hub (`RUN`) | **fails** | ok |
+| App publication by Haiku | **failed** (tmpfs `uid=`) | **failed** (tmpfs `uid=`) |
+| Haiku: time / cost | 16 min / US$ 0.57 | 5.5 min / US$ 0.05 |
 
-Nenhum app foi publicado nos dois cenários: o bloqueio final é do produto com Podman (item P1).
+No app was published in either scenario: the final blocker is in the product with Podman (item P1).
 
-## Rodada 2 — depois das correções (P1–P5)
+## Round 2 — after the fixes (P1–P5)
 
-Mesmos dois cenários recriados do zero, só com os passos do guia (docs/IMPLANTACAO.md › Podman rootless), sem editar
-o compose: `install.sh` verde na primeira execução nos dois (~6,5 min, em paralelo); no A avisou da CPU não delegada.
-O Haiku publicou o app em staging **na primeira tentativa** nos dois cenários (A: 3,8 min / US$ 0,03; B: 3,7 min /
-US$ 0,03). Conferido no servidor: contêiner `healthy`, `/scratch` do usuário 10001 com escrita, `/_hub/ready` 200,
-página `/apps/lista-compras/itens` 200 pelo hub; CPU sem limite no A (sem delegação) e 0,5 CPU no B.
+Same two scenarios recreated from scratch, only with the steps from the guide (docs/IMPLANTACAO.md › Podman rootless), without editing
+the compose file: `install.sh` green on the first run in both (~6.5 min, in parallel); in A it warned about the undelegated CPU.
+Haiku published the app to staging **on the first attempt** in both scenarios (A: 3.8 min / US$ 0.03; B: 3.7 min /
+US$ 0.03). Checked on the server: container `healthy`, `/scratch` of user 10001 writable, `/_hub/ready` 200,
+page `/apps/lista-compras/itens` 200 through the hub; CPU unlimited in A (no delegation) and 0.5 CPU in B.
 
-Ficam abertos P6 (sem compose no RHEL base, contornado e documentado), P7, P8 e P9. Novo: a doc servida pelo hub
-cita a porta de `HUB_PUBLIC_URL` (8090); atrás de um NAT de porta o leitor precisa trocar — só afeta este teste.
+P6 (no compose on the RHEL base, worked around and documented), P7, P8 and P9 remain open. New: the doc served by the hub
+cites the port from `HUB_PUBLIC_URL` (8090); behind a port NAT the reader must change it — this only affects this test.
 
-## Rodada 3 — itens P6–P9 e instalador interativo
+## Round 3 — items P6–P9 and interactive installer
 
-Terceiro servidor limpo (`rhel-c`, 4 GB / 2 CPU, sem compose instalado), `install.sh` sem opções:
-perguntou cada valor, mostrou o resumo, pediu confirmação, ofereceu baixar o `docker-compose` (sha256 conferido)
-e avisou da CPU não delegada. Instalou escolhendo **não** subir os apps de exemplo — e aí apareceu o P10.
+Third clean server (`rhel-c`, 4 GB / 2 CPU, no compose installed), `install.sh` with no options:
+it asked for each value, showed the summary, asked for confirmation, offered to download `docker-compose` (sha256 checked)
+and warned about the undelegated CPU. It was installed choosing **not** to start the sample apps — and that is when P10 appeared.
 
-- **P10 (bloqueante, corrigido) — hub não subia sem os apps de exemplo.** A carga inicial
-  (`HUB_APP_ENV_FILE=app-env.prod.json`) tem variáveis vinculadas aos apps demo; com `apps.empty.json` o catálogo
-  não os tem e o boot morria em `AdminError: Aplicação desconhecida: ativos.` Agora a carga descarta vínculo de app
-  fora do catálogo (arquivo da instalação, não entrada de usuário); a validação pela API segue estrita.
-  Conferido: `/readyz` pronto e `/login` 200 com `HUB_APPS_JSON=./apps.empty.json`.
-- **P6 resolvido:** `install.sh --get-compose` (ou a pergunta no modo interativo) baixa o binário oficial em versão
-  fixa com sha256 conferido em `~/.local/bin`, sem root.
-- **P7 resolvido:** o hub responde o tamanho e o limite (conferido num hub real: `O pacote tem 22.0 MB; o limite é
-  20 MB…`), o `hub deploy` repassa o motivo (lia só `message`, a razão vinha em `error`) e o `hub pack` recusa antes
-  de enviar apontando os maiores arquivos. Limite documentado no guia de publicação.
-- **P8 resolvido:** a falha `§3 página`/`§3 fragmento` traz o status e a última exceção de `.hub/check-app.log`,
-  com a dica de apagar `.hub/*.db` quando é `no such column`/`no such table`.
-- **P9 resolvido:** seção «Testar sem navegador» no guia de telas, com os cabeçalhos e a chave de idempotência.
+- **P10 (blocking, fixed) — hub did not start without the sample apps.** The initial load
+  (`HUB_APP_ENV_FILE=app-env.prod.json`) has variables bound to the demo apps; with `apps.empty.json` the catalog
+  does not have them and boot died with `AdminError: Aplicação desconhecida: ativos.` (Unknown application: ativos.). Now the load
+  discards app bindings outside the catalog (an installation file, not user input); API validation stays strict.
+  Checked: `/readyz` ready and `/login` 200 with `HUB_APPS_JSON=./apps.empty.json`.
+- **P6 resolved:** `install.sh --get-compose` (or the question in interactive mode) downloads the official binary at a fixed
+  version with sha256 checked into `~/.local/bin`, without root.
+- **P7 resolved:** the hub reports the size and the limit (checked on a real hub: `O pacote tem 22.0 MB; o limite é
+  20 MB…` — the package is 22.0 MB; the limit is 20 MB…), `hub deploy` passes on the reason (it read only `message`, the reason was in `error`) and `hub pack` refuses before sending, pointing to the largest files. Limit documented in the publishing guide.
+- **P8 resolved:** the `§3 página`/`§3 fragmento` failure (§3 page / §3 fragment) shows the status and the last exception from `.hub/check-app.log`,
+  with the tip to delete `.hub/*.db` when it is `no such column`/`no such table`.
+- **P9 resolved:** section «Testar sem navegador» (Test without a browser) in the screens guide, with the headers and the idempotency key.
 
-Novo recurso do instalador: modo interativo (padrões entre colchetes, resumo, confirmação); `--yes` ou qualquer
-opção de instância mantém o modo silencioso do CI.
-## Dificuldades — produto (rodada 1)
+New installer feature: interactive mode (defaults in square brackets, summary, confirmation); `--yes` or any
+instance option keeps the silent mode for CI.
+## Difficulties — product (round 1)
 
-- **P1 (bloqueante) — tmpfs `/scratch` com `uid=10001`.** O runtime cria o contêiner do app com
-  `--tmpfs /scratch:uid=10001,gid=10001`; o Podman recusa: `container create: unknown mount option "uid=10001":
-  invalid mount option`. Nenhum app sobe com Podman. Caminho: detectar Podman (`/version` → "Podman Engine") e usar
-  `tmpfs-mode`/`U` ou um volume anônimo com `chown` na imagem.
-- **P2 (bloqueante sem admin) — build com `cpushares`/`cpusetcpus`.** `build_stream` passa limites de CPU; sem o
-  controlador `cpu`/`cpuset` delegado (padrão do RHEL 9 rootless) **todo `RUN` falha** com
-  `while running runtime: exit status 1` (reproduzido: `podman build --cpu-shares 512` falha, `--memory` passa).
-  Caminho: documentar o `Delegate=` como pré-requisito e/ou repetir o build sem limites de CPU quando o daemon é
-  rootless sem delegação, com mensagem clara.
-- **P3 — socket fixo `/var/run/docker.sock` no compose.** Rootless não tem esse socket:
-  `statfs /var/run/docker.sock: permission denied` na etapa 3 do `install.sh`. Contorno usado: editar o compose para
-  `${XDG_RUNTIME_DIR}/podman/podman.sock`. Caminho: variável `HUB_CONTAINER_SOCKET_HOST` (padrão `/var/run/docker.sock`)
-  e o `install.sh` detectar Podman rootless.
-- **P4 — porta `[::1]` fixa.** Com `--bind 0.0.0.0` o `rootlessport` do Podman já ocupa o IPv6:
-  `rootlessport listen tcp [::1]:8090: bind: address already in use`. Contorno: remover a linha `"[::1]:…"`.
-  Caminho: só publicar `[::1]` quando `HUB_BIND=127.0.0.1`.
-- **P5 — `install.sh` aponta para o repositório privado** (`--clone` usa `application-hub.git`); deve ser o público.
-- **P6 — `install.sh` exige `docker compose`.** RHEL/Rocky não traz provedor de compose; `podman-compose` vem do
-  EPEL (precisa de root). Contorno sem root: binário oficial do `docker-compose` em `~/.local/bin` (o
-  `podman compose` o usa). Documentar em IMPLANTACAO.md uma seção "Podman rootless (RHEL)".
-- **P7 — pacote acima de ~20 MB recusado com `400` sem motivo.** O limite não está documentado e a mensagem não diz
-  qual é. Com dependências vendoradas o Haiku do cenário A passou disso trocando `uvicorn[standard]` por `uvicorn`.
-- **P8 — `hub check` reprova conformidade "§3 fragmento com o workspace" sem causa.** A causa real (banco
-  `.hub/*.db` antigo após editar a migração 0001: `no such column`) só aparece em `.hub/check-app.log`. Mostrar a
-  última exceção do log ou apontar o arquivo.
-- **P9 — rotas de fragmento difíceis de testar por `curl`** (405 em `/apps/…`, 403 sem cabeçalhos, 400 por chave de
-  idempotência curta). As mensagens são boas; falta um exemplo de `curl` no guia.
+- **P1 (blocking) — tmpfs `/scratch` with `uid=10001`.** The runtime creates the app container with
+  `--tmpfs /scratch:uid=10001,gid=10001`; Podman refuses: `container create: unknown mount option "uid=10001":
+  invalid mount option`. No app starts with Podman. Path: detect Podman (`/version` → "Podman Engine") and use
+  `tmpfs-mode`/`U`, or an anonymous volume with `chown` in the image.
+- **P2 (blocking without admin) — build with `cpushares`/`cpusetcpus`.** `build_stream` passes CPU limits; without the `cpu`/`cpuset`
+  controller delegated (RHEL 9 rootless default) **every `RUN` fails** with
+  `while running runtime: exit status 1` (reproduced: `podman build --cpu-shares 512` fails, `--memory` passes).
+  Path: document `Delegate=` as a prerequisite and/or repeat the build without CPU limits when the daemon is
+  rootless without delegation, with a clear message.
+- **P3 — fixed socket `/var/run/docker.sock` in the compose file.** Rootless does not have that socket:
+  `statfs /var/run/docker.sock: permission denied` in step 3 of `install.sh`. Workaround used: edit the compose file to
+  `${XDG_RUNTIME_DIR}/podman/podman.sock`. Path: variable `HUB_CONTAINER_SOCKET_HOST` (default `/var/run/docker.sock`)
+  and `install.sh` detecting rootless Podman.
+- **P4 — fixed `[::1]` port.** With `--bind 0.0.0.0` Podman's `rootlessport` already occupies IPv6:
+  `rootlessport listen tcp [::1]:8090: bind: address already in use`. Workaround: remove the `"[::1]:…"` line.
+  Path: only publish `[::1]` when `HUB_BIND=127.0.0.1`.
+- **P5 — `install.sh` points to the private repository** (`--clone` uses `application-hub.git`); it should be the public one.
+- **P6 — `install.sh` requires `docker compose`.** RHEL/Rocky does not ship a compose provider; `podman-compose` comes from
+  EPEL (needs root). Rootless workaround: the official `docker-compose` binary in `~/.local/bin` (`podman compose` uses it).
+  Document a "Podman rootless (RHEL)" section in IMPLANTACAO.md.
+- **P7 — package above ~20 MB refused with `400` without a reason.** The limit is not documented and the message does not say
+  what it is. With vendored dependencies, the Haiku of scenario A got past this by replacing `uvicorn[standard]` with `uvicorn`.
+- **P8 — `hub check` fails conformance "§3 fragmento com o workspace" (§3 fragment with the workspace) without a cause.** The real cause (an old
+  `.hub/*.db` database after editing migration 0001: `no such column`) only shows in `.hub/check-app.log`. Show
+  the last exception from the log or point to the file.
+- **P9 — fragment routes hard to test with `curl`** (405 on `/apps/…`, 403 without headers, 400 due to a short idempotency
+  key). The messages are good; an example `curl` is missing from the guide.
 
-## Dificuldades — ambiente (documentar para a TI do cliente)
+## Difficulties — environment (document for the client's IT)
 
-- RHEL 9 rootless delega só `memory pids` → pedir ao admin
-  `/etc/systemd/system/user@.service.d/delegate.conf` com `[Service]\nDelegate=cpu cpuset io memory pids` (ver P2).
-- `loginctl enable-linger <usuário>` (sem isso o hub cai no logout).
-- Primeira subida compila MinIO/mc do código-fonte: ~5 min com 2 CPU, CPU em 200%.
-- Imagem `rockylinux:9`: `curl-minimal` conflita com `curl` no `dnf install` (não instalar `curl`).
+- RHEL 9 rootless delegates only `memory pids` → ask the admin for
+  `/etc/systemd/system/user@.service.d/delegate.conf` with `[Service]\nDelegate=cpu cpuset io memory pids` (see P2).
+- `loginctl enable-linger <user>` (without it the hub goes down on logout).
+- The first start compiles MinIO/mc from source: ~5 min with 2 CPUs, CPU at 200%.
+- `rockylinux:9` image: `curl-minimal` conflicts with `curl` in `dnf install` (do not install `curl`).
 
-## Artefatos do teste
+## Test artifacts
 
-Fora do repositório (scratchpad da sessão): logs `rhel/a-install*.log`, `rhel/b-install.log`, relatórios do Haiku
-`haiku-rhel-a/RELATORIO.md` e `haiku-rhel-b/RELATORIO.md`. O cenário A foi removido; o B (`rhel-b`, porta
-127.0.0.1:28090) ficou no ar para conferência.
+Outside the repository (session scratchpad): logs `rhel/a-install*.log`, `rhel/b-install.log`, Haiku reports
+`haiku-rhel-a/RELATORIO.md` and `haiku-rhel-b/RELATORIO.md`. Scenario A was removed; B (`rhel-b`, port
+127.0.0.1:28090) was left running for review.

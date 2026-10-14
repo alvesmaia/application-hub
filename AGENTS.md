@@ -1,62 +1,62 @@
 # AGENTS.md
 
-Guia para agentes de código (Claude Code, Codex e outros) que trabalham neste repositório.
+Guide for coding agents (Claude Code, Codex and others) working in this repository.
 
-## Branches e onde trabalhar
+## Branches and where to work
 
-- **`main`**: stack oficial — o hub em **Python** (`platform-py/`) e os apps Python (`platform/demo-apps-py/`). Desde 2026-10-07 serve a instância de produção do dono. Também guarda o mockup estático original (raiz: `index.html`, `js/`, `css/`) e a documentação de produto (`docs/PLAN.md`, `docs/FAQ-ARQUITETURA.md`).
-- **`stack/python`**: branch de trabalho; acompanha a `main`.
-- Só Python. Outras stacks: reavaliar numa expansão futura.
-- **Leia primeiro:** `docs/PENDENCIAS.md` (estado e o que falta), `docs/CONTRATO-APP.md` (contrato HTTP dos apps, em `platform/docs/`), `docs/HANDOFF.md`.
+- **`main`**: official stack — the hub in **Python** (`platform-py/`) and the Python apps (`platform/demo-apps-py/`). Since 2026-10-07 it serves the owner's production instance. It also keeps the original static mockup (root: `index.html`, `js/`, `css/`) and the product documentation (`docs/PLAN.md`, `docs/FAQ-ARQUITETURA.md`).
+- **`stack/python`**: working branch; tracks `main`.
+- Python only. Other stacks: to be re-evaluated in a future expansion.
+- **Read first:** `docs/PENDENCIAS.md` (status and what is missing), `docs/CONTRATO-APP.md` (HTTP contract of the apps, in `platform/docs/`), `docs/HANDOFF.md`.
 
-## Stack (decisões fixas)
+## Stack (fixed decisions)
 
-Python 3.12 gerenciado por `uv`; FastAPI + Jinja2 (SSR), asyncpg, httpx, Pydantic v2 + pydantic-settings, SDK `docker`. Qualidade: **ruff** (lint e formatação, incluindo as regras `S` do bandit), **Astral ty** (tipos), **pytest + pytest-cov** (linhas + ramos, piso de 80% no núcleo), **`uv audit`**. Front-end (CSS, `hub*.js`, fontes, `catalog.json`) fica em `platform/assets/shell` (shell) e `platform/assets/web` (telas do hub); registro de apps em `platform/config/` — não reescrever. Apps oficiais só em Python (SDK `hub_sdk` em `platform/sdk-python`).
+Python 3.12 managed by `uv`; FastAPI + Jinja2 (SSR), asyncpg, httpx, Pydantic v2 + pydantic-settings, the `docker` SDK. Quality: **ruff** (lint and formatting, including the `S` rules from bandit), **Astral ty** (types), **pytest + pytest-cov** (lines + branches, 80% floor on the core), **`uv audit`**. The front-end (CSS, `hub*.js`, fonts, `catalog.json`) lives in `platform/assets/shell` (shell) and `platform/assets/web` (hub screens); app registry in `platform/config/` — do not rewrite. Official apps are Python only (SDK `hub_sdk` in `platform/sdk-python`).
 
-## Comandos (em `platform-py/`)
+## Commands (in `platform-py/`)
 
-- Checagem completa: `uv run hub-check` (ruff, ruff format, ty, `uv audit`, pytest com cobertura; `--fast` = só ruff/formato/ty; `--all` = + cli, SDK e cada app). Testes de banco usam um Postgres descartável.
-- Pilha: projeto compose `app-hub` (imagem selada `app-hub-web`; dev.sh up monta o código) — `app-hub-web` em `127.0.0.1:8090`, `app-hub-db`, `app-hub-objstore` (MinIO), apps `app-hub-app-<id>` (`docker-compose.apps.yml`), segredos de dev em `.dev.env` (gitignored; nunca commitar nem imprimir).
-- Instalação do zero / outra instância no mesmo host: `bash scripts/install.sh [--project app-hub-x --port 8095 --subnet 10.241] [--no-demo-apps]` (compose parametrizado por `HUB_PROJECT`/`HUB_PORT`/`HUB_SUBNET`; apps de exemplo no perfil `demo-apps`). Versão: `hub/__init__.py` (`/healthz`), `CHANGELOG.md`, `scripts/release.sh <versão>`; licença Apache-2.0 (`NOTICE`, `TRADEMARKS.md`).
-- `bash scripts/dev.sh up|down|stop|status|logs|reload-on|reload-off|obs-up|obs-down` — modo dev (uvicorn `--reload`, recarga SSE `/_dev/reload`), perfil observability (OTel Collector + Jaeger).
-- Simulador SharePoint: `docker-compose.graphsim.yml` (perfil `sharepoint-sim`, `app-hub-graphsim`).
-- Conformidade dos apps: `bash scripts/conformance.sh`. CLI: `platform-py/cli` (`hub pack`, `hub mcp`, `hub dev`).
-- E2E e varredura de UI contra a :8090: `platform/tests-e2e` (`npx playwright test`, `node ui-sweep/run.mjs [--quick]`). **Toda mudança de UI precisa passar no ui-sweep.** Resiliência: `platform/loadtest/py-dr.mjs`, `py-resilience.mjs` (só tocam `app-hub-*`).
+- Full check: `uv run hub-check` (ruff, ruff format, ty, `uv audit`, pytest with coverage; `--fast` = ruff/format/ty only; `--all` = + cli, SDK and each app). Database tests use a disposable Postgres.
+- Stack: compose project `app-hub` (sealed image `app-hub-web`; `dev.sh up` mounts the code) — `app-hub-web` at `127.0.0.1:8090`, `app-hub-db`, `app-hub-objstore` (MinIO), apps `app-hub-app-<id>` (`docker-compose.apps.yml`), dev secrets in `.dev.env` (gitignored; never commit or print).
+- Fresh install / another instance on the same host: `bash scripts/install.sh [--project app-hub-x --port 8095 --subnet 10.241] [--no-demo-apps]` (compose parameterized by `HUB_PROJECT`/`HUB_PORT`/`HUB_SUBNET`; sample apps in the `demo-apps` profile). Version: `hub/__init__.py` (`/healthz`), `CHANGELOG.md`, `scripts/release.sh <version>`; license Apache-2.0 (`NOTICE`, `TRADEMARKS.md`).
+- `bash scripts/dev.sh up|down|stop|status|logs|reload-on|reload-off|obs-up|obs-down` — dev mode (uvicorn `--reload`, SSE reload `/_dev/reload`), observability profile (OTel Collector + Jaeger).
+- SharePoint simulator: `docker-compose.graphsim.yml` (profile `sharepoint-sim`, `app-hub-graphsim`).
+- App conformance: `bash scripts/conformance.sh`. CLI: `platform-py/cli` (`hub pack`, `hub mcp`, `hub dev`).
+- E2E and UI sweep against :8090: `platform/tests-e2e` (`npx playwright test`, `node ui-sweep/run.mjs [--quick]`). **Every UI change must pass the ui-sweep.** Resilience: `platform/loadtest/py-dr.mjs`, `py-resilience.mjs` (they only touch `app-hub-*`).
 
 ## Guardrails
 
-- **Hooks (clone novo):** `cd platform-py && uv sync && uv run pre-commit install --allow-missing-config --hook-type pre-commit --hook-type pre-push`. Pre-commit: ruff, ruff format, ty, guarda de segredos (`platform-py/scripts/secret_guard.py`: `.dev.env`, chaves/certificados, `hubt_`, credenciais do cloudflared), arquivos > 1 MB. Pre-push: `uv run hub-check` completo. Nunca `--no-verify`.
-- **`uv run hub-check [--fast|--all]` verde é obrigatório antes de commit/push** (funciona em PowerShell e Git Bash; `--all` inclui `platform-py/cli`, `platform/sdk-python` e cada app em `platform/demo-apps-py/*`). `scripts/check.sh` é só um atalho. Mudou app: também o próprio check do app + `bash scripts/conformance.sh`.
-- **TDD:** comportamento novo ou bug começa por um teste que falha (vermelho), depois o código mínimo que o faz passar (verde), depois a refatoração com os testes verdes. Bug corrigido = teste que reproduz o bug. Casos de borda e decisões deliberadas (ex.: o que é ignorado de propósito) também viram teste.
-- **Que teste cada mudança exige:** função pura/regra → **unitário** (pytest). Rota, banco, cofre, gateway ou contrato (OpenAPI, i18n) → **integração** (pytest com `TestClient`/Postgres descartável). Funcionalidade visível ao usuário → **cenário** (fluxo completo num teste de integração) e, se tem tela, **E2E** Playwright em `platform/tests-e2e` + ui-sweep. Mudou app ou o contrato dos apps → conformidade. Mudou gateway, sessão, banco ou algo no caminho de todo pedido → **carga** (`platform/loadtest/py-load.mjs`, numa pilha isolada, na validação pesada) sem piorar o p95 nem a taxa de erro da última medição registrada em `docs/IMPLANTACAO.md`.
-- **Pydantic v2 nas bordas:** formulários, entradas de API e escritas da Administração são validados por modelos Pydantic, não por `dict` cru.
-- **Segredos nunca** em HTML, API, log, auditoria nem git (`.dev.env` fica fora do git).
-- **Toda mudança de UI passa no ui-sweep**; texto novo nos 2 idiomas (pt-BR, en).
-- **Validação:** leve durante o dia (`--fast`, testes do afetado, ui-sweep `--quick`); pesada uma vez ao fim do dia (E2E completo, DR, caos).
+- **Hooks (fresh clone):** `cd platform-py && uv sync && uv run pre-commit install --allow-missing-config --hook-type pre-commit --hook-type pre-push`. Pre-commit: ruff, ruff format, ty, secret guard (`platform-py/scripts/secret_guard.py`: `.dev.env`, keys/certificates, `hubt_`, cloudflared credentials), files > 1 MB. Pre-push: full `uv run hub-check`. Never `--no-verify`.
+- **A green `uv run hub-check [--fast|--all]` is mandatory before commit/push** (works in PowerShell and Git Bash; `--all` includes `platform-py/cli`, `platform/sdk-python` and each app in `platform/demo-apps-py/*`). `scripts/check.sh` is only a shortcut. If you changed an app: also that app's own check and `bash scripts/conformance.sh`.
+- **TDD:** new behavior or a bug starts with a failing test (red), then the minimal code that makes it pass (green), then refactoring with green tests. A fixed bug = a test that reproduces the bug. Edge cases and deliberate decisions (e.g. what is intentionally ignored) also become tests.
+- **Which test each change requires:** pure function/rule → **unit** (pytest). Route, database, vault, gateway or contract (OpenAPI, i18n) → **integration** (pytest with `TestClient`/disposable Postgres). User-visible feature → **scenario** (full flow in one integration test) and, if it has a screen, **E2E** Playwright in `platform/tests-e2e` + ui-sweep. Changed an app or the app contract → conformance. Changed the gateway, session, database or anything on the path of every request → **load** (`platform/loadtest/py-load.mjs`, on an isolated stack, in the heavy validation) without worsening the p95 or error rate of the last recorded measurement in `docs/IMPLANTACAO.md`.
+- **Pydantic v2 at the edges:** forms, API inputs and Administration writes are validated by Pydantic models, not by raw `dict`.
+- **Secrets never** in HTML, API, logs, audit trail or git (`.dev.env` stays out of git).
+- **Every UI change passes the ui-sweep**; new text in both languages (pt-BR, en).
+- **Validation:** light during the day (`--fast`, tests for the affected code, ui-sweep `--quick`); heavy once at the end of the day (full E2E, DR, chaos).
 
-## Arquitetura do hub Python (`platform-py/hub`)
+## Architecture of the Python hub (`platform-py/hub`)
 
-`auth` (sessões, RBAC, tokens), `vault` (cofre), `state` (Postgres: sessões, jobs, liderança), `admin` (lojas + auditoria em cadeia), `gateway` (proxy `/apps/{id}`, `/_frag/{id}`, identidade assinada `x-hub-user`, `x-hub-base`, CSP, WebSocket), `ux` (Início, busca, Inbox, configurações, i18n), `connections`/`storage` (SharePoint/S3 e broker — credencial nunca em HTML/API/log/auditoria), `insight` (logs, flags, SLOs, observabilidade, OTLP), `ops` (implantações, build de imagem, blue/green, staging, supervisor, backups), `api` (tabela única que gera `/api/v1`, OpenAPI e ferramentas MCP; OAuth 2.1 do MCP). Templates em `hub/web/templates`. Menu (21 telas): `hub/web/nav.json` (`also` = outras rotas que acendem o item) e abas em `hub/ux/shell.py` (`TAB_SETS`: Usuários/Funções `?tab=roles`, Logs/Auditoria, Variáveis/Conexões; Minha conta = `/account`, `/account/security`, `/account/access`); Observabilidade é seção da Saúde, uso (MAU) e rotações de chaves ("Segurança e chaves") ficam em Configurações; rotas antigas respondem 308.
+`auth` (sessions, RBAC, tokens), `vault` (vault), `state` (Postgres: sessions, jobs, leadership), `admin` (stores + chained audit trail), `gateway` (proxy `/apps/{id}`, `/_frag/{id}`, signed identity `x-hub-user`, `x-hub-base`, CSP, WebSocket), `ux` (Home, search, Inbox, settings, i18n), `connections`/`storage` (SharePoint/S3 and broker — credentials never in HTML/API/logs/audit trail), `insight` (logs, flags, SLOs, observability, OTLP), `ops` (deployments, image build, blue/green, staging, supervisor, backups), `api` (single table that generates `/api/v1`, OpenAPI and MCP tools; MCP OAuth 2.1). Templates in `hub/web/templates`. Menu (21 screens): `hub/web/nav.json` (`also` = other routes that light up the item) and tabs in `hub/ux/shell.py` (`TAB_SETS`: Users/Roles `?tab=roles`, Logs/Audit, Variables/Connections; My account = `/account`, `/account/security`, `/account/access`); Observability is a section of Health, usage (MAU) and key rotations ("Security and keys") live in Settings; old routes answer 308.
 
-## Regras
+## Rules
 
-- O hub só gerencia contêineres `app-hub-*` (trava em `hub/ops/runtime.py`). Nunca tocar em contêineres de outros projetos nem encerrar processos por nome de imagem.
-- Túnel público = contêiner `apphub-devtunnel` (config `platform/.tunnel/config-standalone.yml`): **nunca parar/remover sem pedido do dono**.
-- URLs de apps: `/apps/{id}/…`; app monta links com a base pública (`x-hub-base`, `{{ base }}`), nunca `/{id}/…` cru. Apps sem JavaScript próprio (comportamentos via `data-hub-*` no `hub-kit.js`); prontidão obrigatória `GET /{app}/_hub/ready`.
-- Texto novo voltado ao usuário → chave no catálogo nos 2 idiomas (pt-BR, en).
-- Uma execução pesada por vez (máquina com pouca memória).
+- The hub only manages `app-hub-*` containers (guard in `hub/ops/runtime.py`). Never touch containers of other projects or kill processes by image name.
+- Public tunnel = container `apphub-devtunnel` (config `platform/.tunnel/config-standalone.yml`): **never stop/remove without the owner's request**.
+- App URLs: `/apps/{id}/…`; the app builds links with the public base (`x-hub-base`, `{{ base }}`), never a bare `/{id}/…`. Apps have no JavaScript of their own (behaviors via `data-hub-*` in `hub-kit.js`); readiness `GET /{app}/_hub/ready` is mandatory.
+- New user-facing text → key in the catalog in both languages (pt-BR, en).
+- One heavy run at a time (low-memory machine).
 
-## Limpeza ao terminar (obrigatória)
+## Cleanup when finished (mandatory)
 
-Todo trabalho remove o que criou antes de ser dado como pronto. Só apague o que **você** criou nesta tarefa; na dúvida, liste e pergunte ao dono.
+Every task removes what it created before being declared done. Only delete what **you** created in this task; when in doubt, list it and ask the owner.
 
-- **Temporários:** scripts, logs e saídas ficam no diretório temporário do agente, nunca no repositório. Apague-os ao fim. Nada de `*.log`, `*.hubapp`, `.coverage`, `j8080`/`*.html` de inspeção soltos no repo; `git status` limpo (fora do que a tarefa entrega).
-- **Contêineres e volumes de teste:** remova pelo nome exato que você deu (`docker rm -f <nome>`, `docker volume rm <nome>`), inclusive servidores simulados (ex.: `rhel-*`) e pilhas isoladas (`-p <projeto-de-teste> down -v`). Nunca `docker rm`/`volume prune` em bloco: há volumes de outros projetos.
-- **Imagens:** remova as que você construiu e não são mais usadas (tags de teste, `:prev`, imagens de pilhas isoladas), depois `docker image prune -f` (só pendentes) e `docker builder prune -f` (cache de build). Mantenha imagens base, as imagens atuais do `app-hub` e os pins de rollback `app-hub-app-*:keep-*`/`baseline-*`. Imagens de outros projetos não são suas, mesmo paradas.
-- **Build local:** `__pycache__`, `.pytest_cache`, `.ruff_cache`, `build/`, `dist/` gerados pela tarefa e `.hub/` dos apps de teste. Não apague `.venv` nem `uv.lock`.
-- **Instância do dono:** se a tarefa a parou, religue (`up -d`) e confira `/readyz` antes de encerrar. O `apphub-devtunnel` nunca entra na limpeza.
-- **Confira:** `docker ps -a`, `docker system df` e `git status` ao fim; relate o que removeu e o que deixou de propósito.
+- **Temporary files:** scripts, logs and outputs stay in the agent's temporary directory, never in the repository. Delete them at the end. No stray `*.log`, `*.hubapp`, `.coverage`, `j8080`/`*.html` inspection files in the repo; `git status` clean (apart from what the task delivers).
+- **Test containers and volumes:** remove them by the exact name you gave (`docker rm -f <name>`, `docker volume rm <name>`), including simulated servers (e.g. `rhel-*`) and isolated stacks (`-p <test-project> down -v`). Never bulk `docker rm`/`volume prune`: there are volumes from other projects.
+- **Images:** remove the ones you built that are no longer used (test tags, `:prev`, images of isolated stacks), then `docker image prune -f` (dangling only) and `docker builder prune -f` (build cache). Keep base images, the current `app-hub` images and the rollback pins `app-hub-app-*:keep-*`/`baseline-*`. Images from other projects are not yours, even when stopped.
+- **Local build:** `__pycache__`, `.pytest_cache`, `.ruff_cache`, `build/`, `dist/` generated by the task and `.hub/` of test apps. Do not delete `.venv` or `uv.lock`.
+- **Owner's instance:** if the task stopped it, start it again (`up -d`) and check `/readyz` before finishing. `apphub-devtunnel` never enters the cleanup.
+- **Check:** `docker ps -a`, `docker system df` and `git status` at the end; report what you removed and what you deliberately left.
 
-## Mockup estático (raiz)
+## Static mockup (root)
 
-Front-end puro sem build (`index.html`, `js/app.js` com roteamento por `pathname` e `data-route`, `css/styles.css`); deploy estático via `vercel.json`/`_redirects`. Servir com fallback SPA (`npx serve -s .`). Regra central do produto (`docs/PLAN.md` §11): header global único da plataforma; a sidebar de cada app pertence ao workspace, nunca ao rail global.
+Pure front-end without a build step (`index.html`, `js/app.js` with routing by `pathname` and `data-route`, `css/styles.css`); static deploy via `vercel.json`/`_redirects`. Serve with SPA fallback (`npx serve -s .`). Central product rule (`docs/PLAN.md` §11): a single global platform header; each app's sidebar belongs to the workspace, never to the global rail.

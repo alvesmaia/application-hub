@@ -1,40 +1,40 @@
-# Atualização de versão (hub Python)
+# Version update (Python hub)
 
-Vale para instalações feitas por `platform-py/scripts/install.sh` ou pelo checklist de `docs/IMPLANTACAO.md`.
-Leia antes o [`CHANGELOG.md`](../CHANGELOG.md) da versão nova (seção "Atenção" quando houver passo manual).
-Comandos a partir de `platform-py/`; abrevie o compose assim:
+Applies to installations made by `platform-py/scripts/install.sh` or by the checklist in `docs/IMPLANTACAO.md`.
+Read the [`CHANGELOG.md`](../CHANGELOG.md) of the new version first (section "Attention" when there is a manual step).
+Commands are run from `platform-py/`; abbreviate compose like this:
 
 ```bash
 dc() { docker compose --env-file .prod.env -f docker-compose.yml -f docker-compose.apps.yml -f docker-compose.prod.yml "$@"; }
-curl -s http://127.0.0.1:${HUB_PORT:-8090}/healthz     # {"status":"ok","version":"<atual>"}
+curl -s http://127.0.0.1:${HUB_PORT:-8090}/healthz     # {"status":"ok","version":"<current>"}
 ```
 
-## Sem parada (recomendado)
+## Zero downtime (recommended)
 
-A porta do hub é da borda (`<projeto>-edge`, Caddy), que só manda tráfego a quem responde ao `/healthz`. O
-comando abaixo faz o backup, sobe uma cópia com a versão nova, troca o hub enquanto a cópia atende, observa por
-5 min e, se a versão nova falhar, **volta sozinho** para a anterior:
+The hub's port belongs to the edge (`<project>-edge`, Caddy), which only sends traffic to whoever answers `/healthz`. The
+command below makes the backup, starts a copy with the new version, replaces the hub while the copy serves traffic, watches for
+5 min and, if the new version fails, **goes back automatically** to the previous one:
 
 ```bash
-git fetch --tags && git checkout v<versão>      # ou: git pull na main
-python scripts/hub_update.py --build             # constrói do código atual
-python scripts/hub_update.py --image <imagem>    # ou: imagem pronta (GHCR)
-python scripts/hub_update.py --rollback          # voltar depois, à mão
+git fetch --tags && git checkout v<version>      # or: git pull on main
+python scripts/hub_update.py --build             # builds from the current code
+python scripts/hub_update.py --image <image>    # or: ready-made image (GHCR)
+python scripts/hub_update.py --rollback          # roll back later, by hand
 ```
 
-Opções: `--project` (HUB_PROJECT, padrão `app-hub`), `--watch <s>` (observação, padrão 300), `--no-backup`,
-`--backup-dir` (padrão `~/backup-hub/<data-hora>`). Conexões abertas (SSE, WebSocket) caem na troca e reconectam
-sozinhas. A volta automática desfaz o código, não os dados: se a versão nova mudou o formato dos dados, restaure o
-backup (§5). Por isso as migrações do hub são só aditivas (a versão anterior continua lendo os dados).
+Options: `--project` (HUB_PROJECT, default `app-hub`), `--watch <s>` (observation, default 300), `--no-backup`,
+`--backup-dir` (default `~/backup-hub/<date-time>`). Open connections (SSE, WebSocket) drop during the switch and reconnect
+on their own. The automatic rollback undoes the code, not the data: if the new version changed the data format, restore the
+backup (§5). That is why the hub's migrations are additive only (the previous version keeps reading the data).
 
-**Primeira vez com a borda** (instalações anteriores à 0.3.0): o `dc up -d` do §3 cria a borda, que assume a
-`HUB_PORT` do hub (uma parada de ~10 s, só desta vez). Depois disso, use o `hub_update.py`.
+**First time with the edge** (installations prior to 0.3.0): the `dc up -d` in §3 creates the edge, which takes over the
+`HUB_PORT` of the hub (a ~10 s stop, this time only). After that, use `hub_update.py`.
 
-Aviso de versão nova em Administração › Saúde: `HUB_UPDATE_CHECK=1` no `.prod.env`.
+New version notice in Administração › Saúde (Administration › Health): `HUB_UPDATE_CHECK=1` in `.prod.env`.
 
-Os passos abaixo são o caminho manual (com parada curta).
+The steps below are the manual path (with a short stop).
 
-## 1. Backup (sempre)
+## 1. Backup (always)
 
 ```bash
 P=$(grep -E '^HUB_PROJECT=' .prod.env | cut -d= -f2); P=${P:-app-hub}
@@ -46,40 +46,40 @@ docker run --rm -v "$P-objstore-data:/d:ro" -v "$PWD:/b" alpine tar czf /b/objst
 cd -
 ```
 
-Guarde também a chave mestra do cofre (`/data/master.key` ou `.secrets/master.key`) e o `.prod.env` — sem a
-chave os segredos cifrados não abrem.
+Also keep the vault master key (`/data/master.key` or `.secrets/master.key`) and `.prod.env` — without the
+key, the encrypted secrets cannot be opened.
 
-## 2. Código novo
+## 2. New code
 
 ```bash
 git fetch --tags
-git checkout v<versão>          # ou: git pull na main
-diff <(grep -oE '^[A-Z_]+' prod.env.example | sort -u) <(grep -oE '^[A-Z_]+' .prod.env | sort -u)   # variáveis novas?
+git checkout v<version>          # or: git pull on main
+diff <(grep -oE '^[A-Z_]+' prod.env.example | sort -u) <(grep -oE '^[A-Z_]+' .prod.env | sort -u)   # new variables?
 ```
 
-## 3. Reconstruir e subir
+## 3. Rebuild and start
 
 ```bash
-dc build                        # hub e apps do código-fonte (ou: -f docker-compose.ghcr.yml pull, HUB_VERSION=<versão>)
-dc up -d                        # recria só o que mudou
-curl -s http://127.0.0.1:${HUB_PORT:-8090}/healthz     # confira a versão nova
+dc build                        # hub and apps from source (or: -f docker-compose.ghcr.yml pull, HUB_VERSION=<version>)
+dc up -d                        # recreates only what changed
+curl -s http://127.0.0.1:${HUB_PORT:-8090}/healthz     # check the new version
 ```
 
-Só o hub mudou? `dc build app-hub-web && dc up -d --no-deps app-hub-web` (os apps seguem no ar).
+Only the hub changed? `dc build app-hub-web && dc up -d --no-deps app-hub-web` (the apps stay up).
 
-## 4. Migrações
+## 4. Migrations
 
-- **Banco de estado do hub** (`app-hub-db`): o hub cria/atualiza as próprias tabelas no boot (sem passo manual).
-- **Dados em arquivo** (`/data`: usuários, cofre, administração): o formato é migrado no boot; versões antigas são
-  lidas e regravadas no formato novo.
-- **Bancos dos apps** (`app-hub-app-db`): cada app aplica as próprias migrações ao subir (`hub_sdk`).
-- Passos manuais, quando existirem, ficam no CHANGELOG da versão.
+- **Hub state database** (`app-hub-db`): the hub creates/updates its own tables at boot (no manual step).
+- **File data** (`/data`: users, vault, administration): the format is migrated at boot; old versions are
+  read and rewritten in the new format.
+- **App databases** (`app-hub-app-db`): each app applies its own migrations when it starts (`hub_sdk`).
+- Manual steps, when they exist, are in the version's CHANGELOG.
 
-## 5. Conferir e voltar atrás
+## 5. Check and roll back
 
-Confira login, `/apps/<id>`, Administração › Saúde e os logs (`docker logs <projeto>-web`). Se algo der errado:
+Check login, `/apps/<id>`, Administração › Saúde (Administration › Health) and the logs (`docker logs <project>-web`). If something goes wrong:
 
 ```bash
-git checkout v<versão anterior> && dc build && dc up -d
-# dados incompatíveis? restaure o backup do passo 1 (pare a pilha, restaure volumes e dumps, suba de novo)
+git checkout v<previous-version> && dc build && dc up -d
+# incompatible data? restore the step 1 backup (stop the stack, restore volumes and dumps, start again)
 ```

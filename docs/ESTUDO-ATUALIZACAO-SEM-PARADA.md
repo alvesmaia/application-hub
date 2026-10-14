@@ -1,66 +1,65 @@
-# Estudo: atualização sem parada e com reversão automática
+# Study: zero-downtime update with automatic rollback
 
-> **Implementado em 2026-10-10** com uma simplificação: em vez de duas cores fixas e troca pela API do Caddy, uma
-> cópia temporária (`<proj>-web-next`) atende enquanto o `<proj>-web` é recriado; a borda escolhe pela saúde. O
-> nome do hub não muda (scripts e docs seguem valendo). Uso: `docs/ATUALIZACAO.md`, "Sem parada".
+> **Implemented on 2026-10-10** with one simplification: instead of two fixed colors and a switch through the Caddy API, a
+> temporary copy (`<proj>-web-next`) serves traffic while `<proj>-web` is recreated; the edge chooses by health. The
+> hub's name does not change (scripts and docs still apply). Usage: `docs/ATUALIZACAO.md`, "Zero downtime".
 
-Situação em 2026-10-10. Hoje, `dc up -d` recria o `app-hub-web` e o hub fica fora do ar de 3 a 11 s. Nesse
-intervalo param o portal, o gateway dos apps, a API/MCP e as conexões SSE e WebSocket. A volta atrás é
+Situation as of 2026-10-10. Today, `dc up -d` recreates `app-hub-web` and the hub is down for 3 to 11 s. In that
+interval the portal, the apps' gateway, the API/MCP and the SSE and WebSocket connections stop. Rolling back is
 manual (`docs/ATUALIZACAO.md` §5).
 
-## O que já existe e ajuda
+## What already exists and helps
 
-- **Réplicas do hub já funcionam:** o lease `hub-leader` no banco de estado (`hub/ops/leader.py`) garante que só
-  uma réplica rode o que precisa ser único (outbox, agendador de backups, varreduras). Os arquivos de `/data`
-  usam trava entre processos (`hub/filelock.py`).
-- **`/healthz` informa a versão,** e os apps já fazem blue/green com sonda de prontidão (`/_hub/ready`).
-- **Tempo real reconecta sozinho:** `data-hub-ws` e `data-hub-sse` voltam com espera crescente e polling enquanto
-  isso.
+- **Hub replicas already work:** the `hub-leader` lease in the state database (`hub/ops/leader.py`) ensures that only
+  one replica runs what must be unique (outbox, backup scheduler, sweeps). The files in `/data`
+  use locking between processes (`hub/filelock.py`).
+- **`/healthz` reports the version,** and the apps already do blue/green with a readiness probe (`/_hub/ready`).
+- **Real-time reconnects on its own:** `data-hub-ws` and `data-hub-sse` come back with increasing back-off and polling in the
+  meantime.
 
-## Opções
+## Options
 
-| | Como funciona | Parada | Custo |
+| | How it works | Downtime | Cost |
 |---|---|---|---|
-| A. Só reiniciar mais rápido | imagem pronta antes, `up --no-deps` | 2–4 s | baixo, mas não resolve |
-| **B. Azul/verde atrás de um proxy** | proxy fixo na porta do hub; sobe a cor nova, testa e troca | **0 s** | médio |
-| C. Orquestrador (Swarm/K8s) | rolling update nativo | 0 s | alto; muda a instalação inteira |
+| A. Just restart faster | image ready beforehand, `up --no-deps` | 2–4 s | low, but does not solve it |
+| **B. Blue/green behind a proxy** | fixed proxy on the hub's port; start the new color, test, and switch | **0 s** | medium |
+| C. Orchestrator (Swarm/K8s) | native rolling update | 0 s | high; changes the whole installation |
 
-**Recomendação: B.** Usa o que já existe (réplicas, líder, travas) e não muda a forma de instalar.
+**Recommendation: B.** It uses what already exists (replicas, leader, locks) and does not change how the product is installed.
 
-## Desenho da opção B
+## Design of option B
 
-1. **Proxy de borda** `app-hub-edge` (Caddy, imagem oficial), único serviço na `HUB_PORT`. Os contêineres
-   `app-hub-web-blue` e `app-hub-web-green` ficam só na rede interna. O proxy repassa HTTP, SSE e WebSocket
-   sem buffer e drena as conexões na troca.
-2. **Comando `hub-update <versão>`** (em `platform-py/scripts/`), em passos que param no primeiro erro:
-   1. faz o backup do §1 de `ATUALIZACAO.md` automaticamente e guarda a imagem atual com a tag `rollback`;
-   2. baixa ou constrói a versão nova e sobe a cor inativa;
-   3. espera `/healthz` com a versão nova e `/readyz`. Hoje o `/readyz` só responde "ready"; ele passa a
-      conferir o banco de estado, as migrações aplicadas e a leitura de `/data`. Depois roda testes rápidos (login, `/developers`, um `/apps/<id>`);
-   4. troca o upstream do proxy pela API de administração do Caddy, sem reiniciar;
-   5. drena a cor antiga (SIGTERM; o uvicorn termina as requisições em curso) e a mantém parada para a volta
-      atrás.
-3. **Reversão automática:**
-   - **Antes da troca:** qualquer falha remove a cor nova. Nada mudou para os usuários.
-   - **Depois da troca:** durante 5 min, o comando observa os erros 5xx e o `/healthz`. Se piorar, volta o
-     proxy para a cor antiga, que ainda existe, em menos de 1 s.
-   - **Dados:** só é possível voltar sem restaurar se as migrações forem **aditivas** (expandir agora, remover
-     colunas e campos só na versão seguinte). Cada release declara `rollback_compat: <versão mínima>`. Se a
-     versão antiga não for compatível, o comando avisa antes de começar e a volta atrás exige restaurar o
-     backup, com confirmação.
-4. **Aviso de versão nova:** opcional (`HUB_UPDATE_CHECK=1`). O hub consulta as releases do repositório uma vez
-   por dia e mostra um aviso em Administração › Saúde com o comando de atualização. Nada atualiza sozinho.
+1. **Edge proxy** `app-hub-edge` (Caddy, official image), the only service on `HUB_PORT`. The containers
+   `app-hub-web-blue` and `app-hub-web-green` stay only on the internal network. The proxy forwards HTTP, SSE and WebSocket
+   without buffering and drains connections on the switch.
+2. **`hub-update <version>` command** (in `platform-py/scripts/`), in steps that stop at the first error:
+   1. makes the backup of §1 of `ATUALIZACAO.md` automatically and keeps the current image with the `rollback` tag;
+   2. downloads or builds the new version and starts the inactive color;
+   3. waits for `/healthz` with the new version and for `/readyz`. Today `/readyz` only answers "ready"; it will now check the
+      state database, the applied migrations and the reading of `/data`. Then it runs quick tests (login, `/developers`, one `/apps/<id>`);
+   4. switches the proxy's upstream through the Caddy administration API, without restarting;
+   5. drains the old color (SIGTERM; uvicorn finishes the requests in progress) and keeps it stopped for the rollback.
+3. **Automatic rollback:**
+   - **Before the switch:** any failure removes the new color. Nothing changed for users.
+   - **After the switch:** for 5 min, the command watches for 5xx errors and `/healthz`. If it gets worse, it points the
+     proxy back to the old color, which still exists, in under 1 s.
+   - **Data:** rolling back without a restore is only possible if the migrations are **additive** (expand now, remove
+     columns and fields only in the following version). Each release declares `rollback_compat: <minimum-version>`. If the
+     old version is not compatible, the command warns before starting and the rollback requires restoring the
+     backup, with confirmation.
+4. **New version notice:** optional (`HUB_UPDATE_CHECK=1`). The hub checks the repository's releases once
+   a day and shows a notice in Administração › Saúde (Administration › Health) with the update command. Nothing updates on its own.
 
-## Riscos
+## Risks
 
-- **Duas versões no ar durante segundos:** a cor antiga e a nova leem o mesmo `/data` e o mesmo banco. Por isso
-  a regra de migração aditiva é obrigatória, e um teste do CI sobe a versão anterior sobre os dados da nova.
-- **Memória:** duas cópias do hub por alguns segundos (~+250 MB no pico).
-- **Porta e TLS:** o proxy passa a ser o dono da `HUB_PORT`. Quem usa túnel ou proxy externo não muda nada,
-  porque o destino continua o mesmo.
+- **Two versions running for seconds:** the old and the new color read the same `/data` and the same database. That is why
+  the additive migration rule is mandatory, and a CI test starts the previous version on top of the new version's data.
+- **Memory:** two copies of the hub for a few seconds (~+250 MB at peak).
+- **Port and TLS:** the proxy becomes the owner of `HUB_PORT`. Those who use a tunnel or an external proxy change nothing,
+  because the destination stays the same.
 
-## Esforço estimado
+## Estimated effort
 
-Proxy e compose: 1 dia. `hub-update` com reversão: 2 dias. `/readyz` de verdade e regra de migração aditiva com teste
-de compatibilidade: 1–2 dias. Aviso de versão: meio dia. Validação (caos durante a troca, carga com SSE e
-WebSocket abertos): 1 dia.
+Proxy and compose: 1 day. `hub-update` with rollback: 2 days. A real `/readyz` and the additive migration rule with a compatibility test:
+1–2 days. Version notice: half a day. Validation (chaos during the switch, load with SSE and
+WebSocket open): 1 day.
