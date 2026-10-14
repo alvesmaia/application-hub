@@ -5,7 +5,7 @@ from __future__ import annotations
 import random
 
 from coletor import fila
-from coletor.app import N_SESSION_CODES, session_codes
+from coletor.session_store import N_SESSION_CODES, session_codes
 
 
 def codes() -> list[fila.Code]:
