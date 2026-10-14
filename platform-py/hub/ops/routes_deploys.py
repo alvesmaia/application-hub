@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import json
 import os
-import shutil
 from typing import Any
 
 from fastapi import APIRouter, Depends, Request
@@ -13,237 +11,11 @@ from fastapi.responses import JSONResponse, Response
 from hub.ops import model as m
 from hub.ops import newapp
 from hub.ops import pipeline as pl
-from hub.ops import provision as pv
-from hub.ops import runtime as rt
+from hub.ops.deploy_jobs import Upload, run_deploy, run_import
 from hub.ops.model import Data, OpsError, now_ms
-from hub.ops.opsctx import OpsCtx, ctx, rollout_env
+from hub.ops.opsctx import OpsCtx, ctx
 
 router = APIRouter()
-
-
-async def run_import(  # noqa: C901, PLR0915
-    ops: OpsCtx,
-    job_id: int,
-    data: bytes,
-    env: str,
-    origin: str,
-    commit: str,
-    file_name: str,
-    actor: str,
-    uid: str,
-    config: dict[str, dict[str, str]] | None = None,
-) -> None:
-    async def probe(url: str) -> int:
-        return (await ops.client.get(url, timeout=5)).status_code
-
-    def on_step(steps: list[dict[str, Any]]) -> None:
-        ops.jobs.update(job_id, lambda j: j.update(steps=json.loads(json.dumps(steps))))
-
-    # new app still without a production container: no upstream smoke test (the candidate proves readiness)
-    regs = [
-        e
-        for e in ops.registry.entries()
-        if not (
-            newapp.is_dynamic(ops.data_dir, e.id)
-            and await ops.eng.raw(rt.container_name(e.id, "producao")) is None
-        )
-    ]
-    report = await pl.run_all(data, env, regs, probe, on_step=on_step,
-                              allow_without_api=os.getenv("HUB_ALLOW_WITHOUT_API") == "1")  # fmt: skip
-    for st in report["steps"]:
-        if st["state"] in ("ok", "warn", "failed"):
-            ops.log("ERROR" if st["state"] == "failed" else "INFO", report["app"] or "platform", actor,
-                f"pipeline · {st['name']}: {st['detail']}")  # fmt: skip
-    provisioned: dict[str, Any] = {}
-    if report["passed"] and report["app"] and report.get("manifest"):
-        mf = report["manifest"]
-        try:  # F22: new app joins the registry; `requires` provisioned before the deployment
-            if newapp.register(ops.data_dir, ops.registry, ops.admin.cfg.apps, mf):
-                ops.log("INFO", report["app"], actor, "app novo registrado pela implantação")
-
-            async def db(a: str, e: str) -> dict[str, Any]:
-                return await pv.provision(ops.backups, ops.admin.cfg, actor, a, e)
-
-            provisioned = await newapp.apply_requires(report["app"], env, mf, config or {}, actor, ops.admin.cfg, db,
-                                                      getattr(ops.app.state, "storage_provision", None))  # fmt: skip
-        except (OpsError, ValueError) as ex:
-            msg_ = ex.message if isinstance(ex, OpsError) else str(ex)[:200]
-            report.update(passed=False, reason=f"Provisionamento: {msg_}")
-    report["provisioned"] = provisioned
-    sha = pl.hashlib.sha256(data).hexdigest()
-    package = None
-    if report["passed"]:
-        package = f"{report['app']}-{report['version']}-{sha[:12]}.hubapp"
-        (ops.data_dir / "packages").mkdir(parents=True, exist_ok=True)
-        (ops.data_dir / "packages" / package).write_bytes(data)
-    auto = report["passed"] and env == "staging"  # staging is approved by the pipeline itself (step 7)
-    status = m.REJEITADO if not report["passed"] else m.IMPLANTANDO if auto else m.AGUARDANDO
-    label = m.STAGING if env == "staging" else m.PRODUCAO
-    note = report["reason"]
-    dep = {"id": 0, "app": report["app"] or "desconhecido", "version": report["version"] or "—", "env": label,
-           "origin": origin, "commit": commit, "status": status, "at": now_ms(), "image": report["image"],
-           "package": package, "sha256": sha, "note": note, "runtime": "", "scripts": report["scripts"],
-           "build": bool(report.get("build")),
-           "submitted_by": actor, "submitted_by_id": uid}  # fmt: skip
-    if report["passed"] and report["app"]:
-        await ensure_baseline(
-            ops, report["app"], "producao"
-        )  # before the `push`: the compose version is the oldest (rollback)
-    async with ops.store.locked(True) as d:
-        saved = m.push(d, dep)
-    title = {m.REJEITADO: "Pacote rejeitado pelo pipeline de validação",
-             m.AGUARDANDO: "Pacote validado — aguardando aprovação",
-             m.IMPLANTANDO: "Pacote validado — implantando em staging"}[status]  # fmt: skip
-    detail = (f"{ops.name_of(saved['app'])} {saved['version']} · {label} · {origin} · {file_name}"
-              + (f" · {report['reason']}" if not report["passed"] else ""))  # fmt: skip
-    await ops.admin.audit(
-        actor,
-        title,
-        detail,
-        icon="file",
-        scope=saved["app"] if ops.registry.get(saved["app"]) else "platform",
-    )
-    msg = (f"Pacote rejeitado — {report['reason']}" if not report["passed"] else
-           "Pacote validado — aguardando aprovação para produção.")  # fmt: skip
-    good = report["passed"]
-    if auto:
-        good, msg, saved = await run_deploy(ops, saved["id"], job_id, actor)
-
-    def fin(j: dict[str, Any]) -> None:
-        st = (j.get("steps") or [{}] * 6)[5]
-        if st.get("state") == "running":  # build/candidate step in staging
-            st.update(state="ok" if good else "failed",
-                      detail=(f"Imagem {saved['image']} pronta e candidato respondeu à prontidão em staging"
-                              if good else msg))  # fmt: skip
-        j.update(done=True, ok=good, message=msg, progress=100,
-                 result={"deployment": saved, "report": report}, provisioned=report["provisioned"])  # fmt: skip
-
-    ops.jobs.update(job_id, fin)
-
-
-async def ensure_baseline(ops: OpsCtx, app_id: str, k: str) -> None:
-    """First deployment of an app: records the version already running (compose), so rollback has somewhere to go back to."""
-    raw = await ops.eng.raw(rt.container_name(app_id, k))
-    e = ops.registry.get(app_id)
-    if raw is None or e is None or k != "producao":
-        return
-    await ops.eng.pin(
-        str(raw.get("Image", "")), app_id, f"baseline-{str(raw.get('Image', ''))[7:19]}"
-    )  # rollback
-    async with ops.store.locked(True) as d:
-        if any(
-            x["app"] == app_id and x["env"] == m.PRODUCAO and x["status"] == m.IMPLANTADO
-            for x in d["deployments"]
-        ):
-            return
-        base = m.push(d, {"id": 0, "app": app_id, "version": e.version or "—", "env": m.PRODUCAO, "origin": "Compose",
-                   "commit": "—", "status": m.IMPLANTADO, "at": now_ms(), "package": None, "sha256": "",
-                   "image": f"{str(raw['Config'].get('Image', 'imagem')).split(':')[0]}@{raw['Image']}",
-                   "note": "versão em execução antes da primeira implantação", "runtime": "", "scripts": [],
-                   "submitted_by": "", "submitted_by_id": ""})  # fmt: skip
-        d["deployments"].append(
-            d["deployments"].pop(d["deployments"].index(base))
-        )  # the oldest one stays last
-
-
-async def build_image(ops: OpsCtx, dep: Data, job_id: int, actor: str) -> None:  # noqa: PLR0915
-    """Builds the package's image (`build/**`) on the daemon, with a memory cap; the log goes to the job, to the logs console and
-    to the deployment record. The image of an already existing version (rollback, resubmission) is not rebuilt."""
-    tag, app_id = dep["image"], dep["app"]
-    if await ops.eng.has_image(tag) and dep.get("origin") == "Rollback":
-        return
-    if not dep.get("package"):
-        raise OpsError("Pacote da implantação não está mais no hub: reenvie-o.", 422)
-    files = pl.read_zip((ops.data_dir / "packages" / dep["package"]).read_bytes())
-    spec = json.loads(files["runtime.json"]).get("build") or {}
-    lines: list[str] = []
-
-    def on_line(ln: str) -> None:
-        lines.append(ln[:300])
-        ops.log("INFO", app_id, actor, f"build · {ln[:300]}")
-
-        def up(j: dict[str, Any]) -> None:
-            j.update(build_log=lines[-200:], message=f"Construindo a imagem · {ln[:120]}")
-            if len(j.get("steps") or []) > 5:
-                j["steps"][5].update(state="running", detail=f"Construindo a imagem {tag} · {ln[:120]}")
-
-        ops.jobs.update(job_id, up)
-
-    ops.jobs.update(job_id, lambda j: j.update(progress=2, message=f"Construindo a imagem {tag}"))
-    tmp = ops.data_dir / "build" / f"{app_id}-{dep['id']}"
-    shutil.rmtree(tmp, ignore_errors=True)
-    try:
-        for n, b in pl.build_context(files, str(spec.get("dockerfile", "Dockerfile"))).items():
-            if n.startswith("build/"):
-                f = tmp / n.removeprefix("build/")
-                f.parent.mkdir(parents=True, exist_ok=True)
-                f.write_bytes(b)
-        mem = rt.memory_bytes(os.getenv("HUB_BUILD_MEMORY", "1Gi"))
-        await ops.eng.build(
-            str(tmp), tag, str(spec.get("dockerfile", "Dockerfile")), mem, on_line,
-            int(os.getenv("HUB_BUILD_CPUS", "2") or 0), float(os.getenv("HUB_BUILD_TIMEOUT_S", "900") or 0),
-        )  # fmt: skip
-    finally:
-        shutil.rmtree(tmp, ignore_errors=True)
-        async with ops.store.locked(True) as d:
-            m._find(d, dep["id"])["build_log"] = lines[-200:]
-    ops.log("INFO", app_id, actor, f"build concluído · {tag} ({len(lines)} linhas)")
-
-
-async def run_deploy(ops: OpsCtx, dep_id: int, job_id: int, actor: str) -> tuple[bool, str, Data]:  # noqa: PLR0915
-    """Blue/green of the `Implantando` (Deploying) deployment; returns (ok, message, record). The active one only leaves after the candidate is ready."""
-    dep = m._find(ops.store.read(), dep_id)
-    app_id, k, label = dep["app"], rollout_env(dep["env"]), dep["env"]
-    e = ops.registry.get(app_id)
-    err, res = "", {}
-
-    def phase(p: int, msg: str) -> None:
-        ops.jobs.update(job_id, lambda j: j.update(progress=p, message=msg))
-
-    if e is None:
-        err = "Aplicação não encontrada no registro."
-    else:
-        try:
-            await ensure_baseline(ops, app_id, k)
-            lim = rt.resources_of(e, ops.store.read()["limits"])
-            if dep.get("build"):
-                await build_image(ops, dep, job_id, actor)
-            res = await ops.rollout.apply(app_id, k, lim, dep["version"], dep["image"] or None, phase)
-        except OpsError as ex:
-            err = ex.message
-        except Exception as ex:
-            err = f"{type(ex).__name__}: {ex}"[:300]
-    async with ops.store.locked(True) as d:
-        dep = m._find(d, dep_id)
-        if err:
-            dep.update(status=m.FALHOU, note=err)
-        else:
-            for x in d["deployments"]:
-                if (
-                    x is not dep
-                    and x["app"] == app_id
-                    and x["env"] == dep["env"]
-                    and x["status"] == m.IMPLANTADO
-                ):
-                    x["status"] = m.SUBSTITUIDO
-            dep.update(status=m.IMPLANTADO, runtime=f"container {res['container']}", at=now_ms())
-        saved = dict(dep)
-    what = f"{ops.name_of(app_id)} {saved['version']} · {label}"
-    await ops.admin.audit(actor, "Implantação falhou" if err else "Versão implantada", f"{what}" + (f" · {err}" if err else ""),
-                      icon="alert" if err else "check", scope=app_id)  # fmt: skip
-    ops.log(
-        "ERROR" if err else "INFO",
-        app_id,
-        actor,
-        f"implantação {what}: {err or 'concluída (blue/green)'}",
-    )
-    if not err and k == "producao":
-        await ops.admin.cfg.clear_pending(app_id)
-    return (
-        (not err),
-        (f"Implantação falhou — {err}" if err else f"{what} implantada (blue/green, sem indisponibilidade)."),
-        saved,
-    )
 
 
 @router.post("/packages")
@@ -278,8 +50,8 @@ async def upload(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:
     actor = ops.actor_of(request)
     ops.log("INFO", "platform", actor, f"pacote {file_name} recebido ({-(-len(data) // 1024)} KB) · "
         f"{'Staging' if env == 'staging' else 'Produção'} · {origin}")  # fmt: skip
-    coro = run_import(ops, job["id"], data, env, origin, (commit or "—")[:12].lower(), file_name, actor,
-                      str(request.state.user["id"]), newapp.parse_config(str(form.get("config") or "")))  # fmt: skip
+    coro = run_import(ops, Upload(job["id"], data, env, origin, (commit or "—")[:12].lower(), file_name, actor,
+                                  str(request.state.user["id"]), newapp.parse_config(str(form.get("config") or "")) or {}))  # fmt: skip
     if request.query_params.get("wait") == "true":
         await coro
         return JSONResponse(job, status_code=201 if job["ok"] else 422)

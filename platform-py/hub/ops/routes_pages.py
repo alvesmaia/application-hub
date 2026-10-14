@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 from functools import partial
 from typing import Any
@@ -10,18 +9,18 @@ from typing import Any
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
-from hub.admin.config import injected_name
 from hub.admin.routes import relative
 from hub.admin.store import log_stamp
+from hub.ops import backups_view as bv
 from hub.ops import jobs as jb
 from hub.ops import model as m
 from hub.ops import pipeline as pl
 from hub.ops import runtime as rt
+from hub.ops import runtime_view as rv
 from hub.ops.devkit import mount_devkit
-from hub.ops.model import OpsError, now_ms
+from hub.ops.model import now_ms
 from hub.ops.opsctx import OpsCtx, br, ctx, tone
 from hub.ops.routes_runtime import list_tasks, runtime_state
-from hub.ops.schedule import local_label, normalize, timezone_of
 from hub.ux.pager import paginate
 from hub.ux.texts import page_response
 
@@ -135,106 +134,18 @@ async def deploys_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response
 
 
 @router.get("/admin/runtime", response_class=HTMLResponse)
-async def runtime_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:  # noqa: C901, PLR0915
+async def runtime_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:
     data, info, rows, host = await runtime_state(ops)
     podman = "runtime=podman" in request.url.query
     alloc_cpu, alloc_mem = rt.allocated(ops.registry.entries(), data["limits"])
     free_cpu, free_mem = host.available_cpu - alloc_cpu, host.available_mem_gib - alloc_mem
-
-    def seg(v: float, total: float, cls: str, lbl: str) -> tuple[str, str, str]:
-        return f"flex:{max(v / total, 0.0):.4f}", cls, lbl
-
-    cpu_segs = [seg(host.system_cpu, host.cpu, "ops-seg sys", "Sistema"), seg(host.platform_cpu, host.cpu, "ops-seg plat", "Plataforma"),
-                seg(alloc_cpu, host.cpu, "ops-seg apps", "Aplicações"), seg(free_cpu, host.cpu, "ops-seg free", "Livre")]  # fmt: skip
-    mem_segs = [seg(host.system_mem_gib, host.mem_gib, "ops-seg sys", "Sistema"), seg(host.platform_mem_gib, host.mem_gib, "ops-seg plat", "Plataforma"),
-                seg(alloc_mem, host.mem_gib, "ops-seg apps", "Aplicações"), seg(free_mem, host.mem_gib, "ops-seg free", "Livre")]  # fmt: skip
+    cpu_segs, mem_segs = rv.host_segments(host, alloc_cpu, alloc_mem)
     live = {x["name"]: x for x in info["live"]}
     raw = (await ops.admin.cfg.read())["env"]
-    view: list[dict[str, Any]] = []
-    platform_view: list[dict[str, Any]] = []
-    for r in rows:
-        lv = live.get(r["container"])
-        alert = None
-        if r["maintenance"]:
-            mt = r["maintenance"]
-            failed = mt["kind"] == "restauracao_falhou"
-            alert = ("Em manutenção (restauração falhou)" if failed else "Em manutenção (restauração)", mt.get("detail", ""),
-                     "Confira os dados, restaure o snapshot \"Pré-restauração\" ou outro backup e libere em Backups." if failed
-                     else "Implantação, aplicar, iniciar/reiniciar e backup voltam ao fim da restauração.")  # fmt: skip
-        running = bool(lv and lv["state"] == "running")
-        if alert:
-            state, status = "bad", alert[0]
-        elif lv and running:
-            state, status = "ok", "Em execução"
-        elif lv and lv["state"] in ("exited", "created"):
-            state, status = "off", "Parado"
-        elif lv:
-            state, status = "bad", f"Com problema ({lv['state']})"
-        else:
-            state, status = "off", "Não criado" if info["reachable"] else "Sem conexão"
-        mem_mib = r["memory_bytes"] / 1048576
-        cpu = (
-            f"{br(lv['cpu_used'], 2) if lv and lv['cpu_used'] is not None else '—'} / {br(r['cpu'], 2)} vCPU"
-        )
-        used = lv["mem_used"] / 1048576 if lv and lv["mem_used"] is not None else None
-        mem = f"{br(used, 0) if used is not None else '—'} / {br(mem_mib, 0)} MiB"
-        image = lv["image"] if lv else r["image"]
-        uptime = rt.uptime_of(lv["status"]) if lv else "—"
-        port = r["upstream"].rstrip("/").rsplit(":", 1)[-1]
-        port = port if port.isdigit() else "—"
-        hc = (lv or {}).get("host") or {}
-        facts = [("Contêiner", r["container"]), ("Aplicação", r["name"]), ("Ambiente", "Staging" if r["env"] == "staging" else "Produção"), ("Estado", status),
-                 ("Imagem", image), ("Tempo ativo", uptime), ("Porta interna", port), ("CPU", cpu), ("Memória", mem),
-                 ("Processos", f"{(lv or {}).get('pids') if lv and lv.get('pids') is not None else '—'} / {r['pids']}"),
-                 ("Rede isolada", hc.get("NetworkMode", ""))]  # fmt: skip
-        facts.append(("Arquivos somente leitura", "Sim" if hc.get("ReadonlyRootfs") else "Não"))
-        hard = [f"cap-drop {','.join(hc['CapDrop'])}"] if hc.get("CapDrop") else []
-        hard += hc.get("SecurityOpt") or []
-        if hard:
-            facts.append(("Privilégios mínimos", " · ".join(hard)))
-        facts.append(("Reinício automático", "Sim (o hub também religa em caso de queda)"))
-        if sv := r["supervision"]:
-            facts.append(
-                (
-                    "Supervisão",
-                    f"{sv['restarts']} religamento(s)"
-                    + (" · laço de quedas: parou de religar" if sv["loop"] else ""),
-                )
-            )
-        if r["restart_pending"]:
-            facts.append(("Reinício pendente", "Variáveis alteradas depois da criação do contêiner"))
-        vars_ = {injected_name(v): ("••••" if v.get("kind", "publica") != "publica" else v["value"])
-                 for v in raw if any(b["app"] == r["id"] and b["env"] == r["env"] for b in v["bindings"])}  # fmt: skip
-        view.append({
-            "id": r["id"], "name": r["name"], "env": r["env"], "staging": r["env"] == "staging", "container": r["container"], "image": image,
-            "state": state, "status": status, "cpu": cpu, "mem": mem, "mem_style": f"width:{min(max((used or 0) / mem_mib * 100, 0), 100):.0f}%",
-            "uptime": uptime, "port": port, "controls": lv is not None, "running": running,
-            "limits": json.dumps({"app": r["id"], "name": r["name"], "cpu": r["cpu"], "memory": r["memory"], "pids": r["pids"]}),
-            "pending": r["restart_pending"], "alert": alert, "facts": facts,
-            "vars_json": json.dumps(dict(sorted(vars_.items())), indent=2, ensure_ascii=False), "staging_href": f"/hub-env?to=staging&next=/apps/{r['id']}",
-        })  # fmt: skip
-    for x in sorted(info.get("platform", []), key=lambda z: z["name"]):
-        running = x["state"] == "running"
-        mem_l = (x["mem_limit"] or 0) / 1048576
-        used = x["mem_used"] / 1048576 if x["mem_used"] is not None else None
-        cpu = f"{br(x['cpu_used'], 2)} vCPU" if x["cpu_used"] is not None else "—"
-        mem = f"{br(used, 0)} MiB" if used is not None else "—"
-        status = "Em execução" if running else ("Parado" if x["state"] in ("exited", "created") else f"Com problema ({x['state']})")  # fmt: skip
-        up = rt.uptime_of(x["status"])
-        platform_view.append({
-            "id": x["name"], "name": "Plataforma", "env": "platform", "container": x["name"], "image": x["image"],
-            "state": "ok" if running else "off", "status": status, "cpu": cpu, "mem": mem,
-            "mem_style": f"width:{min(max((used or 0) / mem_l * 100, 0), 100) if mem_l else 0:.0f}%",
-            "uptime": up, "port": "—", "vars_json": "{}",
-            "facts": [("Contêiner", x["name"]), ("Grupo", "Plataforma (somente leitura)"), ("Estado", status),
-                      ("Imagem", x["image"]), ("Tempo ativo", up), ("CPU", cpu), ("Memória", mem),
-                      ("Rede", (x.get("host") or {}).get("NetworkMode", ""))],
-        })  # fmt: skip
-    sock = (
-        "/run/podman/podman.sock"
-        if podman
-        else (info["socket"] if os.getenv("HUB_CONTAINER_SOCKET") else "/var/run/docker.sock")
-    )
+    view = [rv.container_view(r, live.get(r["container"]), raw, info["reachable"]) for r in rows]
+    platform_view = [rv.platform_view(x) for x in sorted(info.get("platform", []), key=lambda z: z["name"])]
+    default_sock = info["socket"] if os.getenv("HUB_CONTAINER_SOCKET") else "/var/run/docker.sock"
+    sock = "/run/podman/podman.sock" if podman else default_sock
     return render(ops,
         request, "ops_runtime.html", "Aplicações", "Containers", "Cada aplicação roda isolada, com limites próprios de CPU e memória.",
         rows=view, platform_rows=platform_view, banner=None if info["reachable"] else f"Runtime indisponível — exibindo especificação. ({info['error']})",
@@ -292,64 +203,19 @@ async def tasks_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:
 
 
 @router.get("/admin/backups", response_class=HTMLResponse)
-async def backups_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:  # noqa: PLR0915
+async def backups_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:
     d, now = ops.store.read(), now_ms()
     tz_name = os.getenv("HUB_BACKUP_TZ", "America/Sao_Paulo")
-    policies = []
-    for p in d["policies"]:
-        if ops.registry.get(p["app"]) is None:
-            continue
-        try:
-            manual = normalize(p["schedule"]) is None
-        except OpsError:
-            manual = False  # invalid schedule: the error appears on the environment's row
-        runs = []
-        for env in p["envs"]:
-            lbl = "staging" if env == "staging" else "produção"
-            st = d["schedules"].get(f"{p['app']}|{env}")
-            last = (
-                f" · último: {st['last_status']} ({relative(st['last_at'], now)})"
-                if st and st.get("last_status")
-                else ""
-            )
-            runs.append(f"{lbl}: manual" if manual else
-                        f"{lbl}: agenda inválida — {st['error']}" if st and st.get("error") else
-                        f"{lbl}: próximo {local_label(st['next_due'], timezone_of(p.get('tz', '')))}{last}" if st and st.get("next_due") else
-                        f"{lbl}: aguardando o agendador")  # fmt: skip
-        policies.append({"app": p["app"], "name": ops.name_of(p["app"]), "schedule": p["schedule"], "retention": f"últimos {p['keep']}",
-                         "volumes": p["volumes"], "hooks": p["hooks"], "destination": p["destination"], "item": json.dumps(p, ensure_ascii=False),
-                         "staging": False, "runs": runs})  # fmt: skip
-    hist = []
-    for b in d["backups"]:
-        sfx = " (staging)" if (b.get("env") or "producao") == "staging" else ""
-        detail = b.get("detail") or (
-            f"sha256 {b['sha256']} · {b['files']} arquivos" if b.get("sha256") else ""
-        )
-        hist.append({"id": b["id"], "app": ops.name_of(b["app"]) + sfx, "kind": b["kind"], "size": m.human(b["size"]) if b["size"] else "—",
-                     "status": b["status"], "status_class": tone(b["status"]), "when": relative(b["at"], now), "detail": detail,
-                     "usable": b["status"] == "Concluído" and bool(b.get("file"))})  # fmt: skip
-    last = next((b for b in d["backups"] if b["kind"] == "Teste de restore"), None)
-    if last:
-        ok = last["status"] == "Concluído"
-        tv, tc = (
-            relative(last["at"], now),
-            f"{ops.name_of(last['app'])} · {'OK' if ok else 'falhou'} em {br(last['duration_ms'] / 1000, 1)} s",
-        )
-        tcls = "metric-change" if ok else "metric-change down"
-    else:
-        tv, tc, tcls = "Nunca", "Faça um teste de restauração a partir do histórico", "metric-change"
+    policies = [
+        bv.policy_row(p, d["schedules"], ops.name_of, now)
+        for p in d["policies"]
+        if ops.registry.get(p["app"])
+    ]
+    hist = [bv.history_row(b, ops.name_of, now) for b in d["backups"]]
+    tv, tc, tcls = bv.restore_test_metric(d["backups"], ops.name_of, now)
     kept = [b for b in d["backups"] if b.get("file") and b["status"] == "Concluído"]
     fails = [b for b in d["backups"] if b["status"] == "Falhou" and now - b["at"] < 86_400_000]
-    maint = []
-    for k, mt in d["maintenance"].items():
-        a, env = k.split("|", 1)
-        lbl = (
-            "Em manutenção (restauração falhou)"
-            if mt["kind"] == "restauracao_falhou"
-            else "Em manutenção (restauração)"
-        )
-        maint.append({"app": a, "env": env, "name": ops.name_of(a) + (" (staging)" if env == "staging" else ""),
-                      "detail": f"{lbl} — {mt.get('detail', '')}", "failed": mt["kind"] == "restauracao_falhou" or a not in ops.jobs.busy})  # fmt: skip
+    maint = bv.maintenance_rows(d["maintenance"], ops.name_of, ops.jobs.busy)
     return render(ops,
         request, "ops_backups.html", "Operação", "Backups e snapshots",
         "Cópias de segurança dos dados e arquivos de cada aplicação, com restauração e teste de restauração.", tab="Backups",
