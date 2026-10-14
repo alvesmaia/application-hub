@@ -32,7 +32,8 @@
 - ✅ 7 · CLI and scripts: 9 noqa
   - ✅ agent E: 9/9 noqa removed (CLI 36 passed, scripts 7 passed)
 - ▶️ 8 · Shell JS: hub-device.js, hub-ux.js, hub-kit.js, hub.js, ops.js
-  - ▶️ agent F (worktree)
+  - ✅ agent F: 5 files split into 15 (all < 500), baseline −5; pytest assets/CSP 173 passed
+  - ⬜ browser E2E + ui-sweep after all merges (risks: load order, SW precache, Coletor camera/offline)
 
 ## Closing
 - ⬜ 9 · Tighten limits (20 statements, complexity 8), empty baseline, heavy validation, CHANGELOG
