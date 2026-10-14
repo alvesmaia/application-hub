@@ -3,7 +3,6 @@
   "platform-py/hub/admin/config.py": 614,
   "platform-py/hub/admin/routes.py": 622,
   "platform-py/hub/api/mcp.py": 654,
-  "platform-py/hub/api/oauth.py": 1168,
   "platform-py/hub/api/v1.py": 605,
   "platform-py/hub/app.py": 1119,
   "platform-py/hub/auth/__init__.py": 716,

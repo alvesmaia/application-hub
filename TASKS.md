@@ -20,6 +20,10 @@
   - ✅ OpsCtx is a class with the helpers; mount_ops only wires (79 lines); pattern in AGENTS.md
   - ✅ pytest 494 passed, E2E 06-ops/29 7/7
 - ▶️ 4 · Split the other large hub files (oauth.py, app.py, 15 files 500–720) and clear the hub noqa (69)
+  - ✅ oauth.py 1168 → oauth_{util,base,clients,authorize,tokens}.py + oauth.py (all < 300); pytest 494, E2E 13 2/2
+  - ⬜ app.py (1119)
+  - ⬜ 15 files 500–720
+  - ⬜ hub function noqa
 
 ## SDK, apps, CLI, JS
 - ⬜ 5 · SDK Python: jobs.py, storage.py, idempotency.py, dashboards.py + 17 noqa

@@ -15,6 +15,7 @@ from api_helper import add_user, api_hub, bearer, make_token, rpc
 from fastapi.testclient import TestClient
 
 from hub.api import oauth as oa
+from hub.api.oauth_util import ip_public
 
 ISS = "http://testserver"
 CB = "http://localhost:7777/cb"
@@ -444,7 +445,7 @@ def test_client_metadata_document_never_reaches_internal_addresses(hub: TestClie
                 "https://client.example/"):  # fmt: skip
         r = hub.get("/oauth/authorize?" + authz_query(url, ch))
         assert r.status_code == 400 and "Cliente inválido" in r.text, url
-    assert oa.ip_public(__import__("ipaddress").ip_address("93.184.216.34"))
+    assert ip_public(__import__("ipaddress").ip_address("93.184.216.34"))
     for ip in (
         "10.0.0.1",
         "127.0.0.1",
@@ -455,7 +456,7 @@ def test_client_metadata_document_never_reaches_internal_addresses(hub: TestClie
         "fc00::1",
         "::ffff:10.0.0.1",
     ):
-        assert not oa.ip_public(__import__("ipaddress").ip_address(ip)), ip
+        assert not ip_public(__import__("ipaddress").ip_address(ip)), ip
 
 
 # ---- revocation and screens ----
