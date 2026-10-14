@@ -394,6 +394,7 @@
     if ((el.hasAttribute('data-hub-get') || el.hasAttribute('data-hub-post')) && wants(el, 'change')) request(el);
   });
 
+  P.mount = mount; // hub-kit.js (insert, modals) calls mount through P: it loads before this file
   window.HubKit = Object.freeze({ mount, toast, insert, confirm: confirmDialog, pure: Pure });
   delete window.__hubKitParts;
 })();
