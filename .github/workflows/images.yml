@@ -1,5 +1,5 @@
-# Publica as imagens no GitHub Container Registry (ghcr.io/<dono>/app-hub-*:<versão> e :latest).
-# MANUAL: só roda por "Run workflow" (workflow_dispatch) — sem gatilho de push/tag. Ver docs/IMPLANTACAO.md ("Imagens prontas (GHCR)").
+# Publishes the images to the GitHub Container Registry (ghcr.io/<owner>/app-hub-*:<version> and :latest).
+# MANUAL: runs only via "Run workflow" (workflow_dispatch) - no push/tag trigger. See docs/IMPLANTACAO.md ("Imagens prontas (GHCR)").
 name: images
 
 on:

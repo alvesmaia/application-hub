@@ -21,16 +21,16 @@ __pycache__/
 /platform/dist/
 /platform/.ci-local.lock/
 
-# Estado local do Claude Code
+# Local Claude Code state
 .claude/
 
-# Relatórios do CI local (efêmeros; os resultados de referência ficam em RESULTADOS.md)
+# Local CI reports (ephemeral; reference results live in RESULTADOS.md)
 /platform/loadtest/results/*/ci-local-*.md
 /platform/tests-e2e/test-results/
 /platform/tests-e2e/playwright-report/
 *.stackdump
 .tunnel/
 
-# Segredos locais do compose (ex.: COLETOR_ATIVOS_TOKEN)
+# Local compose secrets (e.g. COLETOR_ATIVOS_TOKEN)
 /platform/.env
 /platform/.dev.env

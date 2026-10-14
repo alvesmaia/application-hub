@@ -1,8 +1,8 @@
-# OpenTelemetry Collector do perfil `observability` (opcional; ver platform/README.md).
-# Recebe OTLP/HTTP do hub-web (traces do hub e dos apps, coletados pelo hub; métricas
-# RED cumulativas), manda os traces ao Jaeger e expõe as métricas em formato
-# Prometheus (:8889/metrics) para quem quiser raspar. Memória limitada (memory_limiter)
-# para caber no orçamento da VM de destino.
+# OpenTelemetry Collector for the `observability` profile (optional; see platform/README.md).
+# Receives OTLP/HTTP from hub-web (traces from the hub and the apps, collected by the hub; cumulative
+# RED metrics), sends the traces to Jaeger and exposes the metrics in
+# Prometheus format (:8889/metrics) for anyone who wants to scrape them. Memory limited (memory_limiter)
+# to fit the target VM's budget.
 receivers:
   otlp:
     protocols:

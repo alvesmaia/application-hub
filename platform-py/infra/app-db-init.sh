@@ -1,6 +1,6 @@
 #!/bin/sh
-# Um banco por app no Postgres dos apps : o `hub_outbox`, as migrações do hub-sdk e os dados
-# de um app nunca se misturam com os de outro. Só roda em volume novo; num volume existente crie à mão:
+# One database per app in the apps' Postgres: `hub_outbox`, the hub-sdk migrations and the data
+# of one app never mix with another's. It only runs on a new volume; on an existing volume create them by hand:
 #   for d in ativos fornecedores servicos coletor; do docker exec app-hub-app-db createdb -U hub $d; done
 set -e
 for d in ativos fornecedores servicos coletor; do

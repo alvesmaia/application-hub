@@ -1,8 +1,8 @@
-# Usa as imagens publicadas no GHCR (workflow manual .github/workflows/images.yml) em vez de compilar:
+# Uses the images published to GHCR (manual workflow .github/workflows/images.yml) instead of building:
 #   HUB_REGISTRY=ghcr.io/alvesmaia HUB_VERSION=0.2.0 \
 #   docker compose --env-file .prod.env -f docker-compose.yml -f docker-compose.apps.yml -f docker-compose.prod.yml \
 #     -f docker-compose.ghcr.yml pull && … up -d
-# Sem `build` aqui: `up --build` com este arquivo ainda compilaria; use `pull` + `up -d`.
+# No `build` here: `up --build` with this file would still build; use `pull` + `up -d`.
 services:
   app-hub-web:
     image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-web:${HUB_VERSION:?defina HUB_VERSION}

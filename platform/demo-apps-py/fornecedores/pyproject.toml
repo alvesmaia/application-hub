@@ -6,9 +6,9 @@ build-backend = "setuptools.build_meta"
 name = "fornecedores"
 version = "1.9.0"
 license = "Apache-2.0"
-description = "Rede de Fornecedores — app de demonstração em Python/FastAPI (hub-sdk-python)."
+description = "Supplier Network — demo app in Python/FastAPI (hub-sdk-python)."
 requires-python = ">=3.11"
-# Fixadas: mesmas versões na imagem, no CI e no hub dev.
+# Pinned: same versions in the image, in CI and in the hub dev.
 dependencies = [
   "hub-sdk==0.2.0",
   "uvicorn==0.54.0",

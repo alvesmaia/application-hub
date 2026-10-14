@@ -1,13 +1,13 @@
-# Borda do hub (app-hub-edge): única dona da HUB_PORT. Repassa para o hub (`app-hub-web`) e, durante uma
-# atualização sem parada (scripts/hub-update.sh), também para `app-hub-web-next`: só quem responde ao /healthz
-# recebe tráfego, e uma conexão recusada é tentada de novo na outra cópia (nenhum pedido se perde na troca).
+# Hub edge (app-hub-edge): sole owner of HUB_PORT. Forwards to the hub (`app-hub-web`) and, during an
+# zero-downtime update (scripts/hub-update.sh), also to `app-hub-web-next`: only the instance that answers /healthz
+# receives traffic, and a refused connection is retried on the other copy (no request is lost in the switch).
 {
 	admin off
 	log {
-		level WARN # a sonda do app-hub-web-next (ausente fora das atualizações) não polui o log
+		level WARN # the app-hub-web-next probe (absent outside updates) does not pollute the log
 	}
 	servers {
-		# cloudflared/proxies na frente chegam por IP privado: os X-Forwarded-* deles seguem até o hub
+		# cloudflared/proxies in front arrive from a private IP: their X-Forwarded-* headers reach the hub
 		trusted_proxies static private_ranges
 	}
 }

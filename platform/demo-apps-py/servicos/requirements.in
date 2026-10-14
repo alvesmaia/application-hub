@@ -1,7 +1,7 @@
-# Dependências de terceiros da imagem hub-servicos (hub-sdk-python + app servicos) e as de
-# build dos dois pacotes locais. Fonte do requirements.lock (com hashes) — ver "Atualizar
-# dependências Python" no platform/README.md. Sem openpyxl/calamine: o app não lê nem escreve
-# planilhas.
+# Third-party dependencies of the hub-servicos image (hub-sdk-python + servicos app) and the
+# build dependencies of the two local packages. Source for requirements.lock (with hashes) — see "Atualizar
+# dependências Python" in platform/README.md. No openpyxl/calamine: the app neither reads nor writes
+# spreadsheets.
 fastapi==0.141.1
 starlette==1.7.0
 asyncpg==0.31.0

@@ -1,9 +1,9 @@
-# Linter do OpenAPI (ci-local, etapa openapi-lint). Base "recommended" do Redocly;
-# as exceções abaixo são decisões do projeto, não esquecimentos.
+# OpenAPI linter (ci-local, openapi-lint step). Redocly "recommended" base;
+# the exceptions below are project decisions, not oversights.
 extends:
   - recommended
 rules:
-  info-license: off            # API interna, sem licença pública
+  info-license: off            # internal API, no public license
   no-server-example.com: error
   operation-4xx-response: error
   operation-operationId-unique: error

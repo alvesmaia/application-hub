@@ -1,8 +1,8 @@
-# Overlay do modo de desenvolvimento (só via scripts/dev.sh; o hub recusa HUB_DEV_MODE=1 com config de produção).
-# Código do disco com uvicorn --reload, assets sem cache, recarga ao vivo opcional (SSE /_dev/reload) e URL do túnel.
+# Development-mode overlay (only via scripts/dev.sh; the hub refuses HUB_DEV_MODE=1 with production config).
+# Code from disk with uvicorn --reload, uncached assets, optional live reload (SSE /_dev/reload) and tunnel URL.
 services:
   app-hub-web:
-    volumes: # só no dev: código e assets do disco (a imagem de produção é selada, sem montagens de código)
+    volumes: # dev only: code and assets from disk (the production image is sealed, with no code mounts)
       - ./hub:/app/hub:ro
       - ../platform:/platform:ro
     command: ["uvicorn", "hub.main:app", "--host", "0.0.0.0", "--port", "8090", "--reload", "--reload-dir", "/app/hub"]

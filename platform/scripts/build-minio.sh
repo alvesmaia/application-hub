@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Compila MinIO e mc do código-fonte oficial (ver infra/minio/Dockerfile) e imprime as
-# variáveis para o compose usar essas imagens em vez dos digests do quay.io (que deixaram
-# de ser públicos).
+# Builds MinIO and mc from the official source (see infra/minio/Dockerfile) and prints the
+# variables for compose to use these images instead of the quay.io digests (which stopped
+# being public).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 MINIO_VERSION="${MINIO_VERSION:-RELEASE.2025-09-07T16-13-09Z}"

@@ -1,7 +1,7 @@
-# Overlay de PRODUÇÃO — use sempre com --env-file .prod.env (gitignored; modelo em prod.env.example):
+# PRODUCTION overlay - always use with --env-file .prod.env (gitignored; template in prod.env.example):
 #   docker compose --env-file .prod.env -f docker-compose.yml -f docker-compose.apps.yml -f docker-compose.prod.yml up -d
-# Sem contas demo (HUB_DEMO_USERS não existe), sem rotas de teste dos apps, variáveis obrigatórias
-# (o compose recusa subir se faltar), cookie Secure e semente de variáveis sem a variável de teste.
+# No demo accounts (HUB_DEMO_USERS does not exist), no app test routes, required variables
+# (compose refuses to start if one is missing), Secure cookie and variable seeding without the test variable.
 # Compose >= 2.24 (!override / !reset).
 services:
   app-hub-web:
@@ -12,12 +12,12 @@ services:
       HUB_PUBLIC_URL: ${HUB_PUBLIC_URL:?https://hub.exemplo.com.br}
       HUB_PUBLIC_DOCS: ${HUB_PUBLIC_DOCS:-1}
       HUB_COOKIE_SECURE: "1"
-      HUB_MASTER_KEY_FILE: ${HUB_MASTER_KEY_FILE:-/data/master.key} # falha ao subir se o arquivo faltar (nunca gera chave nova em silêncio)
+      HUB_MASTER_KEY_FILE: ${HUB_MASTER_KEY_FILE:-/data/master.key} # fails to start if the file is missing (never silently generates a new key)
       HUB_DB_URL: postgresql://hub:${APP_HUB_DB_PASSWORD:?}@app-hub-db:5432/hub
       HUB_STATE_DB_URL: postgresql://hub:${APP_HUB_DB_PASSWORD:?}@app-hub-db:5432/hub
       HUB_S3_ADMIN_URL: http://hubadmin:${APP_HUB_OBJSTORE_PASSWORD:?}@app-hub-objstore:9000
       HUB_APP_ENV_FILE: /config/app-env.prod.json
-      # Âncora externa da auditoria (F19): cabeça assinada fora do volume de dados (outro disco/NFS em produção).
+      # External audit anchor (F19): signed head kept outside the data volume (another disk/NFS in production).
       HUB_AUDIT_HEAD_FILE: /audit-head/head.jsonl
       HUB_BUILD_CPUS: ${HUB_BUILD_CPUS:-2}
       HUB_BUILD_TIMEOUT_S: ${HUB_BUILD_TIMEOUT_S:-900}

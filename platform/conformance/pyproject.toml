@@ -1,4 +1,4 @@
-# Configuração das ferramentas da suíte de conformidade (dependências: requirements.txt).
+# Tool configuration for the conformance suite (dependencies: requirements.txt).
 [tool.ruff]
 line-length = 110
 target-version = "py311"

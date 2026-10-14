@@ -1,4 +1,4 @@
-# Executado dentro de containers Linux: sempre LF, mesmo com core.autocrlf=true.
+# Runs inside Linux containers: always LF, even with core.autocrlf=true.
 platform-py/scripts/build-cli.sh text eol=lf
-# Scripts executados em contêineres/Linux: sempre LF.
+# Scripts run in Linux containers: always LF.
 *.sh text eol=lf

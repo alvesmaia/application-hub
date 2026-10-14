@@ -1,88 +1,88 @@
-# Configuração do Application Hub (onda 11) — copie para config/hub.toml ou aponte
-# HUB_CONFIG_FILE para o arquivo. Todos os valores abaixo são os PADRÕES: um arquivo
-# vazio (ou nenhum arquivo) dá exatamente este comportamento.
+# Application Hub configuration (wave 11) — copy to config/hub.toml or point
+# HUB_CONFIG_FILE at the file. All values below are the DEFAULTS: an empty file
+# (or no file) gives exactly this behavior.
 #
-# Variáveis de ambiente sobrescrevem o arquivo:
+# Environment variables override the file:
 #   HUB_API_ENABLED, HUB_API_DOCS_ENABLED, HUB_API_RATE_PER_MIN,
 #   HUB_MCP_ENABLED, HUB_MCP_PATH, HUB_MCP_TRANSPORTS (ex.: "http,stdio"),
 #   HUB_MCP_DESTRUCTIVE_ACTIONS (confirm|deny), HUB_MCP_EXPOSE_APP_TOOLS,
 #   HUB_MCP_CALLS_PER_MIN, HUB_MCP_TOOL_TIMEOUT_S, HUB_MCP_MAX_RESULT_KB,
 #   HUB_MCP_CONFIRM_TTL_S, HUB_APPS_ALLOW_WITHOUT_API
-# Chave desconhecida, tipo errado ou valor fora da faixa => o hub NÃO sobe (erro claro).
+# Unknown key, wrong type or out-of-range value => the hub does NOT start (clear error).
 
 [api]
-# Superfície pública versionada /api/v1 (+ /api/v1/openapi.json e /api/docs).
-# A interface web usa as rotas internas /api/* e continua funcionando sempre:
-# enabled = false só faz /api/v1, o OpenAPI e a documentação responderem 404.
+# Versioned public surface /api/v1 (+ /api/v1/openapi.json and /api/docs).
+# The web UI uses the internal /api/* routes and always keeps working:
+# enabled = false only makes /api/v1, the OpenAPI and the docs return 404.
 enabled = true
-# Requisições por minuto por usuário — todos os tokens do mesmo dono (e a sessão)
-# dividem a cota; token de CI (sem dono) tem a própria (429 + Retry-After acima disso).
+# Requests per minute per user — all tokens of the same owner (and the session)
+# share the quota; a CI token (no owner) has its own (429 + Retry-After above that).
 rate_per_min = 600
-# Paginação: tamanho padrão e máximo de ?limit=.
+# Pagination: default and maximum ?limit= size.
 page_size = 50
 max_page_size = 500
 
 [api.docs]
-# Página /api/docs (exige login) e o documento OpenAPI 3.1.
+# /api/docs page (login required) and the OpenAPI 3.1 document.
 enabled = true
 
 [mcp]
-# Servidor MCP (Model Context Protocol) do hub para clientes de IA; só aceita
-# Authorization: Bearer (token com escopo mcp). As ferramentas DO HUB são a mesma
-# superfície de /api/v1: com [api].enabled = false elas somem (ficam só as dos apps,
-# se expose_app_tools).
+# Hub MCP (Model Context Protocol) server for AI clients; only accepts
+# Authorization: Bearer (token with the mcp scope). The HUB tools are the same
+# surface as /api/v1: with [api].enabled = false they disappear (only the apps' ones remain,
+# if expose_app_tools).
 enabled = true
-# "http" = Streamable HTTP em `path`; "stdio" = o `hub mcp` da CLI (proxy que fala
-# com o hub por HTTP; exige "http").
+# "http" = Streamable HTTP at `path`; "stdio" = the CLI's `hub mcp` (a proxy that talks
+# to the hub over HTTP; requires "http").
 transports = ["http", "stdio"]
 path = "/mcp"
-# Ferramentas que alteram/removem algo (deploy, rollback, backup, cancelar tarefa e
-# TODA mutação POST/PUT/PATCH/DELETE dos apps, salvo mcp.confirm_exempt no manifesto):
-#   "confirm" = (padrão) a 1ª chamada devolve um confirm_token e a 2ª, com ele, executa.
-#               ATENÇÃO: depende da confirmação do cliente de IA (ex.: o Claude Code pergunta
-#               antes de cada ferramenta) — o próprio modelo consegue reenviar o token;
-#   "deny"    = essas ferramentas nem aparecem.
+# Tools that change/remove something (deploy, rollback, backup, cancel task and
+# ALL POST/PUT/PATCH/DELETE mutations of the apps, unless mcp.confirm_exempt in the manifest):
+#   "confirm" = (default) the 1st call returns a confirm_token and the 2nd, with it, executes.
+#               WARNING: depends on the AI client's confirmation (e.g. Claude Code asks
+#               before each tool) — the model itself can resend the token;
+#   "deny"    = these tools do not appear at all.
 destructive_actions = "confirm"
-# Agrega as ferramentas MCP dos apps como <app>.<ferramenta> (chamadas pelo hub, em
-# nome do usuário, pela rede interna — os apps nunca são alcançados diretamente).
+# Aggregates the apps' MCP tools as <app>.<tool> (called by the hub, on the
+# user's behalf, over the internal network — the apps are never reached directly).
 expose_app_tools = true
-# Onda 12: /mcp, /.well-known/* e /oauth/* fora de HUB_ADMIN_ALLOWED_CIDRS (cliente de IA
-# na nuvem, ex.: Langdock SaaS, alcança o hub pela internet). /api e /admin seguem
-# restritos. Env: HUB_MCP_PUBLIC_NETWORK.
+# Wave 12: /mcp, /.well-known/* and /oauth/* outside HUB_ADMIN_ALLOWED_CIDRS (AI client
+# in the cloud, e.g. Langdock SaaS, reaches the hub over the internet). /api and /admin remain
+# restricted. Env: HUB_MCP_PUBLIC_NETWORK.
 public_network = false
 
 [mcp.limits]
-calls_per_min = 120      # chamadas de ferramenta por minuto por usuário (tokens do mesmo dono dividem)
-tool_timeout_s = 30      # tempo máximo de uma ferramenta
-max_result_kb = 256      # resultado maior é truncado
-logs_tail_max = 200      # linhas máximas de logs_tail
-confirm_ttl_s = 300      # validade do confirm_token
-max_request_kb = 256     # corpo máximo de uma mensagem JSON-RPC
+calls_per_min = 120      # tool calls per minute per user (tokens of the same owner share it)
+tool_timeout_s = 30      # maximum time of a tool call
+max_result_kb = 256      # larger results are truncated
+logs_tail_max = 200      # maximum lines of logs_tail
+confirm_ttl_s = 300      # confirm_token lifetime
+max_request_kb = 256     # maximum body of a JSON-RPC message
 
 [mcp.oauth]
-# O hub como servidor de autorização OAuth 2.1 (PKCE S256 obrigatório) e servidor de
-# recurso do /mcp, para clientes MCP remotos (ex.: Langdock). Descoberta:
+# The hub as an OAuth 2.1 authorization server (PKCE S256 required) and resource server
+# for /mcp, for remote MCP clients (e.g. Langdock). Discovery:
 # /.well-known/oauth-protected-resource/mcp e /.well-known/oauth-authorization-server.
-# O endereço público (emissor e "resource") vem de HUB_PUBLIC_URL — defina em produção.
-# Tokens pessoais (Authorization: Bearer hubt_…) continuam valendo no /mcp.
+# The public address (issuer and "resource") comes from HUB_PUBLIC_URL — set it in production.
+# Personal tokens (Authorization: Bearer hubt_…) remain valid on /mcp.
 enabled = true
-# Registro dinâmico de clientes (POST /oauth/register, RFC 7591) — o Langdock usa.
+# Dynamic client registration (POST /oauth/register, RFC 7591) — Langdock uses it.
 dynamic_registration = true
-# client_id = URL HTTPS de um Client ID Metadata Document (buscado pelo hub; só
-# endereços públicos).
+# client_id = HTTPS URL of a Client ID Metadata Document (fetched by the hub; only
+# public addresses).
 client_metadata_documents = true
-# Hosts aceitos nas redirect_uri (vazio = qualquer host HTTPS; localhost/127.0.0.1
-# sempre aceitos, com http). Ex.: ["app.langdock.com"]. Env: HUB_MCP_OAUTH_ALLOWED_REDIRECT_HOSTS.
+# Hosts accepted in redirect_uri (empty = any HTTPS host; localhost/127.0.0.1
+# always accepted, with http). E.g.: ["app.langdock.com"]. Env: HUB_MCP_OAUTH_ALLOWED_REDIRECT_HOSTS.
 allowed_redirect_hosts = []
-# Escopos que um cliente OAuth pode receber (o token age como o usuário, com as mesmas
-# permissões da interface; estes escopos só limitam): "mcp" = ferramentas de leitura;
-# "api:write" = ferramentas que alteram algo. Tirar "api:write" = agentes só leem.
+# Scopes an OAuth client may receive (the token acts as the user, with the same
+# UI permissions; these scopes only restrict): "mcp" = read tools;
+# "api:write" = tools that change something. Removing "api:write" = agents are read-only.
 allowed_scopes = ["mcp", "api:write"]
-access_token_ttl_s = 3600    # token de acesso (amarrado ao resource = <HUB_PUBLIC_URL>/mcp)
-refresh_token_ttl_days = 30  # refresh token (rotação a cada uso; reuso revoga a concessão)
-code_ttl_s = 120             # código de autorização (uso único)
+access_token_ttl_s = 3600    # access token (bound to resource = <HUB_PUBLIC_URL>/mcp)
+refresh_token_ttl_days = 30  # refresh token (rotated on each use; reuse revokes the grant)
+code_ttl_s = 120             # authorization code (single use)
 
 [apps]
-# Regra: todo app expõe API (manifesto api.enabled = true, padrão). true aceita
-# pacotes com api.enabled = false (exceção documentada; o pipeline avisa).
+# Rule: every app exposes an API (manifest api.enabled = true, default). true accepts
+# packages with api.enabled = false (documented exception; the pipeline warns).
 allow_without_api = false

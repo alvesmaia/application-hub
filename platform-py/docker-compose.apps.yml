@@ -1,7 +1,7 @@
-# Banco dos apps + os 4 apps de exemplo (ativos, fornecedores, servicos, coletor).
-# Os apps só sobem com o perfil `demo-apps` (COMPOSE_PROFILES=demo-apps ou --profile demo-apps); sem ele o hub e o
-# banco dos apps sobem sozinhos (use HUB_APPS_JSON=./apps.empty.json para um catálogo vazio).
-# Portas de depuração no host (HUB_APPDB_PORT, HUB_APP_PORT_<APP>) só em 127.0.0.1.
+# Apps database + the 4 sample apps (ativos, fornecedores, servicos, coletor).
+# The apps only start with the `demo-apps` profile (COMPOSE_PROFILES=demo-apps or --profile demo-apps); without it the hub and the
+# apps database start on their own (use HUB_APPS_JSON=./apps.empty.json for an empty catalog).
+# Host debug ports (HUB_APPDB_PORT, HUB_APP_PORT_<APP>) bound to 127.0.0.1 only.
 services:
   app-hub-web:
     environment:
@@ -17,7 +17,7 @@ services:
   app-hub-app-db:
     image: postgres:16-alpine
     container_name: ${HUB_PROJECT:-app-hub}-app-db
-    mem_limit: 1g # = resources.memory dos manifestos e ao `app` do compose da versão anterior; 256m derrubava (OOM) a importação de 200 mil linhas
+    mem_limit: 1g # = resources.memory in the manifests and the `app` service of the previous compose version; 256m caused OOM on the 200k-row import
     restart: unless-stopped
     environment:
       POSTGRES_USER: hub
@@ -37,11 +37,11 @@ services:
       context: ../platform
       dockerfile: demo-apps-py/ativos/Dockerfile
     container_name: ${HUB_PROJECT:-app-hub}-app-ativos
-    mem_limit: 1g # = resources.memory dos manifestos e ao `app` do compose da versão anterior; 256m derrubava (OOM) a importação de 200 mil linhas
+    mem_limit: 1g # = resources.memory in the manifests and the `app` service of the previous compose version; 256m caused OOM on the 200k-row import
     restart: unless-stopped
     environment: &app-hub-app-env
-      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/ativos # um banco por app (ativos); os demais sobrescrevem
-      HUB_DEMO_E2E_HOSTILE: "1" # só testes: rotas do E2E anti-phishing (ativos/servicos); o compose de produção nunca liga
+      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/ativos # one database per app (ativos); the others override it
+      HUB_DEMO_E2E_HOSTILE: "1" # tests only: routes for the anti-phishing E2E (ativos/servicos); the production compose never enables it
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_ATIVOS:-hubpy-${APP_HUB_APP_TOKEN:-local}-ativos}
     depends_on: [app-hub-app-db]
     ports: ["127.0.0.1:${HUB_APP_PORT_ATIVOS:-9101}:8080"]
@@ -55,12 +55,12 @@ services:
       context: ../platform
       dockerfile: demo-apps-py/fornecedores/Dockerfile
     container_name: ${HUB_PROJECT:-app-hub}-app-fornecedores
-    mem_limit: 1g # = resources.memory dos manifestos e ao `app` do compose da versão anterior; 256m derrubava (OOM) a importação de 200 mil linhas
+    mem_limit: 1g # = resources.memory in the manifests and the `app` service of the previous compose version; 256m caused OOM on the 200k-row import
     restart: unless-stopped
     environment:
       <<: *app-hub-app-env
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_FORNECEDORES:-hubpy-${APP_HUB_APP_TOKEN:-local}-fornecedores}
-      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/fornecedores # um banco por app
+      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/fornecedores # one database per app
       HUB_S3_ENDPOINT_FORNECEDORES: http://app-hub-objstore:9000
       HUB_S3_BUCKET_FORNECEDORES: fornecedores
       HUB_S3_ACCESS_KEY_FORNECEDORES: hubadmin
@@ -77,12 +77,12 @@ services:
       context: ../platform
       dockerfile: demo-apps-py/servicos/Dockerfile
     container_name: ${HUB_PROJECT:-app-hub}-app-servicos
-    mem_limit: 1g # = resources.memory dos manifestos e ao `app` do compose da versão anterior; 256m derrubava (OOM) a importação de 200 mil linhas
+    mem_limit: 1g # = resources.memory in the manifests and the `app` service of the previous compose version; 256m caused OOM on the 200k-row import
     restart: unless-stopped
     environment:
       <<: *app-hub-app-env
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_SERVICOS:-hubpy-${APP_HUB_APP_TOKEN:-local}-servicos}
-      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/servicos # um banco por app
+      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/servicos # one database per app
     depends_on: [app-hub-app-db]
     ports: ["127.0.0.1:${HUB_APP_PORT_SERVICOS:-9103}:8080"]
     networks: [default, hub-app-servicos]
@@ -95,12 +95,12 @@ services:
       context: ../platform
       dockerfile: Dockerfile.coletor
     container_name: ${HUB_PROJECT:-app-hub}-app-coletor
-    mem_limit: 1g # = resources.memory dos manifestos e ao `app` do compose da versão anterior; 256m derrubava (OOM) a importação de 200 mil linhas
+    mem_limit: 1g # = resources.memory in the manifests and the `app` service of the previous compose version; 256m caused OOM on the 200k-row import
     restart: unless-stopped
     environment:
       <<: *app-hub-app-env
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_COLETOR:-hubpy-${APP_HUB_APP_TOKEN:-local}-coletor}
-      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/coletor # um banco por app
+      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/coletor # one database per app
     depends_on: [app-hub-app-db]
     ports: ["127.0.0.1:${HUB_APP_PORT_COLETOR:-9105}:8080"]
     networks: [default, hub-app-coletor]

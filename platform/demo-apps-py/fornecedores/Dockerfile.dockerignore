@@ -1,4 +1,4 @@
-# Contexto do hub-fornecedores: só o SDK Python, o app e os assets compartilhados.
+# Context for hub-fornecedores: only the Python SDK, the app and the shared assets.
 *
 !sdk-python/
 !demo-apps-py/fornecedores/

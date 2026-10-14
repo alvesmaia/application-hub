@@ -1,25 +1,25 @@
 #!/usr/bin/env bash
-# Gera os pacotes .hubapp de exemplo em platform/samples/ com o `hub pack` real,
-# a partir das pastas em platform/samples/src/<app>/ (manifest.json + ui/).
+# Generates the sample .hubapp packages in platform/samples/ with the real `hub pack`,
+# from the folders in platform/samples/src/<app>/ (manifest.json + ui/).
 #
-#   válidos:   ativos-2.5.0.hubapp, fornecedores-1.9.0.hubapp, servicos-3.2.0.hubapp,
+#   valid:      ativos-2.5.0.hubapp, fornecedores-1.9.0.hubapp, servicos-3.2.0.hubapp,
 #              contratos-1.1.0.hubapp, coletor-1.0.0.hubapp (Python/FastAPI)
-#   inválidos: invalido-segredo-ativos-2.5.1.hubapp        (ui/.env com token → Segurança)
-#              invalido-script-inline-fornecedores-1.9.1.hubapp (<script> inline → Front-end)
+#   invalid:    invalido-segredo-ativos-2.5.1.hubapp        (ui/.env with token → Segurança)
+#              invalido-script-inline-fornecedores-1.9.1.hubapp (inline <script> → Front-end)
 #
-# Imagem: cada pacote aponta para sua imagem Python própria (ex.: `hub-ativos`):
+# Image: each package points to its own Python image (e.g. `hub-ativos`):
 #
 #   hub-ativos@sha256:<Image ID>
 #
-# Um build local não tem RepoDigest de registro (só existe depois de push/pull);
-# por isso o digest usado é o Image ID (`docker image inspect -f '{{.Id}}'`). O
-# hub-runtime resolve os dois casos: primeiro `nome@sha256:…` como RepoDigest,
-# depois `sha256:…` como Image ID de uma imagem local do mesmo repositório.
-# Rode de novo depois de reconstruir a imagem Python do app.
+# A local build has no registry RepoDigest (it only exists after push/pull);
+# so the digest used is the Image ID (`docker image inspect -f '{{.Id}}'`). The
+# hub-runtime resolves both cases: first `name@sha256:…` as RepoDigest,
+# then `sha256:…` as the Image ID of a local image from the same repository.
+# Run again after rebuilding the app's Python image.
 #
-# Sem Docker (ou com HUB_SAMPLE_IMAGE=ghcr), usa referências determinísticas
-# `ghcr.io/org/<app>@sha256:<sha256 do id>`: o pipeline valida o formato, mas o
-# deploy no runtime falha (imagem inexistente) e restaura a versão anterior.
+# Without Docker (or with HUB_SAMPLE_IMAGE=ghcr), uses deterministic references
+# `ghcr.io/org/<app>@sha256:<sha256 of the id>`: the pipeline validates the format, but the
+# deploy at runtime fails (image does not exist) and the previous version is restored.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -44,13 +44,13 @@ for app in ativos fornecedores servicos coletor; do
   "$HUB" pack --dir "$SRC/$app" --image "$(image "$app")" --out "$OUT/$app-$version.hubapp"
 done
 
-# Inválido 1: arquivo de segredo dentro de ui/ (o `hub pack` inclui ui/**).
+# Invalid 1: secret file inside ui/ (`hub pack` includes ui/**).
 cp -r "$SRC/ativos" "$TMP/segredo"
 sed -i 's/"2.5.0"/"2.5.1"/' "$TMP/segredo/manifest.json"
 printf 'API_TOKEN=ghp_%s\n' "$(digest token | head -c 36)" > "$TMP/segredo/ui/.env"
 "$HUB" pack --dir "$TMP/segredo" --image "$(image ativos)" --out "$OUT/invalido-segredo-ativos-2.5.1.hubapp"
 
-# Inválido 2: script inline no fragmento (incompatível com a CSP).
+# Invalid 2: inline script in the fragment (incompatible with the CSP).
 cp -r "$SRC/fornecedores" "$TMP/inline"
 sed -i 's/"1.9.0"/"1.9.1"/' "$TMP/inline/manifest.json"
 printf '<section>\n  <script>document.title = "x"</script>\n</section>\n' > "$TMP/inline/ui/index.html"

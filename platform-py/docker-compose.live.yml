@@ -1,9 +1,9 @@
-# Modo "ao vivo" para a instância do dono: a configuração de produção (.prod.env + docker-compose.prod.yml)
-# com código, templates, assets e docs lidos do disco e recarga automática. Sem HUB_DEV_MODE (não recarrega
-# contas demo nem expõe /_dev). Uso:
+# "Live" mode for the owner's instance: the production config (.prod.env + docker-compose.prod.yml)
+# with code, templates, assets and docs read from disk and automatic reload. No HUB_DEV_MODE (it does not reload
+# demo accounts nor expose /_dev). Usage:
 #   docker compose --env-file .prod.env -f docker-compose.yml -f docker-compose.apps.yml \
 #     -f docker-compose.prod.yml -f docker-compose.live.yml up -d --no-deps app-hub-web
-# Voltar à imagem selada: o mesmo comando sem `-f docker-compose.live.yml`.
+# To go back to the sealed image: the same command without `-f docker-compose.live.yml`.
 services:
   app-hub-web:
     command: ["uvicorn", "hub.main:app", "--host", "0.0.0.0", "--port", "8090", "--reload", "--reload-dir", "/app/hub"]

@@ -1,4 +1,4 @@
-# Contexto do hub-coletor: só o SDK Python, o app e os assets compartilhados.
+# hub-coletor context: only the Python SDK, the app and the shared assets.
 *
 !sdk-python/
 !demo-apps-py/coletor/

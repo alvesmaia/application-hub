@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# Exemplo genérico: ambiente dev público por um Cloudflare Tunnel SEU (+ Access recomendado).
-#   TUNNEL_ID=<uuid do seu túnel> TUNNEL_HOSTNAME=hub-dev.suaempresa.com bash scripts/dev-tunnel.sh up|down|status
+# Generic example: public dev environment through YOUR own Cloudflare Tunnel (+ Access recommended).
+#   TUNNEL_ID=<uuid of your tunnel> TUNNEL_HOSTNAME=hub-dev.yourcompany.com bash scripts/dev-tunnel.sh up|down|status
 #
-# Modelo "container avulso": o cloudflared roda FORA do compose, no container
-# `apphub-devtunnel` (restart unless-stopped), e encaminha para host.docker.internal:8080
-# — ou seja, para o que estiver servindo a porta 8080 do host (pilha normal OU modo de
-# desenvolvimento, platform-py/scripts/dev.sh). Subir/descer/recriar a pilha não derruba o túnel.
+# "Standalone container" model: cloudflared runs OUTSIDE compose, in the container
+# `apphub-devtunnel` (restart unless-stopped), and forwards to host.docker.internal:8080
+# — i.e., to whatever serves port 8080 on the host (the normal stack OR the dev mode of
+# development, platform-py/scripts/dev.sh). Starting/stopping/recreating the stack does not drop the tunnel.
 #
-# up:     copia as credenciais para .tunnel/ (gitignored), gera .tunnel/config-standalone.yml
-#         e cria o container se ele não existir (se já existe, só garante que está no ar —
-#         nunca recria um túnel em uso; use `down` + `up` para trocar a configuração).
-# down:   remove o container apphub-devtunnel (o site passa a responder 502/erro do túnel).
-# status: estado do container + últimas linhas do log.
-# O hub-web atrás do túnel precisa de HUB_PUBLIC_URL/HUB_TRUSTED_PROXIES do modo dev
-# (docker-compose.dev.yml); a pilha normal responde, mas sem o IP real do visitante.
+# up:     copies the credentials to .tunnel/ (gitignored), generates .tunnel/config-standalone.yml
+#         and creates the container if it does not exist (if it exists, it only ensures it is running —
+#         never recreates a tunnel in use; use `down` + `up` to change the configuration).
+# down:   removes the apphub-devtunnel container (the site starts answering 502/tunnel errors).
+# status: container state + the last log lines.
+# hub-web behind the tunnel needs HUB_PUBLIC_URL/HUB_TRUSTED_PROXIES from the dev mode
+# (docker-compose.dev.yml); the normal stack still responds, but without the visitor's real IP.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export MSYS_NO_PATHCONV=1
@@ -47,7 +47,7 @@ ingress:
   - hostname: $HOSTNAME_PUB
     service: http://host.docker.internal:8080
     originRequest:
-      # Mantém o Host público (o hub vê $HOSTNAME_PUB).
+      # Keeps the public Host (the hub sees $HOSTNAME_PUB).
       httpHostHeader: $HOSTNAME_PUB
   - service: http_status:404
 CFG

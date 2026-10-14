@@ -1,6 +1,6 @@
-# Dependências de terceiros da imagem hub-contratos (hub-sdk-python + app contratos) e as
-# de build dos dois pacotes locais. Fonte do requirements.lock (com hashes) — ver
-# "Atualizar dependências Python" no platform/README.md.
+# Third-party dependencies of the hub-contratos image (hub-sdk-python + contratos app) and the
+# build dependencies of the two local packages. Source for requirements.lock (with hashes) — see
+# "Atualizar dependências Python" in platform/README.md.
 fastapi==0.141.1
 starlette==1.7.0
 asyncpg==0.31.0

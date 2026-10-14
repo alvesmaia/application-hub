@@ -1,10 +1,10 @@
-# Imagem selada do hub: código + assets dentro da imagem, sem montagens de código e sem --reload.
-# Build (contexto = raiz do repositório): docker build -f platform-py/Dockerfile -t app-hub-web .
-# mc (MinIO Client) só para «Provisionar armazenamento»; imagem local `app-hub-mc` (fonte: infra/minio/Dockerfile, alvo mc).
+# Sealed hub image: code and assets baked into the image, no code mounts and no --reload.
+# Build (context = repository root): docker build -f platform-py/Dockerfile -t app-hub-web .
+# mc (MinIO Client) only for «Provisionar armazenamento» (storage provisioning); local image `app-hub-mc` (source: infra/minio/Dockerfile, mc target).
 ARG MC_IMAGE=app-hub-mc:0.10.0
 FROM ${MC_IMAGE} AS mc
 
-# Kit do desenvolvedor (F22): wheels da hub-cli e do hub-sdk servidos em /dev/cli/simple/.
+# Developer kit (F22): hub-cli and hub-sdk wheels served at /dev/cli/simple/.
 FROM python:3.12-slim AS cli
 RUN pip install --no-cache-dir uv==0.12.23
 WORKDIR /src

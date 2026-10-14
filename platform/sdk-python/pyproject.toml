@@ -6,9 +6,9 @@ build-backend = "setuptools.build_meta"
 name = "hub-sdk"
 version = "0.2.0"
 license = "Apache-2.0"
-description = "SDK Python (FastAPI) dos apps da Application Hub: identidade, fragmentos, tarefas duráveis, idempotência, outbox, /_hub/*, desligamento gracioso e operações pesadas."
+description = "Python SDK (FastAPI) for Application Hub apps: identity, fragments, durable tasks, idempotency, outbox, /_hub/*, graceful shutdown and heavy operations."
 requires-python = ">=3.11"
-# Dependências mínimas e fixadas (mesmas versões nos apps, no CI e nas imagens).
+# Minimal, pinned dependencies (same versions in the apps, in CI and in the images).
 dependencies = [
   "fastapi==0.141.1",
   "starlette==1.7.0",
@@ -18,9 +18,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Camada SQL portátil (hub_sdk.db.engine/upgrade): SQLite no hub dev, Postgres no hub.
+# Portable SQL layer (hub_sdk.db.engine/upgrade): SQLite in the hub dev, Postgres in the hub.
 sql = ["sqlalchemy==2.0.44", "alembic==1.17.1", "psycopg[binary]==3.2.12"]
-# Kit de dashboards (hub_sdk.dashboards): SQL local no dev + exportação XLSX.
+# Dashboard kit (hub_sdk.dashboards): local SQL in dev + XLSX export.
 dashboards = ["sqlalchemy==2.0.44", "openpyxl==3.1.5"]
 dev = [
   "openpyxl==3.1.5",

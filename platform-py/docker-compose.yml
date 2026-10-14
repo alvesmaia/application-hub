@@ -1,7 +1,7 @@
-# Pilha do hub. Nomes de projeto/contêineres/volumes/redes/imagens, porta e faixa das redes são configuráveis
-# (padrões = instalação original): HUB_PROJECT (app-hub), HUB_PORT (8090), HUB_BIND (127.0.0.1),
-# HUB_SUBNET (10.231 → redes 10.231.<n>.0/24 dos apps). Duas instâncias no mesmo host = HUB_PROJECT, HUB_PORT e
-# HUB_SUBNET distintos (ver scripts/install.sh). Apps de exemplo: docker-compose.apps.yml + perfil `demo-apps`.
+# Hub stack. Project/container/volume/network/image names, port and network range are configurable
+# (defaults = original installation): HUB_PROJECT (app-hub), HUB_PORT (8090), HUB_BIND (127.0.0.1),
+# HUB_SUBNET (10.231 → app networks 10.231.<n>.0/24). Two instances on the same host = distinct HUB_PROJECT, HUB_PORT and
+# HUB_SUBNET values (see scripts/install.sh). Sample apps: docker-compose.apps.yml + `demo-apps` profile.
 name: ${HUB_PROJECT:-app-hub}
 
 services:
@@ -11,12 +11,12 @@ services:
       context: ..
       dockerfile: platform-py/Dockerfile
       args:
-        MC_IMAGE: ${HUB_MC_IMAGE:-app-hub-mc:0.10.0} # construir antes: scripts/install.sh (ou infra/minio/Dockerfile, alvo mc)
+        MC_IMAGE: ${HUB_MC_IMAGE:-app-hub-mc:0.10.0} # build first: scripts/install.sh (or infra/minio/Dockerfile, mc target)
     container_name: ${HUB_PROJECT:-app-hub}-web
     labels: { hub.py: "1" }
-    mem_limit: 1g # backups e restaurações montam o pacote em memória (1 GiB)
+    mem_limit: 1g # backups and restores load the package into memory (1 GiB)
     restart: unless-stopped
-    # Sem porta publicada: a HUB_PORT é da borda (app-hub-edge), que permite trocar o hub sem parada.
+    # No published port: HUB_PORT belongs to the edge (app-hub-edge), which allows swapping the hub without downtime.
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8090/readyz', timeout=3)"]
       interval: 5s
@@ -25,25 +25,25 @@ services:
       start_period: 60s
     environment:
       HUB_PLATFORM_DIR: /platform
-      HUB_EDGE_CIDR: ${HUB_SUBNET:-10.231}.250.0/24 # a borda: o hub confia nos X-Forwarded-For que ela repassa
+      HUB_EDGE_CIDR: ${HUB_SUBNET:-10.231}.250.0/24 # the edge: the hub trusts the X-Forwarded-For headers it forwards
       HUB_APPS_FILE: /platform/config/apps.compose.json
       HUB_DB_URL: postgresql://hub:${APP_HUB_DB_PASSWORD:-hubpy-dev}@app-hub-db:5432/hub
       HUB_STATE_DB_URL: postgresql://hub:${APP_HUB_DB_PASSWORD:-hubpy-dev}@app-hub-db:5432/hub
       HUB_DATA_DIR: /data
       HUB_CONTAINER_SOCKET: /var/run/docker.sock
-      # Contêineres desta instância (o hub só opera os do seu prefixo; padrão app-hub-app-*).
+      # Containers of this instance (the hub only operates those with its prefix; default app-hub-app-*).
       HUB_CONTAINER_PREFIX: ${HUB_PROJECT:-app-hub}-app-
       HUB_BACKUP_DB_CONTAINER: ${HUB_PROJECT:-app-hub}-app-db
       HUB_APP_NETWORK: ${HUB_PROJECT:-app-hub}_default
-      HUB_APP_ENV_FILE: /config/app-env.json # valores da pilha Python (app-hub-app-db, app-hub-objstore); a carga só cria o que falta
-      # Broker de armazenamento (Administração › Conexões): porta própria, só /_hub/storage/*, alcançada pelos
-      # apps na rede hub-app-<id> (não publicada); cada token só vale a partir da rede do seu app.
+      HUB_APP_ENV_FILE: /config/app-env.json # Python stack values (app-hub-app-db, app-hub-objstore); the loader only creates what is missing
+      # Storage broker (Administração › Conexões): its own port, only /_hub/storage/*, reached by the
+      # apps on the hub-app-<id> network (not published); each token is only valid from its app's network.
       HUB_BROKER_ADDR: 0.0.0.0:8081
       HUB_BROKER_PUBLIC_URL: http://app-hub-web:8081
       HUB_BROKER_APP_CIDRS: "ativos=${HUB_SUBNET:-10.231}.1.0/24,fornecedores=${HUB_SUBNET:-10.231}.2.0/24,servicos=${HUB_SUBNET:-10.231}.3.0/24,coletor=${HUB_SUBNET:-10.231}.5.0/24"
-      # Object store da plataforma (MinIO) para «Provisionar armazenamento».
+      # Platform object store (MinIO) for «Provisionar armazenamento».
       HUB_S3_ADMIN_URL: http://hubadmin:${APP_HUB_OBJSTORE_PASSWORD:-hubpy-objstore-dev}@app-hub-objstore:9000
-    # Sem --reload: o hub publicado não reinicia quando o código em disco muda (recarga só no modo dev).
+    # No --reload: the published hub does not restart when code on disk changes (reload only in dev mode).
     command: ["uvicorn", "hub.main:app", "--host", "0.0.0.0", "--port", "8090"]
     env_file:
       - path: ./.dev.env
@@ -51,11 +51,11 @@ services:
     volumes:
       - app-hub-data:/data
       - ./app-env.json:/config/app-env.json:ro
-      # Socket do daemon (aprovado pelo dono): o hub só opera containers `app-hub-*`
-      # (guarda em hub/ops/runtime.py); nunca hub-*, apphub-devtunnel nem containers de fora do projeto.
-      # Podman rootless: HUB_CONTAINER_SOCKET_HOST=$XDG_RUNTIME_DIR/podman/podman.sock (install.sh detecta).
+      # Daemon socket (approved by the owner): the hub only operates `app-hub-*` containers
+      # (guard in hub/ops/runtime.py); never hub-*, apphub-devtunnel or containers from outside the project.
+      # Rootless Podman: HUB_CONTAINER_SOCKET_HOST=$XDG_RUNTIME_DIR/podman/podman.sock (install.sh detects it).
       - ${HUB_CONTAINER_SOCKET_HOST:-/var/run/docker.sock}:/var/run/docker.sock
-    # Linux: o socket costuma ser root:docker; exporte DOCKER_GID=$(stat -c %g /var/run/docker.sock).
+    # Linux: the socket is usually root:docker; export DOCKER_GID=$(stat -c %g /var/run/docker.sock).
     group_add: ["${DOCKER_GID:-0}"]
     depends_on: [app-hub-db, app-hub-objstore]
     networks:
@@ -79,7 +79,7 @@ services:
     volumes:
       - app-hub-db-data:/var/lib/postgresql/data
 
-  # MinIO leve (AGPL-3.0, compilado do código-fonte oficial em infra/minio/Dockerfile; ver NOTICE).
+  # Lightweight MinIO (AGPL-3.0, built from the official source in infra/minio/Dockerfile; see NOTICE).
   app-hub-objstore:
     image: ${HUB_MINIO_IMAGE:-app-hub-minio:0.10.0}
     build:
@@ -104,7 +104,7 @@ services:
       start_period: 5s
       retries: 10
 
-  # Borda: dona da HUB_PORT. Repassa ao hub e, numa atualização (scripts/hub-update.sh), também à cópia nova.
+  # Edge: owns HUB_PORT. Forwards to the hub and, during an update (scripts/hub-update.sh), also to the new copy.
   app-hub-edge:
     image: ${HUB_EDGE_IMAGE:-caddy:2.10.0-alpine}
     container_name: ${HUB_PROJECT:-app-hub}-edge
@@ -112,7 +112,7 @@ services:
     mem_limit: 128m
     ports:
       - "${HUB_BIND:-127.0.0.1}:${HUB_PORT:-8090}:8090"
-      # localhost em IPv6; com HUB_BIND fora do loopback, HUB_BIND6=$HUB_BIND (o Podman já ocupa o IPv6 no 0.0.0.0)
+      # localhost on IPv6; with HUB_BIND outside loopback, HUB_BIND6=$HUB_BIND (Podman already takes IPv6 on 0.0.0.0)
       - "${HUB_BIND6:-[::1]}:${HUB_PORT:-8090}:8090"
     volumes:
       - ./infra/edge/Caddyfile:/etc/caddy/Caddyfile:ro
@@ -129,8 +129,8 @@ volumes:
     name: ${HUB_PROJECT:-app-hub}-objstore-data
     labels: { hub.py: "1" }
 
-# Uma rede por app (o broker reconhece o app pela faixa = HUB_BROKER_APP_CIDRS). Existem mesmo sem os apps de
-# exemplo, para que apps instalados depois entrem nelas.
+# One network per app (the broker recognizes the app by its range = HUB_BROKER_APP_CIDRS). They exist even without the sample apps so that
+# apps installed later can join them.
 networks:
   edge:
     name: ${HUB_PROJECT:-app-hub}-edge

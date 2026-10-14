@@ -1,18 +1,18 @@
 # syntax=docker/dockerfile:1
 # hub-fornecedores: app "Rede de Fornecedores" (Python 3.12 + FastAPI + hub-sdk-python).
-# Build (a partir de platform/):  docker build -f demo-apps-py/fornecedores/Dockerfile -t hub-fornecedores .
-# Contexto enxuto: Dockerfile.dockerignore (só sdk-python, o app e os assets
-# compartilhados do mockup).
+# Build (from platform/):  docker build -f demo-apps-py/fornecedores/Dockerfile -t hub-fornecedores .
+# Lean context: Dockerfile.dockerignore (only sdk-python, the app and the assets
+# shared with the mockup).
 #
-# - multi-stage: dependências instaladas num venv no builder (sem compiladores na final);
-# - usuário 10001 sem shell; raiz somente leitura compatível (bytecode pré-compilado,
-#   PYTHONDONTWRITEBYTECODE, temporários em /scratch via TMPDIR);
-# - HEALTHCHECK sem curl: `python -m fornecedores --health` (GET /fornecedores no próprio app);
-# - cadeia de suprimentos: imagem base fixada por digest; TODAS as dependências (inclusive
-#   as transitivas e o setuptools do build) vêm de demo-apps-py/fornecedores/requirements.lock,
-#   instaladas com --require-hashes; os dois pacotes locais entram com --no-deps
-#   --no-build-isolation --no-index (nada é resolvido nem baixado fora do lock).
-#   Atualizar: "Atualizar dependências Python" no platform/README.md.
+# - multi-stage: dependencies installed in a venv in the builder (no compilers in the final image);
+# - user 10001 with no shell; read-only root compatible (precompiled bytecode,
+#   PYTHONDONTWRITEBYTECODE, temp files in /scratch via TMPDIR);
+# - HEALTHCHECK without curl: `python -m fornecedores --health` (GET /fornecedores on the app itself);
+# - supply chain: base image pinned by digest; ALL dependencies (including
+#   transitive ones and the build's setuptools) come from demo-apps-py/fornecedores/requirements.lock,
+#   installed with --require-hashes; the two local packages are installed with --no-deps
+#   --no-build-isolation --no-index (nothing is resolved or downloaded outside the lock).
+#   To update: "Atualizar dependências Python" in platform/README.md.
 ARG PY_IMAGE=python:3.12-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e
 FROM ${PY_IMAGE} AS builder
 ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1

@@ -1,7 +1,7 @@
-# Perfil opcional "observability" da pilha Python (F5c): OTel Collector (<= 192 MiB) + Jaeger em memória (<= 256 MiB).
+# Optional "observability" profile of the Python stack (F5c): OTel Collector (<= 192 MiB) + in-memory Jaeger (<= 256 MiB).
 #   docker compose -p app-hub -f docker-compose.yml -f docker-compose.apps.yml -f docker-compose.observability.yml \
-#     --profile observability up -d     (ou: bash scripts/dev.sh obs-up)
-# O hub exporta OTLP/HTTP quando APP_HUB_OTLP_ENDPOINT está definido (obs-up define). UI do Jaeger: http://127.0.0.1:16696.
+#     --profile observability up -d     (or: bash scripts/dev.sh obs-up)
+# The hub exports OTLP/HTTP when APP_HUB_OTLP_ENDPOINT is set (obs-up sets it). Jaeger UI: http://127.0.0.1:16696.
 services:
   app-hub-web:
     environment:
