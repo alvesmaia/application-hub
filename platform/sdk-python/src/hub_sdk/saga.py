@@ -164,7 +164,7 @@ class Saga:
             pool=ctx.pool,
         )
 
-    async def run(self, ctx: JobCtx) -> Any:  # noqa: C901, PLR0912, PLR0915
+    async def run(self, ctx: JobCtx) -> Any:
         names = [s.name for s in self.steps]
         st = state_of(ctx.checkpoint, names)
         last = ctx.job.attempts >= ctx.job.max_attempts
@@ -172,61 +172,9 @@ class Saga:
             ctx.raise_if_stopping()
             nxt = next_action(st)
             if nxt.startswith("run:"):
-                i = int(nxt[4:])
-                name = names[i]
-                try:
-                    out = await self.steps[i].action(self._ctx(ctx, st, name, f"{ctx.job.id}:{name}"))
-                except (JobRetry, JobFail) as e:
-                    if isinstance(e, JobRetry) and not last:
-                        raise JobRetry(f"{name}: {e}") from e
-                    st["steps"][i]["state"] = "attempted"
-                    st["steps"][i]["error"] = str(e)
-                    st["state"] = "compensating"
-                    st["reason"] = f"{name}: {e}"
-                    await self._save(ctx, st)
-                    continue
-                except JobError:
-                    raise
-                except Exception as e:  # unexpected error in a step = transient
-                    if not last:
-                        raise JobRetry(f"{name}: {e.__class__.__name__}: {e}") from e
-                    st["steps"][i]["state"] = "attempted"
-                    st["steps"][i]["error"] = str(e)
-                    st["state"] = "compensating"
-                    st["reason"] = f"{name}: {e}"
-                    await self._save(ctx, st)
-                    continue
-                st["steps"][i]["state"] = "done"
-                if out is not None:
-                    st["steps"][i]["output"] = out
-                st["steps"][i].pop("error", None)
-                await self._save(ctx, st)
+                await self._run_step(ctx, st, int(nxt[4:]), last)
             elif nxt.startswith("compensate:"):
-                i = int(nxt[11:])
-                name = names[i]
-                if st["steps"][i]["state"] != "compensating":
-                    st["steps"][i]["state"] = "compensating"
-                    await self._save(ctx, st)
-                sc = self._ctx(ctx, st, name, f"{ctx.job.id}:{name}:undo")
-                sc.output = st["steps"][i].get("output")
-                comp = self.steps[i].compensate
-                try:
-                    if comp is not None:
-                        await comp(sc)
-                except JobFail as e:
-                    st["steps"][i]["state"] = "failed"
-                    st["steps"][i]["error"] = str(e)
-                    st["state"] = "failed"
-                    await self._save(ctx, st)
-                    raise JobFail(f"compensação de {name} falhou (intervenção manual): {e}") from e
-                except JobRetry as e:
-                    raise JobRetry(f"compensação de {name}: {e}") from e
-                except JobError:
-                    raise
-                except Exception as e:
-                    raise JobRetry(f"compensação de {name}: {e.__class__.__name__}: {e}") from e
-                st["steps"][i]["state"] = "compensated"
-                await self._save(ctx, st)
+                await self._compensate_step(ctx, st, int(nxt[11:]))
             elif nxt == "complete":
                 if st["state"] != "completed":
                     st["state"] = "completed"
@@ -242,3 +190,61 @@ class Saga:
                 raise JobFail(f"saga compensada — {st.get('reason') or ''}")
             else:
                 raise JobFail(f"saga com compensação pendente de intervenção — {st.get('reason') or ''}")
+
+    async def _run_step(self, ctx: JobCtx, st: dict[str, Any], i: int, last: bool) -> None:
+        """Step ``i`` forward; a definitive failure (or a transient one on the last attempt) switches
+        the saga to compensating instead of failing the attempt."""
+        name = self.steps[i].name
+        try:
+            out = await self.steps[i].action(self._ctx(ctx, st, name, f"{ctx.job.id}:{name}"))
+        except (JobRetry, JobFail) as e:
+            if isinstance(e, JobRetry) and not last:
+                raise JobRetry(f"{name}: {e}") from e
+            await self._start_compensating(ctx, st, i, e)
+            return
+        except JobError:
+            raise
+        except Exception as e:  # unexpected error in a step = transient
+            if not last:
+                raise JobRetry(f"{name}: {e.__class__.__name__}: {e}") from e
+            await self._start_compensating(ctx, st, i, e)
+            return
+        st["steps"][i]["state"] = "done"
+        if out is not None:
+            st["steps"][i]["output"] = out
+        st["steps"][i].pop("error", None)
+        await self._save(ctx, st)
+
+    async def _start_compensating(self, ctx: JobCtx, st: dict[str, Any], i: int, e: Exception) -> None:
+        name = self.steps[i].name
+        st["steps"][i]["state"] = "attempted"
+        st["steps"][i]["error"] = str(e)
+        st["state"] = "compensating"
+        st["reason"] = f"{name}: {e}"
+        await self._save(ctx, st)
+
+    async def _compensate_step(self, ctx: JobCtx, st: dict[str, Any], i: int) -> None:
+        name = self.steps[i].name
+        if st["steps"][i]["state"] != "compensating":
+            st["steps"][i]["state"] = "compensating"
+            await self._save(ctx, st)
+        sc = self._ctx(ctx, st, name, f"{ctx.job.id}:{name}:undo")
+        sc.output = st["steps"][i].get("output")
+        comp = self.steps[i].compensate
+        try:
+            if comp is not None:
+                await comp(sc)
+        except JobFail as e:
+            st["steps"][i]["state"] = "failed"
+            st["steps"][i]["error"] = str(e)
+            st["state"] = "failed"
+            await self._save(ctx, st)
+            raise JobFail(f"compensação de {name} falhou (intervenção manual): {e}") from e
+        except JobRetry as e:
+            raise JobRetry(f"compensação de {name}: {e}") from e
+        except JobError:
+            raise
+        except Exception as e:
+            raise JobRetry(f"compensação de {name}: {e.__class__.__name__}: {e}") from e
+        st["steps"][i]["state"] = "compensated"
+        await self._save(ctx, st)
