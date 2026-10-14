@@ -106,32 +106,33 @@ def backup(proj: str, image: str, dest: Path) -> None:
     say(f"backup em {dest}")
 
 
-def start_next(main: dict[str, Any], image: str, name: str) -> None:  # noqa: C901
-    """Copy of the hub with the same configuration as the running container (includes all compose overrides)."""
-    run("docker", "rm", "-f", name, check=False, quiet=True)
+def _copied_flags(main: dict[str, Any]) -> list[str]:
+    """`docker run` flags that reproduce the running container's environment, mounts and limits."""
     cfg, host = main["Config"], main["HostConfig"]
-    args = ["docker", "run", "-d", "--name", name, "--label", "hub.update=next", "--restart", "no"]
     base = set((inspect(main["Image"]) or {}).get("Config", {}).get("Env") or [])
-    for e in cfg.get("Env") or []:
-        if (
-            e not in base
-        ):  # only what compose defined: the image environment (PATH, versions) comes from the new image
-            args += ["-e", e]
-    for b in host.get("Binds") or []:
-        args += ["-v", b]
+    # only what compose defined: the image environment (PATH, versions) comes from the new image
+    args = [f for e in cfg.get("Env") or [] if e not in base for f in ("-e", e)]
+    args += [f for b in host.get("Binds") or [] for f in ("-v", b)]
     for m in host.get("Mounts") or []:
         spec = f"type={m['Type']},target={m['Target']}" + (
             f",source={m['Source']}" if m.get("Source") else ""
         )
         args += ["--mount", spec + (",readonly" if m.get("ReadOnly") else "")]
-    for g in host.get("GroupAdd") or []:
-        args += ["--group-add", g]
-    for h in host.get("ExtraHosts") or []:
-        args += ["--add-host", h]
+    args += [f for g in host.get("GroupAdd") or [] for f in ("--group-add", g)]
+    args += [f for h in host.get("ExtraHosts") or [] for f in ("--add-host", h)]
     if host.get("Memory"):
         args += ["--memory", str(host["Memory"])]
     if cfg.get("User"):
         args += ["--user", cfg["User"]]
+    return args
+
+
+def start_next(main: dict[str, Any], image: str, name: str) -> None:
+    """Copy of the hub with the same configuration as the running container (includes all compose overrides)."""
+    run("docker", "rm", "-f", name, check=False, quiet=True)
+    cfg = main["Config"]
+    args = ["docker", "run", "-d", "--name", name, "--label", "hub.update=next", "--restart", "no"]
+    args += _copied_flags(main)
     nets = list(main["NetworkSettings"]["Networks"])
     edge = [n for n in nets if n.endswith("-edge")]
     others = [n for n in nets if n not in edge]
@@ -192,9 +193,7 @@ def drop(name: str) -> None:
     run("docker", "rm", "-f", name, check=False, quiet=True)
 
 
-def main() -> int:  # noqa: C901, PLR0912, PLR0915
-    for stream in (sys.stdout, sys.stderr):  # accents in the Windows console
-        getattr(stream, "reconfigure", lambda **_: None)(encoding="utf-8", errors="replace")
+def _parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description="Atualiza o hub sem parada (com volta automática).")
     src = ap.add_mutually_exclusive_group(required=True)
     src.add_argument(
@@ -211,10 +210,10 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0915
     ap.add_argument("--timeout", type=int, default=180, help="espera máxima para cada cópia ficar pronta")
     ap.add_argument("--backup-dir", default=str(Path.home() / "backup-hub"), help="pasta dos backups")
     ap.add_argument("--no-backup", action="store_true", help="pula o backup (não recomendado)")
-    a = ap.parse_args()
+    return ap.parse_args()
 
-    main_name, next_name, edge = f"{a.project}-web", f"{a.project}-web-next", f"{a.project}-edge"
-    repo = f"{a.project}-web"
+
+def _preflight(main_name: str, edge: str) -> dict[str, Any]:
     main_c, edge_c = inspect(main_name), inspect(edge)
     if main_c is None:
         raise SystemExit(f"hub-update: {main_name} não existe")
@@ -223,41 +222,52 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0915
             f"hub-update: a borda {edge} não está no ar. Na primeira vez, suba a pilha com o compose atual "
             "(`up -d`): a borda assume a porta (~10 s de parada, uma vez só)."
         )
-    current = main_c["Image"]
-    # Tag now: under containerd, an image that loses `latest` disappears by ID (backup, rollback and return would fail).
-    prev = f"{repo}:pre-update"
-    if run("docker", "tag", current, prev, check=False, quiet=True).returncode != 0 and inspect(prev) is None:
-        raise SystemExit(
-            f"hub-update: a imagem em execução não tem referência; crie {prev} com a versão atual"
-        )
-    if a.rollback:
-        if inspect(f"{repo}:rollback") is None:
-            raise SystemExit("hub-update: não há imagem anterior (<proj>-web:rollback)")
-        new = run("docker", "image", "inspect", "-f", "{{.Id}}", f"{repo}:rollback").stdout.strip()
-        if new == current:
-            say("a versão anterior é a que já está no ar; nada a fazer")
-            return 0
-    else:
-        if a.build:
-            say("construindo a imagem nova")
-            run(
-                *compose_cmd(main_c, Path(__file__).resolve().parents[1]),
-                "build",
-                main_c["Config"]["Labels"]["com.docker.compose.service"],
-            )
-        else:
-            if inspect(a.image) is None:  # only pulls what does not exist here
-                run("docker", "pull", a.image)
-            run("docker", "tag", a.image, f"{repo}:latest")
-        new = run("docker", "image", "inspect", "-f", "{{.Id}}", f"{repo}:latest").stdout.strip()
-        if new == current:
-            say("a imagem nova é a que já está no ar; nada a fazer")
-            return 0
-        if not a.no_backup:
-            backup(a.project, prev, Path(a.backup_dir) / dt.datetime.now().strftime("%Y%m%d-%H%M%S"))
-        run("docker", "tag", prev, f"{repo}:rollback")
-    run("docker", "tag", new, f"{repo}:latest")  # compose uses <proj>-web(:latest)
+    return main_c
 
+
+def _image_id(ref: str) -> str:
+    return run("docker", "image", "inspect", "-f", "{{.Id}}", ref).stdout.strip()
+
+
+def _rollback_image(repo: str, current: str) -> str | None:
+    """Id of the previous image, or None when it is already the one running."""
+    if inspect(f"{repo}:rollback") is None:
+        raise SystemExit("hub-update: não há imagem anterior (<proj>-web:rollback)")
+    new = _image_id(f"{repo}:rollback")
+    if new == current:
+        say("a versão anterior é a que já está no ar; nada a fazer")
+        return None
+    return new
+
+
+def _new_image(
+    a: argparse.Namespace, main_c: dict[str, Any], repo: str, current: str, prev: str
+) -> str | None:
+    """Builds or fetches the new image and backs up; None when it is already the one running."""
+    if a.build:
+        say("construindo a imagem nova")
+        run(
+            *compose_cmd(main_c, Path(__file__).resolve().parents[1]),
+            "build",
+            main_c["Config"]["Labels"]["com.docker.compose.service"],
+        )
+    else:
+        if inspect(a.image) is None:  # only pulls what does not exist here
+            run("docker", "pull", a.image)
+        run("docker", "tag", a.image, f"{repo}:latest")
+    new = _image_id(f"{repo}:latest")
+    if new == current:
+        say("a imagem nova é a que já está no ar; nada a fazer")
+        return None
+    if not a.no_backup:
+        backup(a.project, prev, Path(a.backup_dir) / dt.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    run("docker", "tag", prev, f"{repo}:rollback")
+    return new
+
+
+def _roll_out(a: argparse.Namespace, new: str, current: str, prev: str) -> int:
+    main_name, next_name, edge = f"{a.project}-web", f"{a.project}-web-next", f"{a.project}-edge"
+    repo = f"{a.project}-web"
     try:
         version = swap(main_name, next_name, new, a.timeout)
         healthy = watch(main_name, edge, a.watch)
@@ -283,6 +293,26 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0915
         "voltou para a versão anterior. Dados alterados pela nova? Restaure o backup (docs/ATUALIZACAO.md §5)"
     )
     return 1
+
+
+def main() -> int:
+    for stream in (sys.stdout, sys.stderr):  # accents in the Windows console
+        getattr(stream, "reconfigure", lambda **_: None)(encoding="utf-8", errors="replace")
+    a = _parse_args()
+    repo = f"{a.project}-web"
+    main_c = _preflight(f"{a.project}-web", f"{a.project}-edge")
+    current = main_c["Image"]
+    # Tag now: under containerd, an image that loses `latest` disappears by ID (backup, rollback and return would fail).
+    prev = f"{repo}:pre-update"
+    if run("docker", "tag", current, prev, check=False, quiet=True).returncode != 0 and inspect(prev) is None:
+        raise SystemExit(
+            f"hub-update: a imagem em execução não tem referência; crie {prev} com a versão atual"
+        )
+    new = _rollback_image(repo, current) if a.rollback else _new_image(a, main_c, repo, current, prev)
+    if new is None:
+        return 0
+    run("docker", "tag", new, f"{repo}:latest")  # compose uses <proj>-web(:latest)
+    return _roll_out(a, new, current, prev)
 
 
 if __name__ == "__main__":
