@@ -26,6 +26,5 @@
   "platform/demo-apps-py/servicos/src/servicos/app.py": 692,
   "platform/sdk-python/src/hub_sdk/dashboards.py": 625,
   "platform/sdk-python/src/hub_sdk/idempotency.py": 677,
-  "platform/sdk-python/src/hub_sdk/jobs.py": 860,
   "platform/sdk-python/src/hub_sdk/storage.py": 743
 }
