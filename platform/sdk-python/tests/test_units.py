@@ -72,10 +72,10 @@ def test_pool_sizes_respect_the_role_connection_budget(monkeypatch: "pytest.Monk
     assert pool_size("HUB_DB_POOL", 12, per_web_process=True) == 12
     monkeypatch.setenv("UVICORN_WORKERS", "2")
     assert pool_size("HUB_DB_POOL", 12, per_web_process=True) == 6
-    assert pool_size("HUB_JOBS_POOL", 5) == 5  # processo de tarefas: único
+    assert pool_size("HUB_JOBS_POOL", 5) == 5  # jobs process: single
     monkeypatch.setenv("UVICORN_WORKERS", "8")
     assert pool_size("HUB_DB_POOL", 12, per_web_process=True) == 2
     monkeypatch.setenv("HUB_DB_POOL", "20")
-    assert pool_size("HUB_DB_POOL", 12, per_web_process=True) == 20  # explícito prevalece
-    # web 12 + 12 + 2 e tarefas 4 + 5 cabem no CONNECTION LIMIT 40 do papel do app
+    assert pool_size("HUB_DB_POOL", 12, per_web_process=True) == 20  # explicit wins
+    # web 12 + 12 + 2 and jobs 4 + 5 fit within the app role's CONNECTION LIMIT 40
     assert 12 + 12 + 2 + 4 + 5 <= 40

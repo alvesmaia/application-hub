@@ -1,9 +1,9 @@
-"""Onda 13 · stack do app no manifesto (``manifest.stack``, opcional e informativo).
+"""Wave 13 · app stack in the manifest (``manifest.stack``, optional and informational).
 
-O hub mostra estes dados no catálogo de aplicações (cartão do app: passar o mouse, foco do
-teclado ou o botão "i" no toque). Mesmas regras do hub (``hub_manifest::validate_stack``):
-``language`` obrigatório; ``framework``/``sdk``/``db`` opcionais; até 12 ``libs``; cada
-texto com 1–48 caracteres, sem caracteres de controle.
+The hub shows this data in the applications catalog (app card: hover, focus of the
+keyboard or the "i" button on touch). Same rules as the hub (``hub_manifest::validate_stack``):
+``language`` required; ``framework``/``sdk``/``db`` optional; up to 12 ``libs``; each
+text with 1–48 characters, no control characters.
 
 >>> declare("Python 3.12", framework="FastAPI", db="PostgreSQL 16", libs=["segno"])["framework"]
 'FastAPI'
@@ -30,7 +30,7 @@ def declare(
     db: str | None = None,
     libs: Sequence[str] = (),
 ) -> dict[str, Any]:
-    """Entrada de ``manifest.stack`` (levanta ``ValueError`` fora das regras do hub)."""
+    """Entry of ``manifest.stack`` (raises ``ValueError`` outside the hub's rules)."""
     out: dict[str, Any] = {"language": language}
     for k, v in (("framework", framework), ("sdk", sdk), ("db", db)):
         if v is not None:

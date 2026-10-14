@@ -1,12 +1,12 @@
-"""Limite de operações pesadas simultâneas por app (importação, exportação, relatório).
+"""Limit on simultaneous heavy operations per app (import, export, report).
 
-Sem vaga, 429 **imediato** com ``Retry-After`` (o ``hub.js`` mostra
-"em fila…" e tenta de novo sozinho). A vaga é liberada quando o *permit* é liberado —
-num download em streaming, só no fim do corpo.
+Without a slot, **immediate** 429 with ``Retry-After`` (``hub.js`` shows
+"queued…" and retries on its own). The slot is released when the *permit* is released —
+in a streaming download, only at the end of the body.
 
-Observação (Python): o semáforo vale **por processo**. Com ``uvicorn --workers N`` o
-limite efetivo do app é ``N × HUB_HEAVY_MAX`` — o dimensionamento recomendado
-(``loadtest/RESULTADOS.md``, onda 7) é 1 worker por vCPU.
+Note (Python): the semaphore applies **per process**. With ``uvicorn --workers N`` the
+effective app limit is ``N × HUB_HEAVY_MAX`` — the recommended sizing
+(``loadtest/RESULTADOS.md``, wave 7) is 1 worker per vCPU.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ DEFAULT_MAX = 2
 
 
 class Permit:
-    """Vaga ocupada; ``release()`` (ou sair do ``with``) devolve. Liberar duas vezes é
+    """Slot taken; ``release()`` (or leaving the ``with``) returns it. Releasing twice is
     inócuo."""
 
     def __init__(self, heavy: Heavy) -> None:
@@ -67,7 +67,7 @@ class Heavy:
         return cls(n)
 
     def try_acquire(self) -> Permit | None:
-        """Vaga sem esperar; ``None`` = limite atingido (responda 429)."""
+        """Slot without waiting; ``None`` = limit reached (answer 429)."""
         with self._lock:
             if self._used >= self.max:
                 return None
@@ -81,14 +81,14 @@ class Heavy:
 
 
 class PermitStreamingResponse(StreamingResponse):
-    """``StreamingResponse`` que **sempre** devolve a vaga de operação pesada:
+    """``StreamingResponse`` that **always** returns the heavy-operation slot:
 
-    - no fim de ``__call__`` (corpo enviado, erro, cliente desconectado antes ou durante o
-      envio, cancelamento pela desconexão) — e fecha o gerador, liberando a conexão do banco;
-    - se a resposta nunca for enviada (ex.: exceção num middleware antes do envio), quando
-      o objeto é coletado (``weakref.finalize``).
+    - at the end of ``__call__`` (body sent, error, client disconnected before or during the
+      send, cancellation by disconnection) — and closes the generator, releasing the DB connection;
+    - if the response is never sent (e.g. an exception in a middleware before sending), when
+      the object is collected (``weakref.finalize``).
 
-    Liberar mais de uma vez é inócuo (:meth:`Permit.release`)."""
+    Releasing more than once is harmless (:meth:`Permit.release`)."""
 
     def __init__(self, content: AsyncIterator[bytes], permit: Permit, **kw: Any) -> None:
         super().__init__(content, **kw)

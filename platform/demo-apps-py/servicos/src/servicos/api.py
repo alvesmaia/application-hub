@@ -1,11 +1,11 @@
-"""API v1 do ``servicos`` (onda 11): chamados (abrir, consultar, mudar status com controle
-otimista), relatório gerencial agregado e pedidos de aprovação pendentes (a decisão é feita pela
-Inbox do hub — ferramenta ``inbox_decide`` — que chama o app pelo canal interno com a identidade
-do aprovador). JSON; erros RFC 9457.
+"""API v1 of the ``servicos`` (wave 11): tickets (open, query, change status with optimistic
+locking), aggregated management report and pending approval requests (the decision is made through the
+hub Inbox — tool ``inbox_decide`` — which calls the app through the internal channel with the
+approver's identity). JSON; RFC 9457 errors.
 
-Identidade do hub obrigatória (``x-hub-user``); auditoria no outbox e idempotência
-(``Idempotency-Key``) como nas telas. OpenAPI nativo do FastAPI em ``/servicos/api/openapi.json``;
-cada operação vira ferramenta MCP (``hub_sdk.mcp``).
+Hub identity required (``x-hub-user``); outbox audit and idempotency
+(``Idempotency-Key``) as on the screens. Native FastAPI OpenAPI at ``/servicos/api/openapi.json``;
+each operation becomes an MCP tool (``hub_sdk.mcp``).
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ GRANULARITY = ["dia", "semana", "mes"]
 
 
 def _plain(typ: str = "string", enum: Any = None) -> Any:
-    """Parâmetro opcional sem valor padrão no esquema (``""`` não faz parte do enum)."""
+    """Optional parameter with no default value in the schema (``""`` is not part of the enum)."""
 
     def fix(schema: dict[str, Any]) -> None:
         schema.pop("anyOf", None)

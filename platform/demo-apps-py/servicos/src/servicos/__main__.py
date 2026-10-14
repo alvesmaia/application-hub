@@ -1,12 +1,12 @@
 """``python -m servicos [serve|seed|openapi|--health]``.
 
-- ``serve`` (padrão): uvicorn em ``SERVICOS_HOST`` (padrão 127.0.0.1; a imagem usa 0.0.0.0) e
-  ``PORT`` (padrão 8080), com ``UVICORN_WORKERS`` processos e 8 s de drenagem no SIGTERM. Sem
-  tarefas duráveis: só o outbox/idempotência do SDK e as tabelas ``tickets``/``ticket_approvals``.
-  Com ``HUB_DB_URL`` o app migra e faz a carga inicial (2 milhões × ``HUB_SEED_SCALE``) em segundo plano.
-- ``seed``: migra o esquema e faz a carga fora do app, como o serviço ``hub-seed``.
-- ``openapi``: imprime o OpenAPI da API v1 (o ``hub pack`` embute como ``openapi.json``).
-- ``--health``: ``GET /servicos`` no próprio app (HEALTHCHECK da imagem, sem curl); sai 0 com 200.
+- ``serve`` (default): uvicorn on ``SERVICOS_HOST`` (default 127.0.0.1; the image uses 0.0.0.0) and
+  ``PORT`` (default 8080), with ``UVICORN_WORKERS`` processes and 8 s of drain on SIGTERM. No
+  durable jobs: only the SDK outbox/idempotency and the ``tickets``/``ticket_approvals`` tables.
+  With ``HUB_DB_URL`` the app migrates and does the initial load (2 million × ``HUB_SEED_SCALE``) in the background.
+- ``seed``: migrates the schema and does the load outside the app, like the ``hub-seed`` service.
+- ``openapi``: prints the OpenAPI of API v1 (``hub pack`` embeds it as ``openapi.json``).
+- ``--health``: ``GET /servicos`` on the app itself (image HEALTHCHECK, no curl); exits 0 with 200.
 """
 
 from __future__ import annotations

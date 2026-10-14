@@ -1,23 +1,23 @@
-"""Armazenamento de arquivos do app (onda 10, contrato item 22): conexões da plataforma pelo **broker do hub** (SharePoint, S3) ou o
-bucket próprio do app (**S3 direto**, ``HUB_S3_*``). Trocar de backend é configuração
-(vínculo em Administração › Conexões), não código.
+"""App file storage (wave 10, contract item 22): platform connections through the **hub broker** (SharePoint, S3) or the
+app's own bucket (**direct S3**, ``HUB_S3_*``). Switching backend is configuration
+(binding in Administration › Connections), not code.
 
 .. code-block:: python
 
-    docs = storage.connection("contratos-docs")      # None se não vinculada
+    docs = storage.connection("contratos-docs")      # None if not linked
     if docs:
         docs = docs.for_user(req.headers.get("x-hub-user"), req.headers.get("x-hub-user-sig"))
         await docs.upload("2026/CT-1.pdf", upload.file, "application/pdf", length=n)
         d = await docs.download("2026/CT-1.pdf")     # d.chunks(): async iterator
 
-- **Broker** (``HUB_CONNECTIONS`` lista a conexão; ``HUB_STORAGE_URL`` + ``HUB_STORAGE_TOKEN``):
-  o hub guarda a credencial e executa a operação confinada à pasta-base da conexão; o app
-  nunca vê o segredo do cliente nem um token do Graph.
-- **S3 direto** (:func:`s3_direct`): SigV4 contra o bucket do app.
+- **Broker** (``HUB_CONNECTIONS`` lists the connection; ``HUB_STORAGE_URL`` + ``HUB_STORAGE_TOKEN``):
+  the hub keeps the credential and runs the operation confined to the connection's base folder; the app
+  never sees the client secret nor a Graph token.
+- **Direct S3** (:func:`s3_direct`): SigV4 against the app's bucket.
 
-Sem dependências novas: HTTP com ``http.client`` em ``asyncio.to_thread`` (upload a partir de
-arquivo/bytes sem carregar tudo na memória; download em pedaços). Caminhos validados aqui com
-as mesmas regras do hub (:func:`clean_path`).
+No new dependencies: HTTP with ``http.client`` in ``asyncio.to_thread`` (upload from a
+file/bytes without loading everything into memory; download in chunks). Paths validated here with
+the same rules as the hub (:func:`clean_path`).
 """
 
 from __future__ import annotations
@@ -58,8 +58,8 @@ CHUNK = 64 * 1024
 
 
 class StorageError(Exception):
-    """Falha de armazenamento: ``status`` HTTP (400 caminho, 403 operação não liberada,
-    404 inexistente ou conexão não vinculada, 409, 413, 429/503 transitório, 502 provedor)."""
+    """Storage failure: HTTP ``status`` (400 path, 403 operation not allowed,
+    404 missing or connection not linked, 409, 413, 429/503 transient, 502 provider)."""
 
     def __init__(self, status: int, message: str, retry_after: int | None = None) -> None:
         super().__init__(message)
@@ -103,10 +103,10 @@ class ShareLink:
 
 
 def clean_path(p: str, file: bool = True) -> str:
-    """Normaliza um caminho relativo à pasta-base (mesmas regras do hub): sem ``..``/``.``,
-    ``\\``, ``%``, ``:*?"<>|#``, controle, sósias Unicode de ``.``/``/``; segmentos sem
-    espaço no início nem espaço/ponto no fim; ≤ 255 bytes por segmento, ≤ 32 níveis,
-    ≤ 1024 bytes no total."""
+    """Normalizes a path relative to the base folder (same rules as the hub): no ``..``/``.``,
+    ``\\``, ``%``, ``:*?"<>|#``, control characters, Unicode look-alikes of ``.``/``/``; segments without
+    leading space nor trailing space/dot in the segment; ≤ 255 bytes per segment, ≤ 32 levels,
+    ≤ 1024 bytes in total."""
     if len(p.encode()) > 1024:
         raise StorageError(400, "Caminho longo demais.")
     segs: list[str] = []
@@ -134,7 +134,7 @@ def clean_path(p: str, file: bool = True) -> str:
 
 
 class Download:
-    """Corpo em streaming: ``async for chunk in d.chunks()``; ``aclose()`` libera a conexão."""
+    """Streaming body: ``async for chunk in d.chunks()``; ``aclose()`` releases the connection."""
 
     def __init__(self, content_type: str, length: int | None, resp: Any, conn: Any) -> None:
         self.content_type = content_type
@@ -201,7 +201,7 @@ def _retry_after(resp: http.client.HTTPResponse) -> int | None:
 
 
 class Connection:
-    """Uma conexão de armazenamento (use :func:`connection` ou :func:`s3_direct`)."""
+    """A storage connection (use :func:`connection` or :func:`s3_direct`)."""
 
     def __init__(self, name: str, kind: str) -> None:
         self.name = name
@@ -214,18 +214,18 @@ class Connection:
         return False
 
     def for_user(self, x_hub_user: str | None, x_hub_user_sig: str | None = None) -> Connection:
-        """Mesma conexão, registrando no hub o usuário da requisição.
+        """Same connection, recording the request's user on the hub.
 
-        Repasse o ``x-hub-user`` **e** o ``x-hub-user-sig`` (assinatura que o gateway
-        injetou): só com a assinatura o hub registra o usuário como autor; sem ela, o autor
-        é o app e o usuário aparece como "informado pelo app (não verificado)".
+        Forward the ``x-hub-user`` **and** the ``x-hub-user-sig`` (signature the gateway
+        injected): only with the signature does the hub record the user as the author; without it, the author
+        is the app and the user shows as "informado pelo app (não verificado)".
         """
         c = self._copy()
         c.user = x_hub_user or None
         c.user_sig = (x_hub_user_sig or None) if c.user is not None and c.user else None
         return c
 
-    def _copy(self) -> Connection:  # pragma: no cover — sobrescrito
+    def _copy(self) -> Connection:  # pragma: no cover — overridden
         raise NotImplementedError
 
     async def upload(self, path: str, data: Body, content_type: str, length: int | None = None) -> Item:
@@ -262,7 +262,7 @@ def _length(data: Body, length: int | None) -> int:
 
 
 class BrokerConnection(Connection):
-    """Pelo broker do hub (rede interna do app, token por app × ambiente)."""
+    """Through the hub's broker (app's internal network, token per app × environment)."""
 
     def __init__(self, name: str, kind: str, base: str, token: str) -> None:
         super().__init__(name, kind)
@@ -394,7 +394,7 @@ def _hmac(key: bytes, data: str) -> bytes:
 
 
 def _signing_key(secret: str, date: str, region: str) -> bytes:
-    """Chave de assinatura SigV4 (`AWS4` + segredo → data → região → s3 → aws4_request)."""
+    """SigV4 signing key (`AWS4` + secret → date → region → s3 → aws4_request)."""
     key = _hmac(f"AWS4{secret}".encode(), date)
     for part in (region, "s3", "aws4_request"):
         key = _hmac(key, part)
@@ -413,7 +413,7 @@ class S3Config:
 
 
 class S3Connection(Connection):
-    """Bucket do app (S3/MinIO) direto, SigV4 com ``UNSIGNED-PAYLOAD``."""
+    """App's bucket (S3/MinIO) direct, SigV4 with ``UNSIGNED-PAYLOAD``."""
 
     def __init__(self, name: str, cfg: S3Config) -> None:
         super().__init__(name, "s3")
@@ -582,17 +582,17 @@ class S3Connection(Connection):
         return ShareLink(url=self.presign_get(self._key(p), secs, now), kind="view", expires=exp)
 
     def presign_get(self, key: str, secs: int, now: dt.datetime) -> str:
-        """URL pré-assinada de leitura."""
+        """Pre-signed read URL."""
         return self.presign("GET", key, secs, now)
 
     def presign_put_path(self, path: str, secs: int, now: dt.datetime | None = None) -> str:
-        """URL pré-assinada de envio (``PUT``) para ``path`` (relativo à pasta-base) —
-        envios em duas fases (onda 12, 2.9)."""
+        """Pre-signed upload URL (``PUT``) for ``path`` (relative to the base folder) —
+        two-phase uploads (wave 12, 2.9)."""
         p = clean_path(path)
         return self.presign("PUT", self._key(p), secs, now or dt.datetime.now(dt.UTC))
 
     def presign(self, method: str, key: str, secs: int, now: dt.datetime) -> str:
-        """Assinatura SigV4 por query string (``GET``/``PUT``)."""
+        """SigV4 signature in the query string (``GET``/``PUT``)."""
         amz, date = now.strftime("%Y%m%dT%H%M%SZ"), now.strftime("%Y%m%d")
         base = (self.cfg.public_url or self.cfg.endpoint).rstrip("/")
         host = urlsplit(base).netloc
@@ -628,7 +628,7 @@ def _unxml(s: str) -> str:
 
 
 def bound() -> list[tuple[str, str]]:
-    """Conexões vinculadas a este app × ambiente (``HUB_CONNECTIONS`` = ``nome=tipo,…``)."""
+    """Connections linked to this app × environment (``HUB_CONNECTIONS`` = ``name=type,…``)."""
     out: list[tuple[str, str]] = []
     for part in os.environ.get("HUB_CONNECTIONS", "").split(","):
         name, _, kind = part.strip().partition("=")
@@ -638,7 +638,7 @@ def bound() -> list[tuple[str, str]]:
 
 
 class LocalConnection(Connection):
-    """Pasta local com a mesma API (``hub dev``: ``HUB_STORAGE_LOCAL_DIR``). Sem links de compartilhamento."""
+    """Local folder with the same API (``hub dev``: ``HUB_STORAGE_LOCAL_DIR``). No share links."""
 
     def __init__(self, name: str, root: str) -> None:
         super().__init__(name, "local")
@@ -670,7 +670,7 @@ class LocalConnection(Connection):
         full = self._p(path)
         if not os.path.isfile(full):
             raise StorageError(404, "Arquivo não encontrado.")
-        f = open(full, "rb")  # noqa: SIM115 — fechado por Download.aclose
+        f = open(full, "rb")  # noqa: SIM115 — closed by Download.aclose
         return Download("application/octet-stream", os.path.getsize(full), f, f)
 
     def _list(self, prefix: str) -> builtins.list[Item]:
@@ -725,8 +725,8 @@ class LocalConnection(Connection):
 
 
 def connection(name: str) -> Connection | None:
-    """Conexão ``name`` pelo broker do hub, se vinculada a este app × ambiente
-    (no ``hub dev``, ``HUB_STORAGE_LOCAL_DIR`` = pasta local com a mesma API)."""
+    """Connection ``name`` through the hub's broker, if linked to this app × environment
+    (in ``hub dev``, ``HUB_STORAGE_LOCAL_DIR`` = local folder with the same API)."""
     local = os.environ.get("HUB_STORAGE_LOCAL_DIR", "").strip()
     if local:
         return LocalConnection(name, local)
@@ -739,5 +739,5 @@ def connection(name: str) -> Connection | None:
 
 
 def s3_direct(name: str, cfg: S3Config) -> Connection:
-    """Bucket próprio do app (S3/MinIO direto)."""
+    """App's own bucket (direct S3/MinIO)."""
     return S3Connection(name, cfg)

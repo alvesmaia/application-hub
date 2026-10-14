@@ -1,4 +1,4 @@
-"""Unidades sem HTTP nem banco: modelo, relatório, sessões, nav, busca, CLI."""
+"""Units without HTTP or DB: model, report, sessions, nav, search, CLI."""
 
 from __future__ import annotations
 
@@ -65,13 +65,13 @@ def test_sessions_lru_is_bounded_and_keeps_recent_reports() -> None:
     s = Sessions(2, 2)
     s.touch("a", lambda _: None)
     s.touch("b", lambda _: None)
-    s.touch("a", lambda _: None)  # "a" fica mais recente
+    s.touch("a", lambda _: None)  # "a" is the most recent
     s.touch("c", lambda _: None)  # descarta "b"
     assert s.stats().sessions == 2 and s.get_report("b", "x") is None
     r = _report()
     for k in ("p1", "p2", "p3"):
         s.put_report("a", k, r)
-    assert s.get_report("a", "p3") is r and s.get_report("a", "p1") is None  # só 2 por sessão
+    assert s.get_report("a", "p3") is r and s.get_report("a", "p1") is None  # only 2 per session
     assert s.stats().approx_bytes > 0 and s.get_report("a", "nada") is None
 
 

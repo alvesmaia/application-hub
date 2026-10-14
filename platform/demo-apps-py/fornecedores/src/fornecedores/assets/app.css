@@ -1,4 +1,4 @@
-/* identidade:inicio — Rede de Fornecedores — terracota e terra, títulos com serifa (CONTRATO-APP §29).
+/* identidade:inicio — Supplier Network — terracotta and earth, serif titles (CONTRATO-APP §29).
    Tokens PRÓPRIOS do app: no CSS do app, `:root` vale para a área do app (#app-root) e o hub
    repassa cada `--app-<papel>` para o que desenha ali. Variante escura obrigatória (claro e
    escuro conferidos por scripts/gen-dark-theme.mjs --check: texto ≥ 4,5:1, formas ≥ 3:1). */
@@ -90,7 +90,7 @@
   }
 }
 /* identidade:fim */
-/* Forma: títulos com serifa (fonte do sistema), cantos suaves. */
+/* Shape: serif titles (system font), soft corners. */
 h1, h2, h3, .page-title { font-family: var(--font-display) !important; letter-spacing: 0; }
 .app-sidebar .sidebar-app strong, .app2-brand strong { font-family: var(--font-display) !important; }
 /* forma:fim */
@@ -356,11 +356,11 @@ h1, h2, h3, .page-title { font-family: var(--font-display) !important; letter-sp
 }
 
 
-/* Identidade Alvesmaia: item ativo da barra lateral igual ao rail da plataforma. */
+/* Alvesmaia identity: active sidebar item same as the platform rail. */
 .app2-sidebar .nav-item.active{background:var(--color-chrome-active-bg)!important;color:var(--am-chrome-text)!important;box-shadow:inset 3px 0 0 var(--color-chrome-active-bar)}
 
-/* Painel: saudação em superfície clara (o navy fica para o cromo da plataforma); barras
- * do gráfico numa cor só (uma série). */
+/* Panel: greeting on a light surface (navy is kept for the platform chrome); chart
+ * bars in a single color (one series). */
 .app2-welcome{background:var(--am-surface);color:var(--am-body);border:1px solid var(--am-border)}
 .app2-welcome:after{display:none}
 .app2-welcome .app2-kicker{color:var(--am-primary)}
@@ -369,6 +369,6 @@ h1, h2, h3, .page-title { font-family: var(--font-display) !important; letter-sp
 .app2-welcome .app2-primary{color:var(--am-on-primary);background:var(--am-primary);border-color:var(--am-primary)}
 .app2-bar-col:nth-child(2n) i{background:var(--am-fill)}
 
-/* Campos: borda de controle (3:1 nos dois temas); busca de fornecedores idem. */
+/* Fields: control border (3:1 in both themes); supplier search likewise. */
 .app2-form-grid input,.app2-form-grid select,.app2-search{border-color:var(--am-control)}
 .app2-search:focus-within{outline:2px solid var(--am-accent);outline-offset:1px}

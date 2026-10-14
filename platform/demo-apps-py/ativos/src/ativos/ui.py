@@ -1,6 +1,6 @@
-"""Utilitários de renderização: escape, query string,
-avisos, encaixe de conteúdo dinâmico no workspace do mockup e formatação pt-BR (a tradução
-para en é feita depois, por :class:`ativos.i18n.I18nMiddleware`)."""
+"""Rendering utilities: escaping, query string,
+warnings, fitting dynamic content into the mockup workspace, and pt-BR formatting (translation
+to en is done later, by :class:`ativos.i18n.I18nMiddleware`)."""
 
 from __future__ import annotations
 
@@ -19,13 +19,13 @@ def esc(s: str) -> str:
 
 
 def query(pairs: Sequence[tuple[str, str]]) -> str:
-    """``?k=v&…`` só com os pares não vazios."""
+    """``?k=v&…`` only with the non-empty pairs."""
     q = [f"{k}={quote(v, safe='')}" for k, v in pairs if v]
     return "?" + "&".join(q) if q else ""
 
 
 def param(q: Mapping[str, str], k: str) -> str:
-    """Primeiro valor de um parâmetro de formulário/query, aparado."""
+    """First value of a form/query parameter, trimmed."""
     return (q.get(k) or "").strip()
 
 
@@ -48,8 +48,8 @@ _BTN = '<button class="mobile-menu-button"'
 
 
 def wrap(template: str, content: str) -> str:
-    """Troca o conteúdo de ``<section class="workspace-content …">`` de um fragmento pelo
-    ``content``, preservando a sidebar e o botão de menu móvel."""
+    """Replaces the content of ``<section class="workspace-content …">`` of a fragment with
+    ``content``, preserving the sidebar and the mobile menu button."""
     start = template.find('<section class="workspace-content')
     if start < 0:
         return content

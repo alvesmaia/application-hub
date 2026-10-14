@@ -1,5 +1,5 @@
-"""Regras puras do Coletor: catálogo determinístico, EAN-13, normalização de leitura,
-situação das linhas, divergências e SVG dos códigos."""
+"""Pure rules of the Coletor: deterministic catalog, EAN-13, reading normalization,
+row status, divergences and the codes' SVG."""
 
 from __future__ import annotations
 
@@ -77,7 +77,7 @@ def test_svg_every_format(fmt: str, value: str, full: str) -> None:
     s = str(barcodes.svg(fmt, value))
     assert s.startswith("<svg") and s.endswith("</svg>")
     assert f'data-code-value="{full}"' in s and 'role="img"' in s
-    # Só elementos aceitos pelo sanitizador do hub, nada de script/estilo.
+    # Only elements accepted by the hub sanitizer, no script/style.
     assert set(re.findall(r"<(\w+)", s)) <= {"svg", "rect", "path"}
     assert "<script" not in s and "style=" not in s
     d = re.search(r' d="([^"]*)"', s)

@@ -1,16 +1,16 @@
-"""Identidade injetada pelo hub no cabeçalho ``x-hub-user``.
+"""Identity injected by the hub in the ``x-hub-user`` header.
 
-Formato (contrato, ver ``docs/CONTRATO-APP.md``): JSON em **base64url sem padding**::
+Format (contract, see ``docs/CONTRATO-APP.md``): JSON in **base64url without padding**::
 
     {"user": "ana@corp.com", "roles": ["Administrador"], "id": "u1a2b3c4",
      "name": "Ana", "email": "ana@corp.com", "permissions": ["acessar_aplicacoes"]}
 
-``user`` (login) e ``roles`` sempre presentes; os demais só quando preenchidos.
+``user`` (login) and ``roles`` always present; the others only when filled.
 
-Regras de confiança: o gateway **sempre** descarta qualquer ``x-hub-*`` vindo do
-navegador e injeta o seu — o app confia no cabeçalho porque só o hub o alcança (rede
-interna ``hub-app-<id>``). Ausente ou inválido → identidade de convidado (o app nunca
-deve tratar isso como administrador).
+Trust rules: the gateway **always** discards any ``x-hub-*`` coming from the browser and injects its own —
+the app trusts the header because only the hub can reach it (internal network
+``hub-app-<id>``). Missing or invalid → guest identity (the app must never treat
+that as administrator).
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ from starlette.requests import HTTPConnection
 USER_HEADER = "x-hub-user"
 ENV_HEADER = "x-hub-env"
 GUEST = "convidado"
-# Teto do cabeçalho decodificado (o hub nunca manda mais que alguns KiB).
+# Cap on the decoded header (the hub never sends more than a few KiB).
 MAX_HEADER = 16 * 1024
 
 
@@ -37,12 +37,12 @@ class Identity:
     name: str = ""
     email: str = ""
     permissions: tuple[str, ...] = field(default_factory=tuple)
-    # Idioma do usuário (onda 9): ``pt-BR`` ou ``en``; vazio em hubs anteriores.
+    # User language (wave 9): ``pt-BR`` or ``en``; empty on older hubs.
     locale: str = ""
 
     @property
     def display_name(self) -> str:
-        """Nome para exibir (`name`, senão o login)."""
+        """Display name (`name`, otherwise the login)."""
         return self.name.strip() or self.user
 
     @property
@@ -53,7 +53,7 @@ class Identity:
         return p in self.permissions
 
     def encode(self) -> str:
-        """Valor do cabeçalho (para testes e para o `hub dev`)."""
+        """Header value (for tests and for `hub dev`)."""
         d: dict[str, object] = {"user": self.user, "roles": list(self.roles)}
         for k in ("id", "name", "email", "locale"):
             v = getattr(self, k)
@@ -75,7 +75,7 @@ def _str_list(v: object) -> tuple[str, ...]:
 
 
 def parse_identity(value: str | None) -> Identity | None:
-    """Decodifica o cabeçalho; ``None`` se ausente ou inválido."""
+    """Decodes the header; ``None`` if missing or invalid."""
     if value is None or not value:
         return None
     v = value.strip()
@@ -108,17 +108,17 @@ def parse_identity(value: str | None) -> Identity | None:
 
 
 def identity_of(conn: HTTPConnection) -> Identity:
-    """Identidade da requisição (convidado se ausente/inválida). Use como dependência
-    do FastAPI: ``ident: Identity = Depends(identity_of)``."""
+    """Request identity (guest if missing or invalid). Use as a dependency
+    of FastAPI: ``ident: Identity = Depends(identity_of)``."""
     return parse_identity(conn.headers.get(USER_HEADER)) or GUEST_IDENTITY
 
 
 def user_key(headers_value: str | None) -> str:
-    """Valor cru do cabeçalho, aparado — é o escopo das chaves de idempotência (a chave de outro usuário nunca devolve a resposta deste)."""
+    """Raw header value, trimmed — it is the scope of the idempotency keys (another user's key never returns this user's response)."""
     return (headers_value or "").strip()
 
 
 def env_of(conn: HTTPConnection) -> str:
-    """Ambiente que o hub declarou (`producao`/`staging`); padrão produção."""
+    """Environment declared by the hub (`producao`/`staging`); default is production."""
     v = conn.headers.get(ENV_HEADER, "producao").strip()
     return v if v in ("producao", "staging") else "producao"

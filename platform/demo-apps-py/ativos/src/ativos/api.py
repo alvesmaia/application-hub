@@ -1,10 +1,10 @@
-"""API v1 do ``ativos`` (onda 11): cadastro de ativos (CRUD com controle otimista), busca,
-exportação XLSX como tarefa durável e a saga "cadastro documentado". JSON; erros RFC 9457.
+"""API v1 of ``ativos`` (wave 11): asset registry (CRUD with optimistic locking), search,
+XLSX export as a durable job, and the "documented registration" saga. JSON; RFC 9457 errors.
 
-Mesmas regras da tela: identidade do hub obrigatória (``x-hub-user``), validação por coluna
-(:func:`ativos.model.validate`), auditoria no outbox na mesma transação e idempotência
-(``Idempotency-Key``) pelo middleware do SDK. OpenAPI nativo do FastAPI em
-``/ativos/api/openapi.json``; cada operação vira ferramenta MCP (``hub_sdk.mcp``).
+Same rules as the screen: hub identity required (``x-hub-user``), per-column validation
+(:func:`ativos.model.validate`), audit in the outbox in the same transaction, and idempotency
+(``Idempotency-Key``) via the SDK middleware. Native FastAPI OpenAPI at
+``/ativos/api/openapi.json``; each operation becomes an MCP tool (``hub_sdk.mcp``).
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ VERSION = "1.0.0"
 
 
 class AssetFields(BaseModel):
-    """Campos editáveis de um ativo (a validação por coluna é a da tela)."""
+    """Editable fields of an asset (the per-column validation is the screen's)."""
 
     tag: str | None = None
     name: str | None = None
@@ -64,7 +64,7 @@ class AssetUpdate(BaseModel):
 
 
 class AssetRow(BaseModel):
-    """Linha da lista de ativos."""
+    """Row of the asset list."""
 
     id: int
     tag: str
@@ -91,7 +91,7 @@ class ExportIn(BaseModel):
 
 
 class Registration(BaseModel):
-    """Pedido de cadastro documentado (saga de exemplo, onda 12 — 2.9)."""
+    """Documented registration request (example saga, wave 12 — 2.9)."""
 
     tag: str
     name: str
@@ -134,7 +134,7 @@ def asset_json(row: Any) -> dict[str, Any]:
 
 
 def register_api(app: FastAPI, st: Any) -> None:
-    from ativos import app as core  # import tardio: o módulo principal já está carregado
+    from ativos import app as core  # lazy import: the main module is already loaded
 
     def db_ok() -> bool:
         return core.db_notice(st) is None
@@ -264,7 +264,7 @@ def register_api(app: FastAPI, st: Any) -> None:
             return _unavailable(str(e))
         if current is None:
             return problem(404, "ativo não encontrado")
-        # Campos ausentes mantêm o valor atual.
+        # Missing fields keep their current value.
         merged = {k: v for k, v in asset_values(current).items() if v != ""}
         merged.update(body.fields.model_dump(exclude_none=True))
         keys = tuple(k for k in EDIT_FIELDS if k != "tag")

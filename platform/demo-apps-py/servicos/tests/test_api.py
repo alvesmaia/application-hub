@@ -1,4 +1,4 @@
-"""API v1, OpenAPI (igual ao contrato empacotado em samples/), MCP interno e idempotência."""
+"""API v1, OpenAPI (same as the contract packaged in samples/), internal MCP and idempotency."""
 
 from __future__ import annotations
 
@@ -76,7 +76,7 @@ async def test_mcp_tools_come_from_the_openapi(running: Running) -> None:
         },
         headers={**HUB, "x-hub-user": ANA},
     )
-    assert "banco de dados" in call.text  # sem banco: 503 problem, mas a ferramenta responde
+    assert "banco de dados" in call.text  # no DB: 503 problem, but the tool responds
 
 
 async def test_api_requires_identity_and_db(running: Running) -> None:
@@ -105,7 +105,7 @@ async def test_api_requires_identity_and_db(running: Running) -> None:
         assert r.status_code == 503 and r.headers["retry-after"] == "2", path
     bad = await c.post(f"{BASE}/tickets", json={"title": "t"})
     assert bad.status_code == 422 and "category" in bad.json()["detail"]
-    # fora da API a validação do FastAPI segue o padrão
+    # outside the API, FastAPI validation keeps its standard format
     assert (await c.post("/servicos/requests/1")).status_code in (404, 503)
 
 

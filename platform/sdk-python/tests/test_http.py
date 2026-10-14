@@ -1,4 +1,4 @@
-"""Middleware de idempotência (modo em memória) e endpoints internos, por HTTP."""
+"""Idempotency middleware (in-memory mode) and internal endpoints, over HTTP."""
 
 from __future__ import annotations
 
@@ -65,11 +65,11 @@ async def test_replay_mismatch_and_user_scope_with_chunked_bodies() -> None:
             return r.status_code, bool(r.headers.get(REPLAY_HEADER) == "true"), r.text
 
         assert await send("ana", b"a=1&", b"b=2") == (201, False, "a=1&b=2")
-        # mesmo conteúdo, pedaços diferentes → repetição
+        # same content, different chunks → replay
         assert await send("ana", b"a=", b"1&b=2") == (201, True, "a=1&b=2")
-        # conteúdo diferente só no fim → 422
+        # different content only at the end → 422
         assert (await send("ana", b"a=1&", b"b=3"))[0] == 422
-        # outro usuário com a mesma chave nunca recebe a resposta de ana
+        # another user with the same key never gets ana's response
         assert await send("bia", b"a=1&", b"b=2") == (201, False, "a=1&b=2")
     assert len(calls) == 2
 
@@ -82,7 +82,7 @@ async def test_large_body_is_spooled_hashed_and_replayed() -> None:
         r1 = await c.post("/x", content=big, headers=h)
         assert r1.status_code == 201 and len(r1.content) == len(big)
         r2 = await c.post("/x", content=big, headers=h)
-        # resposta acima de 256 KiB não é guardada: a repetição recebe 200 "já concluída"
+        # response above 256 KiB is not stored: the replay gets 200 "já concluída"
         assert r2.status_code == 200 and r2.headers[REPLAY_HEADER] == "true"
         assert "Operação já concluída" in r2.text
         other = bytearray(big)
@@ -113,8 +113,8 @@ async def test_invalid_key_and_non_storable_status() -> None:
         h = {HEADER: "falha-transitoria-1"}
         assert (await c.post("/fail", headers=h)).status_code == 503
         r = await c.post("/fail", headers=h)
-        assert r.status_code == 503 and REPLAY_HEADER not in r.headers  # 5xx não é guardado
-        # sem chave: passa direto, sem idempotência
+        assert r.status_code == 503 and REPLAY_HEADER not in r.headers  # 5xx is not stored
+        # no key: passes straight through, no idempotency
         assert (await c.post("/x", content=b"k")).status_code == 201
 
 

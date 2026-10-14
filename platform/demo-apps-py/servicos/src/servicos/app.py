@@ -1,22 +1,22 @@
-"""Central de Serviços — app FastAPI da plataforma (``HUB_DEMO_APP=servicos``; mesmas rotas, mesmo markup, mesma base de dados).
+"""Service Center — the platform's FastAPI app (``HUB_DEMO_APP=servicos``; same routes, same markup, same database).
 
-Chamados no Postgres (milhões de linhas, alto volume de escrita), relatório gerencial agregado
-com exportação CSV e cache de sessão por usuário em memória (LRU limitado).
+Tickets in Postgres (millions of rows, high write volume), aggregated management report
+with CSV export and a per-user session cache in memory (bounded LRU).
 
-Rotas (todas sob ``/servicos``; o hub as expõe em ``/_frag/servicos/...``):
+Routes (all under ``/servicos``; the hub exposes them at ``/_frag/servicos/...``):
 
-- ``GET /servicos`` · ``/servicos/{dashboard,approvals,knowledge,settings}`` — fragmentos do mockup
-  (``fragments/``), todos com o item extra "Relatórios" na sidebar;
-- ``GET /servicos/requests?status=&categoria=&prioridade=&protocolo=&antes=`` (paginação por chave,
-  rápida em qualquer profundidade) e ``?new=1``; ``POST /servicos/requests`` (abrir) e
-  ``POST /servicos/requests/{id}`` (mudar status, com ``version``: desatualizada → 409);
-- ``GET /servicos/reports?de=&ate=&agrupar=&categoria=`` e ``…/reports/export.csv`` (operação pesada);
-- ``GET /servicos/_skeleton`` · ``/servicos/assets/{demo.css,app.css}`` (sem JavaScript);
-- ``/servicos/api/v1/*`` (OpenAPI em ``/servicos/api/openapi.json``; ferramentas MCP geradas dele) e
-  ``/servicos/_hub/*`` (endpoints internos do hub-sdk, inclusive ``approvals`` — decisão da Inbox).
+- ``GET /servicos`` · ``/servicos/{dashboard,approvals,knowledge,settings}`` — mockup fragments
+  (``fragments/``), all with the extra "Reports" item in the sidebar;
+- ``GET /servicos/requests?status=&categoria=&prioridade=&protocolo=&antes=`` (key-based pagination,
+  fast at any depth) and ``?new=1``; ``POST /servicos/requests`` (open) and
+  ``POST /servicos/requests/{id}`` (change status, with ``version``: outdated → 409);
+- ``GET /servicos/reports?de=&ate=&agrupar=&categoria=`` and ``…/reports/export.csv`` (heavy operation);
+- ``GET /servicos/_skeleton`` · ``/servicos/assets/{demo.css,app.css}`` (no JavaScript);
+- ``/servicos/api/v1/*`` (OpenAPI at ``/servicos/api/openapi.json``; MCP tools generated from it) and
+  ``/servicos/_hub/*`` (hub-sdk internal endpoints, including ``approvals`` — Inbox decision).
 
-Toda ação que grava dados grava também o evento de auditoria no outbox e a marca de idempotência
-**na mesma transação** (abrir com "Precisa de aprovação" publica o pedido na Inbox do hub).
+Every action that writes data also writes the audit event to the outbox and the idempotency marker
+**in the same transaction** (opening with "Needs approval" publishes the request to the hub Inbox).
 """
 
 from __future__ import annotations
@@ -96,7 +96,7 @@ def to_i64(s: str) -> int | None:
 
 
 def shared_assets_dir() -> Path:
-    """``demo.css`` compartilhado: ``SERVICOS_SHARED_ASSETS`` ou ``platform/demo-apps/assets``."""
+    """``demo.css`` shared: ``SERVICOS_SHARED_ASSETS`` or ``platform/demo-apps/assets``."""
     env = os.environ.get("SERVICOS_SHARED_ASSETS", "")
     return Path(env) if env else HERE.parents[3] / "demo-apps" / "assets"
 
@@ -108,7 +108,7 @@ def approver_roles() -> list[str]:
 
 # ---- carga inicial -------------------------------------------------------------------------------
 def seed_rows() -> int:
-    """Linhas da carga: ``SERVICOS_SEED_ROWS`` ou 2 milhões × ``HUB_SEED_SCALE``."""
+    """Seed rows: ``SERVICOS_SEED_ROWS`` or 2 million × ``HUB_SEED_SCALE``."""
     if os.environ.get("SERVICOS_SEED_ROWS", ""):
         try:
             return int(os.environ["SERVICOS_SEED_ROWS"])
@@ -122,7 +122,7 @@ def seed_rows() -> int:
 
 
 async def seed_into(c: Any, rows: int) -> None:
-    """Carga idempotente e retomável: lotes de 50 mil gerados no Postgres; lote presente é pulado."""
+    """Idempotent, resumable seed load: batches of 50k generated in Postgres; a batch already present is skipped."""
     t0 = time.monotonic()
     total = str(max(rows, 1))
     sql = SEED_SQL.replace("{TOTAL}", total)
@@ -149,7 +149,7 @@ async def seed(sdk: HubSdk) -> None:
 
 
 async def run_seed() -> int:
-    """``python -m servicos seed``: migra o esquema e faz a carga (2 milhões × ``HUB_SEED_SCALE``)."""
+    """``python -m servicos seed``: migrates the schema and loads the data (2 million × ``HUB_SEED_SCALE``)."""
     from hub_sdk.db import app_env
 
     url = app_env(APP_ID, "HUB_DB_URL")
@@ -173,14 +173,14 @@ def fold(s: str) -> str:
 
 
 def generic_term(q: str) -> bool:
-    """A busca é o nome da entidade ("chamados", "ticket")? Então os mais recentes respondem."""
+    """Is the search the entity name ("chamados", "ticket")? Then the most recent ones answer."""
     f = fold(q)
     return len(f) >= 4 and any(n.startswith(f) or f.startswith(n) for n in NOUNS)
 
 
 def make_search(sdk: HubSdk) -> Any:
-    """Busca federada (onda 9): protocolo exato (índice único) + título/protocolo nos 20 mil chamados
-    mais recentes → ``/apps/servicos/requests?protocolo=<protocolo>``."""
+    """Federated search (wave 9): exact reference (unique index) + title/reference across the 20k most
+    recent tickets → ``/apps/servicos/requests?protocolo=<protocolo>``."""
 
     async def search(q: SearchQuery) -> list[SearchHit]:
         if sdk.pool is None or not sdk.db_ready:
@@ -220,11 +220,11 @@ def make_search(sdk: HubSdk) -> Any:
     return search
 
 
-# ---- aprovações pela Inbox -----------------------------------------------------------------------
+# ---- approvals via the Inbox -----------------------------------------------------------------------
 async def request_approval(
     c: Any, ticket_id: int, protocol: str, title: str, requester_login: str, requester_name: str
 ) -> None:
-    """Pedido de aprovação de um chamado recém-aberto (na transação da abertura)."""
+    """Approval request for a newly opened ticket (in the opening transaction)."""
     await c.execute(
         "INSERT INTO ticket_approvals (ticket_id, requested_by, requested_by_name) VALUES ($1, $2, $3) "
         "ON CONFLICT DO NOTHING",
@@ -245,8 +245,8 @@ async def request_approval(
 
 
 def make_approvals(sdk: HubSdk) -> Any:
-    """Decisão vinda da Inbox do hub (``POST /servicos/_hub/approvals/sd-<id>``): aprovado → "Em
-    atendimento"; recusado → "Fechado"; auditoria + notificação a quem pediu, na mesma transação."""
+    """Decision coming from the hub Inbox (``POST /servicos/_hub/approvals/sd-<id>``): approved → "In
+    progress"; rejected → "Closed"; audit + notification to the requester, in the same transaction."""
 
     async def decide(d: ap.ApprovalDecision) -> str:
         m = re.fullmatch(r"sd-([0-9]+)", d.approval_id)
@@ -335,8 +335,8 @@ class State:
         return None if body is None else personalize(body, user_of(req), from_headers(req.headers))
 
     def page(self, section: str, req: Request, active: str | None = None) -> str | None:
-        """Fragmento de ``section`` com o contexto do hub e o item "Relatórios" na sidebar
-        (``active`` marca o item ativo das páginas extras)."""
+        """``section`` fragment with the hub context and the "Reports" item in the sidebar
+        (``active`` marks the active item of the extra pages)."""
         body = self.raw(section)
         if body is None:
             return None
@@ -344,8 +344,8 @@ class State:
         return views.inject_nav(body, active or section)
 
     async def status_counts(self) -> dict[str, int]:
-        """Contagem por status (cache de 15 s: um ``GROUP BY`` em milhões de linhas por página
-        vista seria desperdício)."""
+        """Count per status (15 s cache: a ``GROUP BY`` over millions of rows on every page
+        view would be wasteful)."""
         if self.counts is not None and time.monotonic() - self.counts[0] < COUNT_TTL_S:
             return self.counts[1]
         out: dict[str, int] = {}
@@ -372,9 +372,9 @@ def create_app() -> FastAPI:
     sdk.install(app)
     app.add_middleware(I18nMiddleware)
     app.state.servicos = st
-    e2e_hostile.install(app, APP_ID)  # só com HUB_DEMO_E2E_HOSTILE=1 (testes)
+    e2e_hostile.install(app, APP_ID)  # only with HUB_DEMO_E2E_HOSTILE=1 (tests)
     register(app, st)
-    # Onda 11: API v1 (OpenAPI em /servicos/api/openapi.json; MCP interno gerado dele).
+    # Wave 11: API v1 (OpenAPI at /servicos/api/openapi.json; internal MCP generated from it).
     from servicos.api import register_api
 
     register_api(app, st)
@@ -427,7 +427,7 @@ def retry_after(resp: Response, secs: int = 2) -> Response:
 
 
 async def audit_tx(conn: Any, req: Request, action: str, target: str, detail: str) -> None:
-    """Evento de auditoria + marca de idempotência na transação da ação."""
+    """Audit event + idempotency marker in the action's transaction."""
     await outbox.write(conn, outbox.audit(user_of(req), action, target, detail))
     ctx = idem_ctx(req)
     if ctx is not None:
@@ -435,8 +435,8 @@ async def audit_tx(conn: Any, req: Request, action: str, target: str, detail: st
 
 
 def session_key(req: Request) -> tuple[str, str | None]:
-    """Sessão do usuário: cookie ``svc_sid`` + usuário da identidade injetada. Devolve a chave e o
-    sid novo (a gravar no cookie) quando o navegador ainda não tem um."""
+    """User session: ``svc_sid`` cookie + user from the injected identity. Returns the key and the
+    new sid (to write to the cookie) when the browser does not have one yet."""
     user = user_of(req)
     for line in req.headers.getlist("cookie"):
         for part in line.split(";"):
@@ -482,7 +482,7 @@ def register(app: FastAPI, st: State) -> None:
             return Response(status_code=404)
         return Response(body, media_type=CSS, headers={"cache-control": "no-cache"})
 
-    # ---- lista, abertura e atualização -----------------------------------------------------------
+    # ---- list, open and update -----------------------------------------------------------
     @app.get("/servicos/requests")
     async def requests_page(req: Request) -> Response:
         key, new_sid = session_key(req)

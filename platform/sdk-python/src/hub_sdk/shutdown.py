@@ -1,15 +1,15 @@
-"""Desligamento gracioso (SIGTERM do ``docker stop``/redeploy, Ctrl+C).
+"""Graceful shutdown (SIGTERM from ``docker stop``/redeploy, Ctrl+C).
 
-Com uvicorn, a ordem é:
+With uvicorn, the order is:
 
-1. SIGTERM → :meth:`Shutdown.chain_signals` dispara o sinal **na hora** (o worker de
-   tarefas para de assumir novas; a tarefa em curso termina o lote atual e devolve o
-   lease sem gastar tentativa) e repassa o sinal ao uvicorn;
-2. o uvicorn para de aceitar conexões e drena as abertas;
-3. no ``lifespan`` de saída, :meth:`Shutdown.drain` espera o trabalho em curso por um
-   prazo menor que o ``stop_timeout`` do container (10 s no Docker).
+1. SIGTERM → :meth:`Shutdown.chain_signals` fires the signal **immediately** (the jobs worker
+   stops taking new ones; the running job finishes the current batch and returns the
+   lease without spending an attempt) and forwards the signal to uvicorn;
+2. uvicorn stops accepting connections and drains the open ones;
+3. in the exit ``lifespan``, :meth:`Shutdown.drain` waits for the work in progress for a
+   shorter deadline than the container's ``stop_timeout`` (10 s in Docker).
 
-SIGKILL/OOM não passam por aqui: aí vale o lease vencido (ver :mod:`hub_sdk.jobs`).
+SIGKILL/OOM do not go through here: the expired lease applies then (see :mod:`hub_sdk.jobs`).
 """
 
 from __future__ import annotations
@@ -26,9 +26,9 @@ from typing import Any
 
 log = logging.getLogger("hub_sdk.shutdown")
 
-# Ganchos do processo: chamados (uma vez) quando qualquer Shutdown deste processo dispara —
-# ex.: repassar o SIGTERM ao processo de tarefas (``HUB_JOBS_MODE=process``) na hora, para
-# os dois drenarem em paralelo dentro dos 10 s do ``docker stop``.
+# Process hooks: called (once) when any Shutdown of this process fires —
+# e.g. forwarding SIGTERM to the jobs process (``HUB_JOBS_MODE=process``) right away, so
+# both drain in parallel within the 10 s of ``docker stop``.
 _PROCESS_HOOKS: list[Callable[[], None]] = []
 _HOOKS_LOCK = threading.Lock()
 
@@ -82,7 +82,7 @@ class Shutdown:
         with self._lock:
             waiters = list(self._waiters)
         for loop, ev in waiters:
-            with contextlib.suppress(RuntimeError):  # laço já fechado
+            with contextlib.suppress(RuntimeError):  # loop already closed
                 loop.call_soon_threadsafe(ev.set)
 
     @property
@@ -90,7 +90,7 @@ class Shutdown:
         return self._flag.is_set()
 
     async def wait(self) -> None:
-        """Resolve quando o desligamento é disparado."""
+        """Resolves when the shutdown is triggered."""
         if self._flag.is_set():
             return
         ev = asyncio.Event()
@@ -117,7 +117,7 @@ class Shutdown:
             return self._inflight
 
     async def drain(self, timeout: float) -> bool:
-        """Espera o trabalho em curso terminar (até ``timeout`` s); ``True`` se drenou."""
+        """Waits for the work in progress to finish (up to ``timeout`` s); ``True`` if it drained."""
         deadline = time.monotonic() + timeout
         while self.inflight > 0:
             if time.monotonic() >= deadline:
@@ -126,9 +126,9 @@ class Shutdown:
         return True
 
     def chain_signals(self) -> None:
-        """Encadeia SIGTERM/SIGINT: dispara este desligamento e chama o tratador
-        anterior (o do uvicorn). Chamar no lifespan de entrada (depois que o uvicorn
-        instalou os dele). Fora da thread principal não faz nada."""
+        """Chains SIGTERM/SIGINT: triggers this shutdown and calls the previous handler
+        (uvicorn's). Call in the entry lifespan (after uvicorn
+        has installed its own). Outside the main thread it does nothing."""
         if threading.current_thread() is not threading.main_thread():
             return
         for sig in (signal.SIGTERM, signal.SIGINT):

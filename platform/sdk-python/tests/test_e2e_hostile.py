@@ -1,4 +1,4 @@
-"""As rotas de teste anti-phishing só existem com HUB_DEMO_E2E_HOSTILE=1."""
+"""The anti-phishing test routes only exist with HUB_DEMO_E2E_HOSTILE=1."""
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient

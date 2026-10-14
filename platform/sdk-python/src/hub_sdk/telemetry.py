@@ -1,17 +1,17 @@
-"""Traces do app (onda 8).
+"""App traces (wave 8).
 
-- :class:`TraceMiddleware` (ASGI puro, funciona com respostas em streaming): lê o
-  ``traceparent`` que o gateway injeta (o do navegador é descartado pelo hub), abre o span
-  ``server`` do app como filho do span do hub e guarda o contexto num ``ContextVar``.
-- :func:`db` — ``async with telemetry.db("SELECT contratos"):`` cria o span ``client`` do
-  banco, filho do atual; :func:`sql_comment` devolve ``/*traceparent='…'*/`` (sqlcommenter)
-  para prefixar o SQL (aparece no ``pg_stat_activity``/logs do Postgres).
-- :class:`Telemetry` guarda os spans num buffer limitado; o hub os busca por
-  ``GET /{app}/_hub/telemetry?after=`` (os apps não alcançam o plano de controle) junto com
-  os medidores de saturação (:meth:`Telemetry.set_gauges`).
+- :class:`TraceMiddleware` (pure ASGI, works with streaming responses): reads the
+  ``traceparent`` the gateway injects (the browser's is discarded by the hub), opens the
+  ``server`` span of the app as a child of the hub's span and stores the context in a ``ContextVar``.
+- :func:`db` — ``async with telemetry.db("SELECT contratos"):`` creates the ``client`` span of the
+  database, child of the current one; :func:`sql_comment` returns ``/*traceparent='…'*/`` (sqlcommenter)
+  to prefix the SQL (it shows up in ``pg_stat_activity``/the Postgres logs).
+- :class:`Telemetry` keeps the spans in a bounded buffer; the hub fetches them via
+  ``GET /{app}/_hub/telemetry?after=`` (apps cannot reach the control plane), along with
+  the saturation gauges (:meth:`Telemetry.set_gauges`).
 
-Sem dependências novas (não usa o SDK do OpenTelemetry: a imagem fixa tudo por hash); o
-formato dos spans é o do hub (``hub_telemetry::Span``), que o reexporta via OTLP.
+No new dependencies (does not use the OpenTelemetry SDK: the image pins everything by hash); the
+span format is the hub's (``hub_telemetry::Span``), which re-exports it via OTLP.
 """
 
 from __future__ import annotations
@@ -95,7 +95,7 @@ class Telemetry:
 
     def pending(self, after: int, limit: int) -> tuple[list[dict[str, Any]], int]:
         with self._lock:
-            if after > self._seq:  # app reiniciou: sequência zerada
+            if after > self._seq:  # app restarted: sequence reset
                 after = 0
             out = [(n, s) for n, s in self._spans if n > after][:limit]
         nxt = out[-1][0] if out else after
@@ -128,7 +128,7 @@ class Telemetry:
         return d
 
 
-# (contexto atual, telemetria) — disponível durante a requisição.
+# (current context, telemetry) — available during the request.
 _CURRENT: ContextVar[tuple[TraceContext, Telemetry] | None] = ContextVar("hub_trace", default=None)
 
 
@@ -166,7 +166,7 @@ async def span(
 
 
 def db(op: str) -> contextlib.AbstractAsyncContextManager[None]:
-    """Span ``client`` de banco (``db.system=postgresql``)."""
+    """DB ``client`` span (``db.system=postgresql``)."""
     return span(f"db {op}", "client", {"db.system": "postgresql", "db.operation": op})
 
 
@@ -216,9 +216,9 @@ def _segment(prev: str, s: str) -> str:
 
 
 def redact_target(path: str) -> str:
-    """``http.target`` seguro (mesmo algoritmo de ``hub_telemetry::redact::target``):
-    sem query/fragmento; ids, e-mails, tokens e segmentos após palavras sensíveis
-    trocados por marcadores."""
+    """Safe ``http.target`` (same algorithm as ``hub_telemetry::redact::target``):
+    no query/fragment; ids, emails, tokens and segments after sensitive words
+    replaced by markers."""
     path = str(re.split(r"[?#]", path, maxsplit=1)[0])
     out: list[str] = []
     prev = ""
@@ -239,7 +239,7 @@ Send = Callable[[MutableMapping[str, Any]], Awaitable[None]]
 
 
 class TraceMiddleware:
-    """Span ``server`` por requisição (filho do ``traceparent`` do hub)."""
+    """``server`` span per request (child of the hub's ``traceparent``)."""
 
     def __init__(
         self, app: Callable[[Scope, Receive, Send], Awaitable[None]], telemetry: Callable[[], Telemetry]

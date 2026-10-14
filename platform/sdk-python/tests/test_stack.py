@@ -1,4 +1,4 @@
-"""Onda 13: ``hub_sdk.stack.declare`` com as mesmas regras do hub (manifest.stack)."""
+"""Wave 13: ``hub_sdk.stack.declare`` with the same rules as the hub (manifest.stack)."""
 
 from __future__ import annotations
 

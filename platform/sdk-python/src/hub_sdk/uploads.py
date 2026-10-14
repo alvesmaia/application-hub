@@ -1,14 +1,14 @@
-"""Envio de arquivos em **duas fases** (onda 12, item 2.9), com tabelas (``hub_uploads``) e tipo de tarefa de
-promoção (``hub.upload.promote``).
+"""File uploads in **two phases** (wave 12, item 2.9), with tables (``hub_uploads``) and the job type for
+promotion (``hub.upload.promote``).
 
-1. :meth:`Uploads.begin` registra o envio (``pending``, com validade) e devolve a chave de
-   staging (``_staging/<id>/<arquivo>``) e, no S3 direto, um ``PUT`` pré-assinado.
-2. :meth:`Uploads.commit` roda **na transação do app** que grava o registro que aponta
-   para o arquivo: marca ``committed`` com o caminho final e enfileira a promoção
-   staging → final na mesma transação (tudo ou nada). Até a promoção,
-   :meth:`Uploads.location` devolve a chave de staging.
-3. Não confirmados vencem (``ttl``, padrão 24 h); :meth:`Uploads.cleanup` apaga o objeto
-   dos vencidos e os órfãos do prefixo de staging (idempotente).
+1. :meth:`Uploads.begin` records the upload (``pending``, with validity) and returns the
+   staging key (``_staging/<id>/<file>``) and, on direct S3, a pre-signed ``PUT``.
+2. :meth:`Uploads.commit` runs **in the app's transaction** that writes the record pointing
+   to the file: marks ``committed`` with the final path and enqueues the promotion
+   staging → final in the same transaction (all or nothing). Until the promotion,
+   :meth:`Uploads.location` returns the staging key.
+3. Unconfirmed uploads expire (``ttl``, default 24 h); :meth:`Uploads.cleanup` deletes the object
+   of the expired ones and the orphans under the staging prefix (idempotent).
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ log = logging.getLogger("hub_sdk.uploads")
 
 PROMOTE_KIND = "hub.upload.promote"
 STAGING_PREFIX = "_staging"
-# Validade máxima da URL pré-assinada de envio (s); a do envio pode ser maior.
+# Maximum validity of the pre-signed upload URL (s); the upload's own may be longer.
 PUT_URL_TTL = 15 * 60
 _NAME = re.compile(r"^[\w.\- ]{1,120}$")
 
@@ -40,7 +40,7 @@ def valid_name(n: str) -> bool:
 
 
 def clean_final(p: str) -> str:
-    """Caminho final normalizado e fora do prefixo de staging (sem diferenciar caixa)."""
+    """Normalized final path, outside the staging prefix (case-insensitive)."""
     try:
         c = clean_path(p)
     except StorageError as e:
@@ -92,8 +92,8 @@ class Uploads:
         self.max_size = max(1, int(max_size))
 
     async def begin(self, file_name: str, user: str) -> UploadSession:
-        """Fase 1: registra o envio **em nome de** ``user`` e devolve a chave de staging. A URL
-        pré-assinada vale no máximo :data:`PUT_URL_TTL` (e nunca além da validade do envio)."""
+        """Phase 1: records the upload **on behalf of** ``user`` and returns the staging key. The URL
+        pre-signed is valid for at most :data:`PUT_URL_TTL` (and never beyond the upload's validity)."""
         if not valid_name(file_name):
             raise ValueError("Nome de arquivo inválido (letras, números, espaço, . _ -; até 120).")
         if not user.strip():
@@ -118,14 +118,14 @@ class Uploads:
         return UploadSession(id=uid, staging_path=staging, expires_at=int(exp), put_url=url)
 
     async def put(self, s: UploadSession, data: bytes, content_type: str) -> None:
-        """Envia o conteúdo para a chave de staging (pelo broker/app)."""
+        """Sends the content to the staging key (through the broker/app)."""
         await self.store.upload(s.staging_path, data, content_type, len(data))
 
     async def commit(self, conn: Any, upload_id: str, final_path: str, user: str) -> Committed:
-        """Fase 2 (na transação ``conn`` do app): confirma o envio **de** ``user`` (o do
-        ``begin``, nesta conexão), registra tamanho e ETag do staging (a promoção só aceita
-        essa versão) e enfileira a promoção. Falha se o envio não existe, é de outro
-        usuário/conexão, venceu, já foi confirmado ou passa do tamanho máximo."""
+        """Phase 2 (in the app's ``conn`` transaction): confirms the upload **from** ``user`` (the one from
+        ``begin``, on this connection), records the staging size and ETag (the promotion only accepts
+        that version) and enqueues the promotion. Fails if the upload does not exist, belongs to another
+        user/connection, has expired, was already confirmed, or exceeds the maximum size."""
         final = clean_final(final_path)
         staging = await conn.fetchval(
             "SELECT staging_path FROM hub_uploads WHERE id = $1 AND user_name = $2 AND connection = $3 "
@@ -151,7 +151,7 @@ class Uploads:
         return Committed(id=upload_id, path=final, promote_job=job.id)
 
     async def location(self, upload_id: str) -> str | None:
-        """Onde o arquivo confirmado está agora (final depois da promoção; staging antes)."""
+        """Where the confirmed file is now (final after the promotion; staging before)."""
         async with self.pool.acquire() as c:
             r = await c.fetchrow(
                 "SELECT staging_path, path, promoted_at IS NOT NULL AS promoted FROM hub_uploads "
@@ -163,8 +163,8 @@ class Uploads:
         return str(r["path"] or "") if r["promoted"] else str(r["staging_path"])
 
     async def cancel(self, upload_id: str) -> None:
-        """Desfaz um envio (compensação) sob a trava da linha — serializado com a promoção:
-        apaga o staging e, se já promovido, o destino, e marca ``cancelled``. Idempotente."""
+        """Undoes an upload (compensation) under the row lock — serialized with the promotion:
+        deletes the staging and, if already promoted, the target, and marks ``cancelled``. Idempotent."""
         async with self.pool.acquire() as c, c.transaction():
             r = await c.fetchrow(
                 "SELECT state, staging_path, path, promoted_at IS NOT NULL AS promoted FROM hub_uploads "
@@ -176,8 +176,8 @@ class Uploads:
             paths = [r["staging_path"]]
             owned = bool(r["promoted"])
             if not owned and r["state"] == "committed" and r["path"]:
-                # Re-revisão P3: promoção que caiu depois do move e antes de marcar — staging
-                # sumiu e o destino é a versão confirmada → também é deste envio.
+                # Re-review P3: promotion that crashed after the move and before marking — staging
+                # is gone and the target is the confirmed version → it also belongs to this upload.
                 v = await c.fetchrow("SELECT size, etag FROM hub_uploads WHERE id = $1", upload_id)
                 try:
                     await self.store.meta(r["staging_path"])
@@ -203,8 +203,8 @@ class Uploads:
             await c.execute("UPDATE hub_uploads SET state = 'cancelled' WHERE id = $1", upload_id)
 
     async def promote(self, upload_id: str) -> None:
-        """Promove (idempotente) sob a trava da linha: confere a versão confirmada
-        (tamanho/ETag), não sobrescreve destino existente, move staging → final e confere."""
+        """Promotes (idempotent) under the row lock: checks the confirmed version
+        (size/ETag), does not overwrite an existing target, moves staging → final and verifies."""
         async with self.pool.acquire() as c, c.transaction():
             r = await c.fetchrow(
                 "SELECT state, staging_path, path, promoted_at IS NOT NULL AS promoted, size, etag "
@@ -233,7 +233,7 @@ class Uploads:
             except StorageError as e:
                 if e.status != 404:
                     raise err(e) from e
-                # Staging já não existe: a promoção anterior moveu e caiu antes de marcar.
+                # Staging no longer exists: the previous promotion moved it and crashed before marking.
                 try:
                     it = await self.store.meta(dest)
                 except StorageError as e2:
@@ -266,7 +266,7 @@ class Uploads:
         return PromoteHandler(self)
 
     async def cleanup(self) -> CleanupReport:
-        """Apaga envios vencidos (objeto + ``expired``) e órfãos do prefixo de staging."""
+        """Deletes expired uploads (object + ``expired``) and orphans under the staging prefix."""
         expired = orphans = 0
         async with self.pool.acquire() as c:
             rows = await c.fetch(
@@ -342,7 +342,7 @@ class Uploads:
 
 
 class PromoteHandler:
-    """Tarefa ``hub.upload.promote`` (registre junto com os outros handlers)."""
+    """``hub.upload.promote`` job (register it together with the other handlers)."""
 
     def __init__(self, uploads: Uploads) -> None:
         self.uploads = uploads

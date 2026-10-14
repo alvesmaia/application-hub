@@ -1,23 +1,23 @@
-"""SDK Python (FastAPI) dos apps da Application Hub.
+"""Python SDK (FastAPI) for the Application Hub apps.
 
-O contrato que todo app cumpre (qualquer linguagem) está em
-`platform/docs/CONTRATO-APP.md`; este pacote o implementa para FastAPI:
+The contract every app complies with (any language) is in
+`platform/docs/CONTRATO-APP.md`; this package implements it for FastAPI:
 
-- :mod:`hub_sdk.identity` — identidade injetada pelo hub (`x-hub-user`).
-- :mod:`hub_sdk.render` — fragmentos HTML com o visual do shell (Jinja2), avisos, 429,
+- :mod:`hub_sdk.identity` — identity injected by the hub (`x-hub-user`).
+- :mod:`hub_sdk.render` — HTML fragments with the shell's look (Jinja2), notices, 429,
   downloads e CSV seguro.
-- :mod:`hub_sdk.jobs` — tarefas duráveis no Postgres (`hub_jobs`): `SKIP LOCKED`, lease
-  + heartbeat, fence por tentativa, backoff com jitter, checkpoint na transação do lote,
-  cancelamento, dead-letter e retomada de lease vencido.
-- :mod:`hub_sdk.idempotency` — middleware `Idempotency-Key` (escopo usuário + rota, hash
-  do corpo inteiro inclusive em streaming, repetição, 409/422).
-- :mod:`hub_sdk.outbox` — outbox transacional (`hub_outbox`) e evento de auditoria.
-- :mod:`hub_sdk.internal` — endpoints `/{app}/_hub/*` com token interno.
+- :mod:`hub_sdk.jobs` — durable jobs in Postgres (`hub_jobs`): `SKIP LOCKED`, lease
+  + heartbeat, per-attempt fence, backoff with jitter, checkpoint in the batch transaction,
+  cancellation, dead-letter and resumption of an expired lease.
+- :mod:`hub_sdk.idempotency` — `Idempotency-Key` middleware (user + route scope, hash
+  of the whole body, including streaming, replay, 409/422).
+- :mod:`hub_sdk.outbox` — transactional outbox (`hub_outbox`) and audit event.
+- :mod:`hub_sdk.internal` — `/{app}/_hub/*` endpoints with an internal token.
 - :mod:`hub_sdk.shutdown` — desligamento gracioso (lifespan + SIGTERM).
-- :mod:`hub_sdk.heavy` — semáforo de operações pesadas (429 + `Retry-After`).
-- :mod:`hub_sdk.app` — :class:`HubSdk`: tudo acima ligado a um app FastAPI.
+- :mod:`hub_sdk.heavy` — semaphore for heavy operations (429 + `Retry-After`).
+- :mod:`hub_sdk.app` — :class:`HubSdk`: all of the above wired to a FastAPI app.
 
-As tabelas (``SCHEMA_SQL``) têm formato estável (dados já gravados): não mude sem migração.
+The tables (``SCHEMA_SQL``) have a stable format (data already written): do not change without a migration.
 """
 
 from hub_sdk.schema import APPS_PREFIX, OUTBOX_RETENTION, SCHEMA_SQL, base, cleanup, ct_eq, new_id

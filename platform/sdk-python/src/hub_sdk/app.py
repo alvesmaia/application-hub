@@ -1,30 +1,30 @@
-"""Tudo ligado a um app FastAPI: :class:`HubSdk`.
+"""Everything wired to a FastAPI app: :class:`HubSdk`.
 
-Uso típico::
+Typical usage::
 
     sdk = HubSdk.from_env("contratos", app_sql=SCHEMA, handlers=[ImportHandler(...)])
     app = FastAPI(lifespan=sdk.lifespan)
-    sdk.install(app)          # idempotência, /_hub/*, x-app-version
+    sdk.install(app)          # idempotency, /_hub/*, x-app-version
 
-Variáveis (injetadas pela plataforma — ver ``docs/CONTRATO-APP.md``): ``HUB_APP_ID``,
-``PORT``, ``HUB_DB_URL`` (ou ``HUB_DB_URL_<ID>``), ``HUB_INTERNAL_TOKEN``,
+Variables (injected by the platform — see ``docs/CONTRATO-APP.md``): ``HUB_APP_ID``,
+``PORT``, ``HUB_DB_URL`` (or ``HUB_DB_URL_<ID>``), ``HUB_INTERNAL_TOKEN``,
 ``HUB_SCRATCH_DIR``/``TMPDIR``, ``HUB_HEAVY_MAX``, ``HUB_JOB_LEASE_S``,
 ``HUB_APP_VERSION_MARKER``, ``HUB_JOBS_MODE``.
 
-Sem banco: outbox e idempotência em memória, sem tarefas duráveis.
+No DB: outbox and idempotency in memory, no durable jobs.
 
-**Onde as tarefas rodam** (``HUB_JOBS_MODE``, diferença da stack Python medida na onda 7):
+**Where jobs run** (``HUB_JOBS_MODE``, Python stack difference measured in wave 7):
 
-- ``inline`` (padrão; ``hub dev`` e testes): o worker de tarefas roda no mesmo processo do
-  servidor HTTP. Simples, mas o trabalho de CPU das tarefas (openpyxl, python-calamine,
-  formatação) disputa o GIL com as requisições: uma exportação XLSX grande multiplica a
-  latência de páginas simples (medido: 4 → 60 ms p50).
-- ``process`` (imagem de produção): o processo web não roda tarefas; um **processo de
-  tarefas** separado (:meth:`HubSdk.run_worker_process`, iniciado e supervisionado pelo app
-  — ex.: ``python -m contratos serve``) as executa. O SIGTERM do web é repassado na hora ao
-  de tarefas (:func:`hub_sdk.shutdown.on_process_shutdown`), e um OOM numa importação mata
-  só o processo de tarefas (o web continua respondendo; a tarefa retoma do checkpoint).
-- ``off``: ninguém executa tarefas neste container (elas ficam na fila).
+- ``inline`` (default; ``hub dev`` and tests): the jobs worker runs in the same process as the
+  HTTP server. Simple, but the jobs' CPU work (openpyxl, python-calamine,
+  formatting) contends for the GIL with the requests: a large XLSX export multiplies the
+  latency of simple pages (measured: 4 → 60 ms p50).
+- ``process`` (production image): the web process runs no jobs; a separate **jobs process**
+  (:meth:`HubSdk.run_worker_process`, started and supervised by the app
+  — e.g. ``python -m contratos serve``) runs them. The web's SIGTERM is forwarded immediately to the
+  jobs process (:func:`hub_sdk.shutdown.on_process_shutdown`), and an OOM during an import kills
+  only the jobs process (the web keeps responding; the job resumes from the checkpoint).
+- ``off``: nobody runs jobs in this container (they stay in the queue).
 """
 
 from __future__ import annotations
@@ -56,10 +56,10 @@ from hub_sdk.telemetry import Telemetry, TraceMiddleware
 
 log = logging.getLogger("hub_sdk")
 
-# Prazo de drenagem no desligamento (abaixo dos 10 s do `docker stop`).
+# Shutdown drain deadline (below the 10 s of `docker stop`).
 DRAIN_S = 8.0
 CLEANUP_EVERY_S = 3600.0
-# Definida pelo supervisor do processo de tarefas ao religá-lo depois de um SIGKILL.
+# Set by the jobs-process supervisor when it restarts it after a SIGKILL.
 KILLED_PID_ENV = "HUB_JOBS_KILLED_PID"
 
 
@@ -72,8 +72,8 @@ def _int_env(name: str) -> int | None:
 
 
 def scratch_dir(app_id: str) -> Path:
-    """Diretório de trabalho (uploads, relatórios): ``HUB_SCRATCH_DIR`` (``/scratch`` nos
-    containers, volume próprio do app) ou o temporário do sistema."""
+    """Working directory (uploads, reports): ``HUB_SCRATCH_DIR`` (``/scratch`` in containers, the app's
+    own volume) or the system temp directory."""
     base = os.environ.get("HUB_SCRATCH_DIR") or os.environ.get("TMPDIR") or None
     import tempfile
 
@@ -96,7 +96,7 @@ class HubSdk:
         cleanup_hooks: Sequence[Callable[[HubSdk], Awaitable[None]]] = (),
     ) -> None:
         self.app_id = app_id
-        # Limpeza do app (ex.: arquivos velhos do /scratch): na subida e a cada hora.
+        # App cleanup (e.g. old files in /scratch): at startup and every hour.
         self.cleanup_hooks = list(cleanup_hooks)
         self.jobs_mode = jobs_mode if jobs_mode in ("inline", "process", "off") else "inline"
         self.app_sql = app_sql
@@ -112,13 +112,13 @@ class HubSdk:
         self.after_migrate = after_migrate
         self._bg: list[asyncio.Task[Any]] = []
         self.version = os.environ.get("HUB_APP_VERSION_MARKER", "").strip() or "dev"
-        # Onda 8: traces (o hub busca em /_hub/telemetry) e flags empurradas pelo hub.
+        # Wave 8: traces (the hub fetches them at /_hub/telemetry) and flags pushed by the hub.
         self.telemetry = Telemetry(app_id)
         self.flags = FlagStore()
-        # Onda 9: busca federada e aprovações pela Inbox (defina antes de `install`).
+        # Wave 9: federated search and Inbox approvals (set before `install`).
         self.search: SearchFn | None = None
         self.approvals: ApprovalFn | None = None
-        # Onda 12 (2.5): verificações extras de prontidão do app (além de banco/encerramento).
+        # Wave 12 (2.5): extra app readiness checks (beyond DB/shutdown).
         self.ready_checks: list[tuple[str, _ready.Check]] = []
         self._job_counts: tuple[float, float] | None = None
         heavy_ = self.heavy
@@ -164,8 +164,8 @@ class HubSdk:
         return self.db is not None and self.db.ready
 
     def readiness(self) -> _ready.Readiness:
-        """Prontidão (``GET /{app}/_hub/ready``): encerrando = não pronto; com banco,
-        migrações aplicadas **e** ``SELECT 1``; depois as verificações de ``ready_checks``."""
+        """Readiness (``GET /{app}/_hub/ready``): shutting down = not ready; with DB,
+        migrations applied **and** ``SELECT 1``; then the ``ready_checks`` checks."""
         sd = self.shutdown
         r = _ready.Readiness().flag("shutdown", "encerrando (SIGTERM)", lambda: not sd.triggered)
         db = self.db
@@ -190,13 +190,13 @@ class HubSdk:
             self.worker.wake()
 
     async def emit(self, user: str, action: str, target: str = "", detail: str = "") -> None:
-        """Auditoria fora de transação (exportações, consultas)."""
+        """Audit outside a transaction (exports, queries)."""
         await self.outbox.emit(audit(user, action, target, detail))
 
     def event(self, user: str, action: str, target: str = "", detail: str = "") -> Event:
         return audit(user, action, target, detail)
 
-    # ---- ciclo de vida --------------------------------------------------------------
+    # ---- lifecycle ----------------------------------------------------------------
     @contextlib.asynccontextmanager
     async def lifespan(self, _app: FastAPI) -> AsyncGenerator[None]:
         self.shutdown.chain_signals()
@@ -236,8 +236,8 @@ class HubSdk:
                 await self.db.close()
 
     async def run_worker_process(self) -> None:
-        """Processo de tarefas (``HUB_JOBS_MODE=process``): só o worker de tarefas e a
-        limpeza periódica, até SIGTERM/SIGINT; drena como o web (8 s)."""
+        """Jobs process (``HUB_JOBS_MODE=process``): only the jobs worker and the
+        periodic cleanup, until SIGTERM/SIGINT; drains like the web (8 s)."""
         self._install_signals()
         if self.db is None or not self.handlers:
             log.warning(
@@ -254,9 +254,9 @@ class HubSdk:
         killed = _int_env(KILLED_PID_ENV)
 
         async def on_ready() -> None:
-            # O supervisor avisa (HUB_JOBS_KILLED_PID) que o processo anterior morreu por
-            # SIGKILL (OOM do cgroup): as tarefas que estavam numa fase de memória viram
-            # `failed` com motivo claro, em vez de 5 tentativas que matariam o processo de novo.
+            # The supervisor notifies (HUB_JOBS_KILLED_PID) that the previous process died from
+            # SIGKILL (cgroup OOM): the jobs that were in a memory phase become
+            # `failed` with a clear reason, instead of 5 attempts that would kill the process again.
             ids = jobs.take_markers(killed)
             if killed is not None and ids:
                 failed = await jobs.fail_killed(ids, f"{killed}-", KILLED_BY_MEMORY)
@@ -303,7 +303,7 @@ class HubSdk:
             try:
                 loop.add_signal_handler(sig, self.shutdown.trigger)
             except (NotImplementedError, RuntimeError, ValueError):
-                # Windows: sem add_signal_handler — signal.signal na thread principal.
+                # Windows: no add_signal_handler — signal.signal on the main thread.
                 with contextlib.suppress(ValueError, OSError):
                     signal.signal(sig, lambda *_: loop.call_soon_threadsafe(self.shutdown.trigger))
 
@@ -311,8 +311,8 @@ class HubSdk:
         return self.shutdown.triggered
 
     async def _cleanup_loop(self) -> None:
-        """Limpeza por validade (tabelas do SDK) e os ganchos do app: na subida (assim que
-        o banco fica pronto, ou em até 60 s) e depois a cada ``CLEANUP_EVERY_S``."""
+        """Cleanup by expiry (SDK tables) and the app hooks: at startup (as soon as
+        the DB is ready, or within 60 s) and then every ``CLEANUP_EVERY_S``."""
         first = True
         while not self.shutdown.triggered:
             waiter = asyncio.create_task(self.shutdown.wait())
@@ -332,7 +332,7 @@ class HubSdk:
             await self.run_cleanup()
 
     async def _job_counts_loop(self) -> None:
-        """Tarefas na fila/rodando (medidor de saturação), a cada 10 s."""
+        """Jobs queued/running (saturation gauge), every 10 s."""
         while not self.shutdown.triggered:
             await asyncio.sleep(10)
             if not self.db_ready:
@@ -358,14 +358,14 @@ class HubSdk:
             except Exception as e:
                 log.warning("limpeza do app: %s", e)
 
-    # ---- instalação no app ------------------------------------------------------------
+    # ---- app installation ------------------------------------------------------------
     def install(self, app: FastAPI) -> None:
-        """Middleware de idempotência (todas as rotas que alteram dados), endpoints
-        internos ``/{id}/_hub/*`` e o cabeçalho ``x-app-version``."""
+        """Idempotency middleware (all routes that change data), internal endpoints
+        ``/{id}/_hub/*`` and the ``x-app-version`` header."""
         app.add_middleware(IdempotencyMiddleware, idem=lambda: self.idem)
-        # Idioma da requisição (onda 9): `t()`, números e datas dos fragmentos.
+        # Request language (wave 9): `t()`, numbers and dates of the fragments.
         app.add_middleware(LocaleMiddleware)
-        # Por fora da idempotência (o último add_middleware é o mais externo).
+        # Outside idempotency (the last add_middleware is the outermost).
         app.add_middleware(TraceMiddleware, telemetry=lambda: self.telemetry)
         app.include_router(
             internal.router(
@@ -381,7 +381,7 @@ class HubSdk:
             )
         )
 
-        # Onda 11: MCP interno gerado do OpenAPI da API do app (`hub_sdk.api.install_api`).
+        # Wave 11: internal MCP generated from the app's API OpenAPI (`hub_sdk.api.install_api`).
         def _doc() -> dict[str, Any]:
             f = getattr(app.state, "hub_api_doc", None)
             return f() if callable(f) else {"paths": {}}
@@ -394,8 +394,8 @@ class HubSdk:
         async def _version(request: Any, call_next: Any) -> Any:
             resp = await call_next(request)
             resp.headers["x-app-version"] = version
-            # Prontidão (docs/CONTRATO-APP.md §2): banco configurado e migrações ainda
-            # em curso → `x-hub-ready: 0`; o blue/green não troca o tráfego para cá.
+            # Readiness (docs/CONTRATO-APP.md §2): DB configured and migrations still
+            # in progress → `x-hub-ready: 0`; blue/green does not switch traffic here.
             if self.db is not None and not self.db.ready:
                 resp.headers["x-hub-ready"] = "0"
             return resp

@@ -1,10 +1,10 @@
 """``python -m fornecedores [serve|openapi|--health]``.
 
-- ``serve`` (padrão): uvicorn em ``FORNECEDORES_HOST`` (padrão 127.0.0.1; a imagem usa 0.0.0.0) e
-  ``PORT`` (padrão 8080), com ``UVICORN_WORKERS`` processos e 8 s de drenagem no SIGTERM. O app
-  não tem tarefas duráveis nem esquema próprio (só o outbox do SDK, se houver ``HUB_DB_URL``).
-- ``openapi``: imprime o OpenAPI da API v1 (o ``hub pack`` embute como ``openapi.json``).
-- ``--health``: ``GET /fornecedores`` no próprio app (HEALTHCHECK da imagem, sem curl); sai 0 com 200.
+- ``serve`` (default): uvicorn on ``FORNECEDORES_HOST`` (default 127.0.0.1; the image uses 0.0.0.0) and
+  ``PORT`` (default 8080), with ``UVICORN_WORKERS`` processes and 8 s of drain on SIGTERM. The app
+  has no durable jobs or schema of its own (only the SDK outbox, if ``HUB_DB_URL`` is set).
+- ``openapi``: prints the OpenAPI of API v1 (``hub pack`` embeds it as ``openapi.json``).
+- ``--health``: ``GET /fornecedores`` on the app itself (image HEALTHCHECK, no curl); exits 0 with 200.
 """
 
 from __future__ import annotations

@@ -1,13 +1,13 @@
-"""Tempo real do Coletor: avisos **por usuário** para os WebSockets abertos
-(``/coletor/ws/live``, pelo gateway do hub em ``/apps/coletor/ws/live``).
+"""Coletor real time: **per-user** notices for the open WebSockets
+(``/coletor/ws/live``, through the hub gateway at ``/apps/coletor/ws/live``).
 
-Quem muda algo (leitura nova, sessão da fila) chama :func:`notify` **dentro da
-transação**: ``pg_notify('coletor_live', …)`` só é entregue no commit, então o socket
-nunca mostra algo que não foi gravado — e funciona com vários processos/réplicas (cada
-um escuta o canal numa conexão própria). Sem banco/escuta (testes), a entrega é local.
+Whoever changes something (new reading, queued session) calls :func:`notify` **inside the
+transaction**: ``pg_notify('coletor_live', …)`` is only delivered on commit, so the socket
+never shows something that was not written — and it works with several processes/replicas (each
+listens on the channel over its own connection). Without DB/listen (tests), delivery is local.
 
-Cada socket tem uma fila pequena (avisos repetidos se fundem: o socket redesenha o
-estado atual, não um diff).
+Each socket has a small queue (repeated notices merge: the socket redraws the
+current state, not a diff).
 """
 
 from __future__ import annotations
@@ -46,7 +46,7 @@ class Live:
 
     def deliver(self, user: str, topic: str) -> None:
         for q in list(self.subs.get(user, ())):
-            # Fila cheia: já há um aviso pendente e o redesenho cobre este.
+            # Full queue: there is already a pending notice and the redraw covers this one.
             with contextlib.suppress(asyncio.QueueFull):
                 q.put_nowait(topic)
 
@@ -56,7 +56,7 @@ class Live:
     def count(self, user: str) -> int:
         return len(self.subs.get(user, ()))
 
-    # ---- canal do Postgres ----------------------------------------------------------------
+    # ---- Postgres channel ----------------------------------------------------------------
     def _on_notify(self, _c: Any, _pid: int, _ch: str, payload: str) -> None:
         try:
             d = json.loads(payload)
@@ -95,7 +95,7 @@ LIVE = Live()
 
 
 async def notify(c: Any, user: str, topic: str) -> None:
-    """Avisa os sockets de ``user`` (no commit da transação de ``c``)."""
+    """Notifies the sockets of ``user`` (on commit of the transaction of ``c``)."""
     if c is not None and LIVE.listening:
         await c.execute("SELECT pg_notify($1, $2)", CHANNEL, json.dumps({"u": user, "t": topic}))
         return

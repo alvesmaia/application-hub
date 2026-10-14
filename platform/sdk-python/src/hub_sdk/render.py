@@ -1,14 +1,14 @@
-"""Fragmentos HTML com o visual do shell (Jinja2) e respostas comuns.
+"""HTML fragments with the shell's look (Jinja2) and common responses.
 
-Convenções do contrato (``docs/CONTRATO-APP.md``):
+Contract conventions (``docs/CONTRATO-APP.md``):
 
-- ``GET /{id}`` e ``GET /{id}/{section}`` devolvem um **fragmento** (sem ``<html>``/
-  ``<body>``) com o workspace do app — sidebar + conteúdo — usando as classes do mockup
+- ``GET /{id}`` and ``GET /{id}/{section}`` return a **fragment** (no ``<html>``/
+  ``<body>``) with the app workspace — sidebar + content — using the mockup classes
   (``app-sidebar``, ``workspace-content``, ``content-panel``, ``data-table``…);
-- ``GET /{id}/_skeleton`` — miolo do skeleton exibido entre seções;
-- ``GET /{id}/assets/{demo.css,app.css,chart.js,interact.js}`` — assets do app;
-- sem ``<script>`` inline (CSP do hub); formulários ``POST`` com ``data-hub-target``;
-  polling com ``data-hub-poll``; downloads em ``/_frag/{id}/…``.
+- ``GET /{id}/_skeleton`` — skeleton body shown between sections;
+- ``GET /{id}/assets/{demo.css,app.css,chart.js,interact.js}`` — app assets;
+- no inline ``<script>`` (hub CSP); ``POST`` forms with ``data-hub-target``;
+  polling with ``data-hub-poll``; downloads at ``/_frag/{id}/…``.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ from hub_sdk.identity import identity_of
 
 FRAG = "/_frag"
 
-# Ícones (SVG do mockup) usados na sidebar.
+# Icons (mockup SVG) used in the sidebar.
 ICONS: dict[str, str] = {
     "dashboard": '<rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1">'
     '</rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1">'
@@ -64,7 +64,7 @@ class AppInfo:
     color: str = "#e3f2ea"
     ink: str = "#2f7d57"
     nav: Sequence[NavItem] = field(default_factory=tuple)
-    #: Linha curta sob o nome na sidebar (ex.: "Contratos e fornecedores"); vazia = só o nome.
+    #: Short line under the name in the sidebar (e.g. "Contracts and suppliers"); empty = name only.
     tagline: str = ""
 
     def has_section(self, s: str) -> bool:
@@ -78,7 +78,7 @@ def html(body: str, status: int = 200, headers: dict[str, str] | None = None) ->
 
 
 class Renderer:
-    """Ambiente Jinja2 do app: templates do app (``templates_dir``) + os do SDK
+    """The app's Jinja2 environment: the app's templates (``templates_dir``) + the SDK's
     (``workspace.html``, ``skeleton.html``, ``notice.html``)."""
 
     def __init__(self, app: AppInfo, templates_dir: Path | str) -> None:
@@ -91,13 +91,13 @@ class Renderer:
             trim_blocks=True,
             lstrip_blocks=True,
         )
-        # Onda 9: `t()` traduz pelo idioma da requisição (ContextVar do LocaleMiddleware);
-        # números, valores e datas no formato do idioma.
+        # Wave 9: `t()` translates by the request's language (LocaleMiddleware ContextVar);
+        # numbers, values and dates in the language's format.
         shared: dict[str, Any] = dict(
             icon=icon,
             app=app,
             FRAG=FRAG,
-            # Onda 13: base pública do app (`/apps/{id}`) para links/formulários.
+            # Wave 13: app's public base (`/apps/{id}`) for links/forms.
             base=f"/apps/{app.id}",
             thousands=_locale.thousands,
             money=_locale.money_cents,
@@ -118,12 +118,12 @@ class Renderer:
         status: int = 200,
         **ctx: Any,
     ) -> HTMLResponse:
-        """Página do app (workspace completo)."""
+        """App page (full workspace)."""
         user = identity_of(conn).display_name
         return html(self.render(template, active=active, user=user, **ctx), status)
 
     def fragment(self, template: str, status: int = 200, **ctx: Any) -> HTMLResponse:
-        """Pedaço de página (painel que substitui ``data-hub-target``)."""
+        """Page fragment (panel that replaces ``data-hub-target``)."""
         return html(self.render(template, **ctx), status)
 
     def notice(self, kind: str, title: str, text: str) -> Markup:
@@ -137,8 +137,8 @@ class Renderer:
 
 
 def busy(what: str, queued: str, retry_after: int = 10) -> Response:
-    """429 de operação pesada (limite do app atingido) com ``Retry-After``: o ``hub.js``
-    mostra ``queued`` ("Relatório em fila…") e tenta de novo sozinho."""
+    """429 for a heavy operation (app limit reached) with ``Retry-After``: the ``hub.js``
+    shows ``queued`` ("Report queued…") and retries on its own."""
     from markupsafe import escape
 
     t = _locale.t
@@ -189,8 +189,8 @@ def _is_number(s: str) -> bool:
 
 
 def csv_field(s: str) -> str:
-    """Campo CSV (``;``, Excel pt-BR) com neutralização de fórmula (OWASP): valores que
-    começam com ``= + - @`` (mesmo atrás de TAB/CR) ganham ``'``."""
+    """CSV field (``;``, Excel pt-BR) with formula neutralization (OWASP): values that
+    start with ``= + - @`` (even after TAB/CR) get a ``'``."""
     hides = s.lstrip("\t\r")[:1] in ("=", "+", "-", "@")
     if hides and not _is_number(s):
         s = "'" + s

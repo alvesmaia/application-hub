@@ -1,24 +1,24 @@
-"""Tarefas duráveis na tabela ``hub_jobs`` (tabela, SQL e estados têm formato estável: não mude sem migração).
+"""Durable jobs in the ``hub_jobs`` table (table, SQL and states have a stable format: do not change without a migration).
 
-Ciclo de vida: ``queued`` → ``running`` → ``done`` | ``failed`` (erro definitivo) |
+Life cycle: ``queued`` → ``running`` → ``done`` | ``failed`` (definitive error) |
 ``dead`` (tentativas esgotadas: dead-letter) | ``cancelled``. Falha transitória volta a
-``queued`` com ``run_after`` = agora + :func:`backoff` (exponencial com *equal jitter*).
-:meth:`Jobs.retry` devolve uma tarefa terminal à fila mantendo o checkpoint.
+``queued`` with ``run_after`` = now + :func:`backoff` (exponential with *equal jitter*).
+:meth:`Jobs.retry` returns a terminal job to the queue, keeping the checkpoint.
 
 - **Assumir** (:meth:`Jobs.claim`): ``UPDATE … WHERE id = (SELECT … FOR UPDATE SKIP
-  LOCKED LIMIT 1)`` sobre ``queued`` vencidas ou ``running`` com **lease vencido**.
-- **Fence por tentativa**: cada claim grava um ``attempt_token`` novo; heartbeat,
-  checkpoint, progresso e fim só valem com o token da tentativa atual.
-- **Lease**: renovado a cada ``lease/3`` e a cada checkpoint; sem renovar por um lease
-  inteiro (banco fora), o worker para.
-- **Checkpoint** (:meth:`JobCtx.save_checkpoint`): gravado com a conexão/transação do
-  lote — lote e checkpoint confirmam juntos ou nenhum.
-- **Tempo máximo** por tentativa; **cancelar**; **evento final** no outbox na mesma
-  transação da mudança de estado.
+  LOCKED LIMIT 1)`` over ``queued`` jobs past their time, or ``running`` with an **expired lease**.
+- **Per-attempt fence**: each claim writes a new ``attempt_token``; heartbeat,
+  checkpoint, progress and completion only count with the current attempt's token.
+- **Lease**: renewed every ``lease/3`` and at each checkpoint; if it cannot be renewed for a whole lease
+  period (DB down), the worker stops.
+- **Checkpoint** (:meth:`JobCtx.save_checkpoint`): written with the batch's connection/transaction —
+  the batch and the checkpoint commit together or not at all.
+- **Maximum time** per attempt; **cancel**; **final event** in the outbox in the same
+  transaction as the state change.
 
-Trabalho de CPU de um handler Python deve ir para
-``asyncio.to_thread`` (o laço de eventos precisa continuar livre para o heartbeat e o
-HTTP); o semáforo :class:`~hub_sdk.heavy.Heavy` é por processo.
+CPU work of a Python handler must go to
+``asyncio.to_thread`` (the event loop must stay free for the heartbeat and the
+HTTP); the :class:`~hub_sdk.heavy.Heavy` semaphore is per process.
 """
 
 from __future__ import annotations
@@ -70,7 +70,7 @@ def _lease_default() -> float:
 
 @dataclass(frozen=True)
 class JobSpec:
-    """Contrato de um tipo de tarefa (espelha ``manifest.jobs``)."""
+    """Contract of a job type (mirrors ``manifest.jobs``)."""
 
     kind: str
     max_attempts: int = 3
@@ -85,7 +85,7 @@ class JobSpec:
 
 
 def backoff(attempt: int, base: float, max_: float, jitter: float) -> float:
-    """Espera antes da tentativa ``attempt + 1``: ``base · 2^(attempt-1)`` limitada a
+    """Wait before attempt ``attempt + 1``: ``base · 2^(attempt-1)`` capped at
     ``max_``, metade fixa + metade aleatória (``jitter`` ∈ [0, 1))."""
     exp = min(max(attempt, 1), 30) - 1
     d = min(base * (1 << min(exp, 20)), max_)
@@ -118,7 +118,7 @@ class Job:
     attempt_token: str | None = None
 
     def to_json(self) -> dict[str, Any]:
-        """JSON do ``GET /_hub/jobs`` (sem o ``attempt_token``, que nunca sai do app)."""
+        """JSON of ``GET /_hub/jobs`` (without the ``attempt_token``, which never leaves the app)."""
         d = {k: getattr(self, k) for k in self.__dataclass_fields__ if k != "attempt_token"}
         return d
 
@@ -170,15 +170,15 @@ def job_of(r: Any) -> Job:
 
 
 class JobError(Exception):
-    """Resultado de uma tentativa que não concluiu."""
+    """Result of an attempt that did not complete."""
 
 
 class JobRetry(JobError):
-    """Falha transitória: nova tentativa com backoff (ou ``dead`` se esgotou)."""
+    """Transient failure: retry with backoff (or ``dead`` if attempts are exhausted)."""
 
 
 class JobFail(JobError):
-    """Falha definitiva (entrada inválida etc.): ``failed``, sem novas tentativas."""
+    """Definitive failure (invalid input, etc.): ``failed``, no further attempts."""
 
 
 class JobCancelled(JobError):
@@ -186,15 +186,15 @@ class JobCancelled(JobError):
 
 
 class JobLostLease(JobError):
-    """Outro worker assumiu (lease vencido): não mexe em mais nada."""
+    """Another worker took over (expired lease): does not touch anything else."""
 
 
 class JobShutdown(JobError):
-    """Desligamento gracioso: devolve à fila sem gastar a tentativa."""
+    """Graceful shutdown: returns to the queue without spending the attempt."""
 
 
 class Handler(Protocol):
-    """Implementação de um tipo de tarefa."""
+    """Implementation of a job type."""
 
     spec: JobSpec
 
@@ -204,8 +204,8 @@ class Handler(Protocol):
 
 
 def extra_events(handler: Handler | None, job: Job, status: str, detail: str) -> list[outbox.Event]:
-    """Eventos extras do estado final (onda 9: ex. notificação para a Inbox do hub), se o
-    handler definir ``final_events(job, status, detail)``; gravados na mesma transação."""
+    """Extra events of the final state (wave 9: e.g. notification to the hub Inbox), if the
+    handler defines ``final_events(job, status, detail)``; written in the same transaction."""
     f = getattr(handler, "final_events", None)
     if f is None:
         return []
@@ -226,8 +226,8 @@ async def enqueue_with(
     user: str,
     idempotency_key: str | None = None,
 ) -> tuple[Job, bool]:
-    """Enfileira com ``conn`` (ex.: dentro da transação que também grava a auditoria).
-    Com ``idempotency_key``, a mesma chave (e tipo) devolve a existente (``False``)."""
+    """Enqueues with ``conn`` (e.g. inside the transaction that also writes the audit).
+    With ``idempotency_key``, the same key (and type) returns the existing one (``False``)."""
     r = await conn.fetchrow(
         "INSERT INTO hub_jobs (id, kind, payload, idempotency_key, max_attempts, max_duration_s, user_name) "  # noqa: S608 -- SQL uses bound values and fixed internal fragments
         "VALUES ($1, $2, $3, $4, $5, $6, $7) "
@@ -273,9 +273,9 @@ KILLED_BY_MEMORY = (
 
 
 async def after_final(handler: Handler | None, job: Job, status: str) -> None:
-    """Gancho opcional ``handler.after_final(job, status)`` (síncrono ou ``async``),
-    chamado **depois** que o estado terminal foi confirmado (ex.: apagar o upload). Erros
-    só vão para o log."""
+    """Optional hook ``handler.after_final(job, status)`` (sync or ``async``),
+    called **after** the terminal state is committed (e.g. deleting the upload). Errors
+    only go to the log."""
     fn = getattr(handler, "after_final", None) if handler is not None else None
     if fn is None:
         return
@@ -302,7 +302,7 @@ class Jobs:
         self.pool = pool
         self.owner = owner or f"{os.getpid()}-{random.getrandbits(32):08x}"
         self.handlers = list(handlers)
-        # Marcas da "fase de memória" (JobCtx.memory_phase) — ver killed_markers/fail_killed.
+        # Markers of the "memory phase" (JobCtx.memory_phase) — see killed_markers/fail_killed.
         self.marker_dir = marker_dir
 
     def handler_for(self, kind: str) -> Handler | None:
@@ -313,10 +313,10 @@ class Jobs:
         return h.final_event(j, j.status, j.error or "") if h is not None else None
 
     def take_markers(self, killed_pid: int | None) -> builtins.list[str]:
-        """Lê e apaga as marcas de fase de memória deixadas por processos anteriores;
-        devolve os ids das tarefas cuja marca é do processo ``killed_pid`` (morto por
-        SIGKILL — ex.: OOM do cgroup). Marcas de outros PIDs (container reiniciado,
-        caos) só são apagadas: essas tarefas retomam normalmente do checkpoint."""
+        """Reads and deletes the memory-phase markers left by previous processes;
+        returns the ids of the jobs whose marker belongs to the ``killed_pid`` process (killed by
+        SIGKILL — e.g. cgroup OOM). Markers of other PIDs (container restarted,
+        chaos) are only deleted: those jobs resume normally from the checkpoint."""
         d = self.marker_dir
         if d is None or not d.is_dir():
             return []
@@ -387,10 +387,10 @@ class Jobs:
         return job
 
     async def reap(self, kinds: Sequence[str]) -> builtins.list[Job]:
-        """``running`` com lease vencido que não serão retomadas: cancelamento pedido →
-        ``cancelled``; sem tentativas → ``dead``. O evento final de cada uma (do handler
-        registrado em ``handlers``) é gravado no outbox **na mesma transação** da mudança
-        de estado. Devolve as que mudaram (o chamador roda :func:`after_final`)."""
+        """``running`` with an expired lease that will not be resumed: cancellation requested →
+        ``cancelled``; no attempts left → ``dead``. The final event of each one (from the handler
+        registered in ``handlers``) is written to the outbox **in the same transaction** as the state change.
+        Returns the ones that changed (the caller runs :func:`after_final`)."""
         async with self.pool.acquire() as c, c.transaction():
             a = await c.fetch(
                 "UPDATE hub_jobs SET status = 'cancelled', finished_at = now(), updated_at = now(), "  # noqa: S608 -- SQL uses bound values and fixed internal fragments
@@ -418,11 +418,11 @@ class Jobs:
         return out
 
     async def fail_killed(self, job_ids: Sequence[str], owner_prefix: str, reason: str) -> builtins.list[Job]:
-        """``failed`` (sem novas tentativas) para as tarefas ``running`` de ``job_ids`` cujo
-        lease ainda é do processo morto (``lease_owner`` começa com ``owner_prefix``, ex.
-        ``"1234-"``), com o evento final na mesma transação. Para quando o processo de
-        tarefas foi morto (SIGKILL/OOM) no meio de uma fase de memória: repetir a tentativa
-        só mataria o processo de novo."""
+        """``failed`` (no further attempts) for the ``running`` jobs in ``job_ids`` whose
+        lease still belongs to the dead process (``lease_owner`` starts with ``owner_prefix``, e.g.
+        ``"1234-"``), with the final event in the same transaction. Used when the jobs process
+        was killed (SIGKILL/OOM) in the middle of a memory phase: retrying the attempt
+        would only kill the process again."""
         if not job_ids:
             return []
         async with self.pool.acquire() as c, c.transaction():
@@ -498,8 +498,8 @@ class Jobs:
     async def finish(
         self, spec: JobSpec, handler: Handler, job: Job, outcome: Any, error: JobError | None
     ) -> None:
-        """Grava o resultado da tentativa (estado + evento final na mesma transação); num
-        estado terminal, chama :func:`after_final` depois de confirmar."""
+        """Records the attempt's result (state + final event in the same transaction); in a
+        terminal state, calls :func:`after_final` after committing."""
         fin = await self._finish_tx(spec, handler, job, outcome, error)
         if fin is not None:
             await after_final(handler, fin, fin.status)
@@ -561,7 +561,7 @@ class Jobs:
                     )
                 )
                 status = "failed"
-            else:  # JobRetry (ou erro inesperado)
+            else:  # JobRetry (or unexpected error)
                 detail = str(error) or error.__class__.__name__
                 if job.attempts >= spec.max_attempts:
                     n = _n(
@@ -588,7 +588,7 @@ class Jobs:
                     )
                     return None
             if n == 0:
-                return None  # não é mais nossa
+                return None  # no longer owned by us
             fin.status = status
             if detail:
                 fin.error = detail
@@ -601,7 +601,7 @@ class Jobs:
 
 
 class JobCtx:
-    """Contexto de uma tentativa em execução."""
+    """Context of an attempt in progress."""
 
     def __init__(self, job: Job, jobs: Jobs, spec: JobSpec, shutdown: Shutdown) -> None:
         self.job = job
@@ -617,15 +617,15 @@ class JobCtx:
 
     @property
     def checkpoint(self) -> Any:
-        """Checkpoint gravado na última confirmação (retomada)."""
+        """Checkpoint written at the last commit (resume)."""
         return self.job.checkpoint
 
     @contextlib.contextmanager
     def memory_phase(self) -> Generator[None]:
-        """Marca (arquivo em ``Jobs.marker_dir``) enquanto a tentativa segura muita memória
-        (ex.: a aba inteira carregada pelo python-calamine). Se o processo de tarefas for
-        morto por SIGKILL (OOM) com a marca presente, o próximo processo marca a tarefa
-        ``failed`` em vez de repeti-la (:meth:`Jobs.fail_killed`)."""
+        """Marker (file in ``Jobs.marker_dir``) while the attempt holds a lot of memory
+        (e.g. the whole sheet loaded by python-calamine). If the jobs process is
+        killed by SIGKILL (OOM) with the marker present, the next process marks the job
+        ``failed`` instead of retrying it (:meth:`Jobs.fail_killed`)."""
         d = self.jobs.marker_dir
         p: Path | None = None
         if d is not None:
@@ -643,7 +643,7 @@ class JobCtx:
                     p.unlink()
 
     def should_stop(self) -> JobError | None:
-        """Motivo para parar agora (lease perdido, cancelamento, desligamento)."""
+        """Reason to stop now (lost lease, cancellation, shutdown)."""
         if self.lost:
             return JobLostLease("lease perdido")
         if self.cancelled:
@@ -660,9 +660,9 @@ class JobCtx:
     async def save_checkpoint(
         self, conn: Any, checkpoint: Any, done: int, total: int, text: str = ""
     ) -> None:
-        """Grava checkpoint + progresso (e renova o lease) com ``conn`` — a transação do
-        lote. Levanta :class:`JobLostLease`/:class:`JobCancelled` (a transação deve ser
-        descartada — sair do ``async with conn.transaction()`` com a exceção faz isso)."""
+        """Writes checkpoint + progress (and renews the lease) with ``conn`` — the batch's
+        transaction. Raises :class:`JobLostLease`/:class:`JobCancelled` (the transaction must be
+        discarded — exiting the ``async with conn.transaction()`` with the exception does that)."""
         r = await conn.fetchrow(
             "UPDATE hub_jobs SET checkpoint = $3, progress_done = $4, progress_total = $5, progress_text = $6, "
             "lease_until = now() + make_interval(secs => $7), updated_at = now() "
@@ -683,7 +683,7 @@ class JobCtx:
             raise JobCancelled("cancelada")
 
     async def progress(self, done: int, total: int, text: str = "") -> None:
-        """Progresso sem checkpoint (fora de transação)."""
+        """Progress without a checkpoint (outside a transaction)."""
         async with self.jobs.pool.acquire() as c:
             n = _n(
                 await c.execute(
@@ -702,7 +702,7 @@ class JobCtx:
 
 
 async def run_claimed(jobs: Jobs, handler: Handler, job: Job, shutdown: Shutdown) -> None:
-    """Executa uma tentativa já assumida: heartbeat em paralelo, tempo máximo, resultado."""
+    """Runs an already claimed attempt: parallel heartbeat, maximum time, result."""
     spec = handler.spec
     ctx = JobCtx(job, jobs, spec, shutdown)
     token = job.attempt_token or ""
@@ -743,7 +743,7 @@ async def run_claimed(jobs: Jobs, handler: Handler, job: Job, shutdown: Shutdown
                 log.exception("tarefa %s: erro", job.id)
                 err = JobRetry(f"{e.__class__.__name__}: {e}")
         else:
-            # Lease perdido: a tentativa é interrompida (transações abertas desfeitas).
+            # Lease lost: the attempt is interrupted (open transactions rolled back).
             work.cancel()
             with contextlib.suppress(asyncio.CancelledError, Exception):
                 await work
@@ -763,8 +763,8 @@ async def run_claimed(jobs: Jobs, handler: Handler, job: Job, shutdown: Shutdown
 
 
 class Worker:
-    """Assume tarefas dos tipos dos ``handlers`` (uma vaga de :class:`Heavy` por
-    tarefa), executa em paralelo, retoma leases vencidos e marca ``dead`` o que esgotou."""
+    """Claims jobs of the types in ``handlers`` (one :class:`Heavy` slot per
+    job), runs them in parallel, resumes expired leases and marks ``dead`` what ran out of attempts."""
 
     def __init__(
         self,
@@ -779,7 +779,7 @@ class Worker:
         self.jobs = jobs
         if not jobs.handlers:
             jobs.handlers = list(handlers)
-        # Executado uma vez, na primeira volta com o banco pronto, antes de assumir tarefas.
+        # Runs once, on the first pass with the DB ready, before claiming jobs.
         self.on_ready = on_ready
         self.handlers = list(handlers)
         self.heavy = heavy

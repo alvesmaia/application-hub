@@ -1,5 +1,5 @@
-"""Correções da revisão da onda 7 (sem banco): teto do corpo e resposta em streaming na
-idempotência, vaga pesada que não vaza numa resposta nunca enviada."""
+"""Fixes from the wave 7 review (no DB): body cap and streaming response in
+idempotency, heavy slot that does not leak on a response never sent."""
 
 from __future__ import annotations
 
@@ -63,11 +63,11 @@ async def test_body_over_the_cap_is_413_before_the_handler(
     cap = 2 << 20
     async with client(app_with(cap, calls)) as c:
         h = {HEADER: "chave-teto-00001"}
-        # Content-Length declarado acima do teto: 413 sem ler
+        # Content-Length declared above the cap: 413 without reading
         r = await c.post("/x", content=b"a" * (cap + 1), headers=h)
         assert r.status_code == 413 and "Envio muito grande" in r.text
 
-        # chunked (sem tamanho) passando do teto: 413 e o temporário já apagado
+        # chunked (no size) going over the cap: 413 and the temp file already deleted
         async def gen() -> AsyncIterator[bytes]:
             for _ in range(5):
                 yield b"b" * (1 << 20)
@@ -75,7 +75,7 @@ async def test_body_over_the_cap_is_413_before_the_handler(
         r = await c.post("/x", content=gen(), headers={HEADER: "chave-teto-00002"})
         assert r.status_code == 413
         assert spool_files() == []
-        # dentro do teto passa (e o temporário some no fim)
+        # within the cap passes (and the temp file goes away at the end)
         r = await c.post("/x", content=b"c" * (cap - 10), headers={HEADER: "chave-teto-00003"})
         assert r.status_code == 201
     assert calls == [cap - 10]
@@ -93,8 +93,8 @@ async def test_response_is_streamed_not_buffered_and_big_ones_store_only_the_mar
         runs.append(1)
 
         async def body() -> AsyncIterator[bytes]:
-            yield b"x" * (MAX_STORED_BODY + 1)  # passou do teto de replay: vai direto
-            await gate.wait()  # só continua depois que o cliente já recebeu o 1º pedaço
+            yield b"x" * (MAX_STORED_BODY + 1)  # over the replay cap: goes straight through
+            await gate.wait()  # only continues after the client has received the 1st chunk
             for _ in range(4):
                 yield b"y" * (MAX_STORED_BODY // 2)
 
@@ -113,7 +113,7 @@ async def test_response_is_streamed_not_buffered_and_big_ones_store_only_the_mar
         if first[0]:
             first[0] = False
             return {"type": "http.request", "body": b"", "more_body": False}
-        await asyncio.sleep(30)  # cliente conectado; nada mais a ler
+        await asyncio.sleep(30)  # client connected; nothing else to read
         return {"type": "http.disconnect"}
 
     scope = {
@@ -129,13 +129,13 @@ async def test_response_is_streamed_not_buffered_and_big_ones_store_only_the_mar
         "client": ("c", 1),
         "root_path": "",
     }
-    # Se a resposta fosse acumulada antes de enviar, o gate nunca abriria (timeout).
+    # If the response were accumulated before sending, the gate would never open (timeout).
     await asyncio.wait_for(app(scope, receive, send), 5)
     sent = b"".join(m.get("body", b"") for m in seen if m["type"] == "http.response.body")
     assert len(sent) == MAX_STORED_BODY + 1 + 4 * (MAX_STORED_BODY // 2)
     async with client(app) as c:
         r = await c.post("/big", headers={HEADER: "chave-stream-001"})
-    # acima do teto de replay: só a marca "concluída"; nada reexecutado
+    # above the replay cap: only the "completed" mark; nothing re-executed
     assert r.status_code == 200 and r.headers[REPLAY_HEADER] == "true"
     assert "Operação já concluída" in r.text and runs == [1]
 
@@ -209,7 +209,7 @@ async def test_permit_released_when_client_disconnects_before_start() -> None:
         await asyncio.sleep(10)
         return {"type": "http.disconnect"}
 
-    with pytest.raises(Exception):  # noqa: B017 — OSError ou ClientDisconnect do Starlette
+    with pytest.raises(Exception):  # noqa: B017 — OSError or Starlette's ClientDisconnect
         await resp({"type": "http", "asgi": {"spec_version": "2.4"}}, receive, send)
     assert heavy.in_use == 0
 
@@ -229,6 +229,6 @@ async def test_permit_released_and_generator_closed_on_disconnect_mid_body() -> 
         await asyncio.sleep(10)
         return {"type": "http.disconnect"}
 
-    with pytest.raises(Exception):  # noqa: B017 — OSError ou ClientDisconnect do Starlette
+    with pytest.raises(Exception):  # noqa: B017 — OSError or Starlette's ClientDisconnect
         await resp({"type": "http", "asgi": {"spec_version": "2.4"}}, receive, send)
     assert heavy.in_use == 0 and closed == [True]

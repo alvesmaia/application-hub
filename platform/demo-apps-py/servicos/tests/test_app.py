@@ -1,5 +1,5 @@
-"""App por HTTP: sem banco (fragmentos, nav, assets, i18n, avisos) e com Postgres (abrir, listar,
-paginar, mudar status com 409, aprovações pela Inbox, relatório, CSV, busca, seed)."""
+"""App over HTTP: without DB (fragments, nav, assets, i18n, notices) and with Postgres (open, list,
+paginate, change status with 409, Inbox approvals, report, CSV, search, seed)."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ async def test_without_db_pages_render_with_notice_and_nav(running: Running) -> 
         "--app3" in (await c.get("/servicos/assets/app.css")).text
         or "app3" in (await c.get("/servicos/assets/app.css")).text
     )
-    assert (await c.get("/servicos/assets/x.js")).status_code == 404  # sem JavaScript próprio
+    assert (await c.get("/servicos/assets/x.js")).status_code == 404  # no own JavaScript
     assert (await c.get("/servicos/nada")).status_code == 404
     assert (await c.get("/outro")).status_code == 404
     assert (await c.get("/servicos/requests/5")).status_code == 404
@@ -74,7 +74,7 @@ async def test_internals_ready_locale_and_openapi(running: Running) -> None:
     deny = await c.post(
         "/servicos/_hub/approvals/sd-1", json={"decision": "approve"}, headers={**HUB, "x-hub-user": BOSS}
     )
-    assert deny.status_code == 503  # sem banco: nada a decidir agora
+    assert deny.status_code == 503  # no DB: nothing to decide now
     bad = await c.post(
         "/servicos/_hub/approvals/sd-x", json={"decision": "approve"}, headers={**HUB, "x-hub-user": BOSS}
     )
@@ -85,7 +85,7 @@ async def test_internals_ready_locale_and_openapi(running: Running) -> None:
     assert nodb.status_code == 503
 
 
-# ---- com Postgres -----------------------------------------------------------------------------
+# ---- with Postgres ----------------------------------------------------------------------------
 async def open_ticket(c: httpx.AsyncClient, **over: str) -> httpx.Response:
     data = {"title": "Preciso de VPN", "category": "Acessos", "priority": "Alta", "description": "d"}
     data.update(over)
@@ -99,10 +99,10 @@ async def test_seed_counters_and_current_year_protocols(db_url: str, running: Ru
     r = await c.get("/servicos/requests")
     assert r.status_code == 200 and f"SD-{YEAR}-0000600" in r.text
     assert "25 chamados nesta página" in r.text and "Mais antigos" in r.text
-    # contadores na casa das unidades (1 em 50 de cada estado nos últimos dias), não de milhares
+    # counters in the units (1 in 50 of each state in recent days), not thousands
     stats = r.text.split('class="app3-request-stats"')[1].split("</div></div>")[0]
     assert "<strong>" in stats
-    # carga idempotente: nada novo; base antiga é redatada
+    # idempotent load: nothing new; an old database gets re-dated
     conn = await asyncpg.connect(db_url)
     try:
         from servicos.app import seed_into
@@ -127,7 +127,7 @@ async def test_open_list_filter_paginate_and_update(db_url: str, running: Runnin
     assert bad.status_code == 422 and "Verifique os campos" in bad.text
     assert (await open_ticket(c, title="a\x01b")).status_code == 422
     ok = await open_ticket(c)
-    proto = f"SD-{YEAR}-10000001"  # os ids do app começam depois de 10 milhões
+    proto = f"SD-{YEAR}-10000001"  # the app's ids start after 10 million
     assert ok.status_code == 201 and f"Protocolo {proto}" in ok.text and "Ver chamado" in ok.text
     found = await c.get("/servicos/requests", params={"protocolo": proto.lower()})
     assert "Preciso de VPN" in found.text and "Ana" in found.text and "app3-priority alta" in found.text
@@ -178,7 +178,7 @@ async def test_approval_flow_through_the_inbox(db_url: str, running: Running) ->
     assert item["inbox_item"] == f"sd-{item['ticket_id']}" and item["requested_by"] == "Ana"
     url = f"/servicos/_hub/approvals/{item['inbox_item']}"
     hdr = {**HUB, "x-hub-user": BOSS}
-    # quem pediu não decide o próprio pedido
+    # the requester does not decide their own request
     own = await c.post(
         url, json={"decision": "approve"}, headers={**HUB, "x-hub-user": _ana_with_permission()}
     )
@@ -248,7 +248,7 @@ async def test_reports_cache_csv_and_busy(db_url: str, running: Running) -> None
     assert (
         await c.get("/servicos/reports", params={**q, "de": "2099-01-01", "ate": "2099-01-02"})
     ).text.count("Sem chamados")
-    # sem vaga de operação pesada: 429 com Retry-After
+    # no heavy-operation slot: 429 with Retry-After
     heavy = running.app.state.servicos.sdk.heavy
     permits = [heavy.try_acquire() for _ in range(heavy.max)]
     try:
@@ -317,7 +317,7 @@ async def test_tables_are_compatible_with_the_rust_schema(db_url: str, running: 
 
 @pytest.mark.db
 async def test_db_unavailable_paths(db_url: str, running: Running) -> None:
-    """Banco que cai depois de pronto: erros viram avisos (não 500 em branco)."""
+    """DB goes down after ready: errors become notices (not a blank 500)."""
     c = running.client
     await wait_ready(c)
     st = running.app.state.servicos

@@ -1,10 +1,10 @@
-"""Onda 12 (2.9): sagas e envios em duas fases.
+"""Wave 12 (2.9): sagas and two-phase uploads.
 
-Sem Postgres: regra de próximo passo pelos vetores de teste, estado/resumo e o esquema (formato estável: não mude sem migração).
-Com Postgres (``@db``): compensação em ordem inversa, retomada depois de queda (para a
-frente e no meio da compensação) com efeito exatamente uma vez, nova tentativa e
-compensação na última tentativa; envio em duas fases com transação desfeita e limpeza
-(com um armazenamento em memória). MinIO real: ``test_wave12_uploads_minio.py``.
+Without Postgres: next-step rule by the test vectors, state/summary and the schema (stable format: do not change without a migration).
+With Postgres (``@db``): compensation in reverse order, resumption after a crash (forward and
+in the middle of the compensation) with exactly-once effect, retry and
+compensation on the last attempt; two-phase upload with rolled-back transaction and cleanup
+(with an in-memory storage). Real MinIO: ``test_wave12_uploads_minio.py``.
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ def test_file_names_are_single_safe_segments() -> None:
         assert not valid_name(bad), bad
 
 
-# ---- com Postgres -------------------------------------------------------------------
+# ---- with Postgres -------------------------------------------------------------------
 
 Log = list[str]
 
@@ -211,7 +211,7 @@ async def test_crash_during_compensation_resumes_compensating(pool: Any) -> None
 
 
 class MemStore(Connection):
-    """Armazenamento em memória (mesma interface das conexões)."""
+    """In-memory storage (same interface as the connections)."""
 
     def __init__(self) -> None:
         super().__init__("mem", "s3")
@@ -259,7 +259,7 @@ async def test_two_phase_upload_commit_rollback_and_cleanup(pool: Any) -> None:
     assert await up.location(s.id) == "2026/contrato.pdf"
     assert store.files["2026/contrato.pdf"] == b"%PDF ok"
 
-    # Transação desfeita: continua pendente e sem promoção.
+    # Transaction rolled back: stays pending and not promoted.
     s2 = await up.begin("rascunho.pdf", "ana")
     await up.put(s2, b"x", "application/pdf")
 
@@ -274,7 +274,7 @@ async def test_two_phase_upload_commit_rollback_and_cleanup(pool: Any) -> None:
     async with pool.acquire() as c:
         assert await c.fetchval("SELECT count(*) FROM hub_jobs WHERE idempotency_key = $1", s2.id) == 0
 
-    # Queda entre as fases + órfão sem registro.
+    # Crash between the phases + orphan without a record.
     s3 = await up.begin("perdido.pdf", "ana")
     await up.put(s3, b"yy", "application/pdf")
     store.files["_staging/upl-semregistro/x.bin"] = b"z"
@@ -297,8 +297,8 @@ async def test_two_phase_upload_commit_rollback_and_cleanup(pool: Any) -> None:
 
 @pytest.mark.db
 async def test_review_fixes_ownership_swap_cancel_and_concurrent_once(pool: Any) -> None:
-    """Revisão de segurança (M1–M4, L1–L3): dono do envio, troca após confirmar, destino
-    existente, compensação × promoção e ``once`` com execuções simultâneas."""
+    """Security review (M1–M4, L1–L3): upload owner, swap after commit, existing target
+    existing, compensation × promotion and ``once`` with concurrent runs."""
     store = MemStore()
     up = Uploads(pool, store, ttl=120)
     s = await up.begin("a.txt", "ana")
@@ -310,7 +310,7 @@ async def test_review_fixes_ownership_swap_cancel_and_concurrent_once(pool: Any)
             with pytest.raises(ValueError):
                 await up.commit(c, s.id, bad, "ana")
         await up.commit(c, s.id, "2026/a.txt", "ana")
-    await up.put(s, b"malicioso!!", "text/plain")  # troca depois da confirmação
+    await up.put(s, b"malicioso!!", "text/plain")  # swap after the commit
     with pytest.raises(JobFail, match="mudou"):
         await up.promote(s.id)
     assert "2026/a.txt" not in store.files
@@ -339,7 +339,7 @@ async def test_review_fixes_ownership_swap_cancel_and_concurrent_once(pool: Any)
     await up.put(s5, b"doc", "text/plain")
     async with pool.acquire() as c:
         await up.commit(c, s5.id, "2026/queda.txt", "ana")
-    await store.move(s5.staging_path, "2026/queda.txt")  # promoção caiu antes de marcar
+    await store.move(s5.staging_path, "2026/queda.txt")  # promotion crashed before marking
     await up.cancel(s5.id)
     assert "2026/queda.txt" not in store.files
 

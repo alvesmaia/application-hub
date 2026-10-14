@@ -1,34 +1,34 @@
-"""``Idempotency-Key`` para rotas que alteram dados (POST/PUT/PATCH/DELETE) — middleware
-ASGI que usa a tabela ``hub_idempotency`` (formato estável: não mude sem migração).
+"""``Idempotency-Key`` for routes that change data (POST/PUT/PATCH/DELETE) — ASGI middleware
+that uses the ``hub_idempotency`` table (stable format: do not change without a migration).
 
-- Primeira vez: o pedido segue para o handler; a resposta (2xx/3xx/4xx, exceto 408/429)
-  é guardada. 5xx/429 não são guardados — salvo se o handler já efetivou a ação
+- First time: the request goes on to the handler; the response (2xx/3xx/4xx, except 408/429)
+  is stored. 5xx/429 are not stored — unless the handler already committed the action
   (:meth:`IdemCtx.mark_committed`).
-- Repetição com o mesmo pedido: devolve a resposta guardada (``idempotent-replay: true``).
-- Mesma chave com **outro** pedido (hash diferente): **422**.
-- Mesma chave em paralelo: espera até ``wait`` (5 s) pela primeira e devolve a resposta
-  dela; se não terminar, **409** com ``Retry-After: 2``.
-- Escopo da chave: valor do ``x-hub-user`` (injetado pelo hub) + método + caminho.
-- Hash: método, caminho, query, ``Content-Type`` sem ``boundary`` e o **corpo inteiro**
-  (``boundary`` do multipart normalizado, inclusive partido entre pedaços). Até 1 MiB
-  com ``Content-Length`` em memória; acima disso ou sem tamanho (chunked), em streaming
-  para um temporário em ``$TMPDIR`` (``/scratch``), reentregue ao handler e apagado no
-  fim — inclusive em exceção. O hash segue os vetores de teste fixos.
-- **Teto do corpo** (``HUB_MAX_BODY_MB``, padrão 64): ``Content-Length`` acima do teto →
-  **413** sem ler nada; corpo sem tamanho (chunked) que passa do teto → 413 e o temporário
-  é apagado na hora. Nada acima do teto chega ao disco.
-- **Resposta com buffer limitado**: até ``MAX_STORED_BODY`` a resposta é registrada antes
-  de ir ao cliente; acima disso segue direto ao cliente em streaming (nada é
-  acumulado em memória além do teto de replay, 256 KiB) e guarda-se só a marca
-  "concluída":
-  a repetição recebe 200 "Operação já concluída".
+- Replay with the same request: returns the stored response (``idempotent-replay: true``).
+- Same key with **another** request (different hash): **422**.
+- Same key in parallel: waits up to ``wait`` (5 s) for the first and returns its response;
+  if it does not finish, **409** with ``Retry-After: 2``.
+- Key scope: value of ``x-hub-user`` (injected by the hub) + method + path.
+- Hash: method, path, query, ``Content-Type`` without ``boundary`` and the **whole body**
+  (``boundary`` of the multipart normalized, including when split across chunks). Up to 1 MiB
+  with ``Content-Length`` in memory; above that, or without a size (chunked), streamed
+  to a temporary file in ``$TMPDIR`` (``/scratch``), re-delivered to the handler and deleted at the
+  end — including on exception. The hash follows the fixed test vectors.
+- **Body cap** (``HUB_MAX_BODY_MB``, default 64): ``Content-Length`` above the cap →
+  **413** without reading anything; a body without size (chunked) that goes over the cap → 413 and the temp file
+  is deleted right away. Nothing above the cap reaches the disk.
+- **Response with limited buffer**: up to ``MAX_STORED_BODY`` the response is recorded before
+  going to the client; above that it goes straight to the client in streaming (nothing beyond the replay cap,
+  256 KiB, is accumulated in memory) and only the
+  "completed" mark is stored:
+  a replay gets 200 "Operação já concluída".
 
-**Queda no meio** (Postgres): o dono da chave segura um advisory lock de sessão
+**Crash midway** (Postgres): the key's owner holds a session advisory lock on the
 (``pg_try_advisory_lock(hashtextextended(rota||chave, 7))``) numa
-conexão do pool de idempotência enquanto o handler executa. Se o processo morre, o lock
-morre com a conexão; a nova tentativa encontra ``pending`` sem dono e executa de novo —
-seguro porque a transação de negócio não confirmou (senão o registro estaria
-``committed``). Se confirmou mas a resposta não foi guardada, a repetição recebe 200
+idempotency pool connection while the handler runs. If the process dies, the lock
+dies with the connection; the new attempt finds ``pending`` with no owner and runs again —
+safe because the business transaction did not commit (otherwise the record would be
+``committed``). If it committed but the response was not stored, the replay gets 200
 "Operação já concluída".
 """
 
@@ -62,7 +62,7 @@ DEFAULT_MAX_BODY_MB = 64
 
 
 def max_body_from_env() -> int:
-    """Teto do corpo de pedidos com ``Idempotency-Key`` (``HUB_MAX_BODY_MB``, padrão 64)."""
+    """Body cap for requests with ``Idempotency-Key`` (``HUB_MAX_BODY_MB``, default 64)."""
     try:
         mb = int(os.environ.get("HUB_MAX_BODY_MB", DEFAULT_MAX_BODY_MB))
     except ValueError:
@@ -78,7 +78,7 @@ ASGIApp = Callable[[Scope, Receive, Send], Awaitable[None]]
 
 
 def valid_key(k: str) -> bool:
-    """8 a 128 caracteres visíveis ASCII."""
+    """8 to 128 visible ASCII characters."""
     return 8 <= len(k) <= 128 and all(33 <= ord(c) <= 126 for c in k)
 
 
@@ -96,7 +96,7 @@ def split_content_type(ct: str) -> tuple[str, str | None]:
 
 
 class RequestHasher:
-    """Hash incremental do pedido."""
+    """Incremental hash of the request."""
 
     def __init__(self, method: str, path: str, query: str, content_type: str) -> None:
         ct, boundary = split_content_type(content_type)
@@ -139,14 +139,14 @@ def request_hash(method: str, path: str, query: str, content_type: str, body: by
 
 
 def storable(status: int) -> bool:
-    """2xx/3xx/4xx (determinísticas), exceto 408/429; nunca 5xx."""
+    """2xx/3xx/4xx (deterministic), except 408/429; never 5xx."""
     return not (status >= 500 or status in (408, 429))
 
 
 @dataclass
 class IdemCtx:
-    """Chave em curso (``request.state.hub_idem``): o handler grava a marca de
-    efetivação **na própria transação** de negócio."""
+    """Key in progress (``request.state.hub_idem``): the handler writes the commit mark
+    **in its own** business transaction."""
 
     route: str
     key: str
@@ -163,7 +163,7 @@ class IdemCtx:
 
 
 def idem_ctx(conn: HTTPConnection) -> IdemCtx | None:
-    """Contexto da chave da requisição (``None`` sem ``Idempotency-Key``)."""
+    """Context of the request's key (``None`` without ``Idempotency-Key``)."""
     ctx = getattr(conn.state, "hub_idem", None)
     return ctx if isinstance(ctx, IdemCtx) else None
 
@@ -183,7 +183,7 @@ class _MemEntry:
 
 
 class Idempotency:
-    """Backend: Postgres (``pool`` dedicado) ou memória (``pool=None``)."""
+    """Backend: Postgres (dedicated ``pool``) or memory (``pool=None``)."""
 
     def __init__(self, pool: Any | None, ttl: float = 24 * 3600, wait: float = 5.0) -> None:
         self.pool = pool
@@ -261,13 +261,13 @@ async def _send_stored(send: Send, r: _Stored, replay: bool) -> None:
 
 
 class _Captured:
-    """``send`` do handler com **buffer limitado**: até ``MAX_STORED_BODY`` a resposta fica
-    em memória e só vai ao cliente depois de registrada (:meth:`flush`); a
-    repetição que chega logo depois já encontra ``done``. Passou do teto, o que estava no
-    buffer é enviado e o resto segue **direto ao cliente** (streaming; nada além do teto
-    fica em memória) e só a marca "concluída" é guardada. Se o cliente sumiu (``send``
-    falhou), o handler segue até o fim sem erro — a ação pode já ter sido efetivada e o
-    resultado ainda precisa ser registrado."""
+    """The handler's ``send`` with a **limited buffer**: up to ``MAX_STORED_BODY`` the response stays
+    in memory and only goes to the client after being recorded (:meth:`flush`); a
+    replay that arrives right after already finds ``done``. Once over the cap, what was in the buffer is
+    sent and the rest goes **straight to the client** (streaming; nothing beyond the cap stays
+    in memory) and only the "completed" mark is stored. If the client is gone (``send``
+    failed), the handler runs to the end without error — the action may already have been committed and the
+    result still needs to be recorded."""
 
     def __init__(self, send: Send) -> None:
         self._send = send
@@ -286,7 +286,7 @@ class _Captured:
             await self._send(msg)
         except OSError:
             self.client_gone = True
-        except Exception as e:  # desconexão do cliente (nomes do Starlette/anyio)
+        except Exception as e:  # client disconnect (Starlette/anyio names)
             if e.__class__.__name__ in ("ClientDisconnect", "ClosedResourceError", "BrokenResourceError"):
                 self.client_gone = True
             else:
@@ -310,13 +310,13 @@ class _Captured:
             self._pending.append(msg)
 
     async def flush(self) -> None:
-        """Envia o que ficou no buffer (chamar depois de registrar o resultado)."""
+        """Sends what is in the buffer (call after recording the result)."""
         pending, self._pending = self._pending, []
         for m in pending:
             await self._out(m)
 
     def stored_body(self) -> bytes | None:
-        """Corpo para replay (``None`` = acima do teto → "já concluída")."""
+        """Body for replay (``None`` = above the cap → "completed")."""
         if self.overflow:
             return None
         return b"".join(bytes(m.get("body", b"")) for m in self._pending if m["type"] == "http.response.body")
@@ -420,7 +420,7 @@ class IdempotencyMiddleware:
 async def _read_body(
     receive: Receive, hasher: RequestHasher, declared: int | None, max_body: int
 ) -> tuple[bytes | None, str | None]:
-    """Corpo pequeno com tamanho declarado → memória; senão, arquivo temporário."""
+    """Small body with a declared size → memory; otherwise a temporary file."""
     if declared is not None and declared <= MAX_HASHED_BODY:
         parts: list[bytes] = []
         total = 0
@@ -473,7 +473,7 @@ def _replayer(receive: Receive, body: bytes | None, path: str | None) -> Receive
             state["done"] = True
             return {"type": "http.request", "body": body, "more_body": False}
         if state["f"] is None:
-            state["f"] = open(path or "", "rb")  # noqa: SIM115, ASYNC230 — fechado ao terminar; leitura local curta
+            state["f"] = open(path or "", "rb")  # noqa: SIM115, ASYNC230 — closed at the end; short local read
         chunk = state["f"].read(CHUNK)
         if not chunk:
             state["f"].close()
@@ -485,7 +485,7 @@ def _replayer(receive: Receive, body: bytes | None, path: str | None) -> Receive
 
 
 async def _run_app(app: ASGIApp, scope: Scope, receive: Receive, send: Send, ctx: IdemCtx) -> _Captured:
-    """Executa o handler repassando a resposta ao cliente em streaming (``_Captured``)."""
+    """Runs the handler, passing the response to the client in streaming (``_Captured``)."""
     scope.setdefault("state", {})["hub_idem"] = ctx
     cap = _Captured(send)
     await app(scope, receive, cap)
@@ -567,7 +567,7 @@ async def _pg_flow(
                 done, rep = _already_done()
                 await _send_stored(send, done, rep)
                 return
-            # pending sem dono: o anterior morreu antes de efetivar
+            # pending with no owner: the previous one died before committing
         try:
             await conn.execute(
                 "INSERT INTO hub_idempotency (route, key, request_hash, state, expires_at) "
@@ -616,7 +616,7 @@ async def _pg_flow(
         await cap.flush()
     finally:
         ok = healthy
-        if locked and ok:  # ty: ignore[redundant-condition-strict]  # `healthy` muda no except que retorna; o ty nao enxerga no finally
+        if locked and ok:  # ty: ignore[redundant-condition-strict]  # `healthy` changes in the except that returns; ty does not see it in the finally
             try:
                 await asyncio.shield(
                     conn.execute("SELECT pg_advisory_unlock(hashtextextended($1, 7))", lock_key)

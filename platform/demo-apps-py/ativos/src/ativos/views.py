@@ -1,6 +1,6 @@
-"""HTML dinâmico da seção "Ativos": lista, painéis
-de edição/cadastro, importação e progresso. Textos em pt-BR; o idioma do usuário é aplicado depois
-(:class:`ativos.i18n.I18nMiddleware`). Nenhum JavaScript: só ``data-hub-*`` (hub-kit.js)."""
+"""Dynamic HTML of the "Assets" section: list, panels
+for editing/creating, import and progress. Texts in pt-BR; the user's language is applied later
+(:class:`ativos.i18n.I18nMiddleware`). No JavaScript: only ``data-hub-*`` (hub-kit.js)."""
 
 from __future__ import annotations
 
@@ -132,7 +132,7 @@ def field_html(key: str, value: str, readonly: bool) -> str:
 
 
 def asset_values(row: Any) -> dict[str, str]:
-    """Valores de um registro como o formulário os mostra (datas dd/mm/aaaa, valores 1234,56)."""
+    """Values of a record as the form shows them (dates dd/mm/yyyy, values 1234,56)."""
     return {c.key: display(c, row[c.key]) for c in COLS}
 
 
@@ -180,7 +180,7 @@ def import_form(msg: str, max_mb: int, max_rows: int) -> str:
 
 
 def job_panel(j: dict[str, Any]) -> str:
-    """Painel da importação (``importer.job_view``)."""
+    """Import panel (``importer.job_view``)."""
     pct = min(j["read"] * 100 // j["total"], 100) if j["total"] else 0
     stats = (
         f"{thousands(j['read'])} de {thousands(j['total'])} linhas lidas · {thousands(j['inserted'])} gravadas · "

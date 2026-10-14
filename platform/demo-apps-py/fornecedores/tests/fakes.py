@@ -1,4 +1,4 @@
-"""Armazenamento em memória no lugar do S3/broker (mesma interface de ``hub_sdk.storage.Connection``)."""
+"""In-memory storage in place of S3/broker (same interface as ``hub_sdk.storage.Connection``)."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ class FakeDownload:
 
 
 class FakeStore(Connection):
-    """Objetos em memória; ``fail`` (status, mensagem) faz toda operação falhar."""
+    """In-memory objects; ``fail`` (status, message) makes every operation fail."""
 
     def __init__(self, kind: str = "s3") -> None:
         super().__init__("fake", kind)

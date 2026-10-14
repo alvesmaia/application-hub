@@ -1,10 +1,10 @@
-"""Esquema, carga inicial e regras puras do Coletor.
+"""Schema, initial load and pure rules of the Coletor.
 
-Catálogo (~200 itens, EAN-13 com prefixo 789 + Code128 ``COL-nnnn``), locais de estoque
-(``LOC-A01``…) e 3 pedidos de recebimento (``REC-1001``…): usados só para dar nome ao que
-foi lido (o Coletor é uma bancada de leitura: Escanear, Folha de teste, Diagnóstico). Tudo
-determinístico: os mesmos códigos na tela, na folha de teste e nos testes. Classificação
-de uma leitura em :func:`guess_format` e :func:`is_url`.
+Catalog (~200 items, EAN-13 with prefix 789 + Code128 ``COL-nnnn``), stock locations
+(``LOC-A01``…) and 3 receiving orders (``REC-1001``…): used only to name what was
+read (the Coletor is a reading bench: Scan, Test sheet, Diagnostics). Everything is
+deterministic: the same codes on the screen, in the test sheet and in the tests. Classification
+of a reading in :func:`guess_format` and :func:`is_url`.
 """
 
 from __future__ import annotations
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS col_sessions (
 );
 """
 
-# Conjuntos de nomes (determinísticos) para o catálogo de demonstração.
+# Name sets (deterministic) for the demo catalog.
 FAMILIES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
     (
         "Fixação",
@@ -125,7 +125,7 @@ N_ITEMS = 200
 
 
 def ean13_check(body12: str) -> str:
-    """Dígito verificador do EAN-13 (pesos 1,3 alternados)."""
+    """EAN-13 check digit (alternating weights 1, 3)."""
     s = sum(int(d) * (3 if i % 2 else 1) for i, d in enumerate(body12))
     return str((10 - s % 10) % 10)
 
@@ -160,7 +160,7 @@ class Order:
 
 
 def catalog() -> list[Item]:
-    rnd = random.Random(424242)  # noqa: S311 — dados de demonstração, não segredo
+    rnd = random.Random(424242)  # noqa: S311 — demo data, not a secret
     out: list[Item] = []
     for i in range(1, N_ITEMS + 1):
         cat, unit, names = FAMILIES[(i - 1) % len(FAMILIES)]
@@ -212,8 +212,8 @@ def orders() -> list[Order]:
 
 
 def normalize_code(raw: str) -> str:
-    """Código lido (câmera, leitor ou teclado): sem espaços/controle; UPC-A (12 dígitos)
-    vira EAN-13 com zero à esquerda; letras em maiúsculas (Code128/Code39 do catálogo)."""
+    """Read code (camera, reader or keyboard): no spaces/control chars; UPC-A (12 digits)
+    becomes EAN-13 with a leading zero; uppercase letters (Code128/Code39 of the catalog)."""
     c = "".join(ch for ch in str(raw) if ch.isprintable() and not ch.isspace())[:64]
     if len(c) == 12 and c.isdigit():
         c = "0" + c
@@ -239,13 +239,13 @@ STATUS_CLASS = {
 
 
 def is_url(raw: str) -> bool:
-    """O valor lido é um endereço web (http/https) e não um código?"""
+    """Is the read value a web address (http/https) and not a code?"""
     v = raw.strip().lower()
     return v.startswith(("http://", "https://")) or "://" in v[:12]
 
 
 def guess_format(raw: str) -> str:
-    """Formato provável de uma leitura sem formato informado (leitor físico/teclado)."""
+    """Likely format of a reading with no format given (physical reader/keyboard)."""
     v = raw.strip()
     if is_url(v):
         return "qr_code"

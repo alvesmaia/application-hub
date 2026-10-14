@@ -1,21 +1,21 @@
-"""Regras puras do Coletor: **sessão de teste em fila** (Folha) e **modos do leitor**
-(Escanear). Sem banco nem rede — o app guarda o estado (JSON) em ``col_sessions`` /
-``col_prefs`` e chama estas funções dentro de uma transação.
+"""Pure rules of the Coletor: **queued test session** (Sheet) and **reader modes**
+(Scan). No DB or network — the app stores the state (JSON) in ``col_sessions`` /
+``col_prefs`` and calls these functions inside a transaction.
 
-Sessão (uma ativa por usuário):
+Session (one active per user):
 
-- :func:`start` embaralha os códigos (``random.Random`` injetável → ordem reproduzível
-  nos testes) e mostra o 1º;
-- :func:`on_read` compara a leitura com o código **esperado** (normalizado: UPC-A ↔
-  EAN-13, maiúsculas): igual → ``ok`` (com "avançar automaticamente" passa ao próximo;
-  sem, fica marcado até "Próximo"); diferente → ``erro`` (não avança);
-- :func:`next_code` (Próximo: o atual sem leitura certa vira ``pulado``), :func:`pause` /
-  :func:`resume` (o tempo parado não conta), :func:`cancel`, :func:`restart` (nova ordem);
-- :func:`summary`: acertos, erros, pulados e tempo médio por leitura certa.
+- :func:`start` shuffles the codes (injectable ``random.Random`` → reproducible order in
+  tests) and shows the 1st;
+- :func:`on_read` compares the reading with the **expected** code (normalized: UPC-A ↔
+  EAN-13, uppercase): equal → ``ok`` (with "auto-advance" it moves to the next one;
+  without it, it stays marked until "Next"); different → ``erro`` (does not advance);
+- :func:`next_code` (Next: the current one without a correct reading becomes ``pulado``), :func:`pause` /
+  - :func:`resume` (time spent paused does not count), :func:`cancel`, :func:`restart` (new order);
+- :func:`summary`: hits, errors, skipped and average time per correct reading.
 
-Leitor (Escanear): ``interativo`` (depois de uma leitura aceita, espera "Próximo") ou
-``automatico`` (pronto de novo depois de ``cooldown_ms``; o mesmo valor dentro de
-``DEDUP_MS`` é ignorado) — :func:`reader_gate`.
+Reader (Scan): ``interativo`` (after an accepted reading, waits for "Next") or
+``automatico`` (ready again after ``cooldown_ms``; the same value within
+``DEDUP_MS`` is ignored) — :func:`reader_gate`.
 """
 
 from __future__ import annotations
@@ -32,23 +32,23 @@ OK, ERRO, PULADO = "ok", "erro", "pulado"
 
 READER_MODES = ("interativo", "automatico")
 DEFAULT_READER = "interativo"
-COOLDOWNS_MS = (0, 1000, 2000, 3000, 5000)  # 0 = sem pausa (leitor físico)
+COOLDOWNS_MS = (0, 1000, 2000, 3000, 5000)  # 0 = no quiet zone (physical reader)
 DEFAULT_COOLDOWN_MS = 2000
-#: Janela em que a mesma leitura (o código que ainda está na frente da câmera) é ignorada.
+#: Window in which the same reading (the code still in front of the camera) is ignored.
 DEDUP_MS = 5000
 
 
 def match_key(raw: str) -> str:
-    """Forma comparável de um código: UPC-A (12) ↔ EAN-13 com zero; 13 dígitos começando
-    com 0 também casam o UPC-A; maiúsculas, sem espaços."""
+    """Comparable form of a code: UPC-A (12) ↔ EAN-13 with a zero; 13 digits starting
+    with 0 also match UPC-A; uppercase, no spaces."""
     return normalize_code(raw)
 
 
 @dataclass
 class Code:
     fmt: str
-    value: str  # texto que vai no símbolo (o hub desenha)
-    expected: str  # forma comparável do que a câmera devolve
+    value: str  # text that goes in the symbol (the hub draws it)
+    expected: str  # comparable form of what the camera returns
     label: str
 
 
@@ -68,7 +68,7 @@ class Session:
     last_error: dict[str, str] | None = None
     results: list[dict[str, Any]] = field(default_factory=list)
 
-    # ---- (de)serialização (jsonb) -----------------------------------------------------
+    # ---- (de)serialization (jsonb) -----------------------------------------------------
     def to_json(self) -> dict[str, Any]:
         return asdict(self)
 
@@ -98,7 +98,7 @@ class Session:
 def start(codes: list[Code], rng: random.Random, now: float, auto: bool = True, sid: str = "") -> Session:
     seed = rng.randrange(1 << 30)
     shuffled = list(codes)
-    random.Random(seed).shuffle(shuffled)  # noqa: S311 — ordem de teste, não segredo
+    random.Random(seed).shuffle(shuffled)  # noqa: S311 — test order, not a secret
     return Session(
         id=sid or f"s{seed:x}",
         seed=seed,
@@ -124,8 +124,8 @@ def _advance(s: Session, now: float) -> None:
 
 
 def on_read(s: Session, raw: str, now: float) -> str:
-    """Aplica uma leitura do celular: ``ok``, ``erro`` ou ``ignorado`` (sessão parada,
-    terminada ou o código atual já certo esperando "Próximo")."""
+    """Applies a reading from the phone: ``ok``, ``erro`` or ``ignorado`` (session stopped,
+    finished, or the current code already correct and waiting for "Next")."""
     cur = s.current()
     if cur is None or s.status != RUNNING or s.matched:
         return "ignorado"
@@ -145,8 +145,8 @@ def on_read(s: Session, raw: str, now: float) -> str:
 
 
 def next_code(s: Session, now: float) -> bool:
-    """Próximo: o atual sem leitura certa vira ``pulado``. Parada → continua parada no
-    próximo código (o tempo parado não conta)."""
+    """Next: the current one without a correct reading becomes ``pulado``. Stopped → stays stopped on the
+    next code (stopped time does not count)."""
     cur = s.current()
     if cur is None:
         return False
@@ -194,7 +194,7 @@ def cancel(s: Session, now: float) -> bool:
 
 
 def restart(s: Session, rng: random.Random, now: float) -> Session:
-    """Mesmos códigos, nova ordem, resultados zerados (mantém "avançar automaticamente")."""
+    """Same codes, new order, results reset (keeps "auto-advance")."""
     base = sorted(s.codes, key=lambda c: (c.fmt, c.expected))
     return start(base, rng, now, auto=s.auto)
 
@@ -224,7 +224,7 @@ def summary(s: Session) -> Summary:
     )
 
 
-# ---- modos do leitor (Escanear) -------------------------------------------------------------
+# ---- reader modes (Scan) -------------------------------------------------------------
 @dataclass
 class Reader:
     mode: str = DEFAULT_READER
@@ -235,9 +235,9 @@ class Reader:
 
 
 def reader_gate(r: Reader, raw: str, now: float) -> str:
-    """Decide uma leitura antes de registrar: ``aceita``, ``aguardando`` (interativo
-    esperando "Próximo"), ``pausa`` (automático, dentro da pausa) ou ``repetida`` (o mesmo
-    valor dentro de ``DEDUP_MS``). Aceita → atualiza o estado."""
+    """Decides a reading before recording it: ``aceita``, ``aguardando`` (interactive,
+    waiting for "Next"), ``pausa`` (automatic, within the pause) or ``repetida`` (the same
+    value within ``DEDUP_MS``). Accepted → updates the state."""
     key = match_key(raw)
     since_ms = (now - r.last_at) * 1000
     if r.mode == "interativo":

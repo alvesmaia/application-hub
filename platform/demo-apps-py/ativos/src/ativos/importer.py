@@ -1,16 +1,16 @@
-"""Importação de planilha Excel como **tarefa durável** (``ativos.import``).
+"""Excel spreadsheet import as a **durable job** (``ativos.import``).
 
-Leitura com **python-calamine** (leitor ``calamine``); o openpyxl só escreve
-(modelo, exportação, planilhas de teste). Antes de abrir, o zip é inspecionado com as mesmas
-regras (entradas, tamanho descomprimido por item e total, razão de compressão).
+Reading with **python-calamine** (``calamine`` reader); openpyxl only writes
+(template, export, test spreadsheets). Before opening, the zip is inspected with the same
+rules (entries, uncompressed size per item and total, compression ratio).
 
-- O upload é gravado em ``/scratch`` e a tarefa entra na fila na mesma transação da auditoria e
-  da marca de idempotência (reenvio com a mesma ``Idempotency-Key`` devolve a mesma tarefa).
-- O worker valida cada linha (tipos, obrigatórios, listas, patrimônio duplicado na planilha) e
-  grava lotes de :data:`BATCH` linhas com ``COPY``; cada lote é gravado **na mesma transação** que
-  avança o checkpoint (última linha + contadores). Queda no meio → a retomada continua dali.
-- Patrimônios já cadastrados vão para o relatório de erros (CSV ``linha;coluna;valor;erro``,
-  gravado depois do commit do lote).
+- The upload is written to ``/scratch`` and the job enters the queue in the same transaction as the audit and
+  the idempotency marker (resubmission with the same ``Idempotency-Key`` returns the same job).
+- The worker validates each row (types, required fields, lists, asset tag duplicated in the sheet) and
+  writes batches of :data:`BATCH` rows with ``COPY``; each batch is written **in the same transaction** that
+  advances the checkpoint (last row + counters). A crash midway → resume continues from there.
+- Asset tags already registered go to the error report (CSV ``linha;coluna;valor;erro``,
+  written after the batch commit).
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ from ativos.model import COLS, STATUSES, Invalid, map_headers, normalize
 
 KIND = "ativos.import"
 BATCH = 2000
-# Linhas de erro gravadas no relatório (as demais só são contadas).
+# Error rows written to the report (the others are only counted).
 MAX_ERROR_LINES = 100_000
 SPEC = JobSpec(KIND, max_attempts=5, max_duration=3600)
 
@@ -46,26 +46,26 @@ def _env_int(name: str, default: int) -> int:
         return default
 
 
-# Leitura com python-calamine (bindings do calamine). O
-# calamine carrega a aba inteira em memória NATIVA (fora do heap Python; medido: ~0,65
-# KiB por linha de 12 colunas → ~130 MiB para 200 mil linhas, praticamente o tamanho
-# descomprimido do XML da aba) e o `iter_rows()` entrega as linhas ao Python uma a uma.
-# Por isso o teto da aba descomprimida é o que limita a memória da importação, e só UMA
-# planilha é carregada por processo por vez (``ATIVOS_IMPORT_PARALLEL``).
+# Reading with python-calamine (calamine bindings). The
+# calamine loads the whole sheet into NATIVE memory (outside the Python heap; measured: ~0.65
+# KiB per 12-column row → ~130 MiB for 200k rows, roughly the uncompressed size of the sheet's XML)
+# and `iter_rows()` hands the rows to Python one by one.
+# So the cap on the uncompressed sheet is what limits the import's memory, and only ONE
+# spreadsheet is loaded per process at a time (``ATIVOS_IMPORT_PARALLEL``).
 MAX_ROWS = _env_int("HUB_IMPORT_MAX_ROWS", 300_000)
-# Regras do zip (diretório central, sem descomprimir nada):
+# Zip rules (central directory, without decompressing anything):
 MAX_ZIP_ENTRIES = 2_000
 MAX_ZIP_TOTAL_UNCOMPRESSED = 2560 * 1024 * 1024
 MAX_ZIP_ENTRY_UNCOMPRESSED = 300 * 1024 * 1024
 MAX_ZIP_RATIO = 100
-# Limitação atual: a aba inteira vira memória (sem leitura em streaming), então o teto é
-# menor (padrão 300 MiB ≈ 460 mil linhas simples).
+# Current limitation: the whole sheet becomes memory (no streaming read), so the cap is
+# smaller (default 300 MiB ≈ 460k simple rows).
 MAX_ZIP_SHEET_UNCOMPRESSED = _env_int("ATIVOS_IMPORT_MAX_SHEET_MB", 300) * 1024 * 1024
 _LOAD_SLOTS = asyncio.Semaphore(max(1, _env_int("ATIVOS_IMPORT_PARALLEL", 1)))
 
 
 def check_zip_entries(entries: list[tuple[str, int, int]]) -> None:
-    """Regras sobre (nome, comprimido, descomprimido) de cada entrada."""
+    """Rules about (name, compressed, uncompressed) of each entry."""
     if len(entries) > MAX_ZIP_ENTRIES:
         raise JobFail(
             f"Arquivo .xlsx inválido: {len(entries)} itens no arquivo compactado (limite {MAX_ZIP_ENTRIES})."
@@ -97,13 +97,13 @@ def check_zip_entries(entries: list[tuple[str, int, int]]) -> None:
 
 
 INVALID = "O arquivo não é uma planilha .xlsx válida."
-_LOCAL = struct.Struct("<4s5H3L2H")  # cabeçalho local do zip (30 bytes)
+_LOCAL = struct.Struct("<4s5H3L2H")  # zip local header (30 bytes)
 _INFLATE_CHUNK = 256 * 1024
 
 
 def _inflated_size(f: Any, method: int, compressed: int, cap: int) -> int:
-    """Tamanho REAL descomprimido de uma entrada (lendo os bytes, não o que o zip declara),
-    parando assim que passar de ``cap`` (devolve ``cap + 1``). Memória constante."""
+    """REAL uncompressed size of an entry (reading the bytes, not what the zip declares),
+    stopping as soon as it exceeds ``cap`` (returns ``cap + 1``). Constant memory."""
     if method == zipfile.ZIP_STORED:
         return compressed
     if method != zipfile.ZIP_DEFLATED:
@@ -117,7 +117,7 @@ def _inflated_size(f: Any, method: int, compressed: int, cap: int) -> int:
             break
         left -= len(chunk)
         data = chunk
-        while data and not d.eof:  # ty: ignore[redundant-condition-strict]  # typeshed fixa `eof` em False; muda ao fim do fluxo
+        while data and not d.eof:  # ty: ignore[redundant-condition-strict]  # typeshed hardcodes `eof` to False; it changes at the end of the stream
             out = d.decompress(data, _INFLATE_CHUNK)
             total += len(out)
             if total > cap:
@@ -127,10 +127,10 @@ def _inflated_size(f: Any, method: int, compressed: int, cap: int) -> int:
 
 
 def actual_entries(path: Path) -> list[tuple[str, int, int]]:
-    """(nome, comprimido, descomprimido REAL) de cada entrada. O diretório central (e o
-    cabeçalho local) são do autor do arquivo: um zip pode declarar 1 KB e descomprimir para
-    gigabytes. Aqui cada entrada é descomprimida em streaming e contada, com teto — o que o
-    calamine vai ler depois é exatamente isto."""
+    """(name, compressed, REAL uncompressed) of each entry. The central directory (and the
+    local header) belong to the file's author: a zip can declare 1 KB and decompress to
+    gigabytes. Here each entry is decompressed as a stream and counted, with a cap — which is exactly
+    what calamine will read afterwards."""
     try:
         with zipfile.ZipFile(path) as z, path.open("rb") as f:
             infos = z.infolist()
@@ -152,15 +152,15 @@ def actual_entries(path: Path) -> list[tuple[str, int, int]]:
                 out.append((i.filename, i.compress_size, max(real, i.file_size)))
                 total += real
                 if real > cap:
-                    break  # check_zip_entries recusa com a mensagem certa
+                    break  # check_zip_entries refuses with the right message
             return out
     except (zipfile.BadZipFile, zlib.error, OSError, struct.error, EOFError) as e:
         raise JobFail(INVALID) from e
 
 
 def check_zip(path: Path) -> None:
-    """Antes de entregar o arquivo ao calamine: regras sobre o diretório central
-    (rápido) e depois sobre os tamanhos REAIS descomprimidos (:func:`actual_entries`)."""
+    """Before handing the file to calamine: rules over the central directory
+    (fast) and then over the REAL uncompressed sizes (:func:`actual_entries`)."""
     try:
         with zipfile.ZipFile(path) as z:
             entries = [(i.filename, i.compress_size, i.file_size) for i in z.infolist()]
@@ -171,7 +171,7 @@ def check_zip(path: Path) -> None:
 
 
 class Validator:
-    """Valida linhas e guarda os patrimônios vistos (duplicados dentro do arquivo)."""
+    """Validates rows and keeps the asset tags seen (duplicates within the file)."""
 
     def __init__(self, headers: list[str]) -> None:
         try:
@@ -183,7 +183,7 @@ class Validator:
     def check(
         self, row: int, cells: list[Any] | tuple[Any, ...]
     ) -> tuple[list[Any] | None, list[tuple[int, str, str, str]]] | None:
-        """``None`` = linha em branco; senão (valores na ordem de COLS | ``None``, erros)."""
+        """``None`` = blank row; otherwise (values in COLS order | ``None``, errors)."""
         if all(v is None or (isinstance(v, str) and not v.strip()) for v in cells):
             return None
         values: list[Any] = [None] * len(COLS)
@@ -219,8 +219,8 @@ def raw_text(v: Any) -> str:
 
 
 class Reader:
-    """Primeira aba do ``.xlsx`` via python-calamine; linhas entregues por ``iter_rows``
-    (usar só de uma thread por vez)."""
+    """First sheet of the ``.xlsx`` via python-calamine; rows delivered by ``iter_rows``
+    (use from only one thread at a time)."""
 
     def __init__(self, path: Path) -> None:
         from python_calamine import CalamineWorkbook
@@ -237,14 +237,14 @@ class Reader:
         if header is None:
             raise JobFail("A planilha está vazia.")
         self.validator = Validator([raw_text(h) for h in header])
-        self.row_no = 1  # cabeçalho
+        self.row_no = 1  # header
 
     def batch(
         self, n: int, skip_until: int = 0
     ) -> list[tuple[int, list[Any] | None, list[tuple[int, str, str, str]]]]:
-        """Até ``n`` linhas novas (depois de ``skip_until``) já validadas:
-        (linha, valores | ``None``, erros). As linhas até o checkpoint são validadas de novo só
-        para o controle de duplicados dentro do arquivo continuar correto."""
+        """Up to ``n`` new rows (after ``skip_until``) already validated:
+        (row, values | ``None``, errors). Rows up to the checkpoint are validated again only
+        so that the in-file duplicate check stays correct."""
         out: list[tuple[int, list[Any] | None, list[tuple[int, str, str, str]]]] = []
         for r in self.rows:
             self.row_no += 1
@@ -262,7 +262,7 @@ class Reader:
 
 
 class Report:
-    """Relatório de erros CSV (``linha;coluna;valor;erro``), continuado numa retomada."""
+    """CSV error report (``linha;coluna;valor;erro``), continued on a resume."""
 
     def __init__(self, path: Path, resume: bool) -> None:
         if resume and path.exists():
@@ -296,8 +296,8 @@ class ImportHandler:
         if not await asyncio.to_thread(path.is_file):
             raise JobFail("O arquivo enviado não está mais disponível; envie a planilha novamente.")
         async with _LOAD_SLOTS:
-            # Fase de memória: se o processo de tarefas for morto (OOM) com a aba carregada,
-            # a tarefa vira `failed` em vez de repetir e matar o processo de novo.
+            # Memory phase: if the jobs process is killed (OOM) with the sheet loaded,
+            # the job becomes `failed` instead of retrying and killing the process again.
             with ctx.memory_phase():
                 return await self._run(ctx, path, Path(str(p.get("report_path", ""))))
 
@@ -376,7 +376,7 @@ class ImportHandler:
     async def _write_batch(
         self, ctx: JobCtx, good: list[tuple[int, list[Any]]]
     ) -> tuple[int, list[tuple[int, str, str, str]], bool]:
-        """Grava os válidos do lote (``COPY``); devolve (gravados, erros extras, falhou o COPY)."""
+        """Writes the valid rows of the batch (``COPY``); returns (written, extra errors, COPY failed)."""
         if not good:
             return 0, [], False
         errs: list[tuple[int, str, str, str]] = []
@@ -396,8 +396,8 @@ class ImportHandler:
                     await c.copy_records_to_table("assets", records=fresh, columns=[c_.key for c_ in COLS])
                 return len(fresh), errs, False
         except (asyncpg.PostgresError, OSError) as e:
-            # Ex.: patrimônio inserido por outra pessoa durante a importação — o lote inteiro
-            # vira rejeitado (a transação foi desfeita).
+            # E.g. an asset tag inserted by someone else during the import — the whole batch
+            # is rejected (the transaction was rolled back).
             first, last = good[0][0], good[-1][0]
             msg = f"lote não gravado: {db_error_text(e)}"
             return 0, [(first, "(lote)", f"linhas {first} a {last}", msg)], True
@@ -416,7 +416,7 @@ class ImportHandler:
         return outbox.audit(job.user, action, name, detail)
 
     def final_events(self, job: Job, status: str, detail: str) -> list[outbox.Event]:
-        """Onda 9: aviso na Inbox de quem importou (mesma transação do estado final)."""
+        """Wave 9: notice in the Inbox of whoever imported (same transaction as the final state)."""
         p = job.payload or {}
         name, login = str(p.get("file", "")), str(p.get("login", ""))
         title, level = {
@@ -440,7 +440,7 @@ class ImportHandler:
         ]
 
     def after_final(self, job: Job, status: str) -> None:
-        """Estado terminal: apaga o upload do ``/scratch`` (reprocessar pede a planilha de novo)."""
+        """Terminal state: deletes the upload from ``/scratch`` (reprocessing asks for the spreadsheet again)."""
         p = str((job.payload or {}).get("file_path", ""))
         if p and Path(p).name.startswith("upload-"):
             with contextlib.suppress(OSError):
@@ -448,7 +448,7 @@ class ImportHandler:
 
 
 def job_view(j: Job) -> dict[str, Any]:
-    """A tarefa como a tela mostra (checkpoint, resultado e estado)."""
+    """The job as the screen shows it (checkpoint, result and state)."""
     p = j.payload or {}
     cp = j.result if (j.status == "done" and isinstance(j.result, dict)) else (j.checkpoint or {})
     return {
@@ -470,7 +470,7 @@ def job_view(j: Job) -> dict[str, Any]:
 
 
 def template_xlsx(path: Path) -> None:
-    """Modelo com os cabeçalhos e 3 linhas de exemplo."""
+    """Template with the headers and 3 sample rows."""
     from openpyxl import Workbook
 
     wb = Workbook(write_only=True)
@@ -493,7 +493,7 @@ def template_xlsx(path: Path) -> None:
 
 
 def generate_xlsx(path: Path, rows: int, bad_per_mille: int = 10, prefix: str = "IMP-") -> None:
-    """Planilha de exemplo para a importação (testes, caos, carga)."""
+    """Sample spreadsheet for the import (tests, chaos, seed)."""
     from openpyxl import Workbook
 
     wb = Workbook(write_only=True)
@@ -509,7 +509,7 @@ def generate_xlsx(path: Path, rows: int, bad_per_mille: int = 10, prefix: str = 
                 f"Ativo importado {i}",
                 cats[i % 6],
                 locs[i % 6],
-                "Status inválido" if bad else STATUSES[i % len(STATUSES)],  # o gerador usa todos os status
+                "Status inválido" if bad else STATUSES[i % len(STATUSES)],  # the generator uses all statuses
                 "Marca X",
                 f"Modelo {i % 50}",
                 f"SN{i:010d}",
@@ -541,7 +541,7 @@ def generate_xlsx(path: Path, rows: int, bad_per_mille: int = 10, prefix: str = 
 
 
 def count_xlsx(path: Path) -> dict[str, int]:
-    """Valida a planilha como a importação faria (sem banco)."""
+    """Validates the spreadsheet the way the import would (without DB)."""
     r = Reader(path)
     valid = rejected = 0
     try:

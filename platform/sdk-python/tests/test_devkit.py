@@ -1,4 +1,4 @@
-"""Kit do desenvolvedor: camada SQL portátil (SQLite) e armazenamento local do `hub dev`."""
+"""Developer kit: portable SQL layer (SQLite) and local storage for `hub dev`."""
 
 from pathlib import Path
 

@@ -1,9 +1,9 @@
-"""Onda 12 (2.9): envio em duas fases com Postgres (``HUB_DB_TEST_URL``) e MinIO real
-descartável (``DOCKER_AVAILABLE=1``; container ``hub-itest-upl-py``, rótulo ``hub.ci=1``,
-imagens ``HUB_MINIO_IMAGE``/``HUB_MC_IMAGE``): confirmar + promover, transação desfeita, queda
-entre as fases com limpeza do órfão, ``PUT`` pré-assinado."""
+"""Wave 12 (2.9): two-phase upload with Postgres (``HUB_DB_TEST_URL``) and a real disposable MinIO
+(``DOCKER_AVAILABLE=1``; container ``hub-itest-upl-py``, label ``hub.ci=1``,
+images ``HUB_MINIO_IMAGE``/``HUB_MC_IMAGE``): commit + promote, rolled-back transaction, crash
+between the phases with orphan cleanup, pre-signed ``PUT``."""
 
-# ruff: noqa: S603, S607 — o teste controla o Docker com argumentos fixos
+# ruff: noqa: S603, S607 — the test controls Docker with fixed arguments
 from __future__ import annotations
 
 import asyncio
@@ -105,7 +105,7 @@ async def test_two_phase_upload_with_minio(pool: Any, minio: S3Connection) -> No
     url = s3.put_url
 
     def put() -> int:
-        req = urllib.request.Request(url, data=b"via url", method="PUT")  # noqa: S310 — URL http local do teste
+        req = urllib.request.Request(url, data=b"via url", method="PUT")  # noqa: S310 — local http URL of the test
         with urllib.request.urlopen(req, timeout=10) as r:  # noqa: S310
             return int(r.status)
 

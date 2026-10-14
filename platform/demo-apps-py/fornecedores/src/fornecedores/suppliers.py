@@ -1,4 +1,4 @@
-"""Diretório de fornecedores do mockup, validação de anexos e nomes de objeto."""
+"""Supplier directory of the mockup, attachment validation and object names."""
 
 from __future__ import annotations
 
@@ -48,7 +48,7 @@ def supplier(code: str) -> Supplier | None:
     return next((s for s in SUPPLIERS if s.code == code), None)
 
 
-# (extensão, content-type, assinatura no início do arquivo)
+# (extension, content-type, signature at the start of the file)
 TYPES = (
     ("pdf", "application/pdf", b"%PDF-"),
     ("png", "image/png", b"\x89PNG\r\n\x1a\n"),
@@ -59,8 +59,8 @@ TYPES = (
 
 
 def check_type(file_name: str, declared: str, head: bytes) -> str:
-    """Confere extensão, content-type declarado e assinatura; devolve o content-type ou levanta
-    ``ValueError`` com a mensagem para o usuário."""
+    """Checks extension, declared content-type and signature; returns the content-type or raises
+    ``ValueError`` with the message for the user."""
     ext = file_name.rsplit(".", 1)[-1].lower()
     hit = next((t for t in TYPES if t[0] == ext), None)
     if hit is None:
@@ -79,7 +79,7 @@ _FOLD = str.maketrans("áàâãÁÀÂÃéêÉÊíÍóôõÓÔÕúÚçÇ", "aaaaa
 
 
 def safe_name(s: str) -> str:
-    """Nome seguro para a chave do objeto: letras, números, ``.``, ``-``, ``_``."""
+    """Safe name for the object key: letters, digits, ``.``, ``-``, ``_``."""
     base = s.replace("\\", "/").rsplit("/", 1)[-1]
     out = "".join(c if (c.isascii() and c.isalnum()) or c in ".-_" else "_" for c in base.translate(_FOLD))
     return out.lstrip(".")[:100] or "arquivo"

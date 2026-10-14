@@ -1,13 +1,13 @@
-"""Códigos de barras e 2D em **SVG gerado no servidor** (sem JavaScript; o app não roda
+"""Barcodes and 2D codes as **SVG generated on the server** (no JavaScript; the app does not run
 script próprio — CONTRATO-APP §13).
 
-- 1D: ``python-barcode`` (MIT) só para codificar (``build()`` → módulos 0/1); o desenho é
-  nosso: um único ``<path>`` com as barras (escala inteira, zona de silêncio de 10
-  módulos), legível por câmera também numa tela.
-- QR: ``segno`` (BSD) → matriz de módulos; DataMatrix: ``ppf-datamatrix`` (MIT) → matriz.
+- 1D: ``python-barcode`` (MIT) only to encode (``build()`` → modules 0/1); the drawing is ours:
+  a single ``<path>`` with the bars (integer scale, 10-module quiet zone),
+  readable by a camera also on a screen.
+- QR: ``segno`` (BSD) → module matrix; DataMatrix: ``ppf-datamatrix`` (MIT) → matrix.
 
-O SVG sai com ``viewBox`` + ``role="img"``/``aria-label`` e só usa elementos aceitos pelo
-sanitizador do hub (``svg``, ``rect``, ``path``).
+The SVG comes out with ``viewBox`` + ``role="img"``/``aria-label`` and only uses elements accepted by
+the hub's sanitizer (``svg``, ``rect``, ``path``).
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from ppf import datamatrix
 
 DataMatrix = vars(datamatrix)["DataMatrix"]
 
-#: Formato → (classe do python-barcode, opções). Os nomes seguem os do BarcodeDetector.
+#: Format → (python-barcode class, options). Names follow those of BarcodeDetector.
 LINEAR: dict[str, tuple[str, dict[str, Any]]] = {
     "ean_13": ("ean13", {}),
     "ean_8": ("ean8", {}),
@@ -47,8 +47,8 @@ LABELS = {
 @dataclass(frozen=True)
 class Encoded:
     fmt: str
-    text: str  # texto completo codificado (com dígito verificador, se houver)
-    modules: tuple[str, ...]  # linhas de módulos "0101…" (1D: uma linha)
+    text: str  # full encoded text (with check digit, if any)
+    modules: tuple[str, ...]  # module rows "0101…" (1D: one row)
 
 
 def encode(fmt: str, value: str) -> Encoded:
@@ -67,7 +67,7 @@ def encode(fmt: str, value: str) -> Encoded:
 
 
 def _runs(row: str) -> list[tuple[int, int]]:
-    """(início, comprimento) de cada sequência de 1."""
+    """(start, length) of each run of 1s."""
     out: list[tuple[int, int]] = []
     i = 0
     while i < len(row):
@@ -95,8 +95,8 @@ def _path_2d(rows: Sequence[str], quiet: int) -> str:
 
 
 def svg(fmt: str, value: str, *, label: str = "", module_px: int = 3, height_modules: int = 40) -> Markup:
-    """SVG do código (fundo branco, barras pretas — o contraste que câmeras esperam, nos
-    dois temas). ``module_px`` = largura de um módulo em px no tamanho natural; o CSS pode
+    """SVG of the code (white background, black bars — the contrast cameras expect, in
+    both themes). ``module_px`` = width of one module in px at natural size; CSS can
     ampliar (``viewBox``)."""
     e = encode(fmt, value)
     name = escape(label or f"{LABELS.get(fmt, fmt)} {e.text}")
@@ -113,7 +113,7 @@ def svg(fmt: str, value: str, *, label: str = "", module_px: int = 3, height_mod
         d = _path_2d(e.modules, q)
         vb = f"0 0 {w} {n + 2 * q}"
         pw, ph = w * module_px * 2, (n + 2 * q) * module_px * 2
-    return Markup(  # noqa: S704 — só números e o rótulo escapado
+    return Markup(  # noqa: S704 — only numbers and the escaped label
         f'<svg class="col-code col-code-{fmt}" xmlns="http://www.w3.org/2000/svg" viewBox="{vb}" '
         f'width="{pw}" height="{ph}" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges" '
         f'role="img" aria-label="{name}" data-code-format="{fmt}" data-code-value="{escape(e.text)}">'

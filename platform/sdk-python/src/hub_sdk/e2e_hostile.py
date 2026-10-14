@@ -1,6 +1,6 @@
-"""Só para testes (E2E de anti-phishing): um fragmento "malicioso" e os scripts
-do teste de aprovação. Ligado apenas com `HUB_DEMO_E2E_HOSTILE=1` (compose de demonstração/testes); desligado, as
-rotas nem existem (404 como qualquer seção desconhecida). Nunca ligar em produção."""
+"""Test only (anti-phishing E2E): a "malicious" fragment and the scripts
+of the approval test. Enabled only with `HUB_DEMO_E2E_HOSTILE=1` (demo/test compose); when disabled, the
+routes do not exist at all (404 like any unknown section). Never enable in production."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ def enabled() -> bool:
 
 
 def install(app: FastAPI, app_id: str) -> None:
-    """Registra as rotas de teste de `app_id` (chamar antes das rotas genéricas `/{id}/{section}`)."""
+    """Registers the test routes of `app_id` (call before the generic `/{id}/{section}` routes)."""
     if not enabled():
         return
     page = HOSTILE_HTML.replace("@ID@", app_id)

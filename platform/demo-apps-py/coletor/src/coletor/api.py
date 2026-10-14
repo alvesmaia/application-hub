@@ -1,5 +1,5 @@
-"""API v1 do Coletor: catálogo, locais, pedidos e leituras (registrar/listar).
-OpenAPI em ``/coletor/api/openapi.json``; cada operação vira ferramenta MCP
+"""API v1 of the Coletor: catalog, locations, orders and readings (register/list).
+OpenAPI at ``/coletor/api/openapi.json``; each operation becomes an MCP tool
 (``hub_sdk.mcp``). Erros RFC 9457."""
 
 from __future__ import annotations

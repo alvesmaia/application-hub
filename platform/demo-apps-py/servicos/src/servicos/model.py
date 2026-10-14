@@ -1,4 +1,4 @@
-"""Domínio da Central de Serviços: listas fechadas, esquema do banco, SLA e a carga inicial."""
+"""Service Center domain: closed lists, database schema, SLA and the initial load."""
 
 from __future__ import annotations
 
@@ -71,10 +71,10 @@ UPDATE_SQL = (
 TICKETS_BASE = 2_000_000
 SEED_CHUNK = 50_000
 
-# Abertura cresce com o id (o maior id é o mais recente: a lista em ORDER BY id DESC mostra o
-# protocolo do ano corrente), 2 anos de histórico. Só os chamados dos últimos 3 dias ficam em
-# aberto (1 em 50 de cada estado: contadores na casa das centenas); os antigos estão resolvidos
-# ou fechados. ``{TOTAL}`` = total-alvo da carga.
+# Opening grows with the id (the highest id is the most recent: the list in ORDER BY id DESC shows
+# the reference of the current year), 2 years of history. Only tickets from the last 3 days stay
+# open (1 in 50 of each state: counters in the hundreds); the old ones are resolved
+# or closed. ``{TOTAL}`` = target total of the load.
 SEED_SQL = """
 INSERT INTO tickets (id, protocol, title, requester, category, priority, status, assignee, description,
   opened_at, updated_at, resolved_at, sla_due)
@@ -102,8 +102,8 @@ CROSS JOIN LATERAL (SELECT t0.o, t0.p,
 ON CONFLICT (id) DO NOTHING
 """
 
-# Base de uma carga antiga (dezenas de milhares "aguardando", datas fora de ordem): refaz
-# datas, estado e protocolo com a mesma regra da carga.
+# Base of an old load (tens of thousands "waiting", dates out of order): redoes
+# dates, state and reference with the same rule as the load.
 STALE_SQL = "SELECT count(*) > 20000 FROM tickets WHERE status IN ('Aberto','Em atendimento','Aguardando')"
 REDATE_SQL = """
 UPDATE tickets AS k SET
@@ -124,7 +124,7 @@ WHERE k.id = t.g
 
 
 def pick(v: str, opts: tuple[str, ...]) -> str:
-    """O próprio valor se for uma das opções; senão vazio."""
+    """The value itself if it is one of the options; otherwise empty."""
     return v if v in opts else ""
 
 
@@ -142,7 +142,7 @@ def sla_text(status: str, sla_due: datetime) -> str:
     if status in CLOSED:
         return "—"
     secs = (sla_due - now()).total_seconds()
-    mins = int(secs / 60)  # trunca para zero, como o chrono
+    mins = int(secs / 60)  # truncates to zero, like chrono
     if mins < 0:
         return "Vencido"
     return f"{int(secs / 3600):02d}:{mins % 60:02d}"

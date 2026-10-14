@@ -1,5 +1,5 @@
-"""hub_sdk.dashboards / hub_sdk.sql: gráficos SVG (snapshots), KPIs, filtros, cache, exportação e conexões
-locais (``.hub/connections.toml``) e pelo broker (servidor HTTP falso)."""
+"""hub_sdk.dashboards / hub_sdk.sql: SVG charts (snapshots), KPIs, filters, cache, export and connections
+local (``.hub/connections.toml``) and through the broker (fake HTTP server)."""
 
 from __future__ import annotations
 
@@ -65,7 +65,7 @@ def test_snapshots(name: str, make: Any) -> None:
 def test_chart_semantics_and_edge_cases() -> None:
     s = str(dash.line_chart(R, "mes", ["norte", "sul"], "Vendas"))
     assert 'role="img"' in s and "aria-labelledby" in s and "<desc>" in s and s.count("<circle") == 8
-    assert 'class="hub-dash-legend"' in s  # 2 séries → legenda
+    assert 'class="hub-dash-legend"' in s  # 2 series → legend
     assert "<script" not in str(dash.chart("bar", ["<b>"], [("x<y", [1])]))  # rótulos escapados
     assert "&lt;b&gt;" in str(dash.chart("bar", ["<b>"], [("x", [1])]))
     assert "Sem dados" in str(dash.chart("line", [], []))
@@ -225,7 +225,7 @@ def test_broker_connection(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("HUB_CONNECTIONS", "docs=s3,vendas=postgres")
         monkeypatch.setenv("HUB_STORAGE_URL", f"http://127.0.0.1:{srv.server_port}")
         monkeypatch.setenv("HUB_STORAGE_TOKEN", "t" * 32)
-        assert sql.connection("docs") is None  # conexão de arquivos não é SQL
+        assert sql.connection("docs") is None  # file connection is not SQL
         c = sql.connection("vendas")
         assert c is not None and "postgres" in repr(c) and "t" * 32 not in repr(c)
         r = asyncio.run(c.for_user("dXNlcg", "sig").query("select :a", {"a": 1}, 10))

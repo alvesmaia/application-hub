@@ -1,4 +1,4 @@
-/* identidade:inicio — Central de Serviços — verde-floresta, formas arredondadas (CONTRATO-APP §29).
+/* identidade:inicio — Service Center — forest green, rounded shapes (CONTRATO-APP §29).
    Tokens PRÓPRIOS do app: no CSS do app, `:root` vale para a área do app (#app-root) e o hub
    repassa cada `--app-<papel>` para o que desenha ali. Variante escura obrigatória (claro e
    escuro conferidos por scripts/gen-dark-theme.mjs --check: texto ≥ 4,5:1, formas ≥ 3:1). */
@@ -90,7 +90,7 @@
   }
 }
 /* identidade:fim */
-/* Forma: tudo arredondado e macio (botões em pílula, cartões bem curvos). */
+/* Shape: everything rounded and soft (pill buttons, very curved cards). */
 :root { --radius-md: 10px; --radius-lg: 12px; --radius-xl: 14px; --radius-2xl: 16px; --radius-3xl: 16px; --radius-4xl: 18px; --radius-5xl: 18px; --radius-6xl: 20px; --radius-7xl: 24px; }
 .primary-button, .secondary-button, .filter-button, .app-sidebar .nav-item { border-radius: var(--radius-pill); }
 /* forma:fim */
@@ -186,10 +186,10 @@
 }
 
 
-/* Identidade Alvesmaia: item ativo da barra lateral igual ao rail da plataforma. */
+/* Alvesmaia identity: active sidebar item same as the platform rail. */
 .app3-sidebar .nav-item.active{background:var(--color-chrome-active-bg)!important;color:var(--am-chrome-text)!important;box-shadow:inset 3px 0 0 var(--color-chrome-active-bar)}
 
-/* Painel: saudação em superfície clara (o navy fica para o cromo da plataforma). */
+/* Panel: greeting on a light surface (navy is kept for the platform chrome). */
 .app3-welcome{background:var(--am-surface);color:var(--am-body);border:1px solid var(--am-border)}
 .app3-welcome:after{display:none}
 .app3-welcome .app3-overline{color:var(--am-primary)}
@@ -200,16 +200,16 @@
 .app3-status-menu form{display:grid;gap:8px}
 .app3-status-menu label{display:grid;gap:4px;font-size:12px;font-weight:600}
 
-/* Campos: borda de controle (3:1 nos dois temas). */
+/* Fields: control border (3:1 in both themes). */
 .app3-settings-fields select,.app3-knowledge-hero label{border-color:var(--am-control)}
 .app3-knowledge-hero label:focus-within{outline:2px solid var(--am-accent);outline-offset:1px}
-/* Base de conhecimento: destaque em superfície de realce, texto com contraste. */
+/* Knowledge base: highlight on a highlight surface, text with contrast. */
 .app3-knowledge-hero{background:var(--am-tint);border:1px solid var(--am-tint-border)}
 .app3-knowledge-hero h2,.app3-knowledge-hero h2 em{color:var(--am-title)}
 .app3-knowledge-hero p{color:var(--am-secondary)}
 .app3-knowledge-hero label{color:var(--am-secondary)}
 .app3-knowledge-hero input{color:var(--am-body);background:transparent}
 .app3-knowledge-hero input::placeholder{color:var(--am-faint)}
-/* Barra de filtros das solicitações: controles juntos (sem vãos), "Limpar" ao lado de "Filtrar". */
+/* Requests filter bar: controls together (no gaps), "Clear" next to "Filter". */
 .app3-request-toolbar.hub-filters{justify-content:flex-start;flex-wrap:wrap;gap:8px}
 .app3-request-toolbar.hub-filters .table-search{flex:0 1 240px}

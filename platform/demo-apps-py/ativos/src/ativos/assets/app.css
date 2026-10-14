@@ -1,4 +1,4 @@
-/* identidade:inicio — Gestão de Ativos — verde-azulado, sans do sistema (CONTRATO-APP §29).
+/* identidade:inicio — Asset Management — teal green, system sans (CONTRATO-APP §29).
    Tokens PRÓPRIOS do app: no CSS do app, `:root` vale para a área do app (#app-root) e o hub
    repassa cada `--app-<papel>` para o que desenha ali. Variante escura obrigatória (claro e
    escuro conferidos por scripts/gen-dark-theme.mjs --check: texto ≥ 4,5:1, formas ≥ 3:1). */
@@ -90,7 +90,7 @@
   }
 }
 /* identidade:fim */
-/* Forma: cantos retos e contidos, cabeçalhos de tabela em caixa alta. */
+/* Shape: square, contained corners, uppercase table headers. */
 :root { --radius-md: 4px; --radius-lg: 5px; --radius-xl: 6px; --radius-2xl: 6px; --radius-3xl: 7px; --radius-4xl: 8px; --radius-5xl: 8px; --radius-6xl: 10px; }
 .app-sidebar .nav-item.active { box-shadow: inset 3px 0 0 var(--app-chrome-icon); }
 .data-table th { text-transform: uppercase; letter-spacing: .04em; }

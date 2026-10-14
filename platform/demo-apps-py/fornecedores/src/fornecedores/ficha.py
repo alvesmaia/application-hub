@@ -1,4 +1,4 @@
-"""Ficha do fornecedor em PDF."""
+"""Supplier record as PDF."""
 
 from __future__ import annotations
 

@@ -1,5 +1,5 @@
-"""Fixtures: cliente HTTP sobre o app real (lifespan incluído), armazenamento em memória e
-banco descartável (``HUB_DB_TEST_URL``)."""
+"""Fixtures: HTTP client over the real app (lifespan included), in-memory storage and a throwaway database
+(``HUB_DB_TEST_URL``)."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ def env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
 
 
 class Running:
-    """App com lifespan ativo + cliente + armazenamento de teste."""
+    """App with active lifespan + client + test storage."""
 
     def __init__(self, app: Any, client: httpx.AsyncClient, store: FakeStore | None) -> None:
         self.app = app
@@ -76,7 +76,7 @@ async def running(env: Path, monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[R
 
 @pytest.fixture
 async def bare(env: Path, monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[Running]:
-    """App sem armazenamento de anexos."""
+    """App without attachment storage."""
     async for r in _run(monkeypatch, None):
         yield r
 

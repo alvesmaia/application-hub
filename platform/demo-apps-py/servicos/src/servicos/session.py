@@ -1,9 +1,9 @@
-"""Cache de sessão por usuário em memória, limitado (LRU): guarda os últimos filtros e os
-relatórios já calculados da sessão, para medir quanto de RAM cada usuário ativo custa; ao passar
-da capacidade, a menos usada recentemente é descartada.
+"""Per-user session cache in memory, bounded (LRU): keeps the last filters and the
+reports already computed for the session, to measure how much RAM each active user costs; when
+over capacity, the least recently used one is discarded.
 
-``HUB_SESSION_CAPACITY`` (padrão 2000 sessões) e ``HUB_SESSION_REPORTS`` (relatórios guardados
-por sessão, padrão 3).
+``HUB_SESSION_CAPACITY`` (default 2000 sessions) and ``HUB_SESSION_REPORTS`` (reports stored
+per session, default 3).
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ class Session:
     created: float = field(default_factory=time.monotonic)
     hits: int = 0
     last_filters: str = ""
-    # (chave dos parâmetros, resultado), do mais recente para o mais antigo.
+    # (parameter key, result), from the most recent to the oldest.
     reports: list[tuple[str, Report]] = field(default_factory=list)
 
     def approx_bytes(self) -> int:
@@ -69,7 +69,7 @@ class Sessions:
         return s
 
     def touch(self, key: str, f: Callable[[Session], None]) -> None:
-        """Cria/atualiza a sessão e aplica ``f``."""
+        """Creates/updates the session and applies ``f``."""
         with self._lock:
             s = self._get(key)
             s.hits += 1

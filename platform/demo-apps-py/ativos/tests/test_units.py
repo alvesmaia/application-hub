@@ -1,4 +1,4 @@
-"""Unidades sem I/O."""
+"""Units without I/O."""
 
 from __future__ import annotations
 
@@ -171,7 +171,7 @@ def test_personalize_uses_identity() -> None:
     assert re.match(r"^[A-ZÀ-Ú-]+, \d{1,2} [A-Z]{3} \d{4}$", i18n.today_label("pt-BR"))
 
 
-# ---- importação: validador e zip --------------------------------------------------------
+# ---- import: validator and zip ---------------------------------------------------------
 
 
 def _header() -> list[str]:
@@ -182,7 +182,7 @@ def test_validator_flags_bad_rows_and_duplicates() -> None:
     v = importer.Validator(["Patrimônio", "Nome", "Categoria", "Localização", "Status", "Extra"])
     ok = v.check(2, ["A-1", "Notebook", "Tecnologia", "Recife", "Em uso", "x"])
     assert ok is not None and ok[0] is not None and ok[1] == [] and ok[0][0] == "A-1"
-    assert v.check(3, [None, "", "", "", "", ""]) is None  # linha em branco
+    assert v.check(3, [None, "", "", "", "", ""]) is None  # blank row
     bad = v.check(4, ["A-2", "Mesa", "Brinquedos", "Recife", "Em uso", ""])
     assert bad is not None and bad[0] is None and bad[1][0][1] == "Categoria"
     dup = v.check(5, ["A-1", "Outra", "Tecnologia", "Recife", "Em uso", ""])
@@ -196,7 +196,7 @@ def test_reader_roundtrip_with_generated_sheet(tmp_path: Path) -> None:
     importer.generate_xlsx(p, 200, 50, "ZZ-")
     r = importer.count_xlsx(p)
     assert r["total"] == 200 and r["valid"] + r["rejected"] == 200 and 0 < r["rejected"] < 40
-    # F17: a planilha traz todos os status (o E2E exporta só os "Disponível").
+    # F17: the spreadsheet carries all statuses (the E2E exports only the "Available" ones).
     from openpyxl import load_workbook
 
     ws = load_workbook(p, read_only=True).active

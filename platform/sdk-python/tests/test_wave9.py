@@ -1,5 +1,5 @@
 """Onda 9: idioma (x-hub-locale / identidade / Accept-Language), busca federada e
-aprovações pelo canal interno, notificações/pedidos no outbox."""
+approvals over the internal channel, notifications/requests in the outbox."""
 
 from __future__ import annotations
 
@@ -131,7 +131,7 @@ async def test_internal_search_uses_identity_and_locale() -> None:
             await c.get("/demo/_hub/search?q=", headers={internal.TOKEN_HEADER: TOKEN})
         ).status_code == 400
         assert (await c.get("/demo/_hub/search?q=x")).status_code == 401
-        # Middleware de idioma nas rotas do app.
+        # Language middleware on the app's routes.
         assert (await c.get("/demo/t", headers={"accept-language": "en"})).text == "Back to the platform"
 
 

@@ -1,5 +1,5 @@
-"""Cliente da API externa de CNPJ/score com timeout por tentativa, novas tentativas com
-backoff exponencial + jitter (só falhas transitórias) e disjuntor."""
+"""Client for the external CNPJ/score API with a timeout per attempt, retries with
+exponential backoff + jitter (transient failures only) and a circuit breaker."""
 
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ class CnpjInfo:
 
 @dataclass(frozen=True)
 class Outcome:
-    """``info`` preenchido = sucesso; senão contingência (``reason`` + último resultado bom)."""
+    """``info`` filled = success; otherwise contingency (``reason`` + last good result)."""
 
     attempts: int
     info: CnpjInfo | None = None
@@ -82,7 +82,7 @@ class Lookup:
         return (hit[0], int(time.monotonic() - hit[1])) if hit else None
 
     def open_for(self) -> int:
-        """Segundos restantes com o disjuntor aberto (0 = fechado)."""
+        """Seconds left with the circuit breaker open (0 = closed)."""
         return int(max(0.0, self.open_until - time.monotonic())) if self.open_until is not None else 0
 
     def _get(self, url: str) -> CnpjInfo:
@@ -140,7 +140,7 @@ class Lookup:
                     f"após {OPEN_AFTER} falhas seguidas.",
                     cached=self.last_good(d),
                 )
-            self.open_until = None  # meio-aberto: esta consulta é o teste
+            self.open_until = None  # half-open: this lookup is the test
             self.failures = OPEN_AFTER - 1
         url = f"{self.base}/cnpj/{d}"
         t0 = time.monotonic()

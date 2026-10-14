@@ -1,9 +1,9 @@
 """Busca federada (onda 9): ``GET /{app}/_hub/search?q=&limit=``.
 
-O hub chama este endpoint pela rede interna (token interno) com a identidade de quem busca
-(``x-hub-user``, ``x-hub-locale``); o app devolve só o que essa pessoa pode ver. O SDK
-valida a consulta (1–100 caracteres), limita ``limit`` a :data:`MAX_LIMIT`, apara os campos
-e descarta resultados cujo ``url`` não seja do próprio app.
+The hub calls this endpoint over the internal network (internal token) with the identity of whoever is searching
+(``x-hub-user``, ``x-hub-locale``); the app returns only what that person can see. The SDK
+validates the query (1–100 characters), caps ``limit`` at :data:`MAX_LIMIT`, trims the fields
+and discards results whose ``url`` is not of the app itself.
 
 Resposta: ``{"results": [{"title", "subtitle", "url", "kind", "score"}]}`` (score 0–1,
 maior primeiro).
@@ -52,7 +52,7 @@ def _cut(s: str, n: int) -> str:
 
 
 def url_in_app(app: str, url: str) -> bool:
-    # Onda 13: URL pública ``/apps/{app}…`` (o antigo ``/{app}…`` segue aceito).
+    # Wave 13: public URL ``/apps/{app}…`` (the old ``/{app}…`` is still accepted).
     if url.startswith(APPS_PREFIX + "/"):
         url = url[len(APPS_PREFIX) :]
     base = f"/{app}"
@@ -82,12 +82,12 @@ def sanitize(app: str, hits: list[SearchHit], limit: int) -> list[SearchHit]:
 
 
 def fold(s: str) -> str:
-    """Minúsculas sem acentos."""
+    """Lowercase, no accents."""
     return "".join(c for c in unicodedata.normalize("NFD", s.lower()) if not unicodedata.combining(c))
 
 
 def score(text: str, q: str) -> float:
-    """Igual 1, começa 0,8, palavra começa 0,6, contém 0,4, senão 0."""
+    """Equal → 1, starts with → 0.8, word starts with → 0.6, contains → 0.4, otherwise 0."""
     t, n = fold(text), fold(q.strip())
     if not n:
         return 0.0
@@ -101,5 +101,5 @@ def score(text: str, q: str) -> float:
 
 
 def like_pattern(q: str) -> str:
-    """Padrão ``ILIKE`` seguro (escapa ``%``, ``_`` e ``\\``)."""
+    """Safe ``ILIKE`` pattern (escapes ``%``, ``_`` and ``\\``)."""
     return "%" + "".join("\\" + c if c in "%_\\" else c for c in q) + "%"

@@ -1,7 +1,7 @@
-"""Fixtures: Postgres descartável via ``HUB_DB_TEST_URL`` (ex.: container ``hub-testdb``).
+"""Fixtures: throwaway Postgres via ``HUB_DB_TEST_URL`` (e.g. the ``hub-testdb`` container).
 
-Testes marcados ``@pytest.mark.db`` são pulados sem a variável. Cada teste recebe um
-banco novo (``hubsdk_<aleatório>``) apagado no fim.
+Tests marked ``@pytest.mark.db`` are skipped without the variable. Each test gets a
+new database (``hubsdk_<random>``) deleted at the end.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ def pytest_collection_modifyitems(config: Any, items: list[Any]) -> None:
     if DB_URL:
         return
     if os.environ.get("CI", "").lower() == "true" and any("db" in it.keywords for it in items):
-        # No CI os testes com Postgres são obrigatórios: sem banco é falha, nunca "pulado".
+        # In CI the Postgres tests are mandatory: without a DB it is a failure, never "skipped".
         raise pytest.UsageError("CI=true sem HUB_DB_TEST_URL: os testes marcados @db não podem ser pulados")
     skip = pytest.mark.skip(reason="defina HUB_DB_TEST_URL para os testes com Postgres")
     for it in items:

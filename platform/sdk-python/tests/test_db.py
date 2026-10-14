@@ -1,5 +1,5 @@
-"""Testes com Postgres real (``HUB_DB_TEST_URL``): tarefas duráveis, outbox e
-idempotência."""
+"""Tests with real Postgres (``HUB_DB_TEST_URL``): durable jobs, outbox and
+idempotency."""
 
 from __future__ import annotations
 
@@ -41,8 +41,8 @@ pytestmark = pytest.mark.db
 
 
 class Recorder:
-    """Handler de teste: processa ``n`` lotes gravando ``items`` + checkpoint na mesma
-    transação; comportamento configurável."""
+    """Test handler: processes ``n`` batches writing ``items`` + checkpoint in the same
+    transaction; configurable behavior."""
 
     def __init__(self, spec: JobSpec, batches: int = 3, fail_first: int = 0, fatal: bool = False) -> None:
         self.spec = spec
@@ -154,7 +154,7 @@ async def test_transient_failure_backs_off_then_dead(pool: Any) -> None:
     j = await jobs.get(job.id)
     assert j is not None and j.status == "dead"
     assert await count(pool, "SELECT count(*) FROM hub_outbox WHERE payload->>'action' = 'Tarefa dead'") == 1
-    # reprocessar: volta à fila com tentativas zeradas
+    # reprocess: back to the queue with attempts reset
     r = await jobs.retry(job.id)
     assert r.status == "queued" and r.attempts == 0
     with pytest.raises(ValueError):
@@ -182,12 +182,12 @@ async def test_fence_lost_lease_and_resume_from_checkpoint(pool: Any) -> None:
     async with pool.acquire() as c, c.transaction():
         await c.execute("INSERT INTO items (name) VALUES ('lote0')")
         await ctx.save_checkpoint(c, {"batch": 1}, 1, 3)
-    # O processo "morre": o lease vence e outro worker assume com token novo.
+    # The process "dies": the lease expires and another worker takes over with a new token.
     await asyncio.sleep(1.3)
     second = await Jobs(pool).claim([spec])
     assert second is not None and second.id == job.id and second.attempt_token != first.attempt_token
     assert second.checkpoint == {"batch": 1} and second.error == "retomada após lease vencido"
-    # O antigo não grava mais nada: o lote dele é descartado junto com o checkpoint.
+    # The old one no longer writes anything: its batch is discarded along with the checkpoint.
     with pytest.raises(JobLostLease):
         async with pool.acquire() as c, c.transaction():
             await c.execute("INSERT INTO items (name) VALUES ('zumbi')")
@@ -197,7 +197,7 @@ async def test_fence_lost_lease_and_resume_from_checkpoint(pool: Any) -> None:
     await run_claimed(jobs, h, second, Shutdown())
     j = await jobs.get(job.id)
     assert j is not None and j.status == "done" and j.attempts == 2
-    # lote 0 do primeiro + lotes 1 e 2 do segundo: nenhum duplicado
+    # batch 0 from the first + batches 1 and 2 from the second: no duplicates
     assert await count(pool, "SELECT count(*) FROM items") == 3
 
 
@@ -224,7 +224,7 @@ async def test_cancel_queued_running_and_reap(pool: Any) -> None:
     await asyncio.wait_for(task, 10)
     j = await jobs.get(r.id)
     assert j is not None and j.status == "cancelled"
-    # running com lease vencido e sem tentativas → dead no reap
+    # running with an expired lease and no attempts left → dead on reap
     d, _ = await jobs.enqueue(JobSpec("t.cancel", max_attempts=1, lease=1), {}, "ana")
     assert await jobs.claim([spec]) is not None
     await asyncio.sleep(1.2)
@@ -294,8 +294,8 @@ async def test_idempotency_postgres_replay_mismatch_parallel(pool: Any, db_url: 
             )
             assert sorted([a.status_code, b.status_code]) == [201, 409]
         assert calls == ["a", "a", "lento"]
-        # Queda depois de efetivar e antes de guardar a resposta: registro "committed"
-        # sem dono → a repetição não executa de novo ("Operação já concluída").
+        # Crash after committing and before storing the response: record "committed"
+        # no owner → the replay does not run again ("Operação já concluída").
         async with idem_pool.acquire() as conn:
             await conn.execute(
                 "UPDATE hub_idempotency SET state = 'committed', status = NULL, body = NULL "
@@ -304,7 +304,7 @@ async def test_idempotency_postgres_replay_mismatch_parallel(pool: Any, db_url: 
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
             r = await c.post("/criar", content=b"a", headers=h)
             assert r.status_code == 200 and "Operação já concluída" in r.text
-        # Queda antes de efetivar: "pending" sem dono → executa de novo.
+        # Crash before committing: "pending" with no owner → runs again.
         async with idem_pool.acquire() as conn:
             await conn.execute(
                 "UPDATE hub_idempotency SET state = 'pending' WHERE key = 'pg-chave-0001' AND route LIKE 'ana%'"
@@ -344,8 +344,8 @@ async def test_internal_jobs_endpoints_with_postgres(pool: Any) -> None:
 
 
 async def test_worker_process_mode_runs_jobs_outside_the_web_and_drains(db_url: str) -> None:
-    """HUB_JOBS_MODE=process: o web não roda tarefas; o processo de tarefas as executa e
-    encerra no desligamento."""
+    """HUB_JOBS_MODE=process: the web runs no jobs; the jobs process runs them and
+    exits on shutdown."""
     from hub_sdk.app import HubSdk
 
     spec = JobSpec("t.proc", lease=3)
@@ -374,7 +374,7 @@ async def test_worker_process_mode_runs_jobs_outside_the_web_and_drains(db_url: 
 
 
 class Finalizing(Recorder):
-    """Recorder que registra as chamadas de ``after_final`` (e pode falhar no evento)."""
+    """Recorder that logs the ``after_final`` calls (and can fail on the event)."""
 
     def __init__(self, spec: JobSpec, **kw: Any) -> None:
         super().__init__(spec, **kw)
@@ -398,7 +398,7 @@ async def test_reap_writes_the_final_event_in_the_same_transaction(pool: Any) ->
     d, _ = await jobs.enqueue(spec, {}, "ana")
     assert await jobs.claim([spec]) is not None
     await asyncio.sleep(1.2)
-    # o evento final falha → a transação inteira é desfeita: a tarefa continua running
+    # the final event fails → the whole transaction is rolled back: the job stays running
     h.explode = True
     with pytest.raises(RuntimeError):
         await jobs.reap([spec.kind])
@@ -410,7 +410,7 @@ async def test_reap_writes_the_final_event_in_the_same_transaction(pool: Any) ->
     reaped = await jobs.reap([spec.kind])
     assert [x.status for x in reaped] == ["dead"]
     assert await count(pool, "SELECT count(*) FROM hub_outbox WHERE payload->>'action' = 'Tarefa dead'") == 1
-    # o worker chama after_final para as reapadas
+    # the worker calls after_final for the reaped ones
     w = Worker(jobs, [h], Heavy(1), Shutdown(), poll=0.05)
     e, _ = await jobs.enqueue(spec, {}, "ana")
     assert await jobs.claim([spec]) is not None
@@ -447,8 +447,8 @@ async def test_killed_in_memory_phase_fails_without_retry(pool: Any, tmp_path: A
     c1 = await dead_proc.claim([spec])
     c2 = await dead_proc.claim([spec])
     assert c1 is not None and c2 is not None
-    # marca de fase de memória: a do job1 é do processo morto (4242); a do job2 é de outro
-    # processo (ex.: vida anterior do container) → só apagada, o job2 retoma normalmente.
+    # memory-phase marker: job1's is from the dead process (4242); job2's is from another
+    # process (e.g. a previous container life) → only deleted, job2 resumes normally.
     ctx = JobCtx(c1, dead_proc, spec, Shutdown())
     with ctx.memory_phase():
         assert len(list(tmp_path.glob("*.mem"))) == 1
@@ -467,5 +467,5 @@ async def test_killed_in_memory_phase_fails_without_retry(pool: Any, tmp_path: A
     assert (
         await count(pool, "SELECT count(*) FROM hub_outbox WHERE payload->>'action' = 'Tarefa failed'") == 1
     )
-    # lease de outro processo (retomado por outro worker): nada muda
+    # lease of another process (resumed by another worker): nothing changes
     assert (await fresh.fail_killed([c2.id], "1111-", "x")) == []

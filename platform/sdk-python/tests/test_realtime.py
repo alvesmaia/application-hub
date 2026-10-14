@@ -1,4 +1,4 @@
-"""hub_sdk.realtime: canal de avisos (SSE/WebSocket) sem Postgres — o aviso fica no processo."""
+"""hub_sdk.realtime: notice channel (SSE/WebSocket) without Postgres — the notice stays in the process."""
 
 import asyncio
 
@@ -15,11 +15,11 @@ async def test_canal_entrega_estado_inicial_aviso_e_ping(monkeypatch):
     estado = iter(["v1", "v2"])
     fluxo = canal.mensagens(lambda: next(estado), ping=0.05)
     assert await anext(fluxo) == "v1"
-    assert await anext(fluxo) is None  # nada novo dentro do ping
+    assert await anext(fluxo) is None  # nothing new within the ping
     canal.avisar(None)
     assert await anext(fluxo) == "v2"
     await fluxo.aclose()
-    assert not canal.filas  # conexão encerrada sai do canal
+    assert not canal.filas  # closed connection leaves the channel
     await canal.fechar()
 
 
@@ -42,6 +42,6 @@ async def test_avisar_de_outra_thread_acorda_a_conexao(monkeypatch):
     await canal.iniciar()
     fluxo = canal.mensagens(lambda: "x", ping=5)
     assert await anext(fluxo) == "x"
-    await asyncio.to_thread(canal.avisar, None)  # rota `def` roda em thread
+    await asyncio.to_thread(canal.avisar, None)  # `def` route runs in a thread
     assert await asyncio.wait_for(anext(fluxo), 1) == "x"
     await fluxo.aclose()

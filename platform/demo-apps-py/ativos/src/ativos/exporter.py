@@ -1,10 +1,10 @@
-"""Exportações do cadastro respeitando busca/filtros/ordenação.
+"""Registration exports respecting search/filters/sorting.
 
-- **CSV em streaming**: cursor no servidor direto para a resposta (memória constante); ocupa
-  uma vaga de operação pesada até o fim do corpo (sem vaga: 429 + ``Retry-After``).
-- **XLSX** como tarefa durável (``ativos.export_xlsx``): openpyxl *write-only* em ``/scratch``;
-  o painel acompanha o progresso e oferece o download ao terminar (6 h). Uma nova tentativa
-  recomeça do zero. Ambos limitam as linhas (``HUB_EXPORT_MAX_ROWS``, padrão 1 milhão).
+- **CSV streaming**: server-side cursor straight into the response (constant memory); holds a
+  heavy-operation slot until the end of the body (no slot: 429 + ``Retry-After``).
+- **XLSX** as a durable job (``ativos.export_xlsx``): openpyxl *write-only* in ``/scratch``;
+  the panel tracks progress and offers the download when it finishes (6 h). A new attempt
+  starts over from scratch. Both cap the rows (``HUB_EXPORT_MAX_ROWS``, default 1 million).
 """
 
 from __future__ import annotations
@@ -52,8 +52,8 @@ def _row_values(r: Any) -> list[str]:
 
 
 async def csv_stream(pool: Any, f: Filter) -> AsyncIterator[bytes]:
-    """Gera o CSV (``;``, BOM UTF-8, cabeçalhos iguais aos da importação). A vaga pesada é da
-    resposta (``PermitStreamingResponse``), não do gerador."""
+    """Generates the CSV (``;``, UTF-8 BOM, headers equal to the import's). The heavy slot belongs to the
+    response (``PermitStreamingResponse``), not to the generator."""
     yield (BOM + csv_line([c.header for c in COLS])).encode()
     sql, params = select_sql(f, max_rows())
     async with pool.acquire() as c, c.transaction():
@@ -113,7 +113,7 @@ class ExportHandler:
                 if col.kind == "money":
                     v = int(v) / 100
                 elif col.kind == "text" and v[:1] in ("=", "+", "-", "@"):
-                    v = "'" + v  # sem fórmulas vindas de dados
+                    v = "'" + v  # no formulas coming from data
                 cell = WriteOnlyCell(ws, value=v)
                 if col.kind in fmt:
                     cell.number_format = fmt[col.kind]
@@ -151,8 +151,8 @@ class ExportHandler:
         )
 
     def after_final(self, job: Job, status: str) -> None:
-        """Tentativa terminal sem sucesso: apaga o arquivo parcial (o ``.xlsx`` pronto fica
-        para download até a limpeza de 6 h)."""
+        """Terminal unsuccessful attempt: deletes the partial file (the finished ``.xlsx`` stays
+        available for download until the 6 h cleanup)."""
         if status != "done":
             out = out_path(self.scratch, job.id)
             for p in (out.with_suffix(".part"), out):
@@ -166,7 +166,7 @@ def _append(ws: Any, rows: list[list[Any]]) -> None:
 
 
 def panel(j: Job) -> str:
-    """Painel da exportação (polling enquanto roda; link de download ao concluir)."""
+    """Export panel (polling while running; download link when finished)."""
     jid = esc(j.id)
     if j.status in ("queued", "running"):
         queued = j.status == "queued"
@@ -198,9 +198,9 @@ def panel(j: Job) -> str:
 def cleanup_old_exports(
     scratch: Path, max_age_s: float = 6 * 3600, active_uploads: set[str] | None = None
 ) -> int:
-    """Apaga do ``/scratch``: exportações (``export-*.xlsx``/``.part``) com mais de ``max_age_s``;
-    uploads (``upload-*.xlsx``) fora de ``active_uploads`` com mais de 1 h — ou, sem a lista
-    (banco fora), com mais de 24 h."""
+    """Deletes from ``/scratch``: exports (``export-*.xlsx``/``.part``) older than ``max_age_s``;
+    uploads (``upload-*.xlsx``) outside ``active_uploads`` and older than 1 h — or, without the list
+    (DB down), older than 24 h."""
     n = 0
     now = time.time()
     old: list[tuple[Path, float]] = [

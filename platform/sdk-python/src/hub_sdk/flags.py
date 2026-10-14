@@ -1,11 +1,11 @@
-"""Feature flags (onda 8) — mesmo algoritmo do crate ``hub-flags`` (vetores compartilhados
-em ``tests/vectors/flags-vectors.json``).
+"""Feature flags (wave 8) — same algorithm as the ``hub-flags`` crate (shared vectors
+in ``tests/vectors/flags-vectors.json``).
 
-- **Na requisição**: :func:`from_headers` lê ``x-hub-flags`` (avaliado pelo hub para o
-  usuário da sessão; o gateway descarta o do navegador) → :meth:`Flags.is_on` /
+- **In the request**: :func:`from_headers` reads ``x-hub-flags`` (evaluated by the hub for the
+  session's user; the gateway discards the browser's) → :meth:`Flags.is_on` /
   :meth:`Flags.variant`. Flag ausente = desligada.
-- **Fora de requisição** (tarefas): :class:`FlagStore` guarda as definições que o hub
-  empurra em ``POST /{app}/_hub/flags`` e avalia localmente (:meth:`FlagStore.evaluate`).
+- **Outside a request** (jobs): :class:`FlagStore` keeps the definitions that the hub
+  pushes to ``POST /{app}/_hub/flags`` and evaluates them locally (:meth:`FlagStore.evaluate`).
 """
 
 from __future__ import annotations
@@ -30,13 +30,13 @@ USER_DIGEST_PREFIX = "sha256:"
 
 
 def user_digest(key: str, user: str) -> str:
-    """Resumo do usuário nas regras empurradas pelo hub (o app não recebe e-mails)."""
+    """User summary in the rules pushed by the hub (the app does not receive emails)."""
     h = hashlib.sha256(f"hub-flag-user:v1:{key}:{user.lower()}".encode()).hexdigest()
     return USER_DIGEST_PREFIX + h
 
 
 def bucket(key: str, user: str) -> int:
-    """Balde estável 0–9999 de ``chave:usuário`` (sha256, 4 primeiros bytes big-endian)."""
+    """Stable bucket 0–9999 of ``key:user`` (sha256, first 4 bytes big-endian)."""
     d = hashlib.sha256(f"{key}:{user}".encode()).digest()
     return int.from_bytes(d[:4], "big") % 10_000
 
@@ -74,8 +74,8 @@ def _off_value(flag: Mapping[str, Any]) -> str:
 
 
 def evaluate(flag: Mapping[str, Any], env: str, user: str, roles: Sequence[str]) -> str:
-    """Valor de ``flag`` no ambiente para o usuário (ordem: kill switch →
-    regras → percentual → padrão)."""
+    """Value of ``flag`` in the environment for the user (order: kill switch →
+    rules → percentage → default)."""
     r = (flag.get("envs") or {}).get(env)
     if not r or not r.get("enabled"):
         return _off_value(flag)
@@ -92,7 +92,7 @@ def evaluate(flag: Mapping[str, Any], env: str, user: str, roles: Sequence[str])
 
 
 class FlagStore:
-    """Definições empurradas pelo hub (cache local; vazio até o primeiro envio)."""
+    """Definitions pushed by the hub (local cache; empty until the first push)."""
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
@@ -118,7 +118,7 @@ class FlagStore:
 
 
 def validate_push(body: Any) -> tuple[int, str, list[dict[str, Any]]] | None:
-    """Valida o corpo de ``POST /_hub/flags`` (``None`` = inválido)."""
+    """Validates the body of ``POST /_hub/flags`` (``None`` = invalid)."""
     if not isinstance(body, dict):
         return None
     v, env, flags = body.get("version"), body.get("env"), body.get("flags")

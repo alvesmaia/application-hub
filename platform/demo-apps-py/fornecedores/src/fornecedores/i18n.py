@@ -1,11 +1,11 @@
-"""Contexto do hub nos fragmentos e tradução do HTML.
+"""Hub context in the fragments and HTML translation.
 
-Os fragmentos trazem marcadores (``{{HUB_USER}}``, ``{{HUB_FIRST}}``, ``{{HUB_INITIALS}}``,
-``{{HUB_TODAY}}``, ``{{HUB_GREETING}}``, ``{{HUB_APP_NAME}}``) que :func:`personalize` troca na
-resposta. O HTML que sai do app passa por :class:`I18nMiddleware`: com idioma diferente de
-pt-BR, textos do catálogo ``i18n.json`` (linhas ``[pt-BR, en]``, chave = texto em pt-BR) são
-trocados — só texto entre tags e os atributos ``placeholder``/``title``/``aria-label``/
-``data-hub-toast``/``alt``; dados (nomes, números, patrimônios) passam intactos.
+Fragments carry markers (``{{HUB_USER}}``, ``{{HUB_FIRST}}``, ``{{HUB_INITIALS}}``,
+``{{HUB_TODAY}}``, ``{{HUB_GREETING}}``, ``{{HUB_APP_NAME}}``) that :func:`personalize` replaces in the
+response. HTML leaving the app goes through :class:`I18nMiddleware`: for a locale other than
+pt-BR, texts from the ``i18n.json`` catalog (rows ``[pt-BR, en]``, key = pt-BR text) are
+replaced — only text between tags and the ``placeholder``/``title``/``aria-label``/
+``data-hub-toast``/``alt`` attributes; data (names, numbers, asset tags) pass through intact.
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ def catalog() -> dict[str, str]:
 
 
 def tr(loc: str, pt: str) -> str | None:
-    """Tradução exata de ``pt`` (ou ``None`` se não está no catálogo / é pt-BR)."""
+    """Exact translation of ``pt`` (or ``None`` if it is not in the catalog / is pt-BR)."""
     hit = catalog().get(pt)
     if hit is None or loc == "pt-BR":
         return None
@@ -62,14 +62,14 @@ def _translate_text(loc: str, raw: str, out: list[str]) -> None:
         trail = raw[len(raw.rstrip()) :]
         out.append(lead + esc(t) + trail)
     elif loc == "en":
-        out.append(en_numbers(raw))  # fora do catálogo (dados): só números e datas mudam
+        out.append(en_numbers(raw))  # outside the catalog (data): only numbers and dates change
     else:
         out.append(raw)
 
 
 def en_numbers(s: str) -> str:
-    """Números e datas pt-BR → en-US dentro de um texto (``2.055`` → ``2,055``, ``3,6`` →
-    ``3.6``, ``05/01/2017`` → ``01/05/2017``); códigos, versões e IPs ficam intactos."""
+    """Pt-BR → en-US numbers and dates within a text (``2.055`` → ``2,055``, ``3,6`` →
+    ``3.6``, ``05/01/2017`` → ``01/05/2017``); codes, versions and IPs stay intact."""
     c = s
     out: list[str] = []
     i = 0
@@ -157,7 +157,7 @@ def _translate_tag(loc: str, tag: str, out: list[str]) -> None:
 
 
 def tr_html(loc: str, html: str) -> str:
-    """Traduz o HTML (texto entre tags e alguns atributos); ``<script>``/``<style>``/
+    """Translates the HTML (text between tags and some attributes); ``<script>``/``<style>``/
     ``<textarea>`` intactos."""
     if loc == "pt-BR":
         return html
@@ -186,7 +186,7 @@ def tr_html(loc: str, html: str) -> str:
 
 
 class I18nMiddleware:
-    """ASGI: respostas ``text/html`` no idioma do usuário (``x-hub-locale``)."""
+    """ASGI: ``text/html`` responses in the user's language (``x-hub-locale``)."""
 
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
@@ -229,11 +229,11 @@ class I18nMiddleware:
         await self.app(scope, receive, wrapper)
 
 
-# ---- contexto do hub (usuário, hoje, saudação) --------------------------------------
+# ---- hub context (user, today, greeting) --------------------------------------
 
 
 def who(name: str) -> tuple[str, str, str]:
-    """(nome, primeiro nome, iniciais) do nome de exibição."""
+    """(name, first name, initials) of the display name."""
     words = name.split()
     first = words[0] if words else ""
     if not words:
@@ -292,7 +292,7 @@ def greeting(loc: str) -> str:
 
 
 def personalize(body: str, name: str, loc: str) -> str:
-    """Troca os marcadores do contexto do hub (todos os valores escapados)."""
+    """Replaces the hub context markers (all values escaped)."""
     if "{{HUB_" not in body:
         return body
     n, first, initials = who(name)

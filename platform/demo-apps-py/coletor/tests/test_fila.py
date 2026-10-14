@@ -1,4 +1,4 @@
-"""Regras puras da sessão de teste em fila e dos modos do leitor (:mod:`coletor.fila`)."""
+"""Pure rules of the queued test session and of the reader modes (:mod:`coletor.fila`)."""
 
 from __future__ import annotations
 
@@ -51,7 +51,7 @@ def test_upc_a_matches_as_ean13_from_the_camera() -> None:
     s = fila.start(codes(), random.Random(3), now=0)
     upc = next(i for i, c in enumerate(s.codes) if c.fmt == "upc_a")
     s.pos = upc
-    assert fila.on_read(s, "0036000291452", now=1) == fila.OK  # o nativo às vezes devolve EAN-13
+    assert fila.on_read(s, "0036000291452", now=1) == fila.OK  # the native one sometimes returns EAN-13
 
 
 def test_without_auto_the_match_waits_for_next() -> None:
@@ -68,7 +68,7 @@ def test_next_skips_pause_resume_and_summary() -> None:
     assert fila.next_code(s, now=1)  # pulado
     assert fila.pause(s, now=2) and s.status == fila.PAUSED
     assert fila.on_read(s, s.codes[1].value, now=3) == "ignorado", "parada não lê"
-    assert fila.resume(s, now=12)  # 10 s parado não contam
+    assert fila.resume(s, now=12)  # 10 s paused do not count
     assert fila.on_read(s, s.codes[1].value, now=13) == fila.OK
     assert s.results[-1]["ms"] == 2000
     for i in range(2, s.total):

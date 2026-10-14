@@ -1,5 +1,5 @@
-"""Relatório gerencial de chamados: ``GROUP BY`` categoria × período sobre a tabela inteira
-(milhões de linhas), apoiado no índice ``tickets_report`` (varredura só de índice)."""
+"""Ticket management report: ``GROUP BY`` category × period over the whole table
+(millions of rows), backed by the ``tickets_report`` index (index-only scan)."""
 
 from __future__ import annotations
 
@@ -16,8 +16,8 @@ from servicos.ui import esc, notice, query, thousands
 
 FRAG = "/_frag"
 GRANULARITIES = (("mes", "Por mês"), ("semana", "Por semana"), ("dia", "Por dia"))
-MAX_DAYS = 3 * 366  # período máximo de um relatório
-ROW_BYTES = 88  # estimativa: Row + 24 bytes de texto
+MAX_DAYS = 3 * 366  # maximum period of a report
+ROW_BYTES = 88  # estimate: Row + 24 bytes of text
 TRUNC = {"dia": "day", "semana": "week"}
 
 SQL = (

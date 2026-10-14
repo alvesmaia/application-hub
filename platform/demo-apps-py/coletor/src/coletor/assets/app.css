@@ -1,4 +1,4 @@
-/* identidade:inicio — Coletor — amarelo de segurança sobre grafite, alto contraste, toque
+/* identidade:inicio — Coletor — safety yellow on graphite, high contrast, touch
    primeiro (CONTRATO-APP §29). Tokens PRÓPRIOS do app (valem só na área do app); variante
    escura obrigatória (texto ≥ 4,5:1, formas ≥ 3:1 — scripts/gen-dark-theme.mjs --check). */
 :root {
@@ -109,7 +109,7 @@
   }
 }
 /* identidade:fim */
-/* Forma: toque primeiro — alvos ≥ 48 px, texto de campo 18 px (sem zoom no iOS), cantos firmes. */
+/* Shape: touch first — targets ≥ 48 px, field text 18 px (no zoom on iOS), firm corners. */
 :root { --radius-md: 6px; --radius-lg: 8px; --radius-xl: 10px; --radius-2xl: 12px; --radius-3xl: 12px; --radius-4xl: 14px; --radius-5xl: 14px; }
 .app-sidebar .nav-item { min-height: 48px; font-size: 15px; }
 /* forma:fim */
@@ -128,11 +128,11 @@ small.col-mono { display: block; margin-top: 2px; }
 .col-empty { color: var(--app-secondary); margin: 8px 0; font-size: 15px; }
 .col-small { font-size: 16px !important; }
 
-/* Local/pedido em foco */
+/* Location/order in focus */
 .col-loc-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-left: 6px solid var(--col-yellow); }
 .col-loc-code { display: block; font: 800 24px/1.1 var(--font-mono, ui-monospace, monospace); color: var(--app-title); letter-spacing: 0.02em; }
 
-/* Formulário de leitura */
+/* Reading form */
 .col-scan-form { display: grid; gap: 10px; }
 .col-scan-form .col-label { margin-top: 4px; }
 .col-code-row { display: flex; gap: 8px; align-items: stretch; }
@@ -147,7 +147,7 @@ small.col-mono { display: block; margin-top: 2px; }
 .col-chip input { width: 20px; height: 20px; accent-color: var(--app-primary); }
 .col-chip:has(input:checked) { background: var(--col-yellow); border-color: var(--col-yellow); color: var(--col-on-yellow); }
 
-/* Botões grandes */
+/* Large buttons */
 .col-button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 20px; border-radius: var(--radius-lg); border: 2px solid transparent; font: 800 16px/1.1 var(--app-font); text-decoration: none; cursor: pointer; white-space: nowrap; }
 .col-button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .col-button-primary { background: var(--col-yellow); color: var(--col-on-yellow); border-color: var(--col-yellow); }
@@ -160,7 +160,7 @@ small.col-mono { display: block; margin-top: 2px; }
 .col-button-small { min-height: 48px; padding: 0 16px; font-size: 15px; background: var(--app-primary); color: var(--app-on-primary); }
 .col-button:focus-visible { outline: 3px solid var(--app-ink); outline-offset: 2px; }
 
-/* Resultado da leitura */
+/* Reading result */
 .col-result { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: var(--radius-2xl); border: 2px solid; font-size: 16px; }
 .col-result-text { display: grid; gap: 2px; min-width: 0; }
 .col-result-text strong { font-size: 18px; overflow-wrap: anywhere; }
@@ -173,7 +173,7 @@ small.col-mono { display: block; margin-top: 2px; }
 .col-result-error { background: var(--col-err-soft); border-color: var(--col-err); color: var(--app-title); }
 .col-result-error .col-result-mark { background: var(--col-err); color: var(--app-surface); }
 
-/* Painel, números e tabelas */
+/* Panel, numbers and tables */
 .col-panel { display: grid; gap: 14px; }
 .col-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .col-stats > div { background: var(--app-surface); border: 1px solid var(--app-border); border-radius: var(--radius-2xl); padding: 12px 14px; min-width: 0; }
@@ -194,7 +194,7 @@ small.col-mono { display: block; margin-top: 2px; }
 .col-st-over { color: var(--col-err); border-color: var(--col-err); background: var(--col-err-soft); }
 .col-tag { display: inline-block; margin-top: 6px; padding: 2px 10px; border-radius: 999px; background: var(--app-tint); border: 1px solid var(--app-tint-border); color: var(--app-title); font-style: normal; font-size: 13px; font-weight: 700; }
 
-/* Lista de locais/pedidos (alvos grandes) */
+/* Location/order list (large targets) */
 .col-loc-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
 .col-loc { display: grid; gap: 2px; min-height: 72px; padding: 14px 16px; border: 2px solid var(--app-border); border-radius: var(--radius-2xl); background: var(--app-surface); color: var(--app-title); text-decoration: none; }
 .col-loc strong { font: 800 18px var(--font-mono, ui-monospace, monospace); }
@@ -234,7 +234,7 @@ small.col-mono { display: block; margin-top: 2px; }
 .col-diag [data-diag-state="unsupported"], .col-diag [data-diag-state="pending"] { color: var(--app-secondary); }
 .col-diag-info { list-style: none; padding: 0; margin: 12px 0; display: grid; gap: 4px; font-size: 14px; color: var(--app-secondary); }
 
-/* Insumos (computador/impressão): códigos grandes, fundo branco sempre */
+/* Supplies (computer/print): large codes, always white background */
 .col-steps ol { margin: 8px 0 0; padding-left: 22px; display: grid; gap: 6px; font-size: 15px; color: var(--app-body); }
 .col-open-phone { margin-top: 12px; }
 .col-code-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
@@ -263,7 +263,7 @@ small.col-mono { display: block; margin-top: 2px; }
   .col-install .col-button { width: 100%; }
 }
 
-/* Escanear: alternância do tipo de código, cartão grande, últimas leituras */
+/* Scan: code type toggle, large card, last readings */
 .col-scan-control { display: grid; gap: 12px; }
 .col-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 2px solid var(--app-border-strong); border-radius: 14px; overflow: hidden; }
 .col-seg-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 56px; border: 0; background: var(--app-surface); color: var(--app-title); font: inherit; font-size: 17px; font-weight: 800; cursor: pointer; }
@@ -285,7 +285,7 @@ small.col-mono { display: block; margin-top: 2px; }
 .col-read-main .col-mono, .col-read-meta { font-size: 13px; color: var(--app-secondary); overflow-wrap: anywhere; }
 .col-empty { margin: 0; color: var(--app-secondary); }
 
-/* Folha de teste: folha + leituras ao vivo lado a lado (≥ 1024 px) */
+/* Test sheet: sheet + live readings side by side (≥ 1024 px) */
 .col-folha { display: grid; gap: 20px; }
 .col-folha-sheet { display: grid; gap: 18px; min-width: 0; }
 .col-folha-live { min-width: 0; }
@@ -306,7 +306,7 @@ small.col-mono { display: block; margin-top: 2px; }
 .col-step { display: grid; gap: 8px; }
 @media print { .col-open-app { display: none !important; } }
 
-/* Modo do leitor + sessão de teste (fila) */
+/* Reader mode + test session (queue) */
 .col-seg-reader .col-seg-btn { min-height: 48px; font-size: 16px; }
 .col-pausa { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .col-pausa .col-label { margin: 0; }

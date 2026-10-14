@@ -1,4 +1,4 @@
-"""API v1, OpenAPI (igual ao contrato empacotado em samples/), MCP interno e outbox durável."""
+"""API v1, OpenAPI (same as the contract packaged in samples/), internal MCP and durable outbox."""
 
 from __future__ import annotations
 
@@ -166,7 +166,7 @@ async def test_durable_outbox_and_readiness_with_postgres(db_url: str, running: 
     out = (await c.get("/fornecedores/_hub/outbox?limit=50", headers=HUB)).json()
     assert out["durable"] is True
     assert any(e["action"] == "Consulta cadastral de fornecedor" for e in out["events"])
-    # sem tabelas próprias: só as do SDK
+    # no tables of its own: only the SDK's
     import asyncpg
 
     conn = await asyncpg.connect(db_url)

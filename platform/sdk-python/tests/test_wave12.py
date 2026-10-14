@@ -1,4 +1,4 @@
-"""Onda 12 (2.1): declaração de JavaScript próprio (exceção revisada pelo hub)."""
+"""Wave 12 (2.1): declaration of the app's own JavaScript (exception reviewed by the hub)."""
 
 import pytest
 
@@ -23,7 +23,7 @@ def test_integrity_matches_browsers() -> None:
     )
 
 
-# ---- 2.5: prontidão obrigatória (GET /{app}/_hub/ready) -------------------------------
+# ---- 2.5: mandatory readiness (GET /{app}/_hub/ready) -------------------------------
 
 
 def test_ready_endpoint_flips_and_health_is_liveness() -> None:

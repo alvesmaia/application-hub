@@ -1,22 +1,22 @@
-"""Rede de Fornecedores — app FastAPI da plataforma (``HUB_DEMO_APP=fornecedores``; mesmas rotas e mesmo markup).
+"""Supplier Network — the platform's FastAPI app (``HUB_DEMO_APP=fornecedores``; same routes and same markup).
 
-Rotas (todas sob ``/fornecedores``; o hub as expõe em ``/_frag/fornecedores/...``):
+Routes (all under ``/fornecedores``; the hub exposes them at ``/_frag/fornecedores/...``):
 
 - ``GET /fornecedores`` · ``/fornecedores/{dashboard,indicators,analysis,reports,settings}`` —
-  fragmentos do mockup (``fragments/``); ``indicators?id=FOR-0284`` insere a ficha do
-  fornecedor (consulta cadastral + anexos) acima do resumo do diretório;
-- ``GET /fornecedores/_skeleton`` · ``/fornecedores/assets/{demo.css,app.css}`` (sem JavaScript);
-- ``POST /fornecedores/suppliers/{code}/lookup`` — consulta cadastral (API externa com
+  mockup fragments (``fragments/``); ``indicators?id=FOR-0284`` inserts the supplier record
+  (registry lookup + attachments) above the directory summary;
+- ``GET /fornecedores/_skeleton`` · ``/fornecedores/assets/{demo.css,app.css}`` (no JavaScript);
+- ``POST /fornecedores/suppliers/{code}/lookup`` — registry lookup (external API with
   timeout, novas tentativas e disjuntor);
-- ``POST …/attachments`` (multipart) · ``GET …/attachments/{name}`` (download em streaming) ·
-  ``POST …/attachments/{name}/delete`` — anexos em ``hub_sdk.storage`` (conexão
-  ``fornecedores-anexos`` do hub ou bucket S3 próprio ``HUB_S3_*``);
-- ``GET …/ficha.pdf`` — ficha em PDF (operação pesada: 429 sem vaga);
-- ``/fornecedores/api/v1/*`` (OpenAPI em ``/fornecedores/api/openapi.json``; ferramentas MCP
-  geradas dele) e ``/fornecedores/_hub/*`` (endpoints internos do hub-sdk, token interno).
+- ``POST …/attachments`` (multipart) · ``GET …/attachments/{name}`` (streaming download) ·
+  ``POST …/attachments/{name}/delete`` — attachments in ``hub_sdk.storage`` (connection
+  ``fornecedores-anexos`` of the hub, or the app's own S3 bucket ``HUB_S3_*``);
+- ``GET …/ficha.pdf`` — supplier record as PDF (heavy operation: 429 without a slot);
+- ``/fornecedores/api/v1/*`` (OpenAPI at ``/fornecedores/api/openapi.json``; MCP tools
+  generated from it) and ``/fornecedores/_hub/*`` (hub-sdk internal endpoints, internal token).
 
-Toda ação que altera dados grava um evento de auditoria no outbox do app (Postgres se houver
-``HUB_DB_URL``; senão em memória) sem atrasar a resposta.
+Every action that changes data writes an audit event to the app's outbox (Postgres if there is
+``HUB_DB_URL``; otherwise in memory) without delaying the response.
 """
 
 from __future__ import annotations
@@ -70,13 +70,13 @@ NOUNS = ("fornecedor", "fornecedores", "supplier", "suppliers", "proveedor", "pr
 
 
 def shared_assets_dir() -> Path:
-    """``demo.css`` compartilhado: ``FORNECEDORES_SHARED_ASSETS`` ou ``platform/demo-apps/assets``."""
+    """Shared ``demo.css``: ``FORNECEDORES_SHARED_ASSETS`` or ``platform/demo-apps/assets``."""
     env = os.environ.get("FORNECEDORES_SHARED_ASSETS", "")
     return Path(env) if env else HERE.parents[3] / "demo-apps" / "assets"
 
 
 def s3_config() -> storage.S3Config | None:
-    """Bucket próprio do app (``HUB_S3_ENDPOINT``, ``HUB_S3_BUCKET``, chaves, região)."""
+    """App's own bucket (``HUB_S3_ENDPOINT``, ``HUB_S3_BUCKET``, keys, region)."""
     endpoint, bucket = app_env(APP_ID, "HUB_S3_ENDPOINT"), app_env(APP_ID, "HUB_S3_BUCKET")
     ak, sk = app_env(APP_ID, "HUB_S3_ACCESS_KEY"), app_env(APP_ID, "HUB_S3_SECRET_KEY")
     if endpoint is None or bucket is None or ak is None or sk is None:
@@ -85,8 +85,8 @@ def s3_config() -> storage.S3Config | None:
 
 
 def attachments_store() -> storage.Connection | None:
-    """Onde ficam os anexos: a conexão ``fornecedores-anexos`` (broker do hub) se vinculada; senão o
-    bucket próprio do app; senão nenhum."""
+    """Where the attachments live: the ``fornecedores-anexos`` connection (hub broker) if linked; otherwise the
+    app's own bucket; otherwise none."""
     if (c := storage.connection(ATTACHMENTS_CONNECTION)) is not None:
         log.warning(
             "fornecedores: anexos na conexão %s (%s) pelo broker do hub", ATTACHMENTS_CONNECTION, c.kind
@@ -110,7 +110,7 @@ def fold(s: str) -> str:
 
 
 def generic_term(q: str) -> bool:
-    """A busca é o nome da entidade ("fornecedores", "suppliers")? Então todos respondem."""
+    """Is the search the entity name ("fornecedores", "suppliers")? Then all of them answer."""
     f = fold(q)
     return len(f) >= 4 and any(n.startswith(f) or f.startswith(n) for n in NOUNS)
 
@@ -150,7 +150,7 @@ class State:
         self.tasks: set[asyncio.Task[Any]] = set()
 
     def fragment(self, name: str, req: Request) -> str | None:
-        """Fragmento do mockup com o contexto do hub (usuário, idioma, data, nome do app)."""
+        """Mockup fragment with the hub context (user, language, date, app name)."""
         body = self.templates.get(name)
         if body is None:
             try:
@@ -161,7 +161,7 @@ class State:
         return personalize(body, user_of(req), from_headers(req.headers))
 
     def audit(self, req: Request, action: str, target: str, detail: str) -> None:
-        """Auditoria no outbox sem atrasar a resposta (não há transação para compartilhar)."""
+        """Outbox audit without delaying the response (there is no transaction to share)."""
         t = asyncio.create_task(self.sdk.emit(user_of(req), action, target, detail))
         self.tasks.add(t)
         t.add_done_callback(self.tasks.discard)
@@ -191,8 +191,8 @@ def with_retry(resp: Response, retry: int | None) -> Response:
 
 
 def storage_status(e: storage.StorageError) -> tuple[int, int | None]:
-    """Falha do armazenamento → status: transitória 503 + ``Retry-After`` (o hub.js repete
-    sozinho); inexistente 404; acima do limite 413; o resto 502."""
+    """Storage failure → status: transient 503 + ``Retry-After`` (hub.js retries
+    on its own); missing 404; over the limit 413; the rest 502."""
     if e.transient:
         return 503, e.retry_after if e.retry_after is not None else 2
     if e.status == 404:
@@ -203,7 +203,7 @@ def storage_status(e: storage.StorageError) -> tuple[int, int | None]:
 
 
 def shown_name(name: str) -> str:
-    """Nome de objeto sem o prefixo de data/hora (``20260926120000-contrato.pdf``)."""
+    """Object name without the date/time prefix (``20260926120000-contrato.pdf``)."""
     _, sep, rest = name.partition("-")
     return rest if sep else name
 
@@ -327,7 +327,7 @@ def create_app() -> FastAPI:
     app.add_middleware(I18nMiddleware)
     app.state.fornecedores = st
     register(app, st)
-    # Onda 11: API v1 (OpenAPI em /fornecedores/api/openapi.json; MCP interno gerado dele).
+    # Wave 11: API v1 (OpenAPI at /fornecedores/api/openapi.json; internal MCP generated from it).
     from fornecedores.api import register_api
 
     register_api(app, st)
@@ -368,7 +368,7 @@ def register(app: FastAPI, st: State) -> None:
         page = st.fragment("indicators", req)
         if page is None:
             return not_found()
-        # "···" de cada linha vira link para a ficha.
+        # "···" on each row becomes a link to the supplier record.
         for s in SUPPLIERS:
             old = (
                 f'<button class="app2-more" aria-label="Mais ações" '
@@ -536,8 +536,8 @@ def register(app: FastAPI, st: State) -> None:
 
 
 async def _spool(up: UploadFile, dest: Path, name: str, limit: int) -> tuple[str, int]:
-    """Grava o upload em ``dest`` conferindo tipo (extensão, content-type e assinatura) nos
-    primeiros bytes e o limite de tamanho; devolve (content-type, bytes). Em falha apaga ``dest``."""
+    """Writes the upload to ``dest``, checking type (extension, content-type and signature) in the
+    first bytes and the size limit; returns (content-type, bytes). On failure removes ``dest``."""
     size, head, ct = 0, b"", ""
     declared = up.content_type or ""
     out = await asyncio.to_thread(partial(dest.open, "wb"))

@@ -1,5 +1,5 @@
-"""Fixtures do app: cliente HTTP sobre o app real (lifespan incluído) e banco
-descartável (``HUB_DB_TEST_URL``, ex.: container ``hub-testdb``)."""
+"""App fixtures: HTTP client over the real app (lifespan included) and a throwaway database
+(``HUB_DB_TEST_URL``, e.g. the ``hub-testdb`` container)."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ def pytest_collection_modifyitems(config: Any, items: list[Any]) -> None:
     if DB_URL:
         return
     if os.environ.get("CI", "").lower() == "true" and any("db" in it.keywords for it in items):
-        # No CI os testes com Postgres são obrigatórios: sem banco é falha, nunca "pulado".
+        # In CI the Postgres tests are mandatory: without a DB it is a failure, never "skipped".
         raise pytest.UsageError("CI=true sem HUB_DB_TEST_URL: os testes marcados @db não podem ser pulados")
     skip = pytest.mark.skip(reason="defina HUB_DB_TEST_URL para os testes com Postgres")
     for it in items:
@@ -59,7 +59,7 @@ async def db_url(env: Path, monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[st
 
 
 class Running:
-    """App com lifespan ativo + cliente."""
+    """App with active lifespan + client."""
 
     def __init__(self, app: Any, client: httpx.AsyncClient) -> None:
         self.app = app
@@ -81,7 +81,7 @@ async def running(env: Path) -> AsyncIterator[Running]:
 
 
 async def wait_ready(c: httpx.AsyncClient, timeout: float = 30) -> None:
-    """Espera as migrações + carga inicial (o local LOC-C04 é reconhecido)."""
+    """Waits for the migrations + initial load (location LOC-C04 is recognized)."""
     loop = asyncio.get_running_loop()
     end = loop.time() + timeout
     last = ""

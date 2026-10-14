@@ -1,4 +1,4 @@
-"""Busca, filtros, ordenação e página da lista (também usados pelas exportações)."""
+"""Search, filters, sorting and page of the list (also used by the exports)."""
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ class Filter:
         )
 
     def where(self) -> tuple[str, list[str]]:
-        """``WHERE …`` parametrizado (todos os parâmetros são texto)."""
+        """``WHERE …`` parameterized (all parameters are text)."""
         conds: list[str] = []
         params: list[str] = []
         if self.q:
@@ -60,11 +60,11 @@ class Filter:
         col = next((s[1] for s in SORTS if s[0] == self.sort), "name")
         d = "DESC" if self.dir == "desc" else "ASC"
         nulls = "NULLS LAST" if d == "DESC" else "NULLS FIRST"
-        # Qualificado: a exportação seleciona `col::text`... com o mesmo nome de saída.
+        # Qualified: the export selects `col::text`... with the same output name.
         return f"assets.{col} {d} {nulls}, assets.id {d}"
 
     def qs(self, **over: str) -> str:
-        """Query string com os filtros atuais e alterações pontuais (vazio = remove)."""
+        """Query string with the current filters and one-off changes (empty = remove)."""
         pairs: dict[str, str] = {
             "q": self.q,
             "categoria": self.categoria,

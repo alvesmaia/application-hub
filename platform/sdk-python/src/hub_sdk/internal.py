@@ -1,21 +1,21 @@
-"""Endpoints internos que **só o hub** usa, pela rede interna do app:
+"""Internal endpoints that **only the hub** uses, over the app's internal network:
 
 ====== ========================================= =====================================
-Método Rota
+Method Route
 ====== ========================================= =====================================
 GET    ``/{app}/_hub/outbox?after=&limit=``      eventos pendentes (cursor = ``id``)
 POST   ``/{app}/_hub/outbox/ack``                ``{"ids": ["evt-…"]}`` (≤ 1000)
-GET    ``/{app}/_hub/jobs?limit=``               tarefas (mais recentes primeiro)
+GET    ``/{app}/_hub/jobs?limit=``               jobs (most recent first)
 POST   ``/{app}/_hub/jobs/{id}/retry|cancel``    reprocessar / cancelar
 GET    ``/{app}/_hub/telemetry?after=``         spans novos + medidores (onda 8)
-POST   ``/{app}/_hub/flags``                    definições das feature flags (onda 8)
-GET    ``/{app}/_hub/search?q=&limit=``          busca federada com a identidade (onda 9)
-POST   ``/{app}/_hub/approvals/{id}``            decisão de um pedido de aprovação (onda 9)
+POST   ``/{app}/_hub/flags``                    feature flag definitions (wave 8)
+GET    ``/{app}/_hub/search?q=&limit=``          federated search with the identity (wave 9)
+POST   ``/{app}/_hub/approvals/{id}``            decision on an approval request (wave 9)
 ====== ========================================= =====================================
 
-Toda chamada exige ``x-hub-internal-token`` igual a ``HUB_INTERNAL_TOKEN`` (comparação em
-tempo constante); sem token configurado (ou < 16 caracteres) tudo responde **403**, token
-errado **401**. ``limit`` é limitado a 500. O gateway do hub recusa ``/_frag/{app}/_hub/*``.
+Every call requires ``x-hub-internal-token`` equal to ``HUB_INTERNAL_TOKEN`` (comparison in
+constant time); without a configured token (or < 16 characters) everything answers **403**, wrong token
+**401**. ``limit`` is capped at 500. The hub's gateway refuses ``/_frag/{app}/_hub/*``.
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ from hub_sdk.outbox import Outbox
 from hub_sdk.schema import ct_eq
 from hub_sdk.telemetry import Telemetry
 
-TOKEN_HEADER = "x-hub-internal-token"  # noqa: S105 — nome do cabeçalho, não um segredo
+TOKEN_HEADER = "x-hub-internal-token"  # noqa: S105 — header name, not a secret
 SEGMENT = "_hub"
 MAX_PAGE = 500
 MAX_ACK = 1000
@@ -70,8 +70,8 @@ def router(
     search: _search.SearchFn | None = None,
     approvals: _ap.ApprovalFn | None = None,
 ) -> APIRouter:
-    """``outbox``/``jobs`` podem ser funções sem argumentos (resolvidas a cada chamada:
-    o lifespan troca os backends em memória pelos do Postgres)."""
+    """``outbox``/``jobs`` can be argument-less functions (resolved on each call:
+    the lifespan swaps the in-memory backends for the Postgres ones)."""
     r = APIRouter(include_in_schema=False)
 
     def ob() -> Outbox:

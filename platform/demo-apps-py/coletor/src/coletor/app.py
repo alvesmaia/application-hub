@@ -1,28 +1,28 @@
-"""Coletor — app FastAPI da plataforma (5º app de demonstração, stack Python): bancada de
-leitura de códigos para celular/leitor de código de barras, **sem JavaScript próprio**.
+"""Coletor — the platform's FastAPI app (5th demo app, Python stack): reading bench for
+reading codes on a phone / barcode scanner, **with no JavaScript of its own**.
 
-Três telas:
+Three screens:
 
-- **Escanear** (celular): botão da câmera (leitura contínua), campo do leitor físico sempre
-  pronto, alternância "Código de barras" / "QR" (lembrada por usuário), cartão grande do
-  último resultado (verde/vermelho + bipe/vibração) e as últimas 10 leituras;
-- **Folha de teste** (computador): os códigos para ler (QR "abrir o app" à parte; Itens,
-  Locais, Pedidos, Formatos variados) e, ao lado, **Leituras ao vivo** — o que o mesmo
-  usuário está lendo no celular, atualizado a cada segundo (``data-hub-trigger="every 1s"``);
-- **Diagnóstico**: os recursos do aparelho.
+- **Scan** (phone): camera button (continuous reading), physical scanner field always
+  ready, "Barcode" / "QR" toggle (remembered per user), large card for the
+  last result (green/red + beep/vibration) and the last 10 readings;
+- **Test sheet** (computer): the codes to read ("open the app" QR separately; Items,
+  Locations, Orders, Mixed formats) and, alongside, **Live readings** — what the same
+  user is reading on the phone, updated every second (``data-hub-trigger="every 1s"``);
+- **Diagnostics**: the device's features.
 
-Leitura pela câmera, leitor tipo teclado, bipe/vibração, fila offline e instalação são
-**comportamentos do hub** (``data-hub-scan``, ``data-hub-wedge``, ``data-hub-feedback``,
+Camera reading, keyboard-style reader, beep/vibration, offline queue and install are
+**hub behaviors** (``data-hub-scan``, ``data-hub-wedge``, ``data-hub-feedback``,
 ``data-hub-offline-queue``, ``data-hub-install``, ``data-hub-diag`` — CONTRATO-APP §25).
 
-Rotas (sob ``/coletor``; o navegador vê ``/apps/coletor/...``; o hub busca em
+Routes (under ``/coletor``; the browser sees ``/apps/coletor/...``; the hub fetches from
 ``/_frag/coletor/...``): ``GET /coletor`` · ``/escanear`` · ``POST /escanear/ler`` ·
 ``POST /escanear/prefs`` · ``GET /folha`` · ``GET /folha/leituras`` · ``POST /folha/limpar`` ·
 ``GET /diagnostico``; telas antigas (``/contagem``, ``/recebimento``, ``/consulta``,
-``/insumos``) mostram o Escanear (ou a Folha). API em ``/coletor/api/v1/*``.
+``/insumos``) show the Scan (or Sheet) screen. API at ``/coletor/api/v1/*``.
 
-Cada leitura grava a linha, o evento de auditoria e a marca de idempotência **na mesma
-transação** (a fila offline do hub repete com a mesma ``Idempotency-Key``: uma leitura
+Each reading writes the row, the audit event and the idempotency marker **in the same
+transaction** (the hub's offline queue retries with the same ``Idempotency-Key``: one reading
 repetida nunca entra duas vezes).
 """
 
@@ -103,7 +103,7 @@ ASSETS = {
     "demo.css": ("demo.css", "text/css; charset=utf-8"),
 }
 
-# Modos da câmera (alternância do Escanear) → formatos do `data-hub-scan-formats`.
+# Camera modes (Scan toggle) → formats of `data-hub-scan-formats`.
 MODES: dict[str, tuple[str, str]] = {
     "barras": ("ean_13,ean_8,upc_a,upc_e,code_128,code_39,itf", "Modo código de barras — troque para QR"),
     "qr": ("qr_code,data_matrix", "Modo QR — troque para Código de barras"),
@@ -125,19 +125,19 @@ def shared_assets_dir() -> Path:
 
 
 def public_url() -> str:
-    """Endereço público do hub (QR "abrir no celular" da folha de teste)."""
+    """Public address of the hub (the "open on the phone" QR of the test sheet)."""
     return os.environ.get("COLETOR_PUBLIC_URL", "").strip().rstrip("/")
 
 
 def public_base(req: HTTPConnection) -> str:
-    """Base pública do app (``/apps/coletor``) — cabeçalho ``x-hub-base`` do hub."""
+    """Public base of the app (``/apps/coletor``) — ``x-hub-base`` header from the hub."""
     b = req.headers.get("x-hub-base", "").strip()
     ok = b.startswith("/apps/") and all(c.isalnum() or c in "/-" for c in b)
     return b if ok else "/apps/coletor"
 
 
 async def seed(sdk: HubSdk) -> None:
-    """Carga inicial idempotente (catálogo, locais e pedidos — só para nomear leituras)."""
+    """Idempotent initial load (catalog, locations and orders — only to name readings)."""
     if sdk.pool is None:
         return
     async with sdk.pool.acquire() as c, c.transaction():
@@ -267,7 +267,7 @@ def _link_label(value: str) -> str:
 
 
 async def classify(c: Any, raw: str) -> tuple[str, str]:
-    """(tipo, rótulo) de uma leitura: item, local, pedido, link ou desconhecido."""
+    """(type, label) of a reading: item, location, order, link or unknown."""
     if is_url(raw):
         return "link", _link_label(raw)
     code = normalize_code(raw)
@@ -380,9 +380,9 @@ def mode_ctx(mode: str, rd: fila.Reader | None = None) -> dict[str, Any]:
     }
 
 
-# ---- sessão de teste (fila) -----------------------------------------------------------------
+# ---- test session (queue) ---------------------------------------------------------------
 def session_codes() -> list[fila.Code]:
-    """Os 24 códigos da sessão (a ordem é sorteada a cada início/reinício)."""
+    """The 24 codes of the session (the order is shuffled at each start/restart)."""
     items = catalog()
     locs = locations()
     ords = orders()
@@ -408,14 +408,14 @@ _SEEDED: random.Random | None = None
 
 
 def rng() -> random.Random:
-    """Sorteio da ordem: ``COLETOR_SHUFFLE_SEED`` fixa a semente do processo (testes: a
-    sequência de sorteios é reproduzível e cada início/reinício sorteia de novo); sem ela,
+    """Order shuffle: ``COLETOR_SHUFFLE_SEED`` fixes the process seed (tests: the
+    shuffle sequence is reproducible and each start/restart shuffles again); without it,
     aleatório."""
     global _SEEDED
     seed = os.environ.get("COLETOR_SHUFFLE_SEED", "").strip()
     if seed.isdigit():
         if _SEEDED is None:
-            _SEEDED = random.Random(int(seed))  # noqa: S311 — ordem de teste
+            _SEEDED = random.Random(int(seed))  # noqa: S311 — test order
         return _SEEDED
     return random.Random(random.SystemRandom().randrange(1 << 62))  # noqa: S311
 
@@ -441,7 +441,7 @@ async def save_session(c: Any, user: str, s: fila.Session) -> None:
 
 
 def session_view(s: fila.Session | None) -> dict[str, Any]:
-    """Contexto das telas da sessão (folha e celular)."""
+    """Context of the session screens (sheet and phone)."""
     if s is None:
         return {"sess": None}
     cur = s.current()
@@ -463,7 +463,7 @@ def session_view(s: fila.Session | None) -> dict[str, Any]:
 
 
 def read_format(form: dict[str, str], value: str) -> tuple[str, str]:
-    """(formato, origem): com formato vindo da câmera (hub) → câmera; sem → leitor físico."""
+    """(format, source): with a format coming from the camera (hub) → camera; without one → physical reader."""
     f = form.get("formato", "").strip().lower()
     if f and f.replace("_", "").isalnum() and len(f) <= 16:
         return f, "camera"
@@ -576,7 +576,7 @@ def register(app: FastAPI, st: State) -> None:
         except (OSError, asyncpg.PostgresError) as e:
             return html(str(r.notice("error", t("Erro ao registrar a leitura"), str(e))), 503)
         if last is None:
-            # Recusada pelo modo do leitor (esperando "Próximo", pausa ou repetida).
+            # Refused by the reader mode (waiting for "Next", paused or repeated).
             prev = reads[0] if reads else None
             return r.fragment(
                 "scan_result.html", last=prev, reads=reads, empty=False, gate=gate, reader=rd, fresh=False
@@ -610,9 +610,9 @@ def register(app: FastAPI, st: State) -> None:
     @app.post("/coletor/escanear/modo")
     @app.post("/coletor/escanear/leitor")
     async def escanear_prefs(req: Request) -> Response:
-        """Escolhas feitas DENTRO da câmera (barra de cima da camada do hub, `data-hub-scan-prefs`):
-        tipo de código (`modo`), modo do leitor (`leitor`) e pausa (`pausa`), por usuário. Campos
-        ausentes ficam como estão. `/modo` e `/leitor` são os nomes antigos (mesma rota)."""
+        """Choices made INSIDE the camera (top bar of the hub layer, `data-hub-scan-prefs`):
+        barcode type (`modo`), reader mode (`leitor`) and pause (`pausa`), per user. Missing
+        fields stay as they are. `/modo` and `/leitor` are the old names (same route)."""
         form = {k: str(v) for k, v in (await req.form()).items()}
         if (n := db_notice(st)) is not None:
             return html(str(n), 503)
@@ -647,7 +647,7 @@ def register(app: FastAPI, st: State) -> None:
             v = session_view(await load_session(c, _user(req)))
         return r.fragment("session_phone.html", **v)
 
-    # ---- folha de teste: sessão em fila + leituras ao vivo -------------------------------------
+    # ---- test sheet: queued session + live readings -------------------------------------
     def sheet_ctx(req: HTTPConnection) -> dict[str, Any]:
         items = catalog()[:8]
         ords = orders()
@@ -728,8 +728,8 @@ def register(app: FastAPI, st: State) -> None:
 
     @app.post("/coletor/sessao/{acao}")
     async def sessao(acao: str, req: Request) -> Response:
-        """Controles da sessão (computador e celular): o estado é do servidor, um por
-        usuário; os dois lados recebem a mudança pelo WebSocket."""
+        """Session controls (computer and phone): the state lives on the server, one per
+        user; both sides receive the change over the WebSocket."""
         if acao not in actions:
             return r.not_found()
         if (n := db_notice(st)) is not None:
@@ -788,8 +788,8 @@ def register(app: FastAPI, st: State) -> None:
 
     @app.websocket("/coletor/ws/live")
     async def ws_live(ws: WebSocket) -> None:
-        """Estado ao vivo do usuário: a cada leitura/mudança da sessão, o fragmento da tela
-        (``view=folha`` ou ``escanear``) é redesenhado e enviado (hub-kit ``data-hub-ws``)."""
+        """Live state of the user: on each reading/session change, the screen fragment
+        (``view=folha`` or ``escanear``) is redrawn and sent (hub-kit ``data-hub-ws``)."""
         view = "escanear" if ws.query_params.get("view") == "escanear" else "folha"
         user = _user(ws)
         if user == "anonimo":
@@ -798,7 +798,7 @@ def register(app: FastAPI, st: State) -> None:
         if db_notice(st) is not None:
             await ws.close(code=1013)
             return
-        _locale.use(_locale.from_headers(ws.headers))  # a tarefa do socket tem o próprio contexto
+        _locale.use(_locale.from_headers(ws.headers))  # the socket task has its own context
         await ws.accept()
         await LIVE.ensure_listener(getattr(st.sdk.db, "url", None))
         q = LIVE.subscribe(user)
@@ -817,7 +817,7 @@ def register(app: FastAPI, st: State) -> None:
                 if get not in done:
                     get.cancel()
                     break
-                while not q.empty():  # avisos em rajada → um redesenho
+                while not q.empty():  # bursts of notices → one redraw
                     q.get_nowait()
                 await ws.send_text(await ws_payload(ws, view))
         except (WebSocketDisconnect, RuntimeError, OSError, asyncpg.PostgresError):
@@ -847,4 +847,4 @@ def register(app: FastAPI, st: State) -> None:
         return r.not_found()
 
 
-_ = i18n  # o catálogo de traduções se registra ao importar
+_ = i18n  # the translations catalog registers on import

@@ -2,7 +2,7 @@ from hub_sdk.idempotency import RequestHasher, request_hash, split_content_type,
 
 MP = "multipart/form-data; boundary="
 
-# Vetores de hash (formato estável: não mude sem migração).
+# Hash vectors (stable format: do not change without a migration).
 HASH_VECTORS = [
     (
         ("POST", "/x", "", MP + "AAA111", b"--AAA111\r\nconteudo\r\n--AAA111--"),

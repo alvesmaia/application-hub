@@ -1,4 +1,4 @@
-"""Unidades: tipos de anexo, nomes, PDF, consulta cadastral (retry, disjuntor, timeout), busca."""
+"""Units: attachment types, names, PDF, registry lookup (retry, circuit breaker, timeout), search."""
 
 from __future__ import annotations
 
@@ -121,7 +121,7 @@ def test_s3_config_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 class Ext:
-    """Serviço externo falso: ``script`` decide (status, corpo, atraso) por chamada."""
+    """Fake external service: ``script`` decides (status, body, delay) per call."""
 
     def __init__(self, script: Script) -> None:
         self.hits = 0
@@ -181,7 +181,7 @@ async def test_timeouts_open_the_breaker_and_recover(ext_factory: Callable[[Scri
     before = ext.hits
     o = await lo.lookup("12345678000190")
     assert o.attempts == 0 and "suspensas" in o.reason and ext.hits == before and lo.open_for() > 0
-    lo.open_until = time.monotonic() - 1  # meio-aberto: a consulta de teste decide
+    lo.open_until = time.monotonic() - 1  # half-open: the test lookup decides
     lo.timeout = 2.0
     ok = await lo.lookup("12345678000190")
     assert ok.info is not None and lo.failures == 0
@@ -196,7 +196,7 @@ async def test_client_errors_connection_errors_and_bad_bodies(ext_factory: Calla
     r = await lk.Lookup("http://127.0.0.1:1", 0.2, 0.001).lookup("1")
     assert r.attempts == 3 and (
         "falha de conexão" in r.reason or "sem resposta" in r.reason
-    )  # Windows: SYN sem RST
+    )  # Windows: SYN without RST
     none = await lk.Lookup(None).lookup("1")
     assert none.attempts == 0 and "não configurado" in none.reason
 

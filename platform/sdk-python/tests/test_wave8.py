@@ -1,5 +1,5 @@
-"""Onda 8: traces (traceparent hub → app → banco), telemetria pelo canal interno e
-feature flags (algoritmo e vetores de teste fixos)."""
+"""Wave 8: traces (traceparent hub → app → DB), telemetry over the internal channel and
+feature flags (algorithm and fixed test vectors)."""
 
 from __future__ import annotations
 
@@ -46,7 +46,7 @@ async def test_server_span_is_child_of_hub_and_db_span_of_server() -> None:
     async with client(traced_app(tel)) as c:
         r = await c.get("/demo/x/42", headers={"traceparent": TP})
         assert r.json()["comment"].startswith("/*traceparent='00-0af7651916cd43dd8448eb211c80319c-")
-        # O canal interno não vira span.
+        # The internal channel does not become a span.
         t = await c.get("/demo/_hub/telemetry?after=0", headers={internal.TOKEN_HEADER: TOKEN})
     body = t.json()
     spans = body["spans"]
@@ -58,7 +58,7 @@ async def test_server_span_is_child_of_hub_and_db_span_of_server() -> None:
     assert server["name"] == "GET /demo/x/{id}"
     assert db["parent_id"] == server["span_id"] and db["trace_id"] == server["trace_id"]
     assert body["next"] == 2
-    # Mesmo formato do hub (hub_telemetry::Span): campos obrigatórios presentes.
+    # Same format as the hub (hub_telemetry::Span): required fields present.
     for k in ("trace_id", "span_id", "name", "service", "kind", "start_us", "duration_us", "error", "attrs"):
         assert k in server
 
@@ -70,7 +70,7 @@ async def test_telemetry_requires_token_and_forged_traceparent_is_ignored() -> N
         await c.get("/demo/x/1", headers={"traceparent": "00-zz-yy-01"})
     s, _ = tel.pending(0, 10)
     server = next(x for x in s if x["kind"] == "server")
-    assert "parent_id" not in server  # inválido → raiz nova
+    assert "parent_id" not in server  # invalid → new root
 
 
 def test_traceparent_parse() -> None:

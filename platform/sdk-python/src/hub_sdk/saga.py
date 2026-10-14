@@ -1,22 +1,22 @@
 """Sagas (onda 12, item 2.9).
 
-Uma saga é uma sequência de **passos** (ação + compensação) executada como tarefa durável
-(:mod:`hub_sdk.jobs`): mesma fila, lease, ``attempt_token``, checkpoint e visibilidade em
-Operações › Tarefas.
+A saga is a sequence of **steps** (action + compensation) run as a durable job
+(:mod:`hub_sdk.jobs`): same queue, lease, ``attempt_token``, checkpoint and visibility in
+Operations › Jobs.
 
-- Estado no checkpoint da tarefa (``{"saga": {...}}``), gravado com o fence da tentativa
-  depois de cada passo/compensação. Queda no meio → outro worker retoma: para a frente
-  se ``running``, compensando se ``compensating``.
-- Falha definitiva (:class:`~hub_sdk.jobs.JobFail`) ou transitória na última tentativa →
-  compensações em ordem inversa, do passo que falhou (pode ter aplicado parte) até o
-  primeiro. Transitória antes disso → nova tentativa no mesmo passo.
-- Idempotência: chave estável ``<tarefa>:<passo>`` (``…:undo`` na compensação); efeitos no
-  banco por :meth:`StepCtx.once` (exatamente uma vez). Compensações toleram "nada a
+- State in the job checkpoint (``{"saga": {...}}``), written with the attempt's fence
+  after each step/compensation. Crash midway → another worker resumes: forward
+  if ``running``, compensating if ``compensating``.
+- Definitive failure (:class:`~hub_sdk.jobs.JobFail`) or transient on the last attempt →
+  compensations in reverse order, from the failed step (which may have applied part) back to the
+  first. Transient before that → retry of the same step.
+- Idempotency: stable key ``<job>:<step>`` (``…:undo`` for the compensation); DB effects
+  through :meth:`StepCtx.once` (exactly once). Compensations tolerate "nothing to
   desfazer".
-- Fim: ``completed`` → tarefa ``done``; ``compensated`` → ``failed`` com o motivo;
-  compensação com erro definitivo → ``failed`` (intervenção manual).
+- End: ``completed`` → job ``done``; ``compensated`` → ``failed`` with the reason;
+  compensation with a definitive error → ``failed`` (manual intervention).
 
-A regra de próximo passo (:func:`next_action`) é coberta por vetores de teste fixos.
+The next-step rule (:func:`next_action`) is covered by fixed test vectors.
 """
 
 from __future__ import annotations
@@ -37,8 +37,8 @@ def new_state(names: Sequence[str]) -> dict[str, Any]:
 
 
 def next_action(s: dict[str, Any]) -> str:
-    """Próxima ação a partir do estado salvo: ``run:i``, ``compensate:i``, ``complete``,
-    ``compensated`` ou ``failed``."""
+    """Next action from the saved state: ``run:i``, ``compensate:i``, ``complete``,
+    ``compensated`` or ``failed``."""
     steps = s.get("steps") or []
     st = s.get("state")
     if st == "running":
@@ -59,7 +59,7 @@ def next_action(s: dict[str, Any]) -> str:
 
 
 def state_of(checkpoint: Any, names: Sequence[str]) -> dict[str, Any]:
-    """Estado da saga no checkpoint (ou um novo). Recusa definição alterada em andamento."""
+    """Saga state in the checkpoint (or a new one). Refuses a changed definition in progress."""
     cp = checkpoint
     if isinstance(cp, str):
         cp = json.loads(cp)
@@ -75,7 +75,7 @@ def state_of(checkpoint: Any, names: Sequence[str]) -> dict[str, Any]:
 
 
 def summary(checkpoint: Any) -> dict[str, Any] | None:
-    """Resumo para o hub: ``{state, steps: [{name, state}], reason}``."""
+    """Summary for the hub: ``{state, steps: [{name, state}], reason}``."""
     cp = json.loads(checkpoint) if isinstance(checkpoint, str) else checkpoint
     s = cp.get("saga") if isinstance(cp, dict) else None
     if not isinstance(s, dict):
@@ -89,7 +89,7 @@ def summary(checkpoint: Any) -> dict[str, Any] | None:
 
 @dataclass
 class StepCtx:
-    """Contexto de um passo."""
+    """Context of a step."""
 
     saga_id: str
     step: str
@@ -102,10 +102,10 @@ class StepCtx:
     pool: Any
 
     async def once(self, fn: Callable[[Any], Awaitable[Any]]) -> Any:
-        """Efeito no banco **exatamente uma vez**: ``fn(conn)`` roda numa transação que
-        também grava ``hub_saga_once(key)``; numa retomada devolve a saída gravada."""
-        # Reivindica primeiro, na mesma transação do efeito: uma execução concorrente do
-        # mesmo passo espera na chave única até esta confirmar ou desfazer.
+        """DB effect **exactly once**: ``fn(conn)`` runs in a transaction that
+        also writes ``hub_saga_once(key)``; on resume it returns the recorded output."""
+        # Claims first, in the same transaction as the effect: a concurrent run of the
+        # same step waits on the unique key until this one commits or rolls back.
         async with self.pool.acquire() as c:
             async with c.transaction():
                 claimed = await c.fetchval(
@@ -133,7 +133,7 @@ class Step:
 
 @dataclass
 class Saga:
-    """Definição de uma saga (um tipo de tarefa). Registre como qualquer handler."""
+    """Definition of a saga (one job type). Register it like any handler."""
 
     spec: JobSpec
     steps: list[Step] = field(default_factory=list)
@@ -187,7 +187,7 @@ class Saga:
                     continue
                 except JobError:
                     raise
-                except Exception as e:  # erro inesperado do passo = transitório
+                except Exception as e:  # unexpected error in a step = transient
                     if not last:
                         raise JobRetry(f"{name}: {e.__class__.__name__}: {e}") from e
                     st["steps"][i]["state"] = "attempted"

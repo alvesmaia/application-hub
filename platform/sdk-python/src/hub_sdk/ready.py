@@ -1,16 +1,16 @@
-"""Prontidão e vivacidade (onda 12, item 2.5 — docs/CONTRATO-APP.md §2).
+"""Readiness and liveness (wave 12, item 2.5 — docs/CONTRATO-APP.md §2).
 
 ====== ========================== ==============================================================
-Método Rota                       Resposta
+Method Route                       Response
 ====== ========================== ==============================================================
 GET    ``/{app}/_hub/health``     vivacidade: sempre 200 ``{"status": "ok"}``
-GET    ``/{app}/_hub/ready``      prontidão: 200 ``{"status": "ready", "checks": {...}}`` ou
+GET    ``/{app}/_hub/ready``      readiness: 200 ``{"status": "ready", "checks": {...}}`` or
                                   503 ``{"status": "not_ready", "reason": "...", "checks": ...}``
 ====== ========================== ==============================================================
 
-O hub só troca o tráfego do blue/green para um candidato cujo ``/_hub/ready`` respondeu 200;
-sem a rota (404) a implantação é recusada. Sem token interno (não expõem dados; o gateway
-recusa ``/_frag/{app}/_hub/*``); ``Cache-Control: no-store``.
+The hub only switches blue/green traffic to a candidate whose ``/_hub/ready`` answered 200;
+without the route (404) the deployment is refused. No internal token (they expose no data; the gateway
+refuses ``/_frag/{app}/_hub/*``); ``Cache-Control: no-store``.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from typing import Any
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-#: Tempo máximo de cada verificação (s).
+#: Maximum time of each check (s).
 CHECK_TIMEOUT = 1.5
 
 Check = Callable[[], Awaitable[None]]
@@ -30,7 +30,7 @@ Check = Callable[[], Awaitable[None]]
 
 
 class NotReady(Exception):
-    """Motivo legível de "não pronto"."""
+    """Readable reason for "not ready"."""
 
 
 class Readiness:

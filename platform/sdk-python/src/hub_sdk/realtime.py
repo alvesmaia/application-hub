@@ -1,14 +1,14 @@
-"""Tempo real (SSE ou WebSocket): acorda as conexões abertas quando os dados mudam.
+"""Real time (SSE or WebSocket): wakes the open connections when the data changes.
 
-Com Postgres (``DATABASE_URL`` no hub), o aviso passa por ``LISTEN``/``NOTIFY`` e alcança todas as réplicas;
-sem ele (SQLite no ``hub dev``), fica no próprio processo. Guia: ``docs/dev/guias/tempo-real.md``.
+With Postgres (``DATABASE_URL`` on the hub), the notice goes through ``LISTEN``/``NOTIFY`` and reaches all replicas;
+without it (SQLite in ``hub dev``), it stays in the process itself. Guide: ``docs/dev/guias/tempo-real.md``.
 
     from hub_sdk.realtime import canal, sse
 
     # lifespan:  await canal.iniciar() ... await canal.fechar()
     # SSE:       return sse(canal.mensagens(lambda: json.dumps({"html": ...})))
     # WebSocket: async for m in canal.mensagens(...): if m is not None: await ws.send_text(m)
-    # mudança:   depois do commit, canal.avisar(engine)
+    # change:   after the commit, canal.avisar(engine)
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ class Canal:
         self.pg: Any = None
 
     async def iniciar(self) -> None:
-        """No lifespan do app. Com Postgres, escuta o aviso de qualquer réplica."""
+        """In the app's lifespan. With Postgres, listens for the notice from any replica."""
         self.loop = asyncio.get_running_loop()
         url = os.environ.get("DATABASE_URL", "")
         if url.startswith(("postgres://", "postgresql://", "postgresql+psycopg://")):
@@ -48,12 +48,12 @@ class Canal:
 
     def _acordar(self) -> None:
         for fila in self.filas:
-            with contextlib.suppress(asyncio.QueueFull):  # já há um aviso pendente
+            with contextlib.suppress(asyncio.QueueFull):  # a notice is already pending
                 fila.put_nowait(None)
 
     def avisar(self, engine: Any = None) -> None:
-        """Chame depois do commit (vale em rotas ``def`` e ``async def``). ``engine``: o SQLAlchemy do app;
-        no Postgres o aviso vai por ``pg_notify`` (todas as réplicas)."""
+        """Call after the commit (works in ``def`` and ``async def`` routes). ``engine``: the app's SQLAlchemy;
+        on Postgres the notice goes via ``pg_notify`` (all replicas)."""
         if engine is not None and engine.dialect.name == "postgresql":
             import sqlalchemy as sa
 
@@ -65,7 +65,7 @@ class Canal:
     async def mensagens(
         self, mensagem: Callable[[], str], ping: float = 20.0
     ) -> AsyncGenerator[str | None, None]:
-        """O estado atual na conexão e depois a cada aviso; ``None`` = nada novo em ``ping`` segundos."""
+        """The current state on the connection, then after each notice; ``None`` = nothing new in ``ping`` seconds."""
         fila: asyncio.Queue[None] = asyncio.Queue(maxsize=1)
         self.filas.add(fila)
         try:
@@ -82,7 +82,7 @@ class Canal:
 
 
 def sse(mensagens: AsyncIterator[str | None]) -> StreamingResponse:
-    """Resposta ``text/event-stream``: cada mensagem vira ``data:``; ``None`` vira ping (mantém a conexão)."""
+    """``text/event-stream`` response: each message becomes ``data:``; ``None`` becomes a ping (keeps the connection open)."""
 
     async def fluxo() -> AsyncIterator[str]:
         async for m in mensagens:

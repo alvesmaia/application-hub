@@ -1,4 +1,4 @@
-"""Tabelas do SDK, ids e utilidades de banco."""
+"""SDK tables, ids and DB utilities."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ import hmac
 import secrets
 from typing import Any
 
-# ``SCHEMA_SQL``: idempotente, aplicado junto com as
-# migrações do app.
+# ``SCHEMA_SQL``: idempotent, applied together with the app's
+# migrations.
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS hub_jobs (
   id text PRIMARY KEY,
@@ -83,38 +83,38 @@ ALTER TABLE hub_uploads ADD COLUMN IF NOT EXISTS size bigint;
 ALTER TABLE hub_uploads ADD COLUMN IF NOT EXISTS etag text;
 """
 
-# Retenção do outbox confirmado.
+# Retention of the confirmed outbox.
 APPS_PREFIX = "/apps"
 """Prefixo público das páginas dos apps (onda 13): o navegador vê ``/apps/{id}/…``; o app
 continua servindo ``/{id}/…`` (o hub traduz). Links do app usam :func:`base`."""
 
 
 def base(app_id: str) -> str:
-    """Base pública do app (``/apps/{id}``): prefixo de todo link do app no HTML."""
+    """App's public base (``/apps/{id}``): prefix of every app link in the HTML."""
     return f"{APPS_PREFIX}/{app_id}"
 
 
 OUTBOX_RETENTION = "7 days"
 
-# Lock das migrações (dois processos do mesmo app — ou um
-# seed e o app — não migram ao mesmo tempo).
+# Migration lock (two processes of the same app — or a
+# seed and the app — do not migrate at the same time).
 MIGRATION_LOCK = 424242
 
 
 def new_id(prefix: str) -> str:
-    """Identificador aleatório de 128 bits em hex com prefixo (`evt-…`, `job-…`)."""
+    """128-bit random identifier in hex with a prefix (`evt-…`, `job-…`)."""
     return f"{prefix}-{secrets.token_hex(16)}"
 
 
 def ct_eq(a: str | bytes, b: str | bytes) -> bool:
-    """Comparação em tempo constante (tokens)."""
+    """Constant-time comparison (tokens)."""
     ab = a.encode() if isinstance(a, str) else a
     bb = b.encode() if isinstance(b, str) else b
     return hmac.compare_digest(ab, bb)
 
 
 async def migrate(conn: Any, app_sql: str = "") -> None:
-    """Aplica as migrações do app + :data:`SCHEMA_SQL` sob advisory lock."""
+    """Applies the app's migrations + :data:`SCHEMA_SQL` under an advisory lock."""
     await conn.execute(f"SELECT pg_advisory_lock({MIGRATION_LOCK})")
     try:
         if app_sql.strip():
@@ -125,9 +125,9 @@ async def migrate(conn: Any, app_sql: str = "") -> None:
 
 
 async def cleanup(pool: Any) -> tuple[int, int]:
-    """Apaga idempotência vencida e outbox confirmado há mais de 7 dias.
+    """Deletes expired idempotency records and outbox entries confirmed more than 7 days ago.
 
-    Devolve (idempotência, outbox) apagados.
+    Returns the (idempotency, outbox) counts deleted.
     """
     async with pool.acquire() as c:
         idem = await c.execute("DELETE FROM hub_idempotency WHERE expires_at < now()")
@@ -139,7 +139,7 @@ async def cleanup(pool: Any) -> tuple[int, int]:
 
 
 def _count(status: str) -> int:
-    """`DELETE 12` → 12 (status do asyncpg)."""
+    """`DELETE 12` → 12 (asyncpg status)."""
     try:
         return int(str(status).rsplit(" ", 1)[-1])
     except ValueError:

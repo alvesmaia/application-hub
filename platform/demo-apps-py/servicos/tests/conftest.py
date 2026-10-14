@@ -1,4 +1,4 @@
-"""Fixtures: cliente HTTP sobre o app real (lifespan incluído) e banco descartável
+"""Fixtures: HTTP client over the real app (lifespan included) and a throwaway database
 (``HUB_DB_TEST_URL``)."""
 
 from __future__ import annotations
@@ -63,7 +63,7 @@ async def db_url(env: Path, monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[st
 
 
 class Running:
-    """App com lifespan ativo + cliente."""
+    """App with active lifespan + client."""
 
     def __init__(self, app: Any, client: httpx.AsyncClient) -> None:
         self.app = app
@@ -88,7 +88,7 @@ async def running(env: Path) -> AsyncIterator[Running]:
 
 
 async def wait_ready(c: httpx.AsyncClient, timeout: float = 30) -> None:
-    """Espera as migrações + carga inicial (600 chamados)."""
+    """Waits for the migrations + initial load (600 tickets)."""
     loop = asyncio.get_running_loop()
     end = loop.time() + timeout
     last = ""

@@ -1,14 +1,14 @@
-"""Idioma e formatação regional dos fragmentos (onda 9).
+"""Language and regional formatting of the fragments (wave 9).
 
-O hub resolve o idioma do usuário (preferência salva → ``Accept-Language`` → pt-BR) e o
-repassa em ``x-hub-locale`` e no campo ``locale`` do ``x-hub-user``. :func:`from_headers`
-lê nessa ordem e cai no ``Accept-Language`` do navegador (o gateway também o repassa).
+The hub resolves the user's language (saved preference → ``Accept-Language`` → pt-BR) and
+passes it on in ``x-hub-locale`` and in the ``locale`` field of ``x-hub-user``. :func:`from_headers`
+reads in that order and falls back to the browser's ``Accept-Language`` (the gateway also passes it on).
 
-Tradução: o **texto em pt-BR é a chave** — ``t("Contratos")`` devolve "Contracts" em
-inglês se o catálogo tiver a entrada, senão o próprio texto (nada quebra se faltar).
-Marcadores ``{nome}`` são preenchidos por ``t("{n} linhas", n=...)``. O idioma da
-requisição fica numa ``ContextVar`` posta por :class:`LocaleMiddleware` (``HubSdk.install``
-já a instala), então templates e código chamam ``t()`` sem passar o idioma adiante.
+Translation: the **pt-BR text is the key** — ``t("Contratos")`` returns "Contracts" in
+English if the catalog has the entry, otherwise the text itself (nothing breaks if it is missing).
+``{name}`` placeholders are filled by ``t("{n} linhas", n=...)``. The request's language lives in a
+``ContextVar`` set by :class:`LocaleMiddleware` (``HubSdk.install``
+already installs it), so templates and code call ``t()`` without passing the language along.
 """
 
 from __future__ import annotations
@@ -28,13 +28,13 @@ DEFAULT = "pt-BR"
 
 
 def parse(s: str | None) -> str | None:
-    """Código suportado para um código/prefixo (``pt``, ``pt-PT``, ``en-US``…) ou ``None``."""
+    """Supported code for a code/prefix (``pt``, ``pt-PT``, ``en-US``…) or ``None``."""
     lang = (s or "").strip().lower().replace("_", "-").split("-")[0]
-    return {"pt": "pt-BR", "en": "en", "es": "en"}.get(lang)  # `es` saiu em 10/2026: vira en
+    return {"pt": "pt-BR", "en": "en", "es": "en"}.get(lang)  # `es` was dropped in 10/2026: it becomes en
 
 
 def from_accept_language(v: str | None) -> str | None:
-    """Melhor idioma suportado de um ``Accept-Language`` (respeita os pesos ``q``)."""
+    """Best supported language from an ``Accept-Language`` (respects the ``q`` weights)."""
     best: tuple[float, int, str] | None = None
     for i, part in enumerate((v or "").split(",")[:20]):
         bits = part.split(";")
@@ -55,7 +55,7 @@ def from_accept_language(v: str | None) -> str | None:
 
 
 def from_headers(headers: Mapping[str, str]) -> str:
-    """``x-hub-locale`` → ``locale`` do ``x-hub-user`` → ``Accept-Language`` → pt-BR."""
+    """``x-hub-locale`` → ``locale`` of ``x-hub-user`` → ``Accept-Language`` → pt-BR."""
     code = parse(headers.get(LOCALE_HEADER))
     if code is None:
         ident = parse_identity(headers.get("x-hub-user"))
@@ -68,23 +68,23 @@ _catalog: dict[str, dict[str, str]] = {}
 
 
 def current() -> str:
-    """Idioma da requisição em curso."""
+    """Language of the current request."""
     return _current.get()
 
 
 def use(code: str) -> contextvars.Token[str]:
-    """Fixa o idioma (testes, tarefas); devolve o token para ``reset``."""
+    """Sets the language (tests, jobs); returns the token for ``reset``."""
     return _current.set(parse(code) or DEFAULT)
 
 
 def register(catalog: Mapping[str, Mapping[str, str]]) -> None:
-    """Acrescenta traduções: ``{"texto pt-BR": {"en": "..."}}``."""
+    """Adds translations: ``{"texto pt-BR": {"en": "..."}}``."""
     for k, v in catalog.items():
         _catalog.setdefault(k, {}).update(v)
 
 
 def t(text: str, **kw: Any) -> str:
-    """Tradução de ``text`` (pt-BR) no idioma atual, com ``{marcadores}`` preenchidos."""
+    """Translation of ``text`` (pt-BR) in the current language, with ``{placeholders}`` filled."""
     code = current()
     out = text if code == DEFAULT else _catalog.get(text, {}).get(code, text)
     if kw:
@@ -106,7 +106,7 @@ def thousands(n: int) -> str:
 
 
 def money_cents(cents: int | None) -> str:
-    """Centavos → ``R$ 1.234,50`` (pt-BR) ou ``BRL 1,234.50`` (en)."""
+    """Cents → ``R$ 1.234,50`` (pt-BR) or ``BRL 1,234.50`` (en)."""
     if cents is None:
         return ""
     code = current()
@@ -115,15 +115,15 @@ def money_cents(cents: int | None) -> str:
 
 
 def date(d: dt.date | None) -> str:
-    """Data curta: ``28/09/2026`` (pt-BR) ou ``09/28/2026`` (en)."""
+    """Short date: ``28/09/2026`` (pt-BR) or ``09/28/2026`` (en)."""
     if d is None:
         return ""
     return d.strftime("%m/%d/%Y") if current() == "en" else d.strftime("%d/%m/%Y")
 
 
 class LocaleMiddleware:
-    """Middleware ASGI: fixa o idioma de cada requisição (ContextVar) a partir dos
-    cabeçalhos do hub."""
+    """ASGI middleware: sets the language of each request (ContextVar) from the
+    hub headers."""
 
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
@@ -140,7 +140,7 @@ class LocaleMiddleware:
             _current.reset(token)
 
 
-# Textos do próprio SDK (workspace, 404, skeleton, 429).
+# Strings of the SDK itself (workspace, 404, skeleton, 429).
 register(
     {
         "Aplicação interna": {"en": "Internal application"},

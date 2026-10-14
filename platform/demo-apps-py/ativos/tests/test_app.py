@@ -1,5 +1,5 @@
-"""App por HTTP: sem banco (fragmentos, assets, i18n, flag) e com Postgres (CRUD, 409,
-importação durável, exportações, auditoria no outbox)."""
+"""App over HTTP: without DB (fragments, assets, i18n, flag) and with Postgres (CRUD, 409,
+durable import, exports, outbox audit)."""
 
 from __future__ import annotations
 
@@ -35,13 +35,13 @@ async def test_without_db_pages_render_with_notice(running: Running) -> None:
     for path in ("/ativos/_skeleton", "/ativos/assets/app.css", "/ativos/assets/demo.css"):
         assert (await c.get(path)).status_code == 200, path
     assert "--app-primary" in (await c.get("/ativos/assets/app.css")).text
-    assert (await c.get("/ativos/assets/x.js")).status_code == 404  # sem JavaScript próprio
+    assert (await c.get("/ativos/assets/x.js")).status_code == 404  # no own JavaScript
     assert (await c.get("/ativos/nada")).status_code == 404
     assert (await c.get("/outro")).status_code == 404
     for p in ("/ativos/itens/1", "/ativos/itens/import", "/ativos/itens/export.xlsx"):
         assert (await c.get(p)).status_code == 404, p
     assert (await c.post("/ativos/assets", data={"tag": "x"})).status_code == 503
-    # internos: token obrigatório, sem tarefas sem banco
+    # internal: token required, no jobs without DB
     assert (await c.get("/ativos/_hub/outbox")).status_code == 401
     h = {"x-hub-internal-token": TOKEN}
     assert (await c.get("/ativos/_hub/outbox", headers=h)).json()["durable"] is False
@@ -65,7 +65,7 @@ async def test_ready_health_and_openapi(running: Running) -> None:
         "assets_export_status",
         "assets_register_documented",
     }
-    # a API exige a identidade do hub
+    # the API requires the hub identity
     assert (
         await httpx.AsyncClient(transport=c._transport, base_url="http://t").get("/ativos/api/v1/assets")
     ).status_code == 401
@@ -180,7 +180,7 @@ async def test_import_is_durable_and_reports_errors(db_url: str, running: Runnin
     bad_rows = {line.split(";")[0] for line in lines[1:]}
     listed = await c.get("/ativos/assets?q=PY-")
     assert f"{thousands(3500 - len(bad_rows))} ativos encontrados" in listed.text
-    # a mesma planilha de novo: tudo vira "patrimônio já cadastrado" (nada duplicado)
+    # the same spreadsheet again: everything becomes "asset tag already registered" (nothing duplicated)
     r = await c.post("/ativos/itens/import", files=files)
     job2 = r.text.split('data-hub-poll="/apps/ativos/itens/import/')[1].split('"')[0]
     for _ in range(300):
@@ -195,7 +195,7 @@ async def test_import_is_durable_and_reports_errors(db_url: str, running: Runnin
     acts = await outbox_actions(c)
     assert acts.count("Importação de ativos iniciada") == 2
     assert acts.count("Importação de ativos concluída") == 2
-    # rejeições do upload
+    # upload rejections
     bad = await c.post("/ativos/itens/import", files={"file": ("x.csv", b"a;b", "text/csv")})
     assert bad.status_code == 422 and "Formato não suportado" in bad.text
     fake = await c.post("/ativos/itens/import", files={"file": ("x.xlsx", b"nao e zip", mime)})
@@ -211,7 +211,7 @@ async def test_exports_csv_stream_xlsx_job_and_429(db_url: str, running: Running
     rows = csv.text.strip().splitlines()
     assert rows[0].lstrip("﻿").startswith("Patrimônio;Nome;Categoria") and len(rows) > 10
     assert all(";Em uso;" in r for r in rows[1:])
-    # sem vaga de operação pesada: 429 + Retry-After
+    # without a heavy-operation slot: 429 + Retry-After
     heavy = running.app.state.ativos.sdk.heavy
     permits = []
     while (p := heavy.try_acquire()) is not None:

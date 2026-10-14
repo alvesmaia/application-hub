@@ -1,11 +1,11 @@
-"""Exemplo de saga do SDK (onda 12, item 2.9): **cadastro documentado** de um ativo —
-(1) cria o ativo, (2) confirma o documento enviado em duas fases (se o app tem a conexão
-``ativos-docs`` vinculada), (3) notifica o solicitante pela Inbox do hub. Qualquer falha
-definitiva (ou transitória na última tentativa) compensa em ordem inversa: remove o documento
-confirmado e o ativo criado. Os efeitos no banco usam ``StepCtx.once`` (exatamente uma vez).
+"""SDK saga example (wave 12, item 2.9): **documented registration** of an asset —
+(1) creates the asset, (2) confirms the document sent in two phases (if the app has the
+``ativos-docs`` connection linked), (3) notifies the requester through the hub Inbox. Any
+definitive failure (or transient on the last attempt) compensates in reverse order: removes the
+confirmed document and the created asset. DB effects use ``StepCtx.once`` (exactly once).
 
-``POST /ativos/api/v1/assets/registrations`` enfileira a saga; ``falhar_em`` (nome de um passo)
-força uma falha para demonstrar a compensação — só com ``HUB_DEMO_SAGA_FAULTS=1``.
+``POST /ativos/api/v1/assets/registrations`` enqueues the saga; ``falhar_em`` (name of a step)
+forces a failure to demonstrate the compensation — only with ``HUB_DEMO_SAGA_FAULTS=1``.
 """
 
 from __future__ import annotations
@@ -20,13 +20,13 @@ from hub_sdk.saga import Saga, StepCtx
 from hub_sdk.uploads import Uploads
 
 KIND = "ativos.cadastro_documentado"
-# Conexão de armazenamento dos documentos (vinculada em Aplicações › Conexões).
+# Storage connection for the documents (linked in Applications › Connections).
 DOCS = "ativos-docs"
 SPEC = JobSpec(KIND, max_attempts=4, max_duration=300)
 
 
 class LazyPool:
-    """Pool do SDK resolvido na hora do uso (o handler é criado antes do banco abrir)."""
+    """SDK pool resolved at use time (the handler is created before the DB opens)."""
 
     def __init__(self) -> None:
         self.sdk: Any = None
@@ -46,8 +46,8 @@ def _injected(c: StepCtx) -> None:
 
 
 async def _once_output(c: StepCtx, step: str) -> Any:
-    """Saída gravada por ``once`` para um passo (a compensação de um passo que "falhou" depois
-    de confirmar o efeito ainda acha o que desfazer)."""
+    """Output written by ``once`` for a step (compensating a step that "failed" after confirming the
+    effect still finds what to undo)."""
     async with c.pool.acquire() as cl:
         r = await cl.fetchrow("SELECT output FROM hub_saga_once WHERE key = $1", f"{c.saga_id}:{step}")
     return (r["output"] if r else None) or None
@@ -101,14 +101,14 @@ def build(pool: Any) -> Saga:
         tag = str(inp.get("tag") or "sem-tag")
         file = str(inp.get("file_name") or "documento")
 
-        # Um segmento só (o destino nunca escapa de ativos/<tag>/).
+        # A single segment (the target never escapes ativos/<tag>/).
         def seg(v: str) -> bool:
             return bool(v) and "/" not in v and "\\" not in v and v not in (".", "..")
 
         if not seg(tag) or not seg(file):
             raise JobFail("tag/arquivo inválidos para o documento")
         path = f"ativos/{tag}/{file}"
-        user = c.user  # o envio precisa ser do mesmo usuário que pediu a saga
+        user = c.user  # the upload must come from the same user who requested the saga
 
         async def fx(conn: Any) -> Any:
             try:
@@ -125,8 +125,8 @@ def build(pool: Any) -> Saga:
         uid = (out or {}).get("upload")
         if up is None or not uid:
             return None
-        # Documento confirmado por esta saga: cancela sob a trava da linha (serializado com a
-        # promoção) e apaga staging e destino.
+        # Document confirmed by this saga: cancels under the row lock (serialized with the
+        # promotion) and deletes staging and target.
         try:
             await up.cancel(str(uid))
         except Exception as e:

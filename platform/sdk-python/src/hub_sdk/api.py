@@ -1,9 +1,9 @@
-"""API do app (onda 11): OpenAPI 3.1 **nativo do FastAPI** servido no caminho do
-contrato (``GET /{app}/api/openapi.json``), só com as rotas da API (``/{app}/api/...``).
+"""App API (wave 11): **native FastAPI** OpenAPI 3.1 served at the contract path
+(``GET /{app}/api/openapi.json``), with only the API routes (``/{app}/api/...``).
 
 Uso::
 
-    app = FastAPI(..., openapi_url=None)            # sem o /openapi.json padrão
+    app = FastAPI(..., openapi_url=None)            # no default /openapi.json
     @app.get("/contratos/api/v1/contracts", operation_id="contracts_list")
     async def contracts_list(...): ...
     @app.delete("/contratos/api/v1/contracts/{cid}", operation_id="contracts_delete",
@@ -11,9 +11,9 @@ Uso::
     async def contracts_delete(...): ...
     install_api(app, "contratos", title="Gestão de Contratos — API", version="1.0.0")
 
-Cada operação vira uma ferramenta MCP (``hub_sdk.mcp``); ``openapi_extra=DESTRUCTIVE``
-(ou ``DELETE``) marca a ferramenta como destrutiva (o hub pede confirmação) e
-``openapi_extra=NO_MCP`` a deixa de fora.
+Each operation becomes an MCP tool (``hub_sdk.mcp``); ``openapi_extra=DESTRUCTIVE``
+(or ``DELETE``) marks the tool as destructive (the hub asks for confirmation) and
+``openapi_extra=NO_MCP`` leaves it out.
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ def problem(status: int, detail: str) -> JSONResponse:
 
 
 def require_user(request: Request) -> Identity | JSONResponse:
-    """Identidade do hub obrigatória nas rotas da API (sem ``x-hub-user`` → 401)."""
+    """Hub identity required on the API routes (no ``x-hub-user`` → 401)."""
     ident = parse_identity(request.headers.get("x-hub-user"))
     if ident is None:
         return problem(401, "identidade do hub ausente (x-hub-user)")
@@ -55,12 +55,12 @@ def require_user(request: Request) -> Identity | JSONResponse:
 
 
 def openapi_of(app: FastAPI, app_id: str, title: str, version: str) -> dict[str, Any]:
-    """Documento OpenAPI só com as rotas ``/{app_id}/api/``."""
+    """OpenAPI document with only the ``/{app_id}/api/`` routes."""
     prefix = f"/{app_id}/api/"
     routes = [r for r in app.routes if isinstance(r, APIRoute) and r.path.startswith(prefix)]
     doc = get_openapi(title=title, version=version, openapi_version="3.1.0", routes=routes)
-    # Onda 12 (2.4): servidor relativo, esquemas de
-    # segurança do hub e erros RFC 9457 tipados (``Problem``) em toda operação.
+    # Wave 12 (2.4): relative server, hub
+    # security schemes and typed RFC 9457 errors (``Problem``) on every operation.
     doc["servers"] = [{"url": "/"}]
     doc["security"] = [{"bearer": []}, {"session": []}]
     comps = doc.setdefault("components", {})
@@ -101,7 +101,7 @@ PROBLEM_SCHEMA: dict[str, Any] = {
 
 
 def install_api(app: FastAPI, app_id: str, *, title: str, version: str) -> None:
-    """Rota ``GET /{app_id}/api/openapi.json`` (e guarda a declaração para o MCP)."""
+    """``GET /{app_id}/api/openapi.json`` route (and stores the declaration for MCP)."""
     cache: dict[str, dict[str, Any]] = {}
 
     def doc() -> dict[str, Any]:

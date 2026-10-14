@@ -1,4 +1,4 @@
-"""Onda 11: OpenAPI no caminho do contrato e MCP interno gerado dele."""
+"""Wave 11: OpenAPI at the contract path and the internal MCP generated from it."""
 
 from __future__ import annotations
 
@@ -78,7 +78,7 @@ async def test_openapi_is_served_at_the_contract_path_only_with_api_routes() -> 
         }
         assert d["paths"]["/demo/api/v1/items/{iid}/archive"]["post"]["x-hub-destructive"] is True
         assert d["paths"]["/demo/api/v1/items"]["get"]["x-hub-destructive"] is False
-        # Sem identidade: 401 problem+json.
+        # No identity: 401 problem+json.
         r = await c.get("/demo/api/v1/items")
         assert r.status_code == 401
         assert r.headers["content-type"].startswith("application/problem+json")
@@ -106,7 +106,7 @@ async def test_mcp_tools_from_openapi_and_in_process_calls() -> None:
         assert e["error"]["code"] == -32602
         e = (await rpc(c, "x")).json()
         assert e["error"]["code"] == -32601
-        # N7: a operação esperada pelo hub (do pacote) diverge da do app no ar → recusa.
+        # N7: the operation the hub expects (from the package) differs from the one of the running app → refused.
         body = {
             "jsonrpc": "2.0",
             "id": 9,
@@ -127,8 +127,8 @@ async def test_mcp_tools_from_openapi_and_in_process_calls() -> None:
 
 
 def test_mutations_are_destructive_by_default() -> None:
-    """I3: leitura só GET/HEAD ou ``x-hub-readonly``; toda mutação pede aprovação e
-    ``x-hub-destructive: false`` não dispensa (só ``mcp.confirm_exempt`` no manifesto)."""
+    """I3: read only GET/HEAD or ``x-hub-readonly``; every mutation asks for approval and
+    ``x-hub-destructive: false`` does not waive it (only ``mcp.confirm_exempt`` in the manifest)."""
     from hub_sdk.mcp import tools_from_openapi
 
     r = {"200": {"description": "ok"}}
@@ -160,8 +160,8 @@ async def test_mcp_can_be_disabled(monkeypatch: Any) -> None:
 
 
 def test_every_platform_openapi_document_is_valid() -> None:
-    """Hub (``docs/openapi/hub-v1.json``) e os apps (``demo-apps-py/<app>/openapi.json``),
-    validados com um validador de especificação OpenAPI."""
+    """Hub (``docs/openapi/hub-v1.json``) and the apps (``demo-apps-py/<app>/openapi.json``),
+    validated with an OpenAPI spec validator."""
     import json
     from pathlib import Path
 
@@ -179,7 +179,7 @@ def test_every_platform_openapi_document_is_valid() -> None:
 
 def test_openapi_has_hub_conventions_and_typed_problem() -> None:
     """Onda 12 (2.4): pydantic tipa corpo/resposta; o SDK acrescenta servidor, esquemas
-    de segurança e ``Problem`` (RFC 9457) em toda operação."""
+    security schemes and ``Problem`` (RFC 9457) on every operation."""
     from hub_sdk.api import openapi_of
 
     app = make_app()
@@ -194,7 +194,7 @@ def test_openapi_has_hub_conventions_and_typed_problem() -> None:
 
 
 def test_mcp_inline_refs_keeps_deep_nullable_types() -> None:
-    # corpo → $ref → propriedade anulável (anyOf) fica a mais de 8 níveis; os tipos não podem virar {}
+    # body → $ref → nullable property (anyOf) sits more than 8 levels deep; the types must not become {}
     doc = {
         "components": {
             "schemas": {
@@ -208,6 +208,6 @@ def test_mcp_inline_refs_keeps_deep_nullable_types() -> None:
     }
     s = mcp._inline_refs({"$ref": "#/components/schemas/U"}, doc)
     assert s["properties"]["fields"]["properties"]["tag"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
-    # ciclo de $ref continua limitado
+    # $ref cycle stays bounded
     cyc = {"components": {"schemas": {"C": {"properties": {"c": {"$ref": "#/components/schemas/C"}}}}}}
     assert mcp._inline_refs({"$ref": "#/components/schemas/C"}, cyc)

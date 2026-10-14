@@ -1,6 +1,6 @@
-"""Colunas do cadastro de ativos (banco, planilha), validação/normalização e esquema SQL.
+"""Asset registry columns (DB, spreadsheet), validation/normalization and SQL schema.
 
-30 colunas, com cabeçalhos, limites e mensagens de erro fixos (a planilha e o banco usam os mesmos).
+30 columns, with fixed headers, limits and error messages (spreadsheet and DB use the same).
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ CONDITIONS = ("Novo", "Bom", "Regular", "Ruim")
 PAGE_SIZE = 50
 MAX_PAGE = 10_000
 
-# Chave → (coluna SQL, rótulo). A ordem é a dos cabeçalhos da tabela.
+# Key → (SQL column, label). The order is that of the table headers.
 SORTS: tuple[tuple[str, str, str], ...] = (
     ("nome", "name", "Ativo"),
     ("patrimonio", "tag", "Patrimônio"),
@@ -81,7 +81,7 @@ def _i(key: str, header: str, lo: int, hi: int) -> Col:
     return Col(key, header, "int", False, lo=lo, hi=hi)
 
 
-# As 30 colunas de negócio, na ordem da planilha.
+# The 30 business columns, in spreadsheet order.
 COLS: tuple[Col, ...] = (
     _t("tag", "Patrimônio", 40, True),
     _t("name", "Nome", 160, True),
@@ -115,7 +115,7 @@ COLS: tuple[Col, ...] = (
     _t("notes", "Observações", 1000),
 )
 COL = {c.key: c for c in COLS}
-# Campos editáveis no painel (formulário e API).
+# Fields editable in the panel (form and API).
 EDIT_FIELDS = (
     "tag",
     "name",
@@ -139,8 +139,8 @@ def _norm_key(s: str) -> str:
 
 
 def map_headers(headers: list[str]) -> list[int | None]:
-    """Mapeia os cabeçalhos da planilha para índices de :data:`COLS` (erro se faltar um
-    obrigatório ou houver cabeçalho repetido)."""
+    """Maps the spreadsheet headers to indices of :data:`COLS` (error if a required one is missing
+    or a header is repeated)."""
     by = {_norm_key(c.header): i for i, c in enumerate(COLS)}
     seen = [False] * len(COLS)
     out: list[int | None] = []
@@ -206,8 +206,8 @@ _INT = re.compile(r"^[+-]?\d+$")
 
 
 def normalize(col: Col, raw: Any) -> Any:
-    """Valor normalizado (``None`` = vazio/NULL) — texto, data, centavos ou inteiro — ou
-    :class:`Invalid` com a mensagem de erro da coluna."""
+    """Normalized value (``None`` = empty/NULL) — text, date, cents or integer — or
+    :class:`Invalid` with the column's error message."""
     if raw is None or (isinstance(raw, str) and not raw.strip()):
         if col.required:
             raise Invalid("campo obrigatório")
@@ -266,7 +266,7 @@ def normalize(col: Col, raw: Any) -> Any:
 
 
 def validate(form: dict[str, Any], keys: tuple[str, ...] = EDIT_FIELDS) -> tuple[dict[str, Any], str]:
-    """Normaliza ``form`` nas colunas ``keys``; devolve (valores, erros ``"Col: msg; …"``)."""
+    """Normalizes ``form`` over the ``keys`` columns; returns (values, errors ``"Col: msg; …"``)."""
     out: dict[str, Any] = {}
     errs: list[str] = []
     for k in keys:
@@ -279,7 +279,7 @@ def validate(form: dict[str, Any], keys: tuple[str, ...] = EDIT_FIELDS) -> tuple
 
 
 def display(col: Col, v: Any) -> str:
-    """Valor do banco para exibição/exportação."""
+    """Value from the DB for display/export."""
     if v is None:
         return ""
     if col.kind == "date":
@@ -353,7 +353,7 @@ CREATE INDEX IF NOT EXISTS assets_value ON assets (acquisition_value_cents, id);
 -- (hub_sdk::SCHEMA_SQL), aplicadas junto. A antiga import_jobs não é mais usada.
 """
 
-# Carga inicial: lotes gerados no próprio Postgres, sem memória no app.
+# Initial load: batches generated inside Postgres itself, no memory used by the app.
 SEED_SQL = """
 INSERT INTO assets (tag, name, category, location, status, brand, model, serial_number, supplier, supplier_cnpj,
   cost_center, department, responsible, building, room, acquisition_date, acquisition_value_cents,

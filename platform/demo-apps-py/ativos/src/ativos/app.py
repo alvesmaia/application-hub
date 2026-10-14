@@ -1,24 +1,24 @@
-"""Gestão de Ativos — app FastAPI da plataforma (``HUB_DEMO_APP=ativos``; mesmas rotas, mesmo markup, mesma base de dados).
+"""Asset management — the platform's FastAPI app (``HUB_DEMO_APP=ativos``; same routes, same markup, same database).
 
-Rotas (todas sob ``/ativos``; o hub as expõe em ``/_frag/ativos/...``):
+Routes (all under ``/ativos``; the hub exposes them at ``/_frag/ativos/...``):
 
 - ``GET /ativos`` · ``/ativos/{dashboard,assets,movements,reports,settings}`` — fragmentos
-  (workspace do app: sidebar + conteúdo). ``assets`` é dinâmico (Postgres): lista paginada com
-  busca, filtros e ordenação no servidor, painéis ``?edit=<id>``, ``?new=1``, ``?import=1``;
-  as demais seções são os fragmentos do mockup (``fragments/``);
-- ``GET /ativos/_skeleton`` · ``/ativos/assets/{demo.css,app.css}`` (sem JavaScript — onda 12);
-- ``POST /ativos/assets`` (cadastrar) · ``POST /ativos/itens/{id}`` (salvar, com ``version`` →
-  409 se outra pessoa alterou antes) · ``POST /ativos/itens/{id}/delete``;
-- ``POST /ativos/itens/import`` (multipart) → tarefa durável ``ativos.import``;
+  (app workspace: sidebar + content). ``assets`` is dynamic (Postgres): paginated list with
+  search, filters and server-side sorting, panels ``?edit=<id>``, ``?new=1``, ``?import=1``;
+  the other sections are the mockup fragments (``fragments/``);
+- ``GET /ativos/_skeleton`` · ``/ativos/assets/{demo.css,app.css}`` (no JavaScript — wave 12);
+- ``POST /ativos/assets`` (create) · ``POST /ativos/itens/{id}`` (save, with ``version`` →
+  409 if someone else changed it first) · ``POST /ativos/itens/{id}/delete``;
+- ``POST /ativos/itens/import`` (multipart) → durable job ``ativos.import``;
   ``GET …/import/{job}`` (progresso) · ``GET …/import/{job}/erros.csv``;
-- ``GET /ativos/itens/export.csv`` (streaming, operação pesada) · ``POST …/export.xlsx`` →
+- ``GET /ativos/itens/export.csv`` (streaming, heavy operation) · ``POST …/export.xlsx`` →
   tarefa ``ativos.export_xlsx``; ``GET …/export/{job}`` · ``…/export/{job}/ativos.xlsx`` ·
   ``GET /ativos/itens/modelo.xlsx``;
-- ``/ativos/api/v1/*`` (OpenAPI em ``/ativos/api/openapi.json``; ferramentas MCP geradas dele)
-  e ``/ativos/_hub/*`` (endpoints internos do hub-sdk, token interno).
+- ``/ativos/api/v1/*`` (OpenAPI at ``/ativos/api/openapi.json``; MCP tools generated from it)
+  and ``/ativos/_hub/*`` (hub-sdk internal endpoints, internal token).
 
-Toda ação que grava dados grava também o evento de auditoria no outbox e a marca de
-idempotência **na mesma transação**.
+Every action that writes data also writes the audit event to the outbox and the
+idempotency marker **in the same transaction**.
 """
 
 from __future__ import annotations
@@ -79,19 +79,19 @@ def _int_env(name: str, default: int) -> int:
 
 
 def import_max_mb() -> int:
-    """Tamanho máximo do ``.xlsx`` (``HUB_IMPORT_MAX_MB``, padrão 50); o gateway aplica antes o
-    ``limits.max_upload_mb`` do manifesto."""
+    """Maximum size of the ``.xlsx`` (``HUB_IMPORT_MAX_MB``, default 50); the gateway applies the
+    ``limits.max_upload_mb`` from the manifest first."""
     return _int_env("HUB_IMPORT_MAX_MB", 50)
 
 
 def shared_assets_dir() -> Path:
-    """``demo.css`` compartilhado: ``ATIVOS_SHARED_ASSETS`` ou ``platform/demo-apps/assets``."""
+    """Shared ``demo.css``: ``ATIVOS_SHARED_ASSETS`` or ``platform/demo-apps/assets``."""
     env = os.environ.get("ATIVOS_SHARED_ASSETS", "")
     return Path(env) if env else HERE.parents[3] / "demo-apps" / "assets"
 
 
 def seed_rows() -> int:
-    """Linhas da carga: ``ATIVOS_SEED_ROWS`` ou 300 mil × ``HUB_SEED_SCALE``."""
+    """Seed rows: ``ATIVOS_SEED_ROWS`` or 300k × ``HUB_SEED_SCALE``."""
     if os.environ.get("ATIVOS_SEED_ROWS", ""):
         return _int_env("ATIVOS_SEED_ROWS", 0)
     try:
@@ -102,8 +102,8 @@ def seed_rows() -> int:
 
 
 async def seed_into(c: Any, rows: int) -> None:
-    """Carga idempotente e retomável: lotes de 50 mil gerados no Postgres; lote já presente é
-    pulado (confere o patrimônio da última linha dele)."""
+    """Idempotent, resumable seed load: batches of 50k generated in Postgres; a batch already present is
+    skipped (its last row's asset tag is checked)."""
     t0 = time.monotonic()
     for start in range(1, rows + 1, SEED_CHUNK):
         end = min(start + SEED_CHUNK - 1, rows)
@@ -128,7 +128,7 @@ async def seed(sdk: HubSdk) -> None:
 
 async def run_seed() -> int:
     """``python -m ativos seed``: migra o esquema e faz a carga (300 mil × ``HUB_SEED_SCALE``) fora
-    do app — o equivalente do serviço one-shot ``hub-seed``. Idempotente e retomável."""
+    of the app — the equivalent of the one-shot ``hub-seed`` service. Idempotent and resumable."""
     from hub_sdk.db import app_env
 
     url = app_env(APP_ID, "HUB_DB_URL")
@@ -145,7 +145,7 @@ async def run_seed() -> int:
 
 
 def build_sdk(scratch: Path) -> HubSdk:
-    """SDK do app (o mesmo no processo web e no processo de tarefas)."""
+    """App SDK (the same in the web process and in the jobs process)."""
     pool = saga.LazyPool()
     handlers: list[Handler] = [importer.ImportHandler(), exporter.ExportHandler(scratch)]
     sg = saga.build(pool)
@@ -172,8 +172,8 @@ def build_sdk(scratch: Path) -> HubSdk:
 
 
 async def sweep_scratch(sdk: HubSdk, scratch: Path) -> int:
-    """Limpeza do ``/scratch`` (na subida e a cada hora): exportações com mais de 6 h, ``.part``
-    órfãos e uploads de importação que nenhuma tarefa ativa usa há mais de 1 h."""
+    """Cleanup of ``/scratch`` (at startup and every hour): exports older than 6 h, ``.part``
+    orphans and import uploads that no active job has used for more than 1 h."""
     active: set[str] | None = None
     if sdk.db_ready and sdk.pool is not None:
         try:
@@ -192,7 +192,7 @@ async def sweep_scratch(sdk: HubSdk, scratch: Path) -> int:
 
 
 async def run_worker() -> None:
-    """``python -m ativos worker``: processo de tarefas (``HUB_JOBS_MODE=process``)."""
+    """``python -m ativos worker``: jobs process (``HUB_JOBS_MODE=process``)."""
     await build_sdk(scratch_dir(APP_ID)).run_worker_process()
 
 
@@ -205,15 +205,15 @@ def fold(s: str) -> str:
 
 
 def generic_term(q: str) -> bool:
-    """A busca é o nome da entidade ("ativos", "assets", "patrimônio")? Então os mais recentes
-    respondem (a busca global nunca volta vazia para o app)."""
+    """Is the search the entity name ("ativos", "assets", "patrimônio")? Then the most recent ones
+    answer (global search never comes back empty for the app)."""
     f = fold(q)
     return len(f) >= 4 and any(n.startswith(f) or f.startswith(n) for n in NOUNS)
 
 
 def make_search(sdk: HubSdk) -> Any:
-    """Busca federada (onda 9): nome, patrimônio, categoria ou localização →
-    ``/apps/ativos/assets?q=<patrimônio>``, rótulo no idioma de quem busca."""
+    """Federated search (wave 9): name, asset tag, category or location →
+    ``/apps/ativos/assets?q=<patrimônio>``, label in the searcher's language."""
 
     async def search(q: SearchQuery) -> list[SearchHit]:
         if sdk.pool is None or not sdk.db_ready:
@@ -258,7 +258,7 @@ class State:
         self.templates: dict[str, str] = {}
 
     def fragment(self, name: str, req: Request) -> str | None:
-        """Fragmento estático do mockup com o contexto do hub (usuário, idioma, data, nome do app)."""
+        """Static mockup fragment with the hub context (user, language, date, app name)."""
         body = self.templates.get(name)
         if body is None:
             p = HERE / "fragments" / f"{name}.html"
@@ -279,9 +279,9 @@ def create_app() -> FastAPI:
     sdk.install(app)
     app.add_middleware(I18nMiddleware)
     app.state.ativos = st
-    e2e_hostile.install(app, APP_ID)  # só com HUB_DEMO_E2E_HOSTILE=1 (testes)
+    e2e_hostile.install(app, APP_ID)  # only with HUB_DEMO_E2E_HOSTILE=1 (tests)
     register(app, st)
-    # Onda 11: API v1 (OpenAPI em /ativos/api/openapi.json; MCP interno gerado dele).
+    # Wave 11: API v1 (OpenAPI at /ativos/api/openapi.json; internal MCP generated from it).
     from ativos.api import register_api
 
     register_api(app, st)
@@ -334,7 +334,7 @@ def retry_after(resp: Response, secs: int = 2) -> Response:
 
 
 async def audit_tx(conn: Any, req: Request, action: str, target: str, detail: str) -> None:
-    """Evento de auditoria + marca de idempotência na transação da ação."""
+    """Audit event + idempotency marker in the action's transaction."""
     await outbox.write(conn, outbox.audit(user_of(req), action, target, detail))
     ctx = idem_ctx(req)
     if ctx is not None:
@@ -349,7 +349,7 @@ async def load_asset(st: State, aid: int) -> Any:
 async def list_assets(st: State, f: Filter) -> tuple[int, list[Any]]:
     wh, params = f.where()
     async with st.sdk.pool.acquire() as c:
-        # Onda 8: spans "db …" filhos do span da requisição e traceparent no comentário SQL.
+        # Wave 8: "db …" spans as children of the request span, and traceparent in the SQL comment.
         tc = telemetry.sql_comment()
         async with telemetry.db("SELECT assets (contagem)"):
             total = int(await c.fetchval(f"{tc}SELECT count(*) FROM assets {wh}", *params))
@@ -380,8 +380,8 @@ def register(app: FastAPI, st: State) -> None:
         body = st.fragment("dashboard", req)
         if body is None:
             return not_found()
-        # Onda 8 — feature flag de demonstração `novo-resumo` (Plataforma › Feature flags): o
-        # hub avalia para o usuário e envia em `x-hub-flags`.
+        # Wave 8 — demo feature flag `novo-resumo` (Platform › Feature flags): the
+        # hub evaluates it for the user and sends it in `x-hub-flags`.
         if flags.from_headers(req.headers).is_on(FLAG_NOVO_RESUMO):
             banner = (
                 '<div class="hub-flag-banner" data-flag="novo-resumo" role="note"><strong>Novo resumo</strong> — 1.106 '
@@ -416,12 +416,12 @@ def register(app: FastAPI, st: State) -> None:
             return Response(status_code=404)
         return Response(body, media_type=CSS, headers={"cache-control": "no-cache"})
 
-    # ---- lista, cadastro e edição --------------------------------------------------------
+    # ---- list, registration and editing --------------------------------------------------------
     @app.get("/ativos/assets")
     async def assets_page(req: Request) -> Response:
         n = db_notice(st)
         if n is not None:
-            # Sem banco: o fragmento estático do mockup, com o aviso no topo.
+            # No DB: the static mockup fragment, with the notice at the top.
             t = st.fragment("assets", req) or ""
             return html(t.replace('<div class="app-page-header">', f'{n}<div class="app-page-header">', 1))
         q = dict(req.query_params)
@@ -501,7 +501,7 @@ def register(app: FastAPI, st: State) -> None:
         ok = notice("ok", "Ativo cadastrado", f"Patrimônio {tag} criado.")
         return html(views.editor(row, ok) if row else notice("ok", "Ativo cadastrado", tag), 201)
 
-    # ---- importação ------------------------------------------------------------------------
+    # ---- import ------------------------------------------------------------------------
     @app.api_route("/ativos/itens/import", methods=["POST", "GET"])
     async def start_import(req: Request) -> Response:
         if req.method == "GET":
@@ -512,8 +512,8 @@ def register(app: FastAPI, st: State) -> None:
         def fail(status: int, title: str, text: str) -> Response:
             return html(import_form(notice("error", title, text)), status)
 
-        # O upload só é gravado em disco; a vaga de operação pesada é tomada pelo worker (sem
-        # vaga, a tarefa espera na fila em vez de receber 429).
+        # The upload is only written to disk; the heavy-operation slot is taken by the worker (without
+        # a slot, the job waits in the queue instead of getting a 429).
         try:
             form = await req.form(max_files=1, max_fields=10)
         except Exception:
@@ -560,7 +560,7 @@ def register(app: FastAPI, st: State) -> None:
             "report_path": str(report),
             "login": identity_of(req).user,
         }
-        # Tarefa + auditoria + marca de idempotência na mesma transação.
+        # Job + audit + idempotency marker in the same transaction.
         try:
             async with st.sdk.pool.acquire() as c, c.transaction():
                 job, created = await enqueue_with(
@@ -574,7 +574,7 @@ def register(app: FastAPI, st: State) -> None:
             dest.unlink(missing_ok=True)
             return fail(503, "Não foi possível registrar a importação", str(e))
         if not created:
-            dest.unlink(missing_ok=True)  # reenvio da mesma submissão: a tarefa já existe
+            dest.unlink(missing_ok=True)  # resubmission of the same submission: the job already exists
         st.sdk.wake()
         return html(views.job_panel(importer.job_view(job)), 202)
 
@@ -612,7 +612,7 @@ def register(app: FastAPI, st: State) -> None:
             await asyncio.to_thread(importer.template_xlsx, p)
         return FileResponse(p, headers=download_headers(XLSX, "modelo-ativos.xlsx"))
 
-    # ---- exportação ------------------------------------------------------------------------
+    # ---- export ------------------------------------------------------------------------
     @app.get("/ativos/itens/export.csv")
     async def export_csv(req: Request) -> Response:
         if (n := db_notice(st)) is not None:
@@ -622,7 +622,7 @@ def register(app: FastAPI, st: State) -> None:
             return busy("A exportação", "Exportação em fila…")
         f = Filter.from_query(req.query_params)
         await st.sdk.emit(user_of(req), "Exportação de ativos (CSV)", "ativos.csv", f.describe())
-        # A vaga é devolvida no fim do envio, na desconexão do cliente ou quando o objeto some.
+        # The slot is returned at the end of the send, on client disconnect, or when the object is gone.
         return PermitStreamingResponse(
             exporter.csv_stream(st.sdk.pool, f),
             permit,
@@ -677,7 +677,7 @@ def register(app: FastAPI, st: State) -> None:
             return html(msg, 410)
         return FileResponse(p, headers=download_headers(XLSX, "ativos.xlsx"))
 
-    # Rotas com parâmetro por último: `/itens/import` e `/itens/export.*` têm precedência.
+    # Routes with a parameter go last: `/itens/import` and `/itens/export.*` take precedence.
     @app.api_route("/ativos/itens/{aid}", methods=["POST", "GET"])
     async def update(req: Request, aid: str) -> Response:
         if req.method == "GET" or not aid.isdigit():
@@ -724,7 +724,7 @@ def register(app: FastAPI, st: State) -> None:
                 views.editor(current, notice("error", "Erro ao salvar", importer.db_error_text(e))), 500
             )
         if version is None:
-            # Versão desatualizada (ou o ativo sumiu): 409 com a mensagem.
+            # Outdated version (or the asset is gone): 409 with the message.
             latest = await load_asset(st, aid_n)
             if latest is None:
                 msg = notice(

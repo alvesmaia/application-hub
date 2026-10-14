@@ -1,5 +1,5 @@
-"""Gerador mínimo de PDF 1.4: texto Helvetica
-(WinAnsi), retângulos e linhas, várias páginas A4."""
+"""Minimal PDF 1.4 generator: Helvetica text
+(WinAnsi), rectangles and lines, several A4 pages."""
 
 from __future__ import annotations
 

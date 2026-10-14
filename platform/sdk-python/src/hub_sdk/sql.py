@@ -1,24 +1,24 @@
-"""Consultas SQL a conexões da plataforma (PostgreSQL, MySQL/MariaDB, SQL Server) — mesma API no hub e no dev.
+"""SQL queries to the platform's connections (PostgreSQL, MySQL/MariaDB, SQL Server) — same API in the hub and in dev.
 
 .. code-block:: python
 
-    vendas = sql.connection("vendas-bi")             # None se não vinculada (nem local)
+    vendas = sql.connection("vendas-bi")             # None if not linked (nor local)
     r = await vendas.query("select regiao, sum(valor) as total from vendas where ano = :ano group by 1",
                            {"ano": 2026})
     r.columns, r.rows, r.truncated, r.dicts()
 
-- **No hub**: ``HUB_CONNECTIONS`` lista a conexão (``nome=postgres``…); a consulta vai pelo **broker**
-  (``HUB_STORAGE_URL`` + ``HUB_STORAGE_TOKEN``, ``POST /_hub/sql/{nome}/query``). O app nunca vê a senha;
-  o hub aplica somente leitura, limite de linhas/tempo e audita (sem dados).
-- **No dev** (``hub dev``): ``HUB_SQL_LOCAL_FILE`` = ``.hub/connections.toml``::
+- **On the hub**: ``HUB_CONNECTIONS`` lists the connection (``nome=postgres``…); the query goes through the **broker**
+  (``HUB_STORAGE_URL`` + ``HUB_STORAGE_TOKEN``, ``POST /_hub/sql/{nome}/query``). The app never sees the password;
+  the hub applies read-only, row/time limits and audits (without data).
+- **In dev** (``hub dev``): ``HUB_SQL_LOCAL_FILE`` = ``.hub/connections.toml``::
 
       [connections.vendas-bi]
-      url = "sqlite:///.hub/sample.db"     # ou postgresql://…, mysql+pymysql://… (driver no projeto)
+      url = "sqlite:///.hub/sample.db"     # or postgresql://…, mysql+pymysql://… (driver in the project)
       readonly = true
       max_rows = 5000
 
-  (SQLAlchemy, extra ``hub-sdk[sql]``; parâmetros ``:nome`` iguais aos do broker.)
-- **Banco do próprio app**: :func:`from_engine` (``hub_sdk.db.engine()``) com a mesma interface.
+  (SQLAlchemy, extra ``hub-sdk[sql]``; ``:name`` parameters the same as the broker's.)
+- **The app's own DB**: :func:`from_engine` (``hub_sdk.db.engine()``) with the same interface.
 """
 
 from __future__ import annotations
@@ -62,7 +62,7 @@ class SqlResult:
 
 
 class SqlConnection:
-    """Uma conexão SQL (use :func:`connection` ou :func:`from_engine`)."""
+    """One SQL connection (use :func:`connection` or :func:`from_engine`)."""
 
     def __init__(self, name: str, kind: str) -> None:
         self.name, self.kind = name, kind
@@ -70,13 +70,13 @@ class SqlConnection:
         self.user_sig: str | None = None
 
     def for_user(self, x_hub_user: str | None, x_hub_user_sig: str | None = None) -> SqlConnection:
-        """Registra no hub o usuário da requisição como autor da consulta (com a assinatura do gateway)."""
+        """Records on the hub the request's user as the author of the query (with the gateway's signature)."""
         c = self._copy()
         c.user = x_hub_user or None
         c.user_sig = (x_hub_user_sig or None) if c.user is not None else None
         return c
 
-    def _copy(self) -> SqlConnection:  # pragma: no cover — sobrescrito
+    def _copy(self) -> SqlConnection:  # pragma: no cover — overridden
         raise NotImplementedError
 
     async def query(
@@ -127,7 +127,7 @@ class BrokerSql(SqlConnection):
 
 
 class EngineSql(SqlConnection):
-    """SQLAlchemy (banco local do dev ou o banco do próprio app)."""
+    """SQLAlchemy (the dev's local DB or the app's own DB)."""
 
     def __init__(self, name: str, engine: Any, readonly: bool = True, max_rows: int = 5000) -> None:
         super().__init__(name, "local")
@@ -147,7 +147,7 @@ class EngineSql(SqlConnection):
         t0 = time.monotonic()
         with self.engine.connect() as c:
             res = c.execute(text(sql), params)
-            if not res.returns_rows:  # escrita (só com readonly = false no connections.toml)
+            if not res.returns_rows:  # write (only with readonly = false in connections.toml)
                 c.commit()
                 return SqlResult([], [], False, int((time.monotonic() - t0) * 1000))
             cols = list(res.keys())
@@ -167,7 +167,7 @@ class EngineSql(SqlConnection):
             return await asyncio.to_thread(self._run, sql, params or {}, limit)
         except StorageError:
             raise
-        except Exception as e:  # erro do banco: mesma forma do broker
+        except Exception as e:  # database error: same shape as the broker's
             raise StorageError(502, f"Banco recusou a consulta: {str(e).splitlines()[0][:200]}") from e
 
 
@@ -185,12 +185,12 @@ def _plain(v: Any) -> Any:
 
 
 def from_engine(engine: Any, name: str = "app", readonly: bool = True, max_rows: int = 5000) -> SqlConnection:
-    """O banco do próprio app (``hub_sdk.db.engine()``) com a interface de consultas dos dashboards."""
+    """The app's own DB (``hub_sdk.db.engine()``) with the dashboards' query interface."""
     return EngineSql(name, engine, readonly, max_rows)
 
 
 def local_connections(path: str | os.PathLike[str] | None = None) -> dict[str, dict[str, Any]]:
-    """``[connections.<nome>]`` de ``.hub/connections.toml`` (``HUB_SQL_LOCAL_FILE``)."""
+    """``[connections.<name>]`` from ``.hub/connections.toml`` (``HUB_SQL_LOCAL_FILE``)."""
     p = Path(path or os.environ.get("HUB_SQL_LOCAL_FILE", "") or "")
     if not str(path or os.environ.get("HUB_SQL_LOCAL_FILE", "")) or not p.is_file():
         return {}
@@ -216,11 +216,11 @@ def _local(name: str, cfg: dict[str, Any], base: Path) -> SqlConnection:
 
 
 def connection(name: str) -> SqlConnection | None:
-    """Conexão SQL ``name``: local (``HUB_SQL_LOCAL_FILE``) no dev; pelo broker se vinculada no hub."""
+    """SQL connection ``name``: local (``HUB_SQL_LOCAL_FILE``) in dev; through the broker if linked in the hub."""
     file = os.environ.get("HUB_SQL_LOCAL_FILE", "").strip()
     if file:
         cfg = local_connections(file).get(name)
-        # caminhos relativos do sqlite valem a partir da raiz do projeto (pai de .hub/)
+        # relative sqlite paths are resolved from the project root (parent of .hub/)
         return _local(name, cfg, Path(file).resolve().parent.parent) if cfg is not None else None
     kind = next((k for n, k in bound() if n == name and k in SQL_KINDS), None)
     base = os.environ.get("HUB_STORAGE_URL", "")

@@ -1,18 +1,18 @@
 """``python -m coletor [serve|worker|--health|openapi]``.
 
-- ``serve`` (padrão): uvicorn em ``COLETOR_HOST`` (padrão 127.0.0.1; a imagem usa
-  0.0.0.0) e ``PORT`` (padrão 8080), com ``UVICORN_WORKERS`` processos (padrão 1 — ver
-  o dimensionamento em ``loadtest/RESULTADOS.md``) e 8 s de drenagem no SIGTERM. Com
-  ``HUB_JOBS_MODE=process`` (padrão da imagem) inicia e supervisiona também o processo de
-  tarefas (``worker``): religado com espera crescente se morrer (o web continua de pé) e recebe o SIGTERM **na hora**, em paralelo com a drenagem do
-  web — com 1 processo web pelo gancho do lifespan; com ``UVICORN_WORKERS>1`` pelo tratador
-  de sinal do processo pai (:class:`HubMultiprocess`). Total ≤ 9,5 s (``docker stop`` = 10 s).
-  Se o processo de tarefas morrer por SIGKILL (OOM do cgroup), o próximo sobe com
-  ``HUB_JOBS_KILLED_PID`` e marca ``failed`` a tarefa que estava na fase de memória.
-- ``worker``: só o processo de tarefas duráveis.
-- ``--health``: ``GET /coletor`` no próprio app (HEALTHCHECK da imagem, sem curl);
-  sai 0 com 200.
-- ``openapi``: OpenAPI da API v1 (o ``hub pack`` embute como openapi.json).
+- ``serve`` (default): uvicorn on ``COLETOR_HOST`` (default 127.0.0.1; the image uses
+  0.0.0.0) and ``PORT`` (default 8080), with ``UVICORN_WORKERS`` processes (default 1 — see
+  the sizing in ``loadtest/RESULTADOS.md``) and 8 s of drain on SIGTERM. With
+  ``HUB_JOBS_MODE=process`` (the image default) it also starts and supervises the jobs process
+  jobs (``worker``): restarted with increasing backoff if it dies (the web keeps running) and receives SIGTERM **immediately**, in parallel with the drain of the
+  with 1 web process via the lifespan hook; with ``UVICORN_WORKERS>1`` via the signal handler
+  of the parent process (:class:`HubMultiprocess`). Total ≤ 9.5 s (``docker stop`` = 10 s).
+  If the jobs process dies from SIGKILL (cgroup OOM), the next one starts with
+  ``HUB_JOBS_KILLED_PID`` and marks as ``failed`` the job that was in the memory phase.
+- ``worker``: only the durable jobs process.
+- ``--health``: ``GET /coletor`` on the app itself (image HEALTHCHECK, no curl);
+  exits 0 with 200.
+- ``openapi``: OpenAPI of API v1 (``hub pack`` embeds it as openapi.json).
 """
 
 from __future__ import annotations
@@ -42,19 +42,19 @@ def health() -> int:
     return 0 if ok else 1
 
 
-# Prazo total do desligamento, abaixo dos 10 s do `docker stop`.
+# Total shutdown time, below the 10 s of `docker stop`.
 STOP_BUDGET_S = 9.5
 KILLED_PID_ENV = "HUB_JOBS_KILLED_PID"
 
 
 def killed_by_sigkill(code: int | None) -> bool:
-    """Saída por SIGKILL (Popen: -9; shell: 137) — o que o OOM killer do cgroup faz."""
+    """SIGKILL exit (Popen: -9; shell: 137) — what the cgroup OOM killer does."""
     return code in (-9, 137)
 
 
 class WorkerSupervisor:
-    """Processo de tarefas filho do web: religado com espera crescente (1 → 30 s) se sair
-    sem ser pedido; SIGTERM repassado na hora quando o web começa a desligar."""
+    """Child jobs process of the web: restarted with increasing backoff (1 → 30 s) if it exits
+    without being asked; SIGTERM forwarded immediately when the web starts shutting down."""
 
     def __init__(self) -> None:
         import threading
@@ -110,7 +110,7 @@ class WorkerSupervisor:
                 p.send_signal(signal.SIGTERM)
 
     def remaining(self, budget: float = STOP_BUDGET_S) -> float:
-        """Quanto ainda cabe esperar o processo de tarefas, contando desde o SIGTERM."""
+        """How much longer to wait for the jobs process, counted from SIGTERM."""
         if self.stop_at is None:
             return budget
         return max(0.2, budget - (time.monotonic() - self.stop_at))
@@ -128,9 +128,9 @@ class WorkerSupervisor:
 
 
 def hub_multiprocess_class() -> type:
-    """Supervisor multiprocesso do uvicorn que repassa o SIGTERM/SIGINT ao processo de
-    tarefas **no próprio tratador de sinal** (o do uvicorn só enfileira o sinal; com
-    ``workers>1`` o processo pai não tem lifespan, então o gancho do SDK não dispararia)."""
+    """Multiprocess uvicorn supervisor that forwards SIGTERM/SIGINT to the jobs process
+    **inside its own signal handler** (uvicorn's only queues the signal; with
+    ``workers>1`` the parent process has no lifespan, so the SDK hook would not fire)."""
     import signal as _signal
 
     from uvicorn.supervisors import Multiprocess
@@ -191,7 +191,7 @@ def main(argv: list[str] | None = None) -> int:
     if cmd == "--health":
         return health()
     if cmd == "openapi":
-        # Onda 11: OpenAPI da API v1 (o `hub pack` embute como openapi.json).
+        # Wave 11: OpenAPI of API v1 (`hub pack` embeds it as openapi.json).
         from coletor.app import create_app
 
         doc = json.dumps(create_app().state.hub_api_doc(), ensure_ascii=False, indent=2, sort_keys=True)

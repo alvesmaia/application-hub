@@ -1,12 +1,12 @@
 """Outbox transacional (``hub_outbox``).
 
-O app grava o evento **na mesma transação** da ação de negócio (:func:`write`); se a
-transação não confirma, o evento não existe; se confirma, fica pendente até o hub buscá-lo
+The app writes the event **in the same transaction** as the business action (:func:`write`); if the
+transaction does not commit, the event does not exist; if it commits, it stays pending until the hub fetches it
 (``GET /{app}/_hub/outbox``) e confirmar (``POST /{app}/_hub/outbox/ack``). O hub deduplica
-por ``event_id``: reentregas têm efeito uma vez só.
+by ``event_id``: redeliveries have a single effect.
 
-Sem banco, :meth:`Outbox.memory` guarda os eventos em memória (perdidos se o processo
-cair — só para apps sem Postgres).
+Without a DB, :meth:`Outbox.memory` keeps the events in memory (lost if the process
+dies — only for apps without Postgres).
 """
 
 from __future__ import annotations
@@ -22,12 +22,12 @@ from hub_sdk.schema import new_id
 log = logging.getLogger("hub_sdk.outbox")
 
 AUDIT = "audit"
-# Onda 9: Inbox do hub (``meta`` com título, texto, link e destino).
+# Wave 9: hub Inbox (``meta`` with title, text, link and target).
 NOTIFICATION = "notification"
 APPROVAL_REQUEST = "approval_request"
-# Máximo de eventos pendentes guardados no modo em memória.
+# Maximum pending events kept in in-memory mode.
 MEM_CAP = 10_000
-# Página máxima pedida ao outbox.
+# Maximum page requested from the outbox.
 MAX_PENDING = 1000
 
 
@@ -38,13 +38,13 @@ class Event:
     action: str
     target: str = ""
     detail: str = ""
-    # Tipos ``notification``/``approval_request``: título, texto, link, destino.
+    # ``notification``/``approval_request`` types: title, text, link, target.
     meta: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
 class Stored:
-    """Evento como o hub o recebe (JSON do ``GET /_hub/outbox``)."""
+    """Event as the hub receives it (JSON of ``GET /_hub/outbox``)."""
 
     id: int
     event_id: str
@@ -68,8 +68,8 @@ def _cut(s: str, n: int) -> str:
 
 
 def audit(user: str, action: str, target: str = "", detail: str = "") -> Event:
-    """Evento de auditoria (usuário ≤ 120, ação ≤ 80, alvo ≤ 200, detalhe ≤ 500; sem
-    caracteres de controle)."""
+    """Audit event (user ≤ 120, action ≤ 80, target ≤ 200, detail ≤ 500; without
+    control characters)."""
     return Event(
         kind=AUDIT,
         user=_cut(user, 120),
@@ -114,8 +114,8 @@ def notification(
     to_roles: list[str] | tuple[str, ...] = (),
     level: str = "info",
 ) -> Event:
-    """Notificação para a Inbox do hub. ``link`` = caminho do próprio app (``/{id}/…``);
-    ``to_users`` (logins) / ``to_roles`` (funções) vazios → só quem causou (``user``)."""
+    """Notification for the hub Inbox. ``link`` = path of the app itself (``/{id}/…``);
+    ``to_users`` (logins) / ``to_roles`` (roles) empty → only whoever caused it (``user``)."""
     return Event(
         kind=NOTIFICATION,
         user=_cut(user, 120),
@@ -134,7 +134,7 @@ def approval_request(
     to_roles: list[str] | tuple[str, ...] = (),
     level: str = "warning",
 ) -> Event:
-    """Pedido de aprovação: a decisão volta em ``POST /{app}/_hub/approvals/{approval_id}``
+    """Approval request: the decision comes back at ``POST /{app}/_hub/approvals/{approval_id}``
     (ver :mod:`hub_sdk.approvals`)."""
     return Event(
         kind=APPROVAL_REQUEST,
@@ -153,7 +153,7 @@ def _payload(ev: Event) -> dict[str, Any]:
 
 
 async def write(conn: Any, ev: Event) -> str:
-    """Grava ``ev`` com ``conn`` — normalmente a transação da ação. Devolve o ``event_id``."""
+    """Writes ``ev`` with ``conn`` — usually the action's transaction. Returns the ``event_id``."""
     eid = new_id("evt")
     await conn.execute(
         "INSERT INTO hub_outbox (event_id, kind, user_name, payload) VALUES ($1, $2, $3, $4)",
@@ -166,7 +166,7 @@ async def write(conn: Any, ev: Event) -> str:
 
 
 class Outbox:
-    """Outbox no Postgres (``pool``) ou em memória (``pool=None``)."""
+    """Outbox in Postgres (``pool``) or in memory (``pool=None``)."""
 
     def __init__(self, pool: Any | None) -> None:
         self.pool = pool
@@ -187,8 +187,8 @@ class Outbox:
         return self.pool is not None
 
     async def emit(self, ev: Event) -> str | None:
-        """Publica fora de uma transação (ações sem banco: exportação, consulta). Falha
-        só vai para o log."""
+        """Publishes outside a transaction (actions without a DB: export, query). Failure
+        only goes to the log."""
         if self.pool is not None:
             try:
                 async with self.pool.acquire() as c:
@@ -215,7 +215,7 @@ class Outbox:
             return st.event_id
 
     async def pending(self, after: int, limit: int) -> list[Stored]:
-        """Eventos não confirmados com ``id > after``, em ordem."""
+        """Unconfirmed events with ``id > after``, in order."""
         limit = max(1, min(limit, MAX_PENDING))
         if self.pool is not None:
             async with self.pool.acquire() as c:
@@ -247,7 +247,7 @@ class Outbox:
             return [e for e, acked in self._mem if not acked and e.id > after][:limit]
 
     async def ack(self, event_ids: list[str]) -> int:
-        """Confirma; devolve quantos passaram a confirmados (repetir é inócuo)."""
+        """Confirms; returns how many became confirmed (repeating is harmless)."""
         if self.pool is not None:
             async with self.pool.acquire() as c:
                 status = await c.execute(

@@ -1,4 +1,4 @@
-"""Markup das telas dinâmicas da Central de Serviços."""
+"""Markup of the Service Center's dynamic screens."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ REPORTS_ICON = (
 
 
 def inject_nav(body: str, section: str) -> str:
-    """Item "Relatórios" na sidebar da Central de Serviços (em todas as páginas)."""
+    """\"Reports\" item in the Service Center sidebar (on all pages)."""
     active = "active" if section == "reports" else ""
     item = f'<a class="nav-item {active}" href="/apps/servicos/reports">{REPORTS_ICON}<span>Relatórios</span></a>'
     out = body

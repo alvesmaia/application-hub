@@ -1,5 +1,5 @@
-"""App por HTTP: páginas, ficha do fornecedor, anexos (upload/download/exclusão), consulta
-cadastral, ficha em PDF, idioma, busca federada e auditoria no outbox."""
+"""App over HTTP: pages, supplier record, attachments (upload/download/delete), registry
+lookup, PDF record sheet, language, federated search and outbox audit."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ HUB = {"x-hub-internal-token": TOKEN}
 
 
 async def outbox_actions(c: httpx.AsyncClient) -> list[str]:
-    await asyncio.sleep(0.05)  # a auditoria sai em segundo plano
+    await asyncio.sleep(0.05)  # the audit goes out in the background
     r = await c.get("/fornecedores/_hub/outbox?limit=500", headers=HUB)
     return [e["action"] for e in r.json()["events"] if e["kind"] == "audit"]
 
@@ -41,7 +41,7 @@ async def test_pages_and_assets_without_store(bare: Running) -> None:
     for p in ("/fornecedores/_skeleton", "/fornecedores/assets/app.css", "/fornecedores/assets/demo.css"):
         assert (await c.get(p)).status_code == 200, p
     assert "--app-primary" in (await c.get("/fornecedores/assets/app.css")).text
-    assert (await c.get("/fornecedores/assets/x.js")).status_code == 404  # sem JavaScript próprio
+    assert (await c.get("/fornecedores/assets/x.js")).status_code == 404  # no own JavaScript
     assert (await c.get("/fornecedores/nada")).status_code == 404
     assert (await c.get("/fornecedores/_hub/nada", headers=HUB)).status_code == 404
     assert (await c.get("/outro")).status_code == 404
@@ -50,8 +50,8 @@ async def test_pages_and_assets_without_store(bare: Running) -> None:
         "/fornecedores/suppliers/FOR-0271/attachments",
         "/fornecedores/suppliers/FOR-0271/attachments/a.pdf/delete",
     ):
-        assert (await c.get(p)).status_code == 404, p  # só POST
-    # ficha do fornecedor sem object store
+        assert (await c.get(p)).status_code == 404, p  # POST only
+    # supplier record without object store
     d = await c.get("/fornecedores/indicators", params={"id": "FOR-0271"})
     assert "Object store não configurado" in d.text and 'id="lookup-box"' in d.text
     assert d.text.index("FICHA DO FORNECEDOR") < d.text.index("app2-directory-summary")

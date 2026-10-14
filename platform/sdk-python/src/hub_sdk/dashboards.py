@@ -1,8 +1,8 @@
-"""Kit de dashboards (BI leve) dos apps: datasets SQL, filtros, KPIs, gráficos SVG no servidor e exportação.
+"""Dashboard kit (light BI) for the apps: SQL datasets, filters, KPIs, server-side SVG charts and export.
 
-Sem JavaScript do app: os gráficos saem prontos em SVG/HTML (classes ``hub-dash-*`` com os tokens do hub,
-claro e escuro), os filtros são um ``<form method="get">`` e as tabelas usam os comportamentos do hub
-(``data-hub-filter``, ``data-hub-table``). Exportação CSV (``;``, Excel pt-BR) e XLSX (``openpyxl``
+No app JavaScript: the charts come out ready as SVG/HTML (``hub-dash-*`` classes with the hub tokens,
+light and dark), the filters are a ``<form method="get">`` and the tables use the hub's behaviors
+(``data-hub-filter``, ``data-hub-table``). CSV export (``;``, Excel pt-BR) and XLSX (``openpyxl``
 write-only, extra ``hub-sdk[dashboards]``).
 
 .. code-block:: python
@@ -13,7 +13,7 @@ write-only, extra ``hub-sdk[dashboards]``).
     VENDAS = dash.Dataset(
         "vendas_mes",
         "select mes, sum(valor) as total from vendas where (:regiao = '' or regiao = :regiao) group by mes",
-        source="vendas-bi",                      # conexão SQL vinculada (ou dev: .hub/connections.toml)
+        source="vendas-bi",                      # linked SQL connection (or dev: .hub/connections.toml)
         params=("regiao",), ttl=60,
     )
     board = dash.Dashboard("Vendas", [VENDAS], [REGIAO])
@@ -21,10 +21,10 @@ write-only, extra ``hub-sdk[dashboards]``).
     values = board.values(request.query_params)
     r = await board.load("vendas_mes", values)
     svg = dash.line_chart(r, x="mes", y=["total"], title="Vendas por mês", unit="R$")
-    csv = dash.to_csv(r)                         # ou dash.export_response(r, "xlsx", "vendas")
+    csv = dash.to_csv(r)                         # or dash.export_response(r, "xlsx", "vendas")
 
-No template (Jinja2): ``{{ svg }}`` (já é ``Markup``) e ``{{ dash.css_href(base) }}``; sirva
-:data:`CSS` como asset do app (``dashboards.css``).
+No template (Jinja2): ``{{ svg }}`` (already a ``Markup``) and ``{{ dash.css_href(base) }}``; serve
+:data:`CSS` as the app's asset (``dashboards.css``).
 """
 
 from __future__ import annotations
@@ -73,13 +73,13 @@ W, H = 640, 260
 PAD_L, PAD_R, PAD_T, PAD_B = 56, 16, 16, 40
 
 
-# ---- parâmetros e datasets ----------------------------------------------------------------------
+# ---- parameters and datasets ----------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
 class Param:
-    """Filtro do dashboard. ``kind``: ``select`` (``options`` = [(valor, rótulo)]), ``text``, ``date``,
-    ``number``. O valor vem da query string, validado aqui (nunca SQL cru: vai como parâmetro ``:nome``)."""
+    """Dashboard filter. ``kind``: ``select`` (``options`` = [(value, label)]), ``text``, ``date``,
+    ``number``. The value comes from the query string, validated here (never raw SQL: it goes as a ``:name`` parameter)."""
 
     name: str
     label: str
@@ -112,9 +112,9 @@ Source = str | SqlConnection | Callable[[], SqlConnection | None]
 
 @dataclass
 class Dataset:
-    """Consulta nomeada: ``sql`` com parâmetros ``:nome`` (só os listados em ``params``), contra uma conexão
-    SQL vinculada (``source`` = nome), uma :class:`hub_sdk.sql.SqlConnection` ou uma função que a devolve.
-    ``ttl`` = segundos de cache por combinação de parâmetros (0 = sem cache)."""
+    """Named query: ``sql`` with ``:name`` parameters (only those listed in ``params``), against a
+    linked SQL connection (``source`` = name), a :class:`hub_sdk.sql.SqlConnection`, or a function that returns one.
+    ``ttl`` = cache seconds per combination of parameters (0 = no cache)."""
 
     name: str
     sql: str
@@ -142,7 +142,7 @@ class Dashboard:
     _locks: dict[tuple[Any, ...], asyncio.Lock] = field(default_factory=dict, repr=False)
 
     def values(self, query: Mapping[str, str]) -> dict[str, Any]:
-        """Valores validados dos filtros a partir da query string."""
+        """Validated filter values from the query string."""
         return {p.name: p.parse(query.get(p.name)) for p in self.params}
 
     def dataset(self, name: str) -> Dataset:
@@ -154,7 +154,7 @@ class Dashboard:
     async def load(
         self, name: str, values: Mapping[str, Any] | None = None, conn: SqlConnection | None = None
     ) -> SqlResult:
-        """Executa (ou devolve do cache) o dataset ``name`` com os valores dos seus parâmetros."""
+        """Runs (or returns from the cache) the dataset ``name`` with the values of its parameters."""
         ds = self.dataset(name)
         vals = values or {}
         args = {k: vals.get(k, "") for k in ds.params}
@@ -164,7 +164,7 @@ class Dashboard:
         if ds.ttl > 0 and hit and now - hit[0] < ds.ttl:
             return hit[1]
         lock = self._locks.setdefault(key, asyncio.Lock())
-        async with lock:  # uma consulta por combinação, mesmo com muitos pedidos simultâneos
+        async with lock:  # one query per combination, even with many simultaneous requests
             hit = self._cache.get(key)
             if ds.ttl > 0 and hit and time.monotonic() - hit[0] < ds.ttl:
                 return hit[1]
@@ -179,7 +179,7 @@ class Dashboard:
         self._cache.clear()
 
 
-# ---- formatação ---------------------------------------------------------------------------------
+# ---- formatting ---------------------------------------------------------------------------------
 
 
 def fmt(v: Any, unit: str = "", places: int | None = None) -> str:
@@ -223,15 +223,15 @@ def _ticks(lo: float, hi: float, n: int = 4) -> list[float]:
     start = math.floor(lo / step) * step
     out: list[float] = []
     v = start
-    while not out or out[-1] < hi - 1e-9:  # o último passo cobre o máximo
+    while not out or out[-1] < hi - 1e-9:  # the last step covers the maximum
         out.append(round(v, 10))
         v += step
     return out
 
 
 def _safe(html: str) -> Markup:
-    """HTML montado aqui: todo valor vindo de dados/usuário passou por :func:`_attr` (escape)."""
-    return Markup(html)  # noqa: S704 — só marcação própria, valores escapados
+    """HTML built here: every value coming from data/user went through :func:`_attr` (escaping)."""
+    return Markup(html)  # noqa: S704 — only own markup, escaped values
 
 
 def _attr(s: Any) -> str:
@@ -242,7 +242,7 @@ def _attr(s: Any) -> str:
 
 
 def kpi(label: str, value: Any, unit: str = "", hint: str = "", delta: float | None = None) -> Markup:
-    """Cartão de indicador. ``delta`` (fração, ex. 0.12 = +12%) vira seta e cor (subiu/caiu)."""
+    """KPI card. ``delta`` (fraction, e.g. 0.12 = +12%) becomes an arrow and a color (up/down)."""
     d = ""
     if delta is not None:
         cls = "up" if delta > 0 else "down" if delta < 0 else "flat"
@@ -259,7 +259,7 @@ def kpis(items: Iterable[Markup]) -> Markup:
     return _safe('<div class="hub-dash-kpis">' + "".join(str(i) for i in items) + "</div>")
 
 
-# ---- gráficos -----------------------------------------------------------------------------------
+# ---- charts ---------------------------------------------------------------------------------
 
 Series = Sequence[tuple[str, Sequence[Any]]]
 
@@ -334,7 +334,7 @@ def chart(
     title: str = "",
     unit: str = "",
 ) -> Markup:
-    """Gráfico SVG: ``kind`` = ``line`` | ``area`` | ``bar`` | ``pie`` | ``donut``. ``series`` = [(nome, valores)]."""
+    """SVG chart: ``kind`` = ``line`` | ``area`` | ``bar`` | ``pie`` | ``donut``. ``series`` = [(name, values)]."""
     labs = [str(v) for v in labels]
     ser = [(n, [_num(v) for v in vals][: len(labs)]) for n, vals in series][:SERIES]
     if kind in ("pie", "donut"):
@@ -458,7 +458,7 @@ def donut_chart(r: SqlResult, label: str, value: str, title: str = "", unit: str
     return chart("donut", labels, series, title, unit)
 
 
-# ---- tabela, filtros e exportação ---------------------------------------------------------------
+# ---- table, filters and export ---------------------------------------------------------------
 
 
 def table(
@@ -469,8 +469,8 @@ def table(
     filter_label: str = "Filtrar linhas",
     units: Mapping[str, str] | None = None,
 ) -> Markup:
-    """Tabela com filtro e paginação do hub (``data-hub-filter``/``data-hub-table``). ``columns`` =
-    [(coluna, rótulo)] (padrão: todas)."""
+    """Table with the hub's filter and pagination (``data-hub-filter``/``data-hub-table``). ``columns`` =
+    [(column, label)] (default: all)."""
     cols = list(columns or [(c, c) for c in r.columns])
     idx = [r.columns.index(c) for c, _ in cols]
     unit_of: dict[str, str] = dict(units) if units is not None else {}
@@ -515,7 +515,7 @@ def table(
 def filters_form(
     params: Sequence[Param], values: Mapping[str, Any], action: str, submit: str = "Aplicar"
 ) -> Markup:
-    """Filtros como ``<form method="get">`` (sem JS): cada mudança é aplicada pelo botão."""
+    """Filters as ``<form method="get">`` (no JS): each change is applied by the button."""
     fields = []
     for p in params:
         fid = f"hub-dash-p-{_attr(p.name)}"
@@ -538,7 +538,7 @@ def filters_form(
 
 
 def export_links(href: str, values: Mapping[str, Any]) -> Markup:
-    """Links «Exportar CSV/XLSX» para a rota de exportação do app (``?format=csv|xlsx`` + filtros)."""
+    """«Export CSV/XLSX» links to the app's export route (``?format=csv|xlsx`` + filters)."""
     from urllib.parse import urlencode
 
     q = {k: str(v) for k, v in values.items() if str(v)}
@@ -558,8 +558,8 @@ def to_csv(r: SqlResult) -> bytes:
 
 
 def to_xlsx(r: SqlResult, sheet: str = "Dados") -> bytes:
-    """XLSX em modo write-only (``openpyxl``; extra ``hub-sdk[dashboards]``). Texto com cara de fórmula é
-    neutralizado como no CSV."""
+    """XLSX in write-only mode (``openpyxl``; extra ``hub-sdk[dashboards]``). Text that looks like a formula is
+    neutralized as in the CSV."""
     from openpyxl import Workbook
 
     wb = Workbook(write_only=True)
@@ -573,14 +573,14 @@ def to_xlsx(r: SqlResult, sheet: str = "Dados") -> bytes:
 
 
 def export_response(r: SqlResult, fmt_: str, filename: str) -> Response:
-    """Resposta de download (``csv`` ou ``xlsx``) com ``Content-Disposition`` e ``no-store``."""
+    """Download response (``csv`` or ``xlsx``) with ``Content-Disposition`` and ``no-store``."""
     if fmt_ == "xlsx":
         ctype = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         return Response(to_xlsx(r), headers=download_headers(ctype, f"{filename}.xlsx"))
     return Response(to_csv(r), headers=download_headers("text/csv; charset=utf-8", f"{filename}.csv"))
 
 
-# ---- estilo (servido pelo app como asset) -------------------------------------------------------
+# ---- style (served by the app as an asset) -------------------------------------------------------
 
 CSS = """/* hub_sdk.dashboards — gráficos e KPIs com os tokens do hub (claro e escuro). */
 :root{--hub-dash-c0:#3b5bdb;--hub-dash-c1:#1f9d5a;--hub-dash-c2:#b87500;--hub-dash-c3:#7a5af8;--hub-dash-c4:#d64545;--hub-dash-c5:#0e8c80}

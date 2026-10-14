@@ -1,5 +1,5 @@
-"""hub_sdk.storage (onda 10): confinamento de caminhos (vetores compartilhados),
-URL pré-assinada S3 e o cliente do broker contra um broker falso."""
+"""hub_sdk.storage (wave 10): path confinement (shared vectors),
+S3 pre-signed URL and the broker client against a fake broker."""
 
 from __future__ import annotations
 
@@ -176,10 +176,10 @@ async def test_broker_connection_roundtrip(broker: str, monkeypatch: pytest.Monk
         "x-hub-user e assinatura repassados"
     )
     assert c.for_user(None, "v1.1.abc").user_sig is None, "assinatura sem usuário não vai"
-    # 503 com Retry-After curto: repetido sozinho (operações repetíveis).
+    # 503 with a short Retry-After: retried on its own (repeatable operations).
     FakeBroker.fail_next.append(503)
     assert len(await c.list("CT-1")) == 1
-    # Caminho que escapa: nunca sai do app.
+    # Escaping path: never leaves the app.
     before = len(FakeBroker.seen)
     for bad in ["../x", "a/../../b", "%2e%2e/x"]:
         with pytest.raises(storage.StorageError):

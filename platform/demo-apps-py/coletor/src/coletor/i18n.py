@@ -1,5 +1,5 @@
-"""Traduções do Coletor (en). A chave é o texto em pt-BR (:mod:`hub_sdk.locale`);
-os valores de dados (status, categorias) continuam gravados em pt-BR."""
+"""Coletor translations (en). The key is the pt-BR text (:mod:`hub_sdk.locale`);
+data values (status, categories) keep being stored in pt-BR."""
 
 from __future__ import annotations
 

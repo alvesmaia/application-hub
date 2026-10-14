@@ -1,11 +1,11 @@
-"""MCP interno do app (onda 11): ferramentas **geradas do OpenAPI** do app em
-``POST /{app}/_hub/mcp`` (JSON-RPC 2.0, MCP 2025-06-18) — só para o hub, pela rede
-interna, com ``x-hub-internal-token`` (o gateway recusa ``/_hub/*`` do navegador).
+"""Internal MCP of the app (wave 11): tools **generated from the app's OpenAPI** at
+``POST /{app}/_hub/mcp`` (JSON-RPC 2.0, MCP 2025-06-18) — only for the hub, over the internal
+network, with ``x-hub-internal-token`` (the gateway refuses the browser's ``/_hub/*``).
 
-Cada operação sob ``/{app}/api/`` vira uma
-ferramenta (``operationId``), com entrada = parâmetros + ``body``; ``tools/call`` executa a
-operação **dentro do próprio app** (chamada ASGI em processo, mesmos middlewares),
-repassando a identidade que o hub mandou. ``HUB_MCP_ENABLED=0`` desliga (404).
+Each operation under ``/{app}/api/`` becomes a
+tool (``operationId``), with input = parameters + ``body``; ``tools/call`` runs the
+operation **inside the app itself** (in-process ASGI call, same middlewares),
+passing on the identity the hub sent. ``HUB_MCP_ENABLED=0`` turns it off (404).
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ from hub_sdk.schema import ct_eq
 PROTOCOL = "2025-06-18"
 SUPPORTED = ("2025-11-25", "2025-06-18", "2025-03-26")
 MAX_RESULT = 256 * 1024
-TOKEN_HEADER = "x-hub-internal-token"  # noqa: S105 — nome do cabeçalho
+TOKEN_HEADER = "x-hub-internal-token"  # noqa: S105 — header name
 FORWARD = ("x-hub-user", "x-hub-user-sig", "x-hub-locale", "x-hub-flags", "traceparent")
 METHODS = ("get", "head", "post", "put", "patch", "delete")
 
@@ -47,14 +47,14 @@ class ToolDef:
 
 
 def _read_only(m: str, op: dict[str, Any]) -> bool:
-    """Onda 11 (I3): leitura só GET/HEAD ou ``x-hub-readonly: true``."""
+    """Wave 11 (I3): read only GET/HEAD or ``x-hub-readonly: true``."""
     return m in ("get", "head") or op.get("x-hub-readonly") is True
 
 
 def _destructive(m: str, op: dict[str, Any]) -> bool:
-    """Toda mutação (POST/PUT/PATCH/DELETE) é destrutiva por padrão — o hub pede
-    aprovação; ``x-hub-destructive: false`` não dispensa. É só a dica do app: o hub
-    classifica pelo ``openapi.json`` do pacote e pela lista revisada ``mcp.confirm_exempt``."""
+    """Every mutation (POST/PUT/PATCH/DELETE) is destructive by default — the hub asks for
+    approval; ``x-hub-destructive: false`` does not waive it. It is only the app's hint: the hub
+    classifies by the package's ``openapi.json`` and by the reviewed list ``mcp.confirm_exempt``."""
     if op.get("x-hub-destructive") is True:
         return True
     return not _read_only(m, op)
@@ -129,7 +129,7 @@ def _inline_refs(schema: Any, doc: dict[str, Any], depth: int = 0) -> Any:
     if isinstance(schema, dict):
         ref = schema.get("$ref")
         if isinstance(ref, str) and ref.startswith("#/"):
-            if depth > 8:  # só $ref aninhados contam: corta ciclos sem mutilar esquemas fundos
+            if depth > 8:  # only nested $ref count: cuts cycles without mangling deep schemas
                 return {}
             node: Any = doc
             for part in ref[2:].split("/"):
@@ -144,7 +144,7 @@ def _inline_refs(schema: Any, doc: dict[str, Any], depth: int = 0) -> Any:
 async def asgi_call(
     app: Any, method: str, path: str, query: str, headers: list[tuple[bytes, bytes]], body: bytes
 ) -> tuple[int, bytes]:
-    """Requisição HTTP em processo contra uma aplicação ASGI (sem rede, sem httpx)."""
+    """HTTP request in-process against an ASGI application (no network, no httpx)."""
     scope = {
         "type": "http",
         "asgi": {"version": "3.0"},
@@ -209,7 +209,7 @@ def router(
     version: str = "1",
 ) -> APIRouter:
     """``POST /{app_id}/_hub/mcp``. ``app``/``doc``: o app ASGI completo e o OpenAPI
-    (resolvidos na primeira chamada)."""
+    (resolved on the first call)."""
     r = APIRouter(include_in_schema=False)
     enabled = os.environ.get("HUB_MCP_ENABLED", "1").strip() != "0"
     cache: dict[str, list[ToolDef]] = {}
@@ -224,8 +224,8 @@ def router(
         t = next((x for x in tools() if x.name == name), None)
         if t is None:
             raise _RpcError(-32602, f"ferramenta desconhecida: {name}")
-        # Onda 11 (N7): o hub manda a operação que classificou (do openapi.json do pacote);
-        # se o nome aponta para outra operação no app no ar, a chamada é recusada.
+        # Wave 11 (N7): the hub sends the operation it classified (from the package's openapi.json);
+        # if the name points to another operation in the running app, the call is refused.
         want = req.headers.get("x-hub-mcp-op")
         if want is not None and want != f"{t.method} {t.path}":
             raise _RpcError(

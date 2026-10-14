@@ -1,4 +1,4 @@
-"""API v1, OpenAPI (igual ao contrato empacotado em samples/), MCP interno e a saga "cadastro documentado"."""
+"""API v1, OpenAPI (same as the contract packaged in samples/), internal MCP and the "documented registration" saga."""
 
 from __future__ import annotations
 
@@ -82,7 +82,7 @@ async def test_api_crud_search_export(db_url: str, running: Running) -> None:
     assert (await c.get(f"{BASE}/assets/99999999")).status_code == 404
     lst = (await c.get(f"{BASE}/assets", params={"q": "API-1"})).json()
     assert lst["total"] == 1 and lst["limit"] == 50 and lst["items"][0]["acquisition_value_cents"] == 123456
-    # campos ausentes mantêm o valor atual (inclusive valor e data)
+    # missing fields keep the current value (including value and date)
     up = await c.put(f"{BASE}/assets/{a['id']}", json={"version": 1, "fields": {"name": "Renomeado"}})
     assert up.status_code == 200
     j = up.json()
@@ -131,7 +131,7 @@ async def test_saga_creates_notifies_and_compensates(
     j = await _wait_job(c, ok.json()["job"])
     assert j["status"] == "done" and j["result"]["saga"] == "completed"
     assert (await c.get(f"{BASE}/assets", params={"q": "SG-1"})).json()["total"] == 1
-    # falha injetada no último passo: o ativo criado é desfeito
+    # injected failure in the last step: the created asset is undone
     monkeypatch.setenv("HUB_DEMO_SAGA_FAULTS", "1")
     bad = await c.post(
         f"{BASE}/assets/registrations", json={"tag": "SG-2", "name": "Saga falha", "falhar_em": "notificar"}
@@ -139,7 +139,7 @@ async def test_saga_creates_notifies_and_compensates(
     j2 = await _wait_job(c, bad.json()["job"])
     assert j2["status"] == "failed" and "falha simulada em notificar" in j2["error"]
     assert (await c.get(f"{BASE}/assets", params={"q": "SG-2"})).json()["total"] == 0
-    # documento sem a conexão ativos-docs vinculada: falha definitiva e compensa
+    # document without the ativos-docs connection linked: definitive failure and compensation
     nodoc = await c.post(
         f"{BASE}/assets/registrations",
         json={"tag": "SG-3", "name": "Sem docs", "upload": "upl_x", "file_name": "a.pdf"},

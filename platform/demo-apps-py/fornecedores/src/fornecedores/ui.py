@@ -1,4 +1,4 @@
-"""Utilitários de renderização."""
+"""Rendering utilities."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ def esc(s: str) -> str:
 
 
 def param(q: Mapping[str, str], k: str) -> str:
-    """Primeiro valor de um parâmetro de formulário/query, aparado."""
+    """First value of a form/query parameter, trimmed."""
     return (q.get(k) or "").strip()
 
 

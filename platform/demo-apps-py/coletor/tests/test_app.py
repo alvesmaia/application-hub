@@ -1,6 +1,6 @@
-"""Telas e fluxos do Coletor sobre o app real (lifespan). Sem banco: as telas dizem que o
-banco não está configurado; com ``HUB_DB_TEST_URL``: Escanear (leitura, idempotência da
-fila offline, modo da câmera), Folha de teste com Leituras ao vivo e API."""
+"""Coletor screens and flows over the real app (lifespan). Without DB: the screens say that
+the DB is not configured; with ``HUB_DB_TEST_URL``: Scan (reading, offline queue idempotency,
+camera mode), Test sheet with Live readings, and API."""
 
 from __future__ import annotations
 
@@ -76,7 +76,7 @@ async def test_device_behaviors_are_declared(running: Running) -> None:
     assert 'data-hub-scan-mode="barras"' in scan and 'data-hub-scan-modes="barras|qr"' in scan, (
         "padrão: barras"
     )
-    # Tipo de código / modo do leitor / pausa só DENTRO da câmera: a página só leva os valores.
+    # Code type / reader mode / pause only INSIDE the camera: the page only carries the values.
     assert "col-seg" not in scan and 'id="pausa"' not in scan and "scan-mode-field" not in scan
     assert "/coletor/escanear/prefs" in scan and 'data-hub-scan-cooldowns="0|1000|2000|3000|5000"' in scan
     assert 'data-hub-ws="/apps/coletor/ws/live?view=escanear"' in scan and 'id="col-session"' in scan
@@ -138,13 +138,13 @@ def test_format_guess_and_urls() -> None:
         assert not is_url(v), v
 
 
-# ---- com banco -------------------------------------------------------------------------
+# ---- with DB -------------------------------------------------------------------------
 @pytest.mark.db
 async def test_scan_classifies_and_is_idempotent(db_url: str, running: Running) -> None:
     c = running.client
     await wait_ready(c)
     await c.post("/coletor/folha/limpar", headers=idem())
-    # Automático sem pausa: cada leitura diferente é aceita na hora (leitor físico).
+    # Automatic without pause: each different reading is accepted right away (physical reader).
     await c.post("/coletor/escanear/leitor", data={"leitor": "automatico", "pausa": "0"}, headers=idem())
     key = idem()
     item = await c.post(
@@ -191,7 +191,7 @@ async def test_scan_mode_is_remembered_per_user(db_url: str, running: Running) -
     assert r.status_code == 204
     page = (await c.get("/coletor/escanear")).text
     assert 'data-hub-scan-mode="qr"' in page and 'data-hub-scan-reader="interativo"' in page
-    # Tudo junto (como a camada da câmera manda): tipo, leitor e pausa.
+    # All together (as the camera layer sends them): type, reader and pause.
     form = {"modo": "barras", "leitor": "automatico", "pausa": "3000"}
     assert (await c.post("/coletor/escanear/prefs", data=form, headers=idem())).status_code == 204
     page = (await c.get("/coletor/escanear")).text
@@ -249,19 +249,19 @@ async def test_session_queue_over_http(db_url: str, running: Running) -> None:
     assert 'data-col-step="itens"' not in r.text, "na fila, um código por vez"
     order = _order(r.text)
     exp = _expected(r.text)
-    # Erro: não avança; o celular recebe o cartão vermelho.
+    # Error: does not advance; the phone gets the red card.
     bad = await c.post("/coletor/escanear/ler", data={"codigo": "NADA-404"}, headers=idem())
     assert 'data-col-outcome="erro"' in bad.text and 'data-hub-feedback-result="error"' in bad.text
     st = (await c.get("/coletor/folha/estado")).text
     assert 'data-col-flag="erro"' in st and "1 de 24" in st
-    # Acerto com avanço automático.
+    # Correct, with auto-advance.
     ok = await c.post("/coletor/escanear/ler", data={"codigo": exp}, headers=idem())
     assert 'data-col-outcome="ok"' in ok.text
     st = (await c.get("/coletor/folha/estado")).text
     assert "2 de 24" in st and _expected(st) == order[1]
     phone = (await c.get("/coletor/escanear/sessao")).text
     assert 'data-col-pos="2"' in phone and f'data-col-expected="{order[1]}"' in phone
-    # Parar / Continuar (pelo celular), Próximo = pulado.
+    # Stop / Continue (from the phone), Next = skipped.
     p = await c.post("/coletor/sessao/parar", data={"tela": "escanear"}, headers=idem())
     assert 'data-col-session="paused"' in p.text and 'data-col-action="continuar"' in p.text
     ign = await c.post("/coletor/escanear/ler", data={"codigo": order[1]}, headers=idem())
@@ -270,7 +270,7 @@ async def test_session_queue_over_http(db_url: str, running: Running) -> None:
     nx = await c.post("/coletor/sessao/proximo", data={"tela": "folha"}, headers=idem())
     assert "3 de 24" in nx.text and nx.text.count('data-col-result="pulado"') == 1
     assert nx.text.count('data-col-result="erro"') == 1 and nx.text.count('data-col-result="ok"') == 1
-    # Sem avanço automático: certo fica marcado até Próximo.
+    # Without auto-advance: the correct one stays marked until Next.
     await c.post("/coletor/sessao/auto", data={"tela": "folha"}, headers=idem())
     hold = await c.post("/coletor/escanear/ler", data={"codigo": order[2]}, headers=idem())
     assert 'data-col-outcome="ok"' in hold.text
@@ -280,7 +280,7 @@ async def test_session_queue_over_http(db_url: str, running: Running) -> None:
     rs = await c.post("/coletor/sessao/reiniciar", data={"tela": "folha"}, headers=idem())
     assert "1 de 24" in rs.text and "data-col-result=" not in rs.text
     assert _order(rs.text) != order and sorted(_order(rs.text)) == sorted(order)
-    # Cancelar: volta ao início (QR do app de novo, sem fila).
+    # Cancel: back to the start (app QR again, no queue).
     cn = await c.post("/coletor/sessao/cancelar", data={"tela": "folha"}, headers=idem())
     assert "data-col-start" in cn.text and "data-col-queue" not in cn.text
     assert 'data-col-session="cancelled"' in (await c.get("/coletor/escanear/sessao")).text

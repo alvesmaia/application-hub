@@ -1,8 +1,8 @@
-"""API v1 do ``fornecedores`` (onda 11): diretório de fornecedores, consulta cadastral (API
-externa com disjuntor) e metadados dos anexos (sem conteúdo). JSON; erros RFC 9457.
+"""API v1 of the ``fornecedores`` (wave 11): supplier directory, registry lookup (external API
+with circuit breaker) and attachment metadata (no content). JSON; RFC 9457 errors.
 
-Identidade do hub obrigatória (``x-hub-user``); auditoria no outbox; idempotência pelo middleware
-do SDK. OpenAPI nativo do FastAPI em ``/fornecedores/api/openapi.json``; cada operação vira
+Hub identity required (``x-hub-user``); outbox audit; idempotency via the middleware
+of the SDK. Native FastAPI OpenAPI at ``/fornecedores/api/openapi.json``; each operation becomes
 ferramenta MCP (``hub_sdk.mcp``).
 """
 

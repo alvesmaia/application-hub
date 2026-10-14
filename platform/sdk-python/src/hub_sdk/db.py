@@ -1,19 +1,19 @@
-"""Pool do Postgres (asyncpg) com os codecs que o SDK espera e migração em segundo plano.
+"""Postgres pool (asyncpg) with the codecs the SDK expects, and background migration.
 
-- ``HUB_DB_URL`` (ou ``HUB_DB_URL_<ID>``): URL do banco do app, injetada pela plataforma.
+- ``HUB_DB_URL`` (or ``HUB_DB_URL_<ID>``): the app's database URL, injected by the platform.
 - Pools separados (mesma URL): handlers (``HUB_DB_POOL``, 12),
-  idempotência (``HUB_IDEM_POOL``, 12) e tarefas (``HUB_JOBS_POOL``, 5) — uma rajada de
-  requisições não trava o heartbeat do lease nem se autobloqueia.
-- **Orçamento de conexões**: o papel do app tem ``CONNECTION LIMIT 40`` no hub-db. Os
-  tamanhos padrão são **por processo**, então (medido na onda 7: 2 processos uvicorn + o de
-  tarefas passaram de 40 e 12,6% das requisições falharam com *too many connections*):
-  com ``UVICORN_WORKERS=N`` os padrões do web são divididos por N; no modo
-  ``HUB_JOBS_MODE=process`` o web usa 2 conexões de tarefas (só enfileira/consulta) e o
-  processo de tarefas abre só handlers (4) + tarefas (5), sem pool de idempotência.
-  Padrão: web 12 + 12 + 2 (+ tarefas 4 + 5) = 35 ≤ 40. Variáveis explícitas prevalecem.
+  idempotency (``HUB_IDEM_POOL``, 12) and jobs (``HUB_JOBS_POOL``, 5) — a burst of
+  requests does not stall the lease heartbeat nor block itself.
+- **Connection budget**: the app's role has ``CONNECTION LIMIT 40`` on hub-db. The
+  default sizes are **per process**, so (measured in wave 7: 2 uvicorn processes plus the jobs one exceeded
+  40 and 12.6% of the requests failed with *too many connections*):
+  with ``UVICORN_WORKERS=N`` the web defaults are divided by N; in
+  ``HUB_JOBS_MODE=process`` mode the web uses 2 job connections (it only enqueues/queries) and the
+  jobs process opens only handlers (4) + jobs (5), with no idempotency pool.
+  Default: web 12 + 12 + 2 (+ jobs 4 + 5) = 35 ≤ 40. Explicit variables take precedence.
 
-``json``/``jsonb`` entram e saem como objetos Python (codec registrado em cada conexão):
-toda conexão passada ao SDK deve vir de :func:`create_pool`.
+``json``/``jsonb`` come in and go out as Python objects (codec registered on each connection):
+every connection passed to the SDK must come from :func:`create_pool`.
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ log = logging.getLogger("hub_sdk.db")
 
 
 def app_env(app_id: str, name: str) -> str | None:
-    """``NOME_<ID>`` com fallback para ``NOME`` (vazio = ausente)."""
+    """``NAME_<ID>`` with fallback to ``NAME`` (empty = absent)."""
     for k in (f"{name}_{app_id.upper().replace('-', '_')}", name):
         v = os.environ.get(k, "").strip()
         if v:
@@ -46,7 +46,7 @@ async def _init(conn: Any) -> None:
 
 
 async def create_pool(url: str, size: int) -> Any:
-    """Pool preguiçoso (``min_size=0``): o app sobe mesmo com o banco fora do ar."""
+    """Lazy pool (``min_size=0``): the app starts even with the DB down."""
     return await asyncpg.create_pool(
         dsn=url,
         min_size=0,
@@ -58,8 +58,8 @@ async def create_pool(url: str, size: int) -> Any:
 
 
 def pool_size(var: str, default: int, per_web_process: bool = False) -> int:
-    """``var`` do ambiente; senão ``default`` — dividido pelos processos web
-    (``UVICORN_WORKERS``) quando ``per_web_process``."""
+    """``var`` from the environment; otherwise ``default`` — divided among the web processes
+    (``UVICORN_WORKERS``) when ``per_web_process``."""
     raw = os.environ.get(var, "").strip()
     if raw:
         try:
@@ -76,7 +76,7 @@ def pool_size(var: str, default: int, per_web_process: bool = False) -> int:
 
 
 class Database:
-    """Pools + estado "pronto" (migrações aplicadas)."""
+    """Pools + "ready" state (migrations applied)."""
 
     def __init__(self, url: str) -> None:
         self.url = url
@@ -91,8 +91,8 @@ class Database:
         return self._ready.is_set()
 
     async def open(self, role: str = "web", jobs_inline: bool = True) -> None:
-        """``role="web"``: handlers + idempotência + tarefas (2 se as tarefas rodam em outro
-        processo); ``role="worker"``: só handlers (4) e tarefas (5)."""
+        """``role="web"``: handlers + idempotency + jobs (2 if the jobs run in another
+        process); ``role="worker"``: only handlers (4) and jobs (5)."""
         if role == "worker":
             self.pool = await create_pool(self.url, pool_size("HUB_WORKER_DB_POOL", 4))
             self.jobs_pool = await create_pool(self.url, pool_size("HUB_JOBS_POOL", 5))
@@ -103,8 +103,8 @@ class Database:
         self.jobs_pool = await create_pool(self.url, jobs)
 
     def spawn_migrations(self, app_id: str, app_sql: str, after: Any = None) -> None:
-        """Migra em segundo plano até conseguir (não segura a partida nem o health
-        check); ``after`` (corrotina opcional) roda depois — ex.: carga inicial."""
+        """Migrates in the background until it succeeds (does not hold up startup nor the health
+        check); ``after`` (optional coroutine) runs afterwards — e.g. the initial load."""
 
         async def loop() -> None:
             wait = 0.5
@@ -115,7 +115,7 @@ class Database:
                     log.warning("%s: banco pronto (migrações aplicadas)", app_id)
                     self._ready.set()
                     break
-                except Exception as e:  # banco fora, rede, credencial: tenta de novo
+                except Exception as e:  # DB down, network, credential: retry
                     log.warning("%s: banco indisponível (%s); nova tentativa em %.1f s", app_id, e, wait)
                     await asyncio.sleep(wait)
                     wait = min(wait * 2, 10.0)
@@ -138,14 +138,14 @@ class Database:
                     p.terminate()
 
 
-# --- Camada SQL portátil (SQLAlchemy Core + Alembic) -------------------------------------------
-# Apps novos (template `python-fastapi` do `hub project create`): o mesmo código roda em SQLite no
-# `hub dev` e em Postgres no hub. URL de ``DATABASE_URL`` (fallback ``HUB_DB_URL``). Extra ``hub-sdk[sql]``.
+# --- Portable SQL layer (SQLAlchemy Core + Alembic) -------------------------------------------
+# New apps (the `python-fastapi` template of `hub project create`): the same code runs on SQLite in
+# `hub dev` and on Postgres in the hub. URL from ``DATABASE_URL`` (fallback ``HUB_DB_URL``). Extra ``hub-sdk[sql]``.
 
 
 def database_url(default: str = "sqlite:///.hub/dev.db") -> str:
-    """URL SQLAlchemy do banco do app: ``DATABASE_URL`` > ``HUB_DB_URL`` > ``default``
-    (``postgres(ql)://`` vira ``postgresql+psycopg://``, o driver do extra ``sql``)."""
+    """SQLAlchemy URL of the app's DB: ``DATABASE_URL`` > ``HUB_DB_URL`` > ``default``
+    (``postgres(ql)://`` becomes ``postgresql+psycopg://``, the driver of the ``sql`` extra)."""
     url = os.environ.get("DATABASE_URL", "").strip() or os.environ.get("HUB_DB_URL", "").strip() or default
     for prefix in ("postgres://", "postgresql://"):
         if url.startswith(prefix):
@@ -154,7 +154,7 @@ def database_url(default: str = "sqlite:///.hub/dev.db") -> str:
 
 
 def engine(url: str | None = None) -> Any:
-    """Engine síncrona do SQLAlchemy Core. Em SQLite cria a pasta do arquivo."""
+    """Synchronous SQLAlchemy Core engine. On SQLite it creates the file's folder."""
     import sqlalchemy as sa
 
     return sa.create_engine(_sqlite_dir(url or database_url()), pool_pre_ping=True)
@@ -169,7 +169,7 @@ def _sqlite_dir(u: str) -> str:
 
 
 def upgrade(migrations_dir: str | os.PathLike[str], url: str | None = None, revision: str = "head") -> None:
-    """Aplica as migrações Alembic de ``migrations_dir`` (pasta com ``env.py`` e ``versions/``)."""
+    """Applies the Alembic migrations of ``migrations_dir`` (folder with ``env.py`` and ``versions/``)."""
     from alembic import command
     from alembic.config import Config
 

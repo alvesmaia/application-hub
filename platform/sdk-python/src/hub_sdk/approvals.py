@@ -1,15 +1,15 @@
-"""Aprovações pela Inbox do hub (onda 9).
+"""Inbox approvals of the hub (wave 9).
 
-1. O app publica o pedido no outbox (:func:`hub_sdk.outbox.approval_request`).
-2. O hub mostra o pedido a quem pode decidir (permissão ``aprovar_solicitacoes``, destino do
-   pedido, app na lista do usuário; nunca quem pediu).
-3. A decisão volta pela rede interna, com o token interno:
+1. The app publishes the request to the outbox (:func:`hub_sdk.outbox.approval_request`).
+2. The hub shows the request to whoever can decide (permission ``aprovar_solicitacoes``, target of the
+   request, app in the user's list; never the requester).
+3. The decision comes back over the internal network, with the internal token:
    ``POST /{app}/_hub/approvals/{approval_id}``, ``x-hub-user`` = quem decidiu e corpo
    ``{"decision": "approve"|"reject", "comment": "…", "event_id": "evt-…", "decided_at": ms}``.
-4. O SDK valida token, id, decisão e a permissão do aprovador; a função do app aplica
-   (idempotente) e devolve ``"approved"``/``"rejected"``. Já decidido → levante
-   :class:`AlreadyDecided` (409 com o estado atual); desconhecido → :class:`NotFound` (404);
-   regra de negócio → :class:`Forbidden` (403).
+4. The SDK validates token, id, decision and the approver's permission; the app's function applies
+   (idempotently) and returns ``"approved"``/``"rejected"``. Already decided → raise
+   :class:`AlreadyDecided` (409 with the current state); unknown → :class:`NotFound` (404);
+   business rule → :class:`Forbidden` (403).
 """
 
 from __future__ import annotations
