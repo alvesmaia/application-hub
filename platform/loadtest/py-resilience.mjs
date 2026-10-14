@@ -1,12 +1,12 @@
-// F7a — zero downtime e caos contra a pilha Python (`app-hub-*`, hub em :8090). Só mexe em `app-hub-*`; não toca em `hub-*` nem em `apphub-devtunnel`:
+// F7a — zero downtime and chaos against the Python stack (`app-hub-*`, hub on :8090). Only touches `app-hub-*`; does not touch `hub-*` nor `apphub-devtunnel`:
 //
 //   HUB=http://localhost:8090 HUB_USER=… HUB_PASSWORD=… node loadtest/py-resilience.mjs zd|chaos [--rps 60] [--out arq.md]
 //
-// zd    carga constante (GET /_frag/ativos/{dashboard,assets?q=…} pelo hub) enquanto: Aplicar (blue/green) ×2,
-//       implantação de uma versão nova em produção (importar → aprovar) e Rollback; conta respostas não-2xx.
-// chaos carga constante em servicos + ativos enquanto: `docker kill app-hub-app-servicos` ×2, `docker restart
-//       app-hub-web` ×1 e `docker restart app-hub-db` ×1; mede o tempo até voltar a responder 200 e confere que o banco
-//       do servicos não perdeu linhas.
+// zd    constant load (GET /_frag/ativos/{dashboard,assets?q=…} through the hub) while: Aplicar (blue/green) ×2,
+//       deployment of a new version to production (import → approve) and Rollback; counts non-2xx responses.
+// chaos constant load on servicos + ativos while: `docker kill app-hub-app-servicos` ×2, `docker restart
+//       app-hub-web` ×1 and `docker restart app-hub-db` ×1; measures the time until it answers 200 again and checks that the database
+//       of servicos lost no rows.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -25,7 +25,7 @@ const lines = [];
 const log = (m) => { const l = `${((Date.now() - t0) / 1000).toFixed(1)} s — ${m}`; lines.push(l); console.log(l); };
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const docker = (...a) => execFileSync('docker', a, { encoding: 'utf8', env: { ...process.env, MSYS_NO_PATHCONV: '1' } }).trim();
-// Prefixo dos contêineres (E2E_CONTAINER_PREFIX; instância isolada: app-hub-iso-, banco dos apps em E2E_APP_DB).
+// Container prefix (E2E_CONTAINER_PREFIX; isolated instance: app-hub-iso-, apps database in E2E_APP_DB).
 const CP = process.env.E2E_CONTAINER_PREFIX || 'app-hub-';
 const APPDB = process.env.E2E_APP_DB || `${CP}app-db`;
 const own = (n) => { if (!/^app-hub-/.test(n)) throw new Error(`fora de app-hub-*: ${n}`); return n; };
@@ -47,11 +47,11 @@ async function api(method, url, json, extra = {}) {
   return { status: r.status, json: text ? JSON.parse(text) : null };
 }
 
-// ---- gerador de carga: RPS pedidos/s, janelas de 1 s ---------------------------------------
+// ---- load generator: RPS requests/s, 1 s windows ---------------------------------------
 const URLS = MODE === 'zd'
   ? ['/_frag/ativos/dashboard', '/_frag/ativos/assets?q=NT-1']
   : ['/_frag/servicos/dashboard', '/_frag/ativos/dashboard'];
-const buckets = new Map(); // segundo → {n, ok, bad:[status]}
+const buckets = new Map(); // second → {n, ok, bad:[status]}
 let stop = false;
 async function worker(i) {
   const gap = 1000 / (RPS / 8);
@@ -84,7 +84,7 @@ const phase = async (name, fn) => {
   const a = Date.now();
   let err = '';
   try { await fn(); } catch (e) { err = String(e.message || e).slice(0, 200); }
-  await wait(3000); // cauda: respostas em voo
+  await wait(3000); // tail: in-flight responses
   const w = window(a, Date.now());
   rows.push({ name, secs: ((Date.now() - a) / 1000).toFixed(1), ...w, err });
   log(`${name}: ${w.n} req em ${((Date.now() - a) / 1000).toFixed(1)} s · 2xx ${w.ok} · não-2xx ${JSON.stringify(w.bad)}${err ? ` · ERRO: ${err}` : ''}`);
@@ -99,7 +99,7 @@ if (MODE === 'zd') {
       if (r.status !== 200) throw new Error(`apply HTTP ${r.status} ${JSON.stringify(r.json)}`);
     });
   }
-  // Implantação de versão nova: reaproveita a imagem do container atual (mesma imagem, versão nova no manifesto).
+  // New version deployment: reuses the current container's image (same image, new version in the manifest).
   const hubBin = process.env.HUB_BIN;
   if (hubBin) {
     const id = docker('inspect', '-f', '{{.Image}}', own(`${CP}app-ativos`));
@@ -133,7 +133,7 @@ if (MODE === 'zd') {
     "SELECT sum((xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', schemaname, tablename), false, true, '')))[1]::text::bigint) FROM pg_tables WHERE schemaname='public'");
   const before = dbRows();
   log(`linhas do banco do servicos antes: ${before}`);
-  const recover = async (url, from) => { for (let i = 0; i < 240; i++) { try { const r = await fetch(`${HUB}${url}`, { headers: { cookie }, signal: AbortSignal.timeout(5000) }); if (r.status === 200) return (Date.now() - from) / 1000; } catch { /* ainda caído */ } await wait(500); } return -1; };
+  const recover = async (url, from) => { for (let i = 0; i < 240; i++) { try { const r = await fetch(`${HUB}${url}`, { headers: { cookie }, signal: AbortSignal.timeout(5000) }); if (r.status === 200) return (Date.now() - from) / 1000; } catch { /* still down */ } await wait(500); } return -1; };
   for (let i = 1; i <= 2; i++) {
     await phase(`docker kill app-hub-app-servicos #${i}`, async () => {
       const a = Date.now(); docker('kill', own(`${CP}app-servicos`));
@@ -145,14 +145,14 @@ if (MODE === 'zd') {
   }
   await phase('docker restart app-hub-web', async () => {
     const a = Date.now(); docker('restart', own(`${CP}web`));
-    for (let i = 0; i < 240; i++) { try { if ((await fetch(`${HUB}/healthz`, { signal: AbortSignal.timeout(2000) })).status === 200) break; } catch { /* subindo */ } await wait(500); }
-    await login(); // a sessão sobrevive (estado em banco); renova por segurança
+    for (let i = 0; i < 240; i++) { try { if ((await fetch(`${HUB}/healthz`, { signal: AbortSignal.timeout(2000) })).status === 200) break; } catch { /* starting */ } await wait(500); }
+    await login(); // the session survives (state in the database); renews it for safety
     log(`  hub voltou em ${((Date.now() - a) / 1000).toFixed(1)} s`);
   });
   await wait(8000);
   await phase('docker restart app-hub-db (estado da plataforma)', async () => {
     const a = Date.now(); docker('restart', own(`${CP}db`));
-    for (let i = 0; i < 240; i++) { try { if ((await fetch(`${HUB}/_frag/ativos/dashboard`, { headers: { cookie }, signal: AbortSignal.timeout(3000) })).status === 200) break; } catch { /* ainda */ } await wait(500); }
+    for (let i = 0; i < 240; i++) { try { if ((await fetch(`${HUB}/_frag/ativos/dashboard`, { headers: { cookie }, signal: AbortSignal.timeout(3000) })).status === 200) break; } catch { /* still */ } await wait(500); }
     log(`  hub respondendo de novo ${((Date.now() - a) / 1000).toFixed(1)} s depois do restart do banco de estado`);
   });
   await wait(8000);

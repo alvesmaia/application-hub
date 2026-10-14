@@ -1,1 +1,1 @@
-"""CLI da Application Hub."""
+"""CLI for the Application Hub."""

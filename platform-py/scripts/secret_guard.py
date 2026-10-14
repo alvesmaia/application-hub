@@ -1,4 +1,4 @@
-"""Barra segredos no commit: .dev.env, .prod.env, chaves/certificados, tokens hubt_, credenciais do cloudflared."""
+"""Blocks secrets from being committed: .dev.env, .prod.env, keys/certificates, hubt_ tokens, cloudflared credentials."""
 
 import re
 import sys

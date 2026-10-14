@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# F7a: suíte de conformidade do contrato de app contra a pilha Python (`app-hub-*`, compose `app-hub`): o mesmo
-# `platform/conformance/run.sh` com os nomes `app-hub-*` (nunca toca em `hub-*`). Roda cada app em container
-# descartável `app-hub-conformance-<id>` na rede `app-hub-app-<id>`, para o `app-hub-web` (ou `${CONF_PREFIX}web`) durante a suíte (ela confere o
-# outbox) e testa o desligamento gracioso (SIGTERM → saída 0 em < 10 s).
-#   bash platform-py/scripts/conformance.sh [app...]   (a partir da raiz do repositório; OUT=pasta do relatório)
+# F7a: app contract conformance suite against the Python stack (`app-hub-*`, compose `app-hub`): the same
+# `platform/conformance/run.sh` with the `app-hub-*` names (never touches `hub-*`). Runs each app in a disposable container
+# `app-hub-conformance-<id>` on the network `app-hub-app-<id>`, stops `app-hub-web` (or `${CONF_PREFIX}web`) during the suite (it checks the
+# outbox) and tests graceful shutdown (SIGTERM → exit 0 in < 10 s).
+#   bash platform-py/scripts/conformance.sh [app...]   (from the repository root; OUT=report folder)
 set -euo pipefail
 cd "$(dirname "$0")/../../platform"
 export MSYS_NO_PATHCONV=1
-# Instância isolada: CONF_PREFIX=app-hub-iso- CONF_NET=app-hub-iso-net CONF_DB_NET= (tudo numa rede só).
+# Isolated instance: CONF_PREFIX=app-hub-iso- CONF_NET=app-hub-iso-net CONF_DB_NET= (everything on a single network).
 CP=${CONF_PREFIX:-app-hub-}
 DBNET=${CONF_DB_NET-app-hub_default}
 apps=("$@")
@@ -51,14 +51,14 @@ for app in "${apps[@]}"; do
     -e CONF_APP="$app" -e CONF_URL="http://$c:8080" -e CONF_TOKEN="$token" -e CONF_DB_URL="$db" \
     -v "$host_out:/out" --user 0 \
     app-hub-conformance --junitxml="/out/$app.xml" >/dev/null
-  [ -n "$DBNET" ] && docker network connect "$DBNET" "$name"  # o banco dos apps (app-hub-app-db) está na rede padrão do compose
+  [ -n "$DBNET" ] && docker network connect "$DBNET" "$name"  # the apps' database (app-hub-app-db) is on the compose default network
   set +e
   docker start -a "$name" > "$OUT/$app.log" 2>&1
   code=$?
   set -e
   docker rm -fv "$name" >/dev/null 2>&1 || true
   summary="$(grep -E '^=+ .* in [0-9.]+s' "$OUT/$app.log" | tail -1 | sed 's/=//g; s/^ *//; s/ *$//')"
-  # Desligamento gracioso: SIGTERM, drenagem e saída 0 antes do SIGKILL (10 s).
+  # Graceful shutdown: SIGTERM, drain and exit 0 before SIGKILL (10 s).
   t0=$(date +%s%N)
   docker stop -t 10 "$c" >/dev/null
   t1=$(date +%s%N)

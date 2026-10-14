@@ -1,4 +1,4 @@
-"""`hub pack`: gera o .hubapp (manifest, runtime.json, openapi.json, ui/**, checksums.txt)."""
+"""`hub pack`: builds the .hubapp (manifest, runtime.json, openapi.json, ui/**, checksums.txt)."""
 
 import hashlib
 import io
@@ -28,11 +28,11 @@ SKIP_DIRS = {
 
 
 def _secretish(p: Path) -> bool:
-    """Estado local e segredos nunca entram no pacote (.env, deploy.*.env, pacotes antigos)."""
+    """Local state and secrets never go into the package (.env, deploy.*.env, old packages)."""
     n = p.name
     return (
         n == ".env"
-        or n.startswith(".env.")  # .env.example também: o pipeline do hub recusa qualquer .env* no pacote
+        or n.startswith(".env.")  # .env.example too: the hub pipeline rejects any .env* in the package
         or n.endswith((".env", ".hubapp"))
         or n == ".coverage"
     )
@@ -47,13 +47,13 @@ def _context(root: Path) -> list[tuple[str, bytes]]:
     return [("build/" + p.relative_to(root).as_posix(), p.read_bytes()) for p in files]
 
 
-MAX_PACKAGE_BYTES = 20 * 1024 * 1024  # = hub/ops/pipeline.py (um teste exige a igualdade)
+MAX_PACKAGE_BYTES = 20 * 1024 * 1024  # = hub/ops/pipeline.py (a test requires equality)
 
 
 def pack(dir_: Path, image: str | None, out: Path, build_dir: Path | None = None,
          dockerfile: str = "Dockerfile") -> str:  # fmt: skip
-    """Escreve o pacote em `out` e devolve o sha256 do arquivo. Com `build_dir` o pacote leva o contexto de
-    build (`build/**`) e o hub constrói a imagem; sem ele exige `image` por digest."""
+    """Writes the package to `out` and returns the file's sha256. With `build_dir` the package carries the build context
+    (`build/**`) and the hub builds the image; without it, `image` by digest is required."""
     mf = dir_ / "manifest.json"
     if not mf.is_file():
         raise PackError("manifest.json não encontrado")
@@ -98,7 +98,7 @@ def pack(dir_: Path, image: str | None, out: Path, build_dir: Path | None = None
         for n, b in entries:
             z.writestr(zipfile.ZipInfo(n, (1980, 1, 1, 0, 0, 0)), b, zipfile.ZIP_DEFLATED)
     data = buf.getvalue()
-    if len(data) > MAX_PACKAGE_BYTES:  # o hub recusaria com 400; diga aqui o que pesa
+    if len(data) > MAX_PACKAGE_BYTES:  # the hub would refuse it with 400; say here what is too heavy
         big = sorted(((len(b), n) for n, b in entries), reverse=True)[:3]
         raise PackError(
             f"pacote com {len(data) / 1024 / 1024:.1f} MB; o hub aceita até "

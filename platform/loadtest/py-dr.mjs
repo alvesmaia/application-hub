@@ -1,12 +1,12 @@
-// F7a — DR contra a pilha Python (`app-hub-*`, hub em :8090). Não toca em nada fora de `app-hub-*`:
+// F7a — DR against the Python stack (`app-hub-*`, hub on :8090). Touches nothing outside `app-hub-*`:
 //
 //   HUB=http://localhost:8090 HUB_USER=admin@demo.local HUB_PASSWORD=… node loadtest/py-dr.mjs [--out arq.md]
 //
-// 1. mede a referência: `servicos` (banco provisionado servicos: linhas + md5 de cada tabela) e
-//    `fornecedores` (3 anexos novos no bucket: sha256 de cada um, baixado pelo app);
-// 2. backup manual dos dois pela API (o botão "Fazer backup agora") e espera concluir;
-// 3. DESASTRE: DROP DATABASE servicos e todos os objetos do bucket `fornecedores`;
-// 4. restaura pela API (o botão "Restaurar"), mede o RTO e confere tudo byte a byte + apps respondendo.
+// 1. measures the reference: `servicos` (provisioned servicos database: rows + md5 of each table) and
+//    `fornecedores` (3 new attachments in the bucket: sha256 of each one, downloaded by the app);
+// 2. manual backup of both via the API (the "Fazer backup agora" button) and waits for it to finish;
+// 3. DISASTER: DROP DATABASE servicos and all objects of the `fornecedores` bucket;
+// 4. restores via the API (the "Restaurar" button), measures the RTO and checks everything byte by byte + apps responding.
 import { execFileSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -27,7 +27,7 @@ const docker = (...a) => execFileSync('docker', a, { encoding: 'utf8' }).trim();
 const psql = (db, sql) => docker('exec', DBC, 'psql', '-U', 'hub', '-d', db, '-tAc', sql);
 const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-// Guarda: este script só mexe em containers app-hub-*.
+// Guard: this script only touches app-hub-* containers.
 for (const c of [DBC, OBJ]) if (!/^app-hub-/.test(c)) throw new Error(`container fora de app-hub-*: ${c}`);
 
 let cookie = '';
@@ -82,7 +82,7 @@ const ref = { db: dbRef(), att: await attachmentsRef() };
 log(`referência: servicos ${Object.keys(ref.db).length} tabelas (${Object.values(ref.db).map((v) => v.split(':')[0]).join('/')} linhas) · ${Object.keys(ref.att).length} anexos`);
 if (Object.keys(ref.att).length < 3) throw new Error('anexos não encontrados na ficha do fornecedor');
 
-// ---- backup manual ---------------------------------------------------------------
+// ---- manual backup ---------------------------------------------------------------
 const maxBefore = Math.max(0, ...(await api('GET', '/backups')).json.history.map((b) => b.id));
 const done = {};
 for (const app of ['servicos', 'fornecedores']) {
@@ -101,7 +101,7 @@ while (Object.keys(done).length < 2) {
   }
 }
 
-// ---- desastre --------------------------------------------------------------------
+// ---- disaster --------------------------------------------------------------------
 const tDisaster = Date.now();
 psql('postgres', 'DROP DATABASE servicos WITH (FORCE)');
 docker('exec', OBJ, 'sh', '-c', `mc alias set s http://127.0.0.1:9000 hubadmin ${OBJ_PASS} >/dev/null && mc rm --recursive --force s/fornecedores`);
@@ -109,7 +109,7 @@ const attAfterDisaster = await attachmentsRef();
 const broken = await http('GET', '/_frag/servicos/dashboard');
 log(`DESASTRE: DROP DATABASE servicos (servicos/dashboard → HTTP ${broken.status}), bucket fornecedores vazio (${Object.keys(attAfterDisaster).length} anexos visíveis)`);
 
-// ---- restauração -----------------------------------------------------------------
+// ---- restore -----------------------------------------------------------------
 const rto = {};
 await Promise.all(['servicos', 'fornecedores'].map(async (app) => {
   const t = Date.now();

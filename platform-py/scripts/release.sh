@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Prepara uma versão: atualiza a versão do hub, move o [Unreleased] do CHANGELOG para a versão, commita, cria a tag
-# anotada v<versão> e um RASCUNHO de release no GitHub com as notas do CHANGELOG (nunca publica; publique na
-# interface ou com `gh release edit v<versão> --draft=false`). Imagens: workflow manual .github/workflows/images.yml.
+# Prepares a release: updates the hub version, moves [Unreleased] in the CHANGELOG to the version, commits, creates the tag
+# annotated v<version> and a DRAFT release on GitHub with the CHANGELOG notes (never publishes; publish it in the
+# web UI or with `gh release edit v<version> --draft=false`). Images: manual workflow .github/workflows/images.yml.
 #   bash platform-py/scripts/release.sh 0.2.0 [--no-push] [--dry-run]
 set -euo pipefail
 cd "$(dirname "$0")/../.."

@@ -1,6 +1,6 @@
-// F8 — ao vivo: pacote com contexto de build (`hub pack --build-dir`) -> upload -> build no hub -> blue/green em
-// produção com carga contínua (0 falhas) -> rollback. Só toca app-hub-*.
-//   HUB=http://localhost:8090 HUB_PASSWORD=… node loadtest/py-build-live.mjs <pacote.hubapp> [--rps 40]
+// F8 — live: package with build context (`hub pack --build-dir`) -> upload -> build on the hub -> blue/green in
+// production under continuous load (0 failures) -> rollback. Touches only app-hub-*.
+//   HUB=http://localhost:8090 HUB_PASSWORD=… node loadtest/py-build-live.mjs <package.hubapp> [--rps 40]
 import fs from 'node:fs';
 
 const HUB = process.env.HUB || 'http://localhost:8090';

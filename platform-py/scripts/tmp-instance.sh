@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Instância TEMPORÁRIA do hub para E2E/ui-sweep: cópia do estado de /data, usuários demo ligados, SEM socket do
-# Docker e SEM banco de estado (não supervisiona nem altera os apps; o gateway só lê). Nunca é produção.
-#   bash scripts/tmp-instance.sh up      # app-hub-web-tmp em http://127.0.0.1:8093
-#   bash scripts/tmp-instance.sh down    # remove contêiner e volume temporário
-# Depois: cd ../platform/tests-e2e && set -a && . ../../platform-py/.tmp-instance.env && set +a \
+# TEMPORARY hub instance for E2E/ui-sweep: copy of the /data state, demo users enabled, NO Docker socket
+# and NO state database (does not supervise or change the apps; the gateway only reads). Never production.
+#   bash scripts/tmp-instance.sh up      # app-hub-web-tmp at http://127.0.0.1:8093
+#   bash scripts/tmp-instance.sh down    # removes the temporary container and volume
+# Then: cd ../platform/tests-e2e && set -a && . ../../platform-py/.tmp-instance.env && set +a \
 #   && HUB=http://127.0.0.1:8093 node ui-sweep/run.mjs --quick
-# Variáveis extras para o contêiner: TMP_EXTRA_ENV="-e HUB_SSO_PROVIDER=entra -e ..." (ex.: SSO com tests/fake_entra.py).
+# Extra variables for the container: TMP_EXTRA_ENV="-e HUB_SSO_PROVIDER=entra -e ..." (e.g. SSO with tests/fake_entra.py).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 NAME=app-hub-web-tmp
@@ -22,7 +22,7 @@ up)
   MSYS_NO_PATHCONV=1 docker run --rm -v app-hub-data:/s:ro -v "$VOL":/d alpine sh -c 'cp -a /s/. /d/ && rm -f /d/primeiro-acesso.txt'
   PW=${HUB_DEMO_PASSWORD:-$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 20)A1}
   (umask 077; printf 'HUB_DEMO_PASSWORD=%s\nHUB=http://127.0.0.1:%s\n' "$PW" "$PORT" > "$ENVF")
-  # reativa as contas demo só na cópia
+  # re-enables the demo accounts only in the copy
   MSYS_NO_PATHCONV=1 docker run --rm -v "$VOL":/data --entrypoint python "${TMP_IMAGE:-app-hub-web}" -c '
 import json
 p="/data/auth.json"; d=json.load(open(p))

@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Atualiza o hub sem parada e volta sozinho se a versão nova falhar (docs/ATUALIZACAO.md).
+"""Updates the hub without downtime and rolls back automatically if the new version fails (docs/ATUALIZACAO.md).
 
-    python platform-py/scripts/hub_update.py --build            # reconstrói do código atual e troca
-    python platform-py/scripts/hub_update.py --image <imagem>   # usa uma imagem pronta (ex.: do GHCR)
-    python platform-py/scripts/hub_update.py --rollback         # volta para a versão anterior
+    python platform-py/scripts/hub_update.py --build            # rebuilds from the current code and swaps
+    python platform-py/scripts/hub_update.py --image <image>   # uses a ready image (e.g. from GHCR)
+    python platform-py/scripts/hub_update.py --rollback         # goes back to the previous version
 
-Como funciona (a borda `<proj>-edge` só manda tráfego a quem responde ao /healthz):
-  1. backup (bancos + volume de dados) e a imagem atual vira `<proj>-web:rollback`;
-  2. sobe `<proj>-web-next` com a imagem nova e a mesma configuração do hub (env, volumes, redes, aliases);
-  3. com a cópia pronta (/readyz), recria `<proj>-web` com a imagem nova — a borda atende pela cópia;
-  4. observa o hub por `--watch` segundos; falhou → refaz a troca com a imagem anterior;
-  5. remove a cópia.
-Só a biblioteca padrão e o `docker` da máquina. Não imprime variáveis de ambiente (há segredos nelas).
+How it works (the `<proj>-edge` edge only sends traffic to whoever answers /healthz):
+  1. backup (databases + data volume) and the current image becomes `<proj>-web:rollback`;
+  2. starts `<proj>-web-next` with the new image and the same hub configuration (env, volumes, networks, aliases);
+  3. once the copy is ready (/readyz), recreates `<proj>-web` with the new image — the edge serves through the copy;
+  4. watches the hub for `--watch` seconds; on failure, swaps back to the previous image;
+  5. removes the copy.
+Only the standard library and the machine's `docker`. Does not print environment variables (they contain secrets).
 """
 
 from __future__ import annotations
@@ -49,7 +49,7 @@ def inspect(name: str) -> dict[str, Any] | None:
 
 
 def compose_cmd(main: dict[str, Any]) -> list[str]:
-    """O mesmo `docker compose` que criou o hub (arquivos, pasta e .env vêm dos rótulos do contêiner)."""
+    """The same `docker compose` that created the hub (files, folder and .env come from the container labels)."""
     lb = main["Config"]["Labels"]
     cmd = ["docker", "compose", "-p", lb["com.docker.compose.project"]]
     cmd += ["--project-directory", lb["com.docker.compose.project.working_dir"]]
@@ -90,7 +90,7 @@ def backup(proj: str, image: str, dest: Path) -> None:
                 p = subprocess.run(["docker", "exec", db, "pg_dumpall", "-U", "hub"], stdout=fh, check=False)  # noqa: S603, S607
             if p.returncode != 0:
                 raise SystemExit(f"hub-update: backup de {db} falhou; nada foi trocado")
-    # O hub segue gravando em /data: o tar sai com 1 se um arquivo mudou durante a leitura (aviso); 2 = erro.
+    # The hub keeps writing to /data: tar exits with 1 if a file changed while being read (warning); 2 = error.
     p = run("docker", "run", "--rm", "--entrypoint", "tar", "-v", f"{proj}-data:/d:ro", "-v", f"{dest.resolve()}:/b",
         image, "czf", "/b/hub-data.tgz", "--warning=no-file-changed", "-C", "/d", ".", check=False, quiet=True)  # fmt: skip
     if p.returncode > 1:
@@ -101,7 +101,7 @@ def backup(proj: str, image: str, dest: Path) -> None:
 
 
 def start_next(main: dict[str, Any], image: str, name: str) -> None:
-    """Cópia do hub com a mesma configuração do contêiner em execução (inclui todos os overrides do compose)."""
+    """Copy of the hub with the same configuration as the running container (includes all compose overrides)."""
     run("docker", "rm", "-f", name, check=False, quiet=True)
     cfg, host = main["Config"], main["HostConfig"]
     args = ["docker", "run", "-d", "--name", name, "--label", "hub.update=next", "--restart", "no"]
@@ -109,7 +109,7 @@ def start_next(main: dict[str, Any], image: str, name: str) -> None:
     for e in cfg.get("Env") or []:
         if (
             e not in base
-        ):  # só o que o compose definiu: o ambiente da imagem (PATH, versões) vem da imagem nova
+        ):  # only what compose defined: the image environment (PATH, versions) comes from the new image
             args += ["-e", e]
     for b in host.get("Binds") or []:
         args += ["-v", b]
@@ -129,7 +129,7 @@ def start_next(main: dict[str, Any], image: str, name: str) -> None:
     nets = list(main["NetworkSettings"]["Networks"])
     edge = [n for n in nets if n.endswith("-edge")]
     others = [n for n in nets if n not in edge]
-    alias = lambda n: "app-hub-web-next" if n in edge else "app-hub-web"  # noqa: E731 — a borda e os apps
+    alias = lambda n: "app-hub-web-next" if n in edge else "app-hub-web"  # noqa: E731 — the edge and the apps
     first = (edge or others)[0]
     args += ["--network", first, "--network-alias", alias(first), image, *(cfg.get("Cmd") or [])]
     run(*args)
@@ -139,7 +139,7 @@ def start_next(main: dict[str, Any], image: str, name: str) -> None:
 
 
 def swap(main_name: str, next_name: str, image: str, timeout: float) -> str:
-    """Troca o hub pela `image` sem parada; devolve a versão que ficou no ar."""
+    """Swaps the hub for `image` without downtime; returns the version left running."""
     main = inspect(main_name)
     if main is None:
         raise RuntimeError(f"{main_name} sumiu durante a troca")
@@ -147,7 +147,7 @@ def swap(main_name: str, next_name: str, image: str, timeout: float) -> str:
     start_next(main, image, next_name)
     v = wait_ready(next_name, timeout).get("version", "?")
     say(f"cópia pronta (versão {v}); recriando {main_name}")
-    time.sleep(3)  # a borda sonda a cada 1 s: a cópia já está na lista quando o hub sair
+    time.sleep(3)  # the edge probes every 1 s: the copy is already in the list when the hub leaves
     service = main["Config"]["Labels"]["com.docker.compose.service"]
     run(*compose_cmd(main), "up", "-d", "--no-deps", service)
     v = wait_ready(main_name, timeout).get("version", "?")
@@ -187,7 +187,7 @@ def drop(name: str) -> None:
 
 
 def main() -> int:
-    for stream in (sys.stdout, sys.stderr):  # acentos no console do Windows
+    for stream in (sys.stdout, sys.stderr):  # accents in the Windows console
         getattr(stream, "reconfigure", lambda **_: None)(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description="Atualiza o hub sem parada (com volta automática).")
     src = ap.add_mutually_exclusive_group(required=True)
@@ -218,7 +218,7 @@ def main() -> int:
             "(`up -d`): a borda assume a porta (~10 s de parada, uma vez só)."
         )
     current = main_c["Image"]
-    # Tag já: no containerd, a imagem que perde o `latest` some pelo ID (backup, rollback e volta falhariam).
+    # Tag now: under containerd, an image that loses `latest` disappears by ID (backup, rollback and return would fail).
     prev = f"{repo}:pre-update"
     if run("docker", "tag", current, prev, check=False, quiet=True).returncode != 0 and inspect(prev) is None:
         raise SystemExit(
@@ -236,7 +236,7 @@ def main() -> int:
             say("construindo a imagem nova")
             run(*compose_cmd(main_c), "build", main_c["Config"]["Labels"]["com.docker.compose.service"])
         else:
-            if inspect(a.image) is None:  # só baixa o que não existe aqui
+            if inspect(a.image) is None:  # only pulls what does not exist here
                 run("docker", "pull", a.image)
             run("docker", "tag", a.image, f"{repo}:latest")
         new = run("docker", "image", "inspect", "-f", "{{.Id}}", f"{repo}:latest").stdout.strip()
@@ -246,7 +246,7 @@ def main() -> int:
         if not a.no_backup:
             backup(a.project, prev, Path(a.backup_dir) / dt.datetime.now().strftime("%Y%m%d-%H%M%S"))
         run("docker", "tag", prev, f"{repo}:rollback")
-    run("docker", "tag", new, f"{repo}:latest")  # o compose usa <proj>-web(:latest)
+    run("docker", "tag", new, f"{repo}:latest")  # compose uses <proj>-web(:latest)
 
     try:
         version = swap(main_name, next_name, new, a.timeout)
@@ -254,7 +254,7 @@ def main() -> int:
     except RuntimeError as e:
         say(str(e))
         healthy = False
-        if (m := inspect(main_name)) is not None and m["Image"] == current:  # o hub nem foi trocado
+        if (m := inspect(main_name)) is not None and m["Image"] == current:  # the hub was not even swapped
             drop(next_name)
             run("docker", "tag", prev, f"{repo}:latest")
             say("nada foi trocado; o hub segue na versão anterior")

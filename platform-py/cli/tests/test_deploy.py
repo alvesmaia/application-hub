@@ -1,4 +1,4 @@
-"""`hub login` / `hub deploy` contra um hub simulado (httpx.MockTransport)."""
+"""`hub login` / `hub deploy` against a simulated hub (httpx.MockTransport)."""
 
 from __future__ import annotations
 
@@ -105,7 +105,7 @@ def test_deploy_staging(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys:
     req = seen[0]
     assert req.url.params["env"] == "staging" and req.url.params["wait"] == "true"
     raw = req.read()
-    assert b'"API_KEY": "segredo-123"' in raw and b"SEGREDO=1" not in raw  # .env nunca vai no pacote
+    assert b'"API_KEY": "segredo-123"' in raw and b"SEGREDO=1" not in raw  # .env never goes into the package
     assert main([*args[:-1]]) == 0 and "abrir:" in capsys.readouterr().out
 
 
@@ -145,7 +145,7 @@ def test_collect_values_prompts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
 
 
 def test_deploy_shows_hub_reason(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """A recusa do hub vem em `error` (ex.: pacote grande): antes a CLI mostrava só o código HTTP."""
+    """The hub's refusal comes in `error` (e.g. large package): before, the CLI only showed the HTTP code."""
     d = app_dir(tmp_path)
     base = ["deploy", "--dir", str(d), "--hub", "http://localhost:9", "--token", "t", "--env", "staging"]
     msg = "O pacote tem 22.0 MB; o limite é 20 MB."

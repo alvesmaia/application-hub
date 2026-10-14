@@ -1,21 +1,21 @@
 #!/usr/bin/env node
-// Onda 12 (2.2) — cliente MCP **independente** (SDK oficial TypeScript,
-// @modelcontextprotocol/sdk) contra o hub no ar (compose): prova que um cliente de
-// terceiros conecta como o Langdock faria.
+// Wave 12 (2.2) — **independent** MCP client (official TypeScript SDK,
+// @modelcontextprotocol/sdk) against the running hub (compose): proves that a third-party client
+// connects the way Langdock would.
 //
-//   cd platform/loadtest/mcp-client && npm ci && node check.mjs [--out arquivo.md]
+//   cd platform/loadtest/mcp-client && npm ci && node check.mjs [--out file.md]
 //
-// Variáveis: HUB_URL (padrão http://localhost:8080), HUB_USER / HUB_PASSWORD (padrão o
-// administrador de demonstração do compose).
+// Variables: HUB_URL (default http://localhost:8080), HUB_USER / HUB_PASSWORD (default the
+// compose demo administrator).
 //
-// Roteiro:
-//   1. OAuth pelo próprio SDK: 401 → descoberta (RFC 9728 + RFC 8414) → registro dinâmico
-//      (RFC 7591) → autorização com PKCE S256 e `resource` → o "navegador" (este script)
-//      entra no hub, aprova na tela de consentimento → troca do código → token;
-//   2. initialize + tools/list + tools/call (leitura) + resources/list pelo Streamable HTTP;
-//   3. ferramenta destrutiva → pedido de aprovação na Inbox (não executa);
-//   4. token de acesso inválido → o SDK renova com o refresh token, sem nova autorização;
-//   5. modo "cabeçalho" (API key): token pessoal em Authorization: Bearer (Langdock "API Key").
+// Steps:
+//   1. OAuth via the SDK itself: 401 → discovery (RFC 9728 + RFC 8414) → dynamic registration
+//      (RFC 7591) → authorization with PKCE S256 and `resource` → the "browser" (this script)
+//      logs in to the hub, approves on the consent screen → code exchange → token;
+//   2. initialize + tools/list + tools/call (read) + resources/list over Streamable HTTP;
+//   3. destructive tool → approval request in the Inbox (does not execute);
+//   4. invalid access token → the SDK renews it with the refresh token, without new authorization;
+//   5. "header" mode (API key): personal token in Authorization: Bearer (Langdock "API Key").
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { UnauthorizedError } from '@modelcontextprotocol/sdk/client/auth.js';
@@ -40,7 +40,7 @@ function ok(cond, what, extra = '') {
   return cond;
 }
 
-/** "Navegador" do usuário: login no hub e aprovação na tela de consentimento. */
+/** The user's "browser": logs in to the hub and approves on the consent screen. */
 async function browserApprove(authUrl) {
   const login = await fetch(`${HUB}/login`, {
     method: 'POST',
@@ -114,11 +114,11 @@ async function connect(provider, extraHeaders) {
 
 async function main() {
   console.log(`hub: ${HUB} · SDK @modelcontextprotocol/sdk (protocolo ${LATEST_PROTOCOL_VERSION})`);
-  // 0) O desafio 401 aponta os metadados.
+  // 0) The 401 challenge points to the metadata.
   const r401 = await fetch(`${HUB}/mcp`, { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream' }, body: '{"jsonrpc":"2.0","id":1,"method":"ping"}' });
   ok(r401.status === 401 && /resource_metadata="/.test(r401.headers.get('www-authenticate') || ''), '401 com WWW-Authenticate resource_metadata', r401.headers.get('www-authenticate'));
 
-  // 1) OAuth pelo SDK.
+  // 1) OAuth via the SDK.
   const p = new Provider();
   let conn;
   try {
@@ -131,7 +131,7 @@ async function main() {
   await first.finishAuth(p.code);
   ok(!!p.tok?.access_token && !!p.tok?.refresh_token, 'código trocado por token (PKCE) com refresh token', `escopo "${p.tok?.scope}", expira em ${p.tok?.expires_in}s`);
 
-  // 2) Protocolo.
+  // 2) Protocol.
   conn = await connect(p);
   const { client } = conn;
   const sv = client.getServerVersion();
@@ -143,13 +143,13 @@ async function main() {
   ok(res.isError === false, 'tools/call apps_list (leitura)', (res.content?.[0]?.text || '').slice(0, 60));
   const rs = await client.listResources();
   ok(rs.resources.some((r) => r.uri === 'hub://apps'), 'resources/list');
-  // 3) Destrutiva → aprovação humana.
+  // 3) Destructive → human approval.
   const d = await client.callTool({ name: 'deployments_rollback', arguments: { id: `sdk-${Date.now() % 1e6}` } });
   ok(d.structuredContent?.approval_required === true || JSON.stringify(d).includes('approval'), 'ferramenta destrutiva cria pedido de aprovação na Inbox (não executa)', `aprovação ${d.structuredContent?.approval_id || '?'}`);
   await conn.transport.terminateSession().catch(() => {});
   await client.close();
 
-  // 4) Renovação pelo refresh token (sem nova autorização).
+  // 4) Renewal via the refresh token (no new authorization).
   const redirectsBefore = p.redirects;
   const oldRefresh = p.tok.refresh_token;
   p.tok = { ...p.tok, access_token: 'hubo_invalido' };
@@ -157,12 +157,12 @@ async function main() {
   const again = await conn.client.listTools();
   ok(again.tools.length > 0 && p.redirects === redirectsBefore && p.tok.refresh_token !== oldRefresh, 'token vencido/inválido → SDK renovou com refresh (rotação), sem nova autorização');
   await conn.client.close();
-  // Reuso do refresh antigo é detectado (a concessão cai).
+  // Reuse of the old refresh token is detected (the grant is revoked).
   const reuse = await fetch(`${HUB}/oauth/token`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: oldRefresh, client_id: p.info.client_id }) });
   const after = await fetch(`${HUB}/mcp`, { method: 'POST', headers: { authorization: `Bearer ${p.tok.access_token}`, 'content-type': 'application/json', accept: 'application/json, text/event-stream' }, body: '{"jsonrpc":"2.0","id":1,"method":"ping"}' });
   ok(reuse.status === 400 && after.status === 401, 'reuso do refresh antigo → concessão revogada', `reuso ${reuse.status} · token atual ${after.status}`);
 
-  // 5) Modo cabeçalho (token pessoal), como o "API Key" do Langdock.
+  // 5) Header mode (personal token), like Langdock's "API Key".
   const login = await fetch(`${HUB}/login`, { method: 'POST', redirect: 'manual', headers: { 'content-type': 'application/x-www-form-urlencoded', origin: HUB }, body: new URLSearchParams({ email: USER, password: PASS, next: '/' }) });
   const cookie = (login.headers.getSetCookie?.() || []).map((c) => c.split(';')[0]).find((c) => c.startsWith('hub_session='));
   const pt = await fetch(`${HUB}/api/me/tokens`, { method: 'POST', headers: { cookie, origin: HUB, 'content-type': 'application/json' }, body: JSON.stringify({ name: `mcp-client-check ${Date.now()}`, actions: ['mcp'], expires_days: 1 }) });

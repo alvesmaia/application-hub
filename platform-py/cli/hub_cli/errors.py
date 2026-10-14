@@ -1,4 +1,4 @@
-"""Erros da CLI com código de saída estável: 0 ok, 1 falha, 2 validação, 3 autenticação, 4 hub inacessível."""
+"""CLI errors with stable exit codes: 0 ok, 1 failure, 2 validation, 3 authentication, 4 hub unreachable."""
 
 OK, FAIL, VALIDATION, AUTH, UNREACHABLE = 0, 1, 2, 3, 4
 

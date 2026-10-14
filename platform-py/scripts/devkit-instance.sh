@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Hub TEMPORÁRIO para provar o `hub deploy` (F22): cópia do estado de /data, banco próprio, rede própria e prefixo de
-# contêiner próprio (`app-hub-devkit-app-*`) — nunca toca os apps nem o banco de produção. Socket do Docker ligado
-# (constrói e sobe o app implantado). Usuários demo ligados só na cópia.
-#   bash scripts/devkit-instance.sh up     # app-hub-devkit em http://127.0.0.1:8094 (senha demo em .devkit-instance.env)
-#   bash scripts/devkit-instance.sh down   # remove contêineres, rede, volumes e imagens do app de prova
+# TEMPORARY hub to prove `hub deploy` (F22): copy of the /data state, own database, own network and container prefix
+# (`app-hub-devkit-app-*`) — never touches the apps or the production database. Docker socket mounted
+# (builds and starts the deployed app). Demo users enabled only in the copy.
+#   bash scripts/devkit-instance.sh up     # app-hub-devkit at http://127.0.0.1:8094 (demo password in .devkit-instance.env)
+#   bash scripts/devkit-instance.sh down   # removes containers, network, volumes and images of the test app
 set -euo pipefail
 cd "$(dirname "$0")/.."
 NAME=app-hub-devkit

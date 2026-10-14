@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Instância ISOLADA do hub para a validação completa (E2E com restauração/importação, blue/green, OAuth): estado
-# vazio, banco de estado, banco dos apps, object store e os 4 apps PRÓPRIOS numa rede própria. Os contêineres usam
-# o prefixo `app-hub-iso-*` e entram na rede com os apelidos da pilha (`app-hub-db`, `app-hub-app-db`,
-# `app-hub-objstore`, `app-hub-app-<id>`, `app-hub-web`), então `apps.json`/`app-env.json` valem sem mudança — nada
-# fala com produção. Senhas de dev (hubpy-*), usuários demo, rota hostil do E2E ligada, HUB_PUBLIC_URL = esta porta.
-#   bash scripts/iso-instance.sh up      # http://127.0.0.1:8093 (senha demo em .iso-instance.env)
-#   bash scripts/iso-instance.sh down    # remove contêineres, rede, volumes e imagens app-hub-iso-*
+# ISOLATED hub instance for the full validation (E2E with restore/import, blue/green, OAuth): empty state,
+# state database, apps database, object store and the 4 OWN apps on their own network. The containers use
+# the `app-hub-iso-*` prefix and join the network with the stack's aliases (`app-hub-db`, `app-hub-app-db`,
+# `app-hub-objstore`, `app-hub-app-<id>`, `app-hub-web`), so `apps.json`/`app-env.json` apply unchanged — nothing
+# talks to production. Dev passwords (hubpy-*), demo users, the E2E hostile route enabled, HUB_PUBLIC_URL = this port.
+#   bash scripts/iso-instance.sh up      # http://127.0.0.1:8093 (demo password in .iso-instance.env)
+#   bash scripts/iso-instance.sh down    # removes containers, network, volumes and app-hub-iso-* images
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export MSYS_NO_PATHCONV=1
@@ -21,7 +21,7 @@ case "${1:-}" in
 up)
   "$0" down >/dev/null 2>&1 || true
   docker build -q -f Dockerfile -t "$IMG" .. >/dev/null
-  # imagens dos apps deste checkout (app-hub-iso-<id>): nunca reetiqueta as app-hub-<id> de produção
+  # images of this checkout's apps (app-hub-iso-<id>): never retags the production app-hub-<id> images
   for a in "${APPS[@]}"; do
     df=demo-apps-py/$a/Dockerfile
     [ "$a" = coletor ] && df=Dockerfile.coletor
@@ -38,10 +38,10 @@ up)
     -e POSTGRES_USER=hub -e POSTGRES_PASSWORD=hubpy-app-dev -e POSTGRES_DB=hub postgres:16-alpine
   run --name $P-objstore --network-alias app-hub-objstore -v $P-obj:/data -e MINIO_ROOT_USER=hubadmin \
     -e MINIO_ROOT_PASSWORD=hubpy-objstore-dev -e MINIO_BROWSER=off app-hub-minio:0.10.0 server /data
-  # um banco por app (= infra/app-db-init.sh, sem montar o arquivo: CRLF num checkout Windows quebra o shebang)
+  # one database per app (= infra/app-db-init.sh, without mounting the file: CRLF in a Windows checkout breaks the shebang)
   until docker exec $P-db pg_isready -U hub >/dev/null 2>&1 && docker exec $P-appdb psql -U hub -c 'select 1' >/dev/null 2>&1; do sleep 1; done
   for a in "${APPS[@]}"; do docker exec $P-appdb createdb -U hub "$a"; done
-  # bucket dos anexos do fornecedores (em produção já existe no volume do objstore)
+  # bucket for the attachments of fornecedores (in production it already exists in the objstore volume)
   for _ in $(seq 30); do
     docker run --rm --network "$NET" --entrypoint sh app-hub-mc:0.10.0 -c \
       'mc alias set r http://app-hub-objstore:9000 hubadmin hubpy-objstore-dev >/dev/null && mc mb -p r/fornecedores >/dev/null' && break
@@ -86,12 +86,12 @@ down)
   rm -f "$ENVF"
   echo "instância isolada removida"
   ;;
-run) # bash scripts/iso-instance.sh run npx playwright test …  (em platform/tests-e2e, com o ambiente da instância)
+run) # bash scripts/iso-instance.sh run npx playwright test …  (in platform/tests-e2e, with the instance environment)
   shift
   set -a
   . "./$ENVF"
   E2E_CONTAINER_PREFIX=$P- E2E_DATA_NETWORK=$NET E2E_OBJSTORE_PASS=hubpy-objstore-dev E2E_ATIVOS_STACK=python E2E_APP_DB=$P-appdb
-  ZD_IMAGE_NAME=$P-ativos HUB_URL=$HUB HUB_PASSWORD=$HUB_DEMO_PASSWORD   # py-resilience.mjs e mcp-client
+  ZD_IMAGE_NAME=$P-ativos HUB_URL=$HUB HUB_PASSWORD=$HUB_DEMO_PASSWORD   # py-resilience.mjs and mcp-client
   HUB_BIN=${HUB_BIN:-$(command -v hub)} HUB_MC_IMAGE=${HUB_MC_IMAGE:-app-hub-mc:0.10.0}
   command -v cygpath >/dev/null && HUB_BIN=$(cygpath -m "$HUB_BIN")
   for a in "${APPS[@]}"; do

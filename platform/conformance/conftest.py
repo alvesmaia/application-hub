@@ -1,18 +1,18 @@
-"""Suíte de conformidade do contrato de app (``docs/CONTRATO-APP.md``) — caixa-preta por
-HTTP, independente de linguagem.
+"""Conformance suite for the app contract (``docs/CONTRATO-APP.md``) — black box over
+HTTP, language-independent.
 
-Configuração (variáveis de ambiente):
+Configuration (environment variables):
 
-- ``CONF_APP`` — id do app; o perfil ``profiles/<id>.json`` diz as seções, a ação que
-  grava dados (idempotência + auditoria), o gatilho de tarefa e a rota pesada;
-- ``CONF_URL`` — base do app (ex.: ``http://hub-app-contratos:8080`` na rede do app, ou
-  ``http://127.0.0.1:9104`` nativo);
-- ``CONF_TOKEN`` — ``HUB_INTERNAL_TOKEN`` do app;
-- ``CONF_DB_URL`` — opcional: banco do app (verificações de esquema e de efeitos);
-- ``CONF_PROFILE`` — opcional: caminho do perfil (o ``hub check --full`` usa o ``conformance.json`` do app).
+- ``CONF_APP`` — app id; the profile ``profiles/<id>.json`` lists the sections, the action that
+  writes data (idempotency + audit), the task trigger and the heavy route;
+- ``CONF_URL`` — app base URL (e.g. ``http://hub-app-contratos:8080`` on the app network, or
+  ``http://127.0.0.1:9104`` native);
+- ``CONF_TOKEN`` — the app's ``HUB_INTERNAL_TOKEN``;
+- ``CONF_DB_URL`` — optional: the app database (schema and side-effect checks);
+- ``CONF_PROFILE`` — optional: profile path (``hub check --full`` uses the app's ``conformance.json``).
 
-O hub **não** deve estar coletando o outbox do app durante a suíte (o ``run.sh`` para o
-``hub-web``): a suíte confere os eventos pendentes e as confirmações ela mesma.
+The hub **must not** be collecting the app's outbox during the suite (``run.sh`` stops the
+``hub-web``): the suite checks the pending events and the acknowledgements itself.
 """
 
 from __future__ import annotations

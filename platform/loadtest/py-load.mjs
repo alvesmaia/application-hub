@@ -1,12 +1,12 @@
-// Carga: quantos usuários simultâneos o hub aguenta. Usuários virtuais (laço fechado, com tempo de pensar) fazem o
-// roteiro de uma pessoa real — Início, catálogo, abrir o app, navegar, buscar — em degraus de carga.
+// Load: how many simultaneous users the hub handles. Virtual users (closed loop, with think time) run the
+// script of a real person — Início, catalog, open the app, navigate, search — in load steps.
 //
 //   HUB=http://127.0.0.1:8097 HUB_DEMO_PASSWORD=… node loadtest/py-load.mjs [--steps 25,50,100,200] [--dur 60]
-//        [--think 2000] [--app ativos] [--out arq.md]
+//        [--think 2000] [--app ativos] [--out file.md]
 //
-// Rode numa pilha isolada (install.sh --project app-hub-<x>), nunca na instância do dono. Critério por degrau:
-// p95 < 300 ms e erros < 0,1%. "Suporta" = maior degrau que passou. Sessões: os 3 usuários de demonstração
-// (HUB_DEMO_USERS=1), repartidas entre os usuários virtuais (o login tem limite de taxa).
+// Run it on an isolated stack (install.sh --project app-hub-<x>), never on the owner's instance. Criterion per step:
+// p95 < 300 ms and errors < 0,1%. "Supports" = highest step that passed. Sessions: the 3 demo users
+// (HUB_DEMO_USERS=1), split among the virtual users (login is rate-limited).
 import fs from 'node:fs';
 
 const HUB = process.env.HUB || 'http://127.0.0.1:8097';
@@ -48,7 +48,7 @@ async function step(n, cookies) {
   const lat = [], bad = new Map();
   let stop = false, total = 0;
   const vu = async (i) => {
-    await wait(Math.random() * THINK); // espalha a partida
+    await wait(Math.random() * THINK); // spreads the start
     for (let k = i; !stop; k++) {
       const [url, h] = ROUTE[k % ROUTE.length];
       const t = performance.now();
@@ -89,7 +89,7 @@ for (const n of STEPS) {
   rows.push(r);
   console.log(`${n} usuários: ${r.rps.toFixed(1)} req/s · p50 ${r.p50.toFixed(0)} ms · p95 ${r.p95.toFixed(0)} ms · `
     + `p99 ${r.p99.toFixed(0)} ms · erros ${(r.err * 100).toFixed(2)}% ${r.bad} → ${r.ok ? 'OK' : 'FALHOU'}`);
-  if (!r.ok) break; // degrau seguinte só pioraria
+  if (!r.ok) break; // the next step would only get worse
 }
 const best = rows.filter((r) => r.ok).at(-1);
 const md = [

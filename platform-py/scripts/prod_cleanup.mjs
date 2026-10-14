@@ -1,6 +1,6 @@
-// Limpeza única do estado de produção (hub PARADO): node scripts/prod_cleanup.mjs <pasta-copia-de-/data>
-// Remove lixo de teste (E2E/probes) sem tocar na auditoria, nos bancos nem nas contas reais.
-// Imprime só contagens e nomes de itens de teste — nunca valores.
+// One-time cleanup of the production state (hub STOPPED): node scripts/prod_cleanup.mjs <copy-of-/data-folder>
+// Removes test leftovers (E2E/probes) without touching the audit, the databases or the real accounts.
+// Prints only counts and names of test items — never values.
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -13,14 +13,14 @@ const log = (...a) => console.log(...a);
 const TEST_TOKEN = /^(f7a-|f4b-|mcp-client-check|step-up mcp|e2e)/i;
 const TEST_ENV = /^(E2E_|HUB_DEMO_E2E_HOSTILE$)/;
 
-// auth.json: tokens de teste
+// auth.json: test tokens
 const auth = rd('auth.json');
 const before = auth.tokens.length;
 auth.tokens = auth.tokens.filter((t) => !TEST_TOKEN.test(t.name || ''));
 log(`tokens removidos: ${before - auth.tokens.length} (restam ${auth.tokens.length})`);
 wr('auth.json', auth);
 
-// admin.json: variáveis, reinício pendente, incidentes e flags de teste
+// admin.json: variables, pending restart, incidents and test flags
 const admin = rd('admin.json');
 const envOut = admin.env.filter((e) => TEST_ENV.test(e.name)).map((e) => e.name);
 admin.env = admin.env.filter((e) => !TEST_ENV.test(e.name));
@@ -35,14 +35,14 @@ admin.flags = admin.flags.filter((f) => !/e2e|teste|probe/i.test(`${f.key} ${f.d
 log(`flags removidas: ${fl - admin.flags.length}`);
 wr('admin.json', admin);
 
-// ops.json: aprovações de script de teste
+// ops.json: test script approvals
 const ops = rd('ops.json');
 const sa = ops.script_approvals.length;
 ops.script_approvals = ops.script_approvals.filter((a) => !/(^|\/)e2e-/.test(a.path));
 log(`aprovações de script removidas: ${sa - ops.script_approvals.length}`);
 wr('ops.json', ops);
 
-// inbox.json: arquiva (bit 2) para todos os usuários os itens do app removido (contratos) e dos clientes de teste do MCP
+// inbox.json: archives (bit 2) for all users the items of the removed app (contratos) and of the MCP test clients
 const inbox = rd('inbox.json');
 const uids = auth.users.map((u) => u.id);
 let n = 0;

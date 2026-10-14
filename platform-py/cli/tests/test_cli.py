@@ -185,7 +185,7 @@ HUBPY = os.environ.get("APP_HUB_URL", "http://localhost:8090")
 
 @pytest.mark.skipif(not _hub_up(HUBPY), reason="app-hub indisponível (APP_HUB_URL, padrão :8090)")
 def test_smoke_hubpy():
-    """Sem APP_HUB_TOKEN usa um token inválido: a ponte devolve erro JSON-RPC (hub alcançado)."""
+    """Without APP_HUB_TOKEN it uses an invalid token: the bridge returns a JSON-RPC error (hub reached)."""
     b = mcp.Bridge(HUBPY, os.environ.get("APP_HUB_TOKEN", "hubt_invalido"))
     init = {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "t", "version": "0"}}
     k, ms = b.forward(json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": init}))
@@ -201,7 +201,7 @@ def test_dev_without_platform_package(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     (tmp_path / "manifest.json").write_text("{}")
-    monkeypatch.setitem(__import__("sys").modules, "hub", None)  # import falha como sem a plataforma
+    monkeypatch.setitem(__import__("sys").modules, "hub", None)  # import fails, as without the platform
     assert main(["dev", "--dir", str(tmp_path), "--upstream", "http://localhost:5000"]) == 2
     assert "pacote da plataforma" in capsys.readouterr().err
 
@@ -228,22 +228,22 @@ def test_pack_build_dir(tmp_path: Path):
 
 
 def test_pack_too_big_says_what_weighs(tmp_path: Path):
-    """O hub recusa acima de MAX_PACKAGE_BYTES com 400; a CLI avisa antes de enviar e aponta os maiores arquivos."""
+    """The hub refuses above MAX_PACKAGE_BYTES with 400; the CLI warns before sending and points to the largest files."""
     from hub_cli.pack import MAX_PACKAGE_BYTES
 
     d = app(tmp_path / "a")
     b = d / "build"
     b.mkdir()
     (b / "Dockerfile").write_text("FROM scratch\n")
-    (b / "vendor.bin").write_bytes(os.urandom(MAX_PACKAGE_BYTES + 1024 * 1024))  # zip não comprime aleatório
+    (b / "vendor.bin").write_bytes(os.urandom(MAX_PACKAGE_BYTES + 1024 * 1024))  # zip will not shrink it
     out = tmp_path / "o.hubapp"
     with pytest.raises(PackError, match=r"build/vendor.bin.*vendor/"):
         pack(d, None, out, b, "Dockerfile")
-    assert not out.exists()  # nada de pacote inútil no disco
+    assert not out.exists()  # no useless package left on disk
 
 
 def test_check_conformance_points_to_cause(tmp_path: Path):
-    """§3 sem causa não ajuda: `_why` traz a última exceção de .hub/check-app.log (e a dica do banco antigo)."""
+    """§3 without a cause is unhelpful: `_why` brings the last exception from .hub/check-app.log (and the old-database hint)."""
     from hub_cli.check import _why
 
     log = tmp_path / "check-app.log"
@@ -258,7 +258,7 @@ def test_check_conformance_points_to_cause(tmp_path: Path):
     assert _why(tmp_path / "nao-existe.log") == ""
     log.write_text("INFO: nada de exceção\n", encoding="utf-8")
     assert _why(log) == " (veja check-app.log)"
-    # 204 com corpo: o servidor derruba a resposta e o cliente só vê o tempo esgotar.
+    # 204 with a body: the server drops the response and the client only sees the timeout.
     log.write_text(
         "h11._util.LocalProtocolError: Too much data for declared Content-Length\n", encoding="utf-8"
     )
@@ -266,7 +266,7 @@ def test_check_conformance_points_to_cause(tmp_path: Path):
 
 
 def test_check_wait_reports_last_ready_status(monkeypatch):
-    """App que nunca fica pronto: a mensagem diz o que o /_hub/ready respondeu, não só "60 s"."""
+    """App that never becomes ready: the message says what /_hub/ready answered, not just "60 s"."""
     import httpx
 
     from hub_cli import check

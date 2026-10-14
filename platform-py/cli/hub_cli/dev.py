@@ -1,8 +1,8 @@
-"""`hub dev`: roda um app sozinho dentro do shell real, sem Docker e sem Postgres (FAQ 7).
+"""`hub dev`: runs one app alone inside the real shell, without Docker or Postgres (FAQ 7).
 
-O hub mínimo em processo vive em `hub.devapp` (pacote da plataforma, embutido na CLI junto dos assets do
-shell). Sem `--upstream`, a CLI também sobe o próprio app (`uv run uvicorn … --reload`) com SQLite em
-`.hub/dev.db`, armazenamento em `.hub/storage/` (mesma API `hub_sdk.storage`) e tarefas em processo.
+The minimal in-process hub lives in `hub.devapp` (platform package, bundled in the CLI along with the assets of the
+shell). Without `--upstream`, the CLI also starts the app itself (`uv run uvicorn … --reload`) with SQLite in
+`.hub/dev.db`, storage in `.hub/storage/` (same `hub_sdk.storage` API) and in-process tasks.
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ def banner(
 
 
 def bundled_assets() -> None:
-    """Fora do repositório, aponta o hub em processo para os assets embutidos na CLI."""
+    """Outside the repository, points the in-process hub at the assets bundled in the CLI."""
     root = Path(str(resources.files("hub_cli"))) / "_assets"
     if (root / "shell").is_dir() and "HUB_ASSET_DIRS" not in os.environ:
         os.environ["HUB_ASSET_DIRS"] = os.pathsep.join([str(root / "shell"), str(root / "web")])
@@ -74,7 +74,7 @@ def read_env(path: Path) -> dict[str, str]:
 
 
 def app_env(directory: Path, app_id: str, port: int) -> dict[str, str]:
-    """Ambiente do app no dev: o que a plataforma injetaria, com SQLite e pasta local."""
+    """App environment in dev: what the platform would inject, with SQLite and a local folder."""
     hub = directory.resolve() / ".hub"
     (hub / "scratch").mkdir(parents=True, exist_ok=True)
     env = {k: v for k, v in os.environ.items() if k != "VIRTUAL_ENV"}
@@ -87,7 +87,7 @@ def app_env(directory: Path, app_id: str, port: int) -> dict[str, str]:
             "HUB_SCRATCH_DIR": str(hub / "scratch"),
             "HUB_INTERNAL_TOKEN": secrets.token_urlsafe(24),
             "HUB_JOBS_MODE": "inline",
-            "PYTHONUTF8": "1",  # acentos certos no console do Windows (cp1252)
+            "PYTHONUTF8": "1",  # correct accents in the Windows console (cp1252)
             "HUB_SQL_LOCAL_FILE": str(local_connections(directory)),
         }
     )
@@ -96,8 +96,8 @@ def app_env(directory: Path, app_id: str, port: int) -> dict[str, str]:
 
 
 def local_connections(directory: Path) -> Path:
-    """`.hub/connections.toml` (conexões SQL locais do `hub_sdk.sql`): na 1ª vez copia `dev/connections.toml`
-    do projeto e cria os bancos SQLite de exemplo `.hub/<nome>.db` a partir de `dev/<nome>.sql`."""
+    """`.hub/connections.toml` (local SQL connections for `hub_sdk.sql`): on first run copies `dev/connections.toml`
+    from the project and creates the sample SQLite databases `.hub/<name>.db` from `dev/<name>.sql`."""
     import sqlite3
 
     hub = directory.resolve() / ".hub"
@@ -141,7 +141,7 @@ def run(
 
     os.environ.setdefault("HUB_DATA_DIR", str(directory.resolve() / ".hub" / "hubdata"))
     asgi, entry = devapp.dev_asgi(directory, upstream, role)
-    if env and env.get("HUB_INTERNAL_TOKEN"):  # o hub local usa o mesmo token do app (sem 401 em /_hub/*)
+    if env and env.get("HUB_INTERNAL_TOKEN"):  # local hub: the app's token (no 401 on /_hub/*)
         os.environ["HUB_INTERNAL_TOKEN_" + entry.id.upper().replace("-", "_")] = env["HUB_INTERNAL_TOKEN"]
     _, _, keys, ignored = devapp.load_app(directory, upstream)
     if limits:
@@ -159,7 +159,7 @@ def run(
 def spawn(
     cmd: list[str], cwd: Path, env: dict[str, str] | None, out: IO[str] | None = None
 ) -> subprocess.Popen[str]:
-    """Processo filho num grupo próprio (o `uv run` tem netos: o encerramento leva a árvore toda)."""
+    """Child process in its own group (`uv run` has grandchildren: shutdown takes the whole tree)."""
     if os.name == "nt":
         flags = subprocess.CREATE_NEW_PROCESS_GROUP
         return subprocess.Popen(cmd, cwd=cwd, env=env, stdout=out, stderr=out, text=True, creationflags=flags)  # noqa: S603
@@ -183,7 +183,7 @@ def stop(proc: subprocess.Popen[str]) -> None:
 
 
 def run_project(directory: Path, port: int, role: str) -> int:
-    """`hub dev` sem `--upstream`: sobe o app do projeto (uvicorn --reload) e o hub local na frente."""
+    """`hub dev` without `--upstream`: starts the project's app (uvicorn --reload) and the local hub in front of it."""
     import json
 
     mf = directory / "manifest.json"

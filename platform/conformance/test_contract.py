@@ -1,7 +1,7 @@
-"""Conformidade com ``platform/docs/CONTRATO-APP.md`` (seções entre colchetes).
+"""Conformance with ``platform/docs/CONTRATO-APP.md`` (sections in brackets).
 
-Cada teste verifica um ponto do contrato só por HTTP (e, com ``CONF_DB_URL``, o banco do
-app); nada aqui conhece a linguagem do app.
+Each test checks one point of the contract only over HTTP (and, with ``CONF_DB_URL``, the
+app's database); nothing here knows the app's language.
 """
 
 from __future__ import annotations
@@ -50,7 +50,7 @@ def test_health_is_get_app_root_200(cfg: Cfg, http: httpx.Client) -> None:
     assert time.monotonic() - t < 5
 
 
-# ---- [3] fragmentos, skeleton, assets ------------------------------------------------------
+# ---- [3] fragments, skeleton, assets ------------------------------------------------------
 def test_sections_are_fragments_with_the_workspace(cfg: Cfg, http: httpx.Client) -> None:
     for s in cfg.profile["sections"]:
         r = keep(http.get(f"/{cfg.app}/{s}"))
@@ -59,11 +59,11 @@ def test_sections_are_fragments_with_the_workspace(cfg: Cfg, http: httpx.Client)
         assert f'href="/apps/{cfg.app}/' in r.text, f"{s}: links do app em /apps/{cfg.app}/…"
 
 
-# ---- [1] URLs públicas: /apps/{id} (onda 13) ----------------------------------------------
+# ---- [1] public URLs: /apps/{id} (wave 13) ----------------------------------------------
 def test_never_emits_unprefixed_self_links(cfg: Cfg, http: httpx.Client) -> None:
-    """O navegador vê o app em ``/apps/{id}/…`` (o hub traduz para ``/{id}/…`` no
-    upstream). Nenhum link, formulário ou comportamento ``data-hub-*`` aponta para o
-    caminho antigo ``/{id}…`` (downloads diretos pelo gateway, ``/_frag/{id}/…``, valem)."""
+    """The browser sees the app at ``/apps/{id}/…`` (the hub translates it to ``/{id}/…`` in the
+    upstream). No link, form or ``data-hub-*`` behavior points to the
+    old path ``/{id}…`` (direct downloads through the gateway, ``/_frag/{id}/…``, are fine)."""
     old = re.compile(
         r'\s(?:href|action|formaction|src|data-hub-[a-z-]+)="/' + re.escape(cfg.app) + r'(?:[/?#"])',
         re.I,
@@ -98,10 +98,10 @@ def test_assets_closed_list_with_types(cfg: Cfg, http: httpx.Client) -> None:
 
 
 def test_no_app_javascript_in_fragments(cfg: Cfg, http: httpx.Client) -> None:
-    """Onda 12 (2.1): o app não roda JavaScript próprio. Fragmentos sem ``<script>``
-    (exceto blocos de dados ``application/json``), sem atributos de evento (``on…=``) e
-    sem URLs ``javascript:`` — o hub os remove de qualquer forma (sanitizador + CSP), então
-    um app que depende deles quebra; comportamentos vêm dos atributos ``data-hub-*``."""
+    """Wave 12 (2.1): the app runs no JavaScript of its own. Fragments without ``<script>``
+    (except ``application/json`` data blocks), no event attributes (``on…=``) and
+    no ``javascript:`` URLs — the hub removes them anyway (sanitizer + CSP), so
+    an app that depends on them breaks; behaviors come from the ``data-hub-*`` attributes."""
     bad = re.compile(r"<script(?![^>]*type=[\"']application/json)|\son[a-z]+\s*=|javascript:", re.I)
     for s in cfg.profile["sections"]:
         r = keep(http.get(f"/{cfg.app}/{s}"))
@@ -109,7 +109,7 @@ def test_no_app_javascript_in_fragments(cfg: Cfg, http: httpx.Client) -> None:
         assert hit is None, f"{s}: JavaScript no fragmento ({hit.group(0) if hit else ''!r}) — use data-hub-*"
 
 
-# ---- [4] identidade -----------------------------------------------------------------------
+# ---- [4] identity -----------------------------------------------------------------------
 def test_identity_is_used_and_escaped_and_invalid_is_guest(cfg: Cfg, http: httpx.Client) -> None:
     page = f"/{cfg.app}/{cfg.profile['sections'][0]}"
     r = keep(http.get(page))
@@ -120,7 +120,7 @@ def test_identity_is_used_and_escaped_and_invalid_is_guest(cfg: Cfg, http: httpx
         assert r.status_code == 200 and "convidado" in r.text, bad
 
 
-# ---- [5] endpoints internos ------------------------------------------------------------------
+# ---- [5] internal endpoints ------------------------------------------------------------------
 def test_internal_endpoints_require_the_token(cfg: Cfg, http: httpx.Client) -> None:
     base = f"/{cfg.app}/_hub"
     for path, method in (
@@ -146,7 +146,7 @@ def test_internal_endpoints_require_the_token(cfg: Cfg, http: httpx.Client) -> N
         assert r.status_code == 401, (path, r.status_code)
 
 
-# ---- [19] busca federada (onda 9) ---------------------------------------------------------------
+# ---- [19] federated search (wave 9) ---------------------------------------------------------------
 def _ident_full(user: str, perms: list[str], locale: str = "") -> str:
     d: dict[str, Any] = {"user": user, "roles": [], "name": "Conformidade", "permissions": perms}
     if locale:
@@ -181,7 +181,7 @@ def test_search_contract(cfg: Cfg, internal: httpx.Client) -> None:
     assert keep(internal.get(base, params={"q": "x" * 101}, headers=h)).status_code == 400
 
 
-# ---- [20] aprovações pela Inbox (onda 9) ---------------------------------------------------------
+# ---- [20] approvals via Inbox (wave 9) ---------------------------------------------------------
 def test_approvals_contract(cfg: Cfg, internal: httpx.Client) -> None:
     base = f"/{cfg.app}/_hub/approvals"
     ok = {"decision": "approve", "comment": "conformidade"}
@@ -204,7 +204,7 @@ def test_approvals_contract(cfg: Cfg, internal: httpx.Client) -> None:
     assert keep(internal.post(f"{base}/{a['unknown']}", json=ok, headers=approver)).status_code == 404
 
 
-# ---- [21] idioma (onda 9) ----------------------------------------------------------------------
+# ---- [21] language (wave 9) ----------------------------------------------------------------------
 def test_locale_from_hub_headers(cfg: Cfg, http: httpx.Client) -> None:
     loc = cfg.profile.get("locale")
     if not loc:
@@ -220,7 +220,7 @@ def test_locale_from_hub_headers(cfg: Cfg, http: httpx.Client) -> None:
     assert loc["pt"] in pt.text, "pt-BR por padrão"
 
 
-# ---- [18] traces e feature flags (onda 8) ---------------------------------------------------
+# ---- [18] traces and feature flags (wave 8) ---------------------------------------------------
 def _pull_spans(cfg: Cfg, internal: httpx.Client, after: int) -> tuple[list[dict[str, Any]], int]:
     r = keep(internal.get(f"/{cfg.app}/_hub/telemetry?after={after}"))
     assert r.status_code == 200
@@ -231,7 +231,7 @@ def _pull_spans(cfg: Cfg, internal: httpx.Client, after: int) -> tuple[list[dict
 
 def test_trace_context_propagates_to_app_and_db(cfg: Cfg, http: httpx.Client, internal: httpx.Client) -> None:
     cursor = 0
-    while True:  # anda até o fim do buffer (o que já estava lá não interessa)
+    while True:  # walks to the end of the buffer (what was already there does not matter)
         old, cursor = _pull_spans(cfg, internal, cursor)
         if not old:
             break
@@ -295,7 +295,7 @@ def test_outbox_page_shape_and_limit_cap(cfg: Cfg, internal: httpx.Client) -> No
 
 
 def mutation(cfg: Cfg) -> dict[str, Any]:
-    """Ação que grava dados (idempotência + auditoria); perfil sem ela pula esses testes."""
+    """Action that writes data (idempotency + audit); a profile without it skips these tests."""
     m = cfg.profile.get("mutation")
     if not m:
         pytest.skip("perfil sem ação que grava dados (mutation)")
@@ -303,7 +303,7 @@ def mutation(cfg: Cfg) -> dict[str, Any]:
 
 
 def mine(cfg: Cfg, internal: httpx.Client, needle: str) -> list[dict[str, Any]]:
-    """Eventos pendentes desta execução (usuário da suíte + marca ``uniq``)."""
+    """Pending events of this run (suite user + ``uniq`` mark)."""
     out: list[dict[str, Any]] = []
     after = 0
     while True:
@@ -341,7 +341,7 @@ def send(
             http.post(m["path"], files={f["field"]: (f["name"], content.encode(), f["type"])}, headers=h)
         )
     if "json" in m:
-        # Onda 13: mutação pela API JSON do app (ex.: coletor, POST /coletor/api/v1/counts).
+        # Wave 13: mutation through the app's JSON API (e.g. coletor, POST /coletor/api/v1/counts).
         body = dict(m["json"])
         if vary:
             body[m["vary"]] = str(body.get(m["vary"], "")) + " (variante)"
@@ -352,7 +352,7 @@ def send(
     return keep(http.post(m["path"], data=form, headers=h))
 
 
-# ---- [6] idempotência + auditoria ---------------------------------------------------------
+# ---- [6] idempotency + audit ---------------------------------------------------------
 def test_idempotency_replay_mismatch_scope_and_audit_exactly_once(
     cfg: Cfg, http: httpx.Client, internal: httpx.Client
 ) -> None:
@@ -367,16 +367,16 @@ def test_idempotency_replay_mismatch_scope_and_audit_exactly_once(
     r3 = send(cfg, http, key, vary=True)
     assert r3.status_code == 422, "mesma chave, outro pedido → 422"
     assert keep(http.post(m["path"], data={}, headers={"idempotency-key": "curta"})).status_code == 400
-    # outra identidade com a mesma chave nunca recebe a resposta guardada
+    # another identity with the same key never receives the stored response
     r4 = send(cfg, http, key, header=ident(f"outro-{cfg.uniq.lower()}@teste.local", "Outro Usuário"))
     assert "idempotent-replay" not in r4.headers
-    # auditoria: exatamente um evento desta ação (a repetição não gravou outro)
+    # audit: exactly one event for this action (the repetition did not write another)
     ev = mine(cfg, internal, cfg.uniq)
     if m.get("audit_action"):
         ev = [e for e in ev if e["action"] == m["audit_action"]]
     assert len(ev) == 1, ev
     assert ev[0]["kind"] == "audit" and ev[0]["user"] in (cfg.name, cfg.user)
-    # confirmação: some da lista; confirmar de novo não conta
+    # acknowledgement: it leaves the list; acknowledging again does not count
     ids = [e["event_id"] for e in mine(cfg, internal, cfg.uniq)]
     r = keep(internal.post(f"/{cfg.app}/_hub/outbox/ack", json={"ids": ids}))
     assert r.json()["acked"] == len(ids)
@@ -420,7 +420,7 @@ def test_idempotency_same_key_in_parallel_executes_once(
     )
 
 
-# ---- [7] tarefas duráveis ----------------------------------------------------------------------
+# ---- [7] durable tasks ----------------------------------------------------------------------
 JOB_FIELDS = {
     "id", "kind", "status", "payload", "attempts", "max_attempts", "max_duration_s", "checkpoint",
     "progress_done", "progress_total", "progress_text", "result", "error", "cancel_requested", "user",
@@ -486,7 +486,7 @@ def test_job_cancel_and_retry_semantics(cfg: Cfg, http: httpx.Client, internal: 
         keep(internal.post(f"/{cfg.app}/_hub/jobs/{job['id']}/cancel"))
 
 
-# ---- [9] operações pesadas ------------------------------------------------------------------
+# ---- [9] heavy operations ------------------------------------------------------------------
 def test_heavy_operations_answer_429_with_retry_after(cfg: Cfg) -> None:
     h = cfg.profile.get("heavy")
     if not h:
@@ -498,7 +498,7 @@ def test_heavy_operations_answer_429_with_retry_after(cfg: Cfg) -> None:
             c.stream("GET", h["path"]) as r,
         ):
             if r.status_code == 200:
-                time.sleep(0.5)  # segura a vaga um pouco antes de consumir
+                time.sleep(0.5)  # holds the slot a little before consuming
                 for _ in r.iter_bytes():
                     pass
             else:
@@ -518,8 +518,8 @@ def test_heavy_operations_answer_429_with_retry_after(cfg: Cfg) -> None:
 
 
 def test_downloads_are_attachments_nosniff_no_store(cfg: Cfg) -> None:
-    """Download (a rota pesada do perfil, ex.: export.csv): anexo com nome de arquivo,
-    ``X-Content-Type-Options: nosniff`` e ``Cache-Control: no-store``."""
+    """Download (the profile's heavy route, e.g. export.csv): attachment with filename,
+    ``X-Content-Type-Options: nosniff`` and ``Cache-Control: no-store``."""
     h = cfg.profile.get("heavy")
     if not h:
         pytest.skip("app sem download no perfil")
@@ -537,12 +537,12 @@ def test_downloads_are_attachments_nosniff_no_store(cfg: Cfg) -> None:
     assert "no-store" in r.headers.get("cache-control", "").lower()
 
 
-# ---- [22] armazenamento de arquivos (onda 10) ---------------------------------------------------
+# ---- [22] file storage (wave 10) ---------------------------------------------------
 def test_storage_roundtrip_confinement_and_failures(cfg: Cfg, http: httpx.Client) -> None:
-    """Arquivos do app (`hub_sdk.storage`): envio → aparece na lista → download igual, como
-    anexo, `nosniff`/`no-store` → exclusão; nomes com traversal/codificação nunca servem
-    arquivo (400/404); armazenamento indisponível (ex.: broker do hub parado durante a suíte)
-    responde **503** (com aviso), nunca 500."""
+    """App files (`hub_sdk.storage`): upload → appears in the list → identical download, as
+    attachment, `nosniff`/`no-store` → deletion; names with traversal/encoding never serve
+    a file (400/404); storage unavailable (e.g. hub broker stopped during the suite)
+    responds **503** (with a warning), never 500."""
     st = cfg.profile.get("storage")
     if not st:
         pytest.skip("app sem armazenamento de arquivos no perfil")
@@ -580,7 +580,7 @@ def test_storage_roundtrip_confinement_and_failures(cfg: Cfg, http: httpx.Client
     assert http.get(links[0]).status_code == 404
 
 
-# ---- [10] banco (opcional) -----------------------------------------------------------------------
+# ---- [10] database (optional) -----------------------------------------------------------------------
 def test_sdk_tables_and_durable_effects(cfg: Cfg, http: httpx.Client) -> None:
     if not cfg.db_url:
         pytest.skip("sem CONF_DB_URL")
@@ -624,7 +624,7 @@ def test_sdk_tables_and_durable_effects(cfg: Cfg, http: httpx.Client) -> None:
     asyncio.run(go())
 
 
-# ---- [23] API v1 (onda 11) ------------------------------------------------------------------
+# ---- [23] API v1 (wave 11) ------------------------------------------------------------------
 def _openapi(http: httpx.Client, cfg: Cfg) -> dict[str, Any]:
     r = keep(http.get(f"/{cfg.app}/api/openapi.json"))
     assert r.status_code == 200, "OpenAPI em /{app}/api/openapi.json (manifest.api.openapi)"
@@ -633,7 +633,7 @@ def _openapi(http: httpx.Client, cfg: Cfg) -> dict[str, Any]:
 
 
 def _simple_gets(cfg: Cfg, doc: dict[str, Any]) -> list[str]:
-    """Operações GET sem parâmetro de caminho nem de consulta obrigatório."""
+    """GET operations without a required path or query parameter."""
     out = []
     for path, item in doc["paths"].items():
         op = item.get("get")
@@ -668,18 +668,18 @@ def test_declared_endpoints_are_reachable_and_auth_is_enforced(cfg: Cfg, http: h
             r = keep(http.get(path))
             assert 200 <= r.status_code < 300, (path, r.status_code, r.text[:200])
             assert r.headers["content-type"].startswith("application/json"), path
-            # Sem a identidade do hub: 401 (problem+json).
+            # Without the hub identity: 401 (problem+json).
             r = keep(anon.get(path))
             assert r.status_code == 401, (path, r.status_code)
             assert r.headers["content-type"].startswith("application/problem+json"), path
-    # Erros no formato RFC 9457.
+    # Errors in RFC 9457 format.
     r = keep(http.get(f"/{cfg.app}/api/v1/nao-existe-{cfg.uniq.lower()}"))
     assert r.status_code in (404, 405)
 
 
 def test_ready_header_is_absent_once_the_app_is_ready(cfg: Cfg, http: httpx.Client) -> None:
-    """x-hub-ready: 0 só enquanto o app aquece (migrações); pronto, o cabeçalho some — o
-    blue/green do hub espera isso antes de trocar o tráfego ([2], correção de 28/09)."""
+    """x-hub-ready: 0 only while the app warms up (migrations); once ready, the header disappears — the
+    hub's blue/green waits for this before switching traffic ([2], fix of 28/09)."""
     deadline = time.monotonic() + 60
     while True:
         r = keep(http.get(f"/{cfg.app}"))
@@ -694,10 +694,10 @@ def test_ready_header_is_absent_once_the_app_is_ready(cfg: Cfg, http: httpx.Clie
 
 
 def test_ready_and_health_endpoints_are_mandatory(cfg: Cfg) -> None:
-    """[2] Onda 12 (2.5): ``GET /{id}/_hub/ready`` (prontidão: 200 pronto / 503 não pronto
-    com JSON ``reason``) e ``GET /{id}/_hub/health`` (vivacidade) são **obrigatórios** —
-    o blue/green do hub só troca o tráfego depois do 200 do ready, e um app sem a rota é
-    recusado na implantação. Sem token interno; ``Cache-Control: no-store``."""
+    """[2] Wave 12 (2.5): ``GET /{id}/_hub/ready`` (readiness: 200 ready / 503 not ready
+    with JSON ``reason``) and ``GET /{id}/_hub/health`` (liveness) are **required** —
+    the hub's blue/green only switches traffic after the 200 from ready, and an app without the route is
+    refused at deployment. No internal token; ``Cache-Control: no-store``."""
     with httpx.Client(base_url=cfg.url, timeout=10) as anon:
         deadline = time.monotonic() + 60
         while True:
@@ -717,7 +717,7 @@ def test_ready_and_health_endpoints_are_mandatory(cfg: Cfg) -> None:
         assert r.status_code == 200 and r.json()["status"] == "ok"
 
 
-# ---- [24] MCP interno (onda 11) ----------------------------------------------------------------
+# ---- [24] internal MCP (wave 11) ----------------------------------------------------------------
 def _mcp(c: httpx.Client, cfg: Cfg, method: str, params: dict[str, Any] | None = None) -> httpx.Response:
     return c.post(
         f"/{cfg.app}/_hub/mcp",
@@ -731,7 +731,7 @@ def test_mcp_initialize_list_and_call_a_safe_tool(
 ) -> None:
     if cfg.profile.get("mcp") is False:
         pytest.skip("app com mcp.enabled = false")
-    # Sem o token interno: recusado (só o hub chama).
+    # Without the internal token: refused (only the hub calls).
     assert _mcp(http, cfg, "tools/list").status_code in (401, 403)
     r = _mcp(internal, cfg, "initialize", {"protocolVersion": "2025-06-18", "capabilities": {}})
     assert r.status_code == 200
@@ -758,12 +758,12 @@ def test_mcp_initialize_list_and_call_a_safe_tool(
     r = _mcp(internal, cfg, "tools/call", {"name": safe["name"], "arguments": {}}).json()
     assert r["result"]["isError"] is False, r
     assert r["result"]["content"][0]["type"] == "text"
-    # Ferramenta desconhecida e método desconhecido: erros JSON-RPC.
+    # Unknown tool and unknown method: JSON-RPC errors.
     assert _mcp(internal, cfg, "tools/call", {"name": "nao-existe"}).json()["error"]["code"] == -32602
     assert _mcp(internal, cfg, "nao/existe").json()["error"]["code"] == -32601
 
 
-# ---- [11] cookies e cabeçalhos (todas as respostas desta execução) ---------------------------
+# ---- [11] cookies and headers (all responses of this run) ---------------------------
 def test_zz_cookies_and_headers_over_every_response(cfg: Cfg) -> None:
     assert SEEN, "nenhuma resposta coletada"
     for r in SEEN:

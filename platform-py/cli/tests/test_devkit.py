@@ -1,4 +1,4 @@
-"""Kit do desenvolvedor: `hub project`, `hub check` e `hub dev` (sem Docker)."""
+"""Developer kit: `hub project`, `hub check` and `hub dev` (no Docker)."""
 
 from __future__ import annotations
 
@@ -46,18 +46,18 @@ def test_create_non_interactive(tmp_path: Path, wheel: Path, capsys: pytest.Capt
     assert check.manifest_problems(m) == []
     assert (d / ".gitignore").is_file() and (d / "vendor" / wheel.name).is_file()
     assert "__APP_ID__" not in (d / "src/estoque/app.py").read_text()
-    # perfil da suíte completa (hub check --full) e o demo.css do shell, também fora do wheel
+    # full-suite profile (hub check --full) and the shell's demo.css, also outside the wheel
     assert json.loads((d / "conformance.json").read_text())["id"] == "estoque"
     assert (d / "src/estoque/assets/demo.css").is_file()
     assert 'path = "vendor/hub_sdk-1.0.0-py3-none-any.whl"' in (d / "pyproject.toml").read_text()
-    # pasta ocupada → validação
+    # folder already in use → validation
     assert main(args) == 2
     assert json.loads(capsys.readouterr().out)["code"] == 2
 
 
 def test_create_validation_errors(tmp_path: Path, wheel: Path, capsys: pytest.CaptureFixture[str]) -> None:
     base = ["project", "create", "--yes", "--dir", str(tmp_path / "x")]
-    assert main(base) == 2  # sem id
+    assert main(base) == 2  # no id
     assert main([*base, "Inválido"]) == 2
     assert main([*base, "hub-x"]) == 2
     assert main([*base, "ok-app", "--stack", "cobol"]) == 2
@@ -215,9 +215,9 @@ def test_step_conformance_app_never_ready(tmp_path: Path, monkeypatch: pytest.Mo
 def test_check_full_runs_the_complete_suite(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: Any
 ) -> None:
-    """`hub check --full`: a suíte completa (platform/conformance) contra o app, com o conformance.json do app."""
+    """`hub check --full`: the full suite (platform/conformance) against the app, using the app's conformance.json."""
     d = mk_manifest(tmp_path / "a")
-    assert "conformidade-completa" not in [n for n, _ in check.STEPS]  # só com --full
+    assert "conformidade-completa" not in [n for n, _ in check.STEPS]  # only with --full
     ok, detail = check.step_full_conformance(d)
     assert not ok and "conformance.json" in detail
     (d / "conformance.json").write_text(
@@ -280,7 +280,7 @@ def test_bundled_assets(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None
 def test_template_formatted_with_longest_id(
     tmp_path: Path, wheel: Path, capsys: pytest.CaptureFixture[str], extra: list[str]
 ) -> None:
-    """O `hub check` do projeto recém-criado não reprova formatação, mesmo com o id mais longo (32)."""
+    """The `hub check` of a newly created project does not fail on formatting, even with the longest id (32)."""
     app_id = "a" + "-b" * 15 + "c"
     d = tmp_path / "p"
     args = [

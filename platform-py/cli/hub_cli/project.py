@@ -1,4 +1,4 @@
-"""`hub project create|stacks`: novo app a partir de um template embutido (depois: catálogo do hub)."""
+"""`hub project create|stacks`: new app from a bundled template (later: the hub catalog)."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from .errors import CliError
 ID_RE = re.compile(r"^[a-z][a-z0-9-]{1,31}$")
 RESERVED = {"apps", "hub", "internal", "platform", "postgres", "template0", "template1"}
 REQUIRES = ("database", "storage")
-# Arquivos sem ponto no template (o empacotador ignoraria) → nome final.
+# Files without a dot in the template (the packager would skip them) → final name.
 RENAMES = {"gitignore": ".gitignore", "dockerignore": ".dockerignore"}
 
 
@@ -92,8 +92,8 @@ def create(
     directory: Path,
     template: str = "basic",
 ) -> dict[str, object]:
-    """Copia o template da stack; ``template="dashboard"`` sobrepõe ``<stack>.dashboard`` (arquivos do kit de
-    dashboards: Painel com KPIs, gráficos, tabela, filtro e exportação + dados de exemplo para o `hub dev`)."""
+    """Copies the stack's template; ``template="dashboard"`` overlays ``<stack>.dashboard`` (files of the dashboard kit:
+    dashboard panel with KPIs, charts, table, filter and export + sample data for `hub dev`)."""
     validate_id(app_id)
     if not name.strip() or len(name) > 80:
         raise CliError("--name: informe 1–80 caracteres", 2)
@@ -132,7 +132,7 @@ def create(
             out.write_text(text, encoding="utf-8", newline="\n")
             if rel not in files:
                 files.append(rel)
-    # O wheel embute o demo.css; rodando do repositório (instalação editável), ele vem de platform/demo-apps.
+    # The wheel bundles demo.css; when running from the repository (editable install) it comes from platform/demo-apps.
     css = directory / "src" / subst["__PKG__"] / "assets" / "demo.css"
     repo_css = Path(__file__).resolve().parents[3] / "platform" / "demo-apps" / "assets" / "demo.css"
     if stack == "python-fastapi" and not css.is_file() and repo_css.is_file():

@@ -1,4 +1,4 @@
-"""Ponto de entrada `hub` (project, dev, check, pack, mcp)."""
+"""Entry point for `hub` (project, dev, check, pack, mcp)."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ exemplos:
 
 
 class Parser(argparse.ArgumentParser):
-    """Erro de uso = código 2 (validação), com a dica de exemplos."""
+    """Usage error = exit code 2 (validation), with the examples hint."""
 
     @override
     def error(self, message: str) -> NoReturn:
@@ -197,7 +197,7 @@ def cmd_check(a: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     try:
         a = parser().parse_args(argv)
-    except SystemExit as e:  # uso inválido (2) ou --help (0)
+    except SystemExit as e:  # invalid usage (2) or --help (0)
         return e.code if isinstance(e.code, int) else VALIDATION
     try:
         if a.cmd == "project":
@@ -245,7 +245,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def run() -> None:
-    for s in (sys.stdout, sys.stderr):  # saída redirecionada no Windows (cp1252) não quebra com → · …
+    for s in (sys.stdout, sys.stderr):  # redirected output on Windows (cp1252) must not break on → · …
         reconfigure = getattr(s, "reconfigure", None)
         if reconfigure:
             reconfigure(encoding="utf-8", errors="replace")

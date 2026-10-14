@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# Runtime de desenvolvimento do hub Python (projeto compose "app-hub", porta 8090).
-#   dev.sh up                       modo dev: uvicorn --reload, assets do disco sem cache, URL do túnel (HUB_DEV_PUBLIC_URL)
-#   dev.sh down                     volta à pilha normal (sem modo dev); `stop` derruba a pilha app-hub inteira
+# Development runtime of the Python hub (compose project "app-hub", port 8090).
+#   dev.sh up                       dev mode: uvicorn --reload, assets from disk without cache, tunnel URL (HUB_DEV_PUBLIC_URL)
+#   dev.sh down                     back to the normal stack (no dev mode); `stop` takes down the whole app-hub stack
 #   dev.sh status|logs
-#   dev.sh reload-on|reload-off     recarga ao vivo do navegador (SSE /_dev/reload); vale no próximo dev-up (ou já, se em dev)
-#   dev.sh obs-up|obs-down          perfil observability (OTel Collector + Jaeger :16696) com OTLP ligado no hub
-# Toca só em app-hub-*; nunca nos containers hub-* nem no túnel.
+#   dev.sh reload-on|reload-off     live browser reload (SSE /_dev/reload); applies on the next dev-up (or immediately, if in dev)
+#   dev.sh obs-up|obs-down          observability profile (OTel Collector + Jaeger :16696) with OTLP enabled in the hub
+# Touches only app-hub-*; never the hub-* containers or the tunnel.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 STATE=dist/dev-mode.env
 c() { docker compose -p app-hub --profile demo-apps ${ENVF:+--env-file "$ENVF"} -f docker-compose.yml -f docker-compose.apps.yml "$@"; }
-[ -f .dev.env ] && ENVF=.dev.env  # tokens internos dos apps = os do cofre do hub (HUB_INTERNAL_TOKEN_<APP>)
+[ -f .dev.env ] && ENVF=.dev.env  # internal app tokens = the hub vault ones (HUB_INTERNAL_TOKEN_<APP>)
 reload_flag() { [ -f "$STATE" ] && grep -q '^HUB_DEV_RELOAD=1' "$STATE" && echo 1 || echo 0; }
 in_dev() { [ "$(docker inspect -f '{{index .Config.Labels "hub.dev"}}' app-hub-web 2>/dev/null || true)" = 1 ]; }
 dev() { export HUB_DEV_RELOAD; HUB_DEV_RELOAD="$(reload_flag)"; c -f docker-compose.dev.yml "$@"; }

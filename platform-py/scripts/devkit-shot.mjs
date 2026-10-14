@@ -1,5 +1,5 @@
-// Captura de tela do `hub dev` (prova do kit do desenvolvedor).
-// Uso: node platform-py/scripts/devkit-shot.mjs <url> <arquivo.png>  (playwright de platform/tests-e2e)
+// Screenshot of `hub dev` (proof for the developer kit).
+// Usage: node platform-py/scripts/devkit-shot.mjs <url> <file.png>  (playwright from platform/tests-e2e)
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";

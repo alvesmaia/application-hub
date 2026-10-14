@@ -1,7 +1,7 @@
-"""`hub login` e `hub deploy`: empacota o app e envia à API de implantações do hub.
+"""`hub login` and `hub deploy`: packages the app and sends it to the hub's deployments API.
 
-O hub aplica o `requires` do manifesto (banco, armazenamento) e grava as variáveis/segredos enviados
-(só escrita: valores nunca são impressos, registrados nem devolvidos). Produção fica pendente de aprovação.
+The hub applies the manifest's `requires` (database, storage) and stores the variables/secrets sent
+(write-only: values are never printed, logged or returned). Production stays pending approval.
 """
 
 from __future__ import annotations
@@ -110,8 +110,8 @@ def read_env_file(path: Path) -> dict[str, str]:
 
 
 def collect_values(manifest: dict[str, Any], env_file: Path | None, tty: bool) -> dict[str, dict[str, str]]:
-    """Valores de `requires.variables/secrets`: arquivo de implantação, senão pergunta (segredo sem eco).
-    Vazio = mantém o valor atual no hub. Nunca imprime valores."""
+    """Values for `requires.variables/secrets`: from the deploy file, otherwise prompts (secrets are not echoed).
+    Empty = keep the current value in the hub. Never prints values."""
     req = manifest.get("requires") or {}
     file_vals = read_env_file(env_file) if env_file and env_file.is_file() else {}
     names = {"variables": list(req.get("variables") or []), "secrets": list(req.get("secrets") or [])}
@@ -158,7 +158,7 @@ def deploy(directory: Path, env: str, hub: str | None, token: str | None, env_fi
         job = r.json()
     except ValueError:
         job = {"message": r.text[:300]}
-    if not job.get("message"):  # recusa do hub: a razão vem em `error` (ex.: tamanho do pacote)
+    if not job.get("message"):  # hub refusal: the reason comes in `error` (e.g. package size)
         job["message"] = str(job.get("error") or "")[:300]
     ok = r.status_code in (200, 201) and bool(job.get("ok"))
     result = {"ok": ok, "app": m["id"], "version": m["version"], "env": env, "sha256": sha,

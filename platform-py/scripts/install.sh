@@ -1,31 +1,31 @@
 #!/usr/bin/env bash
-# Instalação do zero do Application Hub numa máquina que só tem Docker (Compose >= 2.24), git e bash.
+# Fresh install of the Application Hub on a machine that only has Docker (Compose >= 2.24), git and bash.
 #
 #   git clone https://github.com/alvesmaia/application-hub.git application-hub && cd application-hub
 #   bash platform-py/scripts/install.sh --admin-email voce@empresa.com
-#   # ou, sem clonar antes:  bash install.sh --clone [--ref main] [--dir ./application-hub] ...
+#   # or, without cloning first:  bash install.sh --clone [--ref main] [--dir ./application-hub] ...
 #
-# O que faz (idempotente — rodar de novo só sobe o que falta e nunca troca segredos existentes):
-#   1. gera platform-py/.prod.env (0600) a partir de prod.env.example com segredos novos (senhas do Postgres/MinIO,
-#      tokens internos dos apps) e as opções desta instância (projeto, porta, faixa de rede, apps de exemplo);
-#   2. compila do código-fonte as imagens do MinIO/mc (infra/minio/Dockerfile), do hub e dos apps;
-#   3. cria a chave mestra do cofre no volume de dados e guarda uma cópia em platform-py/.secrets/master.key
-#      (mova-a para fora do servidor);
-#   4. cria o primeiro administrador; a senha temporária vai para platform-py/.secrets/primeiro-acesso.txt (0600);
-#   5. sobe a pilha e espera o /healthz.
+# What it does (idempotent — running it again only starts what is missing and never changes existing secrets):
+#   1. generates platform-py/.prod.env (0600) from prod.env.example with new secrets (Postgres/MinIO passwords,
+#      internal app tokens) and this instance's options (project, port, network range, sample apps);
+#   2. builds from source the MinIO/mc images (infra/minio/Dockerfile), the hub and the apps;
+#   3. creates the vault master key in the data volume and keeps a copy in platform-py/.secrets/master.key
+#      (move it off the server);
+#   4. creates the first administrator; the temporary password goes to platform-py/.secrets/primeiro-acesso.txt (0600);
+#   5. starts the stack and waits for /healthz.
 #
-# Opções:
-#   --admin-email E      e-mail do primeiro administrador (padrão admin@example.com)
-#   --public-url URL     origem vista pelo navegador (padrão http://localhost:<porta>; produção: https://…)
-#   --port N             porta do hub no host (padrão 8090)          --bind IP   (padrão 127.0.0.1)
-#   --project NOME       projeto compose / prefixo dos contêineres (padrão app-hub; deve começar com app-hub)
-#   --subnet A.B         faixa das redes dos apps A.B.<n>.0/24 (padrão 10.231)
-#   --no-demo-apps       não sobe os 4 apps de exemplo (padrão: sobem, para a primeira avaliação)
-#   --clone              clona o repositório antes (--repo URL, --ref REF, --dir PASTA)
-#   --get-compose        baixa o docker-compose oficial (versão fixa, sha256 conferido) em ~/.local/bin — para
-#                        RHEL/Rocky sem root, onde a distribuição não traz provedor de compose
-#   --yes                não pergunta nada (padrões + opções da linha de comando); num terminal sem opções
-#                        de instância o script pergunta cada uma, com o padrão entre [colchetes]
+# Options:
+#   --admin-email E      e-mail of the first administrator (default admin@example.com)
+#   --public-url URL     origin seen by the browser (default http://localhost:<port>; production: https://…)
+#   --port N             hub port on the host (default 8090)          --bind IP   (default 127.0.0.1)
+#   --project NAME       compose project / container prefix (default app-hub; must start with app-hub)
+#   --subnet A.B         app network range A.B.<n>.0/24 (default 10.231)
+#   --no-demo-apps       does not start the 4 sample apps (default: they start, for the first evaluation)
+#   --clone              clones the repository first (--repo URL, --ref REF, --dir FOLDER)
+#   --get-compose        downloads the official docker-compose (pinned version, sha256 checked) to ~/.local/bin — for
+#                        RHEL/Rocky without root, where the distribution does not ship a compose provider
+#   --yes                asks nothing (defaults + command-line options); in a terminal without instance options
+#                        of the instance the script asks for each one, with the default in [brackets]
 set -euo pipefail
 export MSYS_NO_PATHCONV=1
 
@@ -54,7 +54,7 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
-ask() { # ask <variável> <pergunta> [validador]; EOF ou 3 erros = fica no padrão
+ask() { # ask <variable> <question> [validator]; EOF or 3 errors = keeps the default
   local cur ans i=0
   eval "cur=\$$1"
   while [ "$i" -lt 3 ]; do
@@ -89,7 +89,7 @@ if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && [ -t 0 ] && [ -r /dev/tty ]; then
 fi
 case "$PROJECT" in app-hub | app-hub-*) ;; *) echo "--project deve começar com app-hub (trava do hub)" >&2; exit 2 ;; esac
 command -v docker >/dev/null || { echo "Docker não encontrado (Podman: instale podman-docker)" >&2; exit 1; }
-get_compose() { # binário oficial em ~/.local/bin (sem root); versão fixa e sha256 conferido
+get_compose() { # official binary in ~/.local/bin (no root); pinned version and sha256 checked
   local url=https://github.com/docker/compose/releases/download/$COMPOSE_VER/docker-compose-linux-x86_64
   local dest=$HOME/.local/bin/docker-compose tmp
   mkdir -p "$HOME/.local/bin"
@@ -120,7 +120,7 @@ if ! docker compose version >/dev/null 2>&1; then
   fi
   docker compose version >/dev/null 2>&1 || { echo "o docker ainda não encontra o provedor de compose" >&2; exit 1; }
 fi
-# Podman rootless (RHEL/Rocky/Fedora): o socket é o do usuário, não /var/run/docker.sock
+# Podman rootless (RHEL/Rocky/Fedora): the socket belongs to the user, not /var/run/docker.sock
 ROOTLESS_SOCK=""
 if docker --version 2>/dev/null | grep -qi podman && [ "$(podman info --format '{{.Host.Security.Rootless}}' 2>/dev/null)" = true ]; then
   ROOTLESS_SOCK="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/podman/podman.sock"
@@ -161,7 +161,7 @@ if [ ! -f "$ENVF" ]; then
     echo "HUB_SUBNET=$SUBNET"
     echo "HUB_MINIO_IMAGE=$PROJECT-minio:0.10.0"
     echo "HUB_MC_IMAGE=$PROJECT-mc:0.10.0"
-    if [ "$PORT" != 8090 ]; then # portas de depuração (só 127.0.0.1) fora das da instância padrão
+    if [ "$PORT" != 8090 ]; then # debug ports (127.0.0.1 only) outside the default instance's
       echo "HUB_APPDB_PORT=$((PORT + 10000))"
       echo "HUB_APP_PORT_ATIVOS=$((PORT + 1011))"
       echo "HUB_APP_PORT_FORNECEDORES=$((PORT + 1012))"
@@ -170,7 +170,7 @@ if [ ! -f "$ENVF" ]; then
     fi
     if [ "$DEMO" = 1 ]; then echo "COMPOSE_PROFILES=demo-apps"; else echo "HUB_APPS_JSON=./apps.empty.json"; fi
   } >> "$ENVF"
-  if [ -n "$ROOTLESS_SOCK" ]; then # dono do socket = o usuário = root dentro do namespace
+  if [ -n "$ROOTLESS_SOCK" ]; then # socket owner = the user = root inside the namespace
     { echo "HUB_CONTAINER_SOCKET_HOST=$ROOTLESS_SOCK"; echo "DOCKER_GID=0"; } >> "$ENVF"
   elif [ -n "${DOCKER_GID:-}" ]; then
     echo "DOCKER_GID=$DOCKER_GID" >> "$ENVF"
@@ -210,7 +210,7 @@ fi
 
 echo "5/5 subindo a pilha ($P)"
 dc up -d
-# bucket dos anexos do app de exemplo fornecedores
+# bucket for the attachments of the sample app fornecedores
 if [ "${COMPOSE_PROFILES:-}" = demo-apps ]; then
   for _ in $(seq 60); do
     docker run --rm --network "${P}_default" -e "PW=$APP_HUB_OBJSTORE_PASSWORD" --entrypoint sh "$HUB_MC_IMAGE" -c \

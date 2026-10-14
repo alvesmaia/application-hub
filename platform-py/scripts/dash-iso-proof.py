@@ -1,7 +1,7 @@
-"""Prova do kit de dashboards na instância isolada (`scripts/iso-instance.sh up`): cria a conexão PostgreSQL
-`vendas` (banco de exemplo no app-db da iso), testa, cria um token de CI e grava em `$TEMP/dash-proof/token`.
-Depois do `hub deploy --env staging`, rode com `bind` para vincular a conexão ao app em staging.
-Uso: uv run python scripts/dash-iso-proof.py setup|bind|check"""
+"""Proof for the dashboard kit on the isolated instance (`scripts/iso-instance.sh up`): creates the PostgreSQL connection
+`vendas` (sample database in the iso app-db), tests it, creates a CI token and writes it to `$TEMP/dash-proof/token`.
+After `hub deploy --env staging`, run with `bind` to link the connection to the app in staging.
+Usage: uv run python scripts/dash-iso-proof.py setup|bind|check"""
 
 from __future__ import annotations
 

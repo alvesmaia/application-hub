@@ -1,4 +1,4 @@
-"""`hub mcp`: ponte stdio <-> Streamable HTTP do MCP do hub (uma mensagem JSON-RPC por linha)."""
+"""`hub mcp`: stdio <-> Streamable HTTP bridge to the hub's MCP (one JSON-RPC message per line)."""
 
 import base64
 import ipaddress
@@ -29,7 +29,7 @@ def rpc_error(id_: Any, code: int, msg: str) -> dict[str, Any]:
 
 
 def check_hub_url(hub: str) -> None:
-    """O token só vai por HTTPS, ou HTTP para a própria máquina."""
+    """The token is only sent over HTTPS, or over HTTP to the local machine itself."""
     u = urlparse(hub)
     if u.scheme not in ("http", "https"):
         raise ValueError(f"esquema {u.scheme or hub}:// não suportado (use https://)")
@@ -49,7 +49,7 @@ def check_hub_url(hub: str) -> None:
 
 
 def resolve_token(cli: str | None, file: Path | None, env: str | None) -> tuple[str, str | None]:
-    """Arquivo > HUB_TOKEN > --token (com aviso)."""
+    """File > HUB_TOKEN > --token (with a warning)."""
     if file is not None:
         try:
             lines = file.read_text(encoding="utf-8").splitlines()
@@ -116,7 +116,7 @@ class Bridge:
         return h
 
     def forward(self, line: str) -> tuple[str, list[Any]]:
-        """Devolve (`reply`|`accepted`|`disabled`, mensagens a escrever)."""
+        """Returns (`reply`|`accepted`|`disabled`, messages to write)."""
         try:
             msg = json.loads(line)
         except ValueError as e:
@@ -135,7 +135,7 @@ class Bridge:
         if st == 404 and (is_init or self.session is None):
             return "disabled", [rpc_error(id_, -32601, DISABLED)]
         if st == 404:
-            self.session = None  # sessão vencida: o cliente inicializa de novo
+            self.session = None  # session expired: the client initializes again
         if st == 202:
             return "accepted", []
         if sid := res.headers.get("mcp-session-id"):

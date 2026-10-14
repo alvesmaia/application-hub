@@ -1,8 +1,8 @@
-"""`hub check`: qualidade e contrato do app, local e sem Docker.
+"""`hub check`: app quality and contract checks, local and without Docker.
 
-Etapas: ruff, ruff format, ty, openapi.json (gerado do código), pytest + cobertura, manifesto (mesmas regras do
-pipeline do hub) e conformidade local (subconjunto do contrato contra o app de pé atrás do hub em processo).
-Com `--full`, também a suíte completa do contrato (`platform/conformance`) contra o app, com o `conformance.json`.
+Steps: ruff, ruff format, ty, openapi.json (generated from the code), pytest + coverage, manifest (same rules as the
+hub pipeline) and local conformance (a subset of the contract against the app running behind the in-process hub).
+With `--full`, also the full contract suite (`platform/conformance`) against the app, using `conformance.json`.
 """
 
 from __future__ import annotations
@@ -61,7 +61,7 @@ def _manifest(directory: Path) -> dict[str, Any]:
 
 
 def manifest_problems(m: dict[str, Any]) -> list[str]:
-    """Regras do passo Manifest do pipeline do hub (+ `requires`), sem precisar do hub."""
+    """Rules for the Manifest step of the hub pipeline (+ `requires`), without needing the hub."""
     from hub.models import requires_error
 
     out: list[str] = []
@@ -103,7 +103,7 @@ def step_openapi(directory: Path) -> tuple[bool, str]:
 
 
 def _wait(url: str, seconds: float = 60) -> tuple[bool, str]:
-    """Espera o 200 do /_hub/ready; sem ele, devolve a última resposta (ou erro) para explicar a demora."""
+    """Waits for the 200 from /_hub/ready; without it, returns the last response (or error) to explain the delay."""
     end, last = time.monotonic() + seconds, "sem resposta"
     while time.monotonic() < end:
         try:
@@ -118,7 +118,7 @@ def _wait(url: str, seconds: float = 60) -> tuple[bool, str]:
 
 
 def _why(log: Path) -> str:
-    """Última exceção do log do app (`.hub/check-app.log`): é ela que explica um 500 na conformidade."""
+    """Last exception from the app log (`.hub/check-app.log`): it explains a 500 in the conformance run."""
     try:
         lines = [
             ln.rstrip() for ln in log.read_text(encoding="utf-8", errors="replace").splitlines() if ln.strip()
@@ -137,7 +137,7 @@ def _why(log: Path) -> str:
 
 
 def conformance(directory: Path, upstream: str, app_id: str, log: Path | None = None) -> list[str]:
-    """Subconjunto do contrato (CONTRATO-APP §2, §3, §3.0, §12–13, §23) pelo hub em processo."""
+    """Subset of the contract (CONTRATO-APP §2, §3, §3.0, §12–13, §23) run by the in-process hub."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         from starlette.testclient import TestClient
@@ -187,7 +187,7 @@ def conformance(directory: Path, upstream: str, app_id: str, log: Path | None = 
 
 @contextlib.contextmanager
 def _running_app(directory: Path) -> Iterator[tuple[str, str, dict[str, str], Path, str]]:
-    """Sobe o app (SQLite em .hub/) e entrega (upstream, id, env, log, erro); erro != "" = não ficou pronto."""
+    """Starts the app (SQLite in .hub/) and returns (upstream, id, env, log, error); error != "" = not ready."""
     app_id = str(_manifest(directory)["id"])
     port = dev.free_port()
     env = dev.app_env(directory, app_id, port)
@@ -219,7 +219,7 @@ def step_conformance(directory: Path) -> tuple[bool, str]:
 
 
 def suite_dir() -> Path:
-    """A suíte completa: embutida no wheel (`_conformance`) ou, no repositório, `platform/conformance`."""
+    """The full suite: bundled in the wheel (`_conformance`) or, in the repository, `platform/conformance`."""
     here = Path(__file__).resolve().parent
     for d in (here / "_conformance", here.parents[2] / "platform" / "conformance"):
         if (d / "test_contract.py").is_file():
@@ -262,7 +262,7 @@ STEPS: list[Step] = [
 ]
 
 
-# Como corrigir, quando há um comando que resolve sozinho.
+# How to fix it, when a command can resolve it automatically.
 FIX = {"ruff": "uv run ruff check --fix .", "formato": "uv run ruff format ."}
 
 
@@ -279,7 +279,7 @@ def run(directory: Path, only: list[str] | None = None, full: bool = False) -> l
             ok, out = fn(directory)
         except CliError:
             raise
-        except Exception as e:  # uma etapa quebrada vira falha da etapa, não da CLI
+        except Exception as e:  # a broken step becomes a failure of that step, not of the CLI
             ok, out = False, f"{type(e).__name__}: {e}"
         if not ok and name in FIX:
             out = f"{out}\n\nPara corrigir: {FIX[name]}"

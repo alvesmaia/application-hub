@@ -1,7 +1,7 @@
-"""Migra o estado do hub de `hubpy-*` para `app-hub-*` (F7). Uso (dentro da imagem app-hub-web, /data = cópia do volume):
+"""Migrates the hub state from `hubpy-*` to `app-hub-*` (F7). Usage (inside the app-hub-web image, /data = copy of the volume):
     python scripts/migrate_rename.py /data
-Reescreve nomes de contêiner/host em admin.json (valores do cofre abertos e selados de novo) e nos JSONs de estado.
-Senhas que contêm `hubpy-` (hubpy-dev, hubpy-app-dev, hubpy-objstore-dev) NÃO mudam. A cadeia de auditoria não é tocada."""
+Rewrites container/host names in admin.json (vault values are opened and sealed again) and in the state JSONs.
+Passwords containing `hubpy-` (hubpy-dev, hubpy-app-dev, hubpy-objstore-dev) do NOT change. The audit chain is not touched."""
 
 import json
 import sys
