@@ -2,82 +2,86 @@
 
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-> English: [README.en.md](README.en.md) · Segurança: [SECURITY.md](SECURITY.md) · Contribuir: [CONTRIBUTING.md](CONTRIBUTING.md)
+> Português: [README.pt-BR.md](README.pt-BR.md) · Security: [SECURITY.md](SECURITY.md) · Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
 >
-> **Status: experimental** — não endurecido para produção sem seguir [`docs/IMPLANTACAO.md`](docs/IMPLANTACAO.md).
+> **Status: experimental.** Not production-hardened unless you follow [`docs/IMPLANTACAO.md`](docs/IMPLANTACAO.md). Docs are mostly in Portuguese.
 
-Portal corporativo único (white label) que hospeda várias aplicações internas: um shell global (header + menu) que nunca some, cada aplicação isolada no seu container e composta na tela sem iframe, com Administração, Operações, observabilidade, Inbox e busca global. Tudo também por **API** (`/api/v1`, OpenAPI 3.1, documentação em `/api/docs`) e por **MCP** para assistentes de IA (`/mcp`, com o mesmo controle de acesso das telas).
+A white-label corporate portal that hosts many internal applications under one global shell
+(header + menu that never disappears). Each application runs isolated in its own container and is
+composed into the page without iframes, plus Administration, Operations, observability, Inbox and
+global search. Everything is also exposed as an **API** (`/api/v1`, OpenAPI 3.1, docs at `/api/docs`)
+and over **MCP** for AI assistants (`/mcp`, same access control as the UI).
 
-- **Stack:** Python 3.12 (`uv`), FastAPI + Jinja2 (SSR), asyncpg, PostgreSQL, MinIO, Docker. Hub em [`platform-py/`](platform-py/); apps Python, SDK `hub_sdk`, front-end compartilhado e suíte de conformidade em [`platform/`](platform/).
-- **Branches:** `main` = stack oficial (Python); `stack/python` = branch de trabalho.
+## Features
 
-## Funcionalidades
-
-| Área | Recursos |
+| Area | What you get |
 |---|---|
-| **Shell e experiência** | Header e menu globais fixos; Início, catálogo de aplicações, Inbox (aprovações e pedidos de acesso), busca federada (hub + apps), tour guiado, tema claro/escuro, PT-BR/EN/ES, PWA |
-| **Aplicações** | Cada app no seu contêiner, alcançado só pelo gateway e composto na página sem iframe; mesma origem com CSP estrita e HTML sanitizado; tempo real por SSE e WebSocket; leitura de código de barras e câmera (`hub-device`) |
-| **Acesso e segurança** | Login local ou SSO Microsoft Entra ID (com logout único); papéis e permissões por app; tokens de API pessoais com escopos; cofre cifrado para segredos; plano de controle restrito por rede |
-| **Administração** | Usuários, papéis, variáveis por ambiente, conexões (Postgres, MySQL, SQL Server, SharePoint/OneDrive, S3) com broker — o app nunca vê a credencial |
-| **Operações** | Implantação blue/green com prontidão obrigatória e rollback, contêineres, tarefas agendadas, backups com credencial de privilégio mínimo, atualização do hub sem parada |
-| **Observabilidade** | Métricas, SLOs e página de status, uso e analytics, logs, exportação OTLP, auditoria em cadeia verificável (âncora em arquivo ou webhook) |
-| **API e IA** | API pública `/api/v1` (OpenAPI 3.1, docs em `/api/docs`); servidor MCP `/mcp` com OAuth 2.1 — ferramentas do hub e dos apps com o mesmo controle de acesso das telas |
-| **Para desenvolvedores** | SDK Python `hub_sdk`, CLI `hub` (`hub project create`, `hub dev`, `hub check --full` com a suíte de conformidade, `hub deploy`), modo dev com recarga, 4 apps de exemplo (Ativos, Fornecedores, Serviços, Coletor) |
-| **Implantação** | Só Docker: `install.sh` gera segredos, compila tudo do código-fonte e cria o primeiro administrador; várias instâncias no mesmo host; testado em RHEL rootless |
+| **Shell & UX** | Fixed global header and menu; Home, app catalog, Inbox (approvals and access requests), federated search (hub + apps), guided tour, light/dark theme, PT-BR/EN/ES, PWA |
+| **Applications** | Each app in its own container, reached only through the gateway and composed into the page without iframes; same origin with strict CSP and sanitized HTML; real time via SSE and WebSocket; barcode scanning and camera (`hub-device`) |
+| **Access & security** | Local login or Microsoft Entra ID SSO (with single logout); per-app roles and permissions; scoped personal API tokens; encrypted vault for secrets; network-restricted control plane |
+| **Administration** | Users, roles, per-environment variables, connections (Postgres, MySQL, SQL Server, SharePoint/OneDrive, S3) behind a broker — apps never see credentials |
+| **Operations** | Blue/green deployments with mandatory readiness and rollback, containers, scheduled tasks, least-privilege backups, zero-downtime hub updates |
+| **Observability** | Metrics, SLOs and status page, usage and analytics, logs, OTLP export, verifiable hash-chained audit log (file or webhook anchor) |
+| **API & AI** | Public API `/api/v1` (OpenAPI 3.1, docs at `/api/docs`); MCP server `/mcp` with OAuth 2.1 — hub and app tools under the same access control as the UI |
+| **For developers** | Python SDK `hub_sdk`, `hub` CLI (`hub project create`, `hub dev`, `hub check --full` with the conformance suite, `hub deploy`), dev mode with reload, 4 sample apps (Assets, Suppliers, Services, Collector) |
+| **Deployment** | Docker only: `install.sh` generates secrets, builds everything from source and creates the first admin; multiple instances per host; tested on rootless RHEL |
 
 ## Roadmap
 
-| Item | Status | Observação |
+| Item | Status | Notes |
 |---|---|---|
-| Modo de escala pronto no compose (N cópias do hub atrás da borda em `round_robin`) | Planejado | Hoje: 1 contêiner ≈ 200 usuários simultâneos; 2 contêineres ≈ 300 (montagem manual) |
-| Vários processos por contêiner (`uvicorn --workers`) | Planejado | Cada processo tenta abrir a porta interna do broker (8081) |
-| ODBC no broker SQL | Ideia | Só com o driver de um banco específico (Oracle, DB2…) na imagem; Postgres, MySQL e SQL Server já são nativos |
-| Aprovação humana de ação de agente na Inbox | Ideia | Hoje a confirmação de ações destrutivas fica com o cliente de IA (`confirm_token`) |
+| Built-in scale mode in compose (N hub replicas behind the edge, `round_robin`) | Planned | Today: 1 container ≈ 200 concurrent users; 2 containers ≈ 300 (manual setup) |
+| Multiple processes per container (`uvicorn --workers`) | Planned | Each process tries to bind the broker's internal port (8081) |
+| ODBC in the SQL broker | Idea | Only with a specific database driver (Oracle, DB2…) in the image; Postgres, MySQL and SQL Server are native |
+| Human approval of agent actions in the Inbox | Idea | Today destructive actions are confirmed by the AI client (`confirm_token`) |
 
-Detalhes e histórico: [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md).
+Details and history: [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md).
 
-## Documentação
+## Architecture
 
-| Documento | Para quê |
-|---|---|
-| [`AGENTS.md`](AGENTS.md) | Guia de trabalho: stack, comandos, guardrails |
-| [`docs/HANDOFF.md`](docs/HANDOFF.md) | Estado atual e como rodar |
-| [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md) | Status e itens em aberto |
-| [`docs/FAQ-ARQUITETURA.md`](docs/FAQ-ARQUITETURA.md) | Decisões de arquitetura |
-| [`docs/IMPLANTACAO.md`](docs/IMPLANTACAO.md) | Checklist de implantação |
-| [`platform/README.md`](platform/README.md) | Mapa de `platform/` (apps, SDK, assets, testes) |
-| [`platform/docs/CONTRATO-APP.md`](platform/docs/CONTRATO-APP.md) | Contrato entre hub e aplicações |
+- **Stack:** Python 3.12 (`uv`), FastAPI + Jinja2 (SSR), asyncpg, PostgreSQL, MinIO, Docker.
+- Hub in `platform-py/hub` (auth, vault, state, admin, gateway, ux, connections/storage, insight, ops, api).
+- Python apps, the `hub_sdk` SDK, shared front-end assets (`platform/assets`) and the conformance suite live in `platform/`.
+- Apps are separate upstreams reached only through the gateway (`/apps/<id>/…`, `/_frag/<id>/…`); the shell composes
+  their HTML fragments (sanitized, same origin, no app JavaScript unless approved). Contract: `platform/docs/CONTRATO-APP.md`.
+- Branches: `main` = official Python stack; `stack/python` = working branch.
 
-## Instalar do zero (só Docker)
+## Install from scratch (Docker only)
 
 ```bash
 git clone https://github.com/alvesmaia/application-hub.git && cd application-hub
-bash platform-py/scripts/install.sh --admin-email voce@empresa.com   # http://localhost:8090
+bash platform-py/scripts/install.sh --admin-email you@company.com   # http://localhost:8090
 ```
 
-Gera os segredos (`platform-py/.prod.env`, 0600), compila tudo do código-fonte (hub, apps, MinIO/mc), cria a
-chave mestra do cofre e o primeiro administrador (senha temporária em `platform-py/.secrets/primeiro-acesso.txt`).
-Os 4 apps de exemplo sobem por padrão (perfil compose `demo-apps`); `--no-demo-apps` instala só o hub. Outras
-opções: `--public-url https://hub.empresa.com`, `--port`, `--project` (várias instâncias no mesmo host),
-`--subnet`. Produção: [`docs/IMPLANTACAO.md`](docs/IMPLANTACAO.md); atualização: [`docs/ATUALIZACAO.md`](docs/ATUALIZACAO.md);
-mudanças: [`CHANGELOG.md`](CHANGELOG.md).
+Generates secrets (`platform-py/.prod.env`), builds everything from source (hub, apps, MinIO/mc), creates the vault
+master key and the first administrator (temporary password in `platform-py/.secrets/primeiro-acesso.txt`). The 4
+sample apps are on by default (compose profile `demo-apps`); `--no-demo-apps` installs the hub only. Upgrades:
+`docs/ATUALIZACAO.md`; changes: `CHANGELOG.md`.
 
-## Desenvolvimento (em `platform-py/`)
+## Development (in `platform-py/`)
 
 ```bash
 uv sync
-uv run hub-check --all              # ruff, formato, ty, audit, pytest (+ cli, SDK, apps)
-docker compose --profile demo-apps -f docker-compose.yml -f docker-compose.apps.yml up -d --build   # hub em http://127.0.0.1:8090
-bash scripts/dev.sh up              # modo dev (código do disco, --reload)
+uv run hub-check --all     # ruff, format, ty, audit, pytest (+ cli, SDK, apps)
+docker compose --profile demo-apps -f docker-compose.yml -f docker-compose.apps.yml up -d --build   # hub at http://127.0.0.1:8090
+bash scripts/dev.sh up     # dev mode (code from disk, --reload)
 ```
 
-> ⚠️ Contas de demonstração (`HUB_DEMO_USERS=1`) só em desenvolvimento; produção usa `docker-compose.prod.yml` + `prod.env.example` (ver `docs/IMPLANTACAO.md`).
+> ⚠️ Demo accounts (`HUB_DEMO_USERS=1`) are for development only. Production uses `docker-compose.prod.yml`
+> + `prod.env.example` and the checklist in `docs/IMPLANTACAO.md`.
 
-## Licença / License
+## Documentation map
 
-Código sob a [Apache License 2.0](LICENSE) — atribuições de terceiros (fontes, ZXing, ícones; MinIO é compilado à
-parte, AGPL-3.0) em [`NOTICE`](NOTICE). O nome "Application Hub", a marca e o logotipo Alvesmaia **não** são
-licenciados para forks: veja [`TRADEMARKS.md`](TRADEMARKS.md).
+| Document | Purpose |
+|---|---|
+| `AGENTS.md` | Working guide: stack, commands, guardrails |
+| `docs/HANDOFF.md` | Current state and how to run |
+| `docs/PENDENCIAS.md` | Status and open items |
+| `docs/FAQ-ARQUITETURA.md` | Architecture decisions (Q&A) |
+| `docs/IMPLANTACAO.md` | Deployment checklist |
+| `platform/docs/CONTRATO-APP.md` | Hub ↔ app contract |
 
-Code licensed under Apache-2.0 (third-party notices in `NOTICE`); the "Application Hub" name and Alvesmaia marks/logo
-are not licensed for forks' branding — see `TRADEMARKS.md`.
+## License
+
+Apache License 2.0 — see [`LICENSE`](LICENSE) and third-party notices in [`NOTICE`](NOTICE). The "Application Hub"
+name and the Alvesmaia marks and logo are not licensed for forks' branding: see [`TRADEMARKS.md`](TRADEMARKS.md).
