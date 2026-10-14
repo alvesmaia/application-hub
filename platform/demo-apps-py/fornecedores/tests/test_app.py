@@ -265,7 +265,7 @@ def test_fake_store_is_a_storage_connection() -> None:
 
 
 async def test_helpers() -> None:
-    from fornecedores.app import kb, shown_name, storage_status
+    from fornecedores.views import kb, shown_name, storage_status
 
     assert kb(0) == 0 and kb(1) == 1 and kb(1025) == 2
     assert shown_name("20260101-a-b.pdf") == "a-b.pdf" and shown_name("x.pdf") == "x.pdf"

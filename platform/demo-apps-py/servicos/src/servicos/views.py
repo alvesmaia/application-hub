@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from fastapi.responses import Response
+from hub_sdk.render import html
+
 from servicos.model import (
     CATEGORIES,
     PAGE,
@@ -164,3 +167,16 @@ def reports_head(p: Params) -> str:
 
 def base_query(status: str, cat: str, pri: str, proto: str) -> str:
     return query([("status", status), ("categoria", cat), ("prioridade", pri), ("protocolo", proto)])
+
+
+def not_found() -> Response:
+    return html(
+        '<section class="empty-state"><h1>Página não encontrada</h1><p>Esta seção não existe. '
+        '<a href="/apps/servicos">Voltar ao início do app</a>.</p></section>',
+        404,
+    )
+
+
+def retry_after(resp: Response, secs: int = 2) -> Response:
+    resp.headers["retry-after"] = str(secs)
+    return resp

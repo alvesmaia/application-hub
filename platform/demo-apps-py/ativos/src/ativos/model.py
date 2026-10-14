@@ -205,56 +205,55 @@ def _is_num(raw: Any) -> bool:
 _INT = re.compile(r"^[+-]?\d+$")
 
 
-def normalize(col: Col, raw: Any) -> Any:  # noqa: C901, PLR0912, PLR0915
-    """Normalized value (``None`` = empty/NULL) — text, date, cents or integer — or
-    :class:`Invalid` with the column's error message."""
-    if raw is None or (isinstance(raw, str) and not raw.strip()):
-        if col.required:
-            raise Invalid("campo obrigatório")
-        return None
-    k = col.kind
-    if k == "text":
-        if isinstance(raw, str):
-            s = raw.strip()
-        elif isinstance(raw, bool):
-            s = "Sim" if raw else "Não"
-        elif _is_num(raw):
-            s = _number_text(float(raw))
-        else:
-            s = str(raw).strip()
-        if len(s) > col.max_len:
-            raise Invalid(f"texto acima de {col.max_len} caracteres")
-        if any(not c.isprintable() and c != "\n" for c in s):
-            raise Invalid("caractere de controle não permitido")
-        return s
-    if k == "enum":
-        s = raw.strip() if isinstance(raw, str) else (_number_text(float(raw)) if _is_num(raw) else "")
-        for o in col.options:
-            if o.lower() == s.lower():
-                return o
-        raise Invalid(f"valor inválido (use: {', '.join(col.options)})")
-    if k == "date":
-        d: dt.date | None = None
-        if isinstance(raw, dt.datetime):
-            d = raw.date()
-        elif isinstance(raw, dt.date):
-            d = raw
-        elif _is_num(raw):
-            d = serial_to_date(float(raw))
-        elif isinstance(raw, str):
-            d = parse_date(raw)
-        if d is None:
-            raise Invalid("data inválida (use dd/mm/aaaa)")
-        return d
-    if k == "money":
-        cents = (
-            _money_from_float(float(raw))
-            if _is_num(raw)
-            else (parse_money(raw) if isinstance(raw, str) else None)
-        )
-        if cents is None:
-            raise Invalid("valor monetário inválido")
-        return cents
+def _text(col: Col, raw: Any) -> str:
+    if isinstance(raw, bool):
+        s = "Sim" if raw else "Não"
+    elif _is_num(raw):
+        s = _number_text(float(raw))
+    else:
+        s = str(raw).strip()
+    if len(s) > col.max_len:
+        raise Invalid(f"texto acima de {col.max_len} caracteres")
+    if any(not c.isprintable() and c != "\n" for c in s):
+        raise Invalid("caractere de controle não permitido")
+    return s
+
+
+def _enum(col: Col, raw: Any) -> str:
+    s = raw.strip() if isinstance(raw, str) else (_number_text(float(raw)) if _is_num(raw) else "")
+    for o in col.options:
+        if o.lower() == s.lower():
+            return o
+    raise Invalid(f"valor inválido (use: {', '.join(col.options)})")
+
+
+def _date(col: Col, raw: Any) -> dt.date:
+    d: dt.date | None = None
+    if isinstance(raw, dt.datetime):
+        d = raw.date()
+    elif isinstance(raw, dt.date):
+        d = raw
+    elif _is_num(raw):
+        d = serial_to_date(float(raw))
+    elif isinstance(raw, str):
+        d = parse_date(raw)
+    if d is None:
+        raise Invalid("data inválida (use dd/mm/aaaa)")
+    return d
+
+
+def _money(col: Col, raw: Any) -> int:
+    cents = (
+        _money_from_float(float(raw))
+        if _is_num(raw)
+        else (parse_money(raw) if isinstance(raw, str) else None)
+    )
+    if cents is None:
+        raise Invalid("valor monetário inválido")
+    return cents
+
+
+def _integer(col: Col, raw: Any) -> int:
     n: int | None = None
     if _is_num(raw) and float(raw) == int(raw):
         n = int(raw)
@@ -263,6 +262,20 @@ def normalize(col: Col, raw: Any) -> Any:  # noqa: C901, PLR0912, PLR0915
     if n is None or not col.lo <= n <= col.hi:
         raise Invalid(f"número inteiro entre {col.lo} e {col.hi}")
     return n
+
+
+# Every other kind is an integer column.
+_NORMALIZERS = {"text": _text, "enum": _enum, "date": _date, "money": _money}
+
+
+def normalize(col: Col, raw: Any) -> Any:
+    """Normalized value (``None`` = empty/NULL) — text, date, cents or integer — or
+    :class:`Invalid` with the column's error message."""
+    if raw is None or (isinstance(raw, str) and not raw.strip()):
+        if col.required:
+            raise Invalid("campo obrigatório")
+        return None
+    return _NORMALIZERS.get(col.kind, _integer)(col, raw)
 
 
 def validate(form: dict[str, Any], keys: tuple[str, ...] = EDIT_FIELDS) -> tuple[dict[str, Any], str]:

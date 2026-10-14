@@ -53,59 +53,66 @@ async def _once_output(c: StepCtx, step: str) -> Any:
     return (r["output"] if r else None) or None
 
 
-def build(pool: Any) -> Saga:  # noqa: C901, PLR0915
-    async def criar(c: StepCtx) -> Any:
-        _injected(c)
-        inp = c.input or {}
-        tag, name, cat, loc, st = (
-            str(inp.get(k) or "").strip() for k in ("tag", "name", "category", "location", "status")
-        )
-        if not tag or not name:
-            raise JobFail("tag e name são obrigatórios")
+async def criar(c: StepCtx) -> Any:
+    _injected(c)
+    inp = c.input or {}
+    tag, name, cat, loc, st = (
+        str(inp.get(k) or "").strip() for k in ("tag", "name", "category", "location", "status")
+    )
+    if not tag or not name:
+        raise JobFail("tag e name são obrigatórios")
 
-        async def fx(conn: Any) -> Any:
-            try:
-                aid = await conn.fetchval(
-                    "INSERT INTO assets (tag, name, category, location, status) VALUES ($1,$2,$3,$4,$5) RETURNING id",
-                    tag,
-                    name,
-                    cat,
-                    loc,
-                    st,
-                )
-            except asyncpg.UniqueViolationError as e:
-                raise JobFail("patrimônio já cadastrado") from e
-            except (asyncpg.PostgresError, OSError) as e:
-                raise JobRetry(str(e)) from e
-            return {"asset": aid}
+    async def fx(conn: Any) -> Any:
+        try:
+            aid = await conn.fetchval(
+                "INSERT INTO assets (tag, name, category, location, status) VALUES ($1,$2,$3,$4,$5) RETURNING id",
+                tag,
+                name,
+                cat,
+                loc,
+                st,
+            )
+        except asyncpg.UniqueViolationError as e:
+            raise JobFail("patrimônio já cadastrado") from e
+        except (asyncpg.PostgresError, OSError) as e:
+            raise JobRetry(str(e)) from e
+        return {"asset": aid}
 
-        return await c.once(fx)
+    return await c.once(fx)
 
-    async def criar_undo(c: StepCtx) -> Any:
-        out = c.output if c.output else await _once_output(c, "criar")
-        aid = (out or {}).get("asset")
-        if isinstance(aid, int):
-            async with c.pool.acquire() as cl:
-                await cl.execute("DELETE FROM assets WHERE id = $1", aid)
-        return None
 
-    async def anexar(c: StepCtx) -> Any:
+async def criar_undo(c: StepCtx) -> Any:
+    out = c.output if c.output else await _once_output(c, "criar")
+    aid = (out or {}).get("asset")
+    if isinstance(aid, int):
+        async with c.pool.acquire() as cl:
+            await cl.execute("DELETE FROM assets WHERE id = $1", aid)
+    return None
+
+
+def _seg(v: str) -> bool:
+    """A single path segment (the target never escapes ativos/<tag>/)."""
+    return bool(v) and "/" not in v and "\\" not in v and v not in (".", "..")
+
+
+class Docs:
+    """The document steps, which need the app pool for the two-phase uploads."""
+
+    def __init__(self, pool: Any) -> None:
+        self.pool = pool
+
+    async def anexar(self, c: StepCtx) -> Any:
         _injected(c)
         inp = c.input or {}
         upload = inp.get("upload")
         if not upload:
             return {"documento": None}
-        up = uploads_for(pool)
+        up = uploads_for(self.pool)
         if up is None:
             raise JobFail(f"sem a conexão {DOCS} vinculada para o documento")
         tag = str(inp.get("tag") or "sem-tag")
         file = str(inp.get("file_name") or "documento")
-
-        # A single segment (the target never escapes ativos/<tag>/).
-        def seg(v: str) -> bool:
-            return bool(v) and "/" not in v and "\\" not in v and v not in (".", "..")
-
-        if not seg(tag) or not seg(file):
+        if not _seg(tag) or not _seg(file):
             raise JobFail("tag/arquivo inválidos para o documento")
         path = f"ativos/{tag}/{file}"
         user = c.user  # the upload must come from the same user who requested the saga
@@ -119,9 +126,9 @@ def build(pool: Any) -> Saga:  # noqa: C901, PLR0915
 
         return await c.once(fx)
 
-    async def anexar_undo(c: StepCtx) -> Any:
+    async def anexar_undo(self, c: StepCtx) -> Any:
         out = c.output if c.output else await _once_output(c, "anexar")
-        up = uploads_for(pool)
+        up = uploads_for(self.pool)
         uid = (out or {}).get("upload")
         if up is None or not uid:
             return None
@@ -133,26 +140,30 @@ def build(pool: Any) -> Saga:  # noqa: C901, PLR0915
             raise JobRetry(str(e)) from e
         return None
 
-    async def notificar(c: StepCtx) -> Any:
-        _injected(c)
-        user = c.user
-        tag = str((c.input or {}).get("tag") or "")
 
-        async def fx(conn: Any) -> Any:
-            ev = outbox.notification(
-                user,
-                "Ativo cadastrado com documento",
-                body=f"O ativo {tag} foi cadastrado.",
-                link="/apps/ativos/assets",
-                to_users=[user],
-            )
-            return {"event": await outbox.write(conn, ev)}
+async def notificar(c: StepCtx) -> Any:
+    _injected(c)
+    user = c.user
+    tag = str((c.input or {}).get("tag") or "")
 
-        return await c.once(fx)
+    async def fx(conn: Any) -> Any:
+        ev = outbox.notification(
+            user,
+            "Ativo cadastrado com documento",
+            body=f"O ativo {tag} foi cadastrado.",
+            link="/apps/ativos/assets",
+            to_users=[user],
+        )
+        return {"event": await outbox.write(conn, ev)}
 
+    return await c.once(fx)
+
+
+def build(pool: Any) -> Saga:
+    docs = Docs(pool)
     return (
         Saga(SPEC)
         .step("criar", criar, criar_undo)
-        .step("anexar", anexar, anexar_undo)
+        .step("anexar", docs.anexar, docs.anexar_undo)
         .step("notificar", notificar)
     )

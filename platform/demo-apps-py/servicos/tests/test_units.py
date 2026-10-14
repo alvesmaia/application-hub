@@ -9,9 +9,11 @@ import pytest
 
 from servicos import __main__ as cli
 from servicos import report, views
-from servicos.app import fold, generic_term, seed_rows, to_i64
 from servicos.model import CATEGORIES, pick, sla_for, sla_text, status_class
+from servicos.search import fold, generic_term
+from servicos.seed import seed_rows
 from servicos.session import Sessions
+from servicos.state import to_i64
 from servicos.ui import notice, query, thousands, wrap
 
 

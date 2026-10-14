@@ -1,15 +1,10 @@
 {
   "platform-py/graphsim/sim.py": 640,
-  "platform-py/hub/app.py": 1119,
+  "platform-py/hub/app.py": 1113,
   "platform-py/hub/auth/__init__.py": 716,
   "platform-py/hub/connections/store.py": 662,
   "platform-py/hub/insight/routes.py": 703,
   "platform-py/hub/state/__init__.py": 703,
   "platform-py/hub/storage/graph.py": 508,
-  "platform-py/hub/vault/__init__.py": 552,
-  "platform/demo-apps-py/ativos/src/ativos/app.py": 808,
-  "platform/demo-apps-py/ativos/src/ativos/importer.py": 559,
-  "platform/demo-apps-py/coletor/src/coletor/app.py": 850,
-  "platform/demo-apps-py/fornecedores/src/fornecedores/app.py": 560,
-  "platform/demo-apps-py/servicos/src/servicos/app.py": 692
+  "platform-py/hub/vault/__init__.py": 552
 }

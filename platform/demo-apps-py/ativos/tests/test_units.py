@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 from hub_sdk.jobs import JobFail
 
-from ativos import i18n, importer
+from ativos import i18n, importer, model, xlsx_guard
 from ativos.model import COL, COLS, MAX_PAGE, Invalid, display, map_headers, normalize, validate
 from ativos.query import Filter
 from ativos.ui import money_cents, query, thousands, wrap
@@ -202,7 +202,7 @@ def test_reader_roundtrip_with_generated_sheet(tmp_path: Path) -> None:
     ws = load_workbook(p, read_only=True).active
     assert ws is not None
     seen = {row[4] for row in ws.iter_rows(min_row=2, values_only=True)}
-    assert set(importer.STATUSES) <= seen
+    assert set(model.STATUSES) <= seen
 
 
 def test_template_has_headers_and_three_rows(tmp_path: Path) -> None:
@@ -214,19 +214,19 @@ def test_template_has_headers_and_three_rows(tmp_path: Path) -> None:
 def test_zip_with_too_many_entries_and_not_xlsx_are_rejected(tmp_path: Path) -> None:
     p = tmp_path / "z.xlsx"
     with zipfile.ZipFile(p, "w") as z:
-        for i in range(importer.MAX_ZIP_ENTRIES + 1):
+        for i in range(xlsx_guard.MAX_ZIP_ENTRIES + 1):
             z.writestr(f"f{i}.txt", "x")
     with pytest.raises(JobFail, match="itens no arquivo compactado"):
-        importer.check_zip(p)
+        xlsx_guard.check_zip(p)
     q = tmp_path / "n.xlsx"
     q.write_bytes(b"isto nao e um zip")
     with pytest.raises(JobFail, match="não é uma planilha"):
-        importer.check_zip(q)
+        xlsx_guard.check_zip(q)
 
 
 def test_zip_bomb_is_rejected_before_calamine(tmp_path: Path) -> None:
     p = tmp_path / "b.xlsx"
     with zipfile.ZipFile(p, "w", zipfile.ZIP_DEFLATED) as z:
-        z.writestr("xl/worksheets/sheet1.xml", b"0" * (importer.MAX_ZIP_ENTRY_UNCOMPRESSED // 4))
+        z.writestr("xl/worksheets/sheet1.xml", b"0" * (xlsx_guard.MAX_ZIP_ENTRY_UNCOMPRESSED // 4))
     with pytest.raises(JobFail, match=r"compressão suspeita|descomprime"):
-        importer.check_zip(p)
+        xlsx_guard.check_zip(p)

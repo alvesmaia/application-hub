@@ -22,7 +22,7 @@ from hub_sdk import outbox
 from hub_sdk.jobs import Job, JobCtx, JobSpec, label
 from hub_sdk.render import BOM, csv_line
 
-from ativos.model import COLS, display
+from ativos.model import COLS, Col, display
 from ativos.query import Filter
 from ativos.ui import esc, notice, thousands
 
@@ -77,64 +77,75 @@ def filter_of(job: Job) -> Filter:
     return Filter.from_query({k: str(v) for k, v in raw.items()})
 
 
+_FORMATS = {"date": "dd/mm/yyyy", "money": "#,##0.00"}
+
+
+class Sheet:
+    """Write-only workbook with the bold header row (openpyxl is imported only when an export runs)."""
+
+    def __init__(self) -> None:
+        from openpyxl import Workbook
+        from openpyxl.cell import WriteOnlyCell
+        from openpyxl.styles import Font
+
+        self.cell_type = WriteOnlyCell
+        self.wb = Workbook(write_only=True)
+        self.ws = self.wb.create_sheet("Ativos")
+        bold = Font(bold=True)
+        head = []
+        for col in COLS:
+            cell = WriteOnlyCell(self.ws, value=col.header)
+            cell.font = bold
+            head.append(cell)
+        self.ws.append(head)
+
+    def line(self, r: Any) -> list[Any]:
+        return [None if r[col.key] is None else self._cell(col, r[col.key]) for col in COLS]
+
+    def _cell(self, col: Col, v: Any) -> Any:
+        if col.kind == "money":
+            v = int(v) / 100
+        elif col.kind == "text" and v[:1] in ("=", "+", "-", "@"):
+            v = "'" + v  # no formulas coming from data
+        cell = self.cell_type(self.ws, value=v)
+        if col.kind in _FORMATS:
+            cell.number_format = _FORMATS[col.kind]
+        return cell
+
+
+async def _fill(ctx: JobCtx, sheet: Sheet, sql: str, params: list[str]) -> int:
+    """Streams the query into the sheet in batches of :data:`FETCH`, reporting progress; returns the rows."""
+    n = 0
+    async with ctx.pool.acquire() as c, c.transaction():
+        batch: list[list[Any]] = []
+        async for r in c.cursor(sql, *params, prefetch=FETCH):
+            batch.append(sheet.line(r))
+            if len(batch) >= FETCH:
+                await asyncio.to_thread(_append, sheet.ws, batch)
+                n += len(batch)
+                batch = []
+                ctx.raise_if_stopping()
+                await ctx.progress(n, 0, f"{n} linhas")
+        if batch:
+            await asyncio.to_thread(_append, sheet.ws, batch)
+            n += len(batch)
+    return n
+
+
 class ExportHandler:
     spec = SPEC
 
     def __init__(self, scratch: Path) -> None:
         self.scratch = scratch
 
-    async def run(self, ctx: JobCtx) -> Any:  # noqa: C901, PLR0915
-        from openpyxl import Workbook
-        from openpyxl.cell import WriteOnlyCell
-        from openpyxl.styles import Font
-
+    async def run(self, ctx: JobCtx) -> Any:
         f = filter_of(ctx.job)
         sql, params = select_sql(f, max_rows())
         out = out_path(self.scratch, ctx.job.id)
         tmp = out.with_suffix(".part")
-        wb = Workbook(write_only=True)
-        ws = wb.create_sheet("Ativos")
-        bold = Font(bold=True)
-        head = []
-        for col in COLS:
-            cell = WriteOnlyCell(ws, value=col.header)
-            cell.font = bold
-            head.append(cell)
-        ws.append(head)
-        fmt = {"date": "dd/mm/yyyy", "money": "#,##0.00"}
-
-        def line(r: Any) -> list[Any]:
-            cells: list[Any] = []
-            for col in COLS:
-                v = r[col.key]
-                if v is None:
-                    cells.append(None)
-                    continue
-                if col.kind == "money":
-                    v = int(v) / 100
-                elif col.kind == "text" and v[:1] in ("=", "+", "-", "@"):
-                    v = "'" + v  # no formulas coming from data
-                cell = WriteOnlyCell(ws, value=v)
-                if col.kind in fmt:
-                    cell.number_format = fmt[col.kind]
-                cells.append(cell)
-            return cells
-
-        n = 0
-        async with ctx.pool.acquire() as c, c.transaction():
-            batch: list[list[Any]] = []
-            async for r in c.cursor(sql, *params, prefetch=FETCH):
-                batch.append(line(r))
-                if len(batch) >= FETCH:
-                    await asyncio.to_thread(_append, ws, batch)
-                    n += len(batch)
-                    batch = []
-                    ctx.raise_if_stopping()
-                    await ctx.progress(n, 0, f"{n} linhas")
-            if batch:
-                await asyncio.to_thread(_append, ws, batch)
-                n += len(batch)
-        await asyncio.to_thread(wb.save, tmp)
+        sheet = Sheet()
+        n = await _fill(ctx, sheet, sql, params)
+        await asyncio.to_thread(sheet.wb.save, tmp)
         tmp.replace(out)
         return {"rows": n, "bytes": out.stat().st_size}
 
