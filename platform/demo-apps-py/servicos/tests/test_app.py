@@ -105,8 +105,8 @@ async def test_seed_counters_and_current_year_protocols(db_url: str, running: Ru
     # idempotent load: nothing new; an old database gets re-dated
     conn = await asyncpg.connect(db_url)
     try:
-        from servicos.app import seed_into
         from servicos.model import REDATE_SQL
+        from servicos.seed import seed_into
 
         await seed_into(conn, 600)
         assert await conn.fetchval("SELECT count(*) FROM tickets") == 600
@@ -336,7 +336,7 @@ async def test_db_unavailable_paths(db_url: str, running: Running) -> None:
 
 @pytest.mark.db
 async def test_seed_command(db_url: str, env: object, capsys: pytest.CaptureFixture[str]) -> None:
-    from servicos.app import run_seed
+    from servicos.seed import run_seed
 
     assert await run_seed() == 0
     conn = await asyncpg.connect(db_url)
@@ -349,6 +349,6 @@ async def test_seed_command(db_url: str, env: object, capsys: pytest.CaptureFixt
 
 
 async def test_seed_command_needs_a_database(env: object) -> None:
-    from servicos.app import run_seed
+    from servicos.seed import run_seed
 
     assert await run_seed() == 2
