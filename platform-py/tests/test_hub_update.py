@@ -34,7 +34,7 @@ def test_build_tags_running_image_before_building(monkeypatch, tmp_path):
     }
     monkeypatch.setattr(hu, "run", run)
     monkeypatch.setattr(hu, "inspect", lambda n: main_c)
-    monkeypatch.setattr(hu, "compose_cmd", lambda c: ("docker", "compose"))
+    monkeypatch.setattr(hu, "compose_cmd", lambda c, *_: ("docker", "compose"))
     backups: list[str] = []
     monkeypatch.setattr(hu, "backup", lambda proj, image, dest: backups.append(image))
     monkeypatch.setattr(hu, "swap", lambda *a: "x")
@@ -53,3 +53,18 @@ def test_backup_tolerates_files_changing_during_tar(monkeypatch, tmp_path):
     monkeypatch.setattr(hu, "run", run)
     monkeypatch.setattr(hu, "inspect", lambda n: None)
     hu.backup("app-hub", "app-hub-web:pre-update", tmp_path)
+
+
+def test_build_uses_the_code_of_this_checkout_not_the_one_that_created_the_container(tmp_path):
+    old = r"C:\old\platform-py"
+    main = {"Config": {"Labels": {
+        "com.docker.compose.project": "app-hub",
+        "com.docker.compose.project.working_dir": old,
+        "com.docker.compose.project.config_files": rf"{old}\docker-compose.yml,{old}\docker-compose.prod.yml",
+        "com.docker.compose.project.environment_file": rf"{old}\.prod.env",
+    }}}  # fmt: skip
+    cmd = hu.compose_cmd(main, root=tmp_path)
+    assert cmd[cmd.index("--project-directory") + 1] == str(tmp_path)
+    assert str(tmp_path / "docker-compose.prod.yml") in cmd and str(tmp_path / ".prod.env") in cmd
+    assert not any(old in c for c in cmd)
+    assert old in hu.compose_cmd(main)  # without root: the container's own folder (rollback/old behavior)

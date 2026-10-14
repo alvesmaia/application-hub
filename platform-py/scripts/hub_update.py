@@ -48,16 +48,22 @@ def inspect(name: str) -> dict[str, Any] | None:
     return json.loads(p.stdout)[0] if p.returncode == 0 else None
 
 
-def compose_cmd(main: dict[str, Any]) -> list[str]:
-    """The same `docker compose` that created the hub (files, folder and .env come from the container labels)."""
+def compose_cmd(main: dict[str, Any], root: Path | None = None) -> list[str]:
+    """The same `docker compose` that created the hub (files, folder and .env come from the container labels).
+    With ``root``, the same files are taken from that checkout instead (the build uses the code next to this script)."""
     lb = main["Config"]["Labels"]
+    wd = lb["com.docker.compose.project.working_dir"]
+
+    def at(f: str) -> str:
+        return str(root / f[len(wd) :].lstrip(r"\/")) if root and f.startswith(wd) else f
+
     cmd = ["docker", "compose", "-p", lb["com.docker.compose.project"]]
-    cmd += ["--project-directory", lb["com.docker.compose.project.working_dir"]]
+    cmd += ["--project-directory", str(root) if root else wd]
     for f in lb["com.docker.compose.project.config_files"].split(","):
-        cmd += ["-f", f]
+        cmd += ["-f", at(f)]
     if env := lb.get("com.docker.compose.project.environment_file"):
         for f in env.split(","):
-            cmd += ["--env-file", f]
+            cmd += ["--env-file", at(f)]
     return cmd
 
 
@@ -234,7 +240,11 @@ def main() -> int:
     else:
         if a.build:
             say("construindo a imagem nova")
-            run(*compose_cmd(main_c), "build", main_c["Config"]["Labels"]["com.docker.compose.service"])
+            run(
+                *compose_cmd(main_c, Path(__file__).resolve().parents[1]),
+                "build",
+                main_c["Config"]["Labels"]["com.docker.compose.service"],
+            )
         else:
             if inspect(a.image) is None:  # only pulls what does not exist here
                 run("docker", "pull", a.image)
