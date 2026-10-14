@@ -1,10 +1,10 @@
 import { test, expect, request, type APIRequestContext } from '@playwright/test';
 import { HUB, USERS, stateFile, uniq } from './helpers';
 
-// Onda 11 — API pública v1 e MCP: a documentação renderiza (CSP, sem script inline), um
-// token de API criado pela tela chama a API, e um cliente MCP (JSON-RPC por Streamable
-// HTTP) usa as ferramentas do hub e as dos apps (agregadas pelo hub, em nome do usuário).
-// Compose no ar (HUB_DEMO_USERS=1).
+// Wave 11 — public API v1 and MCP: the documentation renders (CSP, no inline script), a
+// API token created on the screen calls the API, and an MCP client (JSON-RPC over Streamable
+// HTTP) uses the hub's tools and the apps' (aggregated by the hub, on behalf of the user).
+// Stack up (HUB_DEMO_USERS=1).
 
 test.use({ storageState: stateFile('admin') });
 const RUN = uniq();
@@ -57,7 +57,7 @@ test('token de API criado pela tela chama a API v1 (leitura sim, escrita não)',
   const w = await api.post('/api/v1/audit/verify');
   expect(w.status()).toBe(401);
   expect(w.headers()['content-type']).toContain('application/problem+json');
-  // API do app pelo gateway com token app-api.
+  // App API through the gateway with an app-api token.
   const appTok = await createToken(page, `APP E2E ${RUN}`, ['app-api'], ['ativos']);
   const appApi = await bearer(appTok);
   const assets = await appApi.get('/apps/ativos/api/v1/assets?q=a');
@@ -91,18 +91,18 @@ test('cliente MCP: ferramentas do hub e dos apps, confirmação de ação destru
   const list = (await rpc('tools/call', { name: 'ativos.assets_list', arguments: {} })).result;
   expect(list.isError).toBe(false);
   expect(list.structuredContent.total).toBeGreaterThan(0);
-  // Mutação de app sem dica (POST no OpenAPI do pacote) também exige confirmação (I3).
+  // App mutation without a hint (POST in the package's OpenAPI) also requires confirmation (I3).
   const appTools = tools.filter((t) => t.name.includes('.'));
   expect(appTools.some((t) => t.annotations.destructiveHint && !t.name.endsWith('_delete')), JSON.stringify(appTools.map((t) => t.name))).toBe(true);
-  // Destrutiva (padrão confirm): a 1ª chamada só devolve o confirm_token; a 2ª, com ele, executa.
+  // Destructive (confirm default): the 1st call only returns the confirm_token; the 2nd, with it, executes.
   const args = { id: `9${RUN}`.replace(/\D/g, '').slice(0, 9) || '999999' };
   const first = (await rpc('tools/call', { name: 'deployments_rollback', arguments: args })).result;
   expect(first.structuredContent.confirmation_required, JSON.stringify(first)).toBe(true);
   const cft = first.structuredContent.confirm_token;
   const second = (await rpc('tools/call', { name: 'deployments_rollback', arguments: { ...args, confirm_token: cft } })).result;
-  expect(second.isError).toBe(true); // executou (e a implantação não existe)
+  expect(second.isError).toBe(true); // executed (and the deployment does not exist)
   expect(second.content[0].text).toContain('404');
-  // Tudo auditado.
+  // Everything audited.
   await page.goto('/admin/audit?scope=platform');
   await expect(page.locator('#app-root')).toContainText('MCP: deployments_rollback');
 });

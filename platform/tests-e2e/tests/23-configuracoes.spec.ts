@@ -2,8 +2,8 @@ import { test, expect, type Page } from '@playwright/test';
 import path from 'node:path';
 import { apiAs, json, newRoleContext, stateFile, uniq } from './helpers';
 
-// Minha conta (/account): abas Perfil, Segurança e Acessos (tokens pessoais e apps autorizados);
-// o menu do usuário fica só com Minha conta, tour e Sair. 1440 e 390 (celular). Compose no ar (HUB_DEMO_USERS=1).
+// My account (/account): Profile, Security and Access tabs (personal tokens and authorized apps);
+// the user menu keeps only My account, tour and Sign out. 1440 and 390 (phone). Stack up (HUB_DEMO_USERS=1).
 test.use({ storageState: stateFile('admin') });
 const DIST = path.resolve(__dirname, '..', '..', 'dist');
 const RUN = uniq();
@@ -49,7 +49,7 @@ test('seções: perfil, tema persiste, idioma aplica, senha ida e volta @core', 
   await expect(page.locator('[data-acct-name]')).not.toBeEmpty();
   await expect(page.locator('[data-acct-role]')).not.toBeEmpty();
   await page.screenshot({ path: path.join(DIST, 'settings-1440-light.png'), fullPage: true });
-  // Tema: aplica na hora e persiste.
+  // Theme: applies right away and persists.
   const seg = page.locator('.acct-theme-seg');
   await seg.locator('[value="dark"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
@@ -60,14 +60,14 @@ test('seções: perfil, tema persiste, idioma aplica, senha ida e volta @core', 
   await page.screenshot({ path: path.join(DIST, 'settings-1440-dark.png'), fullPage: true });
   await seg.locator('[value="light"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-  // Idioma: aplica sem botão OK.
+  // Language: applies without an OK button.
   await page.locator('#acct-lang-select').selectOption('en');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page).toHaveURL(/\/account$/);
   await expect(page.getByRole('heading', { level: 1, name: 'My account' })).toBeVisible();
   await page.locator('#acct-lang-select').selectOption('pt-BR');
   await expect(page.locator('html')).toHaveAttribute('lang', 'pt-BR');
-  // Senha (aba Segurança): tela de credencial própria, volta para cá.
+  // Password (Security tab): its own credential screen, returns here.
   await page.locator('nav.hub-tabbar').getByRole('link', { name: 'Segurança' }).click();
   await page.locator('[data-acct-password]').click();
   await expect(page).toHaveURL(/\/account\/password\?next=/);
@@ -95,14 +95,14 @@ test('tokens e apps autorizados dentro de Configurações; links antigos valem @
   await row.locator('[data-token-revoke]').click();
   await page.locator('#revoke-token [data-acct-ok]').click();
   await expect(page.locator('[data-token-row]', { hasText: name })).toHaveCount(0);
-  // Apps autorizados (leitor também acessa as próprias configurações).
+  // Authorized apps (a reader also accesses their own settings).
   const ctx = await newRoleContext(browser, 'leitor');
   const lp = await ctx.newPage();
   for (const url of ['/account', '/account/security', '/account/access']) {
     await lp.goto(url);
     await expect(lp.getByRole('heading', { level: 1, name: 'Minha conta' })).toBeVisible();
   }
-  await lp.goto('/account/authorized-apps'); // link antigo: redireciona para a aba Acessos
+  await lp.goto('/account/authorized-apps'); // old link: redirects to the Access tab
   await expect(lp.getByRole('heading', { level: 2, name: 'Apps autorizados' })).toBeVisible();
   await expect(lp.locator('[data-acct-apps]')).toBeVisible();
   await expect(lp.locator('nav.hub-tabbar [aria-current="page"]')).toHaveText('Acessos');

@@ -1,31 +1,31 @@
-/* hub-ux.js — experiência do shell (onda 9), em todas as páginas do hub:
+/* hub-ux.js — shell experience (wave 9), on every hub page:
  *
- *  - Busca global (paleta ⌘K / Ctrl+K): diálogo modal com combobox + listbox agrupado
- *    (ARIA 1.2), navegação por setas/Home/End/Enter/Esc, foco preso no diálogo e
- *    devolvido ao fechar, buscas recentes. Nas páginas do hub consulta
- *    `/api/me/search` (plataforma + apps federados); dentro de um app a CSP só deixa
- *    falar com o gateway do app, então a paleta usa o índice local (apps e páginas do
- *    usuário, publicado em `data-hub-palette`) e oferece "Buscar em todas as aplicações"
- *    (abre `/search?q=`).
- *  - Tour guiado: passos conforme o que o usuário vê (`[data-tour]`), diálogo com foco,
- *    Voltar/Próximo/Pular, Esc interrompe (retomado depois), estado no servidor
- *    (`/api/me/onboarding`). Começa sozinho no primeiro acesso ao Início.
- *  - Inbox ao vivo: contador do sino atualizado pela conexão SSE compartilhada entre
- *    abas (`logshare.js`, trava do navegador + BroadcastChannel) e anunciado em
+ *  - Global search (palette ⌘K / Ctrl+K): modal dialog with a combobox + grouped listbox
+ *    (ARIA 1.2), navigation by arrows/Home/End/Enter/Esc, focus trapped in the dialog and
+ *    returned on close, recent searches. On the hub pages it queries
+ *    `/api/me/search` (platform + federated apps); inside an app the CSP only lets it talk
+ *    to the app's gateway, so the palette uses the local index (apps and the user's pages,
+ *    published in `data-hub-palette`) and offers "Search in all applications"
+ *    (opens `/search?q=`).
+ *  - Guided tour: steps according to what the user sees (`[data-tour]`), dialog with focus,
+ *    Back/Next/Skip, Esc interrupts (resumed later), state on the server
+ *    (`/api/me/onboarding`). Starts by itself on the first visit to the Home page.
+ *  - Live inbox: bell counter updated by the SSE connection shared between tabs
+ *    (`logshare.js`, browser lock + BroadcastChannel) and announced in
  *    `aria-live`.
- *  - Menus <details> do header: Esc fecha e devolve o foco; abrir um fecha o outro.
+ *  - <details> menus in the header: Esc closes and returns focus; opening one closes the other.
  *
- * Sem dependências; nenhum script inline (CSP). Textos em `data-hub-i18n`.
+ * No dependencies; no inline script (CSP). Texts in `data-hub-i18n`.
  */
 (function () {
   'use strict';
 
-  // ---- Lógica pura (testada em node: `require('hub-ux.js')`) --------------------------
+  // ---- Pure logic (tested in node: `require('hub-ux.js')`) --------------------------
   const Pure = {
     fold(s) {
       return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
     },
-    /** Relevância (mesma regra do servidor): igual 1, começa 0,8, palavra 0,6, contém 0,4. */
+    /** Relevance (same rule as the server): exact 1, starts with 0.8, word 0.6, contains 0.4. */
     score(text, q) {
       const t = Pure.fold(text);
       const n = Pure.fold(q).trim();
@@ -36,7 +36,7 @@
       if (t.includes(n)) return 0.4;
       return 0;
     },
-    /** Resultados locais (índice da paleta) para `q`, melhores primeiro. */
+    /** Local results (palette index) for `q`, best first. */
     local(index, q, max = 8) {
       return (index || [])
         .map((h) => ({ ...h, score: Math.max(Pure.score(h.title, q), Pure.score(h.subtitle, q) * 0.8) }))
@@ -44,7 +44,7 @@
         .sort((a, b) => b.score - a.score)
         .slice(0, max);
     },
-    /** Próximo índice ativo na lista (setas, Home, End), com volta ao início/fim. */
+    /** Next active index in the list (arrows, Home, End), wrapping around to the start/end. */
     move(cur, len, key) {
       if (!len) return -1;
       if (key === 'Home') return 0;
@@ -53,18 +53,18 @@
       if (key === 'ArrowUp') return cur <= 0 ? len - 1 : cur - 1;
       return cur;
     },
-    /** Lista de buscas recentes (mais nova primeiro, sem repetição, até `max`). */
+    /** List of recent searches (newest first, no repeats, up to `max`). */
     remember(list, q, max = 8) {
       const v = String(q || '').trim();
       if (!v) return list || [];
       return [v, ...(list || []).filter((x) => x !== v)].slice(0, max);
     },
-    /** Passos do tour que existem na página, na ordem canônica. */
+    /** Tour steps that exist on the page, in canonical order. */
     tourSteps(available) {
       const order = ['home', 'apps', 'search', 'inbox', 'user', 'admin'];
       return order.filter((k) => available.includes(k));
     },
-    /** Índice para retomar o tour a partir do estado salvo (`step:N`). */
+    /** Index to resume the tour from the saved state (`step:N`). */
     resumeAt(state, total) {
       const m = /^step:(\d+)$/.exec(state || '');
       const n = m ? Number(m[1]) : 0;
@@ -105,20 +105,20 @@
     if (!res.ok) throw new Error(j.error || t('js.error'));
     return j;
   }
-  // Uso de recursos (analytics); dentro de apps a CSP não permite — ignorado.
+  // Resource usage (analytics); inside apps the CSP does not allow it — ignored.
   function feature(name) {
     if (inApp) return;
     api('POST', '/api/me/analytics', { feature: name }).catch(() => {});
   }
-  // Busca "final" (analytics + recentes + passo "Usar a busca"): POST de mesma origem —
-  // o GET da busca não tem efeitos colaterais.
+  // "Final" search (analytics + recents + "Use the search" step): same-origin POST —
+  // the search GET has no side effects.
   function recordSearch(q) {
     if (inApp || !q) return;
     fetch('/api/me/search', {
       method: 'POST',
       credentials: 'same-origin',
-      // Sem keepalive: a página continua aberta, e um fetch keepalive nunca dá a rede
-      // por ociosa no Chromium (/search?q=a não chegava a networkidle).
+      // No keepalive: the page stays open, and a keepalive fetch never gives the network
+      // as idle in Chromium (/search?q=a never reached networkidle).
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify({ q }),
     }).catch(() => {});
@@ -127,7 +127,7 @@
   if (recordForm && recordForm.dataset.hubSearchRecord) recordSearch(recordForm.dataset.hubSearchRecord);
   window.HubUx = { api, t, announce, feature, inApp };
 
-  // ---- Menus do header (<details>) ---------------------------------------------------
+  // ---- Header menus (<details>) ---------------------------------------------------
   const menus = [...document.querySelectorAll('.platform-header details')];
   menus.forEach((d) => {
     d.addEventListener('toggle', () => {
@@ -147,8 +147,8 @@
     menus.forEach((d) => { if (d.open && !d.contains(e.target)) d.open = false; });
   });
 
-  // ---- Confirmação no modal do hub (no lugar do confirm() nativo) --------------------
-  // `HubConfirm(mensagem, { danger, ok })` → Promise<boolean>. Esc/Cancelar = false.
+  // ---- Confirmation in the hub modal (instead of the native confirm()) --------------------
+  // `HubConfirm(message, { danger, ok })` → Promise<boolean>. Esc/Cancel = false.
   function hubConfirm(message, opts) {
     const o = opts || {};
     const danger = o.danger !== undefined ? o.danger : /excluir|apagar|revogar|desativar|remover|reverter|rotacionar|restaurar|delete|revoke|remove/i.test(message);
@@ -179,7 +179,7 @@
   }
   window.HubConfirm = hubConfirm;
 
-  // ---- Campo de arquivo do hub (rótulo no idioma do usuário, no lugar do nativo) ------
+  // ---- Hub file field (label in the user's language, instead of the native one) ------
   function enhanceFile(inp) {
     if (inp.dataset.hubFile || inp.hidden || inp.closest('[hidden]') || !inp.parentNode) return;
     inp.dataset.hubFile = '1';
@@ -208,13 +208,13 @@
       .observe(document.body, { childList: true, subtree: true });
   }
 
-  // Idioma: aplica na hora (sem botão "OK").
+  // Language: applied right away (no "OK" button).
   document.addEventListener('change', (e) => {
     const sel = e.target.closest && e.target.closest('select[data-hub-autosubmit]');
     if (sel && sel.form) sel.form.requestSubmit ? sel.form.requestSubmit() : sel.form.submit();
   });
-  // Tema (3 ícones, role=radiogroup): aplica na hora e grava pela API de preferências;
-  // setas movem/selecionam (padrão de radiogroup). Sem JS o formulário faz POST normal.
+  // Theme (3 icons, role=radiogroup): applied right away and saved through the preferences API;
+  // arrows move/select (radiogroup pattern). Without JS the form does a normal POST.
   document.querySelectorAll('[data-hub-theme-seg]').forEach((seg) => {
     const btns = [...seg.querySelectorAll('[role=radio]')];
     const pick = (b, focus) => {
@@ -238,13 +238,13 @@
       });
     });
   });
-  // Atalho da busca conforme a plataforma (⌘K no macOS, Ctrl K nos demais).
+  // Search shortcut according to the platform (⌘K on macOS, Ctrl K elsewhere).
   if (/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '')) {
     document.querySelectorAll('.hub-kbd').forEach((k) => { k.textContent = '⌘K'; });
   }
 
-  // ---- Menus "⋯" de linha (<details class="hub-row-menu">): um aberto por vez; clique
-  // fora ou Esc fecha; escolher uma ação fecha o menu.
+  // ---- Row "⋯" menus (<details class="hub-row-menu">): one open at a time; click
+  // outside or Esc closes; choosing an action closes the menu.
   document.addEventListener('click', (e) => {
     document.querySelectorAll('details.hub-row-menu[open]').forEach((d) => {
       if (!d.contains(e.target) || e.target.closest('.hub-row-menu-list button, .hub-row-menu-list a')) d.open = false;
@@ -255,8 +255,8 @@
     document.querySelectorAll('details.hub-row-menu[open]').forEach((d) => { d.open = false; d.querySelector('summary')?.focus(); });
   });
 
-  // Menu "⋯" perto da borda da tela: abre para cima (falta espaço embaixo) e/ou alinhado à
-  // esquerda (sairia pela esquerda). `toggle` não borbulha: escuta na captura.
+  // "⋯" menu near the screen edge: opens upwards (no room below) and/or aligned to the
+  // left (would leave the screen on the left). `toggle` does not bubble: listens in capture.
   document.addEventListener('toggle', (e) => {
     const d = e.target;
     if (!(d instanceof HTMLDetailsElement) || !d.classList.contains('hub-row-menu')) return;
@@ -270,9 +270,9 @@
     if (r.left < 8) d.classList.add('hub-row-menu--start');
   }, true);
 
-  // ---- Diálogos modais das telas (Administração/Operações/Insights) -----------------------
-  // Genérico para qualquer [role=dialog][aria-modal=true] visível: Tab/Shift+Tab ficam
-  // dentro do diálogo e, quando ele some, o foco volta para quem estava focado antes.
+  // ---- Modal dialogs of the screens (Administration/Operations/Insights) -----------------------
+  // Generic for any visible [role=dialog][aria-modal=true]: Tab/Shift+Tab stay
+  // inside the dialog and, when it goes away, focus returns to whoever had focus before.
   const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
   const openDialog = () => [...document.querySelectorAll('[role="dialog"][aria-modal="true"]')].find((d) => d.getClientRects().length && !d.closest('[hidden]'));
   let beforeDialog = null;
@@ -311,7 +311,7 @@
     try { return JSON.parse(store()?.getItem('hub:recent-searches') || '[]'); } catch (_) { return []; }
   }
   function saveRecent(q) {
-    try { store()?.setItem('hub:recent-searches', JSON.stringify(Pure.remember(recentList(), q))); } catch (_) { /* privado */ }
+    try { store()?.setItem('hub:recent-searches', JSON.stringify(Pure.remember(recentList(), q))); } catch (_) { /* private */ }
   }
 
   function build() {
@@ -337,7 +337,7 @@
       const o = e.target.closest('[role="option"]');
       if (o) choose(Number(o.dataset.idx));
     });
-    // Foco preso no diálogo (Tab cicla entre o campo e o botão fechar).
+    // Focus trapped in the dialog (Tab cycles between the field and the close button).
     el.addEventListener('keydown', (e) => {
       if (e.key !== 'Tab') return;
       const f = [input, el.querySelector('.hub-palette-close')];
@@ -390,7 +390,7 @@
       const r = await api('GET', '/api/me/search?q=');
       if (my !== seq || palette.querySelector('input').value.trim()) return;
       render([], '', false, r.recent || []);
-    } catch (_) { /* sem rede: só recentes locais */ }
+    } catch (_) { /* no network: only local recents */ }
   }
 
   async function remote(q) {
@@ -405,7 +405,7 @@
     }
   }
 
-  // Destaca o termo buscado (sem diferença de maiúsculas/acentos).
+  // Highlights the searched term (no case/accent differences).
   function mark(text, q) {
     const t = String(text || '');
     const n = Pure.fold(q).trim();
@@ -436,8 +436,8 @@
         html += '</div>';
       }
     }
-    // ⌘K: até 5 registros de apps (somados), 3 páginas e 3 itens internos; o resto
-    // fica em "Ver todos os resultados".
+    // ⌘K: up to 5 app records (combined), 3 pages and 3 internal items; the rest
+    // stays under "See all results".
     const caps = { app: 5, platform: groups.some((g) => g.section === 'app') ? 3 : 8, admin: 3 };
     const used = { app: 0, platform: 0, admin: 0 };
     groups = groups.map((g) => {
@@ -495,7 +495,7 @@
     if (q) {
       saveRecent(q);
       if (!inApp) {
-        // Busca "final" (analytics + recentes + passo "Usar a busca").
+        // "Final" search (analytics + recents + "Use the search" step).
         recordSearch(q);
         feature('palette_select');
       }
@@ -526,14 +526,14 @@
       else open();
       return;
     }
-    // Esc fecha a paleta mesmo com o foco fora do campo (ex.: toque na lista no celular).
+    // Esc closes the palette even when focus is outside the field (e.g. tapping the list on a phone).
     if (e.key === 'Escape' && palette && !palette.hidden && !palette.querySelector('input')?.contains(e.target)) { e.preventDefault(); close(); }
   });
   document.addEventListener('click', (e) => {
     if (e.target.closest('[data-hub-palette-open]')) { e.preventDefault(); open(); }
   });
 
-  // ---- Tour guiado -----------------------------------------------------------------
+  // ---- Guided tour -----------------------------------------------------------------
   const TOUR = {
     home: ['js.tour_home_t', 'js.tour_home_b'],
     apps: ['js.tour_apps_t', 'js.tour_apps_b'],
@@ -627,7 +627,7 @@
     if (opener && opener.focus) opener.focus();
   }
 
-  // Esc fecha o tour com o foco em qualquer lugar (o diálogo não é modal).
+  // Esc closes the tour with focus anywhere (the dialog is not modal).
   document.addEventListener('keydown', (e) => {
     if (tour && e.key === 'Escape') endTour(`step:${tour.i}`);
   });
@@ -644,7 +644,7 @@
       }
     }
   });
-  // Primeiro acesso ao Início (ou retomada pedida com ?tour=1).
+  // First visit to the Home page (or resumed on request with ?tour=1).
   if (!inApp && location.pathname === '/') {
     const st = body.dataset.hubTour || '';
     const asked = /[?&]tour=1\b/.test(location.search);
@@ -654,7 +654,7 @@
     }
   }
 
-  // ---- Inbox ao vivo ---------------------------------------------------------------
+  // ---- Live inbox ---------------------------------------------------------------
   const badge = document.querySelector('[data-hub-unread]');
   const bell = document.querySelector('.hub-notif-menu');
   function setUnread(n) {
@@ -685,11 +685,11 @@
     share.start();
     window.addEventListener('pagehide', () => share.stop());
   }
-  // ---- Rail da plataforma: expandido / recolhido / oculto ------------------------------
-  // Botão no início do header (e Ctrl+B fora de campos de texto) alterna os 3 modos em
-  // ciclo. A escolha fica à parte dentro dos apps (`app`) e fora (`hub`): localStorage
-  // (falhas ignoradas) espelhado no cookie `hub_rail_<ctx>`, que o servidor usa para já
-  // desenhar a próxima página no modo certo.
+  // ---- Platform rail: expanded / collapsed / hidden ------------------------------
+  // The button at the start of the header (and Ctrl+B outside text fields) toggles the 3 modes in
+  // a cycle. The choice is kept separately inside apps (`app`) and outside them (`hub`): localStorage
+  // (failures ignored) mirrored in the `hub_rail_<ctx>` cookie, which the server uses to
+  // already draw the next page in the right mode.
   const NARROW_Q = '(max-width: 1023px), (pointer: coarse) and (max-height: 600px)';
   (function railToggle() {
     const btn = document.querySelector('[data-hub-rail-toggle]');
@@ -706,12 +706,12 @@
       btn.setAttribute('aria-label', label);
       btn.title = label;
       if (!persist) return;
-      try { localStorage.setItem(key, m); } catch (_) { /* sem armazenamento */ }
-      try { document.cookie = `hub_rail_${ctx}=${m}; path=/; max-age=31536000; samesite=lax`; } catch (_) { /* sem cookies */ }
+      try { localStorage.setItem(key, m); } catch (_) { /* no storage */ }
+      try { document.cookie = `hub_rail_${ctx}=${m}; path=/; max-age=31536000; samesite=lax`; } catch (_) { /* no cookies */ }
     }
     let saved = null;
     try { saved = localStorage.getItem(key); } catch (_) { saved = null; }
-    // Cookie perdido (ou outro navegador) mas a escolha está no localStorage: reaplica.
+    // Cookie lost (or another browser) but the choice is in localStorage: reapplies it.
     if (MODES.includes(saved) && saved !== current()) apply(saved, true);
     else apply(current(), false);
     function cycle() {
@@ -722,7 +722,7 @@
     btn.addEventListener('click', cycle);
     document.addEventListener('keydown', (e) => {
       if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || (e.key || '').toLowerCase() !== 'b') return;
-      if (window.matchMedia(NARROW_Q).matches) return; // sem rail em tela estreita
+      if (window.matchMedia(NARROW_Q).matches) return; // no rail on a narrow screen
       const el = e.target;
       if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
       e.preventDefault();
@@ -730,11 +730,11 @@
     });
   })();
 
-  // ---- Menu ☰ em tela estreita (NARROW_Q, mesma consulta do hub.css) ----------------------------------------------------
-  // O rail não aparece no celular: o botão "menu" (☰, canto direito do header) abre o mesmo
-  // `#hub-rail` como painel de cima para baixo logo abaixo do header (`body.hub-drawer-open`),
-  // sobre um fundo escurecido; o ícone vira ✕. Fecha no ✕, ao tocar num item ou no fundo, com
-  // Esc ou ao voltar para tela larga; prende o foco (botão + painel) e devolve ao botão.
+  // ---- Menu ☰ on a narrow screen (NARROW_Q, same query as hub.css) ----------------------------------------------------
+  // The rail does not show on phones: the "menu" button (☰, right corner of the header) opens the same
+  // `#hub-rail` as a panel from top to bottom just below the header (`body.hub-drawer-open`),
+  // over a darkened background; the icon turns into ✕. Closes on ✕, when tapping an item or the background, with
+  // Esc or when going back to a wide screen; traps focus (button + panel) and returns it to the button.
   (function mobileDrawer() {
     const btn = document.querySelector('[data-hub-drawer-toggle]');
     const rail = document.getElementById('hub-rail');
@@ -758,12 +758,12 @@
       btn.setAttribute('aria-expanded', String(open));
       btn.setAttribute('aria-label', (open ? btn.dataset.labelClose : btn.dataset.labelOpen) || '');
       if (open) {
-        // Dentro dos apps o hub.js fixa o z-index do rail inline (!important, contenção do
-        // app); com a gaveta aberta ele precisa ficar acima do fundo escurecido.
+        // Inside apps hub.js fixes the rail's z-index inline (!important, app containment);
+        // with the drawer open it must stay above the darkened background.
         zSaved = rail.style.getPropertyValue('z-index');
         zPrio = rail.style.getPropertyPriority('z-index');
         if (zSaved) rail.style.setProperty('z-index', 'calc(var(--z-overlay) + 1)', 'important');
-        // A gaveta usa o visual do rail expandido (sem gravar a preferência).
+        // The drawer uses the look of the expanded rail (without saving the preference).
         document.documentElement.style.setProperty('--hub-header-h', `${Math.round(header?.getBoundingClientRect().bottom || 41)}px`);
         saved = MODES.find((m) => body.classList.contains(`rail-${m}`)) || null;
         MODES.forEach((m) => body.classList.toggle(`rail-${m}`, m === 'expanded'));
@@ -805,10 +805,10 @@
     window.addEventListener('popstate', () => setOpen(false, false));
   })();
 
-  // ---- Seções administrativas do rail (recolhíveis) -----------------------------------
-  // Estado por usuário no localStorage (falhas ignoradas); a seção da página atual
-  // sempre abre na carga; as demais começam fechadas. No rail recolhido cada seção mostra só o ícone (com dica) e
-  // divisores entre as seções; o recolhimento vale só no rail expandido.
+  // ---- Administrative sections of the rail (collapsible) -----------------------------------
+  // Per-user state in localStorage (failures ignored); the current page's section
+  // always opens on load; the others start closed. In the collapsed rail each section shows only the icon (with a hint) and
+  // dividers between the sections; collapsing only applies to the expanded rail.
   (function railGroups() {
     const menu = document.getElementById('hub-admin-menu');
     if (!menu) return;
@@ -821,24 +821,24 @@
       const btn = g.querySelector('[data-rail-group-toggle]');
       if (!btn) return;
       const hasActive = !!g.querySelector('.rail-subitem.active');
-      // Padrão: só a seção da página atual aberta (o rail cabe a 1280×720); a escolha do
-      // usuário (abrir/fechar) fica lembrada.
+      // Default: only the current page's section open (the rail fits at 1280×720); the
+      // user's choice (open/close) is remembered.
       set(btn, hasActive || saved[g.dataset.railGroup] === true);
       btn.addEventListener('click', () => {
         const open = btn.getAttribute('aria-expanded') !== 'true';
         set(btn, open);
         saved[g.dataset.railGroup] = open;
-        try { localStorage.setItem(key, JSON.stringify(saved)); } catch (_) { /* sem armazenamento */ }
+        try { localStorage.setItem(key, JSON.stringify(saved)); } catch (_) { /* no storage */ }
       });
     });
   })();
 })();
 
-/* Modo de desenvolvimento (scripts/dev-mode.sh reload-on): só quando o servidor põe
- * <meta name="hub-dev-reload"> (HUB_DEV_MODE=1 + HUB_DEV_RELOAD=1; nunca em produção).
- * Escuta o SSE /_dev/reload: "reload" (asset alterado/app reiniciado) recarrega a página;
- * "hello" traz o id da partida do hub — se mudou desde a primeira conexão, o hub foi
- * reiniciado (binário novo) e a página também recarrega. Reconexão do próprio EventSource. */
+/* Development mode (scripts/dev-mode.sh reload-on): only when the server sets
+ * <meta name="hub-dev-reload"> (HUB_DEV_MODE=1 + HUB_DEV_RELOAD=1; never in production).
+ * Listens to the SSE /_dev/reload: "reload" (asset changed/app restarted) reloads the page;
+ * "hello" carries the hub's start id — if it changed since the first connection, the hub
+ * was restarted (new binary) and the page also reloads. Reconnection of the EventSource itself. */
 (function () {
   'use strict';
   if (typeof document === 'undefined') return;
@@ -853,14 +853,14 @@
   es.addEventListener('reload', () => location.reload());
 })();
 
-/* ---- Filtros por coluna, estilo planilha (`data-hub-colfilter`; guia em docs/DESIGN-TOKENS.md) ----
- * <table data-hub-colfilter data-hub-colfilter-empty="Texto">; cada <th data-hub-col="chave"
- * data-hub-col-label="Rótulo" [data-hub-col-type="list|date"]> ganha um funil que abre um
- * popover (no celular, folha de baixo para cima): ordenar, lista de valores com busca e
- * "Selecionar todos" (ou intervalo de datas), Limpar/Aplicar. O valor de cada célula vem de
- * `data-hub-value` (datas em ms) ou do texto. Estado na URL (`f.<chave>=a,b`, `f.<chave>=de..até`,
- * `sort=<chave>:asc|desc`) — compartilhável. Linha "Filtros ativos" acima da tabela; no
- * layout de cartões (sem cabeçalho), o botão "Filtros" abre as mesmas opções. */
+/* ---- Column filters, spreadsheet style (`data-hub-colfilter`; guide in docs/DESIGN-TOKENS.md) ----
+ * <table data-hub-colfilter data-hub-colfilter-empty="Text">; each <th data-hub-col="key"
+ * data-hub-col-label="Label" [data-hub-col-type="list|date"]> gets a funnel that opens a
+ * popover (on a phone, a sheet from the bottom up): sort, list of values with search and
+ * "Select all" (or a date range), Clear/Apply. The value of each cell comes from
+ * `data-hub-value` (dates in ms) or from the text. State in the URL (`f.<key>=a,b`, `f.<key>=from..to`,
+ * `sort=<key>:asc|desc`) — shareable. "Active filters" line above the table; in the
+ * card layout (no header), the "Filters" button opens the same options. */
 (function () {
   'use strict';
   if (typeof document === 'undefined') return;
@@ -1106,8 +1106,8 @@
   document.querySelectorAll('table[data-hub-colfilter]').forEach(setup);
 })();
 
-/* ---- Menus <details class="hub-row-menu">: setas ↑/↓ percorrem os itens; ao abrir pelo
- * teclado, o foco vai para o primeiro item. ---- */
+/* ---- <details class="hub-row-menu"> menus: ↑/↓ arrows move through the items; when opened by the
+ * keyboard, focus goes to the first item. ---- */
 (function () {
   'use strict';
   if (typeof document === 'undefined') return;
@@ -1124,17 +1124,17 @@
     list[n].focus();
   });
 
-  // Onda 13 (PWA): service worker do hub (casco + página offline; nunca guarda respostas
-  // autenticadas). Só em contexto seguro (HTTPS ou localhost).
+  // Wave 13 (PWA): the hub's service worker (shell + offline page; never caches authenticated responses).
+  // Only in a secure context (HTTPS or localhost).
   if ('serviceWorker' in navigator && window.isSecureContext) {
     window.addEventListener('load', () => { navigator.serviceWorker.register('/hub-sw.js', { scope: '/' }).catch(() => {}); });
   }
 })();
 
-/* ---- Skeleton ao navegar entre páginas do hub (Início, Aplicações, Status, conta, Administração):
- * ao clicar num link do hub, o conteúdo vira o esqueleto da página (cabeçalho + cartões ou
- * tabela, mesma largura do `.page-container`: sem salto de layout) até o servidor responder.
- * Sem JS, a navegação é a normal. Animação desligada em `prefers-reduced-motion` (hub.css). ---- */
+/* ---- Skeleton when navigating between hub pages (Home, Applications, Status, account, Administration):
+ * when a hub link is clicked, the content becomes the page skeleton (header + cards or
+ * table, same width as `.page-container`: no layout jump) until the server responds.
+ * Without JS, navigation is the normal one. Animation off under `prefers-reduced-motion` (hub.css). ---- */
 (function () {
   'use strict';
   if (typeof document === 'undefined') return;
@@ -1186,7 +1186,7 @@
       saved = document.createDocumentFragment();
       while (root.firstChild) saved.appendChild(root.firstChild);
       root.appendChild(build(u.pathname));
-      // navegação cancelada/sem resposta: devolve a página
+      // navigation cancelled/no response: returns the page
       setTimeout(() => { if (saved) { root.textContent = ''; root.appendChild(saved); saved = null; } }, 15000);
     }, 0);
   });
@@ -1197,7 +1197,7 @@
   });
 })();
 
-// ---- Abas da página, gaveta de detalhes da linha e filtro multisseleção (Administração) ----
+// ---- Page tabs, row details drawer and multi-select filter (Administration) ----
 (function () {
   'use strict';
   if (typeof document === 'undefined') return;

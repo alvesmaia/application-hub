@@ -1,10 +1,10 @@
-/* F24 — portal do desenvolvedor (/developers/*): navegação à esquerda, texto ~784px, «Nesta página» à direita.
-   Só tokens do hub (fontes próprias, cores do tema claro/escuro). */
-/* Paleta das páginas de documentação (oklch neutros convertidos em hex): valores medidos nas docs da Cloudflare (laranja trocado pelo destaque do hub). */
+/* F24 — developer portal (/developers/*): navigation on the left, text ~784px, "On this page" on the right.
+   Only hub tokens (own fonts, light/dark theme colors). */
+/* Palette of the documentation pages (neutral oklch converted to hex): values measured in the Cloudflare docs (orange replaced by the hub's highlight). */
 :root{--dd-bg:#fcfcfc;--dd-text:#181818;--dd-muted:#737373;--dd-border:#e4e4e4;--dd-control:#8f8f8f;--dd-active:#f4f4f4;--dd-box:#fff;--dd-icode:#fafafa}
 :root[data-theme="dark"]{--dd-bg:#141414;--dd-text:#e6e6e6;--dd-muted:#a1a1a1;--dd-border:#2a2a2a;--dd-control:#6b6b6b;--dd-active:#262626;--dd-box:#0f0f0f;--dd-icode:#252525}
 @media (prefers-color-scheme:dark){:root[data-theme="auto"]{--dd-bg:#141414;--dd-text:#e6e6e6;--dd-muted:#a1a1a1;--dd-border:#2a2a2a;--dd-control:#6b6b6b;--dd-active:#262626;--dd-box:#0f0f0f;--dd-icode:#252525}}
-/* tipografia da Cloudflare Docs: Inter + JetBrains Mono (OFL, servidas pelo hub) */
+/* Cloudflare Docs typography: Inter + JetBrains Mono (OFL, served by the hub) */
 @font-face{font-family:"Inter Variable";font-style:normal;font-display:swap;font-weight:100 900;src:url("/assets/fonts/inter-latin-ext-wght-normal.woff2") format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
 @font-face{font-family:"Inter Variable";font-style:normal;font-display:swap;font-weight:100 900;src:url("/assets/fonts/inter-latin-wght-normal.woff2") format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 @font-face{font-family:"JetBrains Mono Variable";font-style:normal;font-display:swap;font-weight:100 800;src:url("/assets/fonts/jetbrains-mono-latin-ext-wght-normal.woff2") format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
@@ -12,7 +12,7 @@
 body:has(.dev-docs){--dd-sans:"Inter Variable",system-ui,-apple-system,"Segoe UI",sans-serif;--app-font:var(--dd-sans);--font-body:var(--dd-sans);--font-ui:var(--dd-sans);--font-display:var(--dd-sans);--font-mono:"JetBrains Mono Variable",ui-monospace,monospace;letter-spacing:normal}
 body:has(.dev-docs),body:has(.dev-docs) #app-root{background:var(--dd-bg)}
 .dev-docs{display:grid;grid-template-columns:300px minmax(0,1fr) 288px;grid-template-areas:"nav main toc";column-gap:0;align-items:start;padding:0 0 64px}
-/* Barra lateral no estilo das docs da Cloudflare: coluna de 300px, fixa sob o cabeçalho, rolagem própria. */
+/* Sidebar in the style of the Cloudflare docs: 300px column, fixed under the header, own scrolling. */
 .dev-nav{grid-area:nav;position:sticky;top:41px;height:calc(100vh - 41px);overflow:auto;box-sizing:border-box;padding:var(--space-16) var(--space-16) var(--space-16) var(--space-12);border-right:.64px solid var(--dd-border);background:transparent;font-size:13px;line-height:19.5px;font-weight:500}
 .dev-nav-toggle{display:none}
 .dev-nav-head{display:flex;align-items:center;gap:var(--space-8);margin:0 0 var(--space-12);padding:0 var(--space-12);color:var(--dd-text);font-size:14px;font-weight:600}
@@ -29,14 +29,14 @@ body:has(.dev-docs),body:has(.dev-docs) #app-root{background:var(--dd-bg)}
 .dev-nav-group ul{list-style:none;margin:2px 0 4px 12px;padding:0 0 0 8px;border-left:1px solid var(--dd-border)}
 .dev-nav-group li+li{margin-top:1px}
 .dev-nav-link[aria-current="page"]{background:var(--dd-active);color:var(--dd-text);font-weight:600}
-.dev-article{grid-area:main;min-width:0;width:100%;max-width:832px;justify-self:center;padding:24px 24px 0} /* Cloudflare: texto de 784px centrado entre as barras */
+.dev-article{grid-area:main;min-width:0;width:100%;max-width:832px;justify-self:center;padding:24px 24px 0} /* Cloudflare: 784px text centered between the bars */
 .dev-crumbs{margin:0 0 var(--space-12);color:var(--dd-muted);font-size:12.5px;line-height:18px}
 .dev-crumbs a{color:var(--dd-muted);text-decoration:none}
 .dev-crumbs a:hover{color:var(--dd-text);text-decoration:underline}
 .dev-crumbs [aria-current]{color:var(--dd-text)}
 .dev-meta{margin:0 0 var(--space-24);padding-bottom:var(--space-16);border-bottom:1px solid var(--dd-border);color:var(--dd-muted);font-size:13px;line-height:20px}
 .dev-hero-actions{margin:0 0 var(--space-24)}
-/* «Nesta página» (≥ 1280px): trilho vertical contínuo; o item ativo acende o trecho na cor de destaque. */
+/* "On this page" (≥ 1280px): continuous vertical track; the active item lights the stretch in the highlight color. */
 .dev-toc{display:none;grid-area:toc;width:auto;position:sticky;top:80px;max-height:calc(100vh - 96px);overflow:hidden auto;padding:24px 24px 32px 32px}
 .dev-toc-title{margin:0 0 var(--space-8);color:var(--dd-text);font-size:14px;line-height:20px;font-weight:600}
 .dev-toc-list{list-style:none;margin:0;padding:0}
@@ -57,7 +57,7 @@ body:has(.dev-docs),body:has(.dev-docs) #app-root{background:var(--dd-bg)}
   .dev-nav-search kbd{display:none}
 }
 .dev-note{margin:0 0 var(--space-12);padding:var(--space-8) var(--space-12);border:1px solid var(--dd-border);border-radius:var(--radius-md);background:var(--dd-active);color:var(--dd-muted);font-size:var(--font-size-sm)}
-/* tipografia do texto (16/28) */
+/* text typography (16/28) */
 .dev-doc{color:var(--dd-text);font-size:16px;line-height:28px;overflow-wrap:anywhere}
 .dev-doc h1{margin:0 0 var(--space-8);font-size:35px;font-weight:600;line-height:43.75px;letter-spacing:-.875px;color:var(--dd-text)}
 @media (max-width:600px){.dev-doc h1{font-size:28px;line-height:36px}}
@@ -69,8 +69,8 @@ body:has(.dev-docs),body:has(.dev-docs) #app-root{background:var(--dd-bg)}
 .dev-doc blockquote{padding-left:var(--space-12);border-left:3px solid var(--dd-border);color:var(--dd-muted)}
 .dev-doc a{color:var(--color-accent);text-decoration:underline}
 .dev-doc :not(pre)>code{padding:1px 5px;border:1px solid var(--dd-border);border-radius:var(--radius-xs);background:var(--dd-icode);color:var(--dd-text);font-family:var(--font-mono);font-size:14px;font-weight:450}
-/* Bloco de código: caixa na cor de superfície sobre o fundo da página, borda visível, «Copiar» no canto
-   (aparece no hover/foco; sempre em tela de toque). Cores de sintaxe na paleta GitHub (claro/escuro), AA ≥ 4,5 sobre a caixa. */
+/* Code block: box in the surface color over the page background, visible border, "Copy" in the corner
+   (appears on hover/focus; always visible on touch screens). Syntax colors in the GitHub palette (light/dark), AA ≥ 4.5 over the box. */
 .dev-sig{--hl-text:#24292e;--hl-fn:#6f42c1;--hl-str:#032f62;--hl-opt:#005cc5;--hl-kw:#cf222e;--hl-cmt:#6a737d;--hl-tag:#22863a;color:var(--hl-text)}
 .dev-code{--hl-text:#24292e;--hl-fn:#6f42c1;--hl-str:#032f62;--hl-opt:#005cc5;--hl-kw:#d73a49;--hl-cmt:#6a737d;--hl-tag:#22863a;
   position:relative;margin:0 0 var(--space-16);border:1px solid var(--dd-border);border-radius:var(--radius-md);background:var(--dd-box);overflow:hidden}
@@ -94,7 +94,7 @@ body:has(.dev-docs),body:has(.dev-docs) #app-root{background:var(--dd-bg)}
 .dev-table{margin:0 0 var(--space-16);overflow-x:auto;font-size:14px;line-height:22px}
 .dev-doc-foot{margin:var(--space-24) 0 0;font-size:var(--font-size-sm)}
 .dev-doc-foot a{color:var(--dd-muted);text-decoration:underline}
-/* shell público (visitante sem sessão) */
+/* public shell (visitor without a session) */
 .dev-public .platform-header{padding-inline:16px}
 .dev-public .header-actions{margin-left:auto;display:flex;align-items:center;gap:var(--space-8)}
 .dev-theme{display:inline-grid;place-items:center;width:32px;height:32px;padding:0;border:0;border-radius:8px;background:transparent;color:#fff;cursor:pointer}
@@ -106,7 +106,7 @@ body:has(.dev-docs),body:has(.dev-docs) #app-root{background:var(--dd-bg)}
 :root[data-theme="dark"] .dev-theme-moon{display:block}
 @media (prefers-color-scheme:dark){:root[data-theme="auto"] .dev-theme-sun{display:none}:root[data-theme="auto"] .dev-theme-moon{display:block}}
 
-/* «Copiar prompt» (data-hub-copy-prompt) — pílula com os agentes */
+/* "Copy prompt" (data-hub-copy-prompt) — pill with the agents */
 .dev-prompt{display:inline-flex}
 .agent-icons{display:inline-flex;align-items:center;gap:3px}
 .agent-ico{width:18px;height:18px;object-fit:contain}
@@ -123,18 +123,18 @@ body:has(.dev-docs),body:has(.dev-docs) #app-root{background:var(--dd-bg)}
 .agent-copy .dev-ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .agent-copy .dev-ico-check{display:none}
 .agent-copy.is-copied,.agent-copy.is-copied:hover{border-color:var(--dd-control);color:var(--dd-text);background:transparent}
-/* seção atual em destaque (como na Cloudflare) */
+/* current section highlighted (as in Cloudflare) */
 .dev-nav-row.dev-nav-cur{color:var(--dd-text);font-weight:600}
-/* comandos extensos quebram a linha: sem rolagem horizontal na caixa */
+/* long commands break the line: no horizontal scrolling in the box */
 .dev-code pre{white-space:pre-wrap;overflow-wrap:anywhere;overflow-x:hidden}
-/* «Nesta página»: subseções levemente aninhadas, trilho na cor de destaque e rolagem suave */
+/* "On this page": slightly nested subsections, track in the highlight color and smooth scrolling */
 html:has(.dev-docs){scroll-behavior:smooth}
 .dev-doc :is(h2,h3){scroll-margin-top:80px}
 .dev-toc-link{transition:color .15s,border-color .15s}
-.dev-toc-link.dev-toc-l3{margin-left:16px;padding-left:20px;font-size:12.5px} /* subseção: o trilho recua junto (como na Cloudflare) */
-.dev-toc-curve{display:block;width:16px;height:8px;margin-left:.8px;overflow:visible;fill:none;stroke:var(--dd-border);stroke-width:1.6px} /* liga os trilhos na diagonal, como na Cloudflare */
+.dev-toc-link.dev-toc-l3{margin-left:16px;padding-left:20px;font-size:12.5px} /* subsection: the track steps back with it (as in Cloudflare) */
+.dev-toc-curve{display:block;width:16px;height:8px;margin-left:.8px;overflow:visible;fill:none;stroke:var(--dd-border);stroke-width:1.6px} /* connects the tracks diagonally, as in Cloudflare */
 .dev-toc-link[aria-current="true"]{border-left-color:var(--color-accent);color:var(--dd-text);font-weight:500}
-/* trilho ativo animado (devdocs.js): substitui a borda colorida quando o JS roda */
+/* animated active track (devdocs.js): replaces the colored border when the JS runs */
 [data-dev-toc]{position:relative}
 .has-rail .dev-toc-link[aria-current="true"]{border-left-color:var(--dd-border)}
 .dev-toc-rail{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;fill:none}

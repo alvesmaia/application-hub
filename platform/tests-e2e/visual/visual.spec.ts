@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { stateFile } from '../tests/helpers';
 
-// Páginas-chave do hub e dos fragmentos dos apps. Máscaras cobrem o
-// que muda sozinho (horários relativos, console de logs, gráficos ao vivo).
+// Key pages of the hub and of the apps' fragments. Masks cover what
+// changes on its own (relative times, log console, live charts).
 const PAGES: [string, string][] = [
   ['inicio', '/'],
   ['aplicacoes', '/applications'],
@@ -43,8 +43,8 @@ test.describe('autenticado', () => {
   }
 });
 
-// Onda 9: as mesmas telas no tema escuro (escolha do usuário gravada no servidor) e o
-// login com o SO escuro — continua claro (tema padrão = claro; login sempre claro).
+// Wave 9: the same screens in the dark theme (the user's choice saved on the server) and
+// the login with the OS in dark — stays light (default theme = light; login is always light).
 test('login (SO escuro → claro)', async ({ browser }) => {
   const ctx = await browser.newContext({ colorScheme: 'dark', viewport: { width: 1440, height: 900 }, locale: 'pt-BR' });
   const page = await ctx.newPage();

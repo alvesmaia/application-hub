@@ -3,14 +3,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { apiAs, autoConfirm, docker, gotoSafe, json, newRoleContext, openApp, WORK_DIR, CP } from './helpers';
 
-// Onda 10 — Aplicações › Conexões com SharePoint (simulador do Graph, perfil
-// sharepoint-sim do compose): criar a conexão pela tela, "Testar conexão" (token, site,
-// biblioteca, pasta-base, gravar/ler/apagar a sonda), vincular a app × ambiente,
-// "Aplicar (reiniciar)" e usar pelo app — documentos do contrato (contratos, Python) e
-// anexos do fornecedor — sem que o app receba a credencial. Segurança: o broker só
-// atende o token do app a partir da rede do app, e só as conexões vinculadas a ele.
+// Wave 10 — Applications › Connections with SharePoint (Graph simulator, profile
+// sharepoint-sim of the compose): create the connection on the screen, "Test connection" (token, site,
+// library, base folder, write/read/delete the probe), link the app × environment,
+// "Apply (restart)" and use it from the app — contract documents (contratos, Python) and
+// supplier attachments — without the app receiving the credential. Security: the broker only
+// serves the app's token from the app's network, and only the connections linked to it.
 //
-// Compose no ar com o simulador:
+// Stack up with the simulator:
 //   HUB_GRAPH_URL=http://hub-graphsim:8080/v1.0 HUB_GRAPH_LOGIN_URL=http://hub-graphsim:8080 \
 //   docker compose --profile sharepoint-sim up -d
 
@@ -47,7 +47,7 @@ async function createViaUi(page: Page, name: string, base: string) {
   await dlg.getByLabel('Pasta-base (opcional)').fill(base);
   await dlg.getByRole('button', { name: 'Salvar' }).click();
   await expect(page.locator(`tr[data-conn-row="${name}"]`)).toBeVisible();
-  // O segredo nunca volta para a página.
+  // The secret never comes back to the page.
   expect(await page.content()).not.toContain(SIM.secret);
 }
 
@@ -80,13 +80,13 @@ async function applyViaUi(page: Page, app: string) {
   await expect(page.locator(`[data-ops-apply="${app}"]`)).toHaveCount(0, { timeout: 120_000 });
 }
 
-/** Resposta do broker a um pedido feito de dentro da rede de um app (container descartável). */
+/** Broker response to a request made from inside an app's network (disposable container). */
 function probeFrom(network: string, token: string, conn: string): string {
   return docker('run', '--rm', '--name', `hub-e2e-probe-${Date.now()}`, '--network', network, '--entrypoint', 'sh', 'postgres:16-alpine', '-c',
     `wget -S -q -O /dev/null --header "Authorization: Bearer ${token}" http://${CP}web:8081/_hub/storage/${conn}/list 2>&1 | awk '/HTTP\\//{print $2; exit}' || true`);
 }
 
-/** Token do broker do app: lido do ambiente do container (a API não revela segredos). */
+/** App's broker token: read from the container's environment (the API does not reveal secrets). */
 async function reveal(_api: APIRequestContext, app: string): Promise<string> {
   return docker("exec", `${CP}app-${app}`, "printenv", "HUB_STORAGE_TOKEN").trim();
 }
@@ -123,9 +123,9 @@ test.describe('Onda 10 — Conexões (SharePoint pelo simulador)', () => {
       await page.locator('#attachments').getByRole('button', { name: 'Excluir' }).first().click();
       await expect(page.locator('#attachments')).toContainText('Anexo excluído', { timeout: 60_000 });
     } finally {
-      // Volta ao object store do app (o DR confere os anexos no bucket).
+      // Back to the app's object store (DR checks the attachments in the bucket).
       await api.put('/api/admin/connections/fornecedores-anexos/bindings', { data: { bindings: [] } });
-      // Sem vínculo o cartão some da tela Conexões: aplica pela API (mesmo botão de Variáveis).
+      // Without a link the card disappears from the Connections screen: applies through the API (same button as Variables).
       const r = await api.post('/api/ops/runtime/fornecedores/apply', { data: {} });
       expect(r.status(), await r.text()).toBe(200);
       await ctx.close();
@@ -146,13 +146,13 @@ test.describe('Onda 10 — Conexões (SharePoint pelo simulador)', () => {
     await mk("e2e-propria", [{ app: "fornecedores", env: "producao" }]);
     try {
     const tok = await reveal(api, "fornecedores");
-    // Da rede do fornecedores, com o token dele: a conexão vinculada responde.
+    // From the suppliers' network, with their token: the linked connection responds.
     expect(probeFrom(`${CP}app-fornecedores`, tok, "e2e-propria")).toBe("200");
-    // O mesmo token vindo da rede de outro app: recusado (origem).
+    // The same token coming from another app's network: refused (origin).
     expect(probeFrom(`${CP}app-servicos`, tok, 'e2e-propria')).toBe('403');
-    // Sem token / token inválido: 401.
+    // No token / invalid token: 401.
     expect(probeFrom(`${CP}app-servicos`, 'x'.repeat(40), 'e2e-propria')).toBe('401');
-    // Conexão existente, mas não vinculada ao app: 404 (sem revelar que existe).
+    // Existing connection, but not linked to the app: 404 (without revealing that it exists).
     await api.post('/api/admin/connections', {
       data: { kind: 'sharepoint', name: 'e2e-alheia', tenant_id: SIM.tenant, client_id: SIM.client, auth: 'secret', secret: SIM.secret, site: SIM.site, drive: SIM.drive, bindings: [] },
     });
@@ -161,10 +161,10 @@ test.describe('Onda 10 — Conexões (SharePoint pelo simulador)', () => {
     } finally {
       await api.delete('/api/admin/connections/e2e-alheia');
     }
-    // A API e a página nunca devolvem a credencial.
+    // The API and the page never return the credential.
     const list = await (await api.get('/api/admin/connections')).text();
     expect(list).not.toContain(SIM.secret);
-    // Quem não tem "Editar configurações da plataforma" não vê Conexões.
+    // Whoever does not have "Edit platform settings" does not see Connections.
     const leitor = await apiAs('leitor');
     expect((await leitor.get('/api/admin/connections')).status()).toBe(403);
     } finally {

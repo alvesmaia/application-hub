@@ -3,10 +3,10 @@ import { createHash, randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { HUB, apiAs, json, newRoleContext, stateFile, uniq } from './helpers';
 
-// Conta › Apps autorizados e Tokens pessoais no shell da plataforma (não são telas de
-// credencial); contraste dos botões (inclusive <a> com cara de botão) nas telas de
-// credencial e da conta, claro e escuro; grupos do submenu Administração; Personalizar
-// do Início. Compose no ar (HUB_DEMO_USERS=1).
+// Account › Authorized apps and Personal tokens in the platform shell (they are not
+// credential screens); button contrast (including <a> that look like buttons) on the
+// credential and account screens, light and dark; Administration submenu groups; Customize
+// on Home. Stack up (HUB_DEMO_USERS=1).
 
 test.use({ storageState: stateFile('admin') });
 const RUN = uniq();
@@ -20,7 +20,7 @@ async function inShell(page: Page) {
   await expect(page.locator('.auth-card')).toHaveCount(0);
 }
 
-/** Contraste WCAG de todos os botões visíveis (button, .primary/.secondary-button, a.btn). */
+/** WCAG contrast of all visible buttons (button, .primary/.secondary-button, a.btn). */
 async function buttonContrast(page: Page): Promise<string[]> {
   return page.evaluate(() => {
     const parse = (c: string) => {
@@ -81,7 +81,7 @@ async function consent(page: Page, name: string) {
 }
 
 test('apps autorizados: no shell, estado vazio, cliente listado após consentimento e revogação @core', async ({ page, browser }) => {
-  // Leitor sem concessões: estado vazio dentro do shell.
+  // Reader without grants: empty state inside the shell.
   const ctx = await newRoleContext(browser, 'leitor');
   const lp = await ctx.newPage();
   await lp.goto('/');
@@ -100,7 +100,7 @@ test('apps autorizados: no shell, estado vazio, cliente listado após consentime
   await lp.screenshot({ path: path.join(DIST, 'fix-authorized-apps.png') });
   await ctx.close();
 
-  // Admin autoriza um cliente: aparece com host de retorno, permissões e "Não verificado".
+  // Admin authorizes a client: it appears with return host, permissions and "Not verified".
   const name = `Langdock Conta ${RUN}`;
   await consent(page, name);
   await page.goto('/account/access');
@@ -109,7 +109,7 @@ test('apps autorizados: no shell, estado vazio, cliente listado após consentime
   await expect(row).toContainText('127.0.0.1:53682');
   await expect(row).toContainText('mcp');
   await expect(row).toContainText('Não verificado');
-  // Cancelar no diálogo mantém; confirmar revoga.
+  // Cancel in the dialog keeps it; confirm revokes.
   await row.locator('[data-oauth-revoke]').click();
   await expect(page.locator('#revoke-app')).toBeVisible();
   await page.locator('#revoke-app [data-acct-cancel]').click();
@@ -140,11 +140,11 @@ test('tokens pessoais: criar (mostrado uma vez) e revogar @core', async ({ page 
   await expect(secret).toHaveText(/^hubt_/);
   const value = (await secret.textContent())!;
   await page.screenshot({ path: path.join(DIST, 'fix-tokens.png') });
-  // O token funciona na API.
+  // The token works in the API.
   const tapi = await request.newContext({ baseURL: HUB, extraHTTPHeaders: { authorization: `Bearer ${value}` } });
   expect((await tapi.get('/api/v1/apps')).status()).toBe(200);
   await dlg.locator('[data-token-done]').click();
-  // Depois de fechar, a lista mostra o token e o segredo não aparece mais na página.
+  // After closing, the list shows the token and the secret no longer appears on the page.
   const row = page.locator('[data-token-row]', { hasText: name });
   await expect(row).toBeVisible();
   await expect(row).toContainText('api:read');
@@ -161,13 +161,13 @@ test('tokens pessoais: criar (mostrado uma vez) e revogar @core', async ({ page 
 
 test('contraste dos botões (claro e escuro) nas telas de credencial e da conta @core', async ({ browser }) => {
   for (const scheme of ['light', 'dark'] as const) {
-    // Login (sem sessão), pelo tema do sistema.
+    // Login (no session), using the system theme.
     const anon = await browser.newContext({ storageState: { cookies: [], origins: [] }, colorScheme: scheme });
     const ap = await anon.newPage();
     await ap.goto('/login');
     expect(await buttonContrast(ap), `login ${scheme}`).toEqual([]);
     await anon.close();
-    // Leitor (preferência "Sistema"): conta, consentimento e troca de senha.
+    // Reader ("System" preference): account, consent and password change.
     const ctx = await browser.newContext({ storageState: stateFile('leitor'), colorScheme: scheme });
     const lapi = await apiAs('leitor');
     await lapi.post('/account/prefs?next=%2F', { form: { theme: '' }, maxRedirects: 0 });
@@ -182,12 +182,12 @@ test('contraste dos botões (claro e escuro) nas telas de credencial e da conta 
 
 test('Rail: seções administrativas no nível principal (sem "Administração"), com RBAC @core', async ({ page, browser }) => {
   await page.goto('/');
-  // Sem o item-pai "Administração": as 5 seções ficam visíveis já no Início, após um divisor.
+  // Without the "Administration" parent item: the 5 sections are visible already on Home, after a divider.
   await expect(page.locator('[data-rail-toggle]')).toHaveCount(0);
   await expect(page.locator('.rail-nav > .rail-divider')).toHaveCount(1);
   await expect(page.locator('#hub-admin-group-access')).toBeVisible();
   await expect(page.locator('#hub-admin-menu .rail-group-label .rail-group-icon svg')).toHaveCount(4);
-  // Ícones distintos no rail (seções e itens).
+  // Distinct icons on the rail (sections and items).
   const svgs = await page.locator('.rail-nav .rail-icon svg, .rail-nav .rail-group-icon svg').evaluateAll((els) => els.map((e) => e.innerHTML));
   expect(new Set(svgs).size).toBe(svgs.length);
   await page.goto('/admin/users');
@@ -202,7 +202,7 @@ test('Rail: seções administrativas no nível principal (sem "Administração")
   }
   await expect(groups.nth(0).locator('a.rail-subitem').first()).toHaveAttribute('href', '/admin/users');
   await expect(page.locator('#hub-admin-menu a.rail-subitem.active')).toHaveAttribute('href', '/admin/users');
-  // N1: por padrão só a seção da página atual vem aberta (o rail cabe a 1280×720).
+  // N1: by default only the current page's section opens (the rail fits at 1280×720).
   await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k.startsWith('hub-admin-groups:')) localStorage.removeItem(k); });
   await page.reload();
   await expect(page.locator('#hub-admin-group-access')).toHaveAttribute('aria-expanded', 'true');
@@ -214,7 +214,7 @@ test('Rail: seções administrativas no nível principal (sem "Administração")
   await page.locator('#hub-admin-menu a[href="/admin"]').click();
   await expect(page).toHaveURL(/\/admin$/);
   await expect(page.locator('#hub-admin-menu a.rail-subitem.active')).toHaveAttribute('href', '/admin');
-  // Grupos recolhíveis: a escolha do usuário persiste; o grupo da página atual sempre abre.
+  // Collapsible groups: the user's choice persists; the current page's group always opens.
   const opsBtn = page.locator('#hub-admin-group-ops');
   await expect(opsBtn).toHaveAttribute('aria-expanded', 'false');
   await expect(page.locator('#hub-admin-group-ops-items a[href="/admin/logs"]')).toBeHidden();
@@ -236,7 +236,7 @@ test('Rail: seções administrativas no nível principal (sem "Administração")
   await page.reload();
   await page.locator('aside.platform-rail').screenshot({ path: path.join(DIST, 'rail-flat.png') });
 
-  // Operador: só vê os itens permitidos; grupo sem itens não mostra o rótulo.
+  // Operator: only sees the allowed items; a group without items does not show the label.
   const ctx = await newRoleContext(browser, 'operador');
   const op = await ctx.newPage();
   await op.goto('/');
@@ -250,7 +250,7 @@ test('Rail: seções administrativas no nível principal (sem "Administração")
   await links.first().evaluate((a) => (a as HTMLAnchorElement).click());
   await expect(op).toHaveURL(new RegExp(`${href!.replace(/\//g, '\\/')}$`));
   await ctx.close();
-  // Leitor: nenhuma seção administrativa.
+  // Reader: no administrative section.
   const lctx = await newRoleContext(browser, 'leitor');
   const lp = await lctx.newPage();
   await lp.goto('/');
@@ -272,15 +272,15 @@ test('Início › Personalizar: seletores com opções, Cancelar desfaz e Salvar
   const order = async () => page.locator('.hub-widget:not([hidden])').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.widget));
   const initial = await order();
   const first = initial[0]!;
-  // Remover e cancelar: volta como estava.
+  // Remove and cancel: comes back as it was.
   await page.locator(`[data-widget="${first}"] [data-widget-remove]`).click();
   await expect(page.locator(`[data-widget="${first}"]`)).toBeHidden();
-  // O seletor de "Adicionar" agora tem o widget removido como opção habilitada.
+  // The "Add" selector now has the removed widget as an enabled option.
   await expect(editor.locator(`[data-home-add] option[value="${first}"]:not([disabled])`)).toHaveCount(1);
   await editor.locator('[data-home-cancel]').click();
   await expect(editor).toBeHidden();
   expect(await order()).toEqual(initial);
-  // Remover e salvar: persiste e vale após recarregar.
+  // Remove and save: persists and holds after reloading.
   await page.locator('[data-home-customize]').click();
   await page.locator(`[data-widget="${first}"] [data-widget-remove]`).click();
   await editor.locator('[data-home-done]').click();

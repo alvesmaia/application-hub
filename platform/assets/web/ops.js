@@ -1,14 +1,14 @@
-/* ops.js — interações de Operações (Implantações, Containers, Backups, SDK).
+/* ops.js — Operations interactions (Deployments, Containers, Backups, SDK).
  *
- * As páginas chegam prontas do servidor; este script só:
- *   - envia o .hubapp (multipart + X-Hub-Request: 1) e acompanha o job do pipeline
- *     (GET /api/ops/jobs/{id}), animando os passos com o resultado real;
- *   - aprova / promove / faz rollback (202 + job: acompanha os passos do blue/green);
- *     inicia/reinicia/para containers (produção ou staging); edita limites;
- *   - dispara backup, restauração, clone e teste de restore com barra de progresso;
- *   - edita políticas de backup e valida manifest.
- * Após cada mutação a página é recarregada (a verdade fica no servidor).
- * Valores vindos do usuário/servidor entram no DOM só por textContent/value/esc(). */
+ * The pages arrive ready from the server; this script only:
+ *   - sends the .hubapp (multipart + X-Hub-Request: 1) and follows the pipeline job
+ *     (GET /api/ops/jobs/{id}), animating the steps with the real result;
+ *   - approves / promotes / rolls back (202 + job: follows the blue/green steps);
+ *     starts/restarts/stops containers (production or staging); edits limits;
+ *   - triggers backup, restore, clone and restore test with a progress bar;
+ *   - edits backup policies and validates the manifest.
+ * After each mutation the page is reloaded (the truth stays on the server).
+ * Values coming from the user/server enter the DOM only through textContent/value/esc(). */
 (function () {
   'use strict';
 
@@ -31,7 +31,7 @@
     toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
   }
   function reloadWithToast(message) {
-    try { sessionStorage.setItem('hub-admin-toast', message); } catch (e) { /* sem storage */ }
+    try { sessionStorage.setItem('hub-admin-toast', message); } catch (e) { /* no storage */ }
     location.reload();
   }
 
@@ -58,7 +58,7 @@
 
   const envQ = (env) => (env === 'staging' ? '?env=staging' : '');
 
-  /** Aprovar/promover/rollback: 202 + job; mostra cada passo do blue/green. */
+  /** Approve/promote/rollback: 202 + job; shows each blue/green step. */
   async function deploymentAction(id, action, button) {
     if (button) button.disabled = true;
     const job = await call('POST', `/deployments/${id}/${action}`);
@@ -89,7 +89,7 @@
     const close = () => host.remove();
     $('.modal-close', host).onclick = close;
     $('[data-cancel]', host).onclick = close;
-    // Clicar fora não fecha (o que foi digitado se perderia); Esc só fecha sem alterações.
+    // Clicking outside does not close (what was typed would be lost); Esc only closes without changes.
     host.addEventListener('input', () => { host.dataset.dirty = '1'; }); host.addEventListener('change', () => { host.dataset.dirty = '1'; });
     host.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !host.dataset.dirty) { e.preventDefault(); close(); } });
     const form = $('form', host);
@@ -106,7 +106,7 @@
   const field = (name, label, value, attrs = '') =>
     `<div class="form-field"><label for="ops-f-${name}">${esc(label)}</label><input id="ops-f-${name}" name="${name}" value="${esc(value)}" ${attrs}/></div>`;
 
-  // ---- Implantações ----------------------------------------------------------
+  // ---- Deployments ----------------------------------------------------------
   let selectedFile = null;
   function pickFile(file) {
     selectedFile = file || null;
@@ -176,8 +176,8 @@
     return final;
   }
 
-  // ---- Backups: bancos de lado (restaurações interrompidas) -------------------------
-  // Só lista e oferece ações explícitas (devolver ao nome / apagar): nada é apagado sozinho.
+  // ---- Backups: databases on the side (interrupted restores) -------------------------
+  // Only lists and offers explicit actions (return to the name / delete): nothing is deleted on its own.
   function asideRow(a) {
     const back = a.db_exists ? '' : `<button type="button" class="secondary-button" data-ops-aside="${esc(a.aside)}" data-db="${esc(a.db)}" data-action="rename-back">Devolver ao nome</button> `;
     const drop = `<button type="button" class="secondary-button" data-ops-aside="${esc(a.aside)}" data-db="${esc(a.db)}" data-action="drop">Apagar</button>`;
@@ -205,7 +205,7 @@
     }
   }
 
-  // Gaveta de Implantações: o seletor de versão mostra o painel (fatos e ações) da versão escolhida.
+  // Deployments drawer: the version selector shows the panel (facts and actions) of the chosen version.
   document.addEventListener('change', (e) => {
     const s = e.target.closest && e.target.closest('[data-ops-ver]');
     if (!s) return;
@@ -290,7 +290,7 @@
         return reloadWithToast(action === 'retry' ? 'Tarefa devolvida à fila.' : 'Cancelamento solicitado.');
       }
       if (d.opsApproveScripts !== undefined) {
-        // Onda 12 (2.1): revisão de segurança do JavaScript próprio (separada e auditada).
+        // Wave 12 (2.1): security review of the package's own JavaScript (separate and audited).
         if (!await window.HubConfirm('Aprovar o JavaScript próprio deste pacote? Você revisou os arquivos e os motivos listados; os hashes passam a valer na CSP do app.')) return;
         t.disabled = true;
         await call('POST', `/deployments/${d.opsApproveScripts}/scripts/approve`);
@@ -367,10 +367,10 @@
   });
 })();
 
-/* Containers: painel de detalhes (direita no desktop; tela cheia no celular) com abas
- * Visão geral · Variáveis vinculadas (JSON, segredos ••••) · Logs (últimas linhas + SSE) ·
- * Inspect (JSON sanitizado pelo servidor). Clicar fora não fecha (regra das janelas);
- * Esc ou ✕ fecham. Tudo entra por textContent. */
+/* Containers: details panel (right on desktop; full screen on phones) with tabs
+ * Overview · Linked variables (JSON, secrets ••••) · Logs (last lines + SSE) ·
+ * Inspect (JSON sanitized by the server). Clicking outside does not close (rule of the windows);
+ * Esc or ✕ close. Everything enters through textContent. */
 (function () {
   'use strict';
   const drawer = document.querySelector('[data-ops-drawer]');
@@ -407,7 +407,7 @@
       stopLogs();
       es = new EventSource(`${base}/stream?${q}`);
       es.addEventListener('ready', () => { st.textContent = 'Acompanhando em tempo real.'; });
-      es.addEventListener('line', (ev) => { try { add(JSON.parse(ev.data)); } catch (_) { /* linha inválida */ } });
+      es.addEventListener('line', (ev) => { try { add(JSON.parse(ev.data)); } catch (_) { /* invalid line */ } });
       es.onerror = () => { st.textContent = 'Conexão encerrada (o contêiner parou ou a rede caiu).'; stopLogs(); };
     } catch (e) {
       st.textContent = 'Não foi possível ler os logs: ' + e.message;
@@ -497,7 +497,7 @@
       if (d) { e.preventDefault(); select(tabs[(i + d + tabs.length) % tabs.length].dataset.opsTab, true); }
     });
   });
-  // Foco preso no painel enquanto aberto (aria-modal).
+  // Focus trapped in the panel while open (aria-modal).
   drawer.addEventListener('keydown', (e) => {
     if (e.key !== 'Tab') return;
     const f = [...drawer.querySelectorAll('button:not([disabled]),[href],[tabindex="0"]')].filter((x) => x.offsetParent !== null);

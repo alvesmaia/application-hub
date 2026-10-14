@@ -1,5 +1,5 @@
-// Capturas da entrega (bloco do usuário no header e nome do app em 2 linhas na sidebar)
-// → platform/dist/. Pilha no ar; usa o estado de login do admin dos testes E2E.
+// Delivery screenshots (user block in the header and the app name on 2 lines in the sidebar)
+// → platform/dist/. Stack up; uses the admin login state of the E2E tests.
 //   node shots-header-sidebar.mjs
 import { chromium } from '@playwright/test';
 import path from 'node:path';

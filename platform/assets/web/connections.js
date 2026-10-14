@@ -1,10 +1,10 @@
-/* connections.js — Aplicações › Conexões (onda 10).
+/* connections.js — Applications › Connections (wave 10).
  *
- * A página chega pronta do servidor (sem nenhuma credencial); este script abre os
- * modais de criar/editar/vínculos/rotacionar, lê o certificado escolhido (PEM ou PFX)
- * em base64, dispara "Testar conexão" e mostra cada etapa, e fala com
- * /api/admin/connections (JSON). Textos no idioma do usuário (data-hub-i18n do body).
- * Valores vindos do usuário/servidor entram no DOM só por textContent/value/esc(). */
+ * The page arrives ready from the server (without any credential); this script opens the
+ * create/edit/links/rotate modals, reads the chosen certificate (PEM or PFX) as
+ * base64, triggers "Test connection" and shows each step, and talks to
+ * /api/admin/connections (JSON). Texts in the user's language (data-hub-i18n of the body).
+ * Values coming from the user/server enter the DOM only through textContent/value/esc(). */
 (function () {
   'use strict';
 
@@ -30,8 +30,8 @@
     setTimeout(() => el.classList.remove('show'), 2600);
   }
   function reloadWithToast(message) {
-    // admin.js mostra a mensagem depois do reload (mesma chave).
-    try { sessionStorage.setItem('hub-admin-toast', message); } catch (e) { /* sem storage */ }
+    // admin.js shows the message after the reload (same key).
+    try { sessionStorage.setItem('hub-admin-toast', message); } catch (e) { /* no storage */ }
     location.reload();
   }
 
@@ -59,7 +59,7 @@
     return row ? JSON.parse(row.dataset.item) : null;
   }
 
-  // ---- modal acessível ----------------------------------------------------------
+  // ---- accessible modal ----------------------------------------------------------
   let seq = 0;
   function modal(title, bodyHtml, onSubmit, submitLabel) {
     $$('.overlay').forEach((o) => o.remove());
@@ -72,7 +72,7 @@
     const close = () => { host.remove(); if (opener && opener.focus) opener.focus(); };
     $('.modal-close', host).onclick = close;
     $('.modal-cancel', host).onclick = close;
-    // Clicar fora não fecha (o que foi digitado se perderia); Esc só fecha sem alterações.
+    // Clicking outside does not close (what was typed would be lost); Esc only closes without changes.
     host.addEventListener('input', () => { host.dataset.dirty = '1'; }); host.addEventListener('change', () => { host.dataset.dirty = '1'; });
     host.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') { e.preventDefault(); if (!host.dataset.dirty) close(); }
@@ -172,7 +172,7 @@
     $$('[data-wrap="certificate"],[data-wrap="certificate_password"]', host).forEach((w) => { w.hidden = auth !== 'certificate'; });
   }
 
-  // Bancos SQL (PostgreSQL, MySQL/MariaDB, SQL Server): consultas dos apps pelo broker.
+  // SQL databases (PostgreSQL, MySQL/MariaDB, SQL Server): app queries through the broker.
   const SQL_PORTS = { postgres: 5432, mysql: 3306, sqlserver: 1433 };
   function openSqlEditor(kind, item) {
     const v = item || { readonly: true, max_rows: 5000, timeout_s: 30, ssl: 'prefer', bindings: [] };
@@ -283,8 +283,8 @@
   }
 
   function openBindings(item) {
-    // Token do broker por app × ambiente vinculado: "Rotacionar" troca na hora (o app
-    // recebe o novo depois de Aplicar/reiniciar).
+    // Broker token per linked app × environment: "Rotate" takes effect right away (the app
+    // receives the new one after Apply/restart).
     const short = (id) => (meta.apps.find((a) => a.id === id) || { short: id }).short;
     const tokens = (item.bindings || []).length
       ? `<fieldset class="form-field conn-fieldset"><legend>${esc(t('tokens_title'))}</legend><p class="form-hint">${esc(t('tokens_hint'))}</p><div class="conn-token-list">${item.bindings
@@ -372,7 +372,7 @@
     }
   }
 
-  // ---- Onda 12 (2.7): provisionar / desprovisionar armazenamento ------------------
+  // ---- Wave 12 (2.7): provision / deprovision storage ------------------
   const storageForm = $('[data-conn-storage-form]');
   if (storageForm) {
     storageForm.addEventListener('submit', async (e) => {

@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { apiAs, stateFile } from './helpers';
 
-// Onda 12 (2.8) — Administração/Operações no idioma do navegador (Accept-Language, sem
-// preferência salva): o servidor entrega a página traduzida pelo catálogo, o
-// hub-i18n.js traduz o que o JavaScript escreve depois (toasts) e as mensagens de erro da
-// API chegam traduzidas. Não muda a preferência do admin (outras specs esperam pt-BR).
-// Compose no ar (HUB_DEMO_USERS=1).
+// Wave 12 (2.8) — Administration/Operations in the browser's language (Accept-Language, without
+// a saved preference): the server delivers the page translated by the catalog, the
+// hub-i18n.js translates what the JavaScript writes afterwards (toasts) and the error messages of the
+// API arrive translated. Does not change the admin's preference (other specs expect pt-BR).
+// Stack up (HUB_DEMO_USERS=1).
 
 test.describe('inglês', () => {
   test.use({ storageState: stateFile('admin'), locale: 'en-US' });
@@ -23,7 +23,7 @@ test.describe('inglês', () => {
     await expect(page.getByRole('heading', { name: 'Validation pipeline' })).toBeVisible();
     await expect(page.locator('body')).not.toContainText('Pipeline de validação');
 
-    // Texto escrito pelo JavaScript depois da carga (toast): traduzido pelo hub-i18n.js.
+    // Text written by the JavaScript after loading (toast): translated by hub-i18n.js.
     await page.waitForFunction(() => typeof (window as unknown as { hubT?: unknown }).hubT === 'function');
     await expect.poll(() => page.evaluate(() => (window as unknown as { hubT: (s: string) => string }).hubT('Variável excluída.'))).toBe('Variable deleted.');
     await page.evaluate(() => {

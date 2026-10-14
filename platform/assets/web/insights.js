@@ -1,12 +1,12 @@
-/* insights.js — interações da onda 8 no shell do hub:
- *   - Observabilidade: atualização automática (15 s);
- *   - Auditoria: "Verificar integridade";
- *   - Configurações: rotação da chave de dados do cofre;
- *   - Saúde: definir/editar/remover SLO;
- *   - Status: registrar incidente, nota e resolução;
- *   - Feature flags: criar, ligar/desligar por ambiente (kill switch), regras e excluir.
- * Tudo conversa com /api/admin/* (JSON) e recarrega a página depois de cada mutação.
- * Valores entram no DOM só por textContent/value. */
+/* insights.js — wave 8 interactions in the hub shell:
+ *   - Observability: automatic refresh (15 s);
+ *   - Audit: "Check integrity";
+ *   - Settings: rotation of the vault's data key;
+ *   - Health: define/edit/remove SLO;
+ *   - Status: record incident, note and resolution;
+ *   - Feature flags: create, turn on/off per environment (kill switch), rules and delete.
+ * Everything talks to /api/admin/* (JSON) and reloads the page after each mutation.
+ * Values enter the DOM only through textContent/value. */
 (function () {
   'use strict';
   const $ = (s, el = document) => el.querySelector(s);
@@ -42,7 +42,7 @@
     try { return JSON.parse($(sel)?.getAttribute(attr) || '{}'); } catch (e) { return {}; }
   };
 
-  // ---- modal genérico ---------------------------------------------------------
+  // ---- generic modal ---------------------------------------------------------
   // fields: [{name, label, type: text|number|select|textarea|checkbox|checks, options, value}]
   function modal(title, fields, onSubmit, extra) {
     const ov = document.createElement('div');
@@ -111,7 +111,7 @@
       box.append(wrap);
       f.wrap = wrap;
     }
-    // Campos condicionais (`showIf: {name, value}`): só aparecem quando fazem sentido.
+    // Conditional fields (`showIf: {name, value}`): only appear when they make sense.
     for (const f of fields.filter((x) => x.showIf)) {
       const ctl = box.querySelector(`[name="${f.showIf.name}"]`);
       const sync = () => { f.wrap.hidden = !ctl || ctl.value !== f.showIf.value; };
@@ -151,14 +151,14 @@
       try { await onSubmit(v); } catch (err) { toast(err.message, 'error'); ok.disabled = false; }
     });
     ov.append(box);
-    // Clicar fora não fecha (o que foi digitado se perderia); Esc só fecha sem alterações.
+    // Clicking outside does not close (what was typed would be lost); Esc only closes without changes.
     ov.addEventListener('input', () => { ov.dataset.dirty = '1'; }); ov.addEventListener('change', () => { ov.dataset.dirty = '1'; });
     ov.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !ov.dataset.dirty) { e.preventDefault(); ov.remove(); } });
     document.body.append(ov);
     box.querySelector('input,select,textarea')?.focus();
   }
 
-  // ---- Observabilidade: atualização automática --------------------------------
+  // ---- Observability: automatic refresh --------------------------------------
   const auto = $('[data-obs-autorefresh]');
   if (auto) {
     try { if (localStorage.getItem('hub-obs-auto') === '0') auto.checked = false; } catch (e) { /* ignore */ }
@@ -166,7 +166,7 @@
     setInterval(() => { if (auto.checked && !document.hidden && !$('[data-insights-modal]')) location.reload(); }, 15000);
   }
 
-  // ---- Auditoria: verificar integridade ----------------------------------------
+  // ---- Audit: check integrity ----------------------------------------
   const verify = $('[data-audit-verify]');
   if (verify) {
     verify.addEventListener('click', async () => {

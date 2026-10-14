@@ -2,11 +2,11 @@ import { test, expect, request } from '@playwright/test';
 import { createHash, randomBytes } from 'node:crypto';
 import { HUB, stateFile, uniq } from './helpers';
 
-// Onda 12 (2.2) — OAuth 2.1 do MCP pelo navegador: um cliente registrado dinamicamente
-// (como o Langdock) pede acesso; o usuário vê a tela de consentimento (cliente, host de
-// retorno, permissões), aprova, o código volta para o cliente e vira token que usa o
-// /mcp; a concessão aparece em Conta › Apps autorizados e na Administração, e revogar
-// derruba o token. Compose no ar (HUB_DEMO_USERS=1).
+// Wave 12 (2.2) — MCP OAuth 2.1 through the browser: a dynamically registered client
+// (like Langdock) asks for access; the user sees the consent screen (client, return host,
+// permissions), approves, the code goes back to the client and becomes a token that uses
+// /mcp; the grant appears in Account › Authorized apps and in Administration, and revoking
+// drops the token. Stack up (HUB_DEMO_USERS=1).
 
 test.use({ storageState: stateFile('admin') });
 const RUN = uniq();
@@ -25,9 +25,9 @@ test('consentimento OAuth: aprovar, usar o /mcp, ver e revogar em Apps autorizad
     response_type: 'code', client_id: cid, redirect_uri: REDIRECT, code_challenge: challenge,
     code_challenge_method: 'S256', state: 'e2e', scope: 'mcp api:write', resource: `${process.env.HUB_PUBLIC_URL || HUB}/mcp`,
   });
-  // O navegador volta para o cliente (127.0.0.1:53682, porta fechada; a 9 o Chrome bloqueia): o teste captura a URL de retorno.
+  // The browser goes back to the client (127.0.0.1:53682, closed port; Chrome blocks port 9): the test captures the return URL.
   let callback = '';
-  // Redirecionamento de um POST não passa por page.route: registra o pedido (a porta está fechada).
+  // A POST redirect does not go through page.route: records the request (the port is closed).
   page.on('request', (r) => { if (r.url().startsWith(REDIRECT)) callback = r.url(); });
   const res = await page.goto(`/oauth/authorize?${q}`);
   expect(res!.status()).toBe(200);
@@ -38,7 +38,7 @@ test('consentimento OAuth: aprovar, usar o /mcp, ver e revogar em Apps autorizad
   await expect(page.locator('[data-oauth-client]')).toHaveText(`Langdock E2E ${RUN}`);
   await expect(page.locator('[data-oauth-redirect-host]')).toHaveText('127.0.0.1:53682');
   await expect(page.locator('input[name="scope"][value="api:write"]')).toBeChecked();
-  // Só leitura: desmarca "api:write".
+  // Read only: unchecks "api:write".
   await page.locator('input[name="scope"][value="api:write"]').uncheck();
   await page.locator('[data-oauth-approve]').click();
   await expect.poll(() => callback).toContain('code=');
@@ -63,13 +63,13 @@ test('consentimento OAuth: aprovar, usar o /mcp, ver e revogar em Apps autorizad
   expect(names).toContain('apps_list');
   expect(names).not.toContain('deployments_rollback');
 
-  // Acesso › Credenciais lista o cliente e a concessão.
+  // Access › Credentials lists the client and the grant.
   await page.goto('/admin/tokens#oauth');
   await expect(page.locator('[data-oauth-client-row]', { hasText: `Langdock E2E ${RUN}` })).toBeVisible();
   await page.locator('[data-ptab="grants"]').click();
   await expect(page.locator('[data-oauth-grant-row]', { hasText: `Langdock E2E ${RUN}` }).first()).toBeVisible();
 
-  // Conta › Apps autorizados (menu do usuário) → revogar.
+  // Account › Authorized apps (user menu) → revoke.
   await page.goto('/');
   await page.locator('details.hub-user-menu > summary').click();
   await page.locator('.hub-user-popover').getByRole('link', { name: 'Minha conta' }).click();

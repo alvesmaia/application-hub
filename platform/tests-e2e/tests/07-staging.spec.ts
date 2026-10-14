@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { CP, USERS } from './helpers';
 
-// "Ver em staging" → confirmação (gesto do usuário) → host de staging com sessão própria
-// (hub_stg, amarrada à sessão principal) → sair no host principal encerra o staging.
-// Usa um login próprio: o logout não pode derrubar a sessão salva dos outros testes.
-// Hub Python: staging é um modo do mesmo host (cookie `hub_env`, ligado em /hub-env), não um host separado (F5b).
+// "View in staging" → confirmation (user gesture) → staging host with its own session
+// (hub_stg, tied to the main session) → signing out on the main host ends the staging.
+// Uses its own login: the logout must not drop the others' saved session.
+// Python hub: staging is a mode of the same host (cookie `hub_env`, set on /hub-env), not a separate host (F5b).
 test('staging (hub Python): "Ver em staging" liga o modo no mesmo host, faixa e volta à produção', async ({ browser }) => {
   test.skip(!CP.startsWith('app-hub-'), 'só na pilha Python');
   const ctx = await browser.newContext({ storageState: { cookies: [], origins: [] } });

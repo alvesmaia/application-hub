@@ -1,11 +1,11 @@
 import { test, expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import { HUB, apiAs, openApp, stateFile } from './helpers';
 
-// Onda 13 — Coletor: sessão de teste em FILA (Folha no computador, um código por vez, ordem
-// sorteada) sincronizada AO VIVO por WebSocket com o celular (Escanear), modos do leitor
-// (Interativo / Automático com pausa e descarte de repetidas) e alternância Código de barras |
-// QR dentro da câmera. Duas páginas do mesmo usuário: computador (1440) e celular (390) com a
-// câmera e o BarcodeDetector simulados — o código "lido" é o que o teste empurra.
+// Wave 13 — Coletor: test session in a QUEUE (Test sheet on the computer, one code at a time, order
+// drawn at random) synchronized LIVE by WebSocket with the phone (Scan), reader modes
+// (Interactive / Automatic with pause and discard of repeats) and the switch Barcode |
+// QR inside the camera. Two pages of the same user: computer (1440) and phone (390) with the
+// camera and the BarcodeDetector simulated — the "read" code is the one the test pushes.
 
 const idem = () => ({ 'idempotency-key': `e2e-f-${Date.now()}-${Math.random()}` });
 
@@ -19,8 +19,8 @@ async function reset(reader: 'interativo' | 'automatico' = 'automatico', pausa =
   await api.dispose();
 }
 
-/** Câmera falsa + BarcodeDetector que devolve o que estiver em window.__codes, sempre com um
- *  formato do modo atual (o hub descarta formato de outro modo). */
+/** Fake camera + BarcodeDetector that returns whatever is in window.__codes, always with a
+ *  format of the current mode (the hub discards a format from another mode). */
 const PHONE_MOCKS = () => {
   (window as any).__codes = [];
   (window as any).__fmts = [];
@@ -31,7 +31,7 @@ const PHONE_MOCKS = () => {
     async detect() {
       await new Promise((r) => setTimeout(r, 20));
       const q = (window as any).__codes;
-      // Só o leitor do modo atual responde (o de aviso, com os formatos do outro modo, não).
+      // Only the reader of the current mode responds (the warning one, with the formats of the other mode, does not).
       if (!q.length || document.querySelector<HTMLElement>('.hub-camera')?.dataset.formats !== this.f.join(',')) return [];
       return [{ rawValue: q.shift(), format: this.f[0] }];
     }
@@ -77,7 +77,7 @@ async function openCamera(p: Page) {
   await expect(p.locator('.hub-camera')).toHaveAttribute('data-decoder', 'nativo');
 }
 
-/** Garante o modo da câmera certo para o formato esperado (troca DENTRO da câmera). */
+/** Makes sure the camera is in the right mode for the expected format (switch INSIDE the camera). */
 async function aimFor(p: Page, fmt: string) {
   const want = ['qr_code', 'data_matrix'].includes(fmt) ? 'qr' : 'barras';
   const cam = p.locator('.hub-camera');
@@ -100,14 +100,14 @@ test.describe('Coletor — fila ao vivo (WebSocket)', () => {
     const m = await phone(browser);
     try {
       await startSession(d.page, true);
-      // O celular recebe a sessão pelo socket (posição e código esperado).
+      // The phone receives the session through the socket (expected position and code).
       const sess = m.page.locator('#col-session');
       await expect(sess).toHaveAttribute('data-col-pos', '1');
       const first = await expected(d.page);
       await expect(sess).toHaveAttribute('data-col-expected', first);
       await openCamera(m.page);
       await aimFor(m.page, (await queue(d.page).locator('[data-col-current]').getAttribute('data-col-format'))!);
-      // Leitura certa: o computador avança sozinho; medimos da resposta no celular até a tela.
+      // Correct reading: the computer advances by itself; we measure from the response on the phone to the screen.
       const resp = m.page.waitForResponse((r) => r.url().includes('/_frag/coletor/escanear/ler'));
       await scan(m.page, first);
       await resp;
@@ -117,7 +117,7 @@ test.describe('Coletor — fila ao vivo (WebSocket)', () => {
       expect(latency, `atualização ao vivo em ${latency} ms`).toBeLessThan(1000);
       await expect(m.page.locator('#scan-result [data-col-outcome]')).toHaveAttribute('data-col-outcome', 'ok');
       await expect(sess).toHaveAttribute('data-col-pos', '2');
-      // Leitura errada: erro nas duas telas, não avança.
+      // Wrong reading: error on both screens, does not advance.
       const second = await expected(d.page);
       await aimFor(m.page, (await queue(d.page).locator('[data-col-current]').getAttribute('data-col-format'))!);
       await scan(m.page, 'NADA-404');
@@ -129,7 +129,7 @@ test.describe('Coletor — fila ao vivo (WebSocket)', () => {
       await expect(queue(d.page)).toHaveAttribute('data-col-pos', '3');
       await expect(d.page.locator('#app-root [data-col-result="erro"]')).toHaveCount(1);
       await expect(d.page.locator('#app-root [data-col-result="ok"]')).toHaveCount(2);
-      // A troca de modo feita dentro da câmera foi lembrada pelo app.
+      // The mode switch made inside the camera was remembered by the app.
       await m.page.locator('.hub-camera-close').click();
       const mode = await m.page.locator('#app-root [data-hub-scan]').getAttribute('data-hub-scan-mode');
       expect(['barras', 'qr']).toContain(mode);
@@ -150,18 +150,18 @@ test.describe('Coletor — fila ao vivo (WebSocket)', () => {
       await openCamera(m.page);
       await aimFor(m.page, (await queue(d.page).locator('[data-col-current]').getAttribute('data-col-format'))!);
       await scan(m.page, first);
-      // Sem avanço automático: marcado como certo, esperando Próximo.
+      // No automatic advance: marked as correct, waiting for Next.
       await expect(d.page.locator('#app-root [data-col-flag="ok"]')).toBeVisible();
       await expect(m.page.locator('.hub-camera[data-held] .hub-camera-next')).toBeVisible();
-      // Outra leitura com a câmera parada: nada entra.
+      // Another reading with the camera still: nothing goes in.
       await scan(m.page, 'COL-0099');
       await m.page.waitForTimeout(800);
       await expect(m.page.locator('.hub-camera')).toHaveAttribute('data-reads', '1');
       await m.page.locator('.hub-camera-next').click();
       await expect(m.page.locator('.hub-camera[data-held]')).toHaveCount(0);
-      await expect(m.page.locator('.hub-camera')).toHaveAttribute('data-reads', '2', { timeout: 5_000 }); // a COL-0099 que esperava
+      await expect(m.page.locator('.hub-camera')).toHaveAttribute('data-reads', '2', { timeout: 5_000 }); // the COL-0099 it was waiting for
       await expect(m.page.locator('.hub-camera[data-held]')).toHaveCount(1);
-      // Próximo da sessão no celular: o computador vai para o 2º.
+      // Session's Next on the phone: the computer goes to the 2nd.
       await m.page.locator('.hub-camera-next').click();
       await m.page.locator('.hub-camera-close').click();
       await m.page.locator('#col-session [data-col-action="proximo"]').click();
@@ -186,7 +186,7 @@ test.describe('Coletor — fila ao vivo (WebSocket)', () => {
       await expect(queue(d.page)).toHaveAttribute('data-col-pos', '2');
       await expect(m.page.locator('.hub-camera')).toHaveAttribute('data-cooldown', '2000');
       const t0 = Date.now();
-      // O mesmo código ainda na frente da câmera: descartado (não vira erro no 2º).
+      // The same code still in front of the camera: discarded (does not become an error in the 2nd).
       await scan(m.page, first);
       const second = await expected(d.page);
       await aimFor(m.page, (await queue(d.page).locator('[data-col-current]').getAttribute('data-col-format'))!);
@@ -210,20 +210,20 @@ test.describe('Coletor — fila ao vivo (WebSocket)', () => {
       await d.page.locator('#app-root [data-col-action="parar"]').click();
       await expect(queue(d.page)).toHaveAttribute('data-col-status', 'paused');
       await expect(m.page.locator('#col-session')).toHaveAttribute('data-col-session', 'paused');
-      // Parada: leitura não conta (nem como erro).
+      // Stopped: the reading does not count (not even as an error).
       await m.page.locator('#codigo').fill('COL-0099');
       await m.page.locator('#leitura button[type=submit]').click();
       await expect(m.page.locator('#scan-result [data-col-last]')).toContainText('COL-0099');
       await expect(m.page.locator('#scan-result [data-col-outcome]')).toHaveCount(0);
       await expect(queue(d.page)).toHaveAttribute('data-col-pos', '1');
       await expect(d.page.locator('#app-root [data-col-result]')).toHaveCount(0);
-      // Continuar pelo celular.
+      // Continue from the phone.
       await m.page.locator('#col-session [data-col-action="continuar"]').click();
       await expect(queue(d.page)).toHaveAttribute('data-col-status', 'running');
       await m.page.locator('#codigo').fill(await expected(d.page));
       await m.page.locator('#leitura button[type=submit]').click();
       await expect(queue(d.page)).toHaveAttribute('data-col-pos', '2');
-      // Cancelar: volta ao início (QR do app de novo) e o painel do celular some.
+      // Cancel: back to the start (the app's QR again) and the phone's panel disappears.
       await d.page.locator('#app-root [data-col-action="cancelar"]').click();
       await expect(d.page.locator('#app-root [data-col-start]')).toBeVisible();
       await expect(queue(d.page)).toHaveCount(0);

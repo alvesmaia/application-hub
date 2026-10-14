@@ -1,9 +1,9 @@
 import { defineConfig } from '@playwright/test';
 
-// Regressão visual (onda 8, design tokens): screenshots das páginas-chave comparados
-// com a referência gravada ANTES da refatoração para tokens (tolerância pequena para
-// horários relativos e antialiasing). Fora do CI (as referências são por plataforma):
-//   bash ../scripts/demo.sh   (hub nativo, dados novos)   e depois
+// Visual regression (wave 8, design tokens): screenshots of the key pages compared
+// with the reference recorded BEFORE the refactoring to tokens (small tolerance for
+// relative times and antialiasing). Outside CI (the references are per platform):
+//   bash ../scripts/demo.sh   (native hub, fresh data)   and then
 //   npx playwright test -c playwright.visual.config.ts [--update-snapshots]
 export const HUB = process.env.HUB || 'http://localhost:8080';
 

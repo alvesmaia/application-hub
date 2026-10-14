@@ -1,9 +1,9 @@
-/* users.js — Acesso › Usuários e Tokens de API.
+/* users.js — Access › Users and API tokens.
  *
- * As páginas chegam prontas do servidor; este script abre os formulários (modal
- * do mockup), chama /api/admin/users* e /api/admin/tokens* (application/json,
- * mesma origem) e recarrega a página após cada mutação. Valores do servidor e do
- * usuário entram no DOM só por textContent/value ou esc(). */
+ * The pages arrive ready from the server; this script opens the forms (mockup's
+ * modal), calls /api/admin/users* and /api/admin/tokens* (application/json,
+ * same origin) and reloads the page after each mutation. Values from the server and the
+ * user enter the DOM only through textContent/value or esc(). */
 (function () {
   'use strict';
 
@@ -28,7 +28,7 @@
     toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
   }
   function reloadWithToast(message) {
-    try { sessionStorage.setItem('hub-admin-toast', message); } catch (e) { /* sem storage */ }
+    try { sessionStorage.setItem('hub-admin-toast', message); } catch (e) { /* no storage */ }
     location.reload();
   }
 
@@ -50,7 +50,7 @@
     return data;
   }
 
-  // Senha provisória sugerida (o admin pode trocar antes de salvar).
+  // Suggested temporary password (the admin can change it before saving).
   function suggestPassword() {
     const alphabet = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789-_.!@#';
     const bytes = new Uint32Array(16);
@@ -78,7 +78,7 @@
     </form>`;
     document.body.appendChild(wrap);
     const form = $('form', wrap);
-    // Clicar fora não fecha (o que foi digitado se perderia); Esc só fecha sem alterações.
+    // Clicking outside does not close (what was typed would be lost); Esc only closes without changes.
     wrap.addEventListener('input', () => { wrap.dataset.dirty = '1'; }); wrap.addEventListener('change', () => { wrap.dataset.dirty = '1'; });
     wrap.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeModal(); });
     form.addEventListener('submit', async (e) => {
@@ -109,7 +109,7 @@
     `<div class="form-field"><label>${esc(label)}</label><div class="role-permissions">${items
       .map((it) => `<label class="role-permission"><input type="checkbox" name="${name}" value="${esc(it.value)}" ${checked(it.value) ? 'checked' : ''}/><span>${esc(it.label)}</span></label>`)
       .join('')}</div></div>`;
-  // Senha provisória com "Gerar outra" e "Copiar".
+  // Temporary password with "Generate another" and "Copy".
   const pwField = (pw) =>
     `<div class="form-field"><label for="user-pw">Senha provisória</label><div class="pw-row"><input id="user-pw" name="password" type="text" value="${esc(pw)}" required minlength="10" autocomplete="off"/><button type="button" class="secondary-button" data-pw-gen>Gerar outra</button><button type="button" class="secondary-button" data-pw-copy>Copiar</button></div></div>`;
   const values = (form, name) => $$(`input[name="${name}"]:checked`, form).map((i) => i.value);
@@ -120,7 +120,7 @@
     return row ? JSON.parse(row.dataset.user) : null;
   };
 
-  // Recarrega só a lista (HTML do servidor) e destaca a linha nova.
+  // Reloads only the list (HTML from the server) and highlights the new row.
   async function refreshPanel(sel, id) {
     try {
       const res = await fetch(location.pathname + location.search, { credentials: 'same-origin', headers: { accept: 'text/html' } });
@@ -130,10 +130,10 @@
       if (!res.ok || !fresh || !cur) return;
       cur.replaceWith(document.importNode(fresh, true));
       if (id) $(`${sel} [data-token-row="${CSS.escape(String(id))}"]`)?.classList.add('row-new');
-    } catch (_) { /* a lista atualiza no próximo carregamento */ }
+    } catch (_) { /* the list updates on the next load */ }
   }
 
-  // ---- Usuários -------------------------------------------------------------
+  // ---- Users -------------------------------------------------------------
   document.addEventListener('click', async (e) => {
     const t = e.target.closest('button');
     if (!t) return;

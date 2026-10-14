@@ -1,7 +1,7 @@
-/* hub-chart.js — gráficos do hub para os apps (onda 12, 2.1): o TimeSeriesChart que antes
- * vinha no chart.js de cada app (mesmo código/visual) e o renderizador declarativo
- * [data-hub-chart] (barras, linha, área, rosca) usado pelo hub-kit.js. Toda marcação SVG
- * gerada passa pela política Trusted Types 'hub-svg' (sanitizada pelo hub-safe.js). */
+/* hub-chart.js — hub charts for apps (wave 12, 2.1): the TimeSeriesChart that used to live
+ * in each app's chart.js (same code and visuals) and the declarative renderer
+ * [data-hub-chart] (bar, line, area, donut) used by hub-kit.js. All generated SVG
+ * markup goes through the 'hub-svg' Trusted Types policy (sanitized by hub-safe.js). */
 (function(){
 'use strict';
 
@@ -288,11 +288,11 @@ function mountAll(scope){
 
 window.TimeSeriesChart={render,mountAll};
 
-/* ---- [data-hub-chart]: gráfico declarativo (barras, linha, área, rosca) ----
+/* ---- [data-hub-chart]: declarative chart (bar, line, area, donut) ----
  * JSON: {"type":"bar|line|area|donut","title":"…","unit":"…","labels":["Jan",…],
  *        "series":[{"name":"…","values":[1,2,…],"color":"#4F6BFF"}]}
- * Cores só em hexadecimal (#rgb/#rrggbb); textos entram por textContent. */
-// Paleta de séries da identidade (índigo de destaque primeiro); ≥ 3:1 sobre o fundo claro e o grafite.
+ * Colors in hexadecimal only (#rgb/#rrggbb); texts are inserted via textContent. */
+// Series palette of the brand identity (highlight indigo first); ≥ 3:1 against the light and graphite backgrounds.
 const PALETTE=['#4F6BFF','#1F9D5A','#B87500','#7A5AF8','#D64545','#0E8C80','#7B8799'];
 const colorOk=c=>typeof c==='string'&&/^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(c);
 const NS='http://www.w3.org/2000/svg';

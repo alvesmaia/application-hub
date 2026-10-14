@@ -1,5 +1,5 @@
-// Documentação da API v1 (onda 11): lê /api/v1/openapi.json (mesma sessão) e desenha as
-// operações por grupo. Sem dependências, sem script inline (CSP do hub).
+// API v1 documentation (wave 11): reads /api/v1/openapi.json (same session) and draws the
+// operations grouped. No dependencies, no inline script (hub CSP).
 (function () {
   'use strict';
   const root = document.getElementById('apidoc');

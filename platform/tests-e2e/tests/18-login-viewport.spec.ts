@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-// A tela de login cabe numa viewport (sem barra de rolagem) nos tamanhos comuns.
+// The login screen fits in a viewport (no scrollbar) at common sizes.
 const SIZES = [
   [1280, 720],
   [1366, 768],

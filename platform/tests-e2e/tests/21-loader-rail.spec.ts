@@ -1,10 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
 import { stateFile } from './helpers';
 
-// Indicador de carregamento dos apps e botão do rail da plataforma (3 modos).
+// Loading indicator of the apps and the platform rail button (3 modes).
 test.use({ storageState: stateFile('admin') });
 
-/** Atrasa as respostas de fragmento do app (rede lenta). */
+/** Delays the app's fragment responses (slow network). */
 async function slowFragments(page: Page, app: string, ms: number) {
   await page.route(`**/_frag/${app}**`, async (route) => {
     const req = route.request();
@@ -75,7 +75,7 @@ test('loader: troca de página no app mostra só o skeleton (~0,7 s) @core', asy
   await expect(busy).toHaveCount(0, { timeout: 10_000 });
   expect(Date.now() - t0).toBeGreaterThanOrEqual(650);
   await expect(page.locator('.sidebar-nav a.nav-item.active[href="/apps/ativos/movements"]')).toBeVisible();
-  // Voltar do navegador cancela o skeleton (como no mockup).
+  // Browser back cancels the skeleton (as in the mockup).
   await page.goBack();
   await expect(page).toHaveURL(/\/apps\/ativos$/);
   await expect(page.locator('#app-root .component-loading')).toHaveCount(0);
@@ -89,13 +89,13 @@ test('rail: 3 modos dentro e fora dos apps, lembrados à parte @core', async ({ 
   const toggle = page.locator('[data-hub-rail-toggle]');
   const rail = page.locator('#hub-rail');
 
-  // Fora dos apps: expandido por padrão.
+  // Outside the apps: expanded by default.
   await page.goto('/applications');
   expect(await mode(page)).toBe('expanded');
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await expect(rail.locator('.rail-name').first()).toBeVisible();
 
-  // Dentro do app: oculto por padrão; o botão abre o rail.
+  // Inside the app: hidden by default; the button opens the rail.
   await page.goto('/apps/ativos');
   await expect(page.locator('#app-root .component-loading')).toHaveCount(0, { timeout: 20_000 });
   await expect(page.locator('#app-root .app-sidebar')).toBeVisible();
@@ -107,33 +107,33 @@ test('rail: 3 modos dentro e fora dos apps, lembrados à parte @core', async ({ 
   await expect(rail).toBeVisible();
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await expect(page.locator('#app-root .app-sidebar')).toBeVisible();
-  // Sem estouro horizontal a 1280.
+  // No horizontal overflow at 1280.
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  // Sidebar do app começa depois do rail (fim da transição).
+  // The app sidebar starts after the rail (end of the transition).
   await expect.poll(async () => {
     const sb = await page.locator('#app-root .app-sidebar').boundingBox();
     const rb = await rail.boundingBox();
     return sb && rb ? sb.x - (rb.x + rb.width) : -1;
   }).toBeGreaterThanOrEqual(-1);
 
-  // Ctrl+B → recolhido: só ícones, dica no hover.
+  // Ctrl+B → collapsed: icons only, hint on hover.
   await page.locator('body').press('Control+b');
   expect(await mode(page)).toBe('collapsed');
   await expect.poll(async () => (await rail.boundingBox())?.width ?? 999).toBeLessThanOrEqual(60);
   const home = rail.locator('.rail-item').first();
   await home.hover();
   await expect(home.locator('.rail-tooltip')).toBeVisible();
-  // Grupo administrativo vira marcador com ícone.
+  // Administrative group becomes a marker with an icon.
   await expect(rail.locator('.rail-group-label .rail-group-icon').first()).toBeVisible();
 
-  // Persistência dentro do app (nova página do app abre recolhida).
+  // Persistence inside the app (a new app page opens collapsed).
   await page.goto('/apps/fornecedores');
   await expect(page.locator('#app-root .app-sidebar')).toBeVisible({ timeout: 20_000 });
   expect(await mode(page)).toBe('collapsed');
-  // … e fora do app continua a escolha de fora (expandido).
+  // … and outside the app the choice from outside remains (expanded).
   await page.goto('/applications');
   expect(await mode(page)).toBe('expanded');
-  await toggle.click(); // fora: → recolhido
+  await toggle.click(); // outside: → collapsed
   await toggle.click(); // → oculto
   expect(await mode(page)).toBe('hidden');
   await expect(rail).toBeHidden();

@@ -12,13 +12,13 @@ test('credenciais: Revogar espera o clique; excluir vale também para token ativ
   await page.goto('/admin/tokens');
   await row.click();
   await page.locator('[data-rowdrawer] [data-token-revoke]').click();
-  // O diálogo fica aberto até o clique do usuário; o token segue ativo.
+  // The dialog stays open until the user clicks; the token stays active.
   await page.waitForTimeout(1200);
   await expect(page.locator('.hub-confirm')).toBeVisible();
   const still = (await json(await api.get('/api/admin/tokens'))) as any;
   expect((still.items || still).find((t: any) => t.id === id).active).toBe(true);
   await page.locator('[data-hub-confirm="no"]').click();
-  // Excluir (token ativo): confirma e a linha some.
+  // Delete (active token): confirms and the row disappears.
   await page.locator('[data-rowdrawer] [data-token-delete]').click();
   await page.locator('[data-hub-confirm="yes"]').click();
   await expect(row).toHaveCount(0);

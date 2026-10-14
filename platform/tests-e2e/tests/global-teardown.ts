@@ -3,13 +3,13 @@ import fs from 'node:fs';
 import { request } from '@playwright/test';
 import { CP, HUB, stateFile } from './helpers';
 
-/** Marca de dados criados pela suíte (nomes "… E2E …", "e2e-…", e-mails `e2e-…@`). */
+/** Mark of the data created by the suite (names "… E2E …", "e2e-…", e-mails `e2e-…@`). */
 const E2E = /(^|[\s-])e2e([\s-]|$)|^e2e-/i;
 
 /**
- * Remove da demo o que os testes criaram (P2-23): tokens de API e pessoais, clientes de
- * IA (OAuth) e usuários com a marca E2E. Só apaga o que casa com a marca; falhas não
- * derrubam a suíte (são registradas).
+ * Removes from the demo what the tests created (P2-23): API and personal tokens, AI clients
+ * (OAuth) and users with the E2E mark. Only deletes what matches the mark; failures do not
+ * bring the suite down (they are recorded).
  */
 export async function cleanupE2eData() {
   if (!fs.existsSync(stateFile('admin'))) return;
@@ -54,17 +54,17 @@ export async function cleanupE2eData() {
 }
 
 /**
- * O provisionamento/blue-green de staging (06-ops, 07-staging) sobe containers e redes
- * pelo runtime do hub (`hub-app-<id>__staging`, `hub-deps-<id>__staging`, …) por fora do
- * `docker compose` — então `docker compose down` não os remove e ficam órfãos depois da
- * suíte (ex.: `hub-app-fornecedores__staging` + `hub-deps-fornecedores__staging`).
- * Limpa aqui pelo sufixo `__staging` (nunca containers fora do projeto
- * nem qualquer container/rede sem esse sufixo — não usamos filtro por imagem nem "kill by
- * name" genérico).
+ * Staging provisioning/blue-green (06-ops, 07-staging) brings up containers and networks
+ * through the hub's runtime (`hub-app-<id>__staging`, `hub-deps-<id>__staging`, …) outside of
+ * `docker compose` — so `docker compose down` does not remove them and they are left orphaned after the
+ * suite (e.g. `hub-app-fornecedores__staging` + `hub-deps-fornecedores__staging`).
+ * Cleans them here by the `__staging` suffix (never containers outside the project
+ * nor any container/network without that suffix — we do not filter by image nor "kill by
+ * name" generically).
  */
 export default async function globalTeardown() {
   await cleanupE2eData();
-  // Hub Python (app-hub-*): o próprio hub gerencia os `__staging` (supervisor); não remover.
+  // Python hub (app-hub-*): the hub itself manages the `__staging` ones (supervisor); do not remove.
   if (CP.startsWith('app-hub-')) return;
   const docker = (args: string[]) => {
     try {

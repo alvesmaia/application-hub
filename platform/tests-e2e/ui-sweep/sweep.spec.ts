@@ -6,18 +6,18 @@ import { stateFile, type Role } from '../tests/helpers';
 import { CREDENTIAL_PAGES, FINDINGS_DIR, HUB, ROUTES_FILE, SHOTS_DIR, type Finding, type Theme } from './common';
 
 /**
- * Varredura automática de UI (@sweep): cada unidade = papel × tema × viewport percorre
- * todas as rotas descobertas no setup, roda as verificações de `checks.js` na página e em
- * cada camada aberta (menus, popovers, modais) e grava os achados em
- * `<SWEEP_OUT>/findings/<unidade>.json`. O `run.mjs` junta, aplica a allowlist e decide.
- * Nada além de GET sai do navegador (exceto analytics de uso): a varredura nunca muda estado.
+ * Automatic UI sweep (@sweep): each unit = role × theme × viewport walks through
+ * all the routes discovered in setup, runs the checks of `checks.js` on the page and in
+ * each open layer (menus, popovers, modals) and writes the findings to
+ * `<SWEEP_OUT>/findings/<unit>.json`. `run.mjs` gathers them, applies the allowlist and decides.
+ * Nothing but GET leaves the browser (except usage analytics): the sweep never changes state.
  */
 type Unit = { role: Role | 'anon'; theme: Theme; vw: number; vh: number; interact: boolean; focus: boolean; rail?: 'collapsed' | 'expanded'; only?: RegExp };
 const QUICK = process.env.SWEEP_MODE === 'quick';
-// Celular (390×844): shell (gaveta), Início, Usuários (cartões) e um app.
+// Phone (390×844): shell (drawer), Home, Users (cards) and an app.
 const MOBILE_UNITS: Unit[] = (['light', 'dark'] as Theme[]).map((theme) => (
   { role: 'admin' as Role, theme, vw: 390, vh: 844, interact: true, focus: false, only: /^\/(|admin\/users|ativos)$/ }));
-// Visitante sem sessão: só a documentação pública (/developers/*), shell mínimo (header sem rail).
+// Visitor without a session: only the public documentation (/developers/*), minimal shell (header without rail).
 const DOCS = /^\/developers(\/|$)/;
 const ANON_UNITS: Unit[] = (['light', 'os-dark', 'dark'] as Theme[]).flatMap((theme) => [
   { role: 'anon' as const, theme, vw: 1440, vh: 900, interact: true, focus: theme === 'light', only: DOCS },
@@ -34,7 +34,7 @@ const UNITS: Unit[] = QUICK
       { role: 'admin', theme: 'auto', vw: 1440, vh: 900, interact: false, focus: false },
       { role: 'admin', theme: 'light', vw: 1280, vh: 720, interact: false, focus: false },
       { role: 'leitor', theme: 'dark', vw: 1280, vh: 720, interact: false, focus: false },
-      // Rail da plataforma: recolhido (dentro e fora dos apps) e expandido dentro dos apps.
+      // Platform rail: collapsed (inside and outside the apps) and expanded inside the apps.
       { role: 'admin', theme: 'light', vw: 1280, vh: 720, interact: true, focus: false, rail: 'collapsed' },
       { role: 'admin', theme: 'dark', vw: 1280, vh: 720, interact: false, focus: false, rail: 'expanded' },
       ...MOBILE_UNITS, ...ANON_UNITS,
@@ -43,7 +43,7 @@ const UNITS: Unit[] = QUICK
 const CHECKS_JS = fs.readFileSync(path.join(__dirname, 'checks.js'), 'utf8');
 const MAX_TRIGGERS = Number(process.env.SWEEP_MAX_TRIGGERS || 10);
 const MAX_SHOTS_PER_PAGE = 20;
-const ALLOWED_WRITES = /^\/api\/me\/analytics/; // telemetria de uso — inofensiva
+const ALLOWED_WRITES = /^\/api\/me\/analytics/; // usage telemetry — harmless
 const DANGER = /excluir|remover|apagar|revogar|parar|reiniciar|restaurar|desativar|desinstalar|sair|encerrar|descartar|rotacionar|bloquear|delete|remove|revoke|logout|promover|implantar|reverter|rollback/i;
 const TRIGGER_TEXT = /^(\+\s*)?(nov[oa]s?\b|personalizar|editar|adicionar|filtros?\b|mais\b|ações|⋯|…|\.\.\.|convidar|criar|conectar|configurar|solicitar|provisionar)/i;
 const LAYERS = 'dialog[open], [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [popover], .popover, .menu-pop, .dropdown-menu, [data-hub-popover], [data-hub-menu-panel], .modal, .hub-modal, details[open]';
@@ -65,10 +65,10 @@ for (const u of UNITS) {
       storageState: u.role === 'anon' ? undefined : stateFile(u.role), viewport: { width: u.vw, height: u.vh }, locale: 'pt-BR',
       colorScheme: u.theme === 'os-dark' || u.theme === 'auto' ? 'dark' : 'light',
     });
-    // Preferência de tema do próprio hub (`<html data-theme>`, que o servidor escreve a partir
-    // de /api/me/prefs): forçada no cliente para não mexer na preferência gravada do usuário
-    // compartilhado entre os workers. light/os-dark NÃO forçam: verificam o padrão claro que o
-    // servidor escreve (os-dark = SO escuro, hub deve seguir claro). dark/auto = escolhas explícitas.
+    // The hub's own theme preference (`<html data-theme>`, which the server writes from
+    // /api/me/prefs): forced on the client so as not to touch the user's saved preference
+    // shared between the workers. light/os-dark do NOT force: they check the light default the
+    // server writes (os-dark = OS in dark, the hub must stay light). dark/auto = explicit choices.
     const forced = u.theme === 'dark' ? 'dark' : u.theme === 'auto' ? 'auto' : '';
     if (forced) await ctx.addInitScript(`(() => { const T=${JSON.stringify(forced)}; const set=()=>{ if(document.documentElement) document.documentElement.dataset.theme=T; };
       new MutationObserver((_, o) => { if (document.documentElement) { set(); o.disconnect(); } }).observe(document, { childList: true });
@@ -86,7 +86,7 @@ for (const u of UNITS) {
       return r.fulfill({ status: 204, body: '' });
     });
     const page = await ctx.newPage();
-    page.on('dialog', (d) => d.dismiss().catch(() => undefined)); // confirm() nativo: sempre "Cancelar"
+    page.on('dialog', (d) => d.dismiss().catch(() => undefined)); // native confirm(): always "Cancel"
     let consoleErrs: string[] = [];
     page.on('console', (m) => { if (m.type() === 'error') consoleErrs.push(m.text()); });
     page.on('pageerror', (e) => consoleErrs.push('pageerror: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')));
@@ -114,7 +114,7 @@ for (const u of UNITS) {
             await page.screenshot({ path: path.join(SHOTS_DIR, name), fullPage: true, timeout: 5_000,
               clip: { x, y, width: Math.min(Math.max(f.rect.w + 2 * pad, 40), 900), height: Math.min(Math.max(f.rect.h + 2 * pad, 24), 500) } });
             entry.screenshot = `shots/${name}`;
-          } catch { /* fora da página */ }
+          } catch { /* outside the page */ }
         }
         findings.push(entry);
       };
@@ -125,8 +125,8 @@ for (const u of UNITS) {
       try {
         const resp = await page.goto(HUB + r.path, { waitUntil: 'domcontentloaded', timeout: 30_000 });
         status = resp?.status() ?? 0;
-        // Documento que não é HTML (ex.: /dev/docs/*.md, texto cru para agentes): só o status conta; as verificações
-        // de tela num <pre> enorme travavam o renderizador e a navegação seguinte estourava o tempo (F17).
+        // Document that is not HTML (e.g. /dev/docs/*.md, raw text for agents): only the status counts; the checks
+        // of a screen on a huge <pre> hung the renderer and the next navigation timed out (F17).
         if (resp && !/text\/html/.test(resp.headers()['content-type'] || '')) {
           coverage.push({ pattern: r.pattern, path: r.path, status, finalPath, triggers: 0, layers: 0, ms: Date.now() - t0 });
           await page.goto('about:blank').catch(() => undefined);
@@ -157,8 +157,8 @@ for (const u of UNITS) {
         await push('página', { check: 'fora-do-shell', selector: 'body', message: `página fora do shell (header ${shell.header ? 'sim' : 'não'}, rail ${shell.rail ? 'sim' : 'não'})` }, status);
       }
 
-      // Visitante sem sessão (docs públicas) não tem preferência gravada: o padrão é seguir o SO
-      // (data-theme="auto"), então o SO escuro deixa a página escura de verdade.
+      // Visitor without a session (public docs) has no saved preference: the default is to follow the OS
+      // (data-theme="auto"), so the dark OS really makes the page dark.
       const anon = u.role === 'anon';
       const lightTheme = anon ? u.theme === 'light' : u.theme !== 'dark' && u.theme !== 'auto';
       if (!forced) {
@@ -169,7 +169,7 @@ for (const u of UNITS) {
       const run = async (scope?: string) => page.evaluate((o) => (window as any).__uiSweep ? (window as any).__uiSweep.run(o) : [], { scope, lightTheme }).catch(() => []);
       for (const f of await run()) await push('página', f, status);
 
-      // Foco visível (amostra de até 8 elementos do conteúdo, via teclado)
+      // Visible focus (sample of up to 8 elements of the content, via keyboard)
       if (u.focus && status < 400) {
         await page.evaluate(() => { const m = document.querySelector('#app-root, main') as HTMLElement | null; if (m) { m.tabIndex = -1; m.focus(); } }).catch(() => undefined);
         const seenSel = new Set<string>();
@@ -184,7 +184,7 @@ for (const u of UNITS) {
         if (new URL(page.url()).pathname !== finalPath) { await page.goto(HUB + r.path, { waitUntil: 'domcontentloaded' }).catch(() => undefined); await settle(page); }
       }
 
-      // Interações: abre cada gatilho de camada e verifica a camada aberta
+      // Interactions: opens each layer trigger and checks the open layer
       let nTrig = 0, nLayers = 0;
       if (u.interact && status < 400 && !credential) {
         const triggers: { idx: number; label: string; kind: string }[] = await page.evaluate(({ textRe, dangerRe, max, includeShell }) => {
@@ -198,7 +198,7 @@ for (const u of UNITS) {
             const inShell = !!el.closest('.platform-header, .platform-rail');
             if (inShell && !includeShell) continue;
             const row = el.closest('tbody tr');
-            if (row && row.parentElement && row !== row.parentElement.querySelector('tr')) continue; // só a 1ª linha
+            if (row && row.parentElement && row !== row.parentElement.querySelector('tr')) continue; // only the 1st line
             const label = ((el.getAttribute('aria-label') || (el as HTMLElement).innerText || el.getAttribute('title') || '').trim().replace(/\s+/g, ' ')).slice(0, 60);
             if (dre.test(label)) continue;
             const hp = el.getAttribute('aria-haspopup');
@@ -224,7 +224,7 @@ for (const u of UNITS) {
             // o gatilho navegou (link): volta e segue
             await page.goto(HUB + r.path, { waitUntil: 'domcontentloaded' }).catch(() => undefined);
             await settle(page);
-            break; // índices mudaram com o recarregamento
+            break; // indexes changed after the reload
           }
           const layer = await page.evaluate((L) => {
             const vis = (el: Element) => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el); return r.width > 2 && r.height > 2 && cs.visibility !== 'hidden' && cs.display !== 'none'; };
@@ -251,7 +251,7 @@ for (const u of UNITS) {
           if (t.kind === 'details') { await el.click({ timeout: 2_000 }).catch(() => undefined); continue; }
           const isOpen = () => page.evaluate(() => { const e = document.querySelector('[data-sweep-layer]'); if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 2 && r.height > 2 && getComputedStyle(e).visibility !== 'hidden' && getComputedStyle(e).display !== 'none' && (e.tagName !== 'DIALOG' || (e as HTMLDialogElement).open); }).catch(() => false);
           if (layer.modal) {
-            // Clique no fundo: só se o ponto cair no próprio modal/fundo (nunca num link do rail)
+            // Click on the background: only if the point lands on the modal/background itself (never on a rail link)
             const pt = { x: Math.max(4, layer.rect.x - 30), y: Math.min(u.vh - 8, layer.rect.y + layer.rect.h + 30) };
             const safe = await page.evaluate((p) => { const e = document.elementFromPoint(p.x, p.y); if (!e) return false; const lay = document.querySelector('[data-sweep-layer]'); return e === lay || /backdrop|overlay|scrim|modal/i.test(String((e as HTMLElement).className)) && !e.closest('a,button,input,select,textarea'); }, pt).catch(() => false);
             if (safe) {
@@ -279,7 +279,7 @@ for (const u of UNITS) {
         }
       }
 
-      // Erros de console/página (exceto: o próprio 403 esperado e as escritas bloqueadas pela varredura)
+      // Console/page errors (except: the expected 403 itself and the writes blocked by the sweep)
       for (const m of consoleErrs) {
         if (status === 403 && u.role !== 'admin' && /status of 403/.test(m)) continue;
         if (blocked > 0 && /net::ERR_FAILED|status of 204/.test(m)) continue;

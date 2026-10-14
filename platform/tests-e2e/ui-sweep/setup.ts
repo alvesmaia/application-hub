@@ -6,10 +6,10 @@ import { HUB, stateFile, type Role } from '../tests/helpers';
 import { APP_ROUTES, OUT_DIR, ROUTES_FILE, STATIC_ROUTES, isExcluded, patternOf } from './common';
 
 /**
- * Global setup da varredura: (1) sessões de admin/operador/leitor (reusa o global-setup das
- * specs); (2) descoberta de rotas — rail/menus/links same-origin até a profundidade N
- * (SWEEP_DEPTH, padrão 2) por papel + a lista estática da tabela de rotas do hub-web;
- * deduplica por padrão (`/x/:id`) e grava `routes.json` no diretório do relatório.
+ * Sweep global setup: (1) admin/operator/reader sessions (reuses the specs' global-setup); (2) route
+ * discovery — rail/menus/same-origin links up to depth N
+ * (SWEEP_DEPTH, default 2) per role + the static list from the hub-web route table;
+ * deduplicates by pattern (`/x/:id`) and writes `routes.json` to the report directory.
  */
 export default async function setup() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
@@ -24,7 +24,7 @@ export default async function setup() {
     if (cur) cur.roles.add(role);
     else found.set(pat, { path: p, from, roles: new Set([role]) });
   };
-  // SWEEP_ROUTES (ex.: hub dev de um app): só essas rotas e o que elas linkam sob SWEEP_PREFIX.
+  // SWEEP_ROUTES (e.g. an app's dev hub): only those routes and what they link under SWEEP_PREFIX.
   const only = (process.env.SWEEP_ROUTES || '').split(',').filter(Boolean);
   const prefix = process.env.SWEEP_PREFIX || '';
   for (const r of only.length ? only : STATIC_ROUTES) add(r, 'tabela-de-rotas', 'static');
@@ -40,13 +40,13 @@ export default async function setup() {
   const browser = await chromium.launch();
   for (const role of roles) {
     const ctx = await browser.newContext({ storageState: stateFile(role), viewport: { width: 1440, height: 900 } });
-    // Nada além de GET durante a descoberta.
+    // Nothing but GET during discovery.
     await ctx.route('**/*', (r) => (['GET', 'HEAD'].includes(r.request().method()) ? r.continue() : r.abort()));
     let frontier = only.length ? [...only] : ['/'];
     const visited = new Set<string>();
     for (let d = 0; d <= depth && frontier.length; d++) {
       const next: string[] = [];
-      // 4 abas em paralelo
+      // 4 tabs in parallel
       const queue = frontier.filter((p) => !visited.has(patternOf(p)));
       queue.forEach((p) => visited.add(patternOf(p)));
       await Promise.all([0, 1, 2, 3].map(async () => {
@@ -65,7 +65,7 @@ export default async function setup() {
               add(pth, p, role);
               if (!visited.has(patternOf(pth))) next.push(pth);
             }
-          } catch { /* página que não abre vira achado na varredura */ }
+          } catch { /* page that fails to open becomes a finding in the sweep */ }
         }
         await page.close();
       }));

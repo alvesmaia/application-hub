@@ -1,6 +1,6 @@
-// Varredura de UI — verificações executadas DENTRO da página (injetadas via addInitScript).
-// `window.__uiSweep.run({ scope, lightTheme })` devolve uma lista de achados
-// `{ check, selector, message, rect }`. Sem dependências; só leitura do DOM.
+// UI sweep — checks run INSIDE the page (injected via addInitScript).
+// `window.__uiSweep.run({ scope, lightTheme })` returns a list of findings
+// `{ check, selector, message, rect }`. No dependencies; read-only DOM access.
 (() => {
   const JARGON = [
     [/\/api\//, 'caminho de API'],
@@ -16,7 +16,7 @@
     if (!s) return null;
     const m = s.match(/rgba?\(([^)]+)\)/);
     if (!m) {
-      // color(srgb r g b / a) — Chromium usa em color-mix()
+      // color(srgb r g b / a) — Chromium uses it in color-mix()
       const c = s.match(/color\(srgb ([\d.]+) ([\d.]+) ([\d.]+)(?: \/ ([\d.]+))?\)/);
       if (c) return [c[1] * 255, c[2] * 255, c[3] * 255, c[4] === undefined ? 1 : +c[4]];
       return null;
@@ -36,7 +36,7 @@
   const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
   const hex = (c) => '#' + c.slice(0, 3).map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
 
-  /** Fundo efetivo: compõe os fundos dos ancestrais (com alfa). `null` se houver imagem/gradiente. */
+  /** Effective background: composes the ancestors' backgrounds (with alpha). `null` if there is an image/gradient. */
   function effectiveBg(el) {
     const layers = [];
     for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
@@ -58,10 +58,10 @@
     const cs = getComputedStyle(el);
     if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0) return false;
     if (el.closest('[aria-hidden="true"], [hidden], [inert]')) return false;
-    // recortado por clip (sr-only)
+    // clipped out (sr-only)
     if (r.width <= 1 && r.height <= 1) return false;
     if (cs.clip === 'rect(0px, 0px, 0px, 0px)' || cs.clipPath === 'inset(50%)') return false;
-    // ancestral transparente ou que recorta o elemento por completo (grupo recolhido, aba oculta)
+    // transparent ancestor or one that clips the element completely (collapsed group, hidden tab)
     for (let n = el.parentElement; n && n !== document.documentElement; n = n.parentElement) {
       const ps = getComputedStyle(n);
       if (+ps.opacity < 0.05 || ps.visibility === 'hidden') return false;
@@ -133,7 +133,7 @@
       F.push({ check, selector: s, message, rect: el ? rectOf(el) : null, ...(extra || {}) });
     };
 
-    // 1. Contraste de texto + cor igual ao fundo
+    // 1. Text contrast + color equal to the background
     const textEls = new Set();
     for (const t of textNodesUnder(scope)) { const p = t.parentElement; if (p) textEls.add(p); }
     for (const el of scope.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select, textarea')) textEls.add(el);
@@ -158,7 +158,7 @@
       else if (r < need && !disabled) add('contraste', el, `"${txt}" ${r.toFixed(2)}:1 < ${need}:1 (${hex(fgEff)} sobre ${hex(bg)}, ${size}px)`);
     }
 
-    // 1b. Bordas de controles (UI ≥ 3:1) quando o controle não se distingue pelo fundo
+    // 1b. Control borders (UI ≥ 3:1) when the control is not distinguishable by its background
     for (const el of scope.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=submit]):not([type=button]), select, textarea')) {
       if (!visible(el)) continue;
       const cs = getComputedStyle(el);
@@ -172,20 +172,20 @@
       if (r < 3) add('contraste-ui', el, `borda do controle ${r.toFixed(2)}:1 < 3:1 (${hex(over(bc, parent))} sobre ${hex(parent)})`);
     }
 
-    // 2. <select> sem opções reais
+    // 2. <select> without real options
     for (const s of scope.querySelectorAll('select')) {
       if (!visible(s)) continue;
       const real = [...s.options].filter((o) => o.value !== '' && !o.disabled && !o.hidden);
       if (real.length === 0) add('select-vazio', s, `select "${shortText(accName(s)) || s.name || '?'}" sem opções selecionáveis (${s.options.length} no total)`);
     }
 
-    // 3. Botões/links sem nome acessível
+    // 3. Buttons/links without an accessible name
     for (const el of scope.querySelectorAll('button, a[href], [role="button"], [role="menuitem"], [role="tab"], input[type=submit], input[type=button]')) {
       if (!visible(el)) continue;
       if (!accName(el)) add('sem-nome-acessivel', el, `${el.tagName.toLowerCase()} sem nome acessível`);
     }
 
-    // 4. Links sublinhados fora de prosa
+    // 4. Underlined links outside prose
     for (const a of scope.querySelectorAll('a[href]')) {
       if (!visible(a)) continue;
       if (!getComputedStyle(a).textDecorationLine.includes('underline')) continue;
@@ -208,7 +208,7 @@
       }
     }
 
-    // 6. Ícone × rótulo desalinhados (rail, menus, navegação)
+    // 6. Icon × label misaligned (rail, menus, navigation)
     for (const it of scope.querySelectorAll('.platform-rail a, .platform-rail button, [role="menu"] [role="menuitem"], [role="menu"] a, nav a, .app-sidebar a, .menu a, .menu button')) {
       if (!visible(it)) continue;
       const icon = it.querySelector('svg, img, .icon, [class*="icon"]');
@@ -218,13 +218,13 @@
       const rg = document.createRange(); rg.selectNodeContents(tn);
       const tr = rg.getBoundingClientRect(), ir = icon.getBoundingClientRect();
       if (!tr.height || !ir.height) continue;
-      // Só quando lado a lado (mesma linha visual)
+      // Only when side by side (same visual line)
       if (tr.top > ir.bottom || tr.bottom < ir.top) continue;
       const d = Math.abs((tr.top + tr.height / 2) - (ir.top + ir.height / 2));
       if (d > 2) add('icone-desalinhado', it, `ícone e rótulo "${shortText(tn.nodeValue)}" desalinhados em ${d.toFixed(1)}px`);
     }
 
-    // 7. Jargão técnico em texto visível
+    // 7. Technical jargon in visible text
     for (const t of textNodesUnder(scope)) {
       const p = t.parentElement;
       if (!p || p.closest(JARGON_SKIP) || !visible(p)) continue;
@@ -234,8 +234,8 @@
       }
     }
 
-    // 7b. Onda 13: apps vivem em /apps/{id}/… — nenhum link/formulário/comportamento para o
-    // caminho antigo /{id}… (ids: os apps conhecidos + o app da página atual).
+    // 7b. Wave 13: apps live at /apps/{id}/… — no link/form/behavior to the
+    // old path /{id}… (ids: the known apps + the app of the current page).
     {
       const ids = new Set(['ativos', 'fornecedores', 'servicos', 'coletor']);
       const cur = document.querySelector('script[data-hub-app]');
@@ -251,7 +251,7 @@
       }
     }
 
-    // 8. Texto truncado sem dica
+    // 8. Truncated text without a hint
     for (const el of textEls) {
       if (el.matches('input,select,textarea') || !visible(el)) continue;
       const cs = getComputedStyle(el);
@@ -262,13 +262,13 @@
       add('truncado-sem-dica', el, `texto "${shortText(el.innerText)}" truncado sem title/tooltip`);
     }
 
-    // 9. Imagens sem alt
+    // 9. Images without alt
     for (const img of scope.querySelectorAll('img')) {
       if (!visible(img)) continue;
       if (!img.hasAttribute('alt') && !img.closest('[aria-hidden="true"]') && img.getAttribute('role') !== 'presentation') add('imagem-sem-alt', img, `imagem ${img.getAttribute('src') || ''} sem alt`);
     }
 
-    // 10. Estouro horizontal (só na página inteira)
+    // 10. Horizontal overflow (only on the whole page)
     if (!opts.scope) {
       const de = document.documentElement;
       if (de.scrollWidth > de.clientWidth + 1) {
@@ -285,7 +285,7 @@
         if (el.scrollWidth > el.clientWidth + 2 && visible(el) && el.clientWidth > 200 && !el.querySelector('table')) add('estouro-horizontal', el, `área com rolagem horizontal interna (${el.scrollWidth} > ${el.clientWidth})`);
       }
     }
-    // 11. Estouro horizontal INTERNO: contêiner que recorta (overflow hidden/clip) com controles cortados
+    // 11. INTERNAL horizontal overflow: a container that clips (overflow hidden/clip) with controls cut off
     if (!opts.scope) {
       for (const el of document.querySelectorAll('main *, #app-root *')) {
         const cs = getComputedStyle(el);
@@ -306,7 +306,7 @@
     return F;
   }
 
-  /** Foco visível: compara o estilo do elemento focado com o do mesmo elemento sem foco. */
+  /** Visible focus: compares the focused element's style with that of the same element without focus. */
   function focusSnapshot() {
     const el = document.activeElement;
     if (!el || el === document.body) return null;

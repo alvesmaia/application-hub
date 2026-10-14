@@ -1,13 +1,13 @@
 import { test, expect, type Page } from '@playwright/test';
 import { stateFile, HUB } from './helpers';
 
-// Celular: Usuários como lista de cartões (padrão `hub-table-cards`), folha de tela cheia,
-// gaveta do shell no lugar do rail e navegação do app como gaveta.
+// Phone: Users as a card list (`hub-table-cards` pattern), full-screen sheet,
+// the shell's drawer in place of the rail and the app's navigation as a drawer.
 test.use({ storageState: stateFile('admin') });
 
 const created: string[] = [];
 
-// Limpeza: desativa e exclui pela API os usuários criados aqui (marca `e2e-`, a mesma do global-teardown).
+// Cleanup: deactivates and deletes through the API the users created here (`e2e-` mark, the same as global-teardown).
 test.afterAll(async ({ playwright }) => {
   const api = await playwright.request.newContext({ baseURL: HUB, storageState: stateFile('admin'), extraHTTPHeaders: { origin: HUB } });
   try {
@@ -43,7 +43,7 @@ test.describe('celular 390×844', () => {
     await expect(card.locator('.hub-truncate')).toHaveAttribute('title', /@/);
     await expect(card.locator('[data-label="Status"] .status-pill')).toBeVisible();
 
-    // Menu "⋯" da última linha (rolada até o fim da tela): alvo ≥ 40px, lista dentro da tela.
+    // "⋯" menu of the last row (scrolled to the end of the screen): target ≥ 40px, list inside the screen.
     const last = page.locator('.hub-table-cards tbody tr').last();
     const summary = last.locator('.hub-row-menu summary');
     await summary.scrollIntoViewIfNeeded();
@@ -64,7 +64,7 @@ test.describe('celular 390×844', () => {
     await page.keyboard.press('Escape');
     await expect(list).toBeHidden();
 
-    // Novo usuário: folha de tela cheia com ações fixas no rodapé; envia de verdade.
+    // New user: full-screen sheet with fixed actions in the footer; actually submits.
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.locator('[data-user-new]').click();
     const sheet = page.locator('.overlay[data-users-modal] .modal.hub-sheet');
@@ -92,7 +92,7 @@ test.describe('celular 390×844', () => {
     await expect(page.getByRole('button', { name: 'Buscar', exact: true })).toBeVisible();
     const burger = page.locator('[data-hub-drawer-toggle]');
     await expect(burger).toHaveAttribute('aria-label', 'Abrir menu');
-    // ☰ no canto direito, depois de busca e notificações; avatar dentro do menu.
+    // ☰ in the right corner, after search and notifications; avatar inside the menu.
     const bb = (await burger.boundingBox())!;
     expect(bb.x + bb.width).toBeGreaterThan(370);
     expect(bb.width).toBeGreaterThanOrEqual(44);
@@ -103,7 +103,7 @@ test.describe('celular 390×844', () => {
     const rail = page.locator('#hub-rail');
     await expect(rail).toBeVisible();
     await expect(rail.locator('.hub-drawer-user')).toBeVisible();
-    // Painel de largura total logo abaixo do header.
+    // Full-width panel right below the header.
     const rb = (await rail.boundingBox())!;
     const hb = (await page.locator('.platform-header').boundingBox())!;
     expect(Math.round(rb.x)).toBe(0);
@@ -114,7 +114,7 @@ test.describe('celular 390×844', () => {
     await page.keyboard.press('Escape');
     await expect(rail).toBeHidden();
     await expect(burger).toBeFocused();
-    // ✕ e fundo fecham; tocar num item navega e fecha.
+    // ✕ and the background close; tapping an item navigates and closes.
     await burger.click();
     await burger.click();
     await expect(rail).toBeHidden();
@@ -155,7 +155,7 @@ test.describe('celular 390×844', () => {
     await page.goto('/apps/ativos');
     await expect(page.locator('#app-root .app-sidebar')).toBeAttached({ timeout: 30_000 });
     await expect(page.locator('#app-root .component-loading')).toHaveCount(0, { timeout: 30_000 });
-    // Conteúdo longo garantido (a lista do Ativos já é longa; reforça se precisar).
+    // Long content guaranteed (the Ativos list is already long; reinforce if needed).
     await page.evaluate(() => { const c = document.querySelector('.workspace-content') as HTMLElement; if (c && document.documentElement.scrollHeight <= innerHeight) c.style.minHeight = '2000px'; });
     const state = () => page.evaluate(() => {
       const se = document.scrollingElement as HTMLElement;
@@ -186,13 +186,13 @@ test.describe('celular 390×844', () => {
     await page.evaluate(() => window.scrollTo(0, 400));
     expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
     await page.evaluate(() => window.scrollTo(0, 0));
-    // Menu ☰ do shell: trava só enquanto aberto.
+    // Shell ☰ menu: locks only while open.
     const burger = page.locator('[data-hub-drawer-toggle]');
     await burger.click();
     expect((await state()).bodyOv).toBe('hidden');
     await burger.click();
     await ok();
-    // Menu do app (barra "App · Seção").
+    // App menu ("App · Section" bar).
     const bar = page.locator('[data-hub-menu="open"]').first();
     await bar.click();
     expect((await state()).bodyOv).toBe('hidden');
@@ -223,7 +223,7 @@ test('Usuários a 768: tabela sem a coluna secundária e sem estouro', async ({ 
   await noHorizontalOverflow(page);
 });
 
-// Menu ☰ de cima para baixo em toda tela < 1024px e no celular em paisagem; rail só ≥ 1024.
+// ☰ menu top-down on every screen < 1024px and on phones in landscape; rail only ≥ 1024.
 const NARROW: { name: string; w: number; h: number; touch?: boolean; shot?: string }[] = [
   ...[360, 390, 430, 600, 767, 768, 800, 900, 1000, 1023].map((w) => ({ name: `${w}`, w, h: 900, shot: w === 390 || w === 800 ? `mobile-menu-${w}` : undefined })),
   { name: 'paisagem 844×390', w: 844, h: 390, touch: true, shot: 'mobile-menu-landscape' },

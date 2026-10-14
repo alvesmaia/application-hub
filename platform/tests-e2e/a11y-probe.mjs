@@ -1,4 +1,4 @@
-// Sonda manual (onda 9): login, páginas principais, axe nos dois temas, capturas.
+// Manual probe (wave 9): login, main pages, axe in both themes, screenshots.
 // node probe.mjs [saida]
 import { chromium } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';

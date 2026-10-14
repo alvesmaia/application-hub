@@ -1,6 +1,6 @@
-/* autosubmit.js — envia sozinho o formulário [data-autosubmit] da página (ex.: a
- * confirmação same-origin da entrada no staging, que troca estado só por POST). A CSP do
- * hub não permite script inline; sem JavaScript, o usuário clica no botão do formulário. */
+/* autosubmit.js — automatically submits the page's [data-autosubmit] form (e.g. the
+ * same-origin confirmation of entering staging, which changes state only by POST). The hub's
+ * CSP does not allow inline script; without JavaScript, the user clicks the form's button. */
 (function () {
   'use strict';
   const form = document.querySelector('form[data-autosubmit]');

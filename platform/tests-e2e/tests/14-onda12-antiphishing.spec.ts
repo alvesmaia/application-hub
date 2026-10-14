@@ -5,17 +5,17 @@ import { createHash, randomBytes } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { HUB, PLATFORM, USERS, WORK_DIR, apiAs, apiLogin, appImage, autoConfirm, hubBin, json, openDeployVersion, stateFile, uniq } from './helpers';
 
-// Onda 12 (2.1) — anti-phishing com os apps na MESMA origem do hub:
-//  (a) um fragmento hostil (rota SÓ DE TESTE do compose de demonstração,
-//      HUB_DEMO_E2E_HOSTILE=1) com <script>, onerror=, links javascript:, formulários para
-//      /login, /account e /oauth → nada executa, nada é enviado;
-//  (b) script de app aprovado roda (hash certo, SRI); o adulterado é bloqueado;
-//  (c) o pipeline mostra "REVISE: App traz JavaScript próprio" e a implantação só é
-//      aprovada depois da revisão de segurança (separada, auditada);
-//  (d) a frase de segurança aparece no consentimento OAuth e na aprovação de ação do
-//      agente (step-up) — e nunca numa requisição que não seja navegação de topo;
-//  + os comportamentos declarativos data-hub-* que substituíram o JS dos apps.
-// Compose no ar (HUB_DEMO_USERS=1).
+// Wave 12 (2.1) — anti-phishing with the apps on the SAME origin as the hub:
+//  (a) a hostile fragment (TEST-ONLY route of the demo compose,
+//      HUB_DEMO_E2E_HOSTILE=1) with <script>, onerror=, javascript: links, forms to
+//      /login, /account and /oauth → nothing runs, nothing is sent;
+//  (b) an approved app script runs (right hash, SRI); the tampered one is blocked;
+//  (c) the pipeline shows "REVISE: App brings its own JavaScript" and the deployment is only
+//      approved after the security review (separate, audited);
+//  (d) the security phrase appears on the OAuth consent and on the agent's action approval
+//      (step-up) — and never on a request that is not a top-level navigation;
+//  + the declarative data-hub-* behaviors that replaced the apps' JS.
+// Stack up (HUB_DEMO_USERS=1).
 
 test.use({ storageState: stateFile('admin') });
 test.describe.configure({ mode: 'serial' });
@@ -73,13 +73,13 @@ test('(a) fragmento hostil: nada executa, formulários para /login, /account e /
   expect(dialogs).toEqual([]);
   expect(new URL(page.url()).pathname).toBe('/apps/ativos/e2e-hostil');
 
-  // Aberto direto no navegador (link malicioso para o fragmento): documento em sandbox.
+  // Opened directly in the browser (malicious link to the fragment): document in sandbox.
   const direct = await page.goto('/_frag/ativos/e2e-hostil');
   expect(direct!.headers()['content-security-policy']).toMatch(/; sandbox$/);
   expect(await page.evaluate(() => (window as any).__pwned)).toBeUndefined();
   await page.locator('#e2e-steal-btn').click();
   await page.waitForTimeout(500);
-  // (No documento em sandbox a CSP ainda barra estilos externos; só envios importam aqui.)
+  // (In the sandboxed document the CSP still blocks external styles; only submissions matter here.)
   expect(sent.filter((x) => x.startsWith('POST'))).toEqual([]);
 });
 
@@ -87,7 +87,7 @@ test('comportamentos data-hub-*: modal, toast, filtro, gráfico e menu sem JavaS
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await openFragment(page, '/apps/ativos/movements', '[data-hub-filter]');
-  // Nenhum script do app carregado.
+  // No app script loaded.
   const scripts = await page.evaluate(() => [...document.scripts].map((s) => s.src).filter(Boolean));
   expect(scripts.filter((s) => s.includes('/_frag/'))).toEqual([]);
   const rows = page.locator('#app-root .data-table tbody tr');
@@ -97,7 +97,7 @@ test('comportamentos data-hub-*: modal, toast, filtro, gráfico e menu sem JavaS
   await page.locator('[data-hub-filter]').fill(first.slice(0, 12));
   await expect.poll(async () => (await rows.evaluateAll((rs) => rs.filter((r) => !(r as HTMLElement).hidden).length))).toBeLessThan(total);
   await page.locator('[data-hub-filter]').fill('');
-  // Modal declarativo (template do fragmento) + formulário que fecha e mostra o toast.
+  // Declarative modal (fragment template) + form that closes and shows the toast.
   await page.locator('[data-hub-modal="#modal-asset"]').first().click();
   const modal = page.locator('.overlay .modal');
   await expect(modal.getByRole('heading', { name: 'Cadastrar ativo' })).toBeVisible();
@@ -105,12 +105,12 @@ test('comportamentos data-hub-*: modal, toast, filtro, gráfico e menu sem JavaS
   await modal.locator('button[type="submit"]').click();
   await expect(modal).toHaveCount(0);
   await expect(page.locator('#toast')).toContainText('Ativo cadastrado com sucesso.');
-  // Gráfico do hub (TimeSeriesChart) montado a partir do data-hub-charts.
+  // Hub chart (TimeSeriesChart) mounted from data-hub-charts.
   await openFragment(page, '/apps/ativos/dashboard', '[data-tsc]');
   const cat = page.locator('.tsc-cat-row').first();
   await cat.click();
   await expect(cat).toHaveAttribute('aria-pressed', 'true');
-  // Busca na base de conhecimento (filtro com vazio) — servicos.
+  // Search in the knowledge base (filter with empty value) — servicos.
   await openFragment(page, '/apps/servicos/knowledge', '[data-hub-filter-item]');
   await page.locator('[data-hub-filter="#kb-page"]').fill('zzz-nada-aqui');
   await expect(page.locator('.app3-kb-empty')).toBeVisible();
@@ -122,10 +122,10 @@ test('comportamentos data-hub-*: modal, toast, filtro, gráfico e menu sem JavaS
   expect(errors, errors.join('\n')).toEqual([]);
 });
 
-// ---- (b)/(c): pacote de teste com JavaScript próprio ----------------------------------
+// ---- (b)/(c): test package with its own JavaScript ----------------------------------
 const APPROVED_JS = "document.documentElement.dataset.e2eApproved = 'ran';\n";
-// A versão revisada no pacote; o app serve outra (adulterada) → SRI bloqueia.
-// Único por execução: sempre há um hash novo pendente (aprovação vale por app+arquivo+hash).
+// The reviewed version in the package; the app serves another (tampered) one → SRI blocks it.
+// Unique per run: there is always a new pending hash (approval is valid per app+file+hash).
 const TAMPERED_PKG_JS = `document.documentElement.dataset.e2eTampered = 'revisado-${RUN}';\n`;
 const sri = (s: string) => `sha384-${createHash('sha384').update(s).digest('base64')}`;
 
@@ -164,13 +164,13 @@ test('(c)+(b) JavaScript próprio: REVISE no pipeline, revisão separada e audit
   const APP = 'servicos';
   const VERSION = `3.9.${Math.floor(Date.now() / 1000) % 1_000_000}`;
   let api = await apiAs('admin');
-  // Separação de funções (M2): quem envia é outro administrador; a Ana revisa.
+  // Separation of duties (M2): whoever submits is another administrator; Ana reviews.
   const email = `publicador-${RUN.toLowerCase()}@demo.local`;
   const nu = await api.post('/api/admin/users', { headers: { 'content-type': 'application/json' }, data: { email, name: `Publicador ${RUN}`, roles: ['Administrador'], password: 'Publicador-Teste-123', must_change_password: false } });
   expect(nu.status(), await nu.text()).toBeLessThan(300);
   const pub = await apiLogin(email, 'Publicador-Teste-123');
-  // O login de outra conta neste processo derruba a sessão salva do admin (o hub troca a
-  // sessão que chega no login): entra de novo como admin, na API e no navegador.
+  // Logging in with another account in this process drops the admin's saved session (the hub swaps
+  // the session that arrives at login): logs back in as admin, in the API and in the browser.
   api = await apiLogin(USERS.admin.email, USERS.admin.password);
   await page.goto('/login');
   await page.locator('#email').fill(USERS.admin.email);
@@ -192,11 +192,11 @@ test('(c)+(b) JavaScript próprio: REVISE no pipeline, revisão separada e audit
   const dep = (await deployments(api)).find((d) => d.app === APP && d.version === VERSION && d.env === 'Produção');
   expect(dep.status).toMatch(/Aguardando/);
   expect(dep.submitted_by).toBe(`Publicador ${RUN}`);
-  // Quem enviou não aprova o próprio JavaScript (recusa auditada).
+  // Whoever submitted does not approve their own JavaScript (audited refusal).
   const self = await pub.post(`/api/ops/deployments/${dep.id}/scripts/approve`, { headers: { 'content-type': 'application/json', 'x-hub-request': '1' }, data: {} });
   expect(self.status()).toBe(400);
   expect(await self.text()).toContain('Separação de funções');
-  // Renomear o publicador com o nome de quem revisa não burla (comparação por id).
+  // Renaming the publisher to the reviewer's name does not get around it (comparison by id).
   const pubId = (await nu.json()).id as string;
   const ren = await api.put(`/api/admin/users/${pubId}`, { headers: { 'content-type': 'application/json' }, data: { name: USERS.admin.name } });
   expect(ren.status(), await ren.text()).toBeLessThan(300);
@@ -205,27 +205,27 @@ test('(c)+(b) JavaScript próprio: REVISE no pipeline, revisão separada e audit
   expect(await self2.text()).toContain('Separação de funções');
   await pub.dispose();
   expect(dep.scripts.map((s: any) => s.sha384)).toEqual([sri(APPROVED_JS), sri(TAMPERED_PKG_JS)]);
-  // Bloqueia: sem a revisão de segurança a implantação não é aprovada.
+  // Blocks: without the security review the deployment is not approved.
   const blocked = await api.post(`/api/ops/deployments/${dep.id}/approve?wait=true`, { headers: { 'content-type': 'application/json' }, data: {} });
   expect(blocked.status()).toBe(400);
   expect(await blocked.text()).toContain('JavaScript próprio');
-  // Revisão pela tela (botão separado da aprovação).
+  // Review through the screen (button separate from the approval).
   const drawer = await openDeployVersion(page, 'servicos', dep.id);
   const review = drawer.locator(`[data-ops-scripts-review="${dep.id}"]`);
   await expect(review).toContainText('Revisar: o app traz JavaScript próprio');
   await expect(review).toContainText('ui/assets/e2e-tampered.js');
   await expect(review).toContainText(sri(TAMPERED_PKG_JS));
-  await drawer.locator(`[data-ops-approve-scripts="${dep.id}"]`).click(); // botão fica nas ações da versão (gaveta), fora do quadro de revisão
+  await drawer.locator(`[data-ops-approve-scripts="${dep.id}"]`).click(); // button stays in the version's actions (drawer), outside the review frame
   await expect(page.locator('#toast')).toContainText('JavaScript próprio aprovado');
   await expect(page.locator(`[data-ops-scripts-review="${dep.id}"]`)).toHaveCount(0);
   await page.goto('/admin/audit?scope=servicos');
   await expect(page.locator('#app-root')).toContainText('JavaScript próprio aprovado');
-  // Agora a implantação é aprovada (blue/green real).
+  // Now the deployment is approved (real blue/green).
   const ok = await api.post(`/api/ops/deployments/${dep.id}/approve?wait=true`, { headers: { 'content-type': 'application/json' }, data: {} });
   expect(ok.status(), await ok.text()).toBe(200);
   await expect.poll(async () => (await deployments(api)).find((d) => d.id === dep.id)?.status, { timeout: 240_000 }).toBe('Implantado');
 
-  // (b) Navegador: o aprovado roda; o adulterado (servido ≠ revisado) é recusado pelo SRI.
+  // (b) Browser: the approved one runs; the tampered one (served ≠ reviewed) is refused by SRI.
   const consoleErrors: string[] = [];
   page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
   const res = await page.goto('/apps/servicos/dashboard');
@@ -237,7 +237,7 @@ test('(c)+(b) JavaScript próprio: REVISE no pipeline, revisão separada e audit
   expect(await page.locator('html').getAttribute('data-e2e-tampered')).toBeNull();
   expect(consoleErrors.join('\n')).toMatch(/integrity|e2e-tampered/i);
 
-  // Volta à versão anterior (sem scripts) para não afetar outros cenários.
+  // Back to the previous version (no scripts) so as not to affect other scenarios.
   if (before) {
     const rb = await api.post(`/api/ops/deployments/${dep.id}/rollback?wait=true`, { headers: { 'content-type': 'application/json' }, data: {} });
     expect(rb.status(), await rb.text()).toBe(200);
@@ -245,9 +245,9 @@ test('(c)+(b) JavaScript próprio: REVISE no pipeline, revisão separada e audit
   await api.dispose();
 });
 
-// ---- (d) telas de credencial de topo (a frase de segurança foi removida) -----------------
+// ---- (d) top-level credential screens (the security phrase was removed) -----------------
 test('(d) consentimento OAuth é tela de topo sem script', async ({ page }) => {
-  // Recurso removido: a rota antiga não existe mais e nenhuma tela mostra a faixa.
+  // Removed feature: the old route no longer exists and no screen shows the strip.
   const gone = await page.goto('/account/security-phrase');
   expect(gone!.status()).toBe(404);
   // Consentimento OAuth.
@@ -265,7 +265,7 @@ test('(d) consentimento OAuth é tela de topo sem script', async ({ page }) => {
   await anon.dispose();
 });
 
-// ---- revisão de segurança da 2.1 --------------------------------------------------------
+// ---- security review of 2.1 --------------------------------------------------------
 test('H1: data-hub-* com seletor malicioso não alcança o shell (só ids dentro do app) @core', async ({ page }) => {
   await openFragment(page, '/apps/ativos/movements', '[data-hub-filter]');
   const r = await page.evaluate(async () => {
@@ -273,7 +273,7 @@ test('H1: data-hub-* com seletor malicioso não alcança o shell (só ids dentro
     const header = document.querySelector('.platform-header')!;
     const before = header.outerHTML;
     const box = document.createElement('div');
-    // Mesmo caminho do HTML do app: sanitizador + hub-kit.
+    // Same path as the app's HTML: sanitizer + hub-kit.
     (window as any).HubSafe.setHTML(box, `
       <button id="h1a" data-hub-get="/apps/ativos/movements" data-hub-target=", .platform-header" data-hub-swap="outerHTML">a</button>
       <button id="h1b" data-hub-get="/apps/ativos/movements" data-hub-target=", body" data-hub-swap="innerHTML">b</button>
@@ -317,7 +317,7 @@ test('M1: position:fixed do app não cobre o header nem o rail do hub @core', as
     };
   });
   expect(r).toEqual({ header: true, isolated: true, popover: false });
-  // O CSS do app não desfaz a contenção (estilo inline !important do hub).
+  // The app's CSS does not undo the containment (the hub's inline !important style).
   await page.addStyleTag({ content: '#app-root#app-root#app-root{isolation:auto!important;z-index:auto!important;position:static!important}.platform-header{display:none!important;z-index:-1!important}' });
   const still = await page.evaluate(() => ({
     isolated: getComputedStyle(document.getElementById('app-root')!).isolation === 'isolate',
@@ -339,14 +339,14 @@ test('M3: um script da página do app não lê a tela de credencial aberta com w
   });
   const p = await popup;
   await expect(p.locator('input[type="password"]').first()).toBeVisible();
-  // Sem acesso ao documento da tela de credencial (COOP corta o vínculo com quem abriu).
+  // No access to the credential screen's document (COOP cuts the link with whoever opened it).
   expect((read as { text?: string | null }).text ?? null).toBeNull();
   await p.close();
 });
 
 test('M1 (CSS): folha do app com regras contra o shell não esconde nem troca o header', async ({ page }) => {
   await openFragment(page, '/apps/ativos/movements', '[data-hub-filter]');
-  // O CSS do app nunca entra como <link> global: folha construída com @scope.
+  // The app's CSS never comes in as a global <link>: sheet built with @scope.
   const real = await page.evaluate(() => ({
     links: document.querySelectorAll('link[href*="/_frag/"]').length,
     adopted: document.adoptedStyleSheets.length,
@@ -372,8 +372,8 @@ test('M1 (CSS): folha do app com regras contra o shell não esconde nem troca o 
   });
   expect(after).toEqual({ transform: 'none', display: 'flex', visibility: 'visible', before: 'none', filter: 'none' });
   expect(await header.boundingBox()).toEqual(box);
-  // Captura da região do header: igual à de antes (tolerância de 1% para o que o próprio
-  // hub atualiza sozinho, como o contador do sino; um header escondido/trocado muda tudo).
+  // Capture of the header region: same as before (1% tolerance for what the hub
+  // updates on its own, like the bell counter; a hidden/swapped header changes everything).
   const after2 = await header.screenshot({ animations: 'disabled', caret: 'hide' });
   const ratio = await page.evaluate(async ([a, b]) => {
     const load = async (b64: string) => { const i = new Image(); i.src = `data:image/png;base64,${b64}`; await i.decode(); return i; };

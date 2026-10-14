@@ -1,8 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
 import { apiAs, autoConfirm, docker, gotoSafe, json, newRoleContext, openApp, stateFile, uniq, CP } from './helpers';
 
-// Onda 8: Observabilidade, status page e SLOs, feature flags, auditoria imutável,
-// segredos cifrados em repouso e cor da marca (tokens).
+// Wave 8: Observability, status page and SLOs, feature flags, immutable audit,
+// secrets encrypted at rest and brand color (tokens).
 test.use({ storageState: stateFile('admin') });
 test.describe.configure({ mode: 'serial' });
 
@@ -10,7 +10,7 @@ const RUN = uniq();
 const toast = (page: Page) => page.locator('#toast');
 
 test('observabilidade na Saúde: gráficos por app e requisições mais lentas; link antigo redireciona', async ({ page }) => {
-  // Tráfego: páginas do ativos (a lista consulta o banco).
+  // Traffic: pages of ativos (the list queries the database).
   await openApp(page, '/apps/ativos/assets');
   await openApp(page, '/apps/ativos/dashboard');
   await page.goto('/admin/observability?app=ativos&env=producao&min=15');
@@ -21,7 +21,7 @@ test('observabilidade na Saúde: gráficos por app e requisições mais lentas; 
 });
 
 test('SLO: definir na Saúde e ver orçamento de erro', async ({ page }) => {
-  await page.goto('/admin/health?tab=slos'); // SLOs viraram aba da Saúde (F7a)
+  await page.goto('/admin/health?tab=slos'); // SLOs became a tab of Health (F7a)
   await page.click('button[data-slo-edit=""]');
   const m = page.locator('[data-insights-modal] form');
   await m.locator('[name="app"]').selectOption('ativos');
@@ -53,7 +53,7 @@ test('status page: estado dos apps, incidente manual com nota e resolução; lei
   const inc = page.locator('[data-incident]').filter({ hasText: title });
   await expect(inc).toContainText('Em andamento');
   await expect(page.locator('[data-status-app="Central de Serviços"] [data-status-state]').first()).toHaveText('Degradado');
-  // Leitor vê o incidente, sem botões de edição.
+  // Reader sees the incident, without edit buttons.
   const ctx = await newRoleContext(browser, 'leitor');
   const lp = await ctx.newPage();
   await lp.goto('/status');
@@ -70,15 +70,15 @@ test('status page: estado dos apps, incidente manual com nota e resolução; lei
 test('feature flags (só API; a tela foi removida): regra por função liga o recurso no app; kill switch desliga', async ({ page, browser }) => {
   test.setTimeout(180_000);
   const api = await apiAs('admin');
-  // Estado limpo (de uma execução anterior).
+  // Clean state (from a previous run).
   await api.delete('/api/admin/flags/ativos/novo-resumo', { data: {} });
   const rule = { enabled: true, default: 'off', rules: [{ roles: ['Administrador'], users: [], serve: 'on' }] };
   const created = await api.post('/api/admin/flags', { data: { key: 'novo-resumo', app: 'ativos', description: 'Resumo novo no dashboard (E2E)', kind: 'boolean', variants: [], envs: { producao: rule } } });
   expect(created.ok()).toBeTruthy();
-  // A página antiga redireciona para Configurações.
+  // The old page redirects to Settings.
   await page.goto('/admin/flags');
   await expect(page).toHaveURL(/[/]admin$/);
-  // Admin (função Administrador) vê o recurso; leitor não.
+  // Admin (Administrator role) sees the feature; reader does not.
   await openApp(page, '/apps/ativos/dashboard');
   await expect(page.locator('[data-flag="novo-resumo"]')).toBeVisible();
   const ctx = await newRoleContext(browser, 'leitor');
@@ -90,7 +90,7 @@ test('feature flags (só API; a tela foi removida): regra por função liga o re
   expect((await api.post('/api/admin/flags/ativos/novo-resumo/producao/enabled', { data: { enabled: false } })).ok()).toBeTruthy();
   await openApp(page, '/apps/ativos/dashboard');
   await expect(page.locator('[data-flag="novo-resumo"]')).toHaveCount(0);
-  // Auditado no escopo do app.
+  // Audited in the app's scope.
   const audit = await json(await api.get('/api/admin/audit?scope=ativos&limit=20'));
   expect(audit.map((e: { title: string }) => e.title)).toEqual(expect.arrayContaining(['Feature flag criada', 'Feature flag desligada (kill switch)']));
   await api.dispose();
@@ -109,7 +109,7 @@ test('auditoria imutável: verificar integridade e exportar JSONL com provas', a
   expect(proof.t).toBe('proof');
   expect(proof.verification.ok).toBe(true);
   expect(proof.public_keys.length).toBeGreaterThan(0);
-  // checkpoint assinado a cada 100 eventos (F7a): numa instância nova pode ainda não haver nenhum
+  // signed checkpoint every 100 events (F7a): on a new instance there may still be none
   const events = lines.filter((l) => l.includes('"t":"e"')).length;
   expect(lines.some((l) => l.includes('"t":"c"'))).toBe(events >= 100);
   await api.dispose();
@@ -121,12 +121,12 @@ test('segredos cifrados em repouso: o admin.json não tem o valor; o painel do c
   const value = `valor-secreto-${RUN}`;
   const r = await api.post('/api/admin/env', { data: { name, value, kind: 'secreta', bindings: [] } });
   expect(r.status(), await r.text()).toBe(201);
-  // Conta no disco do hub (o admin.json é grande: grep dentro do container).
+  // Account on the hub's disk (admin.json is large: grep inside the container).
   const count = (needle: string) => Number(docker('exec', `${CP}web`, 'sh', '-c', `grep -c "${needle}" /data/admin.json || true`));
   expect(count(value)).toBe(0);
   expect(count('vault:v1:')).toBeGreaterThan(0);
   const back = await api.post(`/api/admin/env/${name}/reveal`, { data: {} });
-  expect([403, 404, 405]).toContain(back.status()); // segredo nunca é revelado
+  expect([403, 404, 405]).toContain(back.status()); // the secret is never revealed
   const v = await json(await api.get('/api/admin/vault'));
   expect(v.enabled).toBe(true);
   await gotoSafe(page, '/admin');

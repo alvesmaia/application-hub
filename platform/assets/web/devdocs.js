@@ -1,11 +1,11 @@
-// Portal do desenvolvedor (/developers/*): «Copiar prompt» (data-hub-copy-prompt), copiar blocos de código
-// (data-dev-copy) e filtro da página (data-dev-filter). Página do hub, não de app.
+// Developer portal (/developers/*): "Copy prompt" (data-hub-copy-prompt), copy of code blocks
+// (data-dev-copy) and the page filter (data-dev-filter). A hub page, not an app's.
 (() => {
   'use strict';
   const COPIED_MS = 2200;
 
-  // Tema do visitante sem sessão (public_base.html, carregado no <head> para não piscar): padrão = SO
-  // (data-theme="auto"); a escolha fica só no localStorage deste navegador.
+  // Visitor theme without a session (public_base.html, loaded in the <head> so it does not flash): default = OS
+  // (data-theme="auto"); the choice stays only in this browser's localStorage.
   const root = document.documentElement;
   const THEME_KEY = 'hub-public-theme';
   const setTheme = (v) => {
@@ -14,8 +14,8 @@
     if (meta) meta.setAttribute('content', v === 'dark' ? 'dark' : v === 'auto' ? 'light dark' : 'light');
   };
   if (root.hasAttribute('data-dev-public')) {
-    try { const v = localStorage.getItem(THEME_KEY); if (v === 'light' || v === 'dark') setTheme(v); } catch { /* sem storage */ }
-    // Botão sol/lua (como na Cloudflare): alterna claro ↔ escuro a partir do tema em uso.
+    try { const v = localStorage.getItem(THEME_KEY); if (v === 'light' || v === 'dark') setTheme(v); } catch { /* no storage */ }
+    // Sun/moon button (as in Cloudflare): toggles light ↔ dark from the theme in use.
     document.addEventListener('click', (e) => {
       const btn = e.target instanceof Element ? e.target.closest('[data-dev-theme]') : null;
       if (!btn) return;
@@ -23,11 +23,11 @@
       const dark = cur === 'dark' || (cur === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
       const v = dark ? 'light' : 'dark';
       setTheme(v);
-      try { localStorage.setItem(THEME_KEY, v); } catch { /* sem storage */ }
+      try { localStorage.setItem(THEME_KEY, v); } catch { /* no storage */ }
     });
   }
 
-  // Copia com a API assíncrona; fora de contexto seguro (http://ip) cai para seleção + execCommand.
+  // Copies with the async API; outside a secure context (http://ip) it falls back to selection + execCommand.
   async function copyText(text, field) {
     if (navigator.clipboard && window.isSecureContext) {
       try { await navigator.clipboard.writeText(text); return true; } catch (_) { /* tenta o modo antigo */ }
@@ -97,7 +97,7 @@
     }
   });
 
-  // Barra lateral: gaveta no celular, «/» foca o filtro, filtro esconde itens (abre os grupos com acerto).
+  // Sidebar: drawer on phones, "/" focuses the filter, the filter hides items (opens the groups with a match).
   const norm = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   document.addEventListener('click', (e) => {
     const b = e.target instanceof Element ? e.target.closest('[data-dev-nav-toggle]') : null;
@@ -139,17 +139,17 @@
 
   const ready = (fn) => (document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', fn) : fn());
   ready(() => {
-    /* tema: o botão sol/lua usa só CSS (data-theme) */
+    /* theme: the sun/moon button uses CSS only (data-theme) */
   });
 
-  // «Nesta página»: destaca o título visível (o primeiro que cruza o topo da janela).
+  // "On this page": highlights the visible heading (the first one crossing the top of the window).
   ready(() => {
   const toc = document.querySelector('[data-dev-toc]');
   if (toc) {
     const links = new Map([...toc.querySelectorAll('a[href^="#"]')].map((a) => [decodeURIComponent(a.hash.slice(1)), a]));
     const heads = [...links.keys()].map((id) => document.getElementById(id)).filter(Boolean);
-    // Trilho ativo (como na Cloudflare): um caminho só pelo trilho de todos os itens, curvas incluídas; o
-    // trecho do item atual aparece por stroke-dasharray/-dashoffset, que a transição anima ao trocar de item.
+    // Active track (as in Cloudflare): a single path along the track of all the items, curves included; the
+    // stretch of the current item appears through stroke-dasharray/-dashoffset, which the transition animates when switching items.
     const NS = 'http://www.w3.org/2000/svg';
     const rail = document.createElementNS(NS, 'svg');
     rail.setAttribute('class', 'dev-toc-rail');
@@ -158,7 +158,7 @@
     rail.appendChild(active);
     toc.appendChild(rail);
     toc.classList.add('has-rail');
-    let spans = new Map(); // link → [início no caminho, altura]
+    let spans = new Map(); // link → [start on the path, height]
     const draw = () => {
       const all = [...links.values()];
       if (!all.length || !toc.offsetParent) return;
@@ -190,12 +190,12 @@
       if (!s) return;
       active.style.strokeDasharray = `${s[1]} ${Number(rail.dataset.len) + 1}`;
       active.style.strokeDashoffset = String(-s[0]);
-      if (!rail.classList.contains('ready')) requestAnimationFrame(() => rail.classList.add('ready')); // 1º: sem animar
+      if (!rail.classList.contains('ready')) requestAnimationFrame(() => rail.classList.add('ready')); // 1st: without animating
     };
     const mark = () => {
-      // último título que já passou da linha de leitura (30 % da janela); antes do primeiro, o primeiro
+      // last heading that has already passed the reading line (30 % of the window); before the first, the first
       const line = innerHeight * 0.3;
-      const end = innerHeight + scrollY >= document.documentElement.scrollHeight - 2; // fim da página: o último
+      const end = innerHeight + scrollY >= document.documentElement.scrollHeight - 2; // end of the page: the last
       const cur = end ? heads.at(-1) : heads.reduce((c, h) => (h.getBoundingClientRect().top <= line ? h : c), heads[0] || null);
       links.forEach((a, id) => { if (cur && id === cur.id) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); });
       place();
@@ -204,7 +204,7 @@
     mark();
     addEventListener('resize', draw);
     document.fonts?.ready.then(draw);
-    let pinned = 0; // clique no «Nesta página»: o item clicado fica ativo até a rolagem suave terminar
+    let pinned = 0; // click on "On this page": the clicked item stays active until the smooth scrolling ends
     toc.addEventListener('click', (e) => {
       const a = e.target instanceof Element ? e.target.closest('a[href^="#"]') : null;
       if (!a) return;

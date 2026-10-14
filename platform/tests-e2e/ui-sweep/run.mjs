@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-// Varredura automática de UI do hub (@sweep).
+// Automatic UI sweep of the hub (@sweep).
 //
-//   node ui-sweep/run.mjs            matriz completa: admin/operador/leitor × claro/escuro/SO-escuro @1440 + 2 combinações @1280
-//   node ui-sweep/run.mjs --quick    subconjunto (admin × claro/escuro @1440)
-//   node ui-sweep/run.mjs --report <dir>   só refaz o relatório de uma pasta existente
+//   node ui-sweep/run.mjs            full matrix: admin/operator/reader × light/dark/OS-dark @1440 + 2 combinations @1280
+//   node ui-sweep/run.mjs --quick    subset (admin × light/dark @1440)
+//   node ui-sweep/run.mjs --report <dir>   only rebuilds the report of an existing folder
 //
-// HUB (padrão http://localhost:8080) com os usuários de demonstração. Relatório em
+// HUB (default http://localhost:8080) with the demo users. Report in
 // platform/loadtest/results/<data>/ui-sweep-<hora>/{report.md,findings.json,routes.json,shots/}.
-// Sai ≠ 0 se houver achado fora de ui-sweep/allowlist.json (cada entrada com `reason`).
+// Exits ≠ 0 if there is a finding outside ui-sweep/allowlist.json (each entry with `reason`).
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -39,7 +39,7 @@ if (!reportOnly) {
 }
 const secs = Math.round((Date.now() - t0) / 1000);
 
-// ---- junta ----
+// ---- join ----
 const allow = JSON.parse(fs.readFileSync(path.join(HERE, 'allowlist.json'), 'utf8')).entries || [];
 for (const a of allow) if (!a.reason || !a.check) { console.error('allowlist: toda entrada precisa de "check" e "reason":', a); process.exit(2); }
 const re = (s) => (s ? new RegExp(s) : null);
@@ -69,7 +69,7 @@ const summary = {
 };
 fs.writeFileSync(path.join(out, 'findings.json'), JSON.stringify({ summary, findings }, null, 2));
 
-// ---- Markdown: achados agrupados (mesma rota/verificação/seletor/mensagem em vários temas/papéis = 1 linha) ----
+// ---- Markdown: grouped findings (same route/check/selector/message in several themes/roles = 1 line) ----
 const groups = new Map();
 for (const f of open) {
   const k = [f.pattern, f.layer, f.check, f.selector, f.message].join('¦');

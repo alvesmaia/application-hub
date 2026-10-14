@@ -2,10 +2,10 @@ import { test, expect } from '@playwright/test';
 import path from 'node:path';
 import { HUB, apiAs, json, newRoleContext, stateFile } from './helpers';
 
-// Segunda rodada da revisão de UI (dist/ui-review.md, "Re-revisão"): tema em 3 ícones,
-// busca com o interno por último, versão real no catálogo, Recentes sem rota de teste,
-// própria conta sem "Desativar", 403 com cabeçalho de página, login com mostrar senha.
-// Compose no ar (HUB_DEMO_USERS=1).
+// Second round of the UI review (dist/ui-review.md, "Re-review"): theme in 3 icons,
+// search with the internal one last, real version in the catalog, Recents without a test route,
+// own account without "Deactivate", 403 with a page header, login with show password.
+// Stack up (HUB_DEMO_USERS=1).
 
 test.use({ storageState: stateFile('admin') });
 const DIST = path.resolve(__dirname, '..', '..', 'dist');
@@ -28,7 +28,7 @@ test('Configurações: tema em 3 opções (radiogroup), claro padrão @core', as
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await expect(radios.nth(1)).toHaveAttribute('aria-checked', 'true');
   const dark = await page.locator('#aparencia').screenshot();
-  // Claro + escuro lado a lado num só arquivo (dist/theme-switch.png).
+  // Light + dark side by side in one file (dist/theme-switch.png).
   const sheet = await page.context().newPage();
   const img = (b: Buffer) => `<img src="data:image/png;base64,${b.toString('base64')}" style="display:block">`;
   await sheet.setContent(`<body style="margin:0;background:#888;display:flex;gap:16px;padding:16px;width:max-content">${img(light)}${img(dark)}</body>`);
@@ -47,7 +47,7 @@ test('Rail a 1280×720: só a seção atual aberta e tudo acessível @core', asy
   const open = page.locator('#hub-admin-menu .rail-group-label[aria-expanded="true"]');
   await expect(open).toHaveCount(1);
   await expect(open).toHaveAttribute('id', 'hub-admin-group-apps');
-  // A última seção (Governança) aparece sem rolar a página.
+  // The last section (Governance) appears without scrolling the page.
   await expect(page.locator('#hub-admin-group-gov')).toBeInViewport();
 });
 
@@ -64,8 +64,8 @@ test('Busca: registros dos apps antes do interno; "ver todos" por app @core', as
   await page.goto('/search?q=a');
   await expect(page.locator('.hub-search-group mark').first()).toBeVisible();
   const t0 = Date.now();
-  // Resultado completo (todos os provedores, teto de 1,5 s por app) em poucos segundos.
-  // (networkidle não serve de métrica aqui: o SSE da inbox, /api/me/stream, fica ativo.)
+  // Full result (all providers, 1.5 s ceiling per app) in a few seconds.
+  // (networkidle is no use as a metric here: the inbox SSE, /api/me/stream, stays active.)
   await page.goto('/search?q=a');
   await expect(page.locator('.hub-search-group').first()).toBeVisible();
   expect(Date.now() - t0).toBeLessThan(4000);

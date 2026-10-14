@@ -1,19 +1,18 @@
-/* ux.js — páginas da onda 9 no hub-web (Início, Aplicações, Inbox, Analytics).
+/* ux.js — wave 9 pages in hub-web (Home, Applications, Inbox, Analytics).
  *
- *  - Início: "Personalizar" liga o modo de edição — arrastar widgets (HTML5 drag and
- *    drop) ou, pelo teclado, os botões ↑/↓/✕ de cada widget; "Adicionar widget",
- *    "Restaurar padrão" e (quem edita configurações) "Salvar como padrão da função".
- *    O layout vai para o servidor (`PUT /api/me/home`). Mudanças anunciadas em aria-live.
- *  - Aplicações: estrela (favoritos) e "Solicitar acesso" (vira pedido na Inbox dos
- *    administradores).
- *  - Inbox: aprovar/recusar (o hub chama o app pela rede interna), marcar como lido,
- *    arquivar, preferências de canal e opt-out do analytics.
- *  - Barras de progresso/gráficos: largura a partir de `data-pct`/`data-h`.
+ *  - Home: "Customize" turns on edit mode — drag widgets (HTML5 drag and
+ *    drop) or, with the keyboard, the ↑/↓/✕ buttons of each widget; "Add widget",
+ *    "Restore default" and (for whoever edits settings) "Save as default for the role".
+ *    The layout goes to the server (`PUT /api/me/home`). Changes announced in aria-live.
+ *  - Applications: star (favorites) and "Request access" (becomes a request in the administrators' Inbox).
+ *  - Inbox: approve/decline (the hub calls the app over the internal network), mark as read,
+ *    archive, channel preferences and analytics opt-out.
+ *  - Progress bars/charts: width from `data-pct`/`data-h`.
  */
 (function () {
   'use strict';
 
-  // Ordem de widgets depois de mover `id` em `delta` posições (lógica pura, testada).
+  // Widget order after moving `id` by `delta` positions (pure logic, tested).
   function moveIn(order, id, delta) {
     const i = order.indexOf(id);
     const j = i + delta;
@@ -28,7 +27,7 @@
     return;
   }
 
-  // hub-ux.js (shell) publica window.HubUx; lido na hora do uso.
+  // hub-ux.js (shell) publishes window.HubUx; read at the moment of use.
   const hx = () => window.HubUx;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -47,7 +46,7 @@
   $$('[data-pct]').forEach((el) => { el.style.width = `${Math.max(0, Math.min(100, Number(el.dataset.pct) || 0))}%`; });
   $$('[data-h]').forEach((el) => { el.style.height = `${Math.max(2, Number(el.dataset.h) || 0)}%`; });
 
-  // ---- Início ------------------------------------------------------------------------
+  // ---- Home ------------------------------------------------------------------------
   const grid = $('[data-home-widgets]');
   const editor = $('[data-home-editor]');
   const toggle = $('[data-home-customize]');
@@ -57,8 +56,8 @@
     const all = () => $$('.hub-widget', grid);
     const order = () => all().filter((w) => !w.hidden).map((w) => w.dataset.widget);
     const save = () => api('PUT', '/api/me/home', { widgets: order() });
-    // "Adicionar widget": as opções vêm do servidor (todos os widgets); só os ocultos
-    // ficam habilitados. Sem nenhum oculto, o seletor dá lugar a um aviso.
+    // "Add widget": the options come from the server (all widgets); only the hidden ones
+    // are enabled. With none hidden, the selector gives way to a warning.
     const refreshAdd = () => {
       const sel = $('[data-home-add]', editor);
       const hiddenIds = all().filter((w) => w.hidden).map((w) => w.dataset.widget);
@@ -87,7 +86,7 @@
         hx() && hx().feature('home_customize');
       }
     };
-    // Cancelar: volta ordem e visibilidade ao estado de quando a edição começou.
+    // Cancel: returns order and visibility to the state from when editing started.
     const restore = () => {
       if (!snapshot) return;
       snapshot.forEach(([id, hidden]) => {
@@ -97,7 +96,7 @@
     };
     toggle.addEventListener('click', () => setEditing(!editing));
     $('[data-home-cancel]', editor).addEventListener('click', () => { restore(); setEditing(false); toggle.focus(); });
-    // Esc sai do modo de edição (= Cancelar), exceto dentro de um menu aberto.
+    // Esc leaves edit mode (= Cancel), except inside an open menu.
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape' || editor.hidden || e.target.closest('details[open]')) return;
       $('[data-home-cancel]', editor).click();
@@ -145,7 +144,7 @@
     $('[data-home-reset]', editor).addEventListener('click', async () => {
       try { await api('DELETE', '/api/me/home'); location.reload(); } catch (e) { toast(e.message, 'error'); }
     });
-    // Arrastar e soltar (mouse/toque); o teclado usa os botões.
+    // Drag and drop (mouse/touch); the keyboard uses the buttons.
     let dragged = null;
     grid.addEventListener('dragstart', (e) => {
       if (!editing) return;
@@ -167,7 +166,7 @@
     });
   }
 
-  // ---- Aplicações ----------------------------------------------------------------------
+  // ---- Applications ----------------------------------------------------------------------
   document.addEventListener('click', async (e) => {
     const star = e.target.closest('[data-fav]');
     if (star) {
@@ -235,7 +234,7 @@
       }
       b.disabled = false;
     });
-    // Itens novos chegando pela conexão ao vivo: recarrega a lista (fora de um campo).
+    // New items arriving through the live connection: reloads the list (outside a field).
     document.addEventListener('hub:inbox', (ev) => {
       if (ev.detail.unread > ev.detail.prev && !inbox.contains(document.activeElement)) location.reload();
     });
@@ -254,8 +253,8 @@
     });
   }
 
-  // ---- Conta: Apps autorizados / Tokens pessoais ---------------------------------------
-  // Diálogos nativos (<dialog>); sem JS, o formulário de revogação posta direto.
+  // ---- Account: Authorized apps / Personal tokens ---------------------------------------
+  // Native dialogs (<dialog>); without JS, the revocation form posts directly.
   const dlgClose = (d) => { if (d && d.open) d.close(); };
   $$('dialog.acct-dialog').forEach((d) => {
     $$('[data-acct-cancel]', d).forEach((b) => b.addEventListener('click', () => dlgClose(d)));
@@ -276,7 +275,7 @@
       if (await confirmIn(f.dataset.acctConfirm)) { f.dataset.confirmed = '1'; f.submit(); }
     });
   });
-  // Recarrega só a lista (mesma página, HTML do servidor) e destaca a linha nova.
+  // Reloads only the list (same page, HTML from the server) and highlights the new row.
   async function refreshList(sel, highlight) {
     const res = await fetch(location.pathname + location.search, { credentials: 'same-origin', headers: { accept: 'text/html' } });
     if (!res.ok) { location.reload(); return; }
@@ -312,7 +311,7 @@
       try {
         const r = await api('POST', '/api/me/tokens', { name, actions, expires_days: Number(form.expires_days.value) });
         $('[data-token-secret]', shown).textContent = r.token;
-        // A lista atrás do diálogo já mostra o token novo (destacado).
+        // The list behind the dialog already shows the new token (highlighted).
         await refreshList('[data-acct-tokens]', r.item && r.item.id);
         form.hidden = true; shown.hidden = false; created = true;
         $('[data-token-copy]', shown).focus();
@@ -320,16 +319,16 @@
       btn.disabled = false;
     });
     $('[data-token-copy]', shown).addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText($('[data-token-secret]', shown).textContent); toast(t('js.kit_copied')); } catch (_) { /* seleção manual */ }
+      try { await navigator.clipboard.writeText($('[data-token-secret]', shown).textContent); toast(t('js.kit_copied')); } catch (_) { /* manual selection */ }
     });
     $('[data-token-done]', shown).addEventListener('click', () => dlgClose(newDlg));
     newDlg.addEventListener('close', () => {
-      // O segredo some do DOM ao fechar: mostrado uma única vez.
+      // The secret disappears from the DOM on close: shown only once.
       $('[data-token-secret]', shown).textContent = '';
       if (created) { created = false; toast(t('js.token_created')); }
     });
   }
-  // Revogar (delegado: vale também para as linhas recarregadas sem reload).
+  // Revoke (delegated: also valid for the rows reloaded without a reload).
   document.addEventListener('click', async (e) => {
     const b = e.target.closest('[data-acct-tokens] [data-token-revoke]');
     if (!b) return;
@@ -342,8 +341,8 @@
     } catch (err) { toast(err.message, 'error'); b.disabled = false; }
   });
 
-  // Onda 13 — catálogo: a stack do app abre no passar do mouse e no foco (CSS) e, no toque,
-  // pelo botão "i" (aria-expanded). Esc ou tocar fora fecham.
+  // Wave 13 — catalog: the app's stack opens on mouse hover and focus (CSS) and, on touch,
+  // through the "i" button (aria-expanded). Esc or tapping outside closes.
   const closeStacks = (except) => document.querySelectorAll('.app-card.hub-stack-open').forEach((c) => {
     if (c === except) return;
     c.classList.remove('hub-stack-open');

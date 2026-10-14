@@ -1,5 +1,5 @@
-/* login.js — botão "Mostrar senha" do login (a CSP do hub não permite script inline).
- * Sem JavaScript o botão fica escondido (atributo hidden) e o campo segue como senha. */
+/* login.js — the login's "Show password" button (the hub's CSP does not allow inline script).
+ * Without JavaScript the button stays hidden (hidden attribute) and the field remains a password. */
 (function () {
   'use strict';
   const btn = document.querySelector('[data-pw-toggle]');

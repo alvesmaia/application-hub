@@ -1,22 +1,22 @@
 /*
- * Design tokens da plataforma — identidade Alvesmaia (cores, fontes, linhas). Fonte
- * única de cor, espaçamento, raio, tipografia, sombras, camadas (z-index) e movimento.
- * Carregado ANTES de styles.css pelo shell (hub-web e hub dev); os fragmentos dos apps
- * rodam no mesmo documento e usam as mesmas variáveis.
+ * Platform design tokens — Alvesmaia identity (colors, fonts, lines). Single source
+ * of color, spacing, radius, typography, shadows, layers (z-index) and motion.
+ * Loaded BEFORE styles.css by the shell (hub-web and hub dev); the app fragments
+ * run in the same document and use the same variables.
  *
- * Camadas:
- *   0. Papéis da identidade (--am-<papel>: page, surface, title, primary, chrome…) com
- *      valores claro e escuro EXPLÍCITOS em scripts/brand-palette.json (bloco gerado).
- *   1. Primitivas (--c-<família>-<luminosidade>): nomes herdados do mockup, hoje só
- *      apelidos de um papel (ou valor fixo, ex.: terminal de logs).
- *   2. Semânticas (--color-surface, --color-text, --color-accent…): o que os
- *      componentes devem usar. White label redefine só esta camada (ex.: /assets/theme.css
- *      gerado de Administração › Configurações troca --color-accent pela cor da marca).
- * Documentação: platform/docs/DESIGN-TOKENS.md
+ * Layers:
+ *   0. Identity roles (--am-<role>: page, surface, title, primary, chrome…) with light and dark
+ *      values EXPLICIT in scripts/brand-palette.json (generated block).
+ *   1. Primitives (--c-<family>-<lightness>): names inherited from the mockup, today only
+ *      aliases of a role (or a fixed value, e.g. the log terminal).
+ *   2. Semantics (--color-surface, --color-text, --color-accent…): what the
+ *      components must use. White label redefines only this layer (e.g. /assets/theme.css
+ *      generated from Administration › Settings replaces --color-accent with the brand color).
+ * Documentation: platform/docs/DESIGN-TOKENS.md
  */
 
-/* Fontes Red Hat (variáveis, SIL OFL 1.1 — ver /assets/fonts/OFL.txt), servidas pelo hub;
- * só latin + latin-ext. */
+/* Red Hat fonts (variables, SIL OFL 1.1 — see /assets/fonts/OFL.txt), served by the hub;
+ * only latin + latin-ext. */
 @font-face { font-family: "Red Hat Display"; font-style: normal; font-display: swap; font-weight: 300 900; src: url("/assets/fonts/red-hat-display-latin-ext-wght-normal.woff2") format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
 @font-face { font-family: "Red Hat Display"; font-style: normal; font-display: swap; font-weight: 300 900; src: url("/assets/fonts/red-hat-display-latin-wght-normal.woff2") format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
 @font-face { font-family: "Nunito Sans"; font-style: normal; font-display: swap; font-weight: 400 900; src: url("/assets/fonts/nunito-sans-latin-wght-normal.woff2") format("woff2-variations"), url("/assets/fonts/nunito-sans-latin-wght-normal.woff2") format("woff2"); }
@@ -25,7 +25,7 @@
 
 /* paleta:inicio (gerado por scripts/gen-dark-theme.mjs a partir de scripts/brand-palette.json — não editar) */
 :root {
-  /* Papéis da identidade (tema claro). */
+  /* Identity roles (light theme). */
   --am-page: #F4F6FB;
   --am-surface: #FFFFFF;
   --am-raised: #FFFFFF;
@@ -68,7 +68,7 @@
   --am-chrome-text-2: #B8C4D6;
   --am-chrome-icon: #C5D0FF;
   --am-scrim: #102A43;
-  /* Primitivas herdadas do mockup → papéis. */
+  /* Primitives inherited from the mockup → roles. */
   --c-blue-27: var(--am-primary);
   --c-blue-27-1: var(--am-body);
   --c-blue-28: var(--am-body);
@@ -310,7 +310,7 @@
 /* paleta:fim */
 
 :root {
-  /* Semânticas (apontam para os papéis da identidade). */
+  /* Semantics (point to the identity roles). */
   --color-bg: var(--am-page);
   --color-surface: var(--am-surface);
   --color-surface-raised: var(--am-raised);
@@ -353,7 +353,7 @@
   --color-neutral-soft: var(--am-neutral-bg);
   --color-info: var(--am-primary);
   --color-info-soft: var(--am-tint);
-  /* Cromo da plataforma (header + rail): navy no claro, grafite no escuro. */
+  /* Platform chrome (header + rail): navy in light, graphite in dark. */
   --color-chrome: var(--am-chrome);
   --color-chrome-raised: var(--am-chrome-raised);
   --color-chrome-text: var(--am-chrome-text);
@@ -362,13 +362,13 @@
   --color-chrome-active-bg: color-mix(in srgb, var(--am-accent) 28%, transparent);
   --color-chrome-active-bar: var(--am-accent);
   --color-scrollbar: var(--am-border-strong);
-  /* Estados de foco e seleção. */
+  /* Focus and selection states. */
   --color-focus: var(--am-accent);
   --focus-ring-color: var(--am-accent);
   --focus-ring: 0 0 0 2px var(--focus-ring-color);
   --color-accent-soft: var(--am-tint);
 
-  /* Espaçamento (nome = px, escala fechada). */
+  /* Spacing (name = px, closed scale). */
   --space-2: 2px;  --space-4: 4px;  --space-6: 6px;  --space-8: 8px;
   --space-10: 10px; --space-12: 12px; --space-14: 14px; --space-16: 16px;
   --space-18: 18px; --space-20: 20px; --space-24: 24px; --space-28: 28px;
@@ -385,7 +385,7 @@
   --font-body: "Nunito Sans", var(--font-sans-fallback);
   --font-ui: "Nunito Sans", var(--font-sans-fallback);
   --font-display: "Nunito Sans", var(--font-sans-fallback);
-  /* Só o nome da aplicação no header ("Application Hub"). */
+  /* Only the application name in the header ("Application Hub"). */
   --font-brand: "Red Hat Display", var(--font-sans-fallback);
   --font-mono: "Red Hat Mono", ui-monospace, Consolas, monospace;
   --font-mono-alt: "Red Hat Mono", ui-monospace, Consolas, monospace;
@@ -395,12 +395,12 @@
   --font-size-5xl: 22px; --font-size-6xl: 25px; --font-size-7xl: 27px;
 
   /* Sombras. */
-  /* Sombra só em elemento flutuante (tooltip, toast, menu, modal); cartões não têm. */
+  /* Shadow only on floating elements (tooltip, toast, menu, modal); cards have none. */
   --shadow-card: none;
   --shadow-popover: 0 8px 24px rgba(16, 42, 67, .16);
   --shadow-modal: 0 8px 24px rgba(16, 42, 67, .16);
 
-  /* Camadas (z-index), da mais baixa à mais alta. */
+  /* Layers (z-index), from the lowest to the highest. */
   --z-raised: 1; --z-rail: 25; --z-header: 30; --z-rail-restore: 35; --z-popover: 40;
   --z-overlay: 45; --z-backdrop: 49; --z-sidebar: 50; --z-tooltip: 60; --z-toast: 70; --z-menu: 80;
 
@@ -414,8 +414,8 @@
   :root { --duration-fast: 0s; --duration-base: 0s; }
 }
 
-/* Controles nativos (checkbox, select, rolagem…) seguem o tema do hub, não o do sistema:
- * claro por padrão; o bloco gerado abaixo troca para escuro. */
+/* Native controls (checkbox, select, scrollbar…) follow the hub's theme, not the system's:
+ * light by default; the generated block below switches to dark. */
 :root, :root[data-theme="light"] { color-scheme: light; }
 
 

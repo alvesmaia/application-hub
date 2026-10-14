@@ -1,13 +1,13 @@
 import { defineConfig } from '@playwright/test';
 
-// Compose no ar com os usuários de demonstração (HUB_DEMO_USERS=1):
+// Stack up with the demo users (HUB_DEMO_USERS=1):
 //   cd platform && docker compose up -d && cd tests-e2e && npm ci && npx playwright install chromium && npm run e2e
-// HUB (padrão http://localhost:8080) e HUB_STAGING (padrão http://staging.localhost:8080).
+// HUB (default http://localhost:8080) and HUB_STAGING (default http://staging.localhost:8080).
 export const HUB = process.env.HUB || 'http://localhost:8080';
 
 export default defineConfig({
   testDir: './tests',
-  // Um só worker: os cenários mudam estado compartilhado (implantações, backups, variáveis).
+  // Only one worker: the scenarios change shared state (deployments, backups, variables).
   workers: 1,
   fullyParallel: false,
   timeout: 180_000,

@@ -1,4 +1,4 @@
-/* Operações da plataforma — implantações, containers, backups e SDK. */
+/* Platform operations — deployments, containers, backups and SDK. */
 .ops-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-14)}
 .ops-grid-flat{align-items:start}
 .ops-section{margin-top:var(--space-16)}
@@ -56,7 +56,7 @@
 .ops-cmd small{display:block;font-size:var(--font-size-2xs);color:var(--muted);margin-top:var(--space-6);line-height:1.5}
 @media (max-width:1000px){.ops-grid-2,.ops-cmds{grid-template-columns:1fr}.ops-cards{grid-template-columns:1fr 1fr}}
 @media (max-width:640px){.ops-cards{grid-template-columns:1fr}.ops-inline{flex-direction:column;align-items:stretch}.content-panel{overflow-x:auto}}
-/* --- Adições da implementação real (estados de falha, banner, progresso, SDK) --- */
+/* --- Additions from the real implementation (failure states, banner, progress, SDK) --- */
 .ops-steps li.failed,.ops-steps li.warn{opacity:1}
 .ops-steps li.failed .ops-step-dot{background:var(--color-danger);border-color:var(--color-danger)}
 .ops-steps li.warn .ops-step-dot{background:var(--color-warning);border-color:var(--color-warning)}
@@ -75,7 +75,7 @@
 .ops-modal-error{color:var(--color-danger);font-size:var(--font-size-xs);min-height:14px;margin-top:var(--space-6)}
 .ops-check{display:flex;align-items:center;gap:var(--space-8);font-size:var(--font-size-sm);color:var(--c-blue-37)}
 .ops-runtime-note{display:block;max-width:280px;margin-top:var(--space-4);white-space:normal;overflow-wrap:anywhere}
-/* Usuários, Tokens de API e aplicações por função (onda 3). */
+/* Users, API tokens and applications per role (wave 3). */
 .auth-alert{background:var(--color-danger-soft);color:var(--c-red-43);border:1px solid var(--c-red-88-1);border-radius:var(--radius-lg);padding:var(--space-10) var(--space-12);font-size:var(--font-size-md);margin:var(--space-8) 0 var(--space-4)}
 .auth-note{margin-top:var(--space-14);font-size:var(--font-size-sm);line-height:1.6}
 .user-actions{display:flex;gap:var(--space-6);flex-wrap:wrap}
@@ -85,7 +85,7 @@
 .role-apps{margin-top:var(--space-12);padding-top:var(--space-10);border-top:1px solid var(--c-blue-95-10)}
 .ops-alert{background:var(--c-yellow-95-1);color:var(--c-orange-24);border:1px solid var(--c-yellow-81);border-radius:var(--radius-xl);padding:var(--space-10) var(--space-12);font-size:var(--font-size-base);margin:0 0 var(--space-12)}
 
-/* ---- Onda 8: Observabilidade, status page, SLOs, flags, auditoria (só tokens) ---- */
+/* ---- Wave 8: Observability, status page, SLOs, flags, audit (tokens only) ---- */
 .obs-muted{color:var(--color-text-muted);font-size:var(--font-size-xs)}
 .obs-sep{display:inline-block;width:1px;height:18px;background:var(--color-border);margin:0 var(--space-8);vertical-align:middle}
 .obs-refresh{display:flex;align-items:center;gap:var(--space-6);font-size:var(--font-size-sm);color:var(--color-text-secondary)}
@@ -132,7 +132,7 @@
 .flags-table td{white-space:normal;vertical-align:top}
 .status-public .page-container{padding-top:var(--space-32)}
 @media (max-width:900px){.obs-grid,.obs-cards{grid-template-columns:1fr}.obs-span{grid-template-columns:1fr 60px}.obs-span-track{grid-column:1/-1}}
-/* Onda 10 — Administração › Conexões */
+/* Wave 10 — Administration › Connections */
 .ops-steps li.failed{opacity:1}
 .ops-steps li.failed .ops-step-dot{background:var(--color-danger);border-color:var(--color-danger)}
 .conn-actions{justify-content:flex-start}
@@ -147,11 +147,11 @@
 .conn-h{font-size:var(--font-size-md);margin:0}
 .conn-modal{max-height:90vh;overflow-y:auto}
 .conn-chip{display:inline-block;margin:0 var(--space-4) var(--space-4) 0;padding:var(--space-2) var(--space-6);border:1px solid var(--color-border-strong);border-radius:var(--radius-md);font-size:var(--font-size-2xs);color:var(--color-text-strong)}
-/* Onda 12 (2.1): revisão do JavaScript próprio de um pacote. */
+/* Wave 12 (2.1): review of a package's own JavaScript. */
 .ops-revise{margin-top:var(--space-10);padding:var(--space-10);border:1px solid var(--color-warning-shape);border-radius:var(--radius-sm);display:grid;gap:6px;max-width:520px}
 .ops-revise .ops-hash{word-break:break-all;font-size:var(--font-size-xs)}
 
-/* Identidade Alvesmaia: selos de status (fundo/texto da paleta), raio 11, 13px/700. */
+/* Alvesmaia identity: status badges (palette background/text), radius 11, 13px/700. */
 .ops-pill-ok{background:var(--color-success-soft);color:var(--color-success)}
 .ops-pill-warn{background:var(--color-warning-soft);color:var(--color-warning)}
 .ops-pill-err{background:var(--color-danger-soft);color:var(--color-danger)}
@@ -163,7 +163,7 @@
 .env-key,.env-value,.env-table code{font-size:12px}
 .env-table .env-value-trunc{max-width:220px}
 
-/* Variáveis: tabela compacta e sem rolagem horizontal (linhas ~36–38px, colunas fixas). */
+/* Variables: compact table with no horizontal scrolling (rows ~36–38px, fixed columns). */
 .content-panel:has(> .env-table){padding:0;border:0;margin:0;overflow:visible}
 .env-table{table-layout:fixed;width:100%;min-width:0}
 .env-table th:nth-child(1){width:34%}.env-table th:nth-child(2){width:14%}.env-table th:nth-child(3){width:28%}.env-table th:nth-child(4){width:18%}.env-table th:nth-child(5){width:6%}
@@ -189,11 +189,11 @@ td.ops-actions{display:table-cell}
 .env-table td .env-actions{min-width:0;justify-content:flex-start}
 .env-table .env-chip:first-child{min-width:0;flex:0 1 auto}
 
-/* Pipeline: passo pendente legível (sem opacidade); o estado vem do ponto. */
+/* Pipeline: pending step readable (no opacity); the state comes from the dot. */
 .ops-steps li{opacity:1}
 .ops-steps li:not(.running):not(.done):not(.skipped):not(.failed):not(.warn) strong{color:var(--color-text-secondary)}
 .ops-steps li small{color:var(--color-text-secondary)}
-/* Containers: nome numa linha (reticências), pílulas na segunda, métricas alinhadas. */
+/* Containers: name on one line (ellipsis), pills on the second, metrics aligned. */
 .ops-container-top{align-items:flex-start}
 .ops-container-id{flex:1;min-width:0;display:grid;gap:4px}
 .ops-container-id>strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;word-break:normal;font-size:13px}
@@ -207,7 +207,7 @@ td.ops-actions{display:table-cell}
 .ops-legend{row-gap:6px}
 .ops-grid-2>*{min-width:0}
 .ops-grid-2{align-items:start}
-/* Observabilidade: eixo Y com rótulos, estado vazio centralizado, auto-refresh na barra. */
+/* Observability: Y axis with labels, empty state centered, auto-refresh on the bar. */
 .obs-plot{position:relative;padding-left:44px}
 .obs-y{position:absolute;left:0;width:40px;text-align:right;font-size:11px;color:var(--color-text-secondary);transform:translateY(-50%);font-variant-numeric:tabular-nums}
 .obs-y-top{top:2px}
@@ -216,8 +216,8 @@ td.ops-actions{display:table-cell}
 .obs-plot-empty{position:absolute;inset:0 0 0 44px;display:grid;place-items:center;color:var(--color-text-secondary);font-size:13px}
 .obs-filter-row{align-items:center}
 .obs-filter-row .obs-refresh{margin-left:auto;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:13px;color:var(--color-text-secondary)}
-/* Containers (estilo Docker Desktop): lista limpa + painel de detalhes. Um único ícone
- * neutro para todos; cor só no estado com problema. */
+/* Containers (Docker Desktop style): clean list + details panel. A single neutral icon
+ * for all; color only in the state with a problem. */
 .ops-ct-panel{padding:0;overflow:hidden;min-width:0;max-width:100%;contain:inline-size}
 .ops-ct-scroll{max-width:100%;position:relative}
 .ops-ct-title{margin:0;font-size:var(--font-size-lg);font-weight:700;color:var(--color-text-strong)}
@@ -277,7 +277,7 @@ body.ops-drawer-open{overflow:hidden}
 }
 .ops-ct-table code{background:transparent!important;padding:0!important;border:0!important}
 
-/* Tarefas: tabela de layout fixo que cabe no cartão (sem rolagem horizontal >= 1280) */
+/* Tasks: fixed-layout table that fits the card (no horizontal scrolling >= 1280) */
 .tasks-table{table-layout:fixed;width:100%}
 .tasks-table th,.tasks-table td{overflow:hidden;overflow-wrap:break-word;white-space:normal;vertical-align:middle}
 .tasks-table th:nth-child(1){width:19%}.tasks-table th:nth-child(2){width:12%}.tasks-table th:nth-child(3){width:9%}
@@ -288,7 +288,7 @@ body.ops-drawer-open{overflow:hidden}
 .tasks-table .col-act .ops-actions{flex-wrap:nowrap;gap:4px}
 .tasks-table .task-icon-btn{min-width:28px;padding:3px 6px;line-height:1}
 @media (max-width:1439px){.tasks-table .col-origem,.tasks-table .col-tent{display:none}}
-/* Abaixo de 1280: colunas secundárias somem e o cartão rola em vez de cortar controles */
+/* Below 1280: secondary columns disappear and the card scrolls instead of cutting controls */
 @media (max-width:1279px){
 .deploys-table th:nth-child(4),.deploys-table td:nth-child(4),.deploys-table th:nth-child(5),.deploys-table td:nth-child(5){display:none}
 .policies-table th:nth-child(4),.policies-table td:nth-child(4),.policies-table th:nth-child(5),.policies-table td:nth-child(5){display:none}

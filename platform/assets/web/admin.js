@@ -1,13 +1,13 @@
-/* admin.js — interações da Administração (e do submenu do rail) no shell do hub.
+/* admin.js — Administration interactions (and of the rail's submenu) in the hub shell.
  *
- * As páginas /admin/* chegam prontas do servidor; este script só:
- *   - abre/fecha o submenu "Administração" do rail;
- *   - abre modais de criar/editar, menus de linha (editar/excluir), revela segredos,
- *     alterna permissões, salva configurações e dispara "Verificar agora";
- *   - conversa com a API JSON (/api/admin/*, sempre application/json) e recarrega a
- *     página após cada mutação (a verdade fica no servidor);
- *   - mantém o console de logs (filtros + "Tempo real" via SSE).
- * Valores vindos do usuário/servidor entram no DOM só por textContent/value/esc(). */
+ * The /admin/* pages arrive ready from the server; this script only:
+ *   - opens/closes the "Administration" submenu of the rail;
+ *   - opens create/edit modals, row menus (edit/delete), reveals secrets,
+ *     toggles permissions, saves settings and triggers "Check now";
+ *   - talks to the JSON API (/api/admin/*, always application/json) and reloads the
+ *     page after each mutation (the truth stays on the server);
+ *   - keeps the log console (filters + "Real time" via SSE).
+ * Values coming from the user/server enter the DOM only through textContent/value/esc(). */
 (function () {
   'use strict';
 
@@ -24,7 +24,7 @@
   };
   const svg = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[name]}</svg>`;
 
-  // ---- toast (mesmo comportamento do mockup) ---------------------------------
+  // ---- toast (same behavior as the mockup) ---------------------------------
   let toastTimer;
   function toast(message, kind) {
     const el = document.getElementById('toast');
@@ -36,16 +36,16 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
   }
-  // Mensagem a exibir depois do reload que segue uma mutação.
+  // Message to show after the reload that follows a mutation.
   function reloadWithToast(message) {
-    try { sessionStorage.setItem('hub-admin-toast', message); } catch (e) { /* sem storage: só recarrega */ }
+    try { sessionStorage.setItem('hub-admin-toast', message); } catch (e) { /* no storage: just reloads */ }
     location.reload();
   }
   try {
     const pending = sessionStorage.getItem('hub-admin-toast');
     if (pending) {
       sessionStorage.removeItem('hub-admin-toast');
-      // Mensagem depois de uma mutação concluída: sucesso.
+      // Message after a completed mutation: success.
       setTimeout(() => toast(pending, 'success'), 50);
     }
   } catch (e) { /* ignore */ }
@@ -73,7 +73,7 @@
   const metaEl = $('[data-admin-meta]');
   const meta = metaEl ? JSON.parse(metaEl.dataset.adminMeta) : { apps: [], permissions: [] };
 
-  // ---- rail: submenu Administração -------------------------------------------
+  // ---- rail: Administration submenu -------------------------------------------
   document.addEventListener('click', (e) => {
     const toggle = e.target.closest('[data-rail-toggle]');
     if (!toggle) return;
@@ -85,7 +85,7 @@
     toggle.setAttribute('aria-expanded', String(open));
   });
 
-  // ---- modal genérico -------------------------------------------------------
+  // ---- generic modal -------------------------------------------------------
   const KINDS = {
     env: { label: 'variável', create: 'Nova variável', path: '/env', created: 'Variável criada com sucesso.', updated: 'Variável atualizada.', deleted: 'Variável excluída.' },
     role: { label: 'função', create: 'Nova função', path: '/roles', created: 'Função criada com sucesso.', updated: 'Função atualizada.', deleted: 'Função excluída.' },
@@ -134,7 +134,7 @@
     if (f.type === 'bindings') {
       const has = (app, env) => f.value.some((b) => b.app === app && b.env === env);
       const envs = [['staging', 'Staging'], ['producao', 'Produção']];
-      // Grade aplicação × ambiente: linhas = apps, colunas = Staging/Produção.
+      // Application × environment grid: rows = apps, columns = Staging/Production.
       return `<fieldset class="form-field binding-grid"><legend>${esc(f.label)}</legend><table class="binding-table"><thead><tr><th scope="col">Aplicação</th>${envs.map(([, l]) => `<th scope="col">${l}</th>`).join('')}</tr></thead><tbody>${meta.apps
         .map((a) => `<tr><th scope="row">${esc(a.name || a.short)}</th>${envs.map(([e, l]) => `<td><input type="checkbox" data-field-binding data-app="${esc(a.id)}" data-env="${e}" aria-label="${esc(a.name || a.short)} · ${l}" ${has(a.id, e) ? 'checked' : ''}/></td>`).join('')}</tr>`)
         .join('')}</tbody></table></fieldset>`;
@@ -165,7 +165,7 @@
     const close = () => host.remove();
     $('.modal-close', host).onclick = close;
     $('.modal-cancel', host).onclick = close;
-    // Clicar fora não fecha (o que foi digitado se perderia); Esc só fecha sem alterações.
+    // Clicking outside does not close (what was typed would be lost); Esc only closes without changes.
     host.addEventListener('input', () => { host.dataset.dirty = '1'; }); host.addEventListener('change', () => { host.dataset.dirty = '1'; });
     const errorEl = $('.modal-error', host);
     $('form', host).onsubmit = async (e) => {
@@ -204,7 +204,7 @@
 
   function closeOverlay() { $$('.overlay').forEach((o) => o.remove()); }
 
-  // ---- menus de linha -------------------------------------------------------
+  // ---- row menus -------------------------------------------------------
   function closeRowMenu() { $('.row-menu')?.remove(); }
 
   function openRowMenu(button) {
@@ -291,7 +291,7 @@
     }
   });
 
-  // Permissões das funções.
+  // Role permissions.
   document.addEventListener('change', async (e) => {
     const box = e.target.closest('[data-role-perm]');
     if (!box) return;
@@ -306,7 +306,7 @@
     }
   });
 
-  // Aplicações permitidas por função (todas = null).
+  // Applications allowed per role (all = null).
   document.addEventListener('change', async (e) => {
     const box = e.target.closest('[data-role-app], [data-role-app-all]');
     if (!box) return;
@@ -316,7 +316,7 @@
     const items = $$('[data-role-app]', wrap);
     if (box === all) items.forEach((i) => { i.checked = all.checked; });
     else all.checked = items.every((i) => i.checked);
-    // "Todas" marcada: as individuais ficam marcadas e travadas (redundantes).
+    // "All" checked: the individual ones stay checked and locked (redundant).
     items.forEach((i) => { i.disabled = all.checked; });
     const apps = all.checked ? null : items.filter((i) => i.checked).map((i) => i.dataset.roleApp);
     try {
@@ -327,7 +327,7 @@
     }
   });
 
-  // Busca local nas tabelas.
+  // Local search in the tables.
   document.addEventListener('input', (e) => {
     const input = e.target.closest('[data-table-search]');
     if (!input) return;
@@ -336,7 +336,7 @@
     $$('tr', table).forEach((tr) => { tr.hidden = q && !tr.textContent.toLowerCase().includes(q); });
   });
 
-  // Configurações.
+  // Settings.
   const settingsForm = $('[data-admin-settings]');
   if (settingsForm) {
     settingsForm.addEventListener('submit', async (e) => {
@@ -375,7 +375,7 @@
       const div = document.createElement('div');
       div.className = 'log-line' + (fresh ? ' log-line-new' : '');
       for (const [c, text] of [['log-time', l.time], [`log-level ${cls}`, l.level], ['log-app', appName(l.app)], ['log-user', l.user ? '@' + l.user : ''], ['log-msg', l.message]]) {
-        // Mensagem = dado técnico do log (monoespaçado, como no servidor).
+        // Message = technical log data (monospaced, as on the server).
         const s = document.createElement(c === 'log-msg' ? 'code' : 'span');
         s.className = c;
         s.textContent = text;
@@ -415,9 +415,9 @@
       status.classList.toggle('connected', on);
       status.innerHTML = `<i class="log-status-dot"></i>${on ? 'Conectado' : 'Parado'}`;
     }
-    // Tempo real: UMA conexão SSE para todas as abas (logshare.js: líder com a trava do
-    // navegador abre o EventSource sem filtro e repassa por BroadcastChannel; cada aba
-    // filtra localmente). Sem logshare.js, conexão própria filtrada no servidor.
+    // Real time: ONE SSE connection for all tabs (logshare.js: the leader, with the browser
+    // lock, opens the EventSource without a filter and relays it through BroadcastChannel; each tab
+    // filters locally). Without logshare.js, its own connection filtered on the server.
     function stop() { if (share) { share.stop(); share = null; } setLive(false); }
     function append(l) {
       $('.log-empty', terminal)?.remove();

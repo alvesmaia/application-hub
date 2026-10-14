@@ -3,15 +3,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { HUB, WORK_DIR, apiAs, json, openApp, stateFile } from './helpers';
 
-// Onda 13 — app Coletor (Python/FastAPI: Escanear, Folha de teste com Leituras ao vivo,
-// Diagnóstico) e os recursos do aparelho do hub (hub-device.js): câmera falsa do Chromium
-// com um quadro .y4m → ZXing do hub; BarcodeDetector simulado (formatos do modo QR/barras),
-// leitor tipo teclado, fila offline, diagnóstico, folha (SVG decodificável) e PWA.
+// Wave 13 — Coletor app (Python/FastAPI: Scan, Test sheet with Live readings,
+// Diagnostics) and the hub's device features (hub-device.js): Chromium's fake camera
+// with a .y4m frame → the hub's ZXing; simulated BarcodeDetector (formats of the QR/barcode mode),
+// keyboard-wedge reader, offline queue, diagnostics, sheet (decodable SVG) and PWA.
 
-const EAN = '7890000000017'; // item 1 do catálogo (COL-0001)
+const EAN = '7890000000017'; // item 1 of the catalog (COL-0001)
 const VENDOR = path.join(__dirname, '..', '..', 'assets', 'shell', 'vendor', 'zxing.min.js');
 
-/** Quadro .y4m (640×480, 4:2:0) com o SVG desenhado no centro — vira a "câmera" do Chromium. */
+/** .y4m frame (640×480, 4:2:0) with the SVG drawn in the center — becomes Chromium's "camera". */
 async function makeY4m(svg: string, file: string, bw = 520, bh = 300) {
   const b = await chromium.launch();
   const p = await b.newPage();
@@ -41,14 +41,14 @@ async function codeSvg(page: Page, fmt: string) {
   return html.includes('xmlns=') ? html : html.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
 }
 
-/** Navegador com câmera falsa mostrando `y4m`, já logado como admin. */
+/** Browser with a fake camera showing `y4m`, already logged in as admin. */
 async function cameraBrowser(y4m: string): Promise<{ b: Browser; page: Page }> {
   const b = await chromium.launch({ args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', `--use-file-for-fake-video-capture=${y4m}`] });
   const ctx = await b.newContext({ storageState: stateFile('admin'), viewport: { width: 390, height: 844 }, locale: 'pt-BR', baseURL: HUB, permissions: ['camera'] });
   return { b, page: await ctx.newPage() };
 }
 
-/** Abre uma tela do app no celular (a sidebar vira o menu de cima para baixo). */
+/** Opens an app screen on the phone (the sidebar becomes the top-down menu). */
 async function openMobile(page: Page, url: string) {
   await page.goto(url);
   await expect(page.locator('#app-root .workspace-content h1')).toBeVisible({ timeout: 30_000 });
@@ -60,13 +60,13 @@ async function resetReads() {
   const api = await apiAs('admin');
   await api.post('/_frag/coletor/folha/limpar', { headers: { 'idempotency-key': `e2e-${Date.now()}-${Math.random()}` } });
   await api.post('/_frag/coletor/escanear/modo', { form: { modo: 'barras' }, headers: { 'idempotency-key': `e2e-m-${Date.now()}-${Math.random()}` } });
-  // Leitor automático sem pausa (leitor físico): cada código diferente entra na hora.
+  // Automatic reader without a pause (physical reader): each different code goes in right away.
   await api.post('/_frag/coletor/sessao/cancelar', { form: { tela: 'folha' }, headers: { 'idempotency-key': `e2e-s-${Date.now()}-${Math.random()}` } });
   await api.post('/_frag/coletor/escanear/leitor', { form: { leitor: 'automatico', pausa: '0' }, headers: { 'idempotency-key': `e2e-l-${Date.now()}-${Math.random()}` } });
   await api.dispose();
 }
 
-/** Folha de teste aberta "no computador" (outro contexto, mesmo usuário). */
+/** Test sheet opened "on the computer" (another context, same user). */
 async function openSheet(browser: Browser) {
   const ctx = await browser.newContext({ storageState: stateFile('admin'), baseURL: HUB, viewport: { width: 1440, height: 900 } });
   const sheet = await ctx.newPage();
@@ -75,7 +75,7 @@ async function openSheet(browser: Browser) {
   return { ctx, sheet };
 }
 
-/** Câmera simulada (canvas) + BarcodeDetector simulado que guarda os formatos pedidos. */
+/** Simulated camera (canvas) + simulated BarcodeDetector that stores the formats requested. */
 function mockDetector(page: Page, reads: { rawValue: string; format: string }[]) {
   return page.addInitScript((list) => {
     (window as any).__fmts = [];
@@ -118,7 +118,7 @@ test.describe('Coletor', () => {
     await page.keyboard.press('Enter');
     await expect(card).toHaveAttribute('data-col-last', 'desconhecido');
     await expect(page.locator('#scan-result .col-read')).toHaveCount(2);
-    // Folha no computador: as duas leituras ao vivo (WebSocket), a mais nova primeiro.
+    // Sheet on the computer: the two live readings (WebSocket), the newest first.
     await expect(sheet.locator('#live-reads [data-col-count]')).toHaveAttribute('data-col-count', '2', { timeout: 4_000 });
     await expect(sheet.locator('#live-reads .col-read').first()).toContainText('Código desconhecido');
     await expect(sheet.locator('#live-reads .col-read').nth(1)).toContainText(/Item: .*EAN-13/s);
@@ -133,7 +133,7 @@ test.describe('Coletor', () => {
     const { ctx, sheet } = await openSheet(browser);
     const ean = await codeSvg(sheet, 'ean_13');
     const eanY4m = path.join(WORK_DIR, 'coletor-ean13.y4m');
-    // Pequeno o bastante para caber no quadro de mira (só ele é lido) no celular em pé.
+    // Small enough to fit in the aiming frame (only it is read) on a phone held upright.
     await makeY4m(ean, eanY4m, 230, 120);
     const { b, page } = await cameraBrowser(eanY4m);
     try {
@@ -167,7 +167,7 @@ test.describe('Coletor', () => {
     await expect(page.locator('.hub-camera-status')).toContainText('Modo código de barras — troque para QR', { timeout: 10_000 });
     await expect(page.locator('.hub-camera')).toHaveAttribute('data-wrong', /[1-9]/);
     await expect(page.locator('.hub-camera')).not.toHaveAttribute('data-reads', /[1-9]/);
-    // Troca para QR dentro da câmera: o app grava (prefs) e o botão guarda o modo.
+    // Switches to QR inside the camera: the app records it (prefs) and the button keeps the mode.
     const saved = page.waitForResponse((r) => r.url().includes('/escanear/prefs') && r.status() === 204);
     await page.locator('.hub-camera-modes [data-mode="qr"]').click();
     await saved;
@@ -176,24 +176,24 @@ test.describe('Coletor', () => {
     await expect(page.locator('#app-root [data-hub-scan]')).toHaveAttribute('data-hub-scan-formats', 'ean_13,ean_8,upc_a,upc_e,code_128,code_39,itf|qr_code,data_matrix');
     await page.locator('#app-root [data-hub-scan]').click();
     await expect(page.locator('.hub-camera-aim')).toHaveClass(/hub-camera-aim-square/);
-    // O último leitor criado é o de aviso (formatos do outro modo); o principal vem antes.
+    // The last reader created is the warning one (formats of the other mode); the main one comes first.
     await expect.poll(() => page.evaluate(() => JSON.stringify((window as any).__fmts.slice(-2)))).toBe(JSON.stringify([['qr_code', 'data_matrix'], ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf']]));
     await expect(page.locator('#scan-result [data-col-last]')).toHaveAttribute('data-col-last', 'pedido', { timeout: 10_000 });
     await expect(page.locator('#scan-result [data-col-last]')).toContainText('QR Code · câmera');
     await page.locator('.hub-camera-close').click();
-    // Lembrado por usuário: recarregar mantém o QR; o campo do leitor continua igual.
+    // Remembered per user: reloading keeps QR; the reader's field stays the same.
     await page.reload();
     await expect(page.locator('#app-root [data-hub-scan]')).toHaveAttribute('data-hub-scan-mode', 'qr', { timeout: 30_000 });
     await expect(page.locator('#codigo')).toHaveAttribute('data-hub-wedge', '');
   });
 
   test('Escanear: tipo de código e modo do leitor só dentro da câmera; as trocas ficam lembradas', async ({ page }) => {
-    await resetReads(); // barras + Automático sem pausa
+    await resetReads(); // barcode + Automatic without a pause
     await mockDetector(page, []);
     await openApp(page, '/apps/coletor/escanear');
     const root = page.locator('#app-root');
     await expect(root.locator('[data-hub-scan]')).toBeVisible();
-    // Antes de abrir a câmera: nenhum seletor na página.
+    // Before opening the camera: no selector on the page.
     await expect(root.locator('[role="group"], .col-seg, select#pausa, #scan-mode-field')).toHaveCount(0);
     await expect(root.getByRole('button', { name: /^(QR|Código de barras|Interativo|Automático)$/ })).toHaveCount(0);
     await root.locator('[data-hub-scan]').click();
@@ -202,7 +202,7 @@ test.describe('Coletor', () => {
     await expect(top.getByRole('group', { name: 'Tipo de código' }).getByRole('button', { name: 'Código de barras' })).toHaveAttribute('aria-pressed', 'true');
     await expect(top.getByRole('group', { name: 'Modo do leitor' }).getByRole('button', { name: 'Automático' })).toHaveAttribute('aria-pressed', 'true');
     await expect(top.getByLabel('Pausa')).toHaveValue('0');
-    // Troca tudo dentro da câmera (cada troca vai para o app).
+    // Switches everything inside the camera (each switch goes to the app).
     let saved = page.waitForResponse((r) => r.url().includes('/escanear/prefs') && r.status() === 204);
     await top.getByLabel('Pausa').selectOption('3000');
     await saved;
@@ -216,7 +216,7 @@ test.describe('Coletor', () => {
     await expect(page.locator('.hub-camera-aim')).toHaveClass(/hub-camera-aim-square/);
     await page.keyboard.press('Escape');
     await expect(page.locator('.hub-camera')).toHaveCount(0);
-    // Reabrir e recarregar: as escolhas continuam.
+    // Reopen and reload: the choices persist.
     for (const step of ['reabrir', 'recarregar']) {
       if (step === 'recarregar') { await page.reload(); await expect(root.locator('[data-hub-scan]')).toHaveAttribute('data-hub-scan-reader', 'interativo', { timeout: 30_000 }); }
       await root.locator('[data-hub-scan]').click();
@@ -309,12 +309,12 @@ test.describe('Coletor', () => {
     await expect(page.locator('#app-root [data-hub-print]')).toBeVisible();
     const svgs: Record<string, string> = {};
     for (const f of ['ean_13', 'code_128', 'qr_code', 'data_matrix']) svgs[f] = await codeSvg(page, f);
-    // Página em branco (sem a CSP do hub) com o mesmo decodificador que o hub serve.
+    // Blank page (without the hub's CSP) with the same decoder the hub serves.
     const p = await browser.newPage();
     await p.setContent('<canvas id="c" width="900" height="500"></canvas>');
     await p.addScriptTag({ path: VENDOR });
-    // Mesmo método do hub (ZXing em JS puro, sem WebAssembly): tamanhos de leitura numa
-    // tela de computador; tenta as escalas que o hub usa em rodízio.
+    // Same method as the hub (ZXing in pure JS, no WebAssembly): reading sizes on a
+    // computer screen; tries the scales the hub uses in rotation.
     const out = await p.evaluate(async (all) => {
       const Z = (window as any).ZXing;
       const res: Record<string, string> = {};

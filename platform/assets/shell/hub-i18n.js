@@ -1,12 +1,12 @@
-/* hub-i18n.js — tradução do que o JavaScript das telas do hub escreve depois da
- * página carregar (onda 12, item 2.8): toasts, modais, linhas de tabela, mensagens de
- * erro e `alert`/`confirm`/`prompt`.
+/* hub-i18n.js — translation of what the hub screens' JavaScript writes after the page has
+ * loaded (wave 12, item 2.8): toasts, modals, table rows, error messages and
+ * `alert`/`confirm`/`prompt`.
  *
- * O servidor já entrega a página traduzida (`hub_shell::tr`); este script usa o mesmo
- * catálogo (`/assets/i18n/<idioma>.json`: chave = texto-fonte em pt-BR, com moldes
- * `{…}` para partes variáveis) e observa o DOM. Em pt-BR não faz nada. Nunca toca em
- * `<script>`, `<style>`, `<textarea>`, `<pre>`, `<code>`, valores de campos nem em
- * elementos com `translate="no"` (dados do usuário).
+ * The server already delivers the page translated (`hub_shell::tr`); this script uses the
+ * same catalog (`/assets/i18n/<language>.json`: key = source text in pt-BR, with templates
+ * `{…}` for variable parts) and observes the DOM. In pt-BR it does nothing. It never touches
+ * `<script>`, `<style>`, `<textarea>`, `<pre>`, `<code>`, field values, or elements with
+ * `translate="no"` (user data).
  */
 (function () {
   'use strict';
@@ -15,7 +15,7 @@
     'data-label', 'data-empty', 'data-hint', 'data-toast'];
   const SKIP = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'PRE', 'CODE', 'NOSCRIPT']);
 
-  // ---- Lógica pura (testada em node) ------------------------------------------------
+  // ---- Pure logic (tested in node) ------------------------------------------------
   const MARK = /\{[^{}\s"]{0,24}\}/g;
 
   function firstWord(s) {
@@ -64,7 +64,7 @@
     });
   }
 
-  /** Catálogo pronto para consulta a partir do JSON do servidor. */
+  /** Catalog ready to query from the server's JSON. */
   function prepare(c) {
     const exact = new Map(Object.entries(c.exact || {}));
     const templates = (c.templates || []).map(([s, d]) => compileTemplate(s, d))
@@ -112,7 +112,7 @@
     return { out, changed, leftover };
   }
 
-  /** Traduz um texto (preserva espaços nas pontas). */
+  /** Translates a text (keeps spaces at the edges). */
   function tr(cat, text) {
     if (!cat || typeof text !== 'string') return text;
     const trimmed = text.trim();
@@ -125,7 +125,7 @@
     for (const t of cat.templates) {
       const v = capture(t, norm);
       if (v) {
-        // valor que é ele mesmo texto do catálogo também troca (mesma regra do servidor)
+        // a value that is itself a catalog text is also translated (same rule as the server)
         const vals = v.map((x) => {
           const h = cat.exact.get(x.trim());
           return h === undefined ? x : x.replace(x.trim(), h);
@@ -138,8 +138,8 @@
       const out = parts.map((p) => tr(cat, p));
       if (out.some((p, i) => p !== parts[i])) return lead + out.join(' · ') + trail;
     }
-    // Frases longas (3+ palavras) em qualquer lugar; palavras soltas só se o texto
-    // inteiro ficar traduzido (mesma regra do servidor).
+    // Long phrases (3+ words) anywhere; single words only if the whole text
+    // gets translated (same rule as the server).
     let r = phrasePass(cat, norm, true);
     if (r.leftover) r = phrasePass(cat, norm, false);
     const { out, changed } = r;
@@ -155,7 +155,7 @@
   if (lang.startsWith('pt')) return;
   const code = 'en';
   let cat = null;
-  const done = new WeakMap(); // nó → texto que nós escrevemos (evita laço)
+  const done = new WeakMap(); // node → text that we wrote (avoids a loop)
 
   function skipped(el) {
     for (let e = el; e && e.nodeType === 1; e = e.parentElement) {
@@ -212,7 +212,7 @@
     });
   }
 
-  // Diálogos nativos: traduz a mensagem (sem catálogo ainda, passa como está).
+  // Native dialogs: translates the message (no catalog yet, passes it through as is).
   for (const f of ['alert', 'confirm', 'prompt']) {
     const orig = window[f];
     if (typeof orig !== 'function') continue;

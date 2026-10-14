@@ -2,8 +2,8 @@ import { test, expect, type Page, type APIRequestContext } from '@playwright/tes
 import AxeBuilder from '@axe-core/playwright';
 import { apiAs, json, newRoleContext, openApp, stateFile, uniq } from './helpers';
 
-// Onda 9 (Fase 3): onboarding guiado, Inbox (notificações e aprovações vindas dos apps),
-// busca global federada (⌘K), Início personalizável, analytics de uso, tema escuro,
+// Wave 9 (Phase 3): guided onboarding, Inbox (notifications and approvals coming from the apps),
+// federated global search (⌘K), customizable Home, usage analytics, dark theme,
 // idiomas e acessibilidade (axe, WCAG 2.2 AA).
 test.use({ storageState: stateFile('admin') });
 test.describe.configure({ mode: 'serial' });
@@ -28,11 +28,11 @@ test('onboarding: tour no primeiro acesso (teclado, interromper e retomar, pular
   const tour = page.getByRole('dialog', { name: 'Seu início' });
   await expect(tour).toBeVisible();
   await expect(tour).toContainText('Passo 1 de');
-  // Teclado: → avança; o foco fica no diálogo.
+  // Keyboard: → advances; focus stays in the dialog.
   await page.keyboard.press('ArrowRight');
   await expect(page.locator('.hub-tour')).toContainText('Passo 2 de');
   await expect(page.locator('.hub-tour-target')).toHaveCount(1);
-  // Esc interrompe e guarda o passo; recarregar retoma do mesmo ponto.
+  // Esc interrupts and saves the step; reloading resumes from the same point.
   await page.keyboard.press('Escape');
   await expect(page.locator('.hub-tour')).toHaveCount(0);
   await expect.poll(async () => (await json(await api.get('/api/me/prefs'))).tour).toBe('step:1');
@@ -43,19 +43,19 @@ test('onboarding: tour no primeiro acesso (teclado, interromper e retomar, pular
   await page.reload();
   await page.waitForTimeout(800);
   await expect(page.locator('.hub-tour')).toHaveCount(0);
-  // Primeiros passos: abrir um app marca o passo sozinho (servidor).
+  // First steps: opening an app ticks the step by itself (server).
   await expect(page.locator('[data-widget="onboarding"]')).toBeVisible();
   await openApp(page, '/apps/fornecedores/indicators');
   await page.goto('/');
   await expect(page.locator('li[data-step="open_app"]')).toHaveClass(/done/);
-  // O operador (Tech Lead) vê os passos de administrador que pode fazer.
+  // The operator (Tech Lead) sees the administrator steps they can do.
   await expect(page.locator('li[data-step="variable"]')).toBeVisible();
   await expect(page.locator('li[data-step="package"]')).toBeVisible();
-  // Tour de novo pelo menu do usuário.
+  // Tour again through the user menu.
   await page.locator('.hub-user-menu summary').click();
   await page.locator('.hub-user-menu [data-hub-tour-start]').click();
   await expect(page.locator('.hub-tour')).toContainText('Passo 1 de');
-  // Esc fecha mesmo com o foco fora do tour; o botão Fechar também.
+  // Esc closes even with focus outside the tour; the Close button too.
   await page.locator('body').focus();
   await page.keyboard.press('Escape');
   await expect(page.locator('.hub-tour')).toHaveCount(0);
@@ -70,7 +70,7 @@ test('onboarding: tour no primeiro acesso (teclado, interromper e retomar, pular
 test('inbox: aprovação do servicos de ponta a ponta (outbox → Inbox → decisão pelo canal interno → chamado)', async ({ browser }) => {
   test.setTimeout(180_000);
   const title = `Aprovação E2E ${RUN}`;
-  // Operador abre um chamado que precisa de aprovação.
+  // Operator opens a request that needs approval.
   const octx = await newRoleContext(browser, 'operador');
   const op = await octx.newPage();
   await openApp(op, '/apps/servicos/requests?new=1');
@@ -83,7 +83,7 @@ test('inbox: aprovação do servicos de ponta a ponta (outbox → Inbox → deci
   const proto = ((await op.locator('#ticket-new').innerText()).match(/SD-\d{4}-\d+/) || [])[0];
   expect(proto, 'protocolo do chamado').toBeTruthy();
 
-  // A administradora recebe o pedido na Inbox (contador ao vivo) e aprova.
+  // The administrator receives the request in the Inbox (live counter) and approves it.
   const admin = await apiAs('admin');
   await expect
     .poll(async () => (await inboxItems(admin, 'approvals')).find((i) => i.title.includes(proto!))?.approval?.status, { timeout: 60_000 })
@@ -97,23 +97,23 @@ test('inbox: aprovação do servicos de ponta a ponta (outbox → Inbox → deci
   await item.locator('[data-decide-comment]').fill('Liberado pelo E2E');
   await item.locator('button[data-decide="approve"]').click();
   await expect(ap.locator('.hub-inbox-item').filter({ hasText: proto! }).locator('.hub-approval')).toHaveAttribute('data-status', 'approved');
-  // O quem pediu não pode decidir o próprio pedido (API).
+  // The requester cannot decide their own request (API).
   const opApi = await apiAs('operador');
   const mine = (await inboxItems(opApi)).find((i) => i.title.includes(proto!));
   expect(mine?.approval?.can_decide ?? false).toBe(false);
 
-  // O chamado mudou no app (a decisão voltou pelo /_hub/approvals) e o operador foi avisado.
+  // The request changed in the app (the decision came back through /_hub/approvals) and the operator was notified.
   await openApp(op, `/apps/servicos/requests?protocolo=${proto}`);
   await expect(op.locator('#app-root')).toContainText('Em atendimento');
   await expect
     .poll(async () => (await inboxItems(opApi, 'notifications')).some((i) => i.title.includes(`${proto} aprovado`)), { timeout: 60_000 })
     .toBe(true);
-  // Ao vivo: o sino do operador mostra não lidas sem recarregar.
+  // Live: the operator's bell shows unread items without reloading.
   await op.goto('/inbox');
   await expect(op.locator('.hub-inbox-item').filter({ hasText: `${proto} aprovado` })).toBeVisible();
   const n = Number(await op.locator('.hub-notif-menu').getAttribute('data-hub-notifications'));
   expect(n).toBeGreaterThan(0);
-  // Marcar como lido e arquivar.
+  // Mark as read and archive.
   const note = op.locator('.hub-inbox-item').filter({ hasText: `${proto} aprovado` });
   if (await note.locator('[data-read]').count()) await note.locator('[data-read]').click();
   await note.locator('[data-archive="1"]').click();
@@ -126,7 +126,7 @@ test('inbox: aprovação do servicos de ponta a ponta (outbox → Inbox → deci
 
 test('inbox: pedido de acesso a app fora da lista → administrador aprova → acesso liberado; preferências de canal', async ({ browser }) => {
   const admin = await apiAs('admin');
-  // Colaborador (leitora) sem o app servicos.
+  // Collaborator (reader) without the servicos app.
   expect((await admin.put('/api/admin/roles/Colaborador/apps', { data: { apps: ['ativos', 'fornecedores', 'coletor'] } })).status()).toBe(200);
   const lctx = await newRoleContext(browser, 'leitor');
   const lp = await lctx.newPage();
@@ -147,10 +147,10 @@ test('inbox: pedido de acesso a app fora da lista → administrador aprova → a
     expect((await lp.goto('/apps/servicos'))?.status()).toBe(200);
     const leitor = await apiAs('leitor');
     await expect.poll(async () => (await inboxItems(leitor)).some((i) => i.title.includes('Acesso a Central de Serviços liberado'))).toBe(true);
-    // Revogar (Inbox do administrador).
+    // Revoke (administrator's Inbox).
     expect((await admin.post('/api/admin/grants/revoke', { data: { item: id } })).status()).toBe(200);
     expect((await lp.goto('/apps/servicos'))?.status()).toBe(403);
-    // Preferência de canal: notificações fora do contador do sino.
+    // Channel preference: notifications outside the bell counter.
     await lp.goto('/account#prefs');
     await lp.locator('input[name="notification.in_app"]').uncheck();
     await lp.locator('[data-channel-form] button[type="submit"]').click();
@@ -176,20 +176,20 @@ test('busca ⌘K: plataforma + apps federados, teclado, listbox e buscas recente
   const listbox = dialog.getByRole('listbox');
   await expect(listbox.getByRole('option', { name: /Norte Tecnologia/ }).first()).toBeVisible({ timeout: 15_000 });
   await expect(listbox.getByRole('group').first()).toBeVisible();
-  // Grupo do app fornecedores (resultado federado pelo /_hub/search).
+  // Group of the fornecedores app (federated result through /_hub/search).
   await expect(dialog.locator('.hub-palette-group', { hasText: 'Rede de Fornecedores' })).toBeVisible();
-  // Setas movem a opção ativa (aria-activedescendant).
+  // Arrows move the active option (aria-activedescendant).
   await page.keyboard.press('ArrowDown');
   const active = await input.getAttribute('aria-activedescendant');
   expect(active).toMatch(/^hub-po-/);
-  // Enter na opção do fornecedor abre o deep link.
+  // Enter on the supplier option opens the deep link.
   const opt = listbox.getByRole('option', { name: /Norte Tecnologia Fornecedor/ });
   const id = await opt.getAttribute('id');
   for (let i = 0; i < 12 && (await input.getAttribute('aria-activedescendant')) !== id; i++) await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/apps\/fornecedores\/indicators\?id=FOR-0284/);
   await expect(page.locator('#app-root .app-sidebar')).toBeVisible({ timeout: 30_000 });
-  // Dentro do app a paleta usa o índice local (CSP) e oferece a busca completa.
+  // Inside the app the palette uses the local index (CSP) and offers the full search.
   await page.keyboard.press('Control+k');
   await page.getByRole('combobox').fill('Ativos');
   await expect(page.getByRole('option', { name: /Gestão de Ativos/ })).toBeVisible();
@@ -201,7 +201,7 @@ test('busca ⌘K: plataforma + apps federados, teclado, listbox e buscas recente
   await page.keyboard.press('Control+k');
   await expect(page.getByRole('option', { name: 'Norte' })).toBeVisible();
   await page.keyboard.press('Escape');
-  // Página de resultados (sem JS) e busca sem resultado no analytics.
+  // Results page (no JS) and a search with no results in the analytics.
   await page.goto(`/search?q=zzz-nada-${RUN}`);
   await expect(page.locator('.empty-state')).toContainText('Nenhum resultado');
 });
@@ -220,7 +220,7 @@ test('início: personalizar (remover, reordenar pelo teclado, adicionar), favori
   // Remove "Atalhos".
   await page.locator('[data-widget="shortcuts"] [data-widget-remove]').click();
   await expect(page.locator('[data-widget="shortcuts"]')).toBeHidden();
-  // Move "Inbox" para cima pelo teclado.
+  // Moves "Inbox" up with the keyboard.
   const order = async () => page.locator('.hub-widget:not([hidden])').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.widget));
   const before = await order();
   const up = page.locator('[data-widget="inbox"] [data-widget-up]');
@@ -234,7 +234,7 @@ test('início: personalizar (remover, reordenar pelo teclado, adicionar), favori
   await page.reload();
   expect(await order()).toEqual(after);
   await expect(page.locator('[data-widget="shortcuts"]')).toBeHidden();
-  // Adicionar de volta e restaurar o padrão.
+  // Add back and restore the default.
   await page.locator('[data-home-customize]').click();
   await page.locator('[data-home-add]').selectOption('shortcuts');
   await page.locator('[data-home-add-btn]').click();
@@ -271,7 +271,7 @@ test('tema escuro e idioma: menu do usuário persiste no servidor; en/es no shel
   const ctx = await newRoleContext(browser, 'operador');
   const page = await ctx.newPage();
   try {
-    // Padrão = claro (mesmo com o SO escuro, sem escolha explícita); "auto" segue o SO.
+    // Default = light (even with the OS in dark, with no explicit choice); "auto" follows the OS.
     await prefs(api, { theme: '' });
     const osDark = await browser.newContext({ storageState: stateFile('operador'), colorScheme: 'dark' });
     const pd = await osDark.newPage();
@@ -284,7 +284,7 @@ test('tema escuro e idioma: menu do usuário persiste no servidor; en/es no shel
     expect(await pd.evaluate(() => getComputedStyle(document.body).backgroundColor)).not.toBe(lightBg);
     await osDark.close();
     await page.goto('/account');
-    // Configurações › Aparência: 3 opções (radiogroup), aplica na hora, sem recarregar, e grava.
+    // Settings › Appearance: 3 options (radiogroup), applies right away, without reloading, and saves.
     const seg = page.locator('.acct-theme-seg[role="radiogroup"]');
     await expect(seg.locator('[role="radio"]')).toHaveCount(3);
     await seg.locator('button[name="theme"][value="dark"]').click();
@@ -308,13 +308,13 @@ test('tema escuro e idioma: menu do usuário persiste no servidor; en/es no shel
     await page.goto('/applications');
     await expect(page.locator('.platform-rail')).toContainText('Home');
     await expect(page.locator('h1.page-title')).toHaveText('Applications');
-    // Fragmento Python traduzido (x-hub-locale do hub).
+    // Translated Python fragment (x-hub-locale of the hub).
     await openApp(page, '/apps/ativos/dashboard');
     await expect(page.locator('#app-root .page-title')).toHaveText('Overview');
     await expect(page.locator('#app-root')).toContainText('Back to platform');
     await openApp(page, '/apps/ativos/settings');
     await expect(page.locator('#app-root .page-title')).toHaveText('Settings');
-    // Automático: segue o Accept-Language do navegador (`es` saiu em 10/2026: vira en).
+    // Automatic: follows the browser's Accept-Language (`es` was dropped in 10/2026: becomes en).
     await prefs(api, { lang: '' });
     const ctx2 = await browser.newContext({ storageState: stateFile('operador'), locale: 'es-ES' });
     const p2 = await ctx2.newPage();
@@ -327,7 +327,7 @@ test('tema escuro e idioma: menu do usuário persiste no servidor; en/es no shel
   }
 });
 
-// ---- Acessibilidade: axe (WCAG 2.2 AA) nas páginas principais, 2 temas × 2 idiomas ----------
+// ---- Accessibility: axe (WCAG 2.2 AA) on the main pages, 2 themes × 2 languages ----------
 const PAGES = ['/', '/applications', '/inbox', '/search?q=norte', '/status', '/admin', '/admin/health', '/admin/connections', '/apps/ativos/assets', '/apps/servicos/requests', '/apps/fornecedores/indicators'];
 
 async function axe(page: Page) {
@@ -351,7 +351,7 @@ for (const theme of ['light', 'dark'] as const) {
           await expect(page.locator('html')).toHaveAttribute('lang', lang);
           for (const v of await axe(page)) found.push(`${p} ${v.id} (${v.nodes.length}): ${v.nodes.slice(0, 3).map((n) => n.target.join(' ')).join(' | ')}`);
         }
-        // Login (sem sessão) no mesmo tema/idioma do navegador.
+        // Login (no session) in the browser's theme/language.
         const anon = await browser.newContext({ colorScheme: theme, locale: lang });
         const lp = await anon.newPage();
         await lp.goto('/login');
@@ -373,14 +373,14 @@ test('acessibilidade: pular para o conteúdo, foco na troca de seção e Esc nos
   await expect(skip).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.locator('#app-root')).toBeFocused();
-  // Menu do usuário: Esc fecha e devolve o foco ao botão.
+  // User menu: Esc closes and returns focus to the button.
   await page.locator('.hub-user-menu summary').focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('.hub-user-menu')).toHaveAttribute('open', '');
   await page.keyboard.press('Escape');
   await expect(page.locator('.hub-user-menu')).not.toHaveAttribute('open', '');
   await expect(page.locator('.hub-user-menu summary')).toBeFocused();
-  // Troca de seção num app: o foco vai para o título da nova página.
+  // Section change in an app: focus goes to the title of the new page.
   await openApp(page, '/apps/ativos/dashboard');
   await page.locator('.sidebar-nav a.nav-item[href="/apps/ativos/assets"]').click();
   await expect(page).toHaveURL(/\/apps\/ativos\/assets$/);

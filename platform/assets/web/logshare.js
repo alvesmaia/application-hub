@@ -1,21 +1,21 @@
-/* logshare.js — uma única conexão SSE de logs para todas as abas (onda 5).
+/* logshare.js — a single SSE log connection for all tabs (wave 5).
  *
- * Cada aba com o console de logs em "Tempo real" disputa uma trava do navegador
- * (Web Locks: `navigator.locks.request('hub-logs-leader')`). Quem tem a trava é o
- * LÍDER: abre o único EventSource (sem filtro; cada aba filtra localmente) e repassa
- * cada linha às outras abas por BroadcastChannel('hub-logs'). As demais são
- * SEGUIDORAS: só escutam o canal e ficam na fila da trava. Quando a aba líder fecha
- * (ou pausa), o navegador libera a trava e a próxima da fila assume sozinha
- * (failover) — sem duas conexões ao mesmo tempo e sem linha duplicada.
- * Sem BroadcastChannel/Web Locks (navegador antigo), cada aba abre a sua conexão.
+ * Each tab with the log console in "Real time" competes for a browser lock
+ * (Web Locks: `navigator.locks.request('hub-logs-leader')`). Whoever holds the lock is the
+ * LEADER: it opens the only EventSource (no filter; each tab filters locally) and relays
+ * each line to the other tabs through BroadcastChannel('hub-logs'). The others are
+ * FOLLOWERS: they only listen to the channel and wait in the lock's queue. When the leader
+ * tab closes (or pauses), the browser releases the lock and the next one in the queue takes
+ * over by itself (failover) — no two connections at the same time and no duplicated line.
+ * Without BroadcastChannel/Web Locks (old browser), each tab opens its own connection.
  *
- * Testado em node (`node --test platform/assets/web/tests/`), com
- * BroadcastChannel/Web Locks simulados.
+ * Tested in node (`node --test platform/assets/web/tests/`), with
+ * simulated BroadcastChannel/Web Locks.
  */
 (function (global) {
   'use strict';
 
-  /** Linha passa pelos filtros do console (mesma regra de `LogFilter::matches`). */
+  /** A line passes the console filters (same rule as `LogFilter::matches`). */
   function matches(line, filter) {
     const app = filter.app || 'all';
     if (app !== 'all' && line.app !== app) return false;
@@ -26,14 +26,14 @@
   /**
    * @param {object} o
    * @param {() => {addEventListener: Function, close: Function, onerror?: any}} o.openSource
-   * @param {(line: object) => void} o.onLine  linha nova (já do stream compartilhado)
+   * @param {(line: object) => void} o.onLine  new line (already from the shared stream)
    * @param {(s: {connected: boolean, role: string}) => void} [o.onStatus]
-   * @param {any} [o.channel]  BroadcastChannel (padrão: global)
-   * @param {any} [o.locks]    navigator.locks (padrão: global)
+   * @param {any} [o.channel]  BroadcastChannel (default: global)
+   * @param {any} [o.locks]    navigator.locks (default: global)
    */
   function createLogShare(o) {
     const name = o.name || 'hub-logs';
-    // Nome do evento SSE repassado (onda 9: a Inbox usa `inbox` no mesmo mecanismo).
+    // Name of the SSE event relayed (wave 9: the Inbox uses `inbox` in the same mechanism).
     const eventName = o.event || 'log';
     const mkChannel = o.channel !== undefined ? () => o.channel : () => (typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(name) : null);
     const locks = o.locks !== undefined ? o.locks : (typeof navigator !== 'undefined' && navigator.locks) || null;
@@ -47,10 +47,10 @@
 
     const setT = o.setTimeout || ((f, ms) => setTimeout(f, ms));
     const clearT = o.clearTimeout || ((h) => clearTimeout(h));
-    // Reconexão da líder quando o EventSource fecha de vez (readyState CLOSED: 401,
-    // sessão vencida, hub reiniciando): espera crescente 1 s → 2 s → … → 30 s; depois
-    // de `maxFailures` tentativas sem `ready`, a aba devolve a liderança (outra aba,
-    // talvez com sessão válida, assume) e volta para a fila.
+    // Leader reconnection when the EventSource closes for good (readyState CLOSED: 401,
+    // expired session, hub restarting): increasing wait 1 s → 2 s → … → 30 s; after
+    // `maxFailures` attempts without `ready`, the tab hands back the leadership (another tab,
+    // perhaps with a valid session, takes over) and returns to the queue.
     const maxFailures = o.maxFailures || 5;
     let failures = 0;
     let retryTimer = null;
@@ -75,7 +75,7 @@
       });
       source.onerror = () => {
         announce(false);
-        // CLOSED (2): o navegador não tenta de novo sozinho.
+        // CLOSED (2): the browser does not retry on its own.
         if (source && source.readyState === 2) onClosed();
       };
     }
@@ -85,7 +85,7 @@
       if (!running || role !== 'líder') return;
       failures += 1;
       if (failures >= maxFailures && release) {
-        // Devolve a liderança e volta para a fila.
+        // Hands back the leadership and returns to the queue.
         const r = release;
         release = null;
         role = 'seguidora';
@@ -112,7 +112,7 @@
     function onMessage(ev) {
       const m = ev.data || {};
       if (role === 'líder') {
-        // Aba nova pedindo o estado atual da conexão.
+        // New tab asking for the current state of the connection.
         if (m.t === 'hello' && channel) channel.postMessage({ t: 'status', connected });
         return;
       }
@@ -126,9 +126,9 @@
       locks.request(`${name}-leader`, opts, () => {
         if (!running) return undefined;
         becomeLeader();
-        // A trava fica presa até esta aba parar, fechar ou devolver a liderança.
+        // The lock stays held until this tab stops, closes or hands back the leadership.
         return new Promise((resolve) => { release = resolve; });
-      }).catch(() => { /* pedido cancelado ao parar */ });
+      }).catch(() => { /* request cancelled on stop */ });
     }
 
     function start() {
@@ -136,14 +136,14 @@
       running = true;
       channel = mkChannel();
       if (!channel || !locks) {
-        // Sem suporte: conexão própria.
+        // No support: own connection.
         becomeLeader();
         return;
       }
       if (channel.addEventListener) channel.addEventListener('message', onMessage);
       else channel.onmessage = onMessage;
       role = 'seguidora';
-      // Só "conectada" quando uma líder confirmar (pergunta o estado atual).
+      // Only "connected" when a leader confirms (asks for the current state).
       status({ connected: false, role });
       channel.postMessage({ t: 'hello' });
       queue();

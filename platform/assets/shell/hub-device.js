@@ -1,76 +1,76 @@
-/* hub-device.js — recursos do APARELHO como comportamentos declarativos `data-hub-*`
- * (onda 13; JavaScript do hub, o app continua sem script próprio — CONTRATO-APP §13/§25).
- * Fica à parte do hub-kit.js só pelo tamanho: é carregado nas mesmas páginas de app e
- * segue as mesmas regras (referências só por id dentro do app, textos por textContent,
- * HTML recebido pelo sanitizador, URLs só do próprio app via /_frag).
+/* hub-device.js — device features as declarative `data-hub-*` behaviors
+ * (wave 13; hub JavaScript, the app still has no script of its own — CONTRATO-APP §13/§25).
+ * Kept apart from hub-kit.js only because of its size: it is loaded on the same pages as
+ * the apps and follows the same rules (references only by id inside the app, texts via
+ * textContent, app HTML through the sanitizer, URLs only from the app's own /_frag).
  *
- *   leitura por câmera   data-hub-scan (botão) + data-hub-scan-target="#campo"
+ *   camera reading       data-hub-scan (button) + data-hub-scan-target="#field"
  *                        [data-hub-scan-continuous] [data-hub-scan-formats="ean_13,qr_code,…"]
- *                        [data-hub-scan-format-target="#campo"] (recebe o formato lido)
- *                        [data-hub-scan-wrong-hint="Texto"] (código do outro tipo → aviso)
- *                        quadro de mira quadrado só com formatos 2D (qr_code/data_matrix)
- *                        alternância DENTRO da câmera: data-hub-scan-formats="lin…|qr_code,…"
- *                        (grupos por |) + data-hub-scan-modes="barras|qr" +
+ *                        [data-hub-scan-format-target="#field"] (receives the format read)
+ *                        [data-hub-scan-wrong-hint="Text"] (code of the other type → warning)
+ *                        square aiming frame only with 2D formats (qr_code/data_matrix)
+ *                        switching INSIDE the camera: data-hub-scan-formats="lin…|qr_code,…"
+ *                        (groups separated by |) + data-hub-scan-modes="barras|qr" +
  *                        data-hub-scan-mode-labels="Código de barras|QR" + data-hub-scan-mode
- *                        (atual) [+ data-hub-scan-mode-target="#campo": recebe a chave e um
- *                        `change`]; data-hub-scan-wrong-hint também aceita um texto por grupo
- *                        data-hub-scan-dedup="ms" (mesmo código ignorado na janela; padrão 1500)
- *                        na resposta: [data-hub-scan-next] (botão do app) → a câmera para e
- *                        mostra "Próximo"; data-hub-scan-cooldown="ms" → espera antes de ler
- *                        leitor DENTRO da câmera: data-hub-scan-reader="interativo|automatico"
- *                        + data-hub-scan-cooldown="ms" (pausa atual, no botão) +
+ *                        (current) [+ data-hub-scan-mode-target="#field": receives the key and a
+ *                        `change`]; data-hub-scan-wrong-hint also accepts one text per group
+ *                        data-hub-scan-dedup="ms" (same code ignored within the window; default 1500)
+ *                        on the response: [data-hub-scan-next] (app button) → the camera stops and
+ *                        shows "Próximo"; data-hub-scan-cooldown="ms" → wait before reading again
+ *                        reader INSIDE the camera: data-hub-scan-reader="interativo|automatico"
+ *                        + data-hub-scan-cooldown="ms" (current pause, on the button) +
  *                        [data-hub-scan-cooldowns="0|1000|…"] + [data-hub-scan-prefs="/apps/…"]
- *                        (POST modo/leitor/pausa a cada troca na barra de cima da camada)
- *                        só o quadro de mira é lido (recorte do vídeo + código ≥ 90 % dentro)
- *                        BarcodeDetector nativo; sem ele, @zxing/library (JS puro, servido em
- *                        /assets/vendor/, carregado só quando preciso — sem 'wasm-unsafe-eval')
- *   leitor tipo teclado  data-hub-wedge (campo): rajada rápida + Enter/Tab = leitura; repetição
- *                        em data-hub-wedge-debounce ms (padrão 800) é descartada
- *   retorno              data-hub-feedback="beep vibrate flash" (contêiner) + elemento
- *                        data-hub-feedback-result="ok|warn|error" na resposta (ou cabeçalho
- *                        X-Hub-Feedback nos envios da fila offline)
- *   foto                 data-hub-capture="#input-file" [data-hub-capture-preview="#id"]
- *                        câmera → JPEG ≤ 1600 px (0,8) → arquivo no <input type=file> do form
- *   fila offline         <form method=post data-hub-offline-queue="Rótulo">: sem rede, o envio
- *                        vai para o IndexedDB e é reenviado em ordem, com a MESMA
- *                        Idempotency-Key, quando a conexão volta; [data-hub-offline-status],
- *                        [data-hub-offline-text], [data-hub-offline-errors] mostram a fila
- *   instalação (PWA)     data-hub-install (botão), data-hub-install-ios / -done / -unavailable
- *   diagnóstico          [data-hub-diag] > [data-hub-diag-check="secure|online|pwa|camera|torch|
+ *                        (POST mode/reader/pause on every change in the top bar of the layer)
+ *                        only the aiming frame is read (video crop + code ≥ 90 % inside)
+ *                        native BarcodeDetector; without it, @zxing/library (pure JS, served from
+ *                        /assets/vendor/, loaded only when needed — no 'wasm-unsafe-eval')
+ *   keyboard-wedge reader data-hub-wedge (field): fast burst + Enter/Tab = reading; repetition
+ *                        within data-hub-wedge-debounce ms (default 800) is discarded
+ *   feedback             data-hub-feedback="beep vibrate flash" (container) + element
+ *                        data-hub-feedback-result="ok|warn|error" in the response (or X-Hub-Feedback
+ *                        header on offline queue submissions)
+ *   photo                data-hub-capture="#input-file" [data-hub-capture-preview="#id"]
+ *                        camera → JPEG ≤ 1600 px (0.8) → file put in the form's <input type=file>
+ *   offline queue        <form method=post data-hub-offline-queue="Label">: without network, the
+ *                        submission goes to IndexedDB and is resent in order, with the SAME
+ *                        Idempotency-Key, when the connection comes back; [data-hub-offline-status],
+ *                        [data-hub-offline-text], [data-hub-offline-errors] show the queue
+ *   installation (PWA)   data-hub-install (button), data-hub-install-ios / -done / -unavailable
+ *   diagnostics          [data-hub-diag] > [data-hub-diag-check="secure|online|pwa|camera|torch|
  *                        scan|wedge|beep|vibrate|capture|storage"] + [data-hub-diag-status],
  *                        [data-hub-diag-run], [data-hub-diag-wedge], [data-hub-diag-info],
  *                        [data-hub-diag-copy]
- *   impressão            data-hub-print (botão)
+ *   printing             data-hub-print (button)
  */
 (function () {
   'use strict';
-  /** Formatos aceitos (nomes do BarcodeDetector) → nome no ZXing.BarcodeFormat. */
+  /** Accepted formats (BarcodeDetector names) → name in ZXing.BarcodeFormat. */
   const FORMATS = { ean_13: 'EAN_13', ean_8: 'EAN_8', upc_a: 'UPC_A', upc_e: 'UPC_E', code_128: 'CODE_128', code_39: 'CODE_39', itf: 'ITF', codabar: 'CODABAR', qr_code: 'QR_CODE', data_matrix: 'DATA_MATRIX', pdf417: 'PDF_417' };
   const DEFAULT_FORMATS = ['ean_13', 'ean_8', 'upc_a', 'code_128', 'code_39', 'qr_code', 'data_matrix'];
   const Pure = {
     FORMATS,
-    /** Só formatos 2D (QR/DataMatrix/PDF417)? → mira quadrada. */
+    /** Only 2D formats (QR/DataMatrix/PDF417)? → square frame. */
     is2d(formats) {
       const two = ['qr_code', 'data_matrix', 'pdf417', 'aztec'];
       return formats.length > 0 && formats.every((f) => two.includes(f));
     },
-    /** Formatos do "outro modo" (2D ↔ lineares), para reconhecer e avisar. */
+    /** Formats of the "other mode" (2D ↔ linear), to recognize and warn. */
     complement(formats) {
       const two = ['qr_code', 'data_matrix'];
       const lin = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf'];
       return Pure.is2d(formats) ? lin : two.filter((f) => !formats.includes(f));
     },
-    /** Formato lido fora dos pedidos (o nativo às vezes devolve outro)? */
+    /** Format read outside the requested ones? (the native one sometimes returns another) */
     outside(fmt, formats) {
       return Boolean(fmt) && fmt in FORMATS && !formats.includes(fmt);
     },
-    /** `"ean_13, qr_code,xyz"` → formatos válidos (vazio = padrão). */
+    /** `"ean_13, qr_code,xyz"` → valid formats (empty = default). */
     parseFormats(v) {
       const out = String(v || '').split(/[\s,]+/).map((s) => s.trim().toLowerCase()).filter((s) => s in FORMATS);
       return out.length ? [...new Set(out)] : DEFAULT_FORMATS.slice();
     },
-    /** Grupos da alternância dentro da câmera: `formats` com `|` + chaves e rótulos na
-     *  mesma ordem → [{key, label, formats, hint}] (menos de 2 grupos válidos → []). */
+    /** Groups of the switch inside the camera: `formats` with `|` + keys and labels in the
+     *  same order → [{key, label, formats, hint}] (fewer than 2 valid groups → []). */
     scanModes(formats, keys, labels, hints) {
       const split = (v) => String(v == null ? '' : v).split('|').map((x) => x.trim());
       const fs = split(formats);
@@ -86,58 +86,58 @@
       });
       return out.length >= 2 ? out : [];
     },
-    /** Índice do modo `key` (ou 0). */
+    /** Index of mode `key` (or 0). */
     modeIndex(modes, key) {
       const i = modes.findIndex((m) => m.key === key);
       return i < 0 ? 0 : i;
     },
-    /** Pausa da câmera depois de uma leitura (`data-hub-scan-cooldown`): 0–10000 ms. */
+    /** Camera pause after a reading (`data-hub-scan-cooldown`): 0–10000 ms. */
     cooldownMs(v) {
       const n = Math.round(Number(v));
       return Number.isFinite(n) && n > 0 ? Math.min(n, 10000) : 0;
     },
-    /** Rajada de leitor tipo teclado: ≥ `min` teclas com intervalo médio ≤ `maxAvg` ms. */
+    /** Keyboard-wedge burst: ≥ `min` keys with average interval ≤ `maxAvg` ms. */
     isBurst(times, min = 4, maxAvg = 35) {
       if (!Array.isArray(times) || times.length < min) return false;
       const gaps = times.slice(1).map((t, i) => t - times[i]);
       const avg = gaps.reduce((a, b) => a + b, 0) / gaps.length;
       return avg <= maxAvg && Math.max(...gaps) <= maxAvg * 4;
     },
-    /** Mesma leitura dentro da janela? (`last` = {code, at}). */
+    /** Same reading within the window? (`last` = {code, at}). */
     duplicate(last, code, now, windowMs) {
       return Boolean(last && last.code === code && now - last.at < windowMs);
     },
-    /** Dimensões reduzidas para no máximo `max` px no maior lado (sem ampliar). */
+    /** Dimensions reduced to at most `max` px on the longer side (never enlarged). */
     fit(w, h, max = 1600) {
       const s = Math.min(1, max / Math.max(w || 1, h || 1));
       return [Math.max(1, Math.round(w * s)), Math.max(1, Math.round(h * s))];
     },
-    /** Valor de `data-hub-feedback-result` / `X-Hub-Feedback` → tipo (ou null). */
+    /** Value of `data-hub-feedback-result` / `X-Hub-Feedback` → type (or null). */
     feedbackKind(v) {
       const k = String(v || '').trim().toLowerCase();
       return ['ok', 'warn', 'error', 'queued'].includes(k) ? k : null;
     },
-    /** Tons (Hz, ms) e vibração por tipo. */
+    /** Tones (Hz, ms) and vibration per type. */
     tones(kind) {
       return { ok: [[1760, 90]], warn: [[1100, 80], [0, 60], [1100, 80]], error: [[330, 160], [0, 50], [250, 260]], queued: [[880, 70], [0, 40], [1320, 70]] }[kind] || [];
     },
     vibration(kind) {
       return { ok: [60], warn: [60, 60, 60], error: [220, 80, 220], queued: [40, 40, 40] }[kind] || [];
     },
-    /** Resposta de um reenvio da fila: 'done' (sai da fila), 'error' (vai para a lista de
-     *  erros — conflito/validação), 'retry' (rede/servidor: tenta depois), 'login'. */
+    /** Response to a queue resend: 'done' (leaves the queue), 'error' (goes to the error list —
+     *  conflict/validation), 'retry' (network/server: try later), 'login'. */
     replayOutcome(status) {
       if (status === 401) return 'login';
       if (status >= 200 && status < 400) return 'done';
       if (status === 0 || status === 408 || status === 425 || status === 429 || status >= 500) return 'retry';
       return 'error';
     },
-    /** Envio que vai direto para a fila (sem tentar a rede)? */
+    /** Submission that goes straight to the queue (without trying the network)? */
     queueFirst(online) { return online === false; },
     isIOS(ua, touchPoints) {
       return /iphone|ipad|ipod/i.test(String(ua || '')) || (/macintosh/i.test(String(ua || '')) && (touchPoints || 0) > 1);
     },
-    /** Texto do relatório do diagnóstico. */
+    /** Text of the diagnostics report. */
     report(rows, info, meta) {
       const lines = [`Diagnóstico do aparelho — ${meta && meta.when ? meta.when : ''}`.trim()];
       for (const r of rows) lines.push(`- ${r.label}: ${r.result}${r.detail ? ` (${r.detail})` : ''}`);
@@ -145,27 +145,27 @@
       if (meta && meta.ua) { lines.push(''); lines.push(`Navegador: ${meta.ua}`); }
       return lines.join('\n');
     },
-    /** Texto de uma resposta HTML para a lista de erros (sem tags, até 160). */
+    /** Text of an HTML response for the error list (no tags, up to 160). */
     plain(html) {
       return String(html || '').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim().slice(0, 160);
     },
-    /** Quadro de mira no palco (px CSS): código de barras = retângulo largo (80 % × 30 %),
-     *  QR/2D = quadrado com 60 % do lado menor; centralizado. */
+    /** Aiming frame on the stage (CSS px): barcode = wide rectangle (80 % × 30 %),
+     *  QR/2D = square with 60 % of the smaller side; centered. */
     aimRect(stageW, stageH, square) {
       const w = square ? Math.min(stageW, stageH) * 0.6 : stageW * 0.8;
       const h = square ? w : stageH * 0.3;
       return { x: (stageW - w) / 2, y: (stageH - h) / 2, w, h };
     },
-    /** `object-fit: cover`: escala e deslocamento (px CSS) do vídeo `vw×vh` (px do vídeo) num
-     *  palco `sw×sh`. O DPR não entra: palco e mira são medidos em px CSS e o recorte sai em
-     *  px do vídeo (resolução real da câmera), então a razão se cancela. */
+    /** `object-fit: cover`: scale and offset (CSS px) of the video `vw×vh` (video px) on a
+     *  stage `sw×sh`. DPR is not involved: stage and frame are measured in CSS px and the crop
+     *  comes out in video px (the camera's real resolution), so the ratio cancels out. */
     coverMap(vw, vh, sw, sh) {
       const scale = Math.max(sw / vw, sh / vh);
       return { scale, offX: (sw - vw * scale) / 2, offY: (sh - vh * scale) / 2 };
     },
-    /** Região de interesse em px do vídeo: `aim` (px CSS no palco) → {sx, sy, sw, sh} (recorte,
-     *  com `margin` de folga em cada lado, limitado ao vídeo) + `aim` em coordenadas DO RECORTE
-     *  (para conferir que o código caiu dentro do quadro). */
+    /** Region of interest in video px: `aim` (CSS px on the stage) → {sx, sy, sw, sh} (crop,
+     *  with a `margin` on each side, limited to the video) + `aim` in CROP coordinates
+     *  (to check that the code fell inside the frame). */
     roi(vw, vh, stageW, stageH, aim, margin = 0.1) {
       if (!vw || !vh || !stageW || !stageH || !aim || !aim.w || !aim.h) return null;
       const m = Pure.coverMap(vw, vh, stageW, stageH);
@@ -180,7 +180,7 @@
       if (x1 - x0 < 2 || y1 - y0 < 2) return null;
       return { sx: x0, sy: y0, sw: x1 - x0, sh: y1 - y0, aim: { x: ax - x0, y: ay - y0, w: aw, h: ah } };
     },
-    /** Caixa de pontos [{x,y}] → {x,y,w,h} (a linha de um código 1D ganha 1 px de altura). */
+    /** Box of points [{x,y}] → {x,y,w,h} (the line of a 1D code gets 1 px of height). */
     boxOf(points) {
       const ps = (points || []).filter((p) => p && Number.isFinite(p.x) && Number.isFinite(p.y));
       if (!ps.length) return null;
@@ -190,15 +190,15 @@
       const y = Math.min(...ys);
       return { x, y, w: Math.max(1, Math.max(...xs) - x), h: Math.max(1, Math.max(...ys) - y) };
     },
-    /** Fração da área de `box` dentro de `rect` (0–1). */
+    /** Fraction of the area of `box` inside `rect` (0–1). */
     insideFraction(box, rect) {
       if (!box || !rect || !(box.w > 0) || !(box.h > 0)) return 0;
       const ix = Math.max(0, Math.min(box.x + box.w, rect.x + rect.w) - Math.max(box.x, rect.x));
       const iy = Math.max(0, Math.min(box.y + box.h, rect.y + rect.h) - Math.max(box.y, rect.y));
       return (ix * iy) / (box.w * box.h);
     },
-    /** Primeiro resultado com o código (cornerPoints / boundingBox) ≥ `min` dentro de `aim`;
-     *  resultado sem posição é aceito (o recorte já limitou a imagem ao quadro). */
+    /** First result with the code (cornerPoints / boundingBox) ≥ `min` inside `aim`;
+     *  a result without position is accepted (the crop already limited the image to the frame). */
     pickInside(results, aim, min = 0.9) {
       for (const r of results || []) {
         if (!r) continue;
@@ -208,17 +208,17 @@
       }
       return null;
     },
-    /** Pausas oferecidas (`data-hub-scan-cooldowns="0|1000|…"`, ms, 0–10000). */
+    /** Offered pauses (`data-hub-scan-cooldowns="0|1000|…"`, ms, 0–10000). */
     cooldownList(v) {
       const out = String(v == null ? '' : v).split(/[|,\s]+/).filter(Boolean).map((x) => Math.round(Number(x))).filter((n) => Number.isFinite(n) && n >= 0 && n <= 10000);
       return out.length ? [...new Set(out)] : [0, 1000, 2000, 3000, 5000];
     },
-    /** Modo do leitor: `interativo` | `automatico` (outro valor → null = sem o seletor). */
+    /** Reader mode: `interativo` | `automatico` (other value → null = no selector). */
     readerMode(v) {
       const k = String(v || '').trim().toLowerCase();
       return k === 'interativo' || k === 'automatico' ? k : null;
     },
-    /** Luminância (Uint8ClampedArray RGBA → Uint8ClampedArray de cinza) para o ZXing. */
+    /** Luminance (Uint8ClampedArray RGBA → Uint8ClampedArray gray) for ZXing. */
     luminance(rgba, w, h) {
       const out = new Uint8ClampedArray(w * h);
       for (let i = 0, j = 0; j < out.length; i += 4, j++) out[j] = (rgba[i] * 299 + rgba[i + 1] * 587 + rgba[i + 2] * 114) / 1000;
@@ -245,7 +245,7 @@
   }
   const fmt = (s, vars) => String(s).replace(/\{(\w+)\}/g, (_, k) => (vars && k in vars ? String(vars[k]) : `{${k}}`));
   const toast = (m) => (window.HubKit ? window.HubKit.toast(m) : null);
-  /** Elemento por id dentro do conteúdo do app (mesma regra do hub-kit). */
+  /** Element by id inside the app content (same rule as hub-kit). */
   function ref(value) {
     const id = String(value == null ? '' : value).trim().replace(/^#/, '');
     if (!/^[A-Za-z][\w-]*$/.test(id)) return null;
@@ -259,14 +259,14 @@
     let u;
     try { u = new URL(url, location.href); } catch (_) { return null; }
     if (u.origin !== location.origin) return null;
-    // Público `/apps/{app}/…` (ou o antigo `/{app}/…`) → caminho no gateway `/{app}/…`.
+    // Public `/apps/{app}/…` (or the old `/{app}/…`) → path on the gateway `/{app}/…`.
     const p = u.pathname.startsWith('/apps/') ? u.pathname.slice(5) : u.pathname;
     if (p !== `/${app}` && !p.startsWith(`/${app}/`)) return null;
     return p + u.search;
   }
   const uuid = () => (window.crypto && crypto.randomUUID ? crypto.randomUUID() : `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`);
 
-  // ---- retorno: bipe, vibração, flash ------------------------------------------------------
+  // ---- feedback: beep, vibration, flash ------------------------------------------------------
   let audio = null;
   function audioCtx() {
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -275,7 +275,7 @@
     if (audio.state === 'suspended') audio.resume().catch(() => {});
     return audio;
   }
-  // Áudio só depois de um gesto do usuário (política dos navegadores).
+  // Audio only after a user gesture (browser policy).
   const unlock = () => { audioCtx(); };
   document.addEventListener('pointerdown', unlock, { capture: true, once: true });
   document.addEventListener('keydown', unlock, { capture: true, once: true });
@@ -332,7 +332,7 @@
     }
   }
 
-  // ---- leitura pela câmera -----------------------------------------------------------------
+  // ---- camera reading -----------------------------------------------------------------
   let zxing = null;
   function loadZxing() {
     if (window.ZXing) return Promise.resolve(window.ZXing);
@@ -346,19 +346,19 @@
     });
     return zxing;
   }
-  /** Decodificador: nativo (BarcodeDetector) quando cobre os formatos; senão ZXing. */
+  /** Decoder: native (BarcodeDetector) when it covers the formats; otherwise ZXing. */
   async function makeDecoder(formats) {
-    if (window.HubDeviceDecoder) return window.HubDeviceDecoder; // gancho de teste (E2E)
+    if (window.HubDeviceDecoder) return window.HubDeviceDecoder; // test hook (E2E)
     if ('BarcodeDetector' in window) {
       try {
         const sup = await window.BarcodeDetector.getSupportedFormats();
         const use = formats.filter((f) => sup.includes(f));
         if (use.length) {
           const det = new window.BarcodeDetector({ formats: use });
-          // `src` = recorte do quadro de mira; `aim` = o quadro dentro dele (px do recorte).
+          // `src` = crop of the aiming frame; `aim` = the frame inside it (crop px).
           return { kind: 'nativo', async decode(src, aim) { const r = Pure.pickInside(await det.detect(src), aim); return r ? { text: r.rawValue, format: r.format } : null; } };
         }
-      } catch (_) { /* cai para o ZXing */ }
+      } catch (_) { /* falls back to ZXing */ }
     }
     const Z = await loadZxing();
     const hints = new Map();
@@ -368,8 +368,8 @@
     reader.setHints(hints);
     const canvas = document.createElement('canvas');
     const ctx2d = canvas.getContext('2d', { willReadFrequently: true });
-    // Uma escala por quadro, em rodízio: o detector do ZXing acha o código em tamanhos
-    // diferentes conforme a distância (o BarcodeDetector nativo não precisa disso).
+    // One scale per frame, in rotation: ZXing's detector finds the code at different sizes
+    // depending on the distance (the native BarcodeDetector does not need this).
     const SCALES = [1024, 640, 420];
     let turn = 0;
     return {
@@ -407,7 +407,7 @@
     if (n === 'NotSupportedError') return t('js.dev_unsupported', 'Este navegador não dá acesso à câmera.');
     return t('js.dev_camera_fail', 'Não foi possível abrir a câmera.');
   }
-  function stopStream(stream) { try { stream && stream.getTracks().forEach((tr) => tr.stop()); } catch (_) { /* nada */ } }
+  function stopStream(stream) { try { stream && stream.getTracks().forEach((tr) => tr.stop()); } catch (_) { /* none */ } }
   function torchCapable(stream) {
     try { const tr = stream.getVideoTracks()[0]; return Boolean(tr && tr.getCapabilities && tr.getCapabilities().torch); } catch (_) { return false; }
   }
@@ -416,7 +416,7 @@
     await tr.applyConstraints({ advanced: [{ torch: on }] });
   }
 
-  /** Seletor segmentado (botões com aria-pressed) para a barra de cima da câmera. */
+  /** Segmented selector (buttons with aria-pressed) for the camera's top bar. */
   function segmented(label, items, current, attr) {
     const seg = document.createElement('div');
     seg.className = 'hub-camera-seg';
@@ -433,8 +433,8 @@
     });
     return seg;
   }
-  /** Camada do hub com o vídeo da câmera (leitura ou foto). `modes` = alternância de tipo de
-   *  código; `reader` = {mode, cooldown, cooldowns} (Interativo/Automático + pausa) ou null. */
+  /** Hub layer with the camera video (reading or photo). `modes` = switch of code type;
+   *  `reader` = {mode, cooldown, cooldowns} (Interactive/Automatic + pause) or null. */
   function cameraLayer(title, mode, square, modes, current, reader) {
     const host = document.createElement('div');
     host.className = `hub-camera hub-camera-${mode}`;
@@ -471,7 +471,7 @@
       aim.append(laser);
       stage.append(aim);
     }
-    // Barra de cima (sobre o vídeo): tipo de código + modo do leitor + pausa.
+    // Top bar (over the video): code type + reader mode + pause.
     let seg = null, rseg = null, pause = null, pauseBox = null;
     if ((modes && modes.length) || reader) {
       const top = document.createElement('div');
@@ -531,7 +531,7 @@
   }
 
   let scanner = null;
-  /** Abre a leitura. `opts`: {formats, continuous, onRead(code, fmt) → bool (true = fecha)}. */
+  /** Opens the reading. `opts`: {formats, continuous, onRead(code, fmt) → bool (true = closes)}. */
   async function openScanner(opts) {
     if (scanner) return;
     const prevFocus = document.activeElement;
@@ -550,10 +550,10 @@
     ui.host.dataset.formats = formats.join(',');
     if (modes.length) ui.host.dataset.mode = modes[modeIdx].key;
     if (reader) { ui.host.dataset.reader = reader.mode; ui.host.dataset.pause = String(reader.cooldown); }
-    // Interativo: a câmera espera "Próximo" — a janela de repetidas volta ao padrão.
+    // Interactive: the camera waits for "Próximo" — the repeat window goes back to the default.
     const dedupMs = () => (reader && reader.mode === 'interativo' ? 1500 : opts.dedupMs > 0 ? opts.dedupMs : 1500);
     const prefs = () => opts.onPrefs && opts.onPrefs({ mode: modes.length ? modes[modeIdx].key : '', reader: reader ? reader.mode : '', cooldown: reader ? reader.cooldown : 0 });
-    // Região de interesse: só o que está dentro do quadro de mira vai para o decodificador.
+    // Region of interest: only what is inside the aiming frame goes to the decoder.
     const crop = document.createElement('canvas');
     const cctx = crop.getContext('2d', { willReadFrequently: true });
     const frameOf = () => {
@@ -586,8 +586,8 @@
         prefs();
       });
     }
-    let holdUntil = 0; // pausa (cooldown) depois de uma leitura
-    let held = null; // botão "Próximo" do app: câmera parada até tocar
+    let holdUntil = 0; // pause (cooldown) after a reading
+    let held = null; // app's "Próximo" button: camera stopped until touched
     let stream = null;
     let stop = false;
     let count = 0;
@@ -598,7 +598,7 @@
       ui.host.remove();
       document.removeEventListener('keydown', esc, true);
       scanner = null;
-      try { prevFocus && prevFocus.focus && prevFocus.focus(); } catch (_) { /* nada */ }
+      try { prevFocus && prevFocus.focus && prevFocus.focus(); } catch (_) { /* none */ }
       opts.onClose && opts.onClose(count);
     };
     const esc = (e) => { if (e.key === 'Escape') { e.preventDefault(); done(); } };
@@ -606,7 +606,7 @@
     ui.close.addEventListener('click', done);
     const release = () => {
       held = null;
-      holdUntil = Date.now() + 500; // o "Próximo" do app chega antes da leitura seguinte
+      holdUntil = Date.now() + 500; // the app's "Próximo" arrives before the next reading
       ui.next.hidden = true;
       ui.host.removeAttribute('data-held');
       ui.status.textContent = t('js.dev_scan_ready', 'Pronto: aponte para o próximo código.');
@@ -614,7 +614,7 @@
     ui.next.addEventListener('click', () => {
       const b = held;
       release();
-      if (b && b.isConnected) b.click(); // o app libera a próxima leitura (data-hub-post)
+      if (b && b.isConnected) b.click(); // the app releases the next reading (data-hub-post)
     });
     scanner = {
       close: done,
@@ -632,7 +632,7 @@
           ui.next.hidden = false;
           ui.host.setAttribute('data-held', '');
           ui.status.textContent = t('js.dev_scan_held', 'Leitura registrada. Toque em Próximo para ler outro código.');
-          try { ui.next.focus(); } catch (_) { /* nada */ }
+          try { ui.next.focus(); } catch (_) { /* none */ }
           return;
         }
         const cd = Pure.cooldownMs(el.getAttribute('data-hub-scan-cooldown'));
@@ -656,7 +656,7 @@
     }
     if (stop) { stopStream(stream); return; }
     ui.video.srcObject = stream;
-    ui.video.play().catch(() => {}); // sem await: um fluxo sem quadros nunca resolveria
+    ui.video.play().catch(() => {}); // no await: a flow with no frames would never resolve
     if (torchCapable(stream)) {
       ui.torch.hidden = false;
       ui.torch.addEventListener('click', async () => {
@@ -669,8 +669,8 @@
     const build = async () => {
       decoder = await makeDecoder(formats);
       probe = null;
-      // Aviso de modo errado: um segundo leitor, só com os formatos do outro modo, olha um
-      // quadro a cada 4 — o que ele achar não é entregue, só vira o aviso do app.
+      // Wrong-mode warning: a second reader, with only the formats of the other mode, looks at
+      // one frame every 4 — whatever it finds is not delivered, it only becomes the app's warning.
       if (wrongHint && !window.HubDeviceDecoder) {
         const other = Pure.complement(formats);
         if (other.length) probe = await makeDecoder(other).catch(() => null);
@@ -682,7 +682,7 @@
       ui.status.textContent = t('js.dev_decoder_fail', 'Não foi possível carregar o leitor de códigos.');
       return;
     }
-    // Alternância dentro da câmera: troca os formatos (e a mira) sem fechar o vídeo.
+    // Switch inside the camera: changes the formats (and the frame) without closing the video.
     if (ui.seg) {
       ui.seg.addEventListener('click', async (e) => {
         const b = e.target.closest('[data-mode]');
@@ -697,7 +697,7 @@
         ui.host.dataset.mode = modes[i].key;
         if (ui.aim) ui.aim.classList.toggle('hub-camera-aim-square', Pure.is2d(formats));
         swapping = true;
-        try { await build(); } catch (_) { /* mantém o anterior */ }
+        try { await build(); } catch (_) { /* keeps the previous one */ }
         swapping = false;
         ui.status.textContent = fmt(t('js.dev_scan_mode', 'Lendo: {m}'), { m: modes[i].label });
         opts.onMode && opts.onMode(modes[i].key);
@@ -724,7 +724,7 @@
         busy = true;
         let r = null;
         const roi = frameOf();
-        // Sem medida do palco (camada sem CSS), o quadro inteiro.
+        // No stage measurement (layer without CSS), the whole frame.
         const src = roi ? crop : ui.video;
         try { r = await decoder.decode(src, roi ? roi.aim : null); } catch (_) { r = null; }
         if (r && wrongHint && Pure.outside(r.format, formats)) { r = null; wrong(); }
@@ -750,8 +750,8 @@
     tick();
   }
 
-  /** Coloca o código lido no campo e envia o formulário como um Enter do teclado.
-   *  `fmtTarget` (opcional) recebe o formato lido só durante este envio. */
+  /** Puts the code read into the field and submits the form like a keyboard Enter.
+   *  `fmtTarget` (optional) receives the format read only during this submission. */
   function deliver(target, code, submit, fmt, fmtTarget) {
     if (fmtTarget) fmtTarget.value = fmt || '';
     target.value = code;
@@ -761,14 +761,14 @@
     if (submit && form && !form.hasAttribute('data-hub-scan-nosubmit')) {
       if (form.requestSubmit) form.requestSubmit(); else form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
     }
-    if (fmtTarget) fmtTarget.value = ''; // a próxima leitura pelo leitor físico vem sem formato
+    if (fmtTarget) fmtTarget.value = ''; // the next reading from the physical reader comes without a format
   }
 
   // ---- leitor tipo teclado (wedge) ---------------------------------------------------------
   const keyTimes = new WeakMap();
   const lastWedge = new WeakMap();
   let wedgeSeen = false;
-  try { wedgeSeen = sessionStorage.getItem('hub-wedge-seen') === '1'; } catch (_) { /* privado */ }
+  try { wedgeSeen = sessionStorage.getItem('hub-wedge-seen') === '1'; } catch (_) { /* private */ }
   const keepFocusWanted = () => wedgeSeen || (window.matchMedia && matchMedia('(pointer: fine)').matches);
   function onWedgeKey(e) {
     const el = e.target;
@@ -786,9 +786,9 @@
     keyTimes.set(el, []);
     const burst = Pure.isBurst(times);
     const code = String(el.value || '').trim();
-    if (!burst) return; // digitação humana: Enter normal
+    if (!burst) return; // human typing: normal Enter
     wedgeSeen = true;
-    try { sessionStorage.setItem('hub-wedge-seen', '1'); } catch (_) { /* privado */ }
+    try { sessionStorage.setItem('hub-wedge-seen', '1'); } catch (_) { /* private */ }
     const win = Number(el.getAttribute('data-hub-wedge-debounce')) || 800;
     const prev = lastWedge.get(el);
     el.dispatchEvent(new CustomEvent('hub:wedge', { bubbles: true, detail: { code } }));
@@ -807,8 +807,8 @@
     }
   }
   document.addEventListener('keydown', onWedgeKey, true);
-  // Mantém o foco no campo do leitor (só com teclado físico/leitor — no celular sem leitor
-  // devolver o foco abriria o teclado virtual a cada toque).
+  // Keeps the focus in the reader's field (only with a physical keyboard/reader — on a phone without a reader
+  // giving the focus back would open the virtual keyboard on every tap).
   document.addEventListener('focusout', (e) => {
     const el = e.target;
     if (!el.matches || !el.matches('[data-hub-wedge]') || !inScope(el) || !keepFocusWanted()) return;
@@ -816,11 +816,11 @@
       const a = document.activeElement;
       if (!el.isConnected || document.querySelector('[data-hub-layer]')) return;
       if (a && a !== document.body && a.matches && a.matches('input, select, textarea, button, a[href], [tabindex], summary')) return;
-      try { el.focus({ preventScroll: true }); } catch (_) { /* nada */ }
+      try { el.focus({ preventScroll: true }); } catch (_) { /* none */ }
     }, 250);
   });
 
-  // ---- fila offline (IndexedDB) ------------------------------------------------------------
+  // ---- offline queue (IndexedDB) ------------------------------------------------------------
   const DB = 'hub-offline';
   let dbp = null;
   function db() {
@@ -868,7 +868,7 @@
     const lists = [...document.querySelectorAll('[data-hub-offline-errors]')].filter(inScope);
     if (!boxes.length && !lists.length) return;
     let pending = 0, errors = [];
-    try { pending = (await all('queue', app)).length; errors = await all('errors', app); } catch (_) { /* sem IndexedDB */ }
+    try { pending = (await all('queue', app)).length; errors = await all('errors', app); } catch (_) { /* no IndexedDB */ }
     const online = navigator.onLine !== false;
     const state = errors.length ? 'error' : pending ? 'pending' : online ? 'online' : 'offline';
     let text;
@@ -957,10 +957,10 @@
   function afterSubmit(form) {
     form.querySelectorAll('[data-hub-clear]').forEach((f) => { f.value = ''; });
     const w = form.querySelector('[data-hub-wedge]');
-    if (w && (keepFocusWanted() || document.activeElement === w)) { try { w.focus({ preventScroll: true }); } catch (_) { /* nada */ } }
+    if (w && (keepFocusWanted() || document.activeElement === w)) { try { w.focus({ preventScroll: true }); } catch (_) { /* none */ } }
   }
 
-  // Captura: depois do hub-kit (validação/confirmação), antes do hub.js (que enviaria por XHR).
+  // Capture: after hub-kit (validation/confirmation), before hub.js (which would send via XHR).
   document.addEventListener('submit', async (e) => {
     const form = e.target;
     if (!form.matches || !form.matches('form[data-hub-offline-queue]') || !inScope(form)) return;
@@ -984,7 +984,7 @@
       refreshStatus();
     };
     if (Pure.queueFirst(navigator.onLine)) { await queueIt(); return; }
-    // Com fila pendente, este envio entra no fim dela (ordem garantida).
+    // With a pending queue, this submission goes to the end of it (order guaranteed).
     let pending = 0;
     try { pending = (await all('queue', app)).length; } catch (_) { pending = 0; }
     if (pending) { await queueIt(); sync(); return; }
@@ -1000,7 +1000,7 @@
   window.addEventListener('offline', () => refreshStatus());
   setInterval(() => { if (navigator.onLine !== false) sync(); }, 15000);
 
-  // ---- foto (captura + compressão) ---------------------------------------------------------
+  // ---- photo (capture + compression) ---------------------------------------------------------
   const compressed = new WeakSet();
   async function toJpeg(source, w0, h0) {
     const [w, h] = Pure.fit(w0, h0, 1600);
@@ -1031,7 +1031,7 @@
     const ui = cameraLayer(t('js.dev_capture_title', 'Fotografar'), 'capture');
     let stream = null;
     const prevFocus = document.activeElement;
-    const done = () => { stopStream(stream); ui.host.remove(); document.removeEventListener('keydown', esc, true); try { prevFocus?.focus?.(); } catch (_) { /* nada */ } };
+    const done = () => { stopStream(stream); ui.host.remove(); document.removeEventListener('keydown', esc, true); try { prevFocus?.focus?.(); } catch (_) { /* none */ } };
     const esc = (e) => { if (e.key === 'Escape') { e.preventDefault(); done(); } };
     document.addEventListener('keydown', esc, true);
     ui.close.addEventListener('click', done);
@@ -1075,7 +1075,7 @@
       const { blob } = await toJpeg(bmp, bmp.width, bmp.height);
       if (blob && blob.size < f.size) putFile(input, blob, previewSel);
       else { compressed.add(f); const pv = previewSel ? ref(previewSel) : null; if (pv) { const img = document.createElement('img'); img.alt = t('js.dev_photo_preview', 'Prévia da foto'); img.src = URL.createObjectURL(f); pv.replaceChildren(img); } }
-    } catch (_) { /* formato que o navegador não decodifica: segue o original */ }
+    } catch (_) { /* format the browser does not decode: keeps the original */ }
   }
   document.addEventListener('change', (e) => {
     const input = e.target;
@@ -1084,7 +1084,7 @@
     if (btn) compressInput(input, btn.getAttribute('data-hub-capture-preview'));
   });
 
-  // ---- instalação (PWA) --------------------------------------------------------------------
+  // ---- installation (PWA) --------------------------------------------------------------------
   let installEvt = null;
   const standalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
   window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; refreshInstall(); });
@@ -1109,7 +1109,7 @@
     return c.outcome === 'accepted';
   }
 
-  // ---- diagnóstico -------------------------------------------------------------------------
+  // ---- diagnostics -------------------------------------------------------------------------
   const DIAG = { ok: ['js.dev_ok', 'OK'], fail: ['js.dev_fail', 'Falhou'], unsupported: ['js.dev_unsup', 'Não suportado'], pending: ['js.dev_pending', 'Aguardando teste'], running: ['js.dev_running', 'Testando…'] };
   function setDiag(row, state, detail) {
     if (!row) return;
@@ -1174,8 +1174,8 @@
     return Pure.report(rows, info, { ua: navigator.userAgent, when: new Date().toLocaleString() });
   }
 
-  /** Escolhas feitas na camada da câmera → botão (próxima abertura) + app
-   *  (`data-hub-scan-prefs`: POST modo/leitor/pausa, o app guarda por usuário). */
+  /** Choices made in the camera layer → button (next opening) + app
+   *  (`data-hub-scan-prefs`: POST mode/reader/pause, the app stores them per user). */
   let prefsSeq = 0;
   async function savePrefs(btn, path, p) {
     if (p.mode) btn.setAttribute('data-hub-scan-mode', p.mode);
@@ -1193,7 +1193,7 @@
     }
   }
 
-  // ---- delegação ---------------------------------------------------------------------------
+  // ---- delegation ---------------------------------------------------------------------------
   document.addEventListener('click', (e) => {
     const t0 = e.target;
     if (!inScope(t0)) return;
@@ -1267,11 +1267,11 @@
     if (keepFocusWanted()) {
       const w = root.querySelector?.('input[data-hub-wedge]:not([data-hub-diag-wedge])');
       if (w && !document.querySelector('[data-hub-layer]') && (!document.activeElement || document.activeElement === document.body || !inScope(document.activeElement))) {
-        try { w.focus({ preventScroll: true }); } catch (_) { /* nada */ }
+        try { w.focus({ preventScroll: true }); } catch (_) { /* none */ }
       }
     }
   }
-  // Toda inserção no conteúdo do app (hub.js, hub-kit, fila offline) passa por aqui.
+  // Every insertion into the app content (hub.js, hub-kit, offline queue) goes through here.
   const obs = new MutationObserver((muts) => {
     for (const m of muts) for (const n of m.addedNodes) if (n.nodeType === 1) mount(n);
   });

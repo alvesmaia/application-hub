@@ -1,63 +1,63 @@
-/* hub.js — composição de fragmentos no shell do hub.
+/* hub.js — fragment composition in the hub shell.
  *
- * A página /{id}[/{section}][?query] chega do servidor com o shell em modo "dentro do
- * app" e a tela de carregamento do mockup. Este script:
- *   1. carrega o CSS do app via gateway (o app NÃO traz JavaScript: os comportamentos são
- *      atributos data-hub-* do hub-kit.js; só scripts aprovados pela administração, listados
- *      em data-hub-scripts com o sha384, são carregados — com SRI, ver hub-safe.js);
- *   2. página pública /apps/{id}/{section}?query → busca o fragmento em
- *      /_frag/{id}/{section}?query (gateway -> upstream, que vê /{id}/{section});
- *   3. reproduz a sequência do mockup (decisão do dono): ao ABRIR o app, o carregador
- *      (0→100% em 3,5 s, `1 - (1 - t)^2.2`) → skeleton de componentes (0,9 s) → conteúdo;
- *      troca de página dentro do app: só o skeleton (0,7 s). Tempos fixos — se o fragmento
- *      ainda não chegou ao fim deles, o skeleton fica até ele chegar (nunca área vazia);
- * *   4. intercepta links do mesmo app (pushState + skeleton + novo fragmento) e popstate;
- *   5. intercepta formulários do app:
- *      - GET: vira navegação (a query entra na URL, então recarregar/compartilhar funciona);
- *      - POST (inclusive multipart com arquivos): enviado por XHR para /_frag/... com
- *        progresso de upload em [data-hub-progress]; a resposta (qualquer status com
- *        corpo, ex.: 409/413/422/429) substitui o elemento de data-hub-target (outerHTML)
- *        ou, sem alvo, o workspace inteiro;
- *   6. elementos com data-hub-poll="/{id}/..." são recarregados a cada
- *      data-hub-interval ms (padrão 1000) até a resposta não trazer mais data-hub-poll
- *      (progresso de jobs; para fluxo contínuo use data-hub-sse/data-hub-ws do hub-kit);
- *   7. downloads: links normais para /_frag/{id}/... (não interceptados) — o app
- *      responde com Content-Disposition e o gateway repassa o corpo em streaming;
- *   8. em falha (ex.: 502 do gateway com o app fora do ar) mostra a mensagem amigável
- *      dentro do shell, nunca uma página em branco; se o app está reiniciando
- *      (502/503/504, rede, `data-hub-unavailable`), mostra "reiniciando" e tenta de
- *      novo sozinho com espera crescente (2 s → 15 s), trocando pelo conteúdo quando o
- *      app volta — navegar para outro lugar cancela as tentativas; 429 (operação pesada
- *      em fila no app) mostra "em fila…" (rótulo do app em `data-hub-queued`, ex.
- *      "Relatório em fila…") e tenta de novo sozinho honrando o `Retry-After` com jitter
- *      (até QUEUE_MAX vezes; esgotadas, o aviso do app);
- *   9. voltar/avançar do navegador (popstate) cancela o carregador e o skeleton (como no
- *      mockup); erros (reiniciando, em fila, falha) aparecem sem esperar os tempos.
- * Todo HTML recebido do app passa pelo sanitizador (hub-safe.js: sem <script>, sem on*,
- * sem javascript:, formulários só para o próprio app) antes de entrar no documento; depois
- * de cada troca o hub-kit.js monta os comportamentos (HubKit.mount) e o evento `hub:mount`
- * avisa os scripts aprovados. */
+ * The page /{id}[/{section}][?query] arrives from the server with the shell in "inside the
+ * app" mode and the mockup's loading screen. This script:
+ *   1. loads the app's CSS through the gateway (the app does NOT bring JavaScript: behaviors
+ *      are data-hub-* attributes of hub-kit.js; only scripts approved by the administration, listed
+ *      in data-hub-scripts with the sha384, are loaded — with SRI, see hub-safe.js);
+ *   2. public page /apps/{id}/{section}?query → fetches the fragment at
+ *      /_frag/{id}/{section}?query (gateway -> upstream, which sees /{id}/{section});
+ *   3. reproduces the mockup's sequence (owner's decision): when OPENING the app, the loader
+ *      (0→100% in 3.5 s, `1 - (1 - t)^2.2`) → component skeleton (0.9 s) → content;
+ *      page change inside the app: only the skeleton (0.7 s). Fixed times — if the fragment
+ *      has not arrived by their end, the skeleton stays until it does (never an empty area);
+ * *   4. intercepts links of the same app (pushState + skeleton + new fragment) and popstate;
+ *   5. intercepts the app's forms:
+ *      - GET: becomes navigation (the query goes into the URL, so reload/sharing works);
+ *      - POST (including multipart with files): sent by XHR to /_frag/... with
+ *        upload progress in [data-hub-progress]; the response (any status with
+ *        a body, e.g. 409/413/422/429) replaces the data-hub-target element (outerHTML)
+ *        or, without a target, the whole workspace;
+ *   6. elements with data-hub-poll="/{id}/..." are reloaded every
+ *      data-hub-interval ms (default 1000) until the response no longer brings data-hub-poll
+ *      (job progress; for a continuous stream use data-hub-sse/data-hub-ws from hub-kit);
+ *   7. downloads: normal links to /_frag/{id}/... (not intercepted) — the app
+ *      responds with Content-Disposition and the gateway passes the body through as a stream;
+ *   8. on failure (e.g. 502 from the gateway with the app down) shows the friendly message
+ *      inside the shell, never a blank page; if the app is restarting
+ *      (502/503/504, network, `data-hub-unavailable`), it shows "restarting" and retries
+ *      on its own with increasing wait (2 s → 15 s), swapping in the content when the
+ *      app comes back — navigating elsewhere cancels the attempts; 429 (heavy operation
+ *      queued in the app) shows "queued…" (the app's label in `data-hub-queued`, e.g.
+ *      "Report queued…") and retries on its own honoring the `Retry-After` with jitter
+ *      (up to QUEUE_MAX times; once exhausted, the app's warning);
+ *   9. the browser's back/forward (popstate) cancels the loader and the skeleton (as in the
+ *      mockup); errors (restarting, queued, failure) appear without waiting for the times.
+ * All HTML received from the app goes through the sanitizer (hub-safe.js: no <script>, no on*,
+ * no javascript:, forms only to the app itself) before entering the document; after each
+ * swap hub-kit.js mounts the behaviors (HubKit.mount) and the `hub:mount` event
+ * notifies the approved scripts. */
 (function () {
   'use strict';
-  // Decisões puras (testadas em node: `require('hub.js')` devolve este objeto).
+  // Pure decisions (tested in node: `require('hub.js')` returns this object).
   const Policy = {
-    /** Espera antes da tentativa `attempt` (0, 1, …) de recarregar um app indisponível. */
+    /** Wait before attempt `attempt` (0, 1, …) to reload an unavailable app. */
     retryDelay(attempt) {
       return Math.min(2000 * 2 ** attempt, 15000);
     },
-    /** A resposta indica app reiniciando/indisponível (tentar de novo)? */
+    /** Does the response indicate the app is restarting/unavailable (retry)? */
     retriable(status, html) {
       return status === 0 || status === 502 || status === 503 || status === 504 || /data-hub-unavailable/.test(html || '');
     },
-    /** Máximo de novas tentativas automáticas depois de um 429 (fila do app). */
+    /** Maximum number of automatic new attempts after a 429 (the app's queue). */
     QUEUE_MAX: 5,
-    /** 429 = o app recusou por excesso de operações pesadas (fila): tentar de novo. */
+    /** 429 = the app refused due to excessive heavy operations (queue): retry. */
     queued(status) {
       return status === 429;
     },
-    /** Espera antes da nova tentativa `attempt` (0, 1, …) depois de um 429: honra o
-     *  `Retry-After` (segundos ou data HTTP) com jitter de 0–50% (evita que várias abas
-     *  voltem juntas); sem ele, espera crescente. Entre 1 s e 30 s. */
+    /** Wait before the new attempt `attempt` (0, 1, …) after a 429: honors the
+     *  `Retry-After` (seconds or HTTP date) with 0–50% jitter (avoids several tabs
+     *  coming back together); without it, increasing wait. Between 1 s and 30 s. */
     queueDelay(retryAfter, attempt, rand = Math.random, now = Date.now()) {
       let ms = NaN;
       if (retryAfter != null && String(retryAfter).trim() !== '') {
@@ -67,12 +67,12 @@
       if (!Number.isFinite(ms) || ms <= 0) ms = Math.min(2000 * 2 ** attempt, 15000);
       return Math.min(Math.max(1000, Math.round(ms * (1 + 0.5 * rand()))), 30000);
     },
-    /** Rótulo do estado "em fila" (o app pode sugerir com `data-hub-queued`). */
+    /** Label of the "queued" state (the app can suggest it with `data-hub-queued`). */
     queuedLabel(html) {
       const m = /data-hub-queued="([^"]*)"/.exec(html || '');
       return (m && m[1]) || 'Operação em fila…';
     },
-    /** `/apps/app` sem seção nem consulta = entrada pelo início do app; o resto é deep link. */
+    /** `/apps/app` without a section or query = entry through the app's start; the rest is a deep link. */
     deepLink(pathname, search, app) {
       let bits = pathname.split('/').filter(Boolean);
       if (bits[0] === 'apps') bits = bits.slice(1);
@@ -85,17 +85,17 @@
   }
   const me = document.currentScript;
   const app = me.dataset.hubApp;
-  // O conteúdo do app substitui o #app-root (e este <script>): o id fica no <html> para o
-  // hub-kit/hub-device lerem depois.
+  // The app content replaces #app-root (and this <script>): the id stays on <html> so
+  // hub-kit/hub-device can read it later.
   document.documentElement.dataset.hubApp = app || '';
   const frag = me.dataset.hubFrag || '/_frag';
   const version = me.dataset.hubVersion || '';
   const root = document.getElementById('app-root');
-  // Tokens do app (onda 8): cor e tinta da identidade do app para os fragmentos
-  // (`var(--app-color)`/`var(--app-ink)`), valores só de cor (sem injeção de CSS).
+  // App tokens (wave 8): the app's identity color and ink for the fragments
+  // (`var(--app-color)`/`var(--app-ink)`), color values only (no CSS injection).
   const colorOk = (c) => /^#[0-9a-fA-F]{3,8}$/.test(c || '');
-  // Tema escuro (onda 9): a tinta do app clareada e o fundo do ícone escurecido, para
-  // manter o contraste sobre as superfícies escuras.
+  // Dark theme (wave 9): the app's ink lightened and the icon background darkened, to
+  // keep contrast over the dark surfaces.
   const theme = document.documentElement.dataset.theme || '';
   const dark = theme === 'dark' || (theme === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
   const mix = (hex, to, k) => {
@@ -107,13 +107,13 @@
   };
   if (root && colorOk(me.dataset.hubColor)) root.style.setProperty('--app-color', dark ? mix(me.dataset.hubColor, 0, 0.78) : me.dataset.hubColor);
   if (root && colorOk(me.dataset.hubInk)) root.style.setProperty('--app-ink', dark ? mix(me.dataset.hubInk, 255, 0.5) : me.dataset.hubInk);
-  // Onda 12 (M1): o conteúdo do app fica num contexto de empilhamento próprio
-  // (`isolation: isolate; position: relative; z-index: 0` em #app-root): nada do app —
-  // nem `position: fixed; inset: 0; z-index: 2147483647` — pinta acima do header e do
-  // rail do hub (posicionados com z-index maior). Estilo inline `!important`: o CSS do app
-  // não desfaz. Header e rail mantêm posição/camada e o header a exibição que tinham antes
-  // do CSS do app. (`contain: paint` foi avaliado e descartado: desloca a sidebar e os
-  // elementos fixos dos apps — ver PENDENCIAS.)
+  // Wave 12 (M1): the app content gets its own stacking context
+  // (`isolation: isolate; position: relative; z-index: 0` on #app-root): nothing from the app —
+  // not even `position: fixed; inset: 0; z-index: 2147483647` — paints above the hub's header and
+  // rail (positioned with a higher z-index). Inline `!important` style: the app's CSS cannot undo it.
+  // Header and rail keep their position/layer, and the header keeps the display it had before
+  // the app's CSS. (`contain: paint` was evaluated and discarded: it shifts the sidebar and the
+  // fixed elements of the apps — see PENDENCIAS.)
   function containApp() {
     if (!root) return;
     for (const [k, val] of [['isolation', 'isolate'], ['position', 'relative'], ['z-index', '0']]) root.style.setProperty(k, val, 'important');
@@ -130,16 +130,16 @@
   }
   containApp();
   const base = `${frag}/${app}`;
-  /** Tempos fixos do mockup (decisão do dono). */
+  /** Fixed times of the mockup (owner's decision). */
   const LOADER_MS = 3500;
   const SKELETON_MS = 900;
   const PAGE_SKELETON_MS = 700;
   let navToken = 0;
-  // Alvo em voo/renderizado (onda 9 bug): `location` já muda no pushState, antes do
-  // fragmento chegar — comparar o clique com `location` deixa um clique durante essa
-  // janela (ex.: alternar a ordenação bem rápido) sem efeito, porque o link ainda
-  // exibido (não re-renderizado) aponta pro mesmo alvo que acabou de ser empurrado.
-  // `pendingTarget` segue o que está de fato em voo/renderizado na tela.
+  // In-flight/rendered target (wave 9 bug): `location` already changes in pushState, before the
+  // fragment arrives — comparing the click with `location` leaves a click during that
+  // window (e.g. toggling the sorting very fast) with no effect, because the link still
+  // shown (not re-rendered) points to the same target that was just pushed.
+  // `pendingTarget` follows what is actually in flight/rendered on the screen.
   let pendingTarget = location.pathname + location.search;
   const store = (kind) => { try { return window[kind]; } catch (_) { return null; } };
   const ASSETS_KEY = `hub:assets:${app}`;
@@ -159,8 +159,8 @@
 
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  // URLs públicas do app (decisão do dono): `/apps/{id}/...`. Um caminho antigo
-  // `/{id}/...` (app ainda não atualizado) é aceito e normalizado para o novo.
+  // Public URLs of the app (owner's decision): `/apps/{id}/...`. An old path
+  // `/{id}/...` (app not yet updated) is accepted and normalized to the new one.
   const pub = me.dataset.hubBase || `/apps/${app}`;
   function canon(path) {
     if (path === `/${app}` || path.startsWith(`/${app}/`) || path.startsWith(`/${app}?`)) return `/apps${path}`;
@@ -171,12 +171,12 @@
     if (p !== pub && !p.startsWith(`${pub}/`)) return null;
     return p.slice(pub.length).split('/').filter(Boolean)[0] || 'dashboard';
   }
-  // Caminho público → caminho no gateway (`/_frag/{id}/...`; o upstream vê `/{id}/...`).
+  // Public path → gateway path (`/_frag/{id}/...`; the upstream sees `/{id}/...`).
   const fragUrl = (target) => `${frag}/${app}${canon(target).slice(pub.length)}`;
 
-  // CSS do app (onda 12, M1): nunca como <link> global — o texto vem pelo gateway e vira
-  // uma folha construída dentro de `@scope (#app-root, [data-hub-layer])` (hub-safe.js):
-  // regras do app não alcançam o header, o rail nem o `body` do hub.
+  // App CSS (wave 12, M1): never as a global <link> — the text comes through the gateway and becomes
+  // a sheet built inside `@scope (#app-root, [data-hub-layer])` (hub-safe.js):
+  // the app's rules do not reach the hub's header, rail or `body`.
   async function loadAppCss(href) {
     try {
       const res = await fetch(href, { credentials: 'same-origin' });
@@ -208,14 +208,14 @@
     });
   }
 
-  // Sessão expirada (401 do hub): volta ao login e depois para esta mesma página.
+  // Expired session (401 from the hub): goes back to login and then to this same page.
   function toLogin() {
     location.href = `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
   }
 
-  // Scripts de app APROVADOS (exceção; ver CONTRATO-APP §13): `[{src, integrity}]`
-  // fixado pelo servidor. Só caminhos do próprio app em /_frag/{id}/assets/, com o sha384
-  // aprovado (SRI: arquivo alterado = bloqueado pelo navegador).
+  // APPROVED app scripts (exception; see CONTRATO-APP §13): `[{src, integrity}]`
+  // fixed by the server. Only the app's own paths in /_frag/{id}/assets/, with the approved
+  // sha384 (SRI: a changed file = blocked by the browser).
   let approvedScripts = [];
   try {
     approvedScripts = JSON.parse(me.dataset.hubScripts || '[]').filter((x) => x && typeof x.src === 'string'
@@ -223,21 +223,21 @@
   } catch (_) { approvedScripts = []; }
   window.HubSafe?.approve(approvedScripts.map((x) => x.src));
 
-  // Assets do app, servidos pelo próprio upstream e alcançados só via gateway.
+  // App assets, served by the upstream itself and reached only through the gateway.
   const assetsReady = (async () => {
     await Promise.all([loadAppCss(`${base}/assets/demo.css${v}`), loadAppCss(`${base}/assets/app.css${v}`)]);
     for (const sc of approvedScripts) {
       await loadScript(sc.src, sc.integrity).catch((err) => console.error(err));
     }
-    try { store('localStorage')?.setItem(ASSETS_KEY, version); } catch (_) { /* cota/privado */ }
+    try { store('localStorage')?.setItem(ASSETS_KEY, version); } catch (_) { /* quota/private */ }
   })();
 
-  // `target` = caminho da página no app (/{id}/{section}) + query.
+  // `target` = the page path in the app (/{id}/{section}) + query.
   async function fetchFragment(target) {
     let res;
     try {
-      // `x-hub-nav`: troca de página (analytics de navegação no hub; o gateway descarta
-      // x-hub-* antes do app).
+      // `x-hub-nav`: page change (navigation analytics in the hub; the gateway drops
+      // x-hub-* before the app).
       res = await fetch(fragUrl(target), {
         headers: { accept: 'text/html', 'x-hub-nav': '1' },
         credentials: 'same-origin',
@@ -255,11 +255,11 @@
       const retryAfter = res.headers && res.headers.get ? res.headers.get('retry-after') : null;
       return { ok: false, queued: true, retryAfter, html };
     }
-    // 502 do gateway e 404 do app já vêm como fragmento amigável.
+    // 502 from the gateway and 404 from the app already come as a friendly fragment.
     return { ok: false, retry: Policy.retriable(res.status, html), html: html.trim() ? html : unavailable() };
   }
 
-  // App reiniciando: estado amigável dentro do shell + novas tentativas até voltar.
+  // App restarting: friendly state inside the shell + new attempts until it returns.
   function retryView(html, seconds) {
     return `<div class="workspace workspace-no-sidebar" id="workspace"><section class="workspace-content hub-app-error"><div class="hub-retry" data-hub-retry="" role="status" aria-live="polite"><div class="hub-retry-spinner" aria-hidden="true"></div>${html}<p>Tentando de novo em <span data-hub-retry-in="">${seconds}</span> s…</p><p><a class="primary-button" href="/applications">Voltar à plataforma</a></p></div></section></div>`;
   }
@@ -278,8 +278,8 @@
     }
   }
 
-  // 429 (operação pesada em fila no app): estado amigável "em fila" com novas tentativas
-  // automáticas (Retry-After + jitter, até QUEUE_MAX); esgotadas, mostra o aviso do app.
+  // 429 (heavy operation queued in the app): friendly "queued" state with new
+  // automatic attempts (Retry-After + jitter, up to QUEUE_MAX); once exhausted, shows the app's warning.
   function queuedMarkup(label, seconds, attempt) {
     return `<div class="hub-retry" data-hub-queued-view="" role="status" aria-live="polite"><div class="hub-retry-spinner" aria-hidden="true"></div><h2>${label.replace(/[<>&"]/g, '')}</h2><p>O app está com muitas operações pesadas agora; a sua entra assim que houver vaga. Tentando de novo em <span data-hub-retry-in="">${seconds}</span> s (tentativa ${attempt + 1} de ${Policy.QUEUE_MAX})…</p></div>`;
   }
@@ -321,8 +321,8 @@
     return `<div class="workspace workspace-no-sidebar" id="workspace"><section class="workspace-content hub-app-error">${html}<p class="empty-state"><a class="primary-button" href="/applications">Voltar à plataforma</a></p></section></div>`;
   }
 
-  // Carregador do mockup: 0→100% em LOADER_MS com `1 - (1 - t)^2.2` (a % segue mesmo com
-  // prefers-reduced-motion; só o brilho da barra para, no CSS).
+  // Mockup loader: 0→100% in LOADER_MS with `1 - (1 - t)^2.2` (the % keeps going even with
+  // prefers-reduced-motion; only the bar's shine stops, in the CSS).
   function startLoader() {
     const box = root.querySelector('.app-loading');
     if (!box) return;
@@ -331,7 +331,7 @@
     const bar = box.querySelector('.loader-track');
     (function tick(now) {
       if (!box.isConnected || box.dataset.hubLoaderDone) return;
-      // Clamp: o carimbo do quadro (rAF) pode ser anterior a startedAt (daria -1%).
+      // Clamp: the frame timestamp (rAF) may be earlier than startedAt (would give -1%).
       const ratio = Math.max(0, Math.min((now - startedAt) / LOADER_MS, 1));
       const value = ratio >= 1 ? 100 : Math.floor((1 - Math.pow(1 - ratio, 2.2)) * 100);
       if (pct) pct.textContent = `${value}%`;
@@ -341,8 +341,8 @@
     })(performance.now());
   }
 
-  // Fim do carregador: o temporizador de LOADER_MS pode vencer antes do quadro de
-  // animação que chegaria a 100% — fecha em 100% e deixa um quadro pintar antes de trocar.
+  // End of the loader: the LOADER_MS timer may fire before the animation frame that would reach
+  // 100% — closes at 100% and lets one frame paint before swapping.
   function finishLoader() {
     const box = root.querySelector('.app-loading');
     if (!box) return Promise.resolve();
@@ -356,7 +356,7 @@
     return new Promise((r) => requestAnimationFrame(() => r()));
   }
 
-  // Skeleton de componentes (o do mockup): título, métricas, gráfico, lista e tabela.
+  // Component skeleton (the mockup's): title, metrics, chart, list and table.
   function skeletonMarkup() {
     const esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     return '<div class="skeleton-page-heading" aria-hidden="true"><div><i class="skeleton-block eyebrow-skeleton"></i><i class="skeleton-block title-skeleton"></i><i class="skeleton-block subtitle-skeleton"></i></div><i class="skeleton-block action-skeleton"></i></div>'
@@ -366,7 +366,7 @@
       + `<span class="component-loading-caption">${esc(tr('js.loading_app', 'Carregando {app}', { app: appName }))}</span>`;
   }
 
-  // Mostra o skeleton no lugar do conteúdo (com a sidebar do app, se já houver uma).
+  // Shows the skeleton in place of the content (with the app sidebar, if there is one already).
   function showSkeleton(section) {
     let content = root.querySelector('.workspace-content');
     if (!content || root.querySelector('.app-loading')) {
@@ -384,18 +384,18 @@
     });
   }
 
-  // Único caminho de HTML para o documento: sanitizado (hub-safe.js). Sem o sanitizador
-  // (script do hub não carregou) nada do app é inserido.
+  // The only HTML path into the document: sanitized (hub-safe.js). Without the sanitizer
+  // (hub script did not load) nothing from the app is inserted.
   function setHtml(el, html) {
     if (!window.HubSafe) { el.textContent = ''; return; }
-    // A faixa "Você está em staging" (servidor, dentro do #app-root) sobrevive à troca do conteúdo do app.
+    // The "You are in staging" strip (server, inside #app-root) survives the app content swap.
     const bar = el === root ? root.querySelector(':scope > [data-hub-staging-bar]') : null;
     window.HubSafe.setHTML(el, html, { app });
     if (bar) root.prepend(bar);
   }
 
   function mounted(scope) {
-    // Barra de navegação do app no celular: "<App> · <Seção>" (o botão vem do app).
+    // App navigation bar on the phone: "<App> · <Section>" (the button comes from the app).
     try {
       const bar = root.querySelector('[data-hub-menu="open"], [data-mobile-menu]');
       const sec = root.querySelector('.app-sidebar .nav-item.active')?.textContent.trim();
@@ -412,7 +412,7 @@
       }
     } catch (_) { /* barra opcional */ }
     try { window.HubKit?.mount(scope); } catch (err) { console.error(err); }
-    try { document.dispatchEvent(new CustomEvent('hub:mount', { detail: { root: scope, app } })); } catch (_) { /* nada */ }
+    try { document.dispatchEvent(new CustomEvent('hub:mount', { detail: { root: scope, app } })); } catch (_) { /* none */ }
     startPolling(scope);
   }
 
@@ -426,7 +426,7 @@
     mounted(root);
   }
 
-  // Substitui `el` (outerHTML) pelo HTML recebido (sanitizado); devolve os novos nós.
+  // Replaces `el` (outerHTML) with the HTML received (sanitized); returns the new nodes.
   function replaceElement(el, html) {
     const frag = window.HubSafe ? window.HubSafe.sanitize(html.trim(), { app }) : document.createDocumentFragment();
     const nodes = [...frag.children];
@@ -435,7 +435,7 @@
     return nodes;
   }
 
-  // Polling de elementos [data-hub-poll] (progresso de jobs em segundo plano).
+  // Polling of [data-hub-poll] elements (background job progress).
   function startPolling(scope) {
     const els = scope.matches?.('[data-hub-poll]') ? [scope] : [...scope.querySelectorAll('[data-hub-poll]')];
     els.forEach((el) => {
@@ -451,7 +451,7 @@
           if (html.trim()) replaceElement(el, html);
           else startPolling(el);
         } catch (_) {
-          if (el.isConnected) startPolling(el); // tenta de novo no próximo intervalo
+          if (el.isConnected) startPolling(el); // retries at the next interval
         }
       }, every);
     });
@@ -459,19 +459,19 @@
 
   async function open(target) {
     const token = ++navToken;
-    try { store('sessionStorage')?.setItem(OPENED_KEY, '1'); } catch (_) { /* privado */ }
+    try { store('sessionStorage')?.setItem(OPENED_KEY, '1'); } catch (_) { /* private */ }
     startLoader();
     const section = sectionOf(target.split('?')[0]);
     const fragment = Promise.all([fetchFragment(target), assetsReady.catch(() => {})]).then(([r]) => r);
-    // Erro conhecido antes do fim do carregador: mostra já (sem segurar com o tempo fixo).
+    // Known error before the end of the loader: shows it right away (without holding it for the fixed time).
     const early = await Promise.race([fragment, wait(LOADER_MS - (performance.now() - startedAt)).then(() => null)]);
     if (token !== navToken) return;
     if (early && !early.ok) return showFailure(target, token, early);
-    // Fragmento pronto antes: o carregador ainda cumpre o tempo fixo (decisão do dono).
+    // Fragment ready earlier: the loader still completes the fixed time (owner's decision).
     if (early) await wait(LOADER_MS - (performance.now() - startedAt));
     if (token !== navToken) return;
-    // Fim do carregador → skeleton de componentes; o conteúdo entra depois de SKELETON_MS
-    // (ou quando o fragmento chegar, se demorar mais).
+    // End of the loader → component skeleton; the content comes in after SKELETON_MS
+    // (or when the fragment arrives, if it takes longer).
     await finishLoader();
     if (token !== navToken) return;
     const skelAt = performance.now();
@@ -501,14 +501,14 @@
     if (push) history.pushState({}, '', target);
     if (!samePage) window.scrollTo(0, 0);
     const hasSidebar = Boolean(root.querySelector('.app-sidebar'));
-    // Mesma página com outra query (busca, filtro, paginação): sem skeleton — mas o
-    // conteúdo (ainda o antigo) fica sem receber cliques até o fragmento novo chegar,
-    // senão um segundo clique rápido (ex.: alternar a ordenação) acerta o link antigo,
-    // que ainda não reflete a troca, e o alvo calculado bate com o que já foi
-    // empurrado — o clique é descartado como "sem mudança" (onda 9: consulta ao
-    // servidor ficou mais lenta o bastante pra essa janela aparecer de verdade).
-    // Troca de página no app: skeleton por PAGE_SKELETON_MS fixos (ou até o fragmento chegar).
-    // `quiet` (voltar/avançar do navegador) cancela o skeleton, como no mockup.
+    // Same page with another query (search, filter, pagination): no skeleton — but the
+    // content (still the old one) does not receive clicks until the new fragment arrives,
+    // otherwise a second quick click (e.g. toggling the sorting) hits the old link,
+    // which does not yet reflect the change, and the target computed matches what was already
+    // pushed — the click is discarded as "no change" (wave 9: the server query became slow
+    // enough for this window to really show up).
+    // Page change in the app: skeleton for a fixed PAGE_SKELETON_MS (or until the fragment arrives).
+    // `quiet` (browser back/forward) cancels the skeleton, as in the mockup.
     const skeleton = hasSidebar && !samePage && !quiet;
     if (skeleton) showSkeleton(section);
     const skelAt = performance.now();
@@ -534,7 +534,7 @@
       }
       const scroller = root.querySelector('.workspace-content');
       const keep = samePage && scroller ? scroller.scrollTop : 0;
-      // Celular: quem rola é o documento (puxar para atualizar do navegador funciona).
+      // Phone: the document is what scrolls (the browser's pull-to-refresh works).
       const docKeep = samePage ? window.scrollY : 0;
       await swap(result.html);
       if (keep) { const s = root.querySelector('.workspace-content'); if (s) s.scrollTop = keep; }
@@ -545,8 +545,8 @@
     }
   }
 
-  // Acessibilidade (onda 9): depois de trocar de seção, o foco vai para o título da
-  // página nova (leitores de tela anunciam a mudança; o teclado continua dali).
+  // Accessibility (wave 9): after changing section, focus goes to the title of the
+  // new page (screen readers announce the change; the keyboard continues from there).
   function focusContent() {
     const h = root.querySelector('.workspace-content h1, .workspace-content h2') || root;
     if (!h.hasAttribute('tabindex')) h.setAttribute('tabindex', '-1');
@@ -564,11 +564,11 @@
     if (target !== pendingTarget) go(target, true);
   });
 
-  // Formulários do app (ação em /{id}/...): GET vira navegação; POST vai por XHR.
+  // App forms (action at /{id}/...): GET becomes navigation; POST goes by XHR.
   document.addEventListener('submit', (e) => {
     const form = e.target.closest('#app-root form');
     if (!form || e.defaultPrevented) return;
-    // Destino fora do app (sanitizador marcou): nunca sai daqui.
+    // Target outside the app (sanitizer marked it): never leaves from here.
     if (form.hasAttribute('data-hub-blocked') || e.submitter?.hasAttribute?.('data-hub-blocked')) { e.preventDefault(); return; }
     const action = new URL(form.getAttribute('action') || location.href, location.href);
     if (action.origin !== location.origin || !sectionOf(action.pathname)) return;
@@ -585,16 +585,16 @@
     submitPost(form, canon(action.pathname) + action.search, data);
   });
 
-  // Chave de idempotência por submissão (reusada nas novas tentativas automáticas):
-  // o app devolve a mesma resposta em vez de repetir a ação (hub-sdk).
+  // Idempotency key per submission (reused in the automatic new attempts):
+  // the app returns the same response instead of repeating the action (hub-sdk).
   function idempotencyKey() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
     const b = new Uint8Array(16);
     (window.crypto || {}).getRandomValues ? crypto.getRandomValues(b) : b.forEach((_, i) => { b[i] = Math.floor(Math.random() * 256); });
     return [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
   }
-  // Falhas transitórias (rede, app reiniciando, gateway sem resposta): nova tentativa
-  // com a MESMA chave, com espera crescente.
+  // Transient failures (network, app restarting, gateway without response): new attempt
+  // with the SAME key, with increasing wait.
   const RETRY_STATUS = [0, 502, 503, 504];
   const RETRY_DELAYS = [1000, 2000, 4000, 8000];
 
@@ -608,7 +608,7 @@
     const done = async (html) => {
       buttons.forEach((b) => { b.disabled = false; });
       const sel = form.dataset.hubTarget;
-      // Só um id (`#id`) dentro do conteúdo do app — nunca seletor montado com texto do app.
+      // Only an id (`#id`) inside the app content — never a selector built with app text.
       const m = /^#?([A-Za-z][\w-]*)$/.exec((sel || '').trim());
       const cand = m ? document.getElementById(m[1]) : null;
       const el = cand && cand !== root && root.contains(cand) ? cand : null;

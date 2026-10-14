@@ -2,9 +2,9 @@ import { test, expect, type Page } from '@playwright/test';
 import path from 'node:path';
 import { HUB, apiAs, json, openApp, stateFile, CP } from './helpers';
 
-// Lote de revisão da Administração: rail sem contadores, Containers no estilo Docker
-// Desktop (lista + painel de detalhes), "Nova conexão ▾", filtros por coluna em Tarefas e
-// Logs só com registros reais. Compose no ar.
+// Administration review batch: rail without counters, Containers in Docker Desktop style
+// (list + details panel), "New connection ▾", column filters in Tasks and
+// Logs only with real records. Stack up.
 test.use({ storageState: stateFile('admin') });
 const DIST = path.resolve(__dirname, '..', '..', 'dist');
 const MOBILE = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true };
@@ -25,7 +25,7 @@ test('containers: lista limpa e painel com variáveis mascaradas, logs e inspect
   await page.goto('/admin/runtime');
   const rows = page.locator('tr[data-ops-row]');
   await expect(rows.first()).toBeVisible();
-  // No máximo um selo por linha; um só ícone neutro para todos.
+  // At most one badge per row; one neutral icon for all.
   for (const r of await rows.all()) {
     expect(await r.locator('.status-pill').count()).toBeLessThanOrEqual(1);
     await expect(r.locator('.ops-ct-icon')).toHaveCount(1);
@@ -40,7 +40,7 @@ test('containers: lista limpa e painel com variáveis mascaradas, logs e inspect
   await expect(drawer).toBeVisible();
   await expect(drawer.locator('[data-ops-drawer-title]')).toHaveText(`${CP}app-ativos`);
   await expect(drawer.locator('.ops-detail:not([hidden]) .ops-facts')).toContainText('Porta interna');
-  // Fundo não fecha.
+  // Background does not close.
   await page.mouse.click(50, 450);
   await expect(drawer).toBeVisible();
   await drawer.getByRole('tab', { name: 'Variáveis vinculadas' }).click();
@@ -64,7 +64,7 @@ test('containers: lista limpa e painel com variáveis mascaradas, logs e inspect
   await page.screenshot({ path: path.join(DIST, 'runtime-details.png') });
   await page.keyboard.press('Escape');
   await expect(drawer).toBeHidden();
-  // ⋯ → Ver logs abre direto na aba.
+  // ⋯ → View logs opens directly on the tab.
   await row.locator('summary').click();
   await row.getByRole('menuitem', { name: 'Ver logs' }).click();
   await expect(drawer.getByRole('tab', { name: 'Logs' })).toHaveAttribute('aria-selected', 'true');
@@ -91,7 +91,7 @@ test('conexões: um botão "Nova conexão" com menu acessível @core', async ({ 
 });
 
 test('tarefas: filtros por coluna com estado na URL @core', async ({ page }) => {
-  // Garante ao menos uma tarefa real (exportação do Ativos).
+  // Ensures at least one real task (export from Ativos).
   const api = await apiAs('admin');
   const has = async () => { const t = await json(await api.get('/api/ops/tasks')); return ((t.tasks || t.items || t) as unknown[]).length; };
   if (!(await has())) {
@@ -114,7 +114,7 @@ test('tarefas: filtros por coluna com estado na URL @core', async ({ page }) => 
   await expect(pop.locator(`input[value="${firstApp}"]`)).toBeChecked();
   await page.screenshot({ path: path.join(DIST, 'tasks-filters.png') });
   await page.keyboard.press('Escape');
-  // Intervalo de datas: a partir de amanhã não há tarefas.
+  // Date range: from tomorrow on there are no tasks.
   await table.locator('[data-hub-cf-col="data"]').click();
   const d = new Date(Date.now() + 86_400_000);
   const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -125,13 +125,13 @@ test('tarefas: filtros por coluna com estado na URL @core', async ({ page }) => 
   await expect(table.locator('[data-hub-cf-col="data"]')).toHaveClass(/on/);
   await expect(table.locator('tbody tr:visible')).toHaveCount(0);
   await expect(page.locator('.hub-cf-empty')).toBeVisible();
-  // Estado da URL é restaurado ao recarregar; "Limpar tudo" volta tudo.
+  // URL state is restored on reload; "Clear all" brings everything back.
   await page.reload();
   await expect(table.locator('tbody tr:visible')).toHaveCount(0);
   await page.getByRole('button', { name: 'Limpar tudo' }).click();
   await expect(page).not.toHaveURL(/f\.data=/);
   await expect(table.locator('tbody tr:visible')).toHaveCount(total);
-  // Link compartilhado com filtro de app.
+  // Shared link with an app filter.
   await page.goto(`/admin/tasks?f.app=${firstApp}&sort=data:desc`);
   for (const r of await rows.all()) if (await r.isVisible()) await expect(r.locator('td').nth(1)).toHaveAttribute('data-hub-value', firstApp);
   await expect(table.locator('th[data-hub-col="data"]')).toHaveAttribute('aria-sort', 'descending');

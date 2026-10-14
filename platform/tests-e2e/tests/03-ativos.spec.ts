@@ -5,7 +5,7 @@ import { bigXlsx, openApp, stateFile, uniq } from './helpers';
 test.use({ storageState: stateFile('admin') });
 test.describe.configure({ mode: 'serial' });
 
-// Planilha "grande" do roteiro: 200 mil linhas (1% com erro) com prefixo único por execução.
+// "Large" spreadsheet from the script: 200 thousand rows (1% with errors) with a unique prefix per run.
 const ROWS = Number(process.env.E2E_IMPORT_ROWS || 200_000);
 const PREFIX = `E2E${uniq()}-`;
 
@@ -22,7 +22,7 @@ test('ativos: busca, ordenação e filtros no servidor @core', async ({ page }) 
     const names = await rows(page).locator('td:first-child').allTextContents();
     return names.length > 0 && names.every((t) => t.includes('MacBook'));
   }).toBe(true);
-  // Filtro por status (mantém a busca)
+  // Filter by status (keeps the search)
   await page.selectOption('select[name="status"]', 'Manutenção');
   await page.click('.hub-filters button.filter-button');
   await expect(page).toHaveURL(/status=Manuten/);
@@ -30,7 +30,7 @@ test('ativos: busca, ordenação e filtros no servidor @core', async ({ page }) 
     const st = (await rows(page).locator('td:nth-child(5)').allTextContents()).map((t) => t.trim());
     return st.length > 0 && st.every((t) => t === 'Manutenção');
   }).toBe(true);
-  // Ordenação por valor (crescente e depois decrescente)
+  // Sort by value (ascending, then descending)
   await page.locator('a.hub-sort', { hasText: 'Valor' }).click();
   await expect(page).toHaveURL(/sort=valor&dir=asc/);
   const money = async () => (await rows(page).locator('td:nth-child(7)').allTextContents())
@@ -39,7 +39,7 @@ test('ativos: busca, ordenação e filtros no servidor @core', async ({ page }) 
   await page.locator('a.hub-sort', { hasText: 'Valor' }).click();
   await expect(page).toHaveURL(/sort=valor&dir=desc/);
   await expect.poll(async () => { const d = await money(); return d.length > 3 && d.every((v, i) => i === 0 || d[i - 1] >= v) && d[0] > d[d.length - 1]; }).toBe(true);
-  // Limpar volta à lista completa
+  // Clear returns to the full list
   await page.click('.hub-filters a.hub-link');
   await expect(page).toHaveURL(/\/apps\/ativos\/assets$/);
 });
@@ -74,7 +74,7 @@ test(`ativos: importar planilha grande (${ROWS} linhas) com progresso e relatór
   await openApp(page, '/apps/ativos/assets?import=1');
   await page.setInputFiles('#f-file', file);
   await page.locator('#import-panel button[type="submit"]').click();
-  // Progresso (tarefa durável; o painel é consultado a cada 1 s)
+  // Progress (durable task; the panel is polled every 1 s)
   await expect(page.locator('#import-panel .hub-progress')).toBeVisible({ timeout: 60_000 });
   await expect(page.locator('#import-panel .eyebrow')).toHaveText('IMPORTAÇÃO CONCLUÍDA', { timeout: 540_000 });
   const report = page.locator('#import-panel a[href*="erros.csv"]');
@@ -84,7 +84,7 @@ test(`ativos: importar planilha grande (${ROWS} linhas) com progresso e relatór
   const lines = csv.trim().split(/\r?\n/);
   expect(lines.length).toBeGreaterThan(10);
   test.info().annotations.push({ type: 'import', description: `${ROWS} linhas · ${lines.length - 1} erros no relatório` });
-  // As válidas estão na lista
+  // The valid ones are in the list
   await openApp(page, `/apps/ativos/assets?q=${encodeURIComponent(PREFIX)}`);
   await expect(page.locator('.page-subtitle')).not.toContainText(/^0 ativos/);
 });

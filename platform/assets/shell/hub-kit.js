@@ -1,63 +1,63 @@
-/* hub-kit.js — comportamentos declarativos `data-hub-*` para os apps (onda 12, item 2.1).
+/* hub-kit.js — declarative `data-hub-*` behaviors for the apps (wave 12, item 2.1).
  *
- * Por padrão um app NÃO roda JavaScript próprio (a CSP da página de app só aceita os
- * scripts do hub e os raros scripts de app aprovados pela administração, com SRI). Tudo o
- * que os apps faziam com JS vira atributo interpretado aqui — documentação completa com
- * exemplos em docs/CONTRATO-APP.md, §25:
+ * By default an app does NOT run its own JavaScript (the app page CSP only accepts the hub's
+ * scripts and the rare app scripts approved by the administration, with SRI). Everything the
+ * apps used to do with JS becomes an attribute interpreted here — full documentation with
+ * examples in docs/CONTRATO-APP.md, §25:
  *
- *   atualização parcial  data-hub-get / data-hub-post="/apps/{app}/…", data-hub-target="#id",
+ *   partial update       data-hub-get / data-hub-post="/apps/{app}/…", data-hub-target="#id",
  *                        data-hub-swap="outerHTML|innerHTML|beforeend|afterbegin|none",
  *                        data-hub-trigger="click|change|submit|input|load|every 5s",
- *                        data-hub-include="#form" (campos enviados junto)
- *   confirmação          data-hub-confirm="Texto"   (links, botões, formulários)
- *   modal                data-hub-modal="#template-id"; dentro: data-hub-close;
- *                        <form data-hub-dismiss data-hub-toast="…"> fecha sem enviar
- *   tabela               <table data-hub-table data-hub-page-size="10">, <th data-hub-sort>,
+ *                        data-hub-include="#form" (fields sent along)
+ *   confirmation         data-hub-confirm="Text"   (links, buttons, forms)
+ *   modal                data-hub-modal="#template-id"; inside: data-hub-close;
+ *                        <form data-hub-dismiss data-hub-toast="…"> closes without sending
+ *   table                <table data-hub-table data-hub-page-size="10">, <th data-hub-sort>,
  *                        <input data-hub-filter="#tabela|#lista" data-hub-filter-empty="#vazio">
- *   upload com progresso <form enctype="multipart/form-data"> + [data-hub-progress]
- *                        (<progress> ou texto) — tratado pelo hub.js
- *   gráficos             data-hub-chart='{"type":"bar|line|area|donut",…}' e
- *                        data-hub-charts='[config TimeSeriesChart]' (gráfico pré-renderizado)
- *   toast                data-hub-toast="Mensagem" (clique) ou cabeçalho X-Hub-Toast na resposta
- *   copiar               data-hub-copy="texto" ou data-hub-copy-from="#id"
- *   abas                 [data-hub-tabs] > [data-hub-tab="#painel"]
- *   selects dependentes  <select data-hub-depends="#pai" data-hub-options='{"v":[["id","rótulo"]]}'>
- *   validação            <form data-hub-validate> + data-hub-msg-required / -type / -pattern /
- *                        -min / -max / -minlength / -maxlength nos campos
- *   menu móvel           data-hub-menu="open|close" (sidebar do app em telas estreitas)
- *   tempo real           data-hub-ws="/apps/{app}/ws/…" (WebSocket pelo gateway) +
- *                        data-hub-ws-target="#id" / data-hub-ws-swap="outerHTML|…": mensagens
- *                        {"html":"…","target":"#id","swap":"…"} (ou {"fragments":[…]}) entram
- *                        pelo hub-safe.js; {"event":"nome","data":…} vira o evento `hub:ws`;
- *                        reconecta com espera crescente; enquanto o socket cai, o
- *                        data-hub-get + data-hub-trigger="every 2s" do mesmo elemento faz polling
- *                        data-hub-sse="/apps/{app}/…" (SSE pelo gateway, via /_frag): mesmas
- *                        mensagens no `data:` de cada evento, -target/-swap, evento `hub:sse`
+ *   upload with progress <form enctype="multipart/form-data"> + [data-hub-progress]
+ *                        (<progress> or text) — handled by hub.js
+ *   charts               data-hub-chart='{"type":"bar|line|area|donut",…}' and
+ *                        data-hub-charts='[TimeSeriesChart config]' (pre-rendered chart)
+ *   toast                data-hub-toast="Message" (click) or X-Hub-Toast header in the response
+ *   copy                 data-hub-copy="text" or data-hub-copy-from="#id"
+ *   tabs                 [data-hub-tabs] > [data-hub-tab="#panel"]
+ *   dependent selects    <select data-hub-depends="#parent" data-hub-options='{"v":[["id","label"]]}'>
+ *   validation           <form data-hub-validate> + data-hub-msg-required / -type / -pattern /
+ *                        -min / -max / -minlength / -maxlength on the fields
+ *   mobile menu          data-hub-menu="open|close" (app sidebar on narrow screens)
+ *   real time            data-hub-ws="/apps/{app}/ws/…" (WebSocket through the gateway) +
+ *                        data-hub-ws-target="#id" / data-hub-ws-swap="outerHTML|…": messages
+ *                        {"html":"…","target":"#id","swap":"…"} (or {"fragments":[…]}) go
+ *                        through hub-safe.js; {"event":"name","data":…} becomes the `hub:ws` event;
+ *                        reconnects with increasing wait; while the socket is down, the
+ *                        data-hub-get + data-hub-trigger="every 2s" of the same element polls
+ *                        data-hub-sse="/apps/{app}/…" (SSE through the gateway, via /_frag): same
+ *                        messages in the `data:` of each event, -target/-swap, `hub:sse` event
  *
- * Todo HTML recebido passa pelo hub-safe.js; URLs de data-hub-get/post só valem dentro do
- * próprio app (`/apps/{app}/…`, buscadas via gateway em /_frag); textos entram por textContent. */
+ * All received HTML goes through hub-safe.js; URLs of data-hub-get/post are only valid inside
+ * the app itself (`/apps/{app}/…`, fetched through the gateway at /_frag); texts are inserted via textContent. */
 (function () {
   'use strict';
   const Pure = {
-    /** `every 5s` / `every 500ms` → ms (mínimo 1 s); outro gatilho → null. */
+    /** `every 5s` / `every 500ms` → ms (minimum 1 s); any other trigger → null. */
     everyMs(trigger) {
       const m = /(?:^|\s)every\s+(\d+(?:\.\d+)?)(ms|s)\b/.exec(String(trigger || ''));
       if (!m) return null;
       const v = Number(m[1]) * (m[2] === 's' ? 1000 : 1);
       return Math.max(1000, Math.round(v));
     },
-    /** Gatilho padrão pelo elemento. */
+    /** Default trigger for the element. */
     defaultTrigger(tag, type) {
       if (tag === 'form') return 'submit';
       if (tag === 'select' || (tag === 'input' && ['checkbox', 'radio', 'file', 'date', 'range'].includes(type))) return 'change';
       if (tag === 'input' || tag === 'textarea') return 'input';
       return 'click';
     },
-    /** Texto normalizado para filtro (minúsculas, sem acento). */
+    /** Text normalized for filtering (lowercase, no accents). */
     fold(s) {
       return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
     },
-    /** Comparação de células para ordenação (`num`, `date` dd/mm/aaaa ou texto pt-BR). */
+    /** Cell comparison for sorting (`num`, `date` dd/mm/yyyy or pt-BR text). */
     compare(a, b, kind) {
       if (kind === 'num') {
         const n = (s) => { const v = parseFloat(String(s).replace(/[^\d,.-]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.')); return Number.isFinite(v) ? v : -Infinity; };
@@ -69,24 +69,24 @@
       }
       return String(a).localeCompare(String(b), 'pt-BR', { sensitivity: 'base', numeric: true });
     },
-    /** Referência a elemento em atributo data-hub-*: só um id (`id` ou `#id`,
-     *  `^[A-Za-z][\w-]*$`). Nada de seletor montado com texto do app (onda 12, H1). */
+    /** Element reference in a data-hub-* attribute: only an id (`id` or `#id`,
+     *  `^[A-Za-z][\w-]*$`). No selector built from app text (wave 12, H1). */
     idToken(v) {
       const t = String(v == null ? '' : v).trim().replace(/^#/, '');
       return /^[A-Za-z][\w-]*$/.test(t) ? t : null;
     },
-    /** Espera da reconexão do WebSocket (ms): 1 s, 2 s, 4 s… até 30 s, ±25 %. */
+    /** WebSocket reconnection wait (ms): 1 s, 2 s, 4 s… up to 30 s, ±25 %. */
     wsBackoff(attempt, rand) {
       const base = Math.min(30000, 1000 * 2 ** Math.max(0, Math.min(5, attempt | 0)));
       const r = typeof rand === 'number' ? rand : Math.random();
       return Math.round(base * (0.75 + 0.5 * r));
     },
-    /** Caminho de socket do app no gateway: `/{app}/ws` ou `/{app}/ws/…`. */
+    /** App socket path on the gateway: `/{app}/ws` or `/{app}/ws/…`. */
     isWsPath(p) {
       return /^\/[a-z0-9][a-z0-9-]*\/ws(?:[/?]|$)/.test(String(p || ''));
     },
-    /** Texto recebido no socket → lista de mensagens ({html,target,swap} | {event,data} |
-     *  {text,target}); texto que não é JSON é HTML para o alvo padrão. Máx. 20 por quadro. */
+    /** Text received on the socket → list of messages ({html,target,swap} | {event,data} |
+     *  {text,target}); text that is not JSON is HTML for the default target. Max. 20 per frame. */
     wsMessages(data) {
       const s = String(data == null ? '' : data);
       let m;
@@ -95,7 +95,7 @@
       const list = Array.isArray(m) ? m : Array.isArray(m.fragments) ? m.fragments : [m];
       return list.filter((x) => x && typeof x === 'object').slice(0, 20);
     },
-    /** Páginas de `total` itens em blocos de `size`. */
+    /** Pages of `total` items in blocks of `size`. */
     pages(total, size) {
       return size > 0 ? Math.max(1, Math.ceil(total / size)) : 1;
     },
@@ -106,15 +106,15 @@
   }
   if (window.HubKit) return;
   const me = document.querySelector('script[data-hub-app]');
-  // O hub-kit carrega ANTES do hub.js (que traz data-hub-app): o id do app é lido na hora.
+  // hub-kit loads BEFORE hub.js (which carries data-hub-app): the app id is read right away.
   const curApp = () => { const m = document.querySelector('script[data-hub-app]'); return (m && m.dataset.hubApp) || document.documentElement.dataset.hubApp || ''; };
   const frag = (me && me.dataset.hubFrag) || '/_frag';
   const Safe = window.HubSafe;
   const SCOPE = '#app-root, [data-hub-layer]';
   const inScope = (el) => Boolean(el && el.closest && el.closest(SCOPE));
   const appRoot = () => document.getElementById('app-root');
-  /** Elemento nomeado num atributo data-hub-*: id puro, dentro do conteúdo do app (ou de
-   *  uma camada do hub aberta por ele) e nunca o próprio #app-root. */
+  /** Element named in a data-hub-* attribute: a bare id, inside the app content (or of
+   *  a hub layer opened by it) and never #app-root itself. */
   function ref(value, opts) {
     const id = Pure.idToken(value);
     if (!id) { if (value) console.warn('data-hub-*: use só um id (#id)', value); return null; }
@@ -152,13 +152,13 @@
     toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
   }
 
-  // ---- caminhos do próprio app ----
+  // ---- the app's own paths ----
   function ownPath(url) {
     if (!url) return null;
     let u;
     try { u = new URL(url, location.href); } catch (_) { return null; }
     if (u.origin !== location.origin) return null;
-    // Público `/apps/{app}/…` (ou o antigo `/{app}/…`) → caminho no gateway `/{app}/…`.
+    // Public `/apps/{app}/…` (or the old `/{app}/…`) → path on the gateway `/{app}/…`.
     const p = u.pathname.startsWith('/apps/') ? u.pathname.slice(5) : u.pathname;
     const app = curApp();
     if (!app || (p !== `/${app}` && !p.startsWith(`/${app}/`))) return null;
@@ -170,7 +170,7 @@
     return `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`;
   }
 
-  // ---- inserção segura ----
+  // ---- safe insertion ----
   function insert(target, html, swap) {
     const frag = Safe.sanitize(html, { app: curApp() });
     const nodes = [...frag.childNodes].filter((n) => n.nodeType === 1);
@@ -228,7 +228,7 @@
       const note = res.headers.get('x-hub-toast');
       if (target.isConnected && html.trim()) insert(target, html, swap);
       else if (target.isConnected && swap !== 'none' && !res.ok) toast(t('js.kit_error', 'Não foi possível concluir a operação.'));
-      if (note) { let msg = note; try { msg = decodeURIComponent(note); } catch (_) { /* texto cru */ } toast(msg); }
+      if (note) { let msg = note; try { msg = decodeURIComponent(note); } catch (_) { /* raw text */ } toast(msg); }
       else if (res.ok && el.dataset.hubToast) toast(el.dataset.hubToast);
     } catch (_) {
       toast(t('js.kit_offline', 'Sem conexão com a aplicação. Tente de novo.'));
@@ -237,7 +237,7 @@
     }
   }
 
-  // ---- confirmação ----
+  // ---- confirmation ----
   function dialog(build, onClose) {
     const host = document.createElement('div');
     host.className = 'overlay';
@@ -251,10 +251,10 @@
     const close = (v) => {
       host.remove();
       document.removeEventListener('keydown', esc, true);
-      try { prev && prev.focus && prev.focus(); } catch (_) { /* nada */ }
+      try { prev && prev.focus && prev.focus(); } catch (_) { /* none */ }
       onClose && onClose(v);
     };
-    // Clicar fora não fecha (o que foi digitado se perderia); Esc só fecha sem alterações.
+    // Clicking outside does not close (what was typed would be lost); Esc only closes without changes.
     const esc = (e) => { if (e.key === 'Escape') { e.preventDefault(); if (!host.dataset.dirty) close(false); } };
     document.addEventListener('keydown', esc, true);
     host.addEventListener('input', () => { host.dataset.dirty = '1'; }); host.addEventListener('change', () => { host.dataset.dirty = '1'; });
@@ -297,7 +297,7 @@
   }
 
   const confirmed = new WeakSet();
-  /** Segura o evento até o usuário confirmar; confirmado, repete a ação uma vez. */
+  /** Holds the event until the user confirms; once confirmed, repeats the action once. */
   function guard(e, el, replay, text) {
     if (confirmed.has(el)) { confirmed.delete(el); return false; }
     e.preventDefault();
@@ -322,7 +322,7 @@
     });
   }
 
-  // ---- validação de formulário ----
+  // ---- form validation ----
   const MSG = [['valueMissing', 'required'], ['typeMismatch', 'type'], ['patternMismatch', 'pattern'], ['rangeUnderflow', 'min'], ['rangeOverflow', 'max'], ['tooShort', 'minlength'], ['tooLong', 'maxlength'], ['stepMismatch', 'step'], ['badInput', 'type']];
   function fieldMessage(f) {
     for (const [k, attr] of MSG) if (f.validity[k]) return f.getAttribute(`data-hub-msg-${attr}`) || f.validationMessage;
@@ -462,9 +462,9 @@
   }
 
 
-  // ---- tempo real (WebSocket pelo gateway) ----
-  // Um socket por URL; o elemento dono pode ser trocado por um fragmento (outerHTML) — o
-  // novo elemento com o mesmo data-hub-ws herda o socket. Sem dono por 3 s → fecha.
+  // ---- real time (WebSocket through the gateway) ----
+  // One socket per URL; the owning element can be swapped for a fragment (outerHTML) — the
+  // new element with the same data-hub-ws inherits the socket. No owner for 3 s → closes.
   const sockets = new Map();
   const polls = new WeakMap();
   const wsOwners = (url, attr = 'data-hub-ws') => [...document.querySelectorAll(`[${attr}]`)].filter((e) => e.getAttribute(attr) === url && inScope(e));
@@ -536,21 +536,21 @@
       if (wsOwners(st.url).length) continue;
       st.closing = true;
       clearTimeout(st.retry);
-      try { st.ws && st.ws.close(1000); } catch (_) { /* nada */ }
+      try { st.ws && st.ws.close(1000); } catch (_) { /* none */ }
       sockets.delete(st.url);
     }
     for (const st of [...streams.values()]) {
       if (wsOwners(st.url, st.attr).length) continue;
       clearTimeout(st.retry);
-      try { st.es && st.es.close(); } catch (_) { /* nada */ }
+      try { st.es && st.es.close(); } catch (_) { /* none */ }
       streams.delete(st.url);
     }
     if (!sockets.size && !streams.size) { clearInterval(sweeper); sweeper = 0; }
   }
 
-  // ---- tempo real (SSE pelo gateway) ----
-  // Mesmo formato de mensagem do data-hub-ws (cada `data:` do evento), um EventSource por
-  // URL em /_frag; se o fluxo cai, o data-hub-get + data-hub-trigger faz polling até voltar.
+  // ---- real time (SSE through the gateway) ----
+  // Same message format as data-hub-ws (each `data:` of the event), one EventSource per
+  // URL in /_frag; if the stream drops, data-hub-get + data-hub-trigger polls until it comes back.
   const streams = new Map();
   function sseConnect(st) {
     const owners = wsOwners(st.url, st.attr);
@@ -566,7 +566,7 @@
       wsOwners(st.url, st.attr).forEach((o) => { wsPoll(o, false); if (resync && o.hasAttribute('data-hub-get')) request(o); });
     };
     es.onmessage = (e) => wsApply(st, e.data);
-    // O navegador reconecta sozinho; erro com o fluxo fechado (status ≠ 200) = nós.
+    // The browser reconnects on its own; an error with the stream closed (status ≠ 200) = us.
     es.onerror = () => { if (es.readyState === 2 && st.es === es) { st.es = null; sseLost(st); } else if (!st.failed) { st.failed = true; wsState(st, 'polling'); wsOwners(st.url, st.attr).forEach((o) => wsPoll(o, true)); } };
   }
   function sseLost(st) {
@@ -593,7 +593,7 @@
     if (!sweeper) sweeper = setInterval(wsSweep, 3000);
   }
 
-  // ---- montagem de um trecho novo ----
+  // ---- building a new fragment ----
   const timers = new WeakMap();
   function mount(scope) {
     if (!scope || !scope.querySelectorAll) return;
@@ -614,7 +614,7 @@
       const trig = el.getAttribute('data-hub-trigger') || '';
       if (/(^|\s)load(\s|$)/.test(trig)) request(el);
       const every = Pure.everyMs(trig);
-      // Com data-hub-ws/-sse o polling é o plano B: só liga quando o fluxo cai (wsPoll).
+      // With data-hub-ws/-sse, polling is the fallback: it only starts when the stream drops (wsPoll).
       if (every && !timers.has(el) && !el.hasAttribute('data-hub-ws') && !el.hasAttribute('data-hub-sse')) {
         const id = setInterval(() => { if (!el.isConnected) { clearInterval(id); return; } request(el); }, every);
         timers.set(el, id);
@@ -625,7 +625,7 @@
   const triggerOf = (el) => el.getAttribute('data-hub-trigger') || Pure.defaultTrigger(el.tagName.toLowerCase(), (el.getAttribute('type') || '').toLowerCase());
   const wants = (el, kind) => triggerOf(el).split(/\s*,\s*|\s+/).includes(kind);
 
-  // ---- delegação ----
+  // ---- delegation ----
   document.addEventListener('keydown', (e) => {
     const ws = document.getElementById('workspace');
     if (e.key !== 'Escape' || !ws?.classList.contains('menu-open')) return;
@@ -641,7 +641,7 @@
     if (c && c.tagName !== 'FORM' && inScope(c) && !(c.type === 'submit' && c.form)) {
       if (guard(e, c, () => c.click())) return;
     }
-    // Escolher uma seção (ou tocar no fundo) fecha o painel de navegação do app.
+    // Choosing a section (or tapping the background) closes the app's navigation panel.
     if (t0.closest('.app-sidebar a[href], .mobile-backdrop')) {
       const ws = document.getElementById('workspace');
       if (ws?.classList.contains('menu-open')) {
@@ -652,7 +652,7 @@
     const menu = t0.closest('[data-hub-menu], [data-mobile-menu], [data-mobile-close]');
     if (menu) {
       const ws = document.getElementById('workspace');
-      // O botão "open" alterna (no celular a barra do app abre e fecha o painel de seções).
+      // The "open" button toggles (on phones the app bar opens and closes the sections panel).
       const open = (menu.getAttribute('data-hub-menu') === 'open' || menu.hasAttribute('data-mobile-menu')) && !ws?.classList.contains('menu-open');
       ws?.classList.toggle('menu-open', open);
       ws?.querySelectorAll('[data-hub-menu="open"], [data-mobile-menu]').forEach((b) => b.setAttribute('aria-expanded', String(open)));
@@ -696,7 +696,7 @@
     next.focus();
   });
 
-  // Captura: roda antes do hub.js (que envia os formulários do app).
+  // Capture: runs before hub.js (which submits the app's forms).
   document.addEventListener('submit', (e) => {
     const form = e.target;
     if (!inScope(form)) return;

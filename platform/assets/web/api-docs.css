@@ -1,7 +1,7 @@
-/* Documentação da API v1 (onda 11): visualizador mínimo, sem dependências externas. */
+/* API v1 documentation (wave 11): minimal viewer, no external dependencies. */
 :root { --bg: #F4F6FB; --fg: #334E68; --muted: #52606D; --card: #FFFFFF; --line: #E1E6F0; --get: #3A4FD8; --post: #0B6B3A; --put: #8A4B00; --delete: #9B1C1C; --danger-bg: #FDECEC; --on-method: #FFFFFF; --link: #3A4FD8; }
 @media (prefers-color-scheme: dark) { :root[data-theme="auto"] { --bg: #191919; --fg: #EDEDED; --muted: #A5A5A5; --card: #202020; --line: #2F2F2F; --get: #3A4FD8; --post: #0B6B3A; --put: #8A4B00; --delete: #9B1C1C; --danger-bg: #33201E; --link: #8FA3FF; } }
-/* Nunito Sans (interface) e Red Hat Mono (código) servidas pelo hub (identidade Alvesmaia; OFL em /assets/fonts/OFL.txt). */
+/* Nunito Sans (interface) and Red Hat Mono (code) served by the hub (Alvesmaia identity; OFL in /assets/fonts/OFL.txt). */
 @font-face { font-family: "Nunito Sans"; font-display: swap; font-weight: 400 900; src: url("/assets/fonts/nunito-sans-latin-wght-normal.woff2") format("woff2-variations"), url("/assets/fonts/nunito-sans-latin-wght-normal.woff2") format("woff2"); }
 @font-face { font-family: "Red Hat Mono"; font-display: swap; font-weight: 300 700; src: url("/assets/fonts/red-hat-mono-latin-wght-normal.woff2") format("woff2"); }
 * { box-sizing: border-box; }

@@ -1,4 +1,4 @@
-// Capturas da entrega (identidade dos apps, rail, loader) → platform/dist/.
+// Delivery screenshots (apps identity, rail, loader) → platform/dist/.
 import { chromium } from '@playwright/test';
 import path from 'node:path';
 const HUB = process.env.HUB || 'http://localhost:8080';

@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test';
 import path from 'node:path';
 import { stateFile } from './helpers';
 
-// F24 — portal do desenvolvedor: navegação entre seções, filtro, cópia de código e «Copiar prompt» (área de
-// transferência simulada; o fallback execCommand cobre contexto não seguro). Capturas em platform-py/dist/shots.
+// F24 — developer portal: navigation between sections, filter, code copy and «Copy prompt» (simulated clipboard;
+// the execCommand fallback covers an insecure context). Screenshots in platform-py/dist/shots.
 test.use({ storageState: stateFile('admin') });
 const SHOTS = path.resolve(__dirname, '../../../platform-py/dist/shots');
 
@@ -31,14 +31,14 @@ test('developers: navegação, âncoras, filtro e Markdown cru @core', async ({ 
     await expect(page.locator('.dev-crumbs [aria-current="page"]')).toHaveText(label);
   }
   await page.goto('/developers/cli');
-  await page.locator('.dev-doc a', { hasText: 'Publicar' }).click(); // cada comando é uma página
+  await page.locator('.dev-doc a', { hasText: 'Publicar' }).click(); // each command is a page
   await expect(page).toHaveURL(/\/developers\/cli\/hub-deploy$/);
   await expect(page.locator('.dev-doc h1')).toHaveText('Publicar');
   await page.goto('/developers/cli');
   await expect(page.locator('[data-dev-raw]')).toHaveCount(0);
   await expect(page.locator('link[rel="alternate"][type="text/markdown"]')).toHaveAttribute('href', '/dev/docs/cli.md');
   await expect(page.locator('.app-page-header')).toHaveCount(0);
-  // filtro da barra lateral: «/» foca; sem acerto mostra o aviso
+  // sidebar filter: «/» focuses; with no match it shows the warning
   await page.locator('body').press('/');
   await expect(page.locator('[data-dev-nav-filter]')).toBeFocused();
   await page.keyboard.type('zzzz-nada');
@@ -57,7 +57,7 @@ test('developers: «Nesta página» acompanha a rolagem com o trilho ativo', asy
   const path = page.locator('.dev-toc-rail path');
   await expect(page.locator('.dev-toc-rail')).toHaveClass(/(^| )on( |$)/);
   const first = await path.evaluate((p) => (p as SVGPathElement).style.strokeDashoffset);
-  await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight)); // fim: o último item
+  await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight)); // end: the last item
   await expect(page.locator('.dev-toc-link').last()).toHaveAttribute('aria-current', 'true');
   await expect.poll(() => path.evaluate((p) => (p as SVGPathElement).style.strokeDashoffset)).not.toBe(first);
   await page.locator('.dev-toc-link').first().click();

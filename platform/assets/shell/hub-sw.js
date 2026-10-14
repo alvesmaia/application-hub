@@ -1,12 +1,12 @@
-/* hub-sw.js — service worker do hub (onda 13, PWA). Escopo `/`.
+/* hub-sw.js — hub service worker (wave 13, PWA). Scope `/`.
  *
- * - Guarda só o "casco" do hub: CSS/JS/fontes/ícones de /assets/ e a página /offline.
- * - Navegação: sempre pela rede; sem rede, a página /offline (nunca uma página de app
- *   guardada — páginas autenticadas não vão para o cache).
- * - /api, /_frag, /mcp, /oauth, /login, /auth, /_dev: nunca interceptados nem guardados.
- *   A fila de envios offline dos apps é do hub-device.js (IndexedDB na página), não daqui.
- * - Assets: rede primeiro (o modo de desenvolvimento e as versões novas valem na hora);
- *   o cache só responde quando a rede falha.
+ * - Caches only the hub "shell": CSS/JS/fonts/icons from /assets/ and the /offline page.
+ * - Navigation: always over the network; without network, the /offline page (never a cached
+ *   app page — authenticated pages do not go into the cache).
+ * - /api, /_frag, /mcp, /oauth, /login, /auth, /_dev: never intercepted or cached.
+ *   The apps' offline submission queue belongs to hub-device.js (IndexedDB in the page), not here.
+ * - Assets: network first (development mode and new versions take effect immediately);
+ *   the cache only answers when the network fails.
  */
 const VERSION = '__HUB_SW_VERSION__';
 const CACHE = `hub-shell-${VERSION}`;
