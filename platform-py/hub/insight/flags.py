@@ -51,7 +51,7 @@ class Flag(BaseModel):
     def off_value(self) -> str:
         return OFF if self.kind == "boolean" else (self.variants[0] if self.variants else OFF)
 
-    def validate_rules(self) -> None:  # noqa: C901
+    def validate_rules(self) -> None:
         """Raises `ValueError` with the message of the previous hub version."""
         if not valid_token(self.key):
             raise ValueError("Chave inválida: use letras minúsculas, números, '.', '_' ou '-' (até 64).")
@@ -64,23 +64,27 @@ class Flag(BaseModel):
                 raise ValueError("Variante inválida (letras minúsculas, números, '.', '_' ou '-').")
         vals = self.values()
         for env, r in self.envs.items():
-            if env not in ("staging", "producao"):
-                raise ValueError("Ambiente inválido (staging ou producao).")
-            served = [r.default, *(x.serve for x in r.rules)]
-            if r.rollout:
-                if r.rollout.percent > 100:
-                    raise ValueError("Percentual deve ser de 0 a 100.")
-                served.append(r.rollout.serve)
-            if bad := next((v for v in served if v not in vals), None):
-                raise ValueError(f'Valor "{bad}" não é uma opção desta flag.')
-            if len(r.rules) > 20 or any(len(x.roles) + len(x.users) > 100 for x in r.rules):
-                raise ValueError("Regras demais (até 20, com até 100 funções/usuários cada).")
+            _validate_env(env, r, vals)
 
     def dump(self) -> dict[str, Any]:
         """Envs in key order, `rollout` omitted when empty (format of the previous hub version)."""
         d = self.model_dump(exclude_none=True)
         d["envs"] = dict(sorted(d["envs"].items()))
         return d
+
+
+def _validate_env(env: str, r: EnvRule, vals: list[str]) -> None:
+    if env not in ("staging", "producao"):
+        raise ValueError("Ambiente inválido (staging ou producao).")
+    served = [r.default, *(x.serve for x in r.rules)]
+    if r.rollout:
+        if r.rollout.percent > 100:
+            raise ValueError("Percentual deve ser de 0 a 100.")
+        served.append(r.rollout.serve)
+    if bad := next((v for v in served if v not in vals), None):
+        raise ValueError(f'Valor "{bad}" não é uma opção desta flag.')
+    if len(r.rules) > 20 or any(len(x.roles) + len(x.users) > 100 for x in r.rules):
+        raise ValueError("Regras demais (até 20, com até 100 funções/usuários cada).")
 
 
 def parse_flag(raw: Any) -> Flag:
