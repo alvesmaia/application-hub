@@ -51,7 +51,7 @@ Short and imperative on purpose; based on Akita's "Clean Code for AI Agents".
 
 ## Rules
 
-- The hub only manages `app-hub-*` containers (guard in `hub/ops/runtime.py`). Never touch containers of other projects or kill processes by image name.
+- The hub only manages `app-hub-*` containers (guard in `hub/ops/docker_guard.py`). Never touch containers of other projects or kill processes by image name.
 - Public tunnel = container `apphub-devtunnel` (config `platform/.tunnel/config-standalone.yml`): **never stop/remove without the owner's request**.
 - App URLs: `/apps/{id}/…`; the app builds links with the public base (`x-hub-base`, `{{ base }}`), never a bare `/{id}/…`. Apps have no JavaScript of their own (behaviors via `data-hub-*` in `hub-kit.js`); readiness `GET /{app}/_hub/ready` is mandatory.
 - New user-facing text → key in the catalog in both languages (pt-BR, en).

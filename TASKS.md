@@ -22,7 +22,8 @@
 - ▶️ 4 · Split the other large hub files (oauth.py, app.py, 15 files 500–720) and clear the hub noqa (69)
   - ✅ oauth.py 1168 → oauth_{util,base,clients,authorize,tokens}.py + oauth.py (all < 300); pytest 494, E2E 13 2/2
   - ▶️ agent A: app.py, auth, state, connections, insight, vault, storage, graphsim
-  - ▶️ agent B: api (mcp, v1, rest), admin, ops (remaining), ux, gateway
+  - ✅ agent B: api/admin/ops/ux/gateway — all noqa in scope removed, 7 files out of the baseline; pytest 494
+  - ⬜ oauth*.py: 7 functions still over the limits (admin_action, mount_oauth, authorize_get, fetch_cimd, register, code_grant, refresh_grant)
 
 ## SDK, apps, CLI, JS
 - ✅ 5 · SDK Python: jobs.py, storage.py, idempotency.py, dashboards.py + 17 noqa
