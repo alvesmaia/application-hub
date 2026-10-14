@@ -82,6 +82,25 @@ def _n(status: str) -> int:
         return 0
 
 
+def _job_error(e: StorageError) -> Exception:
+    return JobRetry(e.message) if e.transient or e.status >= 500 else JobFail(e.message)
+
+
+def _same_version(r: Any, it: Item) -> bool:
+    """``it`` is the version confirmed in the row ``r`` (size, and ETag when both sides have one)."""
+    if r["size"] is None or it.size != r["size"]:
+        return False
+    a, b = r["etag"], it.etag
+    return bool(a is None or b is None or a.strip('"') == b.strip('"'))
+
+
+def _staging_upload_id(path: str) -> str:
+    """Upload id of a key under the staging prefix (``""`` when it is not one)."""
+    rel = path.lstrip("/")
+    parts = rel[len(STAGING_PREFIX) + 1 :].split("/") if rel.startswith(STAGING_PREFIX + "/") else []
+    return parts[0] if parts else ""
+
+
 class Uploads:
     def __init__(
         self, pool: Any, store: Connection, ttl: float = 24 * 3600, max_size: int = 100 * 1024 * 1024
@@ -184,12 +203,7 @@ class Uploads:
                 except StorageError as e:
                     if e.status == 404:
                         try:
-                            it = await self.store.meta(r["path"])
-                            owned = it.size == v["size"] and (
-                                v["etag"] is None
-                                or it.etag is None
-                                or v["etag"].strip('"') == it.etag.strip('"')
-                            )
+                            owned = _same_version(v, await self.store.meta(r["path"]))
                         except StorageError:
                             owned = False
             if owned and r["path"]:
@@ -202,7 +216,7 @@ class Uploads:
                         raise
             await c.execute("UPDATE hub_uploads SET state = 'cancelled' WHERE id = $1", upload_id)
 
-    async def promote(self, upload_id: str) -> None:  # noqa: C901, PLR0912, PLR0915
+    async def promote(self, upload_id: str) -> None:
         """Promotes (idempotent) under the row lock: checks the confirmed version
         (size/ETag), does not overwrite an existing target, moves staging → final and verifies."""
         async with self.pool.acquire() as c, c.transaction():
@@ -217,113 +231,115 @@ class Uploads:
                 raise JobFail(f"envio em estado {r['state']}")
             if r["promoted"]:
                 return
-            staging, dest = r["staging_path"], r["path"]
-
-            def err(e: StorageError) -> Exception:
-                return JobRetry(e.message) if e.transient or e.status >= 500 else JobFail(e.message)
-
-            def same(it: Item) -> bool:
-                if r["size"] is None or it.size != r["size"]:
-                    return False
-                a, b = r["etag"], it.etag
-                return bool(a is None or b is None or a.strip('"') == b.strip('"'))
-
-            try:
-                cur = await self.store.meta(staging)
-            except StorageError as e:
-                if e.status != 404:
-                    raise err(e) from e
-                # Staging no longer exists: the previous promotion moved it and crashed before marking.
-                try:
-                    it = await self.store.meta(dest)
-                except StorageError as e2:
-                    if e2.status == 404:
-                        raise JobFail("o arquivo de staging sumiu antes da promoção") from e2
-                    raise err(e2) from e2
-                if not same(it):
-                    raise JobFail("staging ausente e o destino não é a versão confirmada") from e
-            else:
-                if not same(cur):
-                    raise JobFail("o arquivo de staging mudou depois da confirmação: recusado")
-                try:
-                    await self.store.meta(dest)
-                    raise JobFail(f"o destino {dest} já existe: não sobrescrito")
-                except StorageError as e:
-                    if e.status != 404:
-                        raise err(e) from e
-                try:
-                    await self.store.move(staging, dest)
-                    moved = await self.store.meta(dest)
-                except StorageError as e:
-                    raise err(e) from e
-                if not same(moved):
-                    with contextlib.suppress(StorageError):
-                        await self.store.delete(dest)
-                    raise JobFail("o arquivo mudou durante a promoção: removido")
+            await self._promote_files(r)
             await c.execute("UPDATE hub_uploads SET promoted_at = now() WHERE id = $1", upload_id)
+
+    async def _promote_files(self, r: Any) -> None:
+        staging, dest = r["staging_path"], r["path"]
+        try:
+            cur = await self.store.meta(staging)
+        except StorageError as e:
+            if e.status != 404:
+                raise _job_error(e) from e
+            await self._check_moved(r, e)
+            return
+        if not _same_version(r, cur):
+            raise JobFail("o arquivo de staging mudou depois da confirmação: recusado")
+        try:
+            await self.store.meta(dest)
+            raise JobFail(f"o destino {dest} já existe: não sobrescrito")
+        except StorageError as e:
+            if e.status != 404:
+                raise _job_error(e) from e
+        try:
+            await self.store.move(staging, dest)
+            moved = await self.store.meta(dest)
+        except StorageError as e:
+            raise _job_error(e) from e
+        if not _same_version(r, moved):
+            with contextlib.suppress(StorageError):
+                await self.store.delete(dest)
+            raise JobFail("o arquivo mudou durante a promoção: removido")
+
+    async def _check_moved(self, r: Any, missing: StorageError) -> None:
+        """Staging no longer exists: the previous promotion moved it and crashed before marking."""
+        try:
+            it = await self.store.meta(r["path"])
+        except StorageError as e2:
+            if e2.status == 404:
+                raise JobFail("o arquivo de staging sumiu antes da promoção") from e2
+            raise _job_error(e2) from e2
+        if not _same_version(r, it):
+            raise JobFail("staging ausente e o destino não é a versão confirmada") from missing
 
     def promote_handler(self) -> PromoteHandler:
         return PromoteHandler(self)
 
-    async def cleanup(self) -> CleanupReport:  # noqa: C901, PLR0912, PLR0915
+    async def cleanup(self) -> CleanupReport:
         """Deletes expired uploads (object + ``expired``) and orphans under the staging prefix."""
-        expired = orphans = 0
         async with self.pool.acquire() as c:
-            rows = await c.fetch(
-                "SELECT id, staging_path FROM hub_uploads WHERE state = 'pending' AND expires_at < now() "
-                "AND connection = $1 LIMIT 500",
-                self.store.name,
-            )
-            for r in rows:
-                try:
-                    await self.store.delete(r["staging_path"])
-                except StorageError as e:
-                    if e.status != 404:
-                        raise
-                expired += _n(
-                    await c.execute(
-                        "UPDATE hub_uploads SET state = 'expired' WHERE id = $1 AND state = 'pending'",
-                        r["id"],
-                    )
-                )
-            try:
-                items = await self.store.list(STAGING_PREFIX)
-            except StorageError as e:
-                if e.status != 404:
-                    raise
-                items = []
-            for it in items:
-                rel = it.path.lstrip("/")
-                parts = (
-                    rel[len(STAGING_PREFIX) + 1 :].split("/") if rel.startswith(STAGING_PREFIX + "/") else []
-                )
-                if not parts or not parts[0]:
-                    continue
-                uid = parts[0]
-                if it.folder:
-                    try:
-                        files = [
-                            x.path for x in await self.store.list(f"{STAGING_PREFIX}/{uid}") if not x.folder
-                        ]
-                    except StorageError:
-                        files = []
-                else:
-                    files = [it.path]
-                keep = await c.fetchval(
-                    "SELECT 1 FROM hub_uploads WHERE id = $1 AND (state = 'pending' OR "
-                    "(state = 'committed' AND promoted_at IS NULL))",
-                    uid,
-                )
-                if keep:
-                    continue
-                for f in files:
-                    try:
-                        await self.store.delete(f.lstrip("/"))
-                        orphans += 1
-                    except StorageError as e:
-                        if e.status != 404:
-                            raise
+            expired = await self._expire(c)
+            orphans = await self._remove_orphans(c)
         return CleanupReport(expired=expired, orphans=orphans)
+
+    async def _delete_if_present(self, path: str) -> bool:
+        """``True`` when deleted; an already missing object (404) is not an error."""
+        try:
+            await self.store.delete(path)
+        except StorageError as e:
+            if e.status != 404:
+                raise
+            return False
+        return True
+
+    async def _expire(self, c: Any) -> int:
+        rows = await c.fetch(
+            "SELECT id, staging_path FROM hub_uploads WHERE state = 'pending' AND expires_at < now() "
+            "AND connection = $1 LIMIT 500",
+            self.store.name,
+        )
+        expired = 0
+        for r in rows:
+            await self._delete_if_present(r["staging_path"])
+            expired += _n(
+                await c.execute(
+                    "UPDATE hub_uploads SET state = 'expired' WHERE id = $1 AND state = 'pending'",
+                    r["id"],
+                )
+            )
+        return expired
+
+    async def _remove_orphans(self, c: Any) -> int:
+        try:
+            items = await self.store.list(STAGING_PREFIX)
+        except StorageError as e:
+            if e.status != 404:
+                raise
+            items = []
+        orphans = 0
+        for it in items:
+            uid = _staging_upload_id(it.path)
+            if not uid:
+                continue
+            files = await self._staging_files(uid, it)
+            keep = await c.fetchval(
+                "SELECT 1 FROM hub_uploads WHERE id = $1 AND (state = 'pending' OR "
+                "(state = 'committed' AND promoted_at IS NULL))",
+                uid,
+            )
+            if keep:
+                continue
+            for f in files:
+                orphans += await self._delete_if_present(f.lstrip("/"))
+        return orphans
+
+    async def _staging_files(self, uid: str, it: Item) -> list[str]:
+        if not it.folder:
+            return [it.path]
+        try:
+            return [x.path for x in await self.store.list(f"{STAGING_PREFIX}/{uid}") if not x.folder]
+        except StorageError:
+            return []
 
     def spawn_cleanup(self, every: float, shutdown: Shutdown) -> asyncio.Task[None]:
         async def loop() -> None:

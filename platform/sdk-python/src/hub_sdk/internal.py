@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
 from fastapi import APIRouter, Request
@@ -59,52 +60,73 @@ def _int(v: str | None, default: int) -> int:
         return default
 
 
-def router(  # noqa: C901, PLR0915
-    app_id: str,
-    token: str | None,
-    outbox: Outbox | Callable[[], Outbox],
-    jobs: Jobs | Callable[[], Jobs | None] | None,
-    wake: Callable[[], None] | None = None,
-    telemetry: Telemetry | None = None,
-    flags: FlagStore | None = None,
-    search: _search.SearchFn | None = None,
-    approvals: _ap.ApprovalFn | None = None,
-) -> APIRouter:
-    """``outbox``/``jobs`` can be argument-less functions (resolved on each call:
-    the lifespan swaps the in-memory backends for the Postgres ones)."""
-    r = APIRouter(include_in_schema=False)
+async def _decision_body(req: Request) -> tuple[Any, str] | None:
+    """``(body, decision)`` of an approval decision, ``None`` when the body is not valid."""
+    try:
+        body = await req.json()
+        decision = body["decision"]
+        if decision not in ("approve", "reject"):
+            raise ValueError
+    except (ValueError, KeyError, TypeError):
+        return None
+    return body, decision
 
-    def ob() -> Outbox:
-        return outbox if isinstance(outbox, Outbox) else outbox()
 
-    def jb() -> Jobs | None:
-        return jobs if jobs is None or isinstance(jobs, Jobs) else jobs()
+async def _decide(approvals: _ap.ApprovalFn, d: _ap.ApprovalDecision) -> Any:
+    try:
+        status = await approvals(d)
+    except _ap.NotFound:
+        return _err(404, "pedido desconhecido")
+    except _ap.AlreadyDecided as ex:
+        return JSONResponse({"status": ex.status, "error": "pedido já decidido"}, status_code=409)
+    except _ap.Forbidden as ex:
+        return _err(403, str(ex))
+    except Exception as ex:
+        return _err(503, str(ex))
+    return {"status": status}
 
-    base = f"/{app_id}/{SEGMENT}"
 
-    def auth(req: Request) -> JSONResponse | None:
-        if token is None:
+@dataclass
+class _Internal:
+    """The ``/_hub/*`` handlers, bound to the app's backends."""
+
+    app_id: str
+    token: str | None
+    outbox: Outbox | Callable[[], Outbox]
+    jobs: Jobs | Callable[[], Jobs | None] | None
+    wake: Callable[[], None] | None
+    telemetry: Telemetry | None
+    flags: FlagStore | None
+    search: _search.SearchFn | None
+    approvals: _ap.ApprovalFn | None
+
+    def ob(self) -> Outbox:
+        return self.outbox if isinstance(self.outbox, Outbox) else self.outbox()
+
+    def jb(self) -> Jobs | None:
+        return self.jobs if self.jobs is None or isinstance(self.jobs, Jobs) else self.jobs()
+
+    def auth(self, req: Request) -> JSONResponse | None:
+        if self.token is None:
             return _err(403, "endpoints internos desabilitados: HUB_INTERNAL_TOKEN não configurado")
         sent = req.headers.get(TOKEN_HEADER, "")
-        if not ct_eq(sent.encode("latin-1", "replace"), token.encode()):
+        if not ct_eq(sent.encode("latin-1", "replace"), self.token.encode()):
             return _err(401, "token interno inválido")
         return None
 
-    @r.get(f"{base}/outbox")
-    async def outbox_list(req: Request) -> Any:
-        if (e := auth(req)) is not None:
+    async def outbox_list(self, req: Request) -> Any:
+        if (e := self.auth(req)) is not None:
             return e
         after = _int(req.query_params.get("after"), 0)
         limit = max(1, min(_int(req.query_params.get("limit"), 200), MAX_PAGE))
         try:
-            ev = await ob().pending(after, limit)
+            ev = await self.ob().pending(after, limit)
         except Exception as ex:
             return _err(503, str(ex))
-        return {"events": [e.to_json() for e in ev], "durable": ob().durable}
+        return {"events": [e.to_json() for e in ev], "durable": self.ob().durable}
 
-    @r.post(f"{base}/outbox/ack")
-    async def outbox_ack(req: Request) -> Any:
-        if (e := auth(req)) is not None:
+    async def outbox_ack(self, req: Request) -> Any:
+        if (e := self.auth(req)) is not None:
             return e
         try:
             body = await req.json()
@@ -116,16 +138,15 @@ def router(  # noqa: C901, PLR0915
         if len(ids) > MAX_ACK:
             return _err(400, "no máximo 1000 ids por confirmação")
         try:
-            n = await ob().ack(ids)
+            n = await self.ob().ack(ids)
         except Exception as ex:
             return _err(503, str(ex))
         return {"acked": n}
 
-    @r.get(f"{base}/jobs")
-    async def jobs_list(req: Request) -> Any:
-        if (e := auth(req)) is not None:
+    async def jobs_list(self, req: Request) -> Any:
+        if (e := self.auth(req)) is not None:
             return e
-        jobs_ = jb()
+        jobs_ = self.jb()
         if jobs_ is None:
             return {"jobs": [], "enabled": False}
         limit = max(1, min(_int(req.query_params.get("limit"), 100), MAX_PAGE))
@@ -135,11 +156,10 @@ def router(  # noqa: C901, PLR0915
             return _err(503, str(ex))
         return {"jobs": [j.to_json() for j in lst], "enabled": True}
 
-    @r.post(base + "/jobs/{job_id}/{action}")
-    async def job_action(req: Request, job_id: str, action: str) -> Any:
-        if (e := auth(req)) is not None:
+    async def job_action(self, req: Request, job_id: str, action: str) -> Any:
+        if (e := self.auth(req)) is not None:
             return e
-        jobs_ = jb()
+        jobs_ = self.jb()
         if jobs_ is None:
             return _err(404, "este app não tem tarefas duráveis")
         try:
@@ -155,25 +175,23 @@ def router(  # noqa: C901, PLR0915
             return _err(409, str(ex))
         except Exception as ex:
             return _err(503, str(ex))
-        if wake is not None:
-            wake()
+        if self.wake is not None:
+            self.wake()
         return {"job": j.to_json()}
 
-    @r.get(f"{base}/telemetry")
-    async def telemetry_pull(req: Request) -> Any:
-        if (e := auth(req)) is not None:
+    async def telemetry_pull(self, req: Request) -> Any:
+        if (e := self.auth(req)) is not None:
             return e
         after = max(0, _int(req.query_params.get("after"), 0))
-        if telemetry is None:
+        if self.telemetry is None:
             return {"spans": [], "next": after, "gauges": {}}
-        spans, nxt = telemetry.pending(after, 1000)
-        return {"spans": spans, "next": nxt, "gauges": telemetry.gauges()}
+        spans, nxt = self.telemetry.pending(after, 1000)
+        return {"spans": spans, "next": nxt, "gauges": self.telemetry.gauges()}
 
-    @r.post(f"{base}/flags")
-    async def flags_push(req: Request) -> Any:
-        if (e := auth(req)) is not None:
+    async def flags_push(self, req: Request) -> Any:
+        if (e := self.auth(req)) is not None:
             return e
-        if flags is None:
+        if self.flags is None:
             return _err(404, "este app não usa feature flags")
         try:
             body = await req.json()
@@ -183,14 +201,13 @@ def router(  # noqa: C901, PLR0915
         if parsed is None:
             return _err(400, "definições de flags inválidas")
         v, env, fl = parsed
-        applied = flags.replace(v, env, fl)
-        return {"applied": applied, "flags": len(fl), "version": flags.version}
+        applied = self.flags.replace(v, env, fl)
+        return {"applied": applied, "flags": len(fl), "version": self.flags.version}
 
-    @r.get(f"{base}/search")
-    async def search_ep(req: Request) -> Any:
-        if (e := auth(req)) is not None:
+    async def search_ep(self, req: Request) -> Any:
+        if (e := self.auth(req)) is not None:
             return e
-        if search is None:
+        if self.search is None:
             return _err(404, "este app não oferece busca")
         q = (req.query_params.get("q") or "").strip()
         if not q or len(q) > _search.MAX_QUERY:
@@ -204,28 +221,24 @@ def router(  # noqa: C901, PLR0915
         )
         token_ = _locale.use(query.locale)
         try:
-            hits = await search(query)
+            hits = await self.search(query)
         except Exception as ex:
             return _err(503, str(ex))
         finally:
             _locale._current.reset(token_)
-        return {"results": [h.to_json() for h in _search.sanitize(app_id, hits, limit)]}
+        return {"results": [h.to_json() for h in _search.sanitize(self.app_id, hits, limit)]}
 
-    @r.post(base + "/approvals/{approval_id}")
-    async def approval_ep(req: Request, approval_id: str) -> Any:  # noqa: C901
-        if (e := auth(req)) is not None:
+    async def approval_ep(self, req: Request, approval_id: str) -> Any:
+        if (e := self.auth(req)) is not None:
             return e
-        if approvals is None:
+        if self.approvals is None:
             return _err(404, "este app não recebe aprovações")
         if not _ap.valid_id(approval_id):
             return _err(400, "id de aprovação inválido")
-        try:
-            body = await req.json()
-            decision = body["decision"]
-            if decision not in ("approve", "reject"):
-                raise ValueError
-        except (ValueError, KeyError, TypeError):
+        parsed = await _decision_body(req)
+        if parsed is None:
             return _err(422, 'corpo inválido: use {"decision": "approve"|"reject"}')
+        body, decision = parsed
         approver = parse_identity(req.headers.get(USER_HEADER))
         if approver is None:
             return _err(403, "aprovador ausente (x-hub-user)")
@@ -239,16 +252,31 @@ def router(  # noqa: C901, PLR0915
             decided_at=_int(str(body.get("decided_at", "0")), 0),
             approver=approver,
         )
-        try:
-            status = await approvals(d)
-        except _ap.NotFound:
-            return _err(404, "pedido desconhecido")
-        except _ap.AlreadyDecided as ex:
-            return JSONResponse({"status": ex.status, "error": "pedido já decidido"}, status_code=409)
-        except _ap.Forbidden as ex:
-            return _err(403, str(ex))
-        except Exception as ex:
-            return _err(503, str(ex))
-        return {"status": status}
+        return await _decide(self.approvals, d)
 
+
+def router(
+    app_id: str,
+    token: str | None,
+    outbox: Outbox | Callable[[], Outbox],
+    jobs: Jobs | Callable[[], Jobs | None] | None,
+    wake: Callable[[], None] | None = None,
+    telemetry: Telemetry | None = None,
+    flags: FlagStore | None = None,
+    search: _search.SearchFn | None = None,
+    approvals: _ap.ApprovalFn | None = None,
+) -> APIRouter:
+    """``outbox``/``jobs`` can be argument-less functions (resolved on each call:
+    the lifespan swaps the in-memory backends for the Postgres ones)."""
+    h = _Internal(app_id, token, outbox, jobs, wake, telemetry, flags, search, approvals)
+    r = APIRouter(include_in_schema=False)
+    base = f"/{app_id}/{SEGMENT}"
+    r.add_api_route(f"{base}/outbox", h.outbox_list, methods=["GET"])
+    r.add_api_route(f"{base}/outbox/ack", h.outbox_ack, methods=["POST"])
+    r.add_api_route(f"{base}/jobs", h.jobs_list, methods=["GET"])
+    r.add_api_route(base + "/jobs/{job_id}/{action}", h.job_action, methods=["POST"])
+    r.add_api_route(f"{base}/telemetry", h.telemetry_pull, methods=["GET"])
+    r.add_api_route(f"{base}/flags", h.flags_push, methods=["POST"])
+    r.add_api_route(f"{base}/search", h.search_ep, methods=["GET"])
+    r.add_api_route(base + "/approvals/{approval_id}", h.approval_ep, methods=["POST"])
     return r
