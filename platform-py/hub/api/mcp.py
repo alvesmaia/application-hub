@@ -10,333 +10,50 @@ from __future__ import annotations
 
 import asyncio
 import base64
-import hashlib
 import json
-import secrets
 import time
 from collections.abc import AsyncIterator
+from dataclasses import dataclass
 from typing import Any, cast
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 
-from hub.api import ops as opsmod
-from hub.api import schemas as sc
-from hub.api.mcp_apps import app_tools, run_app
-from hub.api.ops import MULTIPART, Op
-from hub.api.v1 import Args, P, Problem, audit, authorize, authorize_scope, call, principal, take_rate
-
-PROTOCOL = "2025-11-25"
-MODERN = "2026-07-28"
-LEGACY = ("2025-11-25", "2025-06-18", "2025-03-26")
-SUPPORTED = (MODERN, *LEGACY)
-SESSION, VERSION = "mcp-session-id", "mcp-protocol-version"
-META_VERSION = "io.modelcontextprotocol/protocolVersion"
-META_CLIENT = "io.modelcontextprotocol/clientInfo"
-PARSE_ERROR, INVALID_REQUEST, METHOD_NOT_FOUND, INVALID_PARAMS = -32700, -32600, -32601, -32602
-HEADER_MISMATCH, UNSUPPORTED_VERSION = -32020, -32022
-SESSION_TTL_MS = 8 * 3600 * 1000
-KEEPALIVE, GET_KEEPALIVE, GET_MAX = 10, 15, 30 * 60
-K_SESSION, K_CONFIRM = "mcp.session", "mcp.confirm"
-RESOURCES = (
-    ("hub://apps", "apps", "Catálogo de apps", "apps_list"),
-    ("hub://status", "status", "Status page (situação dos apps)", "status_get"),
+from hub.api.mcp_tools import (
+    GET_KEEPALIVE,
+    GET_MAX,
+    HEADER_MISMATCH,
+    INVALID_REQUEST,
+    K_SESSION,
+    KEEPALIVE,
+    LEGACY,
+    META_CLIENT,
+    META_VERSION,
+    METHOD_NOT_FOUND,
+    MODERN,
+    PARSE_ERROR,
+    PROTOCOL,
+    RESOURCES,
+    SESSION,
+    SUPPORTED,
+    UNSUPPORTED_VERSION,
+    VERSION,
+    Rpc,
+    client_label,
+    json_response,
+    new_session,
+    plain,
+    resources_read,
+    rpc_error,
+    session_client,
+    session_ok,
+    sha,
+    tools_call,
+    tools_for,
 )
-CONFIRM_DESC = "Token devolvido pela 1ª chamada; reenvie só depois de o usuário confirmar a ação."
-
-
-class Rpc(Exception):
-    def __init__(self, code: int, message: str) -> None:
-        super().__init__(message)
-        self.code, self.message = code, message
-
-
-def now_ms() -> int:
-    return time.time_ns() // 1_000_000
-
-
-def sha(s: str) -> str:
-    return hashlib.sha256(s.encode()).hexdigest()
-
-
-def rpc_error(id_: Any, code: int, msg: str, data: Any = None) -> dict[str, Any]:
-    e: dict[str, Any] = {"code": code, "message": msg}
-    if data is not None:
-        e["data"] = data
-    return {"jsonrpc": "2.0", "id": id_, "error": e}
-
-
-def json_response(status: int, v: Any, headers: dict[str, str] | None = None) -> Response:
-    return Response(json.dumps(v, ensure_ascii=False), status, headers={"cache-control": "no-store", **(headers or {})},
-                    media_type="application/json")  # fmt: skip
-
-
-def plain(status: int, msg: str, headers: dict[str, str] | None = None) -> Response:
-    return json_response(status, {"error": msg}, headers)
-
-
-def text_result(app: FastAPI, v: Any, is_error: bool = False) -> dict[str, Any]:
-    cap = app.state.apicfg.mcp.max_result_kb * 1024
-    text = json.dumps(v, ensure_ascii=False, indent=2)
-    raw = text.encode()
-    truncated = len(raw) > cap
-    if truncated:
-        text = raw[:cap].decode("utf-8", "ignore") + "\n… (resultado truncado: use limit/offset ou filtros)"
-    r: dict[str, Any] = {"content": [{"type": "text", "text": text}], "isError": is_error}
-    if isinstance(v, dict) and not truncated and not is_error:
-        r["structuredContent"] = v
-    return r
-
-
-def client_label(params: dict[str, Any]) -> str:
-    def clean(v: Any, n: int) -> str:
-        return "".join(c for c in str(v or "") if c.isprintable())[:n]
-
-    info = params.get("clientInfo") or {}
-    name, ver = clean(info.get("name"), 60), clean(info.get("version"), 30)
-    return "" if not name else f"{name} {ver}" if ver else name
-
-
-def args_hash(args: dict[str, Any]) -> str:
-    a = {k: v for k, v in args.items() if k != "confirm_token"}
-    return sha(json.dumps(a, sort_keys=True, ensure_ascii=False, separators=(",", ":")))
-
-
-# ---------------------------------------------------------------- ferramentas
-
-
-def hub_input_schema(op: Op, confirm: bool) -> dict[str, Any]:
-    props: dict[str, Any] = {}
-    required: list[str] = []
-    for p in op.params:
-        props[p.name] = p.schema | {"description": p.desc}
-        if p.required or p.loc == "path":
-            required.append(p.name)
-    if op.list is not None:
-        props["limit"] = {"type": "integer", "minimum": 1, "description": "Itens (padrão 20)"}
-        props["offset"] = {"type": "integer", "minimum": 0}
-        if "q" not in op.passed:
-            props["q"] = {"type": "string", "description": "Texto em qualquer campo"}
-        for f in op.filters:
-            props[f] = {"type": "string", "description": f"Filtra por {f}"}
-    if op.body and op.body != MULTIPART:
-        props["body"] = sc.inline(op.body)
-        required.append("body")
-    if confirm:
-        props["confirm_token"] = {"type": "string", "description": CONFIRM_DESC}
-    return {"type": "object", "properties": props, "required": required, "additionalProperties": False}
-
-
-def destructive_note(mode: str) -> str:
-    return " — AÇÃO DESTRUTIVA: exige confirmação do usuário (confirm_token)."
-
-
-def hub_tools(app: FastAPI, p: P) -> list[dict[str, Any]]:
-    cfg = app.state.apicfg
-    if not cfg.api.enabled:
-        return []
-    mode, out = cfg.mcp.destructive_actions, []
-    for op in opsmod.OPS:
-        if not op.mcp or authorize(op, p) or (op.destructive and mode == "deny"):
-            continue
-        needs = op.destructive and mode == "confirm"
-        out.append({
-            "name": op.id, "title": op.summary,
-            "description": f"{op.summary} ({op.method} /api/v1{op.path})" + (destructive_note(mode) if op.destructive else ""),
-            "inputSchema": hub_input_schema(op, needs),
-            "annotations": {"title": op.summary, "readOnlyHint": not op.write, "destructiveHint": op.destructive,
-                            "idempotentHint": not op.write, "openWorldHint": False},
-        })  # fmt: skip
-    return out
-
-
-def hub_args(app: FastAPI, op: Op, args: dict[str, Any]) -> Args:
-    cfg = app.state.apicfg
-    a = Args()
-    for prm in op.params:
-        v = args.get(prm.name)
-        if v is not None:
-            s = v if isinstance(v, str) else json.dumps(v)
-            if prm.loc == "path":
-                a.path[prm.name] = s
-            else:
-                a.query.append((prm.name, s))
-    if op.list is not None:
-        cap = cfg.mcp.logs_tail_max if op.id == "logs_tail" else cfg.api.max_page_size
-        lim = args.get("limit")
-        limit = min(max(lim if isinstance(lim, int) else 20, 1), cap)
-        a.query.append(("limit", str(limit)))
-        for k in ("offset", "q", *op.filters):
-            v = args.get(k)
-            if v is not None:
-                a.query.append((k, v if isinstance(v, str) else json.dumps(v)))
-    if "body" in args:
-        a.body = json.dumps(args["body"]).encode()
-    return a
-
-
-# ---------------------------------------------------------------- sessions and confirmations
-
-
-async def new_session(app: FastAPI, who: str, client: str) -> str:
-    sid, now = secrets.token_hex(16), now_ms()
-    await app.state.records.put(K_SESSION, sha(sid), {"who": who, "client": client, "exp": now + SESSION_TTL_MS},
-                                now + SESSION_TTL_MS)  # fmt: skip
-    return sid
-
-
-async def session_ok(app: FastAPI, sid: str, who: str) -> bool:
-    v = await app.state.records.get(K_SESSION, sha(sid))
-    if not v or v.get("who") != who:
-        return False
-    now = now_ms()
-    if v["exp"] - now < SESSION_TTL_MS - 60_000:
-        await app.state.records.put(
-            K_SESSION, sha(sid), v | {"exp": now + SESSION_TTL_MS}, now + SESSION_TTL_MS
-        )
-    return True
-
-
-async def session_client(app: FastAPI, sid: str) -> str:
-    v = await app.state.records.get(K_SESSION, sha(sid))
-    return str((v or {}).get("client", ""))
-
-
-async def issue_confirmation(app: FastAPI, who: str, tool: str, args: dict[str, Any]) -> tuple[str, int]:
-    ttl, now = app.state.apicfg.mcp.confirm_ttl_s, now_ms()
-    tok = f"cnf_{secrets.token_hex(16)}"
-    rec = {"who": who, "tool": tool, "args_hash": args_hash(args), "expires": now + ttl * 1000}
-    await app.state.records.put(K_CONFIRM, sha(tok), rec, int(rec["expires"]))
-    return tok, int(ttl)
-
-
-async def check_confirmation(
-    app: FastAPI, who: str, tool: str, args: dict[str, Any], token: str
-) -> str | None:
-    """`None` = may execute (token consumed); otherwise, the reason for refusal."""
-    rec_store, key = app.state.records, sha(token)
-    p = await rec_store.get(K_CONFIRM, key)
-    if not p:
-        return "confirm_token inválido ou já usado"
-    if p["who"] != who or p["tool"] != tool:
-        return "confirm_token de outra ferramenta ou de outro usuário"  # does not consume
-    if await rec_store.take(K_CONFIRM, key) is None:
-        return "confirm_token inválido ou já usado"
-    if p["expires"] <= now_ms():
-        return "confirm_token vencido"
-    if p["args_hash"] != args_hash(args):
-        return "os argumentos mudaram desde a confirmação"
-    return None
-
-
-async def sweep(app: FastAPI) -> None:
-    """Deletes the expired `confirm_token`s."""
-    now = now_ms()
-    db = app.state.auth.db
-    if db is not None:
-        await db.rec_take_expired(K_CONFIRM, now, 1000)
-        return
-    rs = app.state.records
-    for k, (_, exp) in list(rs.mem.items()):
-        if k[0] == K_CONFIRM and exp <= now:
-            del rs.mem[k]
-
-
-async def run_hub(request: Request, p: P, op: Op | None, a: Args) -> dict[str, Any]:
-    app = request.app
-    if op is None:
-        return text_result(app, {"error": "ferramenta sem operação"}, True)
-    try:
-        _, value = await asyncio.wait_for(call(request, op, p, a), app.state.apicfg.mcp.tool_timeout_s)
-        return text_result(app, value)
-    except Problem as e:
-        return text_result(app, e.body(op.full_path), True)
-    except TimeoutError:
-        return text_result(app, {"error": "tempo esgotado"}, True)
-
-
-async def tools_call(request: Request, p: P, params: dict[str, Any], client: str) -> dict[str, Any]:  # noqa: C901, PLR0915
-    app, cfg = request.app, request.app.state.apicfg
-    name = params.get("name")
-    if not isinstance(name, str):
-        raise Rpc(INVALID_PARAMS, "name ausente")
-    args = params.get("arguments")
-    if args is None:
-        args = {}
-    if not isinstance(args, dict):
-        raise Rpc(INVALID_PARAMS, "arguments deve ser um objeto")
-    who = p.key
-    wait = await take_rate(app, "mcp", p.rate_key, cfg.mcp.calls_per_min)
-    if wait is not None:
-        return text_result(
-            app, {"error": f"limite de {cfg.mcp.calls_per_min} chamadas por minuto; tente em {wait} s"}, True
-        )
-    tool = next((t for t in await tools_for(request, p) if t["name"] == name), None)
-    if tool is None:
-        raise Rpc(INVALID_PARAMS, f"ferramenta desconhecida ou fora do seu acesso: {name}")
-    src: dict[str, Any] | None = tool.get("_app")
-    op = None if src else opsmod.BY_ID[name]
-    scope = src["app"] if src else str(args.get("app") or "platform")
-    keys = ", ".join(k for k in args if k != "confirm_token")
-    a = hub_args(app, op, args) if op else Args()
-    if op:
-        denied = authorize(op, p, a) or await authorize_scope(request, op, p, a)
-        if denied:
-            await audit(request, p, f"MCP: {name}", f"negado ({denied.status}) · argumentos: {keys}", scope)
-            return text_result(app, denied.body(op.full_path), True)
-    destructive = bool(tool["annotations"]["destructiveHint"])
-    mode = cfg.mcp.destructive_actions
-    if destructive and mode == "confirm":
-        token = args.get("confirm_token")
-        if not isinstance(token, str):
-            tok, ttl = await issue_confirmation(app, who, name, args)
-            await audit(
-                request,
-                p,
-                f"MCP: {name}",
-                f"confirmação pedida · cliente: {client or '—'} · argumentos: {keys}",
-                scope,
-            )
-            return text_result(app, {
-                "confirmation_required": True, "confirm_token": tok, "expires_in_s": ttl, "tool": name,
-                "message": f"Ação destrutiva: confirme com o usuário e chame {name} de novo com os mesmos argumentos e confirm_token (válido por {ttl} s).",
-            })  # fmt: skip
-        if why := await check_confirmation(app, who, name, args, token):
-            await audit(request, p, f"MCP: {name}", f"confirmação recusada ({why})", scope)
-            return text_result(app, {"error": why}, True)
-    if src:
-        result = await run_app(request, p, src, args, text_result)
-    else:
-        result = await run_hub(request, p, op, a)
-    await audit(
-        request,
-        p,
-        f"MCP: {name}",
-        f"{'erro' if result['isError'] else 'ok'} · argumentos: {keys or '—'}",
-        scope,
-    )
-    return result
-
-
-async def tools_for(request: Request, p: P) -> list[dict[str, Any]]:
-    mode = request.app.state.apicfg.mcp.destructive_actions
-    apps = await app_tools(request, p, mode, CONFIRM_DESC, destructive_note)
-    return [*hub_tools(request.app, p), *apps]
-
-
-async def resources_read(request: Request, p: P, params: dict[str, Any]) -> dict[str, Any]:
-    uri = params.get("uri", "")
-    hit = next((r for r in RESOURCES if r[0] == uri), None)
-    if hit is None or not request.app.state.apicfg.api.enabled:
-        raise Rpc(-32002, f"recurso não encontrado: {uri}")
-    try:
-        _, v = await call(request, opsmod.BY_ID[hit[3]], p, Args(query=[("limit", "500")]))
-    except Problem as e:
-        raise Rpc(-32603, e.detail) from e
-    return {
-        "contents": [{"uri": uri, "mimeType": "application/json", "text": json.dumps(v, ensure_ascii=False)}]
-    }
-
+from hub.api.mcp_tools import sweep as sweep
+from hub.api.mcp_tools import text_result as text_result
+from hub.api.v1_base import P, principal
 
 # ---------------------------------------------------------------- JSON-RPC
 
@@ -498,7 +215,8 @@ async def client_of(app: FastAPI, session: str | None, msg: dict[str, Any], h: A
     return "".join(c for c in str(h.get("user-agent", "")) if c.isprintable())[:80]
 
 
-async def handle(request: Request) -> Response:  # noqa: C901, PLR0912, PLR0915
+async def _admit(request: Request) -> Response | P:
+    """The token's owner, or the answer that refuses the request (MCP off, foreign Origin, no bearer/scope)."""
     app, cfg, h = request.app, request.app.state.apicfg, request.headers
     if not cfg.mcp_http:
         return plain(404, "O servidor MCP está desligado nesta instalação ([mcp].enabled = false).")
@@ -523,95 +241,146 @@ async def handle(request: Request) -> Response:  # noqa: C901, PLR0912, PLR0915
         r = plain(403, "Token sem o escopo mcp.")
         r.headers["www-authenticate"] = app.state.oauth.www_authenticate(request, "insufficient_scope")
         return r
-    who = p.key
-    version, session = hv(h, VERSION), hv(h, SESSION)
-    modern_hdr = version == MODERN
-    method = request.method
-    if method == "GET":
-        if modern_hdr:
-            return plain(
-                405,
-                "Na revisão 2026-07-28 não há stream GET; use POST (subscriptions/listen não é oferecido).",
-                {"allow": "POST"},
-            )
-        if not accepts(h, "text/event-stream", True):
-            return plain(
-                405, "GET abre o stream SSE: envie Accept: text/event-stream.", {"allow": "POST, GET, DELETE"}
-            )
-        if session is None:
-            return plain(400, "Mcp-Session-Id obrigatório no GET (inicialize antes).")
-        if not await session_ok(app, session, who):
-            return plain(404, "Sessão MCP desconhecida ou vencida.")
-        return get_stream(app, session, who)
-    if method == "DELETE":
-        if modern_hdr:
-            return plain(405, "Na revisão 2026-07-28 não há sessão.", {"allow": "POST"})
-        if session and await session_ok(app, session, who):
-            await app.state.records.delete(K_SESSION, sha(session))
-            return Response(status_code=204)
-        return plain(404, "Sessão desconhecida.")
-    if method != "POST":
-        return plain(405, "Use POST.", {"allow": "POST, GET, DELETE"})
-    if version and version not in SUPPORTED:
-        return json_response(400, rpc_error(None, UNSUPPORTED_VERSION, f"MCP-Protocol-Version não suportada: {version}",
-                                            {"supported": list(SUPPORTED), "requested": version}))  # fmt: skip
+    return p
+
+
+async def _get(request: Request, who: str, modern_hdr: bool, session: str | None) -> Response:
+    if modern_hdr:
+        return plain(
+            405,
+            "Na revisão 2026-07-28 não há stream GET; use POST (subscriptions/listen não é oferecido).",
+            {"allow": "POST"},
+        )
+    if not accepts(request.headers, "text/event-stream", True):
+        return plain(
+            405, "GET abre o stream SSE: envie Accept: text/event-stream.", {"allow": "POST, GET, DELETE"}
+        )
+    if session is None:
+        return plain(400, "Mcp-Session-Id obrigatório no GET (inicialize antes).")
+    if not await session_ok(request.app, session, who):
+        return plain(404, "Sessão MCP desconhecida ou vencida.")
+    return get_stream(request.app, session, who)
+
+
+async def _delete(request: Request, who: str, modern_hdr: bool, session: str | None) -> Response:
+    if modern_hdr:
+        return plain(405, "Na revisão 2026-07-28 não há sessão.", {"allow": "POST"})
+    if session and await session_ok(request.app, session, who):
+        await request.app.state.records.delete(K_SESSION, sha(session))
+        return Response(status_code=204)
+    return plain(404, "Sessão desconhecida.")
+
+
+async def _read_message(request: Request) -> Any:
+    """The parsed JSON body, or the `Response` that refuses it (too large / invalid JSON)."""
     body = b""
     async for chunk in request.stream():
         body += chunk
-        if len(body) > cfg.mcp.max_request_kb * 1024:
+        if len(body) > request.app.state.apicfg.mcp.max_request_kb * 1024:
             return plain(413, "Mensagem grande demais.")
     try:
-        msg = json.loads(body)
+        return json.loads(body)
     except ValueError as e:
         return json_response(400, rpc_error(None, PARSE_ERROR, f"JSON inválido: {e}"))
+
+
+def _modern_error(h: Any, msg: dict[str, Any], id_: Any, meta_ver: str | None) -> Response | None:
+    if meta_ver is None:
+        return json_response(400, rpc_error(id_, HEADER_MISMATCH,
+                                            'requisição 2026-07-28 sem _meta["io.modelcontextprotocol/protocolVersion"]'))  # fmt: skip
+    if meta_ver != MODERN:
+        return json_response(400, rpc_error(id_, UNSUPPORTED_VERSION, "Unsupported protocol version",
+                                            {"supported": list(SUPPORTED), "requested": meta_ver}))  # fmt: skip
+    if err := check_modern_headers(h, msg, meta_ver):
+        return json_response(400, rpc_error(id_, HEADER_MISMATCH, f"Header mismatch: {err}"))
+    return None
+
+
+@dataclass
+class _Call:
+    """One JSON-RPC request (not a batch) already admitted."""
+
+    p: P
+    id_: Any
+    method: str
+    params: dict[str, Any]
+    modern: bool
+    client: str
+
+
+async def _run(request: Request, c: _Call) -> dict[str, Any]:
+    try:
+        result = await dispatch(request, c.p, c.method, c.params, c.client)
+    except Rpc as e:
+        return rpc_error(c.id_, e.code, e.message)
+    if c.modern and "resultType" not in result:
+        result["resultType"] = "complete"
+    if c.modern and c.method.endswith("/list"):
+        # 2026-07-28: lists state how long the client may keep them; they depend on the user → private
+        result.setdefault("ttlMs", 0)
+        result.setdefault("cacheScope", "private")
+    return {"jsonrpc": "2.0", "id": c.id_, "result": result}
+
+
+async def _respond(request: Request, c: _Call) -> Response:
+    h = request.headers
+    sse = accepts(h, "text/event-stream") and (
+        (c.modern and c.method == "tools/call") or not accepts(h, "application/json")
+    )
+    if sse:
+        return sse_response(_run(request, c), c.params.get("_meta", {}).get("progressToken"))
+    reply = await _run(request, c)
+    status = 404 if c.modern and reply.get("error", {}).get("code") == METHOD_NOT_FOUND else 200
+    headers: dict[str, str] = {}
+    if c.method == "initialize" and "result" in reply:
+        headers[SESSION] = await new_session(request.app, c.p.key, client_label(c.params))
+    return json_response(status, reply, headers)
+
+
+async def _single(
+    request: Request, p: P, msg: dict[str, Any], id_: Any, mth: str, version: str | None, session: str | None
+) -> Response:
+    h = request.headers
+    params = msg.get("params") or {}
+    meta_ver = (params.get("_meta") or {}).get(META_VERSION)
+    modern = mth != "initialize" and (meta_ver is not None or version == MODERN)
+    if modern and (err := _modern_error(h, msg, id_, meta_ver)) is not None:
+        return err
+    if not modern and mth != "initialize" and session and not await session_ok(request.app, session, p.key):
+        return plain(404, "Sessão MCP desconhecida ou vencida: inicialize de novo.")
+    client = await client_of(request.app, None if modern else session, msg, h)
+    return await _respond(request, _Call(p, id_, mth, params, modern, client))
+
+
+async def _post(request: Request, p: P, version: str | None, session: str | None) -> Response:
+    if version and version not in SUPPORTED:
+        return json_response(400, rpc_error(None, UNSUPPORTED_VERSION, f"MCP-Protocol-Version não suportada: {version}",
+                                            {"supported": list(SUPPORTED), "requested": version}))  # fmt: skip
+    msg = await _read_message(request)
+    if isinstance(msg, Response):
+        return msg
     if isinstance(msg, list):
-        return await handle_batch(request, p, who, session, version, msg)
+        return await handle_batch(request, p, p.key, session, version, msg)
     c = classify(msg)
     if isinstance(c, dict):
         return json_response(400, c)
     if c is None:
         return Response(status_code=202)
-    id_, mth = c
-    params = msg.get("params") or {}
-    meta_ver = (params.get("_meta") or {}).get(META_VERSION)
-    modern = mth != "initialize" and (meta_ver is not None or modern_hdr)
-    if modern:
-        if meta_ver is None:
-            return json_response(400, rpc_error(id_, HEADER_MISMATCH,
-                                                'requisição 2026-07-28 sem _meta["io.modelcontextprotocol/protocolVersion"]'))  # fmt: skip
-        if meta_ver != MODERN:
-            return json_response(400, rpc_error(id_, UNSUPPORTED_VERSION, "Unsupported protocol version",
-                                                {"supported": list(SUPPORTED), "requested": meta_ver}))  # fmt: skip
-        if err := check_modern_headers(h, msg, meta_ver):
-            return json_response(400, rpc_error(id_, HEADER_MISMATCH, f"Header mismatch: {err}"))
-    elif mth != "initialize" and session and not await session_ok(app, session, who):
-        return plain(404, "Sessão MCP desconhecida ou vencida: inicialize de novo.")
-    client = await client_of(app, None if modern else session, msg, h)
+    return await _single(request, p, msg, c[0], c[1], version, session)
 
-    async def run() -> dict[str, Any]:
-        try:
-            result = await dispatch(request, p, mth, params, client)
-        except Rpc as e:
-            return rpc_error(id_, e.code, e.message)
-        if modern and "resultType" not in result:
-            result["resultType"] = "complete"
-        if modern and mth.endswith("/list"):
-            # 2026-07-28: lists state how long the client may keep them; they depend on the user → private
-            result.setdefault("ttlMs", 0)
-            result.setdefault("cacheScope", "private")
-        return {"jsonrpc": "2.0", "id": id_, "result": result}
 
-    sse = accepts(h, "text/event-stream") and (
-        (modern and mth == "tools/call") or not accepts(h, "application/json")
-    )
-    if sse:
-        return sse_response(run(), params.get("_meta", {}).get("progressToken"))
-    reply = await run()
-    status = 404 if modern and reply.get("error", {}).get("code") == METHOD_NOT_FOUND else 200
-    headers: dict[str, str] = {}
-    if mth == "initialize" and "result" in reply:
-        headers[SESSION] = await new_session(app, who, client_label(params))
-    return json_response(status, reply, headers)
+async def handle(request: Request) -> Response:
+    p = await _admit(request)
+    if isinstance(p, Response):
+        return p
+    version, session = hv(request.headers, VERSION), hv(request.headers, SESSION)
+    if request.method == "GET":
+        return await _get(request, p.key, version == MODERN, session)
+    if request.method == "DELETE":
+        return await _delete(request, p.key, version == MODERN, session)
+    if request.method != "POST":
+        return plain(405, "Use POST.", {"allow": "POST, GET, DELETE"})
+    return await _post(request, p, version, session)
 
 
 async def handle_batch(
