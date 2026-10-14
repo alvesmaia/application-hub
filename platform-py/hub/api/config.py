@@ -87,19 +87,22 @@ def _fill(obj: Any, data: Mapping[str, Any]) -> None:
             setattr(obj, k, v)
 
 
-def load_cfg(toml: Mapping[str, Any] | None = None, env: Mapping[str, str] | None = None) -> HubCfg:  # noqa: PLR0915
-    toml, env = toml or {}, os.environ if env is None else env
-    c = HubCfg()
+def _from_toml(c: HubCfg, toml: Mapping[str, Any]) -> None:
     api, mcp = dict(toml.get("api", {})), dict(toml.get("mcp", {}))
     _fill(c.api, api)
     c.api.docs = bool(api.get("docs", {}).get("enabled", True))
     _fill(c.mcp, mcp)
     _fill(c.mcp, mcp.get("limits", {}))
     _fill(c.mcp.oauth, mcp.get("oauth", {}))
-    c.api.enabled = _flag(env, "HUB_API_ENABLED", c.api.enabled)
-    c.api.docs = _flag(env, "HUB_API_DOCS_ENABLED", c.api.docs)
-    c.api.rate_per_min = _num(env, "HUB_API_RATE_PER_MIN", c.api.rate_per_min)
-    m, o = c.mcp, c.mcp.oauth
+
+
+def _api_env(a: ApiCfg, env: Mapping[str, str]) -> None:
+    a.enabled = _flag(env, "HUB_API_ENABLED", a.enabled)
+    a.docs = _flag(env, "HUB_API_DOCS_ENABLED", a.docs)
+    a.rate_per_min = _num(env, "HUB_API_RATE_PER_MIN", a.rate_per_min)
+
+
+def _mcp_env(m: McpCfg, env: Mapping[str, str]) -> None:
     m.enabled = _flag(env, "HUB_MCP_ENABLED", m.enabled)
     m.expose_app_tools = _flag(env, "HUB_MCP_EXPOSE_APP_TOOLS", m.expose_app_tools)
     m.public_network = _flag(env, "HUB_MCP_PUBLIC_NETWORK", m.public_network)
@@ -111,6 +114,9 @@ def load_cfg(toml: Mapping[str, Any] | None = None, env: Mapping[str, str] | Non
     m.tool_timeout_s = _num(env, "HUB_MCP_TOOL_TIMEOUT_S", m.tool_timeout_s)
     m.max_result_kb = _num(env, "HUB_MCP_MAX_RESULT_KB", m.max_result_kb)
     m.confirm_ttl_s = _num(env, "HUB_MCP_CONFIRM_TTL_S", m.confirm_ttl_s)
+
+
+def _oauth_env(o: OAuthCfg, env: Mapping[str, str]) -> None:
     o.enabled = _flag(env, "HUB_MCP_OAUTH_ENABLED", o.enabled)
     o.dynamic_registration = _flag(env, "HUB_MCP_OAUTH_DYNAMIC_REGISTRATION", o.dynamic_registration)
     o.client_metadata_documents = _flag(
@@ -119,6 +125,9 @@ def load_cfg(toml: Mapping[str, Any] | None = None, env: Mapping[str, str] | Non
     if v := env.get("HUB_MCP_OAUTH_ALLOWED_REDIRECT_HOSTS"):
         o.allowed_redirect_hosts = [s.strip().lower() for s in v.split(",") if s.strip()]
     o.access_token_ttl_s = _num(env, "HUB_MCP_OAUTH_ACCESS_TOKEN_TTL_S", o.access_token_ttl_s)
+
+
+def _validate(m: McpCfg) -> None:
     p = m.path
     rest = p.removeprefix("/mcp/")
     if p != "/mcp" and not (
@@ -135,4 +144,14 @@ def load_cfg(toml: Mapping[str, Any] | None = None, env: Mapping[str, str] | Non
         "stdio" in m.transports and "http" not in m.transports
     ):
         raise ValueError("[mcp].transports: http e/ou stdio (stdio exige http)")
+
+
+def load_cfg(toml: Mapping[str, Any] | None = None, env: Mapping[str, str] | None = None) -> HubCfg:
+    toml, env = toml or {}, os.environ if env is None else env
+    c = HubCfg()
+    _from_toml(c, toml)
+    _api_env(c.api, env)
+    _mcp_env(c.mcp, env)
+    _oauth_env(c.mcp.oauth, env)
+    _validate(c.mcp)
     return c
