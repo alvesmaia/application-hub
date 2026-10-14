@@ -172,7 +172,7 @@ def test_check_steps_with_fake_uv(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     assert check.step_openapi(d) == (True, "openapi.json em dia")
     monkeypatch.setattr(check, "_uv_raw", lambda _d, *a: done(1, "", "quebrou"))
     assert main(["check", "--dir", str(d), "--only", "ruff,openapi"]) == 1
-    assert "FALHOU" in capsys.readouterr().out
+    assert "FAILED" in capsys.readouterr().out
     assert "Para corrigir: uv run ruff check --fix ." in check.run(d, ["ruff"])[0]["detail"]
     assert main(["check", "--dir", str(d), "--only", "nada"]) == 2
     assert main(["check", "--dir", str(tmp_path / "vazio")]) == 2

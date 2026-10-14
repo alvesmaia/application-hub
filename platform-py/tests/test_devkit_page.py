@@ -161,7 +161,7 @@ def test_split_docs_one_page_per_section(hub: TestClient) -> None:
         "<h1" in page and "Health e prontidão" in page and "Rotas, fragmentos" in page
     )  # 3rd section only in the menu
     cli = hub.get("/developers/cli").text
-    assert 'href="/developers/cli/hub-dev"' in cli and "Hub local leve" in cli  # index with summary
+    assert 'href="/developers/cli/hub-dev"' in cli and "Lightweight local hub" in cli  # index with summary
     assert 'href="/dev/docs/cli.md"' in cli  # full text on a single page
 
 

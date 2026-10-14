@@ -17,12 +17,12 @@ from . import project
 from .errors import FAIL, VALIDATION, CliError
 from .pack import PackError, pack
 
-EXIT_CODES = """códigos de saída: 0 ok · 1 falha (checagem/etapa) · 2 validação (parâmetro ausente ou inválido) ·
-3 autenticação · 4 hub inacessível"""
+EXIT_CODES = """exit codes: 0 ok · 1 failure (check/step) · 2 validation (missing or invalid argument) ·
+3 authentication · 4 hub unreachable"""
 
 EPILOG = f"""{EXIT_CODES}
 
-exemplos:
+examples:
   hub project create estoque --stack python-fastapi --yes --json
   hub project stacks --json
   hub check
@@ -36,92 +36,92 @@ class Parser(argparse.ArgumentParser):
     @override
     def error(self, message: str) -> NoReturn:
         self.print_usage(sys.stderr)
-        print(f"{self.prog}: erro: {message}", file=sys.stderr)
+        print(f"{self.prog}: error: {message}", file=sys.stderr)
         sys.exit(VALIDATION)
 
 
 def parser() -> argparse.ArgumentParser:
     fmt = argparse.RawDescriptionHelpFormatter
-    p = Parser(prog="hub", description="CLI da Application Hub", epilog=EPILOG, formatter_class=fmt)
+    p = Parser(prog="hub", description="Application Hub CLI", epilog=EPILOG, formatter_class=fmt)
     sub = p.add_subparsers(dest="cmd", required=True, parser_class=Parser)
 
     pr = sub.add_parser(
-        "project", help="Cria apps a partir dos templates", epilog=EPILOG, formatter_class=fmt
+        "project", help="Create apps from the templates", epilog=EPILOG, formatter_class=fmt
     )
     psub = pr.add_subparsers(dest="pcmd", required=True, parser_class=Parser)
     c = psub.add_parser(
         "create",
-        help="Novo app (interativo no terminal; não interativo com --yes ou sem TTY)",
+        help="New app (interactive in a terminal; non-interactive with --yes or without a TTY)",
         formatter_class=fmt,
         epilog=f"""{EXIT_CODES}
 
-exemplos:
+examples:
   hub project create estoque --stack python-fastapi --yes --json
   hub project create vendas --stack python-fastapi --template dashboard --yes
   hub project create estoque --name "Estoque" --requires database,storage --dir ./estoque --yes
-  hub project create            (pergunta o que faltar, se houver terminal)""",
+  hub project create            (asks for whatever is missing, if there is a terminal)""",
     )
-    c.add_argument("id", nargs="?", help="id do app (2–32: a-z, 0-9, '-')")
-    c.add_argument("--name", help="nome exibido (padrão: id capitalizado)")
-    c.add_argument("--stack", help="stack (veja `hub project stacks`; padrão python-fastapi)")
-    c.add_argument("--db", default=None, help="sqlite (padrão) ou URL do banco (vai para .env DATABASE_URL)")
-    c.add_argument("--requires", help="o que o hub provisiona: database,storage (padrão: database)")
-    c.add_argument("--dir", type=Path, help="pasta destino (padrão: ./<id>)")
+    c.add_argument("id", nargs="?", help="app id (2–32: a-z, 0-9, '-')")
+    c.add_argument("--name", help="display name (default: capitalized id)")
+    c.add_argument("--stack", help="stack (see `hub project stacks`; default python-fastapi)")
+    c.add_argument("--db", default=None, help="sqlite (default) or database URL (written to .env DATABASE_URL)")
+    c.add_argument("--requires", help="what the hub provisions: database,storage (default: database)")
+    c.add_argument("--dir", type=Path, help="target folder (default: ./<id>)")
     c.add_argument("--template", choices=project.TEMPLATES, default=None,
-                   help="basic (padrão) ou dashboard (KPIs, gráficos, tabela, filtro e exportação)")  # fmt: skip
+                   help="basic (default) or dashboard (KPIs, charts, table, filter and export)")  # fmt: skip
     c.add_argument("--with", dest="with_", default=None, help="extras: dashboards (= --template dashboard)")
-    c.add_argument("--yes", "-y", action="store_true", help="sem perguntas: usa os padrões")
-    c.add_argument("--json", action="store_true", help="saída em JSON")
-    s = psub.add_parser("stacks", help="Lista as stacks disponíveis")
+    c.add_argument("--yes", "-y", action="store_true", help="no questions: use the defaults")
+    c.add_argument("--json", action="store_true", help="JSON output")
+    s = psub.add_parser("stacks", help="List the available stacks")
     s.add_argument("--json", action="store_true")
 
-    ck = sub.add_parser("check", help="ruff, ty, pytest+cobertura, manifesto, openapi e conformidade local",
-                        epilog=f"{EXIT_CODES}\n\nexemplo:\n  hub check --only ruff,pytest --json",
+    ck = sub.add_parser("check", help="ruff, ty, pytest+coverage, manifest, openapi and local conformance",
+                        epilog=f"{EXIT_CODES}\n\nexample:\n  hub check --only ruff,pytest --json",
                         formatter_class=fmt)  # fmt: skip
     ck.add_argument("--dir", type=Path, default=Path())
-    ck.add_argument("--only", help="etapas separadas por vírgula: " + ",".join(n for n, _ in check_mod.STEPS))
+    ck.add_argument("--only", help="comma-separated steps: " + ",".join(n for n, _ in check_mod.STEPS))
     ck.add_argument(
-        "--full", action="store_true", help="também a suíte completa do contrato (conformance.json)"
+        "--full", action="store_true", help="also the full contract suite (conformance.json)"
     )
     ck.add_argument("--json", action="store_true")
 
-    k = sub.add_parser("pack", help="Gera o pacote .hubapp a partir da pasta do app")
+    k = sub.add_parser("pack", help="Build the .hubapp package from the app folder")
     k.add_argument("--dir", type=Path, default=Path())
-    k.add_argument("--image", help="imagem por digest (nome@sha256:…); alternativa: --build-dir")
-    k.add_argument("--build-dir", type=Path, help="contexto de build: o hub constrói a imagem do pacote")
-    k.add_argument("--dockerfile", default="Dockerfile", help="Dockerfile dentro de --build-dir")
+    k.add_argument("--image", help="image by digest (name@sha256:…); alternative: --build-dir")
+    k.add_argument("--build-dir", type=Path, help="build context: the hub builds the package image")
+    k.add_argument("--dockerfile", default="Dockerfile", help="Dockerfile inside --build-dir")
     k.add_argument("--out", type=Path)
 
-    d = sub.add_parser("dev", help="Hub local leve (sem Docker) com o app dentro do shell",
-                       epilog="exemplos:\n  hub dev                       (projeto do template: sobe o app com recarga)\n"
+    d = sub.add_parser("dev", help="Lightweight local hub (no Docker) with the app inside the shell",
+                       epilog="examples:\n  hub dev                       (template project: starts the app with reload)\n"
                        "  hub dev --upstream http://127.0.0.1:9000", formatter_class=fmt)  # fmt: skip
     d.add_argument("--dir", type=Path, default=Path())
-    d.add_argument("--upstream", help="app já rodando (senão a CLI sobe o app do projeto)")
+    d.add_argument("--upstream", help="app already running (otherwise the CLI starts the project app)")
     d.add_argument("--port", type=int, default=4173)
     d.add_argument("--role", default="admin")
     d.add_argument("--limits", action="store_true")
     d.add_argument("command", nargs="*")
 
-    lg = sub.add_parser("login", help="Salva o hub e o token (o token é pedido sem eco)",
-                        epilog=f"{EXIT_CODES}\n\nexemplo:\n  hub login --hub https://hub.exemplo.com",
+    lg = sub.add_parser("login", help="Save the hub and the token (the token is prompted without echo)",
+                        epilog=f"{EXIT_CODES}\n\nexample:\n  hub login --hub https://hub.example.com",
                         formatter_class=fmt)  # fmt: skip
     lg.add_argument("--hub", required=True)
-    lg.add_argument("--token", help="EVITE: use HUB_TOKEN, --token-file ou a pergunta sem eco")
-    lg.add_argument("--token-file", type=Path, help="arquivo com o token (ex.: entregue pelo cofre do CI)")
+    lg.add_argument("--token", help="AVOID: use HUB_TOKEN, --token-file or the no-echo prompt")
+    lg.add_argument("--token-file", type=Path, help="file with the token (e.g. provided by the CI vault)")
     lg.add_argument("--json", action="store_true")
-    dp = sub.add_parser("deploy", help="Empacota e envia ao hub (produção fica pendente de aprovação)",
-                        epilog=f"{EXIT_CODES}\n\nexemplos:\n  hub deploy --env staging\n"
-                        "  hub deploy --env production --hub https://hub.exemplo.com --json", formatter_class=fmt)  # fmt: skip
+    dp = sub.add_parser("deploy", help="Package and send to the hub (production stays pending approval)",
+                        epilog=f"{EXIT_CODES}\n\nexamples:\n  hub deploy --env staging\n"
+                        "  hub deploy --env production --hub https://hub.example.com --json", formatter_class=fmt)  # fmt: skip
     dp.add_argument("--env", required=True, choices=["staging", "production"])
     dp.add_argument("--dir", type=Path, default=Path())
-    dp.add_argument("--hub", help="URL do hub (padrão: o do `hub login` ou HUB_URL)")
-    dp.add_argument("--token", help="EVITE: use `hub login` ou HUB_TOKEN")
-    dp.add_argument("--env-file", type=Path, help="valores de requires (padrão: deploy.<env>.env)")
-    dp.add_argument("--yes", "-y", action="store_true", help="sem perguntas")
+    dp.add_argument("--hub", help="hub URL (default: the one from `hub login` or HUB_URL)")
+    dp.add_argument("--token", help="AVOID: use `hub login` or HUB_TOKEN")
+    dp.add_argument("--env-file", type=Path, help="values for requires (default: deploy.<env>.env)")
+    dp.add_argument("--yes", "-y", action="store_true", help="no questions")
     dp.add_argument("--json", action="store_true")
-    m = sub.add_parser("mcp", help="Servidor MCP por stdio que repassa ao MCP do hub com um token")
+    m = sub.add_parser("mcp", help="stdio MCP server that forwards to the hub MCP with a token")
     m.add_argument("--hub", default=os.environ.get("HUB_URL", "http://localhost:8080"))
-    m.add_argument("--token", help="EVITE: use HUB_TOKEN ou --token-file")
+    m.add_argument("--token", help="AVOID: use HUB_TOKEN or --token-file")
     tf = os.environ.get("HUB_TOKEN_FILE")
     m.add_argument("--token-file", type=Path, default=Path(tf) if tf else None)
     m.add_argument("--path", default=os.environ.get("HUB_MCP_PATH", "/mcp"))
@@ -149,11 +149,11 @@ def cmd_create(a: argparse.Namespace) -> int:
         raise CliError("informe o id do app (ex.: hub project create estoque --yes)", VALIDATION)
     project.validate_id(app_id)
     default_name = app_id.replace("-", " ").capitalize()
-    name = a.name or (ask("Nome exibido", default_name) if tty else default_name)
+    name = a.name or (ask("Display name", default_name) if tty else default_name)
     ids = [s["id"] for s in project.stacks()]
     stack = a.stack or (ask(f"Stack ({', '.join(ids)})", ids[0]) if tty else ids[0])
-    db = a.db or (ask("Banco local (sqlite ou URL)", "sqlite") if tty else "sqlite")
-    req = a.requires or (ask("O app precisa de (database,storage)", "database") if tty else None)
+    db = a.db or (ask("Local database (sqlite or URL)", "sqlite") if tty else "sqlite")
+    req = a.requires or (ask("The app needs (database,storage)", "database") if tty else None)
     directory = a.dir or Path(app_id)
     template = project.parse_template(a.template, a.with_)
     out = project.create(app_id, name, stack, db, project.parse_requires(req), directory, template)
@@ -161,7 +161,7 @@ def cmd_create(a: argparse.Namespace) -> int:
         print(json.dumps(out, ensure_ascii=False))
     else:
         print(
-            f"App {app_id} criado em {out['dir']}\nPróximos passos:\n  cd {directory}\n  uv sync\n  hub check\n  hub dev"
+            f"App {app_id} created in {out['dir']}\nNext steps:\n  cd {directory}\n  uv sync\n  hub check\n  hub dev"
         )
     return 0
 
@@ -180,17 +180,17 @@ def cmd_check(a: argparse.Namespace) -> int:
     only = [s.strip() for s in (a.only or "").split(",") if s.strip()] or None
     known = {n for n, _ in check_mod.STEPS} | {check_mod.FULL[0]}
     if only and set(only) - known:
-        raise CliError(f"--only: etapas desconhecidas {', '.join(sorted(set(only) - known))}", VALIDATION)
+        raise CliError(f"--only: unknown steps {', '.join(sorted(set(only) - known))}", VALIDATION)
     results = check_mod.run(a.dir, only, a.full or bool(only and check_mod.FULL[0] in only))
     ok = all(r["ok"] for r in results)
     if a.json:
         print(json.dumps({"ok": ok, "steps": results}, ensure_ascii=False))
     else:
         for r in results:
-            print(f"{'ok ' if r['ok'] else 'FALHOU'} {r['step']:<13} {r['seconds']:>6.1f}s")
+            print(f"{'ok ' if r['ok'] else 'FAILED'} {r['step']:<13} {r['seconds']:>6.1f}s")
             if not r["ok"]:
                 print("    " + r["detail"].replace("\n", "\n    ")[-4000:])
-        print("hub check: verde" if ok else "hub check: com falhas")
+        print("hub check: green" if ok else "hub check: failed")
     return 0 if ok else FAIL
 
 

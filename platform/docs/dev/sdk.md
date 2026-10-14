@@ -6,12 +6,12 @@ Gerada das assinaturas e docstrings do pacote `hub_sdk`. Só nomes públicos (se
 
 ## `hub_sdk`
 
-SDK Python (FastAPI) dos apps da Application Hub.
+Python SDK (FastAPI) for the Application Hub apps.
 
 ## `hub_sdk.api`
 
-API do app (onda 11): OpenAPI 3.1 **nativo do FastAPI** servido no caminho do
-contrato (``GET /{app}/api/openapi.json``), só com as rotas da API (``/{app}/api/...``).
+App API (wave 11): **native FastAPI** OpenAPI 3.1 served at the contract path
+(``GET /{app}/api/openapi.json``), with only the API routes (``/{app}/api/...``).
 
 ### `problem(status: int, detail: str) -> JSONResponse`
 
@@ -19,42 +19,42 @@ Erro RFC 9457 (``application/problem+json``).
 
 ### `require_user(request: Request) -> Identity | JSONResponse`
 
-Identidade do hub obrigatória nas rotas da API (sem ``x-hub-user`` → 401).
+Hub identity required on the API routes (no ``x-hub-user`` → 401).
 
 ### `openapi_of(app: FastAPI, app_id: str, title: str, version: str) -> dict[str, Any]`
 
-Documento OpenAPI só com as rotas ``/{app_id}/api/``.
+OpenAPI document with only the ``/{app_id}/api/`` routes.
 
 ### `install_api(app: FastAPI, app_id: str, *, title: str, version: str) -> None`
 
-Rota ``GET /{app_id}/api/openapi.json`` (e guarda a declaração para o MCP).
+``GET /{app_id}/api/openapi.json`` route (and stores the declaration for MCP).
 
 ## `hub_sdk.app`
 
-Tudo ligado a um app FastAPI: :class:`HubSdk`.
+Everything wired to a FastAPI app: :class:`HubSdk`.
 
 ### `scratch_dir(app_id: str) -> Path`
 
-Diretório de trabalho (uploads, relatórios): ``HUB_SCRATCH_DIR`` (``/scratch`` nos
-containers, volume próprio do app) ou o temporário do sistema.
+Working directory (uploads, reports): ``HUB_SCRATCH_DIR`` (``/scratch`` in containers, the app's
+own volume) or the system temp directory.
 
 ### class `HubSdk`
 
 - `from_env(app_id: str | None=None, app_sql: str='', handlers: Sequence[Handler]=(), after_migrate: Callable[[HubSdk], Awaitable[None]] | None=None, cleanup_hooks: Sequence[Callable[[HubSdk], Awaitable[None]]]=()) -> HubSdk`
 - `pool() -> Any`
 - `db_ready() -> bool`
-- `readiness() -> _ready.Readiness` — Prontidão (``GET /{app}/_hub/ready``): encerrando = não pronto; com banco, migrações aplicadas **e** ``SELECT 1``; depois as verificações de ``ready_checks``.
+- `readiness() -> _ready.Readiness` — Readiness (``GET /{app}/_hub/ready``): shutting down = not ready; with DB, migrations applied **and** ``SELECT 1``; then the ``ready_checks`` checks.
 - `wake() -> None`
-- `async emit(user: str, action: str, target: str='', detail: str='') -> None` — Auditoria fora de transação (exportações, consultas).
+- `async emit(user: str, action: str, target: str='', detail: str='') -> None` — Audit outside a transaction (exports, queries).
 - `event(user: str, action: str, target: str='', detail: str='') -> Event`
 - `async lifespan(_app: FastAPI) -> AsyncGenerator[None]`
-- `async run_worker_process() -> None` — Processo de tarefas (``HUB_JOBS_MODE=process``): só o worker de tarefas e a limpeza periódica, até SIGTERM/SIGINT; drena como o web (8 s).
+- `async run_worker_process() -> None` — Jobs process (``HUB_JOBS_MODE=process``): only the jobs worker and the periodic cleanup, until SIGTERM/SIGINT; drains like the web (8 s).
 - `async run_cleanup() -> None`
-- `install(app: FastAPI) -> None` — Middleware de idempotência (todas as rotas que alteram dados), endpoints internos ``/{id}/_hub/*`` e o cabeçalho ``x-app-version``.
+- `install(app: FastAPI) -> None` — Idempotency middleware (all routes that change data), internal endpoints ``/{id}/_hub/*`` and the ``x-app-version`` header.
 
 ## `hub_sdk.approvals`
 
-Aprovações pela Inbox do hub (onda 9).
+Inbox approvals of the hub (wave 9).
 
 ### `valid_id(s: str) -> bool`
 
@@ -70,28 +70,28 @@ Aprovações pela Inbox do hub (onda 9).
 
 ## `hub_sdk.dashboards`
 
-Kit de dashboards (BI leve) dos apps: datasets SQL, filtros, KPIs, gráficos SVG no servidor e exportação.
+Dashboard kit (light BI) for the apps: SQL datasets, filters, KPIs, server-side SVG charts and export.
 
 ### class `Param`
 
-Filtro do dashboard. ``kind``: ``select`` (``options`` = [(valor, rótulo)]), ``text``, ``date``,
-``number``. O valor vem da query string, validado aqui (nunca SQL cru: vai como parâmetro ``:nome``).
+Dashboard filter. ``kind``: ``select`` (``options`` = [(value, label)]), ``text``, ``date``,
+``number``. The value comes from the query string, validated here (never raw SQL: it goes as a ``:name`` parameter).
 
 - `parse(raw: str | None) -> str | int | float`
 
 ### class `Dataset`
 
-Consulta nomeada: ``sql`` com parâmetros ``:nome`` (só os listados em ``params``), contra uma conexão
-SQL vinculada (``source`` = nome), uma :class:`hub_sdk.sql.SqlConnection` ou uma função que a devolve.
-``ttl`` = segundos de cache por combinação de parâmetros (0 = sem cache).
+Named query: ``sql`` with ``:name`` parameters (only those listed in ``params``), against a
+linked SQL connection (``source`` = name), a :class:`hub_sdk.sql.SqlConnection`, or a function that returns one.
+``ttl`` = cache seconds per combination of parameters (0 = no cache).
 
 - `connection() -> SqlConnection`
 
 ### class `Dashboard`
 
-- `values(query: Mapping[str, str]) -> dict[str, Any]` — Valores validados dos filtros a partir da query string.
+- `values(query: Mapping[str, str]) -> dict[str, Any]` — Validated filter values from the query string.
 - `dataset(name: str) -> Dataset`
-- `async load(name: str, values: Mapping[str, Any] | None=None, conn: SqlConnection | None=None) -> SqlResult` — Executa (ou devolve do cache) o dataset ``name`` com os valores dos seus parâmetros.
+- `async load(name: str, values: Mapping[str, Any] | None=None, conn: SqlConnection | None=None) -> SqlResult` — Runs (or returns from the cache) the dataset ``name`` with the values of its parameters.
 - `clear() -> None`
 
 ### `fmt(v: Any, unit: str='', places: int | None=None) -> str`
@@ -100,13 +100,13 @@ SQL vinculada (``source`` = nome), uma :class:`hub_sdk.sql.SqlConnection` ou uma
 
 ### `kpi(label: str, value: Any, unit: str='', hint: str='', delta: float | None=None) -> Markup`
 
-Cartão de indicador. ``delta`` (fração, ex. 0.12 = +12%) vira seta e cor (subiu/caiu).
+KPI card. ``delta`` (fraction, e.g. 0.12 = +12%) becomes an arrow and a color (up/down).
 
 ### `kpis(items: Iterable[Markup]) -> Markup`
 
 ### `chart(kind: str, labels: Sequence[Any], series: Series, title: str='', unit: str='') -> Markup`
 
-Gráfico SVG: ``kind`` = ``line`` | ``area`` | ``bar`` | ``pie`` | ``donut``. ``series`` = [(nome, valores)].
+SVG chart: ``kind`` = ``line`` | ``area`` | ``bar`` | ``pie`` | ``donut``. ``series`` = [(name, values)].
 
 ### `line_chart(r: SqlResult, x: str, y: Sequence[str] | str, title: str='', unit: str='') -> Markup`
 
@@ -120,81 +120,81 @@ Gráfico SVG: ``kind`` = ``line`` | ``area`` | ``bar`` | ``pie`` | ``donut``. ``
 
 ### `table(r: SqlResult, columns: Sequence[tuple[str, str]] | None=None, table_id: str='hub-dash-table', page_size: int=20, filter_label: str='Filtrar linhas', units: Mapping[str, str] | None=None) -> Markup`
 
-Tabela com filtro e paginação do hub (``data-hub-filter``/``data-hub-table``). ``columns`` =
-[(coluna, rótulo)] (padrão: todas).
+Table with the hub's filter and pagination (``data-hub-filter``/``data-hub-table``). ``columns`` =
+[(column, label)] (default: all).
 
 ### `filters_form(params: Sequence[Param], values: Mapping[str, Any], action: str, submit: str='Aplicar') -> Markup`
 
-Filtros como ``<form method="get">`` (sem JS): cada mudança é aplicada pelo botão.
+Filters as ``<form method="get">`` (no JS): each change is applied by the button.
 
 ### `export_links(href: str, values: Mapping[str, Any]) -> Markup`
 
-Links «Exportar CSV/XLSX» para a rota de exportação do app (``?format=csv|xlsx`` + filtros).
+«Export CSV/XLSX» links to the app's export route (``?format=csv|xlsx`` + filters).
 
 ### `to_csv(r: SqlResult) -> bytes`
 
 ### `to_xlsx(r: SqlResult, sheet: str='Dados') -> bytes`
 
-XLSX em modo write-only (``openpyxl``; extra ``hub-sdk[dashboards]``). Texto com cara de fórmula é
-neutralizado como no CSV.
+XLSX in write-only mode (``openpyxl``; extra ``hub-sdk[dashboards]``). Text that looks like a formula is
+neutralized as in the CSV.
 
 ### `export_response(r: SqlResult, fmt_: str, filename: str) -> Response`
 
-Resposta de download (``csv`` ou ``xlsx``) com ``Content-Disposition`` e ``no-store``.
+Download response (``csv`` or ``xlsx``) with ``Content-Disposition`` and ``no-store``.
 
 ## `hub_sdk.db`
 
-Pool do Postgres (asyncpg) com os codecs que o SDK espera e migração em segundo plano.
+Postgres pool (asyncpg) with the codecs the SDK expects, and background migration.
 
 ### `app_env(app_id: str, name: str) -> str | None`
 
-``NOME_<ID>`` com fallback para ``NOME`` (vazio = ausente).
+``NAME_<ID>`` with fallback to ``NAME`` (empty = absent).
 
 ### `async create_pool(url: str, size: int) -> Any`
 
-Pool preguiçoso (``min_size=0``): o app sobe mesmo com o banco fora do ar.
+Lazy pool (``min_size=0``): the app starts even with the DB down.
 
 ### `pool_size(var: str, default: int, per_web_process: bool=False) -> int`
 
-``var`` do ambiente; senão ``default`` — dividido pelos processos web
-(``UVICORN_WORKERS``) quando ``per_web_process``.
+``var`` from the environment; otherwise ``default`` — divided among the web processes
+(``UVICORN_WORKERS``) when ``per_web_process``.
 
 ### class `Database`
 
-Pools + estado "pronto" (migrações aplicadas).
+Pools + "ready" state (migrations applied).
 
 - `ready() -> bool`
-- `async open(role: str='web', jobs_inline: bool=True) -> None` — ``role="web"``: handlers + idempotência + tarefas (2 se as tarefas rodam em outro processo); ``role="worker"``: só handlers (4) e tarefas (5).
-- `spawn_migrations(app_id: str, app_sql: str, after: Any=None) -> None` — Migra em segundo plano até conseguir (não segura a partida nem o health check); ``after`` (corrotina opcional) roda depois — ex.: carga inicial.
+- `async open(role: str='web', jobs_inline: bool=True) -> None` — ``role="web"``: handlers + idempotency + jobs (2 if the jobs run in another process); ``role="worker"``: only handlers (4) and jobs (5).
+- `spawn_migrations(app_id: str, app_sql: str, after: Any=None) -> None` — Migrates in the background until it succeeds (does not hold up startup nor the health check); ``after`` (optional coroutine) runs afterwards — e.g. the initial load.
 - `async close() -> None`
 
 ### `database_url(default: str='sqlite:///.hub/dev.db') -> str`
 
-URL SQLAlchemy do banco do app: ``DATABASE_URL`` > ``HUB_DB_URL`` > ``default``
-(``postgres(ql)://`` vira ``postgresql+psycopg://``, o driver do extra ``sql``).
+SQLAlchemy URL of the app's DB: ``DATABASE_URL`` > ``HUB_DB_URL`` > ``default``
+(``postgres(ql)://`` becomes ``postgresql+psycopg://``, the driver of the ``sql`` extra).
 
 ### `engine(url: str | None=None) -> Any`
 
-Engine síncrona do SQLAlchemy Core. Em SQLite cria a pasta do arquivo.
+Synchronous SQLAlchemy Core engine. On SQLite it creates the file's folder.
 
 ### `upgrade(migrations_dir: str | os.PathLike[str], url: str | None=None, revision: str='head') -> None`
 
-Aplica as migrações Alembic de ``migrations_dir`` (pasta com ``env.py`` e ``versions/``).
+Applies the Alembic migrations of ``migrations_dir`` (folder with ``env.py`` and ``versions/``).
 
 ## `hub_sdk.flags`
 
-Feature flags (onda 8) — mesmo algoritmo do crate ``hub-flags`` (vetores compartilhados
-em ``tests/vectors/flags-vectors.json``).
+Feature flags (wave 8) — same algorithm as the ``hub-flags`` crate (shared vectors
+in ``tests/vectors/flags-vectors.json``).
 
 ### `valid_token(s: str) -> bool`
 
 ### `user_digest(key: str, user: str) -> str`
 
-Resumo do usuário nas regras empurradas pelo hub (o app não recebe e-mails).
+User summary in the rules pushed by the hub (the app does not receive emails).
 
 ### `bucket(key: str, user: str) -> int`
 
-Balde estável 0–9999 de ``chave:usuário`` (sha256, 4 primeiros bytes big-endian).
+Stable bucket 0–9999 of ``key:user`` (sha256, first 4 bytes big-endian).
 
 ### `parse_header(v: str) -> dict[str, str]`
 
@@ -207,12 +207,12 @@ Balde estável 0–9999 de ``chave:usuário`` (sha256, 4 primeiros bytes big-end
 
 ### `evaluate(flag: Mapping[str, Any], env: str, user: str, roles: Sequence[str]) -> str`
 
-Valor de ``flag`` no ambiente para o usuário (ordem: kill switch →
-regras → percentual → padrão).
+Value of ``flag`` in the environment for the user (order: kill switch →
+rules → percentage → default).
 
 ### class `FlagStore`
 
-Definições empurradas pelo hub (cache local; vazio até o primeiro envio).
+Definitions pushed by the hub (local cache; empty until the first push).
 
 - `replace(version: int, env: str, flags: list[dict[str, Any]]) -> bool`
 - `evaluate(key: str, user: str, roles: Sequence[str]) -> str`
@@ -220,15 +220,15 @@ Definições empurradas pelo hub (cache local; vazio até o primeiro envio).
 
 ### `validate_push(body: Any) -> tuple[int, str, list[dict[str, Any]]] | None`
 
-Valida o corpo de ``POST /_hub/flags`` (``None`` = inválido).
+Validates the body of ``POST /_hub/flags`` (``None`` = invalid).
 
 ## `hub_sdk.heavy`
 
-Limite de operações pesadas simultâneas por app (importação, exportação, relatório).
+Limit on simultaneous heavy operations per app (import, export, report).
 
 ### class `Permit`
 
-Vaga ocupada; ``release()`` (ou sair do ``with``) devolve. Liberar duas vezes é
+Slot taken; ``release()`` (or leaving the ``with``) returns it. Releasing twice is
 inócuo.
 
 - `release() -> None`
@@ -236,31 +236,31 @@ inócuo.
 ### class `Heavy`
 
 - `from_env() -> Heavy`
-- `try_acquire() -> Permit | None` — Vaga sem esperar; ``None`` = limite atingido (responda 429).
+- `try_acquire() -> Permit | None` — Slot without waiting; ``None`` = limit reached (answer 429).
 - `in_use() -> int`
 
 ### class `PermitStreamingResponse`
 
-``StreamingResponse`` que **sempre** devolve a vaga de operação pesada:
+``StreamingResponse`` that **always** returns the heavy-operation slot:
 
 ## `hub_sdk.idempotency`
 
-``Idempotency-Key`` para rotas que alteram dados (POST/PUT/PATCH/DELETE) — middleware
-ASGI que usa a tabela ``hub_idempotency`` (formato estável: não mude sem migração).
+``Idempotency-Key`` for routes that change data (POST/PUT/PATCH/DELETE) — ASGI middleware
+that uses the ``hub_idempotency`` table (stable format: do not change without a migration).
 
 ### `max_body_from_env() -> int`
 
-Teto do corpo de pedidos com ``Idempotency-Key`` (``HUB_MAX_BODY_MB``, padrão 64).
+Body cap for requests with ``Idempotency-Key`` (``HUB_MAX_BODY_MB``, default 64).
 
 ### `valid_key(k: str) -> bool`
 
-8 a 128 caracteres visíveis ASCII.
+8 to 128 visible ASCII characters.
 
 ### `split_content_type(ct: str) -> tuple[str, str | None]`
 
 ### class `RequestHasher`
 
-Hash incremental do pedido.
+Incremental hash of the request.
 
 - `update(data: bytes) -> None`
 - `finish() -> str`
@@ -269,22 +269,22 @@ Hash incremental do pedido.
 
 ### `storable(status: int) -> bool`
 
-2xx/3xx/4xx (determinísticas), exceto 408/429; nunca 5xx.
+2xx/3xx/4xx (deterministic), except 408/429; never 5xx.
 
 ### class `IdemCtx`
 
-Chave em curso (``request.state.hub_idem``): o handler grava a marca de
-efetivação **na própria transação** de negócio.
+Key in progress (``request.state.hub_idem``): the handler writes the commit mark
+**in its own** business transaction.
 
 - `async mark_committed(conn: Any) -> None`
 
 ### `idem_ctx(conn: HTTPConnection) -> IdemCtx | None`
 
-Contexto da chave da requisição (``None`` sem ``Idempotency-Key``).
+Context of the request's key (``None`` without ``Idempotency-Key``).
 
 ### class `Idempotency`
 
-Backend: Postgres (``pool`` dedicado) ou memória (``pool=None``).
+Backend: Postgres (dedicated ``pool``) or memory (``pool=None``).
 
 - `postgres(pool: Any) -> Idempotency`
 - `memory() -> Idempotency`
@@ -297,65 +297,65 @@ Backend: Postgres (``pool`` dedicado) ou memória (``pool=None``).
 
 ## `hub_sdk.identity`
 
-Identidade injetada pelo hub no cabeçalho ``x-hub-user``.
+Identity injected by the hub in the ``x-hub-user`` header.
 
 ### class `Identity`
 
-- `display_name() -> str` — Nome para exibir (`name`, senão o login).
+- `display_name() -> str` — Display name (`name`, otherwise the login).
 - `is_guest() -> bool`
 - `has_permission(p: str) -> bool`
-- `encode() -> str` — Valor do cabeçalho (para testes e para o `hub dev`).
+- `encode() -> str` — Header value (for tests and for `hub dev`).
 
 ### `parse_identity(value: str | None) -> Identity | None`
 
-Decodifica o cabeçalho; ``None`` se ausente ou inválido.
+Decodes the header; ``None`` if missing or invalid.
 
 ### `identity_of(conn: HTTPConnection) -> Identity`
 
-Identidade da requisição (convidado se ausente/inválida). Use como dependência
-do FastAPI: ``ident: Identity = Depends(identity_of)``.
+Request identity (guest if missing or invalid). Use as a dependency
+of FastAPI: ``ident: Identity = Depends(identity_of)``.
 
 ### `user_key(headers_value: str | None) -> str`
 
-Valor cru do cabeçalho, aparado — é o escopo das chaves de idempotência (a chave de outro usuário nunca devolve a resposta deste).
+Raw header value, trimmed — it is the scope of the idempotency keys (another user's key never returns this user's response).
 
 ### `env_of(conn: HTTPConnection) -> str`
 
-Ambiente que o hub declarou (`producao`/`staging`); padrão produção.
+Environment declared by the hub (`producao`/`staging`); default is production.
 
 ## `hub_sdk.jobs`
 
-Tarefas duráveis na tabela ``hub_jobs`` (tabela, SQL e estados têm formato estável: não mude sem migração).
+Durable jobs in the ``hub_jobs`` table (table, SQL and states have a stable format: do not change without a migration).
 
 ### `label(status: str) -> str`
 
 ### class `JobSpec`
 
-Contrato de um tipo de tarefa (espelha ``manifest.jobs``).
+Contract of a job type (mirrors ``manifest.jobs``).
 
 ### `backoff(attempt: int, base: float, max_: float, jitter: float) -> float`
 
-Espera antes da tentativa ``attempt + 1``: ``base · 2^(attempt-1)`` limitada a
+Wait before attempt ``attempt + 1``: ``base · 2^(attempt-1)`` capped at
 ``max_``, metade fixa + metade aleatória (``jitter`` ∈ [0, 1)).
 
 ### class `Job`
 
-- `to_json() -> dict[str, Any]` — JSON do ``GET /_hub/jobs`` (sem o ``attempt_token``, que nunca sai do app).
+- `to_json() -> dict[str, Any]` — JSON of ``GET /_hub/jobs`` (without the ``attempt_token``, which never leaves the app).
 - `percent() -> int`
 
 ### `job_of(r: Any) -> Job`
 
 ### class `JobError`
 
-Resultado de uma tentativa que não concluiu.
+Result of an attempt that did not complete.
 
 ### class `JobRetry`
 
-Falha transitória: nova tentativa com backoff (ou ``dead`` se esgotou).
+Transient failure: retry with backoff (or ``dead`` if attempts are exhausted).
 
 ### class `JobFail`
 
-Falha definitiva (entrada inválida etc.): ``failed``, sem novas tentativas.
+Definitive failure (invalid input, etc.): ``failed``, no further attempts.
 
 ### class `JobCancelled`
 
@@ -363,70 +363,70 @@ Cancelamento pedido.
 
 ### class `JobLostLease`
 
-Outro worker assumiu (lease vencido): não mexe em mais nada.
+Another worker took over (expired lease): does not touch anything else.
 
 ### class `JobShutdown`
 
-Desligamento gracioso: devolve à fila sem gastar a tentativa.
+Graceful shutdown: returns to the queue without spending the attempt.
 
 ### class `Handler`
 
-Implementação de um tipo de tarefa.
+Implementation of a job type.
 
 - `async run(ctx: JobCtx) -> Any`
 - `final_event(job: Job, status: str, detail: str) -> outbox.Event | None`
 
 ### `extra_events(handler: Handler | None, job: Job, status: str, detail: str) -> list[outbox.Event]`
 
-Eventos extras do estado final (onda 9: ex. notificação para a Inbox do hub), se o
-handler definir ``final_events(job, status, detail)``; gravados na mesma transação.
+Extra events of the final state (wave 9: e.g. notification to the hub Inbox), if the
+handler defines ``final_events(job, status, detail)``; written in the same transaction.
 
 ### `async enqueue_with(conn: Any, spec: JobSpec, payload: Any, user: str, idempotency_key: str | None=None) -> tuple[Job, bool]`
 
-Enfileira com ``conn`` (ex.: dentro da transação que também grava a auditoria).
-Com ``idempotency_key``, a mesma chave (e tipo) devolve a existente (``False``).
+Enqueues with ``conn`` (e.g. inside the transaction that also writes the audit).
+With ``idempotency_key``, the same key (and type) returns the existing one (``False``).
 
 ### `async after_final(handler: Handler | None, job: Job, status: str) -> None`
 
-Gancho opcional ``handler.after_final(job, status)`` (síncrono ou ``async``),
-chamado **depois** que o estado terminal foi confirmado (ex.: apagar o upload). Erros
-só vão para o log.
+Optional hook ``handler.after_final(job, status)`` (sync or ``async``),
+called **after** the terminal state is committed (e.g. deleting the upload). Errors
+only go to the log.
 
 ### class `Jobs`
 
 - `handler_for(kind: str) -> Handler | None`
-- `take_markers(killed_pid: int | None) -> builtins.list[str]` — Lê e apaga as marcas de fase de memória deixadas por processos anteriores; devolve os ids das tarefas cuja marca é do processo ``killed_pid`` (morto por SIGKILL — ex.: OOM do cgroup). Marcas de outros PIDs (container reiniciado, caos) só são apagadas: essas tarefas retomam normalmente do checkpoint.
+- `take_markers(killed_pid: int | None) -> builtins.list[str]` — Reads and deletes the memory-phase markers left by previous processes; returns the ids of the jobs whose marker belongs to the ``killed_pid`` process (killed by SIGKILL — e.g. cgroup OOM). Markers of other PIDs (container restarted, chaos) are only deleted: those jobs resume normally from the checkpoint.
 - `async enqueue(spec: JobSpec, payload: Any, user: str, idempotency_key: str | None=None) -> tuple[Job, bool]`
 - `async get(job_id: str) -> Job | None`
 - `async list(limit: int) -> builtins.list[Job]`
 - `async claim(specs: Sequence[JobSpec]) -> Job | None`
-- `async reap(kinds: Sequence[str]) -> builtins.list[Job]` — ``running`` com lease vencido que não serão retomadas: cancelamento pedido → ``cancelled``; sem tentativas → ``dead``. O evento final de cada uma (do handler registrado em ``handlers``) é gravado no outbox **na mesma transação** da mudança de estado. Devolve as que mudaram (o chamador roda :func:`after_final`).
-- `async fail_killed(job_ids: Sequence[str], owner_prefix: str, reason: str) -> builtins.list[Job]` — ``failed`` (sem novas tentativas) para as tarefas ``running`` de ``job_ids`` cujo lease ainda é do processo morto (``lease_owner`` começa com ``owner_prefix``, ex. ``"1234-"``), com o evento final na mesma transação. Para quando o processo de tarefas foi morto (SIGKILL/OOM) no meio de uma fase de memória: repetir a tentativa só mataria o processo de novo.
+- `async reap(kinds: Sequence[str]) -> builtins.list[Job]` — ``running`` with an expired lease that will not be resumed: cancellation requested → ``cancelled``; no attempts left → ``dead``. The final event of each one (from the handler registered in ``handlers``) is written to the outbox **in the same transaction** as the state change. Returns the ones that changed (the caller runs :func:`after_final`).
+- `async fail_killed(job_ids: Sequence[str], owner_prefix: str, reason: str) -> builtins.list[Job]` — ``failed`` (no further attempts) for the ``running`` jobs in ``job_ids`` whose lease still belongs to the dead process (``lease_owner`` starts with ``owner_prefix``, e.g. ``"1234-"``), with the final event in the same transaction. Used when the jobs process was killed (SIGKILL/OOM) in the middle of a memory phase: retrying the attempt would only kill the process again.
 - `async cancel(job_id: str) -> Job`
 - `async retry(job_id: str) -> Job`
 - `async heartbeat(job_id: str, token: str, lease: float) -> None`
-- `async finish(spec: JobSpec, handler: Handler, job: Job, outcome: Any, error: JobError | None) -> None` — Grava o resultado da tentativa (estado + evento final na mesma transação); num estado terminal, chama :func:`after_final` depois de confirmar.
+- `async finish(spec: JobSpec, handler: Handler, job: Job, outcome: Any, error: JobError | None) -> None` — Records the attempt's result (state + final event in the same transaction); in a terminal state, calls :func:`after_final` after committing.
 
 ### class `JobCtx`
 
-Contexto de uma tentativa em execução.
+Context of an attempt in progress.
 
 - `pool() -> Any`
-- `checkpoint() -> Any` — Checkpoint gravado na última confirmação (retomada).
-- `memory_phase() -> Generator[None]` — Marca (arquivo em ``Jobs.marker_dir``) enquanto a tentativa segura muita memória (ex.: a aba inteira carregada pelo python-calamine). Se o processo de tarefas for morto por SIGKILL (OOM) com a marca presente, o próximo processo marca a tarefa ``failed`` em vez de repeti-la (:meth:`Jobs.fail_killed`).
-- `should_stop() -> JobError | None` — Motivo para parar agora (lease perdido, cancelamento, desligamento).
+- `checkpoint() -> Any` — Checkpoint written at the last commit (resume).
+- `memory_phase() -> Generator[None]` — Marker (file in ``Jobs.marker_dir``) while the attempt holds a lot of memory (e.g. the whole sheet loaded by python-calamine). If the jobs process is killed by SIGKILL (OOM) with the marker present, the next process marks the job ``failed`` instead of retrying it (:meth:`Jobs.fail_killed`).
+- `should_stop() -> JobError | None` — Reason to stop now (lost lease, cancellation, shutdown).
 - `raise_if_stopping() -> None`
-- `async save_checkpoint(conn: Any, checkpoint: Any, done: int, total: int, text: str='') -> None` — Grava checkpoint + progresso (e renova o lease) com ``conn`` — a transação do lote. Levanta :class:`JobLostLease`/:class:`JobCancelled` (a transação deve ser descartada — sair do ``async with conn.transaction()`` com a exceção faz isso).
-- `async progress(done: int, total: int, text: str='') -> None` — Progresso sem checkpoint (fora de transação).
+- `async save_checkpoint(conn: Any, checkpoint: Any, done: int, total: int, text: str='') -> None` — Writes checkpoint + progress (and renews the lease) with ``conn`` — the batch's transaction. Raises :class:`JobLostLease`/:class:`JobCancelled` (the transaction must be discarded — exiting the ``async with conn.transaction()`` with the exception does that).
+- `async progress(done: int, total: int, text: str='') -> None` — Progress without a checkpoint (outside a transaction).
 
 ### `async run_claimed(jobs: Jobs, handler: Handler, job: Job, shutdown: Shutdown) -> None`
 
-Executa uma tentativa já assumida: heartbeat em paralelo, tempo máximo, resultado.
+Runs an already claimed attempt: parallel heartbeat, maximum time, result.
 
 ### class `Worker`
 
-Assume tarefas dos tipos dos ``handlers`` (uma vaga de :class:`Heavy` por
-tarefa), executa em paralelo, retoma leases vencidos e marca ``dead`` o que esgotou.
+Claims jobs of the types in ``handlers`` (one :class:`Heavy` slot per
+job), runs them in parallel, resumes expired leases and marks ``dead`` what ran out of attempts.
 
 - `wake() -> None`
 - `spawn() -> asyncio.Task[None]`
@@ -434,35 +434,35 @@ tarefa), executa em paralelo, retoma leases vencidos e marca ``dead`` o que esgo
 
 ## `hub_sdk.locale`
 
-Idioma e formatação regional dos fragmentos (onda 9).
+Language and regional formatting of the fragments (wave 9).
 
 ### `parse(s: str | None) -> str | None`
 
-Código suportado para um código/prefixo (``pt``, ``pt-PT``, ``en-US``…) ou ``None``.
+Supported code for a code/prefix (``pt``, ``pt-PT``, ``en-US``…) or ``None``.
 
 ### `from_accept_language(v: str | None) -> str | None`
 
-Melhor idioma suportado de um ``Accept-Language`` (respeita os pesos ``q``).
+Best supported language from an ``Accept-Language`` (respects the ``q`` weights).
 
 ### `from_headers(headers: Mapping[str, str]) -> str`
 
-``x-hub-locale`` → ``locale`` do ``x-hub-user`` → ``Accept-Language`` → pt-BR.
+``x-hub-locale`` → ``locale`` of ``x-hub-user`` → ``Accept-Language`` → pt-BR.
 
 ### `current() -> str`
 
-Idioma da requisição em curso.
+Language of the current request.
 
 ### `use(code: str) -> contextvars.Token[str]`
 
-Fixa o idioma (testes, tarefas); devolve o token para ``reset``.
+Sets the language (tests, jobs); returns the token for ``reset``.
 
 ### `register(catalog: Mapping[str, Mapping[str, str]]) -> None`
 
-Acrescenta traduções: ``{"texto pt-BR": {"en": "..."}}``.
+Adds translations: ``{"texto pt-BR": {"en": "..."}}``.
 
 ### `t(text: str, **kw: Any) -> str`
 
-Tradução de ``text`` (pt-BR) no idioma atual, com ``{marcadores}`` preenchidos.
+Translation of ``text`` (pt-BR) in the current language, with ``{placeholders}`` filled.
 
 ### `number(v: float, places: int=0, code: str | None=None) -> str`
 
@@ -470,22 +470,22 @@ Tradução de ``text`` (pt-BR) no idioma atual, com ``{marcadores}`` preenchidos
 
 ### `money_cents(cents: int | None) -> str`
 
-Centavos → ``R$ 1.234,50`` (pt-BR) ou ``BRL 1,234.50`` (en).
+Cents → ``R$ 1.234,50`` (pt-BR) or ``BRL 1,234.50`` (en).
 
 ### `date(d: dt.date | None) -> str`
 
-Data curta: ``28/09/2026`` (pt-BR) ou ``09/28/2026`` (en).
+Short date: ``28/09/2026`` (pt-BR) or ``09/28/2026`` (en).
 
 ### class `LocaleMiddleware`
 
-Middleware ASGI: fixa o idioma de cada requisição (ContextVar) a partir dos
-cabeçalhos do hub.
+ASGI middleware: sets the language of each request (ContextVar) from the
+hub headers.
 
 ## `hub_sdk.mcp`
 
-MCP interno do app (onda 11): ferramentas **geradas do OpenAPI** do app em
-``POST /{app}/_hub/mcp`` (JSON-RPC 2.0, MCP 2025-06-18) — só para o hub, pela rede
-interna, com ``x-hub-internal-token`` (o gateway recusa ``/_hub/*`` do navegador).
+Internal MCP of the app (wave 11): tools **generated from the app's OpenAPI** at
+``POST /{app}/_hub/mcp`` (JSON-RPC 2.0, MCP 2025-06-18) — only for the hub, over the internal
+network, with ``x-hub-internal-token`` (the gateway refuses the browser's ``/_hub/*``).
 
 ### class `ToolDef`
 
@@ -493,12 +493,12 @@ interna, com ``x-hub-internal-token`` (o gateway recusa ``/_hub/*`` do navegador
 
 ### `async asgi_call(app: Any, method: str, path: str, query: str, headers: list[tuple[bytes, bytes]], body: bytes) -> tuple[int, bytes]`
 
-Requisição HTTP em processo contra uma aplicação ASGI (sem rede, sem httpx).
+HTTP request in-process against an ASGI application (no network, no httpx).
 
 ### `router(app_id: str, token: str | None, app: Callable[[], Any], doc: Callable[[], dict[str, Any]], version: str='1') -> APIRouter`
 
 ``POST /{app_id}/_hub/mcp``. ``app``/``doc``: o app ASGI completo e o OpenAPI
-(resolvidos na primeira chamada).
+(resolved on the first call).
 
 ## `hub_sdk.outbox`
 
@@ -508,47 +508,47 @@ Outbox transacional (``hub_outbox``).
 
 ### class `Stored`
 
-Evento como o hub o recebe (JSON do ``GET /_hub/outbox``).
+Event as the hub receives it (JSON of ``GET /_hub/outbox``).
 
 - `to_json() -> dict[str, Any]`
 
 ### `audit(user: str, action: str, target: str='', detail: str='') -> Event`
 
-Evento de auditoria (usuário ≤ 120, ação ≤ 80, alvo ≤ 200, detalhe ≤ 500; sem
-caracteres de controle).
+Audit event (user ≤ 120, action ≤ 80, target ≤ 200, detail ≤ 500; without
+control characters).
 
 ### `notification(user: str, title: str, body: str='', link: str='', to_users: list[str] | tuple[str, ...]=(), to_roles: list[str] | tuple[str, ...]=(), level: str='info') -> Event`
 
-Notificação para a Inbox do hub. ``link`` = caminho do próprio app (``/{id}/…``);
-``to_users`` (logins) / ``to_roles`` (funções) vazios → só quem causou (``user``).
+Notification for the hub Inbox. ``link`` = path of the app itself (``/{id}/…``);
+``to_users`` (logins) / ``to_roles`` (roles) empty → only whoever caused it (``user``).
 
 ### `approval_request(user: str, approval_id: str, title: str, body: str='', link: str='', to_users: list[str] | tuple[str, ...]=(), to_roles: list[str] | tuple[str, ...]=(), level: str='warning') -> Event`
 
-Pedido de aprovação: a decisão volta em ``POST /{app}/_hub/approvals/{approval_id}``
+Approval request: the decision comes back at ``POST /{app}/_hub/approvals/{approval_id}``
 (ver :mod:`hub_sdk.approvals`).
 
 ### `async write(conn: Any, ev: Event) -> str`
 
-Grava ``ev`` com ``conn`` — normalmente a transação da ação. Devolve o ``event_id``.
+Writes ``ev`` with ``conn`` — usually the action's transaction. Returns the ``event_id``.
 
 ### class `Outbox`
 
-Outbox no Postgres (``pool``) ou em memória (``pool=None``).
+Outbox in Postgres (``pool``) or in memory (``pool=None``).
 
 - `postgres(pool: Any) -> Outbox`
 - `memory() -> Outbox`
 - `durable() -> bool`
-- `async emit(ev: Event) -> str | None` — Publica fora de uma transação (ações sem banco: exportação, consulta). Falha só vai para o log.
-- `async pending(after: int, limit: int) -> list[Stored]` — Eventos não confirmados com ``id > after``, em ordem.
-- `async ack(event_ids: list[str]) -> int` — Confirma; devolve quantos passaram a confirmados (repetir é inócuo).
+- `async emit(ev: Event) -> str | None` — Publishes outside a transaction (actions without a DB: export, query). Failure only goes to the log.
+- `async pending(after: int, limit: int) -> list[Stored]` — Unconfirmed events with ``id > after``, in order.
+- `async ack(event_ids: list[str]) -> int` — Confirms; returns how many became confirmed (repeating is harmless).
 
 ## `hub_sdk.ready`
 
-Prontidão e vivacidade (onda 12, item 2.5 — docs/CONTRATO-APP.md §2).
+Readiness and liveness (wave 12, item 2.5 — docs/CONTRATO-APP.md §2).
 
 ### class `NotReady`
 
-Motivo legível de "não pronto".
+Readable reason for "not ready".
 
 ### class `Readiness`
 
@@ -560,22 +560,26 @@ Motivo legível de "não pronto".
 
 ## `hub_sdk.realtime`
 
-Tempo real (SSE ou WebSocket): acorda as conexões abertas quando os dados mudam.
+Real time (SSE or WebSocket): wakes the open connections when the data changes.
 
-### class `Canal`
+### class `Channel`
 
-- `async iniciar() -> None` — No lifespan do app. Com Postgres, escuta o aviso de qualquer réplica.
+- `async start() -> None` — In the app's lifespan. With Postgres, listens for the notice from any replica.
+- `async close() -> None`
+- `notify(engine: Any=None) -> None` — Call after the commit (works in ``def`` and ``async def`` routes). ``engine``: the app's SQLAlchemy; on Postgres the notice goes via ``pg_notify`` (all replicas).
+- `async messages(message: Callable[[], str], ping: float=20.0) -> AsyncGenerator[str | None, None]` — The current state on the connection, then after each notice; ``None`` = nothing new in ``ping`` seconds.
+- `async iniciar() -> None`
 - `async fechar() -> None`
-- `avisar(engine: Any=None) -> None` — Chame depois do commit (vale em rotas ``def`` e ``async def``). ``engine``: o SQLAlchemy do app; no Postgres o aviso vai por ``pg_notify`` (todas as réplicas).
-- `async mensagens(mensagem: Callable[[], str], ping: float=20.0) -> AsyncGenerator[str | None, None]` — O estado atual na conexão e depois a cada aviso; ``None`` = nada novo em ``ping`` segundos.
+- `avisar(engine: Any=None) -> None`
+- `mensagens(mensagem: Callable[[], str], ping: float=20.0) -> AsyncGenerator[str | None, None]`
 
-### `sse(mensagens: AsyncIterator[str | None]) -> StreamingResponse`
+### `sse(messages: AsyncIterator[str | None]) -> StreamingResponse`
 
-Resposta ``text/event-stream``: cada mensagem vira ``data:``; ``None`` vira ping (mantém a conexão).
+``text/event-stream`` response: each message becomes ``data:``; ``None`` becomes a ping (keeps the connection open).
 
 ## `hub_sdk.render`
 
-Fragmentos HTML com o visual do shell (Jinja2) e respostas comuns.
+HTML fragments with the shell's look (Jinja2) and common responses.
 
 ### `icon(name: str) -> Markup`
 
@@ -589,20 +593,20 @@ Fragmentos HTML com o visual do shell (Jinja2) e respostas comuns.
 
 ### class `Renderer`
 
-Ambiente Jinja2 do app: templates do app (``templates_dir``) + os do SDK
+The app's Jinja2 environment: the app's templates (``templates_dir``) + the SDK's
 (``workspace.html``, ``skeleton.html``, ``notice.html``).
 
 - `render(template: str, **ctx: Any) -> str`
-- `page(conn: HTTPConnection, template: str, active: str, status: int=200, **ctx: Any) -> HTMLResponse` — Página do app (workspace completo).
-- `fragment(template: str, status: int=200, **ctx: Any) -> HTMLResponse` — Pedaço de página (painel que substitui ``data-hub-target``).
+- `page(conn: HTTPConnection, template: str, active: str, status: int=200, **ctx: Any) -> HTMLResponse` — App page (full workspace).
+- `fragment(template: str, status: int=200, **ctx: Any) -> HTMLResponse` — Page fragment (panel that replaces ``data-hub-target``).
 - `notice(kind: str, title: str, text: str) -> Markup`
 - `skeleton() -> HTMLResponse`
 - `not_found() -> HTMLResponse`
 
 ### `busy(what: str, queued: str, retry_after: int=10) -> Response`
 
-429 de operação pesada (limite do app atingido) com ``Retry-After``: o ``hub.js``
-mostra ``queued`` ("Relatório em fila…") e tenta de novo sozinho.
+429 for a heavy operation (app limit reached) with ``Retry-After``: the ``hub.js``
+shows ``queued`` ("Report queued…") and retries on its own.
 
 ### `download_headers(content_type: str, filename: str) -> dict[str, str]`
 
@@ -616,8 +620,8 @@ mostra ``queued`` ("Relatório em fila…") e tenta de novo sozinho.
 
 ### `csv_field(s: str) -> str`
 
-Campo CSV (``;``, Excel pt-BR) com neutralização de fórmula (OWASP): valores que
-começam com ``= + - @`` (mesmo atrás de TAB/CR) ganham ``'``.
+CSV field (``;``, Excel pt-BR) with formula neutralization (OWASP): values that
+start with ``= + - @`` (even after TAB/CR) get a ``'``.
 
 ### `csv_line(fields: Iterable[str]) -> str`
 
@@ -629,28 +633,28 @@ Sagas (onda 12, item 2.9).
 
 ### `next_action(s: dict[str, Any]) -> str`
 
-Próxima ação a partir do estado salvo: ``run:i``, ``compensate:i``, ``complete``,
-``compensated`` ou ``failed``.
+Next action from the saved state: ``run:i``, ``compensate:i``, ``complete``,
+``compensated`` or ``failed``.
 
 ### `state_of(checkpoint: Any, names: Sequence[str]) -> dict[str, Any]`
 
-Estado da saga no checkpoint (ou um novo). Recusa definição alterada em andamento.
+Saga state in the checkpoint (or a new one). Refuses a changed definition in progress.
 
 ### `summary(checkpoint: Any) -> dict[str, Any] | None`
 
-Resumo para o hub: ``{state, steps: [{name, state}], reason}``.
+Summary for the hub: ``{state, steps: [{name, state}], reason}``.
 
 ### class `StepCtx`
 
-Contexto de um passo.
+Context of a step.
 
-- `async once(fn: Callable[[Any], Awaitable[Any]]) -> Any` — Efeito no banco **exatamente uma vez**: ``fn(conn)`` roda numa transação que também grava ``hub_saga_once(key)``; numa retomada devolve a saída gravada.
+- `async once(fn: Callable[[Any], Awaitable[Any]]) -> Any` — DB effect **exactly once**: ``fn(conn)`` runs in a transaction that also writes ``hub_saga_once(key)``; on resume it returns the recorded output.
 
 ### class `Step`
 
 ### class `Saga`
 
-Definição de uma saga (um tipo de tarefa). Registre como qualquer handler.
+Definition of a saga (one job type). Register it like any handler.
 
 - `step(name: str, action: StepFn, compensate: StepFn | None=None) -> Saga`
 - `final_event(job: Any, status: str, detail: str) -> outbox.Event | None`
@@ -658,39 +662,39 @@ Definição de uma saga (um tipo de tarefa). Registre como qualquer handler.
 
 ## `hub_sdk.schema`
 
-Tabelas do SDK, ids e utilidades de banco.
+SDK tables, ids and DB utilities.
 
 ### `base(app_id: str) -> str`
 
-Base pública do app (``/apps/{id}``): prefixo de todo link do app no HTML.
+App's public base (``/apps/{id}``): prefix of every app link in the HTML.
 
 ### `new_id(prefix: str) -> str`
 
-Identificador aleatório de 128 bits em hex com prefixo (`evt-…`, `job-…`).
+128-bit random identifier in hex with a prefix (`evt-…`, `job-…`).
 
 ### `ct_eq(a: str | bytes, b: str | bytes) -> bool`
 
-Comparação em tempo constante (tokens).
+Constant-time comparison (tokens).
 
 ### `async migrate(conn: Any, app_sql: str='') -> None`
 
-Aplica as migrações do app + :data:`SCHEMA_SQL` sob advisory lock.
+Applies the app's migrations + :data:`SCHEMA_SQL` under an advisory lock.
 
 ### `async cleanup(pool: Any) -> tuple[int, int]`
 
-Apaga idempotência vencida e outbox confirmado há mais de 7 dias.
+Deletes expired idempotency records and outbox entries confirmed more than 7 days ago.
 
 ## `hub_sdk.scripts`
 
-Onda 12 (2.1) · JavaScript próprio do app — **exceção** declarada no manifesto.
+Wave 12 (2.1) · the app's own JavaScript — a **declared exception** in the manifest.
 
 ### `declare(file: str, reason: str) -> dict[str, str]`
 
-Entrada de ``manifest.scripts`` para ``ui/assets/<file>`` (mesmas regras do hub).
+Entry of ``manifest.scripts`` for ``ui/assets/<file>`` (same rules as the hub).
 
 ### `integrity(data: bytes) -> str`
 
-Integridade SRI/CSP (``sha384-<base64>``) — a mesma que o hub calcula no import.
+SRI/CSP integrity (``sha384-<base64>``) — the same one the hub computes on import.
 
 ## `hub_sdk.search`
 
@@ -708,19 +712,19 @@ Busca federada (onda 9): ``GET /{app}/_hub/search?q=&limit=``.
 
 ### `fold(s: str) -> str`
 
-Minúsculas sem acentos.
+Lowercase, no accents.
 
 ### `score(text: str, q: str) -> float`
 
-Igual 1, começa 0,8, palavra começa 0,6, contém 0,4, senão 0.
+Equal → 1, starts with → 0.8, word starts with → 0.6, contains → 0.4, otherwise 0.
 
 ### `like_pattern(q: str) -> str`
 
-Padrão ``ILIKE`` seguro (escapa ``%``, ``_`` e ``\``).
+Safe ``ILIKE`` pattern (escapes ``%``, ``_`` and ``\``).
 
 ## `hub_sdk.shutdown`
 
-Desligamento gracioso (SIGTERM do ``docker stop``/redeploy, Ctrl+C).
+Graceful shutdown (SIGTERM from ``docker stop``/redeploy, Ctrl+C).
 
 ### `on_process_shutdown(fn: Callable[[], None]) -> None`
 
@@ -732,15 +736,15 @@ Desligamento gracioso (SIGTERM do ``docker stop``/redeploy, Ctrl+C).
 
 - `trigger() -> None`
 - `triggered() -> bool`
-- `async wait() -> None` — Resolve quando o desligamento é disparado.
+- `async wait() -> None` — Resolves when the shutdown is triggered.
 - `track() -> InFlight`
 - `inflight() -> int`
-- `async drain(timeout: float) -> bool` — Espera o trabalho em curso terminar (até ``timeout`` s); ``True`` se drenou.
-- `chain_signals() -> None` — Encadeia SIGTERM/SIGINT: dispara este desligamento e chama o tratador anterior (o do uvicorn). Chamar no lifespan de entrada (depois que o uvicorn instalou os dele). Fora da thread principal não faz nada.
+- `async drain(timeout: float) -> bool` — Waits for the work in progress to finish (up to ``timeout`` s); ``True`` if it drained.
+- `chain_signals() -> None` — Chains SIGTERM/SIGINT: triggers this shutdown and calls the previous handler (uvicorn's). Call in the entry lifespan (after uvicorn has installed its own). Outside the main thread it does nothing.
 
 ## `hub_sdk.sql`
 
-Consultas SQL a conexões da plataforma (PostgreSQL, MySQL/MariaDB, SQL Server) — mesma API no hub e no dev.
+SQL queries to the platform's connections (PostgreSQL, MySQL/MariaDB, SQL Server) — same API in the hub and in dev.
 
 ### class `SqlResult`
 
@@ -749,9 +753,9 @@ Consultas SQL a conexões da plataforma (PostgreSQL, MySQL/MariaDB, SQL Server) 
 
 ### class `SqlConnection`
 
-Uma conexão SQL (use :func:`connection` ou :func:`from_engine`).
+One SQL connection (use :func:`connection` or :func:`from_engine`).
 
-- `for_user(x_hub_user: str | None, x_hub_user_sig: str | None=None) -> SqlConnection` — Registra no hub o usuário da requisição como autor da consulta (com a assinatura do gateway).
+- `for_user(x_hub_user: str | None, x_hub_user_sig: str | None=None) -> SqlConnection` — Records on the hub the request's user as the author of the query (with the gateway's signature).
 - `async query(sql: str, params: dict[str, Any] | None=None, max_rows: int | None=None) -> SqlResult`
 
 ### class `BrokerSql`
@@ -760,40 +764,40 @@ Uma conexão SQL (use :func:`connection` ou :func:`from_engine`).
 
 ### class `EngineSql`
 
-SQLAlchemy (banco local do dev ou o banco do próprio app).
+SQLAlchemy (the dev's local DB or the app's own DB).
 
 - `async query(sql: str, params: dict[str, Any] | None=None, max_rows: int | None=None) -> SqlResult`
 
 ### `from_engine(engine: Any, name: str='app', readonly: bool=True, max_rows: int=5000) -> SqlConnection`
 
-O banco do próprio app (``hub_sdk.db.engine()``) com a interface de consultas dos dashboards.
+The app's own DB (``hub_sdk.db.engine()``) with the dashboards' query interface.
 
 ### `local_connections(path: str | os.PathLike[str] | None=None) -> dict[str, dict[str, Any]]`
 
-``[connections.<nome>]`` de ``.hub/connections.toml`` (``HUB_SQL_LOCAL_FILE``).
+``[connections.<name>]`` from ``.hub/connections.toml`` (``HUB_SQL_LOCAL_FILE``).
 
 ### `connection(name: str) -> SqlConnection | None`
 
-Conexão SQL ``name``: local (``HUB_SQL_LOCAL_FILE``) no dev; pelo broker se vinculada no hub.
+SQL connection ``name``: local (``HUB_SQL_LOCAL_FILE``) in dev; through the broker if linked in the hub.
 
 ## `hub_sdk.stack`
 
-Onda 13 · stack do app no manifesto (``manifest.stack``, opcional e informativo).
+Wave 13 · app stack in the manifest (``manifest.stack``, optional and informational).
 
 ### `declare(language: str, *, framework: str | None=None, sdk: str | None=None, db: str | None=None, libs: Sequence[str]=()) -> dict[str, Any]`
 
-Entrada de ``manifest.stack`` (levanta ``ValueError`` fora das regras do hub).
+Entry of ``manifest.stack`` (raises ``ValueError`` outside the hub's rules).
 
 ## `hub_sdk.storage`
 
-Armazenamento de arquivos do app (onda 10, contrato item 22): conexões da plataforma pelo **broker do hub** (SharePoint, S3) ou o
-bucket próprio do app (**S3 direto**, ``HUB_S3_*``). Trocar de backend é configuração
-(vínculo em Administração › Conexões), não código.
+App file storage (wave 10, contract item 22): platform connections through the **hub broker** (SharePoint, S3) or the
+app's own bucket (**direct S3**, ``HUB_S3_*``). Switching backend is configuration
+(binding in Administration › Connections), not code.
 
 ### class `StorageError`
 
-Falha de armazenamento: ``status`` HTTP (400 caminho, 403 operação não liberada,
-404 inexistente ou conexão não vinculada, 409, 413, 429/503 transitório, 502 provedor).
+Storage failure: HTTP ``status`` (400 path, 403 operation not allowed,
+404 missing or connection not linked, 409, 413, 429/503 transient, 502 provider).
 
 - `transient() -> bool`
 
@@ -805,14 +809,14 @@ Falha de armazenamento: ``status`` HTTP (400 caminho, 403 operação não libera
 
 ### `clean_path(p: str, file: bool=True) -> str`
 
-Normaliza um caminho relativo à pasta-base (mesmas regras do hub): sem ``..``/``.``,
-``\``, ``%``, ``:*?"<>|#``, controle, sósias Unicode de ``.``/``/``; segmentos sem
-espaço no início nem espaço/ponto no fim; ≤ 255 bytes por segmento, ≤ 32 níveis,
-≤ 1024 bytes no total.
+Normalizes a path relative to the base folder (same rules as the hub): no ``..``/``.``,
+``\``, ``%``, ``:*?"<>|#``, control characters, Unicode look-alikes of ``.``/``/``; segments without
+leading space nor trailing space/dot in the segment; ≤ 255 bytes per segment, ≤ 32 levels,
+≤ 1024 bytes in total.
 
 ### class `Download`
 
-Corpo em streaming: ``async for chunk in d.chunks()``; ``aclose()`` libera a conexão.
+Streaming body: ``async for chunk in d.chunks()``; ``aclose()`` releases the connection.
 
 - `async chunks() -> AsyncIterator[bytes]`
 - `async read() -> bytes`
@@ -820,10 +824,10 @@ Corpo em streaming: ``async for chunk in d.chunks()``; ``aclose()`` libera a con
 
 ### class `Connection`
 
-Uma conexão de armazenamento (use :func:`connection` ou :func:`s3_direct`).
+A storage connection (use :func:`connection` or :func:`s3_direct`).
 
 - `via_broker() -> bool`
-- `for_user(x_hub_user: str | None, x_hub_user_sig: str | None=None) -> Connection` — Mesma conexão, registrando no hub o usuário da requisição.
+- `for_user(x_hub_user: str | None, x_hub_user_sig: str | None=None) -> Connection` — Same connection, recording the request's user on the hub.
 - `async upload(path: str, data: Body, content_type: str, length: int | None=None) -> Item`
 - `async download(path: str) -> Download`
 - `async list(prefix: str='') -> builtins.list[Item]`
@@ -834,7 +838,7 @@ Uma conexão de armazenamento (use :func:`connection` ou :func:`s3_direct`).
 
 ### class `BrokerConnection`
 
-Pelo broker do hub (rede interna do app, token por app × ambiente).
+Through the hub's broker (app's internal network, token per app × environment).
 
 - `via_broker() -> bool`
 - `async upload(path: str, data: Body, content_type: str, length: int | None=None) -> Item`
@@ -849,7 +853,7 @@ Pelo broker do hub (rede interna do app, token por app × ambiente).
 
 ### class `S3Connection`
 
-Bucket do app (S3/MinIO) direto, SigV4 com ``UNSIGNED-PAYLOAD``.
+App's bucket (S3/MinIO) direct, SigV4 with ``UNSIGNED-PAYLOAD``.
 
 - `async upload(path: str, data: Body, content_type: str, length: int | None=None) -> Item`
 - `async download(path: str) -> Download`
@@ -858,17 +862,17 @@ Bucket do app (S3/MinIO) direto, SigV4 com ``UNSIGNED-PAYLOAD``.
 - `async delete(path: str) -> None`
 - `async move(src: str, dst: str) -> Item`
 - `async share_link(path: str, kind: str='view', expires_hours: int=24) -> ShareLink`
-- `presign_get(key: str, secs: int, now: dt.datetime) -> str` — URL pré-assinada de leitura.
-- `presign_put_path(path: str, secs: int, now: dt.datetime | None=None) -> str` — URL pré-assinada de envio (``PUT``) para ``path`` (relativo à pasta-base) — envios em duas fases (onda 12, 2.9).
-- `presign(method: str, key: str, secs: int, now: dt.datetime) -> str` — Assinatura SigV4 por query string (``GET``/``PUT``).
+- `presign_get(key: str, secs: int, now: dt.datetime) -> str` — Pre-signed read URL.
+- `presign_put_path(path: str, secs: int, now: dt.datetime | None=None) -> str` — Pre-signed upload URL (``PUT``) for ``path`` (relative to the base folder) — two-phase uploads (wave 12, 2.9).
+- `presign(method: str, key: str, secs: int, now: dt.datetime) -> str` — SigV4 signature in the query string (``GET``/``PUT``).
 
 ### `bound() -> list[tuple[str, str]]`
 
-Conexões vinculadas a este app × ambiente (``HUB_CONNECTIONS`` = ``nome=tipo,…``).
+Connections linked to this app × environment (``HUB_CONNECTIONS`` = ``name=type,…``).
 
 ### class `LocalConnection`
 
-Pasta local com a mesma API (``hub dev``: ``HUB_STORAGE_LOCAL_DIR``). Sem links de compartilhamento.
+Local folder with the same API (``hub dev``: ``HUB_STORAGE_LOCAL_DIR``). No share links.
 
 - `async upload(path: str, data: Body, content_type: str, length: int | None=None) -> Item`
 - `async download(path: str) -> Download`
@@ -879,16 +883,16 @@ Pasta local com a mesma API (``hub dev``: ``HUB_STORAGE_LOCAL_DIR``). Sem links 
 
 ### `connection(name: str) -> Connection | None`
 
-Conexão ``name`` pelo broker do hub, se vinculada a este app × ambiente
-(no ``hub dev``, ``HUB_STORAGE_LOCAL_DIR`` = pasta local com a mesma API).
+Connection ``name`` through the hub's broker, if linked to this app × environment
+(in ``hub dev``, ``HUB_STORAGE_LOCAL_DIR`` = local folder with the same API).
 
 ### `s3_direct(name: str, cfg: S3Config) -> Connection`
 
-Bucket próprio do app (S3/MinIO direto).
+App's own bucket (direct S3/MinIO).
 
 ## `hub_sdk.telemetry`
 
-Traces do app (onda 8).
+App traces (wave 8).
 
 ### class `TraceContext`
 
@@ -915,28 +919,28 @@ Traces do app (onda 8).
 
 ### `db(op: str) -> contextlib.AbstractAsyncContextManager[None]`
 
-Span ``client`` de banco (``db.system=postgresql``).
+DB ``client`` span (``db.system=postgresql``).
 
 ### `redact_target(path: str) -> str`
 
-``http.target`` seguro (mesmo algoritmo de ``hub_telemetry::redact::target``):
-sem query/fragmento; ids, e-mails, tokens e segmentos após palavras sensíveis
-trocados por marcadores.
+Safe ``http.target`` (same algorithm as ``hub_telemetry::redact::target``):
+no query/fragment; ids, emails, tokens and segments after sensitive words
+replaced by markers.
 
 ### class `TraceMiddleware`
 
-Span ``server`` por requisição (filho do ``traceparent`` do hub).
+``server`` span per request (child of the hub's ``traceparent``).
 
 ## `hub_sdk.uploads`
 
-Envio de arquivos em **duas fases** (onda 12, item 2.9), com tabelas (``hub_uploads``) e tipo de tarefa de
-promoção (``hub.upload.promote``).
+File uploads in **two phases** (wave 12, item 2.9), with tables (``hub_uploads``) and the job type for
+promotion (``hub.upload.promote``).
 
 ### `valid_name(n: str) -> bool`
 
 ### `clean_final(p: str) -> str`
 
-Caminho final normalizado e fora do prefixo de staging (sem diferenciar caixa).
+Normalized final path, outside the staging prefix (case-insensitive).
 
 ### `promote_spec() -> JobSpec`
 
@@ -948,19 +952,19 @@ Caminho final normalizado e fora do prefixo de staging (sem diferenciar caixa).
 
 ### class `Uploads`
 
-- `async begin(file_name: str, user: str) -> UploadSession` — Fase 1: registra o envio **em nome de** ``user`` e devolve a chave de staging. A URL pré-assinada vale no máximo :data:`PUT_URL_TTL` (e nunca além da validade do envio).
-- `async put(s: UploadSession, data: bytes, content_type: str) -> None` — Envia o conteúdo para a chave de staging (pelo broker/app).
-- `async commit(conn: Any, upload_id: str, final_path: str, user: str) -> Committed` — Fase 2 (na transação ``conn`` do app): confirma o envio **de** ``user`` (o do ``begin``, nesta conexão), registra tamanho e ETag do staging (a promoção só aceita essa versão) e enfileira a promoção. Falha se o envio não existe, é de outro usuário/conexão, venceu, já foi confirmado ou passa do tamanho máximo.
-- `async location(upload_id: str) -> str | None` — Onde o arquivo confirmado está agora (final depois da promoção; staging antes).
-- `async cancel(upload_id: str) -> None` — Desfaz um envio (compensação) sob a trava da linha — serializado com a promoção: apaga o staging e, se já promovido, o destino, e marca ``cancelled``. Idempotente.
-- `async promote(upload_id: str) -> None` — Promove (idempotente) sob a trava da linha: confere a versão confirmada (tamanho/ETag), não sobrescreve destino existente, move staging → final e confere.
+- `async begin(file_name: str, user: str) -> UploadSession` — Phase 1: records the upload **on behalf of** ``user`` and returns the staging key. The URL pre-signed is valid for at most :data:`PUT_URL_TTL` (and never beyond the upload's validity).
+- `async put(s: UploadSession, data: bytes, content_type: str) -> None` — Sends the content to the staging key (through the broker/app).
+- `async commit(conn: Any, upload_id: str, final_path: str, user: str) -> Committed` — Phase 2 (in the app's ``conn`` transaction): confirms the upload **from** ``user`` (the one from ``begin``, on this connection), records the staging size and ETag (the promotion only accepts that version) and enqueues the promotion. Fails if the upload does not exist, belongs to another user/connection, has expired, was already confirmed, or exceeds the maximum size.
+- `async location(upload_id: str) -> str | None` — Where the confirmed file is now (final after the promotion; staging before).
+- `async cancel(upload_id: str) -> None` — Undoes an upload (compensation) under the row lock — serialized with the promotion: deletes the staging and, if already promoted, the target, and marks ``cancelled``. Idempotent.
+- `async promote(upload_id: str) -> None` — Promotes (idempotent) under the row lock: checks the confirmed version (size/ETag), does not overwrite an existing target, moves staging → final and verifies.
 - `promote_handler() -> PromoteHandler`
-- `async cleanup() -> CleanupReport` — Apaga envios vencidos (objeto + ``expired``) e órfãos do prefixo de staging.
+- `async cleanup() -> CleanupReport` — Deletes expired uploads (object + ``expired``) and orphans under the staging prefix.
 - `spawn_cleanup(every: float, shutdown: Shutdown) -> asyncio.Task[None]`
 
 ### class `PromoteHandler`
 
-Tarefa ``hub.upload.promote`` (registre junto com os outros handlers).
+``hub.upload.promote`` job (register it together with the other handlers).
 
 - `async run(ctx: JobCtx) -> Any`
 - `final_event(job: Any, status: str, detail: str) -> None`

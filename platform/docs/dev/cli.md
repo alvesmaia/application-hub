@@ -16,7 +16,7 @@ Gerada do `--help` da CLI `hub` (argparse). Rode `hub <comando> --help` para a m
 
 ## `hub project create`
 
-Novo app (interativo no terminal; não interativo com --yes ou sem TTY).
+New app (interactive in a terminal; non-interactive with --yes or without a TTY).
 
 ```
 hub project create [-h] [--name NAME] [--stack STACK] [--db DB] [--requires REQUIRES] [--dir DIR] [--template {basic,dashboard}] [--with WITH_] [--yes] [--json] [id]
@@ -24,29 +24,20 @@ hub project create [-h] [--name NAME] [--stack STACK] [--db DB] [--requires REQU
 
 | Parâmetro | Descrição | Padrão |
 |---|---|---|
-| `id` | id do app (2–32: a-z, 0-9, '-') |  |
-| `--name` | nome exibido (padrão: id capitalizado) |  |
-| `--stack` | stack (veja `hub project stacks`; padrão python-fastapi) |  |
-| `--db` | sqlite (padrão) ou URL do banco (vai para .env DATABASE_URL) |  |
-| `--requires` | o que o hub provisiona: database,storage (padrão: database) |  |
-| `--dir` | pasta destino (padrão: ./<id>) |  |
-| `--template` (basic \| dashboard) | basic (padrão) ou dashboard (KPIs, gráficos, tabela, filtro e exportação) |  |
+| `id` | app id (2–32: a-z, 0-9, '-') |  |
+| `--name` | display name (default: capitalized id) |  |
+| `--stack` | stack (see `hub project stacks`; default python-fastapi) |  |
+| `--db` | sqlite (default) or database URL (written to .env DATABASE_URL) |  |
+| `--requires` | what the hub provisions: database,storage (default: database) |  |
+| `--dir` | target folder (default: ./<id>) |  |
+| `--template` (basic \| dashboard) | basic (default) or dashboard (KPIs, charts, table, filter and export) |  |
 | `--with` | extras: dashboards (= --template dashboard) |  |
-| `--yes`, `-y` | sem perguntas: usa os padrões |  |
-| `--json` | saída em JSON |  |
-
-Exemplos:
-
-```
-  hub project create estoque --stack python-fastapi --yes --json
-  hub project create vendas --stack python-fastapi --template dashboard --yes
-  hub project create estoque --name "Estoque" --requires database,storage --dir ./estoque --yes
-  hub project create            (pergunta o que faltar, se houver terminal)
-```
+| `--yes`, `-y` | no questions: use the defaults |  |
+| `--json` | JSON output |  |
 
 ## `hub project stacks`
 
-Lista as stacks disponíveis.
+List the available stacks.
 
 ```
 hub project stacks [-h] [--json]
@@ -58,7 +49,7 @@ hub project stacks [-h] [--json]
 
 ## `hub check`
 
-ruff, ty, pytest+cobertura, manifesto, openapi e conformidade local.
+ruff, ty, pytest+coverage, manifest, openapi and local conformance.
 
 ```
 hub check [-h] [--dir DIR] [--only ONLY] [--full] [--json]
@@ -67,19 +58,13 @@ hub check [-h] [--dir DIR] [--only ONLY] [--full] [--json]
 | Parâmetro | Descrição | Padrão |
 |---|---|---|
 | `--dir` |  | `.` |
-| `--only` | etapas separadas por vírgula: manifesto,ruff,formato,ty,openapi,pytest,conformidade |  |
-| `--full` | também a suíte completa do contrato (conformance.json) |  |
+| `--only` | comma-separated steps: manifesto,ruff,formato,ty,openapi,pytest,conformidade |  |
+| `--full` | also the full contract suite (conformance.json) |  |
 | `--json` |  |  |
-
-Exemplos:
-
-```
-  hub check --only ruff,pytest --json
-```
 
 ## `hub pack`
 
-Gera o pacote .hubapp a partir da pasta do app.
+Build the .hubapp package from the app folder.
 
 ```
 hub pack [-h] [--dir DIR] [--image IMAGE] [--build-dir BUILD_DIR] [--dockerfile DOCKERFILE] [--out OUT]
@@ -88,14 +73,14 @@ hub pack [-h] [--dir DIR] [--image IMAGE] [--build-dir BUILD_DIR] [--dockerfile 
 | Parâmetro | Descrição | Padrão |
 |---|---|---|
 | `--dir` |  | `.` |
-| `--image` | imagem por digest (nome@sha256:…); alternativa: --build-dir |  |
-| `--build-dir` | contexto de build: o hub constrói a imagem do pacote |  |
-| `--dockerfile` | Dockerfile dentro de --build-dir | `Dockerfile` |
+| `--image` | image by digest (name@sha256:…); alternative: --build-dir |  |
+| `--build-dir` | build context: the hub builds the package image |  |
+| `--dockerfile` | Dockerfile inside --build-dir | `Dockerfile` |
 | `--out` |  |  |
 
 ## `hub dev`
 
-Hub local leve (sem Docker) com o app dentro do shell.
+Lightweight local hub (no Docker) with the app inside the shell.
 
 ```
 hub dev [-h] [--dir DIR] [--upstream UPSTREAM] [--port PORT] [--role ROLE] [--limits] [command ...]
@@ -104,22 +89,15 @@ hub dev [-h] [--dir DIR] [--upstream UPSTREAM] [--port PORT] [--role ROLE] [--li
 | Parâmetro | Descrição | Padrão |
 |---|---|---|
 | `--dir` |  | `.` |
-| `--upstream` | app já rodando (senão a CLI sobe o app do projeto) |  |
+| `--upstream` | app already running (otherwise the CLI starts the project app) |  |
 | `--port` |  | `4173` |
 | `--role` |  | `admin` |
 | `--limits` |  |  |
 | `command` |  |  |
 
-Exemplos:
-
-```
-  hub dev                       (projeto do template: sobe o app com recarga)
-  hub dev --upstream http://127.0.0.1:9000
-```
-
 ## `hub login`
 
-Salva o hub e o token (o token é pedido sem eco).
+Save the hub and the token (the token is prompted without echo).
 
 ```
 hub login [-h] --hub HUB [--token TOKEN] [--token-file TOKEN_FILE] [--json]
@@ -128,19 +106,13 @@ hub login [-h] --hub HUB [--token TOKEN] [--token-file TOKEN_FILE] [--json]
 | Parâmetro | Descrição | Padrão |
 |---|---|---|
 | `--hub` |  (obrigatório) |  |
-| `--token` | EVITE: use HUB_TOKEN, --token-file ou a pergunta sem eco |  |
-| `--token-file` | arquivo com o token (ex.: entregue pelo cofre do CI) |  |
+| `--token` | AVOID: use HUB_TOKEN, --token-file or the no-echo prompt |  |
+| `--token-file` | file with the token (e.g. provided by the CI vault) |  |
 | `--json` |  |  |
-
-Exemplos:
-
-```
-  hub login --hub https://hub.exemplo.com
-```
 
 ## `hub deploy`
 
-Empacota e envia ao hub (produção fica pendente de aprovação).
+Package and send to the hub (production stays pending approval).
 
 ```
 hub deploy [-h] --env {staging,production} [--dir DIR] [--hub HUB] [--token TOKEN] [--env-file ENV_FILE] [--yes] [--json]
@@ -150,22 +122,15 @@ hub deploy [-h] --env {staging,production} [--dir DIR] [--hub HUB] [--token TOKE
 |---|---|---|
 | `--env` (staging \| production) |  (obrigatório) |  |
 | `--dir` |  | `.` |
-| `--hub` | URL do hub (padrão: o do `hub login` ou HUB_URL) |  |
-| `--token` | EVITE: use `hub login` ou HUB_TOKEN |  |
-| `--env-file` | valores de requires (padrão: deploy.<env>.env) |  |
-| `--yes`, `-y` | sem perguntas |  |
+| `--hub` | hub URL (default: the one from `hub login` or HUB_URL) |  |
+| `--token` | AVOID: use `hub login` or HUB_TOKEN |  |
+| `--env-file` | values for requires (default: deploy.<env>.env) |  |
+| `--yes`, `-y` | no questions |  |
 | `--json` |  |  |
-
-Exemplos:
-
-```
-  hub deploy --env staging
-  hub deploy --env production --hub https://hub.exemplo.com --json
-```
 
 ## `hub mcp`
 
-Servidor MCP por stdio que repassa ao MCP do hub com um token.
+stdio MCP server that forwards to the hub MCP with a token.
 
 ```
 hub mcp [-h] [--hub HUB] [--token TOKEN] [--token-file TOKEN_FILE] [--path PATH]
@@ -174,6 +139,6 @@ hub mcp [-h] [--hub HUB] [--token TOKEN] [--token-file TOKEN_FILE] [--path PATH]
 | Parâmetro | Descrição | Padrão |
 |---|---|---|
 | `--hub` |  | `http://localhost:8080` |
-| `--token` | EVITE: use HUB_TOKEN ou --token-file |  |
+| `--token` | AVOID: use HUB_TOKEN or --token-file |  |
 | `--token-file` |  |  |
 | `--path` |  | `/mcp` |

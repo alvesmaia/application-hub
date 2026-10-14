@@ -2,7 +2,7 @@
 name = "hub-cli"
 version = "0.2.0"
 license = "Apache-2.0"
-description = "CLI da Application Hub: project create, dev (hub local sem Docker), check, pack, mcp"
+description = "Application Hub CLI: project create, dev (local hub without Docker), check, pack, mcp"
 requires-python = ">=3.12"
 # httpx: API do hub. O resto: o hub em processo do `hub dev`/`hub check` (pacote `hub` embutido no wheel).
 dependencies = [
