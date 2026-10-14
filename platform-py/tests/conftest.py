@@ -1,4 +1,4 @@
-"""Caminhos dos assets e do registro de apps (saíram de `platform/crates`/`platform/apps/hub-web`)."""
+"""Paths to the assets and the app registry (moved out of `platform/crates`/`platform/apps/hub-web`)."""
 
 import os
 import tempfile
@@ -9,6 +9,6 @@ os.environ.setdefault(
     "HUB_ASSET_DIRS", os.pathsep.join(str(_PLATFORM / "assets" / d) for d in ("shell", "web"))
 )
 os.environ.setdefault("HUB_APPS_FILE", str(_PLATFORM / "config" / "apps.json"))
-# padrão isolado por sessão: teste que não define a pasta não grava em `platform/data` (dois pytest juntos
-# quebravam a cadeia de auditoria compartilhada); os helpers ainda trocam por `tmp_path` por teste
+# isolated per session by default: a test that does not set the folder does not write to `platform/data` (two pytest runs at once
+# would break the shared audit chain); the helpers still switch to `tmp_path` per test
 os.environ.setdefault("HUB_DATA_DIR", tempfile.mkdtemp(prefix="hub-test-"))

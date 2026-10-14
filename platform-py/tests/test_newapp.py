@@ -1,4 +1,4 @@
-"""F22: registro de app novo, molde do container e `requires` na implantação."""
+"""F22: new app registration, container template and `requires` in the deployment."""
 
 from __future__ import annotations
 

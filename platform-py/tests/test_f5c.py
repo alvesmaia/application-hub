@@ -52,11 +52,11 @@ def test_exporter_flushes_and_retries() -> None:
         ex.on_observe("x", "producao", 503, 700.0)
         async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as c:
             await ex.flush_traces(c)
-            assert len(ex.spans) == 1  # falhou: devolvido à fila
+            assert len(ex.spans) == 1  # failed: returned to the queue
             fail["on"] = False
             await ex.flush_traces(c)
             await ex.flush_metrics(c)
-            await ex.flush_traces(c)  # fila vazia: nada a enviar
+            await ex.flush_traces(c)  # empty queue: nothing to send
 
     asyncio.run(go())
     assert [p for p, _ in posted] == ["/v1/traces", "/v1/metrics"]
@@ -115,7 +115,7 @@ def test_dev_production_markers_and_check(monkeypatch: pytest.MonkeyPatch) -> No
     assert devmode.production_markers({"HUB_DEMO_USERS": "1"}.get) == []
     for k in env:
         monkeypatch.delenv(k, raising=False)
-    devmode.startup_check()  # fora do modo dev: nada
+    devmode.startup_check()  # outside dev mode: nothing
     monkeypatch.setenv("HUB_DEV_MODE", "1")
     devmode.startup_check()
     monkeypatch.setenv("HUB_DEPLOYMENT", "production")

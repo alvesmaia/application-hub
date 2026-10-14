@@ -1,4 +1,4 @@
-"""Containers: probe em cache (TTL), leituras concorrentes e fora do loop de eventos."""
+"""Containers: cached probe (TTL), concurrent reads and off the event loop."""
 
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ async def test_probe_cached_and_parallel() -> None:
     e = _engine(calls)
     t = time.monotonic()
     info = await e.probe()
-    assert len(info["live"]) == 5 and time.monotonic() - t < 0.9  # 5 stats de 0.2 s em paralelo
+    assert len(info["live"]) == 5 and time.monotonic() - t < 0.9  # 5 stats of 0.2 s in parallel
     t = time.monotonic()
     assert await e.probe() is info and time.monotonic() - t < 0.05
     assert len(calls) == 1
@@ -61,7 +61,7 @@ async def test_probe_stale_served_without_blocking_loop() -> None:
     t = time.monotonic()
     assert await e.probe() is first and time.monotonic() - t < 0.05
     assert e._flight
-    await asyncio.shield(e._flight)  # atualização ao fundo
+    await asyncio.shield(e._flight)  # background refresh
     b.cancel()
     assert ticks > 5 and e._cache[1] is not first
 

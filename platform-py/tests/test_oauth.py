@@ -1,4 +1,4 @@
-"""OAuth 2.1 do MCP: descoberta, registro, consentimento, PKCE, rotação de refresh, revogação e CORS."""
+"""MCP OAuth 2.1: discovery, registration, consent, PKCE, refresh rotation, revocation and CORS."""
 
 import base64
 import hashlib
@@ -137,14 +137,14 @@ def test_switches_follow_the_configuration(tmp_path: Path, monkeypatch: pytest.M
     )
     assert machine(nodcr).post("/oauth/register", json={}).status_code == 404
     assert "registration_endpoint" not in machine(nodcr).get("/.well-known/oauth-authorization-server").json()
-    # sem HUB_PUBLIC_URL só localhost responde (nunca um Host qualquer)
+    # without HUB_PUBLIC_URL only localhost answers (never an arbitrary Host)
     anon = api_hub(tmp_path / "c", monkeypatch)
     assert machine(anon).get("/.well-known/oauth-authorization-server").status_code == 404
     local = machine(anon).get("/.well-known/oauth-authorization-server", headers={"host": "localhost:8090"})
     assert local.json()["issuer"] == "http://localhost:8090"
 
 
-# ---- o fluxo completo ---------------------------------------------------------------------------------
+# ---- the full flow ----
 
 
 def test_full_dance_pkce_refresh_rotation_and_audience(hub: TestClient) -> None:
@@ -162,7 +162,7 @@ def test_full_dance_pkce_refresh_rotation_and_audience(hub: TestClient) -> None:
     csp = page.headers["content-security-policy"]
     assert "script-src 'none'" in csp and "form-action 'self' http://localhost:7777" in csp
     assert page.headers["x-frame-options"] == "DENY"
-    # o nonce é de uso único e amarrado ao usuário que abriu a tela
+    # the nonce is single-use and tied to the user who opened the screen
     other = add_user(hub, "outro", ["Administrador"])
     assert "venceu ou já foi usada" in approve(other, nonce).text
     _, nonce = consent(hub, cid, ch)
@@ -175,17 +175,17 @@ def test_full_dance_pkce_refresh_rotation_and_audience(hub: TestClient) -> None:
     t = tok.json()
     assert t["token_type"] == "Bearer" and t["expires_in"] == 3600 and t["scope"] == "mcp api:write"
     assert t["access_token"].startswith("hubo_") and t["refresh_token"].startswith("hubr_")
-    # o token de acesso vale no /mcp (como o dono) e só ali
+    # the access token is valid on /mcp (as the owner) and only there
     c = bearer(hub, t["access_token"])
     assert rpc(c, "tools/list").status_code == 200
     names = {x["name"] for x in rpc(c, "tools/list").json()["result"]["tools"]}
     assert "apps_list" in names and "tasks_cancel" in names
     assert c.get("/api/v1/apps").status_code == 401
     assert c.get("/api/ops/deployments").status_code == 401
-    # só hashes no estado
+    # only hashes in the state
     dump = json.dumps(list(hub.app.state.records.mem.values()))
     assert t["access_token"] not in dump and t["refresh_token"] not in dump and q["code"] not in dump
-    # refresh com rotação: o novo par vale; o antigo é reuso e revoga a concessão inteira
+    # refresh with rotation: the new pair is valid; the old one is reuse and revokes the whole grant
     r2 = token(hub, {"grant_type": "refresh_token", "client_id": cid, "refresh_token": t["refresh_token"]})
     assert r2.status_code == 200
     n = r2.json()
@@ -195,7 +195,7 @@ def test_full_dance_pkce_refresh_rotation_and_audience(hub: TestClient) -> None:
     )
     reuse = token(hub, {"grant_type": "refresh_token", "client_id": cid, "refresh_token": t["refresh_token"]})
     assert reuse.status_code == 400 and reuse.json()["error"] == "invalid_grant"
-    assert rpc(bearer(hub, n["access_token"]), "ping").status_code == 401  # concessão revogada
+    assert rpc(bearer(hub, n["access_token"]), "ping").status_code == 401  # revoked grant
     assert (
         token(
             hub, {"grant_type": "refresh_token", "client_id": cid, "refresh_token": n["refresh_token"]}
@@ -236,7 +236,7 @@ def test_code_exchange_checks_client_redirect_pkce_and_resource(hub: TestClient)
     assert bad[3].json()["error"] == "invalid_target" and bad[1].json()["error_description"].startswith(
         "code_verifier"
     )
-    # um pedido errado não "queima" o código: o certo ainda funciona
+    # a wrong request does not "burn" the code: the right one still works
     assert exchange(hub, cid, code, v).status_code == 200
     assert (
         token(hub, {"grant_type": "authorization_code", "client_id": cid, "code": "nada"}).status_code == 400
@@ -262,7 +262,7 @@ def test_authorization_request_validation(hub: TestClient) -> None:
             "/oauth/authorize?" + authz_query(cid, ch).replace("localhost%3A7777", "evil.example")
         ).text
     )
-    r = hub.get("/oauth/authorize?" + authz_query(cid, ""))  # sem PKCE: erro volta para o cliente
+    r = hub.get("/oauth/authorize?" + authz_query(cid, ""))  # without PKCE: the error returns to the client
     assert r.status_code == 303 and query_of(r)["error"] == "invalid_request" and query_of(r)["iss"] == ISS
     r = hub.get("/oauth/authorize?" + authz_query(cid, ch, response_type="token"))
     assert query_of(r)["error"] == "unsupported_response_type"
@@ -273,10 +273,10 @@ def test_authorization_request_validation(hub: TestClient) -> None:
     )
     assert query_of(hub.get("/oauth/authorize?" + plain))["error"] == "invalid_request"
     assert "Parâmetro repetido" in hub.get("/oauth/authorize?client_id=a&client_id=b").text
-    # sem sessão: vai para o login; com token (sem sessão do navegador) o consentimento é recusado
+    # no session: goes to login; with a token (no browser session) consent is refused
     anon = machine(hub).get("/oauth/authorize?" + authz_query(cid, ch))
     assert anon.status_code == 303 and anon.headers["location"].startswith("/login?next=")
-    # recusa do usuário
+    # user refusal
     _, nonce = consent(hub, cid, ch)
     r = approve(hub, nonce, decision="deny")
     assert query_of(r)["error"] == "access_denied" and query_of(r)["state"] == "xyz"
@@ -290,7 +290,7 @@ def test_user_can_narrow_scopes_and_write_tools_follow(hub: TestClient) -> None:
     assert t["scope"] == "mcp"
     names = {x["name"] for x in rpc(bearer(hub, t["access_token"]), "tools/list").json()["result"]["tools"]}
     assert "apps_list" in names and "tasks_cancel" not in names
-    # refresh só pode reduzir o escopo, nunca ampliar
+    # refresh can only reduce the scope, never widen it
     big = token(
         hub,
         {
@@ -345,13 +345,13 @@ def test_registration_rules(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     assert reg(redirect_uris=[CB], grant_types=["password"]).status_code == 400
     assert m.post("/oauth/register", content="x").status_code == 400
     r = reg(redirect_uris=[CB], client_name="‮Claude​")
-    assert r.json()["client_name"] == "Claude"  # invisíveis e bidi saem
-    confidential = reg(redirect_uris=[CB]).json()  # padrão: client_secret_basic
+    assert r.json()["client_name"] == "Claude"  # invisible and bidi characters are removed
+    confidential = reg(redirect_uris=[CB]).json()  # default: client_secret_basic
     assert (
         confidential["client_secret"].startswith("hubcs_") and confidential["client_secret_expires_at"] == 0
     )
     stored = json.dumps(list(hub.app.state.records.mem.values()))
-    assert confidential["client_secret"] not in stored  # só o hash
+    assert confidential["client_secret"] not in stored  # only the hash
 
 
 def test_registration_rate_limit_per_ip(hub: TestClient) -> None:
@@ -369,9 +369,9 @@ def test_confidential_client_authentication(hub: TestClient) -> None:
     basic = {"authorization": "Basic " + base64.b64encode(f"{cid}:{secret}".encode()).decode()}
     wrong = {"authorization": "Basic " + base64.b64encode(f"{cid}:errado".encode()).decode()}
     assert token(hub, form, **wrong).status_code == 401
-    nocred = token(hub, form)  # sem credenciais
+    nocred = token(hub, form)  # no credentials
     assert nocred.status_code == 401 and nocred.headers["www-authenticate"].startswith("Basic")
-    assert token(hub, form | {"client_id": cid}).status_code == 401  # sem segredo
+    assert token(hub, form | {"client_id": cid}).status_code == 401  # no secret
     assert token(hub, form, **basic).status_code == 200
     post = register(hub, method="client_secret_post")
     code = grant_code(hub, post["client_id"], ch)
@@ -432,7 +432,7 @@ def test_client_metadata_document(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
         == 200
     )
     assert any(c["client_id"] == url for c in asyncio.run(o.clients()))
-    # documento inconsistente é recusado
+    # inconsistent document is refused
     doc["client_id"] = "https://outro.example/x.json"
     o.cimd_cache.clear()
     assert "client_id do documento" in hub.get("/oauth/authorize?" + q).text
@@ -458,13 +458,13 @@ def test_client_metadata_document_never_reaches_internal_addresses(hub: TestClie
         assert not oa.ip_public(__import__("ipaddress").ip_address(ip)), ip
 
 
-# ---- revogação e telas --------------------------------------------------------------------------------
+# ---- revocation and screens ----
 
 
 def test_revoke_endpoint_account_page_and_admin_actions(hub: TestClient) -> None:
     t = oauth_login(hub)
     cid = t["client_id"]
-    # outro cliente não revoga o que não é seu; 200 mesmo para token desconhecido (RFC 7009)
+    # another client does not revoke what is not its own; 200 even for an unknown token (RFC 7009)
     stranger = register(hub)["client_id"]
     assert token(hub, {"grant_type": "x"}).status_code == 401
     r = machine(hub).post("/oauth/revoke", data={"token": t["refresh_token"], "client_id": stranger})
@@ -472,7 +472,7 @@ def test_revoke_endpoint_account_page_and_admin_actions(hub: TestClient) -> None
     assert (
         machine(hub).post("/oauth/revoke", data={"token": "hubr_nada", "client_id": cid}).status_code == 200
     )
-    # a página da conta lista e revoga
+    # the account page lists and revokes
     page = hub.get("/account/access").text
     m = re.search(r'name="grant" value="(g[0-9a-f]+)"', page)
     assert m
@@ -496,11 +496,11 @@ def test_revoke_endpoint_account_page_and_admin_actions(hub: TestClient) -> None
         ).status_code
         == 400
     )
-    # pelo próprio cliente
+    # through the client itself
     t2 = oauth_login(hub)
     r = machine(hub).post("/oauth/revoke", data={"token": t2["refresh_token"], "client_id": t2["client_id"]})
     assert r.status_code == 200 and rpc(bearer(hub, t2["access_token"]), "ping").status_code == 401
-    # a administração bloqueia o cliente: concessões somem e ele não volta a autorizar
+    # the administration blocks the client: grants vanish and it does not authorize again
     t3 = oauth_login(hub)
     form = {"content-type": "application/x-www-form-urlencoded"}
     r = hub.post("/admin/oauth/block-client", content=f"client={t3['client_id']}", headers=form)
@@ -512,7 +512,7 @@ def test_revoke_endpoint_account_page_and_admin_actions(hub: TestClient) -> None
     assert hub.get("/oauth/authorize?" + authz_query(t3["client_id"], ch)).status_code == 200
     hub.post("/admin/oauth/remove-client", content=f"client={t3['client_id']}", headers=form)
     assert "desconhecido" in hub.get("/oauth/authorize?" + authz_query(t3["client_id"], ch)).text
-    # a administração é restrita a quem pode editar configurações
+    # administration is restricted to whoever can edit settings
     colab = add_user(hub, "colab", ["Colaborador"])
     assert colab.post("/admin/oauth/block-client", content="client=x", headers=form).status_code == 403
 
@@ -552,16 +552,16 @@ def test_cors_preflight_and_readable_errors_on_machine_endpoints(
             "mcp-session-id" in r.headers["access-control-allow-headers"]
             and r.headers["access-control-max-age"] == "600"
         )
-    assert m.options("/oauth/authorize").status_code != 204  # tela do navegador: sem CORS
+    assert m.options("/oauth/authorize").status_code != 204  # browser screen: no CORS
     assert "access-control-allow-origin" not in hub.get("/oauth/authorize").headers
-    # o 401 do /mcp é legível pelo navegador
+    # the 401 from /mcp is readable by the browser
     r = m.post("/mcp", json={}, headers={"origin": "https://app.langdock.com"})
     assert r.status_code == 401 and r.headers["access-control-allow-origin"] == "*"
     assert (
         "WWW-Authenticate" in r.headers["access-control-expose-headers"]
         and "Mcp-Session-Id" in r.headers["access-control-expose-headers"]
     )
-    # origem não permitida: 403, mas ainda com os cabeçalhos CORS (o cliente precisa ler o erro)
+    # origin not allowed: 403, but still with the CORS headers (the client needs to read the error)
     ok = bearer(hub, make_token(hub, ["mcp"]))
     r = rpc(ok, "ping", origin="https://evil.example")
     assert r.status_code == 403 and r.headers["access-control-allow-origin"] == "*"
@@ -578,7 +578,7 @@ def test_machine_endpoints_follow_the_control_plane_cidr(
     m = machine(hub)
     assert m.get("/.well-known/oauth-authorization-server").status_code == 403
     assert m.post("/oauth/token", data={}).status_code == 403
-    assert m.options("/mcp").status_code == 204  # preflight vem antes de tudo
+    assert m.options("/mcp").status_code == 204  # preflight comes before everything
     open_ = api_hub(
         tmp_path / "o",
         monkeypatch,

@@ -72,9 +72,9 @@ def test_targets_and_decide_rules() -> None:
     )
     assert targets(it, boss) and can_decide(it, boss)
     assert not targets(it, Who(id="u3", roles=["Outro"]))
-    assert not targets(it, Who(id="u1", roles=["Gestor"], apps=["ativos"]))  # não alcança o app
-    assert not can_decide(it | {"by": "boss@x"}, boss)  # ninguém aprova o próprio pedido
-    own = item_of("notification", "servicos", "t", by="op@x")  # sem destinatário: só quem causou
+    assert not targets(it, Who(id="u1", roles=["Gestor"], apps=["ativos"]))  # does not reach the app
+    assert not can_decide(it | {"by": "boss@x"}, boss)  # nobody approves their own request
+    own = item_of("notification", "servicos", "t", by="op@x")  # no recipient: only whoever caused it
     assert targets(own, Who(id="u9", email="OP@x")) and not targets(own, boss)
 
 
@@ -127,7 +127,7 @@ async def test_sse_delivers_unread_changes(tmp_path: Path) -> None:
     assert (await anext(events)).startswith("event: ready")
     assert json.loads((await anext(events)).split("data: ")[1]) == {"unread": 0}
     task = asyncio.ensure_future(anext(events))
-    await asyncio.sleep(0.2)  # sem mudança: só keepalive (o gerador segue esperando)
+    await asyncio.sleep(0.2)  # no change: only keepalive (the generator keeps waiting)
     assert not task.done() or task.result().startswith(":")
     if task.done():
         task = asyncio.ensure_future(anext(events))
@@ -159,7 +159,7 @@ def test_inbox_api_list_read_archive(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert c.post(
         "/api/me/inbox/archive", json={"ids": [f"i:{item}"], "archived": False}, headers=HDR
     ).json() == {"changed": 1}
-    assert c.post("/api/me/inbox/read", headers=HDR).json() == {"marked": 1}  # sem corpo = todos
+    assert c.post("/api/me/inbox/read", headers=HDR).json() == {"marked": 1}  # no body = all
     assert c.post("/api/me/inbox/archive", content=b"{", headers=HDR).status_code == 400
 
 
@@ -171,7 +171,7 @@ def test_decide_calls_the_app_and_records_result(tmp_path: Path, monkeypatch: py
         return httpx.Response(200, json={"status": "approved"})
 
     c = make_client(tmp_path, monkeypatch, handler)
-    # quem pediu é outra pessoa; o admin (Administrador) decide
+    # whoever asked is someone else; the admin (Administrator) decides
     item = approval(c)
     r = c.post(f"/api/me/inbox/i:{item}/decide", json={"decision": "approve", "comment": "ok"}, headers=HDR)
     assert r.json() == {"ok": True, "status": "approved"}
@@ -196,7 +196,7 @@ def test_decide_failures(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
     r = c.post(f"/api/me/inbox/i:{item}/decide", json={"decision": "approve"}, headers=HDR)
     assert r.status_code == 502 and "quebrou" in r.json()["error"]
     shown = c.get("/api/me/inbox").json()["items"][0]["approval"]
-    assert shown["status"] == "error" and shown["can_decide"] is True  # dá para tentar de novo
+    assert shown["status"] == "error" and shown["can_decide"] is True  # can try again
     assert c.post("/api/me/inbox/i:999/decide", json={"decision": "approve"}, headers=HDR).status_code == 404
     assert c.post("/api/me/inbox/x/decide", json={"decision": "approve"}, headers=HDR).status_code == 400
     assert c.post(f"/api/me/inbox/i:{item}/decide", json={"x": 1}, headers=HDR).status_code == 400
@@ -239,7 +239,7 @@ def test_sse_route_limits_connections(tmp_path: Path, monkeypatch: pytest.Monkey
     assert c.get("/api/me/stream").status_code == 429
 
 
-# ---- páginas, prefs, i18n -----------------------------------------------------------------------
+# ---- pages, prefs, i18n ----
 
 
 def test_inbox_page_bell_and_prefs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -250,7 +250,7 @@ def test_inbox_page_bell_and_prefs(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     assert f'data-item="i:{item}"' in html and "Aprovar chamado SD-1" in html
     assert 'data-decide="approve"' in html and "Não lidas · 1" in html
     assert 'data-hub-notifications="1"' in c.get("/").text  # sino
-    assert "Aprovar chamado SD-1" in c.get("/").text  # widget da Início
+    assert "Aprovar chamado SD-1" in c.get("/").text  # Home widget
     r = c.post("/account/notifications/read?next=%2Finbox", headers=HDR)
     assert r.status_code == 303 and r.headers["location"] == "/inbox"
     assert "Não lidas · 0" in c.get("/inbox").text
@@ -282,13 +282,13 @@ def test_search_endpoints_federate_and_rank(tmp_path: Path, monkeypatch: pytest.
                 },
             )
         if req.url.path.startswith("/servicos/"):
-            return httpx.Response(404)  # sem busca
+            return httpx.Response(404)  # no search
         return httpx.Response(500)
 
     c = make_client(tmp_path, monkeypatch, handler)
     srch._buckets.clear()
     body = c.get("/api/me/search?q=contrato").json()
-    assert [g["id"] for g in body["groups"]][:2] == ["contratos", "platform"]  # registros do app primeiro
+    assert [g["id"] for g in body["groups"]][:2] == ["contratos", "platform"]  # app records first
     assert body["groups"][0]["hits"] == [
         {
             "title": "Contrato 1",
@@ -309,9 +309,9 @@ def test_search_endpoints_federate_and_rank(tmp_path: Path, monkeypatch: pytest.
         and "Contrato · CT-1" in page
         and 'data-hub-search-record="contrato"' in page
     )
-    assert "hub-search-more" not in page  # menos de 5 registros: sem "ver todos"
+    assert "hub-search-more" not in page  # fewer than 5 records: no "see all"
     srch._buckets.clear()
-    quiet = make_client(tmp_path / "q", monkeypatch)  # nenhum app responde com algo
+    quiet = make_client(tmp_path / "q", monkeypatch)  # no app responds with anything
     assert "Nenhum resultado para “zzzz”." in quiet.get("/search?q=zzzz").text
     assert "Administração (interno)" not in page or "hub-search-admin" in page
 
@@ -344,7 +344,7 @@ def test_search_failure_marks_partial_and_see_all(tmp_path: Path, monkeypatch: p
 def test_search_rate_limit_and_helpers() -> None:
     srch._buckets.clear()
     assert all(srch.search_allowed("u", 0.0) for _ in range(20)) and not srch.search_allowed("u", 0.0)
-    assert srch.search_allowed("u", 1.0)  # repõe 4 fichas por segundo
+    assert srch.search_allowed("u", 1.0)  # refills 4 tokens per second
     assert srch.score("Gestão de Ativos", "gestao") == 0.8
     assert srch.score("Gestão de Ativos", "ATIVOS") == 0.6
     assert srch.score("Gestão de Ativos", "tão") == 0.4 and srch.score("x", " ") == 0.0
@@ -381,7 +381,7 @@ def test_settings_pages_and_prefs_form(tmp_path: Path, monkeypatch: pytest.Monke
         headers=HDR | {"content-type": "application/x-www-form-urlencoded"},
     )
     assert r.status_code == 303 and r.headers["location"] == "/account"
-    page = c.get("/account").text  # tema e idioma vêm do servidor (sem piscar claro)
+    page = c.get("/account").text  # theme and language come from the server (no flash of light)
     assert (
         '<html lang="en" data-theme="dark">' in page and '<meta name="color-scheme" content="dark"/>' in page
     )
@@ -457,8 +457,8 @@ def test_password_roundtrip_returns_to_settings_with_new_session(
     assert r.status_code == 303 and r.headers["location"] == "/account/security"
     assert "hub_session=" in r.headers["set-cookie"]
     fresh = {"cookie": "hub_session=" + r.headers["set-cookie"].split("hub_session=")[1].split(";")[0]}
-    assert c.get("/account/security", headers=fresh).status_code == 200  # a sessão nova vale
-    assert c.get("/account/security").status_code == 303  # a antiga caiu
+    assert c.get("/account/security", headers=fresh).status_code == 200  # the new session is valid
+    assert c.get("/account/security").status_code == 303  # the old one dropped
     mismatch = c.post(
         "/account/password",
         data=form | {"confirm": "x", "current": "Another-Password-9!"},
@@ -473,7 +473,7 @@ def test_password_roundtrip_returns_to_settings_with_new_session(
 
 def test_language_resolution_and_translation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     assert resolve("", "en-US,en;q=0.9,pt;q=0.8") == "en"
-    assert resolve("es", "pt-BR") == "en" and resolve("", "fr, es;q=0.5") == "en"  # `es` saiu: vira en
+    assert resolve("es", "pt-BR") == "en" and resolve("", "fr, es;q=0.5") == "en"  # `es` dropped: now en
     assert resolve("", "en;q=0") == "pt-BR" and resolve("", None) == "pt-BR" and resolve("xx", "") == "pt-BR"
     assert tn("home.subtitle", 1, "en").startswith("1 ") and tr("Cancelar", "en") == "Cancel"
     assert (
@@ -486,10 +486,10 @@ def test_language_resolution_and_translation(tmp_path: Path, monkeypatch: pytest
     assert '<html lang="en"' in en and "Alertas da plataforma" not in en and "Notification preferences" in en
     assert 'aria-label="Platform navigation"' in en and "Skip to content" in en and ">Home<" in en
     assert 'class="hub-search-label">Search apps, pages and records<' in en
-    assert "Pular para o conteúdo" in c.get("/inbox").text  # padrão: pt-BR
+    assert "Pular para o conteúdo" in c.get("/inbox").text  # default: pt-BR
     assert c.put("/api/me/prefs", json={"lang": "es"}, headers=HDR).status_code == 400
     c.put("/api/me/prefs", json={"lang": "en"}, headers=HDR)
-    en = c.get("/search?q=zzz", headers={"accept-language": "pt-BR"}).text  # a preferência vence o navegador
+    en = c.get("/search?q=zzz", headers={"accept-language": "pt-BR"}).text  # the preference beats the browser
     assert '<html lang="en"' in en and "Sin resultados para" not in en
     state = json.loads(
         c.get("/").text.split('data-hub-i18n="')[1].split('" data-hub-palette')[0].replace("&#34;", '"')
@@ -498,7 +498,7 @@ def test_language_resolution_and_translation(tmp_path: Path, monkeypatch: pytest
 
 
 def test_legacy_agent_items_are_dropped_on_load(tmp_path: Path) -> None:
-    """Pedidos de ação de agente (aprovação na Inbox, removida) gravados antes não voltam a aparecer."""
+    """Action requests from an agent (approval in the Inbox, now removed) recorded earlier do not show up again."""
     store = InboxStore(tmp_path / "inbox.json")
     keep = store.push(item_of("app", "ativos", "fica", to_users=["u1"]))
     gone = store.push(item_of("agent", "platform", "sai", to_users=["u1"], approval=approval_of("x")))
@@ -507,7 +507,7 @@ def test_legacy_agent_items_are_dropped_on_load(tmp_path: Path) -> None:
 
 
 def test_access_decision_notifies_the_requester(tmp_path: Path) -> None:
-    """F7a: aprovar/recusar um pedido de acesso avisa quem pediu ("Acesso a X liberado") na Inbox, uma vez."""
+    """F7a: approving/refusing an access request notifies whoever asked ("Acesso a X liberado") in the Inbox, once."""
     store = InboxStore(tmp_path / "inbox.json")
     boss = Who(
         id="b",

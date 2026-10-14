@@ -1,4 +1,4 @@
-"""Simulador do Graph (`graphsim`) e autenticação SharePoint por certificado (asserção de cliente JWT)."""
+"""Graph simulator (`graphsim`) and SharePoint authentication by certificate (JWT client assertion)."""
 
 from __future__ import annotations
 
@@ -99,7 +99,7 @@ def client(
     return c
 
 
-# ---- Graph contra o simulador ------------------------------------------------------------------
+# ---- Graph against the simulator ----
 
 
 async def test_graph_crud_and_token_cache(sim: Sim) -> None:
@@ -116,7 +116,7 @@ async def test_graph_crud_and_token_cache(sim: Sim) -> None:
     with pytest.raises(StorageError) as e:
         await c.delete("b.txt")
     assert e.value.kind == "not_found"
-    assert sim.stats["tokens_issued"] == 1  # o token é reaproveitado entre as chamadas
+    assert sim.stats["tokens_issued"] == 1  # the token is reused across calls
     with pytest.raises(StorageError):
         await c.upload("../x", 1, "text/plain", feed(b"x"))
     await c.aclose()
@@ -124,7 +124,7 @@ async def test_graph_crud_and_token_cache(sim: Sim) -> None:
 
 async def test_graph_large_upload_uses_session_in_chunks(sim: Sim) -> None:
     c = client(sim)
-    data = bytes(range(256)) * 2800  # ~700 KiB: 3 pedaços de 320 KiB (o último menor)
+    data = bytes(range(256)) * 2800  # ~700 KiB: 3 chunks of 320 KiB (the last one smaller)
     item = await c.upload("big.bin", len(data), "application/octet-stream", feed(data))
     assert item.size == len(data) and sim.file("Documentos", "Base/big.bin") == data
     assert sim.stats["sessions"] == 1 and sim.stats["chunks"] == 3
@@ -161,7 +161,7 @@ async def test_graph_share_link_enforces_expiry(sim: Sim) -> None:
     link = await c.share_link("a.txt", "view", "organization", 3600)
     assert link["url"].startswith("https://contoso.sharepoint.com/") and link["expires"]
     assert len(sim.links) == 1
-    sim.cfg.link_expiry = "ignore"  # o tenant ignorou a validade: o link é apagado e recusado
+    sim.cfg.link_expiry = "ignore"  # the tenant ignored the validity: the link is deleted and refused
     with pytest.raises(StorageError, match="foi apagado") as e:
         await c.share_link("a.txt", "view", "organization", 3600)
     assert e.value.kind == "upstream" and len(sim.links) == 1
@@ -200,7 +200,7 @@ async def test_graph_throttle_retry_and_revoked_token(sim: Sim) -> None:
     await c.upload("a.txt", 1, "text/plain", feed(b"x"))
     sim.cfg.throttle_next, sim.cfg.throttle_retry_after = 1, 0
     assert (await c.meta("a.txt")).size == 1 and sim.stats["throttled"] == 1
-    sim.tokens.clear()  # token invalidado: um 401 renova o token e repete
+    sim.tokens.clear()  # token invalidated: a 401 renews the token and retries
     assert (
         (await c.meta("a.txt")).size == 1
         and sim.stats["tokens_issued"] == 2
@@ -349,18 +349,18 @@ async def test_graph_with_certificate_against_sim(sim: Sim, pair: tuple[Any, byt
     steps = await c.test()
     assert all(s["ok"] for s in steps), steps
     assert sim.stats["assertions"] == 1
-    # certificado não cadastrado no app registration: recusado, sem vazar nada
+    # certificate not registered in the app registration: refused, without leaking anything
     other, other_der = make_cert("outro")
     bad = client(sim, cert=ClientCert.parse(pem_of(other, other_der).encode()), secret="")
     with pytest.raises(StorageError) as e:
         await bad.ls("")
     assert e.value.kind == "auth" and "Credencial recusada" in e.value.message
-    sim.cfg.cert_pem = ""  # sem certificado configurado no provedor: nada passa
+    sim.cfg.cert_pem = ""  # no certificate configured at the provider: nothing passes
     with pytest.raises(StorageError):
         await client(sim, cert=cert, secret="").ls("")
 
 
-# ---- conexões no hub (API) contra um simulador real em HTTP ------------------------------------
+# ---- connections in the hub (API) against a real simulator over HTTP ----
 
 
 @pytest.fixture
@@ -417,7 +417,7 @@ def test_connection_test_with_secret_and_with_certificate(
     )
     r = hub.post("/api/admin/connections/sp-secret/test", json={}).json()
     assert r["ok"] is True, r
-    # certificado: PEM (cert + chave) em base64; nunca volta na API/HTML
+    # certificate: PEM (cert + key) in base64; never comes back in the API/HTML
     b64 = base64.b64encode(pem.encode()).decode()
     created = hub.post(
         "/api/admin/connections", json=sp_body("sp-cert", auth="certificate", certificate_b64=b64)
@@ -427,14 +427,14 @@ def test_connection_test_with_secret_and_with_certificate(
     assert view["auth"] == "certificate" and view["cert_thumbprint"] and view["cert_subject"] == "hub-teste"
     r = hub.post("/api/admin/connections/sp-cert/test", json={}).json()
     assert r["ok"] is True and sim_.stats["assertions"] >= 1, r
-    # nada de chave/certificado em HTML, API, auditoria, log ou claro no disco
+    # no key/certificate in HTML, API, audit, log or clear text on disk
     leaks = ["PRIVATE KEY", b64[:40], pem.split("\n")[1]]
     blob = hub.get("/admin/connections").text + hub.get("/api/admin/connections").text
     audit = str(run(hub.app.state.admin.cfg.read())["audit"])  # type: ignore[attr-defined]
     on_disk = "".join(p.read_text(errors="ignore") for p in tmp_path.rglob("*.json"))
     for leak in leaks:
         assert leak not in blob and leak not in on_disk and leak not in audit
-    # sem arquivo ao trocar para certificado, e rotação do certificado
+    # no file when switching to a certificate, and certificate rotation
     r = hub.put("/api/admin/connections/sp-secret", json=sp_body("sp-secret", auth="certificate"))
     assert r.status_code == 400 and "Envie o certificado" in r.json()["error"]
     assert hub.post("/api/admin/connections/sp-cert/rotate", json={}).status_code == 400
@@ -444,7 +444,7 @@ def test_connection_test_with_secret_and_with_certificate(
         "/api/admin/connections/sp-cert/rotate", json={"certificate_b64": base64.b64encode(b"lixo").decode()}
     )
     assert bad.status_code == 400
-    # volta para segredo: o certificado guardado some
+    # back to secret: the stored certificate disappears
     r = hub.put(
         "/api/admin/connections/sp-cert", json=sp_body("sp-cert", auth="secret", secret=CFG.client_secret)
     )

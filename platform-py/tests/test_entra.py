@@ -68,7 +68,7 @@ def test_success_jit_provisioning_and_session(sso: TestClient) -> None:
     assert u["roles"] == ["Colaborador"] and u["sso_subject"] == "oid-ana" and "password_hash" not in u
     client.headers["cookie"] = f"hub_session={r.cookies['hub_session']}"
     assert client.get("/").status_code == 200
-    # segundo login: mesmo usuário, sem duplicar
+    # second login: same user, no duplicate
     anon(client)
     assert flow(client, sso).status_code == 303
     assert sum(u["email"] == "ana@contoso.com" for u in users(client)) == 1
@@ -144,7 +144,7 @@ def test_role_map_formats() -> None:
 
 
 def test_sso_link_drops_unchanged_temporary_password(sso: TestClient) -> None:
-    """Vincular pelo e-mail um usuário que nunca trocou a senha temporária anula essa senha e não exige a troca."""
+    """Linking by e-mail a user who never changed the temporary password cancels that password and does not require the change."""
     client = anon(client_for(create_app()))
     store = client.app.state.auth  # type: ignore[attr-defined]
     asyncio.run(store.create_user("ana@contoso.com", "Ana", ["Colaborador"], "Temporaria-123!", True))
@@ -156,7 +156,7 @@ def test_sso_link_drops_unchanged_temporary_password(sso: TestClient) -> None:
 
 
 def test_client_secret_from_vault(monkeypatch: pytest.MonkeyPatch, tmp_path: Any) -> None:
-    """Sem HUB_ENTRA_CLIENT_SECRET(_FILE), o segredo vem do cofre (`python -m hub.admin set-entra-secret`)."""
+    """Without HUB_ENTRA_CLIENT_SECRET(_FILE), the secret comes from the vault (`python -m hub.admin set-entra-secret`)."""
     import io
 
     from hub.admin.__main__ import main as admin_main
@@ -180,7 +180,7 @@ def test_client_secret_from_vault(monkeypatch: pytest.MonkeyPatch, tmp_path: Any
 
 
 def test_logout_of_sso_session_ends_entra_session(sso: TestClient) -> None:
-    """Sessão aberta pelo Entra: o logout encerra também a sessão na Microsoft (logout único)."""
+    """Session opened via Entra: logout also ends the session at Microsoft (single logout)."""
     client = anon(client_for(create_app()))
     cookie = flow(client, sso).cookies["hub_session"]
     r = client.post("/logout", headers={"sec-fetch-site": "same-origin", "cookie": f"hub_session={cookie}"})

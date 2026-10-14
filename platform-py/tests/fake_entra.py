@@ -1,7 +1,7 @@
-"""Provedor OIDC falso no formato do Entra ID v2 (authorize/token/JWKS) para testes e instância temporária.
+"""Fake OIDC provider in the Entra ID v2 format (authorize/token/JWKS) for tests and a temporary instance.
 
-Uso avulso: `uv run python tests/fake_entra.py` (porta 8095; FAKE_ENTRA_ISSUER = base que o hub usa como
-HUB_ENTRA_AUTHORITY). O authorize aprova na hora e devolve o código ao redirect_uri.
+Standalone use: `uv run python tests/fake_entra.py` (port 8095; FAKE_ENTRA_ISSUER = base that the hub uses as
+HUB_ENTRA_AUTHORITY). The authorize approves at once and returns the code to the redirect_uri.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ CLIENT = "client-123"
 SECRET = "fake-secret"
 KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 OTHER = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-# Ajustes por teste: claims extras/substitutas e `bad_sig`/`bad_nonce`.
+# Per-test adjustments: extra/replacement claims and `bad_sig`/`bad_nonce`.
 OVERRIDES: dict[str, Any] = {}
 _codes: dict[str, str] = {}
 

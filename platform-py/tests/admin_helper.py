@@ -1,4 +1,4 @@
-"""Hub de teste da Administração: dados em disco temporário, cinco apps no registro e sessões por função."""
+"""Test hub for Administration: data in a temporary disk, five apps in the registry and per-role sessions."""
 
 from __future__ import annotations
 
@@ -64,7 +64,7 @@ def make_hub(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, handler: Any = Non
 
 
 def add_user(client: TestClient, user_id: str, roles: list[str], *, active: bool = True) -> TestClient:
-    """Cria usuário com sessão própria e devolve um cliente HTTP autenticado como ele."""
+    """Creates a user with its own session and returns an HTTP client authenticated as that user."""
     auth = client.app.state.auth  # type: ignore[attr-defined]
     doc = json.loads(auth.path.read_text(encoding="utf-8"))
     now = time.time_ns() // 1_000_000

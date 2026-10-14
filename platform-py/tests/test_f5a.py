@@ -1,5 +1,5 @@
-"""F5a: outbox → Inbox/auditoria, agendador de backups, cópia externa, restauração com banco de lado, alertas,
-jobs duráveis e liderança entre réplicas (Postgres descartável em `HUB_DB_TEST_URL`)."""
+"""F5a: outbox -> Inbox/audit, backup scheduler, external copy, restore with a side database, alerts,
+durable jobs and leadership across replicas (disposable Postgres in `HUB_DB_TEST_URL`)."""
 
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ DB_URL = os.getenv("HUB_DB_TEST_URL")
 TOKEN = "t" * 20
 
 
-# ---- cron e plano da agenda -------------------------------------------------------------------------------
+# ---- cron and schedule plan ----
 def test_cron_next_and_plan() -> None:
     tz = timezone_of("America/Sao_Paulo")
     t0 = int(time.mktime((2026, 9, 27, 12, 0, 0, 0, 0, 0)) * 1000)
@@ -42,7 +42,7 @@ def test_cron_next_and_plan() -> None:
     assert q is not None and q - t0 <= 15 * 60_000
     sab = int(
         time.mktime((2026, 10, 3, 10, 0, 0, 0, 0, 0)) * 1000
-    )  # sábado: a próxima "seg-sex 9h" é segunda
+    )  # Saturday: the next "Mon-Fri 9h" is Monday
     seg = Cron("0 9 * * 1-5").next_after(sab, tz)
     assert seg is not None and 36 * 3600_000 < seg - sab < 72 * 3600_000
     with pytest.raises(OpsError):
@@ -72,7 +72,7 @@ def test_notice_units() -> None:
     assert allowed_roles(["Suporte", "Aprovador"], ["Suporte"], ["suporte"]) == ["Suporte"]
     ev = {"event_id": "e", "kind": "approval_request", "user": "ana", "at": 5,
           "meta": {"title": "Aprovar?", "approval_id": "ap-1", "to_roles": ["Suporte"], "link": "/ativos/x"}}  # fmt: skip
-    assert item_from_notice("ativos", ev, []) is None  # funções pedidas recusadas: nunca cai em "quem causou"
+    assert item_from_notice("ativos", ev, []) is None  # refused: never falls back to "who caused it"
     it = item_from_notice("ativos", ev, ["Suporte"])
     assert (
         it and it["kind"] == "approval" and it["approval"]["ext_id"] == "ap-1" and it["source"] == "ativos:e"
@@ -82,9 +82,9 @@ def test_notice_units() -> None:
     assert bad and bad["kind"] == "notification" and bad["title"] == "Notificação"
 
 
-# ---- hub de teste com tarefas de fundo sob controle ----------------------------------------------------------
+# ---- test hub with background tasks under control ----
 class Remote:
-    """Upstream falso dos apps: outbox, ack e tarefas."""
+    """Fake app upstream: outbox, ack and tasks."""
 
     def __init__(self) -> None:
         self.events: list[dict[str, Any]] = []
@@ -139,18 +139,18 @@ def test_outbox_exactly_once_and_inbox(hub: TestClient, remote: Remote) -> None:
     ]  # fmt: skip
     remote.fail_ack = True
     out = call(hub, ob.pull_app, "ativos", "http://upstream", TOKEN, 0)
-    assert out["fetched"] == 5 and out["recorded"] == 1 and remote.acks == []  # ack falhou: nada confirmado
+    assert out["fetched"] == 5 and out["recorded"] == 1 and remote.acks == []  # ack failed: nothing confirmed
     titles = [e["title"] for e in audit_rows(hub)]
     assert titles.count("Ativo cadastrado") == 1
     assert {i["kind"] for i in inbox.items.values()} == {"notification", "approval"}
     assert any(i["approval"] and i["approval"]["ext_id"] == "ap-9" for i in inbox.items.values())
-    # reentrega depois da falha do ack: nada duplica; agora confirma tudo que foi gravado (menos o id inválido)
+    # redelivered after the ack failure: nothing duplicates; now confirms everything written (except the invalid id)
     remote.fail_ack = False
     out = call(hub, ob.pull_app, "ativos", "http://upstream", TOKEN, 0)
     assert out["recorded"] == 0 and remote.acks == [["e1", "e2", "e3", "e5"]]
     assert [e["title"] for e in audit_rows(hub)].count("Ativo cadastrado") == 1 and len(inbox.items) == 2
     assert call(hub, ob.ingest.pending, "ativos") == []  # compactado
-    # tick percorre os apps com token; os demais respondem 404 e viram um aviso único
+    # tick walks the apps with a token; the others answer 404 and become a single warning
     call(hub, ob.tick)
     call(hub, ob.tick)
     warns = [ln for ln in hub.app.state.admin.logs.recent() if "outbox indisponível" in ln["message"]]  # type: ignore[attr-defined]
@@ -196,7 +196,7 @@ def test_scheduler_runs_skips_and_defers(hub: TestClient, bk: FakeDocker) -> Non
     assert call(hub, sched.tick, t0) == []
     st = ops.read()["schedules"]["ativos|producao"]
     assert st["next_due"] > t0 and "próximo" in hub.get("/admin/backups").text
-    # na hora: roda como "Agendado" com o ator do agendador
+    # right away: runs as "Scheduled" with the scheduler's actor
     lines = call(hub, sched.tick, st["run_at"] + 1000)
     assert len(lines) == 1 and "Agendado" in lines[0]
     job_id = ops.read()["schedules"]["ativos|producao"]["last_job"]
@@ -206,8 +206,8 @@ def test_scheduler_runs_skips_and_defers(hub: TestClient, bk: FakeDocker) -> Non
     call(hub, sched.tick, st["run_at"] + 2000)
     assert ops.read()["schedules"]["ativos|producao"]["last_status"] == "Concluído"
     assert "último: Concluído" in hub.get("/admin/backups").text
-    # perdida (hub fora do ar) com política "pular": não roda
-    set_policy(hub, missed="pular")  # política alterada: a próxima execução é recalculada
+    # missed (hub offline) with the "skip" policy: does not run
+    set_policy(hub, missed="pular")  # policy changed: the next run is recalculated
     assert "ativos|producao" not in ops.read()["schedules"]
     call(hub, sched.tick, now_ms())
     s = ops.read()["schedules"]["ativos|producao"]
@@ -216,16 +216,16 @@ def test_scheduler_runs_skips_and_defers(hub: TestClient, bk: FakeDocker) -> Non
         return len([h for h in hub.get("/api/ops/backups").json()["history"] if h["app"] == "ativos"])
 
     n = ativos_hist()
-    lines = call(hub, sched.tick, s["run_at"] + 3_600_000)  # +1 h pode cruzar a agenda diária de outro app
+    lines = call(hub, sched.tick, s["run_at"] + 3_600_000)  # +1 h may cross another app's daily schedule
     assert any(x.startswith("ativos|producao: pulado") for x in lines)
     assert ativos_hist() == n
     assert ops.read()["schedules"]["ativos|producao"]["last_status"] == "Perdido (pulado)"
-    # job em andamento do app: adia 15 s
+    # app job in progress: postpones 15 s
     s = ops.read()["schedules"]["ativos|producao"]
     call(hub, hub.app.state.ops_jobs.claim, "ativos")  # type: ignore[attr-defined]
     assert call(hub, sched.tick, s["run_at"] + 1)[0].endswith("adiado")
     assert ops.read()["schedules"]["ativos|producao"]["last_status"] == "Adiado (job em andamento)"
-    # agenda inválida vira erro visível; manual não agenda
+    # invalid schedule becomes a visible error; manual does not schedule
     d = ops.read()
     d["policies"][next(i for i, p in enumerate(d["policies"]) if p["app"] == "ativos")]["schedule"] = "x y"
     ops.write(d)
@@ -234,7 +234,7 @@ def test_scheduler_runs_skips_and_defers(hub: TestClient, bk: FakeDocker) -> Non
     assert "agenda inválida" in hub.get("/admin/backups").text
 
 
-# ---- cópia externa, snapshot de segurança, banco de lado -----------------------------------------------------------
+# ---- external copy, safety snapshot, side database ----
 def _read(p: str) -> bytes:
     return Path(p).read_bytes()
 
@@ -271,7 +271,7 @@ def test_offsite_copy_and_failure_alert(
     assert "s3cr3t" not in rec["detail"]
     b.objstore = ObjectStore(runner=fake_mc(copies, fail=True))
     j = wait_job(hub, hub.post("/api/ops/backups/ativos/run", headers=JSON).json()["id"])
-    assert j["ok"]  # o backup local vale
+    assert j["ok"]  # the local backup is the one that counts
     rec = hub.get("/api/ops/backups").json()["history"][0]
     assert rec["status"] == "Concluído" and "cópia externa FALHOU" in rec["detail"]
     alerts = [i for i in hub.app.state.inbox.items.values() if i["kind"] == "alert"]  # type: ignore[attr-defined]
@@ -296,10 +296,10 @@ def test_aside_restore_flow_and_undo(hub: TestClient, bk: FakeDocker) -> None:
 
     b._psql, b._load = psql, load
     msg = call(hub, b._restore_db, "appdb", b"-- sql", False)
-    assert "restaurado" in msg and loads == [False]  # não transacional
+    assert "restaurado" in msg and loads == [False]  # not transactional
     assert "RENAME TO" in calls[0][0] and 'CREATE DATABASE "appdb" OWNER "appowner"' in calls[1][0]
-    assert 'DROP DATABASE IF EXISTS "appdb_pre' in calls[-1][0]  # o de lado só some no fim
-    # falha no meio: apaga o parcial e devolve o original ao nome
+    assert 'DROP DATABASE IF EXISTS "appdb_pre' in calls[-1][0]  # the side one only disappears at the end
+    # failure midway: deletes the partial and returns the original to the name
     calls.clear()
 
     async def boom(db: str, sql: bytes, single: bool) -> tuple[int, bytes]:
@@ -310,7 +310,7 @@ def test_aside_restore_flow_and_undo(hub: TestClient, bk: FakeDocker) -> None:
         call(hub, b._restore_db, "appdb", b"-- sql", False)
     undo = calls[-1]
     assert undo[0] == 'DROP DATABASE IF EXISTS "appdb" WITH (FORCE)' and 'RENAME TO "appdb"' in undo[1]
-    # falha antes de saber se o rename ocorreu: nada de desfazer
+    # failure before knowing whether the rename happened: nothing to undo
     calls.clear()
 
     async def first_fails(db: str, *stmts: str) -> str:
@@ -324,7 +324,7 @@ def test_aside_restore_flow_and_undo(hub: TestClient, bk: FakeDocker) -> None:
     with pytest.raises(OpsError):
         call(hub, b._restore_db, "postgres", b"x", False)
     b._load = load
-    assert "temporário" in call(hub, b._restore_db, "appdb", b"x", True)  # banco temporário (teste)
+    assert "temporário" in call(hub, b._restore_db, "appdb", b"x", True)  # temporary database (test)
 
 
 def test_aside_list_and_actions(hub: TestClient, bk: FakeDocker) -> None:
@@ -342,7 +342,7 @@ def test_aside_list_and_actions(hub: TestClient, bk: FakeDocker) -> None:
     assert got["available"] and [(a["aside"], a["db"], a["db_exists"]) for a in got["aside"]] == [
         ("appdb_pre123", "appdb", True)
     ]
-    # o banco original existe: devolver ao nome é recusado; apagar funciona e é auditado
+    # the original database exists: returning it to the name is refused; dropping it works and is audited
     assert hub.post("/api/ops/backups/aside/appdb_pre123/rename-back", headers=JSON).status_code == 409
     assert hub.post("/api/ops/backups/aside/appdb_pre123/drop", headers=JSON).status_code == 200
     assert 'DROP DATABASE IF EXISTS "appdb_pre123" WITH (FORCE)' in seen
@@ -376,7 +376,7 @@ def test_restore_snapshot_maintenance_and_alert(hub: TestClient, bk: FakeDocker)
     snap = next(h for h in hist if h["kind"] == "Pré-restauração")
     assert snap["status"] == "Concluído" and snap["file"] and not ops.read()["maintenance"]
 
-    # restauração que falha: o app fica em manutenção (falhou) e a administração é avisada
+    # restore that fails: the app stays in maintenance (failed) and the administration is notified
     async def boom(db: str, sql: bytes, single: bool) -> tuple[int, bytes]:
         return 1, b"ERRO"
 
@@ -411,7 +411,7 @@ def test_restore_safety_snapshot_can_be_disabled(
 def test_inbox_reload_between_replicas_and_leader_route(hub: TestClient) -> None:
     inbox = hub.app.state.inbox  # type: ignore[attr-defined]
     path = inbox.path
-    other = InboxStore(path)  # "outra réplica" sobre o mesmo arquivo
+    other = InboxStore(path)  # "other replica" on the same file
     other.push(item_of("alert", "ativos", "Outra réplica", source="r2"))
     woke = []
     inbox.watchers.add(type("Q", (), {"empty": lambda s: True, "put_nowait": lambda s, v: woke.append(1)})())
@@ -425,7 +425,7 @@ def test_inbox_reload_between_replicas_and_leader_route(hub: TestClient) -> None
     assert info["leader"] is True and info["shared"] is False
 
 
-# ---- com Postgres: jobs duráveis e liderança ---------------------------------------------------------------------
+# ---- with Postgres: durable jobs and leadership ----
 pg = pytest.mark.skipif(not DB_URL, reason="HUB_DB_TEST_URL not set")
 
 
@@ -457,12 +457,12 @@ async def test_jobs_shared_across_replicas(states: Any) -> None:
     ja.update(job["id"], lambda j: j.update(progress=50, message="metade"))
     await ja.flush()
     assert (await jb.aget(job["id"]) or {})["progress"] == 50
-    with pytest.raises(OpsError):  # um backup/restauração por app, também entre réplicas
+    with pytest.raises(OpsError):  # one backup/restore per app, also across replicas
         await jb.claim("x")
     await jb.claim("y")
     ids = {(await Jobs(a).create("deploy", "d"))["id"] for _ in range(3)}
-    assert len(ids) == 3 and job["id"] not in ids  # ids da sequência do banco
-    # dono sem sinal de vida: o job vira "interrompido"; com sinal de vida, fica
+    assert len(ids) == 3 and job["id"] not in ids  # ids from the database sequence
+    # owner with no sign of life: the job becomes "interrupted"; with a sign of life, it stays
     await b.heartbeat({})
     await a.heartbeat({})
     assert await jb.interrupt_dead() == 0
@@ -476,7 +476,7 @@ async def test_jobs_shared_across_replicas(states: Any) -> None:
     ja.update(job["id"], lambda j: j.update(done=True, ok=True))
     ja.start()
     await asyncio.sleep(0.7)
-    assert (await jb.aget(job["id"]) or {})["ok"] is True  # o laço grava a mudança sem pedir
+    assert (await jb.aget(job["id"]) or {})["ok"] is True  # the loop writes the change without asking
     await ja.stop()
 
 
@@ -505,7 +505,7 @@ async def test_two_replicas_one_leader(states: Any, monkeypatch: pytest.MonkeyPa
         await asyncio.sleep(0.1)
     assert la.leading() != lb.leading()
     first, second = (la, lb) if la.leading() else (lb, la)
-    # a mesma tarefa "do líder" em duas réplicas: só o líder a executa
+    # the same task "of the leader" in two replicas: only the leader runs it
     ran = {"a": 0, "b": 0}
     for _ in range(5):
         for name, ld in (("a", la), ("b", lb)):
@@ -517,7 +517,7 @@ async def test_two_replicas_one_leader(states: Any, monkeypatch: pytest.MonkeyPa
     assert info["leader"] and info["holder"] == first.replica and len(info["replicas"]) == 2
     assert not (await second.info())["leader"]
     assert len(took) == 1 and any("assumiu a liderança" in m for m in msgs)
-    # o líder cai (sem soltar a lease): o outro assume depois do TTL
+    # the leader falls (without releasing the lease): the other takes over after the TTL
     assert first.lease
     for t in first.tasks:
         t.cancel()
@@ -526,7 +526,7 @@ async def test_two_replicas_one_leader(states: Any, monkeypatch: pytest.MonkeyPa
         if second.leading():
             break
         await asyncio.sleep(0.1)
-    for _ in range(30):  # o vigia (0,5 s) chama o gancho de assunção
+    for _ in range(30):  # the watchdog (0.5 s) calls the takeover hook
         if len(took) == 2:
             break
         await asyncio.sleep(0.1)

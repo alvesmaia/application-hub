@@ -1,4 +1,4 @@
-"""Aviso de versão nova (HUB_UPDATE_CHECK=1) e regras de comparação."""
+"""New version notice (HUB_UPDATE_CHECK=1) and comparison rules."""
 
 from __future__ import annotations
 
@@ -29,9 +29,9 @@ def test_check_reads_latest_release_and_ignores_bad_answers() -> None:
     asyncio.run(chk.check(_client(200, rel)))
     assert chk.notice() == {"version": "99.0.0", "url": rel["html_url"], "current": __version__}
     asyncio.run(chk.check(_client(200, {"tag_name": "v99.0.0", "html_url": "javascript:alert(1)"})))
-    assert chk.notice() is None  # link fora do GitHub não vira aviso
+    assert chk.notice() is None  # link outside GitHub does not become a notice
     asyncio.run(chk.check(_client(200, {"tag_name": f"v{__version__}", "html_url": rel["html_url"]})))
-    assert chk.notice() is None  # já está na última
+    assert chk.notice() is None  # already on the latest
 
 
 def test_health_page_shows_notice(tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> None:

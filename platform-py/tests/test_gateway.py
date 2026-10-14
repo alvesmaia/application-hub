@@ -33,13 +33,13 @@ from hub.gateway.registry import AppEntry, Registry
 KEY = b"k" * 32
 
 
-# --- identidade: vetores calculados com openssl, independentes deste código ----------------
+# --- identity: vectors computed with openssl, independent of this code ----------------
 
 
 def test_signature_golden() -> None:
     sig = sign_user(KEY, "ativos", "producao", "abc", 1700000000)
     assert sig == "v1.1700000000.e86e8a642ef0ee6998d08beff4e12db675c26c9e85c74083c5643211a314c351"
-    # a assinatura de um app não serve para outro nem para outro ambiente
+    # one app's signature is not valid for another, nor for another environment
     assert sign_user(KEY, "contratos", "producao", "abc", 1700000000) != sig
     assert sign_user(KEY, "ativos", "staging", "abc", 1700000000) != sig
 
@@ -61,12 +61,12 @@ def test_verify_user_window() -> None:
     sig = sign_user(KEY, "ativos", "producao", "abc", 1000)
     assert verify_user(KEY, "ativos", "producao", "abc", sig, now=1100)
     assert not verify_user(KEY, "ativos", "producao", "abc", sig, now=1000 + 901)
-    assert not verify_user(KEY, "ativos", "producao", "abc", sig, now=900)  # > 60 s no futuro
+    assert not verify_user(KEY, "ativos", "producao", "abc", sig, now=900)  # > 60 s in the future
     assert not verify_user(KEY, "contratos", "producao", "abc", sig, now=1100)
     assert not verify_user(KEY, "ativos", "producao", "abc", "lixo", now=1100)
 
 
-# --- funções puras -------------------------------------------------------------------------
+# --- pure functions ----
 
 
 def test_public_location() -> None:
@@ -100,7 +100,7 @@ def test_csp_app_page() -> None:
     assert "trusted-types" not in csp_with("http://h", None)
 
 
-# --- proxy HTTP (upstream ASGI em memória) -----------------------------------------------
+# --- HTTP proxy (in-memory ASGI upstream) ----
 
 
 def make_upstream() -> FastAPI:
@@ -173,11 +173,11 @@ def test_proxy_headers_and_identity(hub: TestClient) -> None:
     assert j["path"] == "/ativos/echo" and j["query"] == "x=1" and j["body_len"] == 3
     assert h["x-hub-base"] == "/apps/ativos" and h["x-hub-env"] == "producao"
     assert h["x-hub-user"] != "forjado" and h["x-hub-user-sig"].startswith("v1.")
-    assert h["x-hub-locale"] == "pt-BR"  # o idioma do usuário vai para o app (preferência ou Accept-Language)
+    assert h["x-hub-locale"] == "pt-BR"  # the user's language goes to the app (preference or Accept-Language)
     assert verify_user(KEY, "ativos", "producao", h["x-hub-user"], h["x-hub-user-sig"])
     assert h["cookie"] == "tema=1"
     assert "authorization" not in h and h.get("traceparent") != "00-x"
-    # resposta: x-hub-* e cookies do hub caem; Domain sai
+    # response: x-hub-* and the hub's cookies are dropped; Domain is removed
     assert "x-hub-secret" not in r.headers
     assert r.headers.get_list("set-cookie") == ["ok=1; Path=/"]
     csp = r.headers["content-security-policy"]
@@ -218,7 +218,7 @@ def test_location_rewrite_and_legacy_redirects(hub: TestClient) -> None:
     assert r.status_code == 301 and r.headers["location"] == "/apps/ativos/assets?q=1"
     r = hub.post("/ativos/api/x", content=b"1")
     assert r.status_code == 308 and r.headers["location"] == "/apps/ativos/api/x"
-    assert hub.get("/healthz").status_code == 200  # rotas do hub não são afetadas
+    assert hub.get("/healthz").status_code == 200  # hub routes are not affected
     assert hub.get("/nada/x").status_code == 404
 
 
@@ -251,7 +251,7 @@ def test_app_page_renders_shell() -> None:
     assert c.get("/apps/nope").status_code == 404
 
 
-# --- WebSocket (upstream real em uvicorn numa thread) ------------------------------------
+# --- WebSocket (real upstream on uvicorn in a thread) ----
 
 
 def _free_port() -> int:
@@ -293,7 +293,7 @@ def test_websocket_echo(ws_upstream: int) -> None:
     c = client_for(create_app(gateway=Gateway(reg, GwOptions(user_sig_key=KEY))))
     hdrs = {"origin": "http://testserver", "cookie": f"hub_session={SESSION}"}
     with c.websocket_connect("/apps/ativos/ws/echo", headers=hdrs) as ws:
-        assert ws.receive_text() == "user=eyJ1c2"  # x-hub-user chegou ao upstream
+        assert ws.receive_text() == "user=eyJ1c2"  # x-hub-user reached the upstream
         ws.send_text("oi")
         assert ws.receive_text() == "echo:oi"
     with (
@@ -304,7 +304,7 @@ def test_websocket_echo(ws_upstream: int) -> None:
 
 
 def test_websocket_in_hub_dev(ws_upstream: int, tmp_path: Any) -> None:
-    """`hub dev`: o usuário simulado vale também no WebSocket (antes: 1008 por falta de cookie)."""
+    """`hub dev`: the simulated user is also valid on the WebSocket (before: 1008 for lack of a cookie)."""
     import json
 
     from hub import devapp

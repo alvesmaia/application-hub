@@ -1,4 +1,4 @@
-"""Telas de Administração/Operação seguem o idioma do usuário (tr_html no render)."""
+"""Administration/Operations screens follow the user's language (tr_html on render)."""
 
 from __future__ import annotations
 

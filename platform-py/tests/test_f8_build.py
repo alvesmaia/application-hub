@@ -1,4 +1,4 @@
-"""F8: pacote com contexto de build -> imagem construída no hub (Docker simulado) -> blue/green -> rollback."""
+"""F8: package with a build context -> image built on the hub (simulated Docker) -> blue/green -> rollback."""
 
 from __future__ import annotations
 
@@ -51,7 +51,7 @@ def up(c: TestClient, data: bytes) -> Any:
 
 
 class Builder:
-    """`api.build` e `images.get(...).tag` simulados; a imagem construída passa a existir no daemon."""
+    """`api.build` and `images.get(...).tag` simulated; the built image now exists on the daemon."""
 
     def __init__(self, fd: FD, fail: bool = False) -> None:
         self.fd, self.fail, self.calls, self.tags = fd, fail, [], []
@@ -107,13 +107,13 @@ def test_build_deploy_pins_previous_and_rollback(hub: TestClient, fake: FD) -> N
     assert c["tag"] == "app-hub-app-ativos:9.1.0" and c["dockerfile"] == "Dockerfile"
     assert c["container_limits"]["memory"] == c["container_limits"]["memswap"] == 1 << 30
     assert c["rm"] and c["forcerm"]
-    # imagem nova no container; a anterior (baseline do compose) ficou fixada com nome app-hub-app-*
+    # new image in the container; the previous one (the compose baseline) was pinned with the name app-hub-app-*
     assert fake.cs["app-hub-app-ativos"].attrs["Image"] == "sha256:" + "cc" * 32
     assert any(t.startswith("app-hub-app-ativos:baseline-") for t in b.tags)
     assert any(t.startswith("app-hub-app-ativos:keep-") for t in b.tags)
     full = next(d for d in hub.get("/api/ops/deployments").json() if d["version"] == "9.1.0")
     assert "Successfully built" in full["build_log"]
-    # rollback: imagem do baseline (ainda no daemon, porque fixada) sem refazer o build
+    # rollback: baseline image (still on the daemon, because pinned) without rebuilding
     cur = next(d for d in hub.get("/api/ops/deployments").json() if d["status"] == m.IMPLANTADO)
     fake.images.get = lambda ref: SimpleNamespace(id="sha256:" + "aa" * 32, attrs={"Config": {"Env": []}})  # type: ignore[method-assign]
     rb = hub.post(f"/api/ops/deployments/{cur['id']}/rollback?wait=true", headers=JSON)
@@ -148,8 +148,8 @@ def test_engine_build_guard_and_pin_swallow(fake: FD) -> None:  # noqa: F811
 
 @pytest.mark.parametrize("ctl", [["cpuset", "cpu", "memory", "pids"], ["memory", "pids"], None])
 def test_podman_rootless_tmpfs_and_cpu(ctl: list[str] | None) -> None:
-    """Podman recusa `uid=` em tmpfs; sem o controlador `cpu` delegado (padrão RHEL 9 rootless) limite de CPU quebra
-    o build e a criação. Docker (`/libpod/info` 404) segue igual."""
+    """Podman refuses `uid=` on tmpfs; without the `cpu` controller delegated (RHEL 9 rootless default) the CPU limit breaks
+    the build and the creation. Docker (`/libpod/info` 404) keeps working the same."""
     seen: dict[str, Any] = {}
     info = SimpleNamespace(status_code=200 if ctl else 404, json=lambda: {"host": {"cgroupControllers": ctl}})
     api = SimpleNamespace(
@@ -165,4 +165,4 @@ def test_podman_rootless_tmpfs_and_cpu(ctl: list[str] | None) -> None:
     podman, cpu = ctl is not None, ctl is None or "cpu" in ctl
     assert made["Tmpfs"]["/scratch"] == ("rw,size=256m,U" if podman else "rw,size=256m,uid=10001,gid=10001")
     assert ("NanoCpus" in made) is cpu and ("cpushares" in seen["build"]) is cpu and made["Memory"] == 1
-    assert host["Tmpfs"]["/scratch"].endswith("gid=10001")  # o molde do chamador não muda
+    assert host["Tmpfs"]["/scratch"].endswith("gid=10001")  # the caller's template does not change

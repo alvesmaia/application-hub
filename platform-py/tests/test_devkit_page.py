@@ -1,4 +1,4 @@
-"""F22: índice de pacotes da CLI (público), documentos e a tela Desenvolvedores."""
+"""F22: public CLI package index, documents and the Developers screen."""
 
 import re
 from pathlib import Path
@@ -49,9 +49,9 @@ def test_docs_are_public_without_shell(hub: TestClient) -> None:
     )
     assert "http://testserver/dev/docs/agente.md" in page.text
     assert anon.get("/developers/agente").status_code == 200
-    llms = anon.get("/llms.txt")  # índice para agentes, público como as páginas
+    llms = anon.get("/llms.txt")  # index for agents, public like the pages
     assert llms.status_code == 200 and "http://testserver/dev/docs/guia-tempo-real.md" in llms.text
-    assert anon.get("/dev/llms.txt").text == llms.text  # mesmo índice sob /dev/* (liberado em proxies/Access)
+    assert anon.get("/dev/llms.txt").text == llms.text  # same index under /dev/* (allowed in proxies/Access)
     assert anon.post("/developers", follow_redirects=False).status_code != 200
     logged = hub.get("/developers").text
     assert "hub-user-menu" in logged and 'type="text/markdown" href="/dev/docs/comecar.md"' in logged
@@ -108,7 +108,7 @@ def test_developers_languages(hub: TestClient) -> None:
         and "Follow the instructions at" in en
         and "This documentation is in Portuguese" in en
     )
-    es = hub.get("/developers/cli/hub-dev", headers={"accept-language": "es"}).text  # `es` saiu: vira en
+    es = hub.get("/developers/cli/hub-dev", headers={"accept-language": "es"}).text  # `es` dropped: now en
     assert "Guides" in es and ">Copy<" in es
 
 
@@ -121,7 +121,7 @@ def test_render_md_anchors_code_and_no_html() -> None:
     hl, _ = devdocs.render_md("```python\nimport os\n```\n\n```\nraw <b>\n```\n")
     assert (
         "hl-kn" in hl and "dev-code-lang" not in hl and "<b>" not in hl and "&lt;" in hl
-    )  # sem linguagem: deduzida
+    )  # no language: inferred
 
 
 def test_bash_highlight_marks_commands_options_continuation() -> None:
@@ -144,7 +144,7 @@ def test_dist_dir_default(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_docs_rail_collapsed_by_default_and_bash_flow(hub: TestClient) -> None:
-    html = hub.get("/developers").text  # hub (admin): rail recolhido nas docs, escolha própria (`docs`)
+    html = hub.get("/developers").text  # hub (admin): rail collapsed in the docs, own choice (`docs`)
     assert 'class="rail-collapsed' in html and 'data-rail-ctx="docs"' in html
     out = devdocs.highlight("for a in x; do echo $a; done\nif hub check; then hub dev; fi\n", "bash")
     assert '<span class="hl-nf">echo</span>' in out and '<span class="hl-nf">hub</span>' in out
@@ -159,10 +159,10 @@ def test_split_docs_one_page_per_section(hub: TestClient) -> None:
     page = hub.get("/developers/contrato/2-health-e-prontidao").text
     assert (
         "<h1" in page and "Health e prontidão" in page and "Rotas, fragmentos" in page
-    )  # 3ª seção só no menu
+    )  # 3rd section only in the menu
     cli = hub.get("/developers/cli").text
-    assert 'href="/developers/cli/hub-dev"' in cli and "Hub local leve" in cli  # índice com resumo
-    assert 'href="/dev/docs/cli.md"' in cli  # texto completo numa página só
+    assert 'href="/developers/cli/hub-dev"' in cli and "Hub local leve" in cli  # index with summary
+    assert 'href="/dev/docs/cli.md"' in cli  # full text on a single page
 
 
 def test_every_code_box_and_signature_is_colored() -> None:

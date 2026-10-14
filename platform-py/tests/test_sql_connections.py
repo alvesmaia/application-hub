@@ -1,5 +1,5 @@
-"""Conexões SQL (#21): validação, guarda de somente leitura, parâmetros, broker `/_hub/sql/*` e auditoria
-sem dados. O banco é um SQLite em memória no lugar do driver; com `HUB_DB_TEST_URL`, também um Postgres real."""
+"""SQL connections (#21): validation, read-only guard, parameters, `/_hub/sql/*` broker and audit
+without data. The database is an in-memory SQLite in place of the driver; with `HUB_DB_TEST_URL`, also a real Postgres."""
 
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ def run(coro: Any) -> Any:
 
 
 class SqliteBackend(SqlBackend):
-    """Mesmas regras do SqlBackend (guarda, limites, serialização), executando num SQLite em memória."""
+    """Same rules as SqlBackend (guard, limits, serialization), run on an in-memory SQLite."""
 
     def __init__(self, cfg: SqlConfig) -> None:
         super().__init__(cfg)
@@ -144,7 +144,7 @@ def test_jsonable() -> None:
     assert jsonable(dt.timedelta(seconds=2)) == 2.0 and jsonable(object()).startswith("<")
 
 
-# ---- conexões e broker --------------------------------------------------------------------------
+# ---- connections and broker ----
 
 
 def test_sql_connection_crud_masks_password(hub: TestClient, tmp_path: Path) -> None:
@@ -217,9 +217,9 @@ def test_broker_sql_query_limits_and_audit_without_data(hub: TestClient) -> None
         == 403
     )
     assert b.post("/_hub/sql/vendas-bi/query", json={"x": 1}, headers=auth).status_code == 400
-    assert b.post("/_hub/sql/outro/query", json=q, headers=auth).status_code == 404  # vinculada a outro app
+    assert b.post("/_hub/sql/outro/query", json=q, headers=auth).status_code == 404  # bound to another app
     assert b.post("/_hub/sql/vendas-bi/query", json=q).status_code == 401
-    # conexão SQL não serve para operações de arquivo
+    # SQL connection does not serve file operations
     assert b.get("/_hub/storage/vendas-bi/list", headers=auth).status_code == 403
     audit = run(hub.app.state.admin.cfg.read())["audit"]  # type: ignore[attr-defined]
     mine = [e for e in audit if "SQL" in e["title"] or "consulta SQL" in e["title"]]
@@ -267,7 +267,7 @@ def test_query_timeout_and_driver_error() -> None:
     assert "p" not in repr(b).split("/")[-1] or "SqlBackend(" in repr(b)
 
 
-# ---- Postgres real (descartável) ----------------------------------------------------------------
+# ---- real Postgres (disposable) ----
 
 PG_URL = os.getenv("HUB_DB_TEST_URL")
 
@@ -288,7 +288,7 @@ def test_real_postgres_readonly_transaction() -> None:
             )
             steps = await b.test()
             rw = SqlBackend(dataclasses.replace(cfg, readonly=False))
-            # mesmo sem a guarda léxica, a transação READ ONLY recusa escrita
+            # even without the lexical guard, the READ ONLY transaction refuses writes
             rw.cfg = dataclasses.replace(cfg, readonly=True)
             try:
                 await rw._run("create table hub_sql_ro_test(a int)", {}, 1)
@@ -307,8 +307,8 @@ def test_real_postgres_readonly_transaction() -> None:
     assert "ReadOnly" in err.message
 
 
-# ---- Bancos reais (descartáveis): bash platform-py/scripts/db-tests.sh -------------------------------------
-# Somente leitura: nada fica (transação READ ONLY ou rollback). Leitura e escrita: a escrita é confirmada.
+# ---- Real databases (disposable): bash platform-py/scripts/db-tests.sh ----
+# Read-only: nothing persists (READ ONLY transaction or rollback). Read and write: the write is committed.
 
 MYSQL_URL = os.getenv("HUB_MYSQL_TEST_URL")  # mysql://root:senha@127.0.0.1:3306/mysql
 MSSQL_URL = os.getenv("HUB_MSSQL_TEST_URL")  # sqlserver://sa:senha@127.0.0.1:1433/master
@@ -323,7 +323,7 @@ def _cfg(kind: str, url: str) -> SqlConfig:
 
 
 def _write_modes(cfg: SqlConfig, setup: str, write: str, probe: str, cleanup: str) -> tuple[str, Any, Any]:
-    """(erro da escrita no modo leitura, linhas depois dela, linhas depois da escrita no modo leitura e escrita)."""
+    """(write error in read mode, rows after it, rows after the write in read mode and write)."""
 
     async def go() -> tuple[str, Any, Any]:
         ro, rw = SqlBackend(cfg), SqlBackend(dataclasses.replace(cfg, readonly=False))
@@ -331,7 +331,7 @@ def _write_modes(cfg: SqlConfig, setup: str, write: str, probe: str, cleanup: st
             await rw.query(cleanup)
             await rw.query(setup)
             try:
-                await ro._run(write, {}, 1)  # sem a guarda léxica: só a transação/rollback protege
+                await ro._run(write, {}, 1)  # without lexical guard, only the transaction protects
                 refused = ""
             except Exception as e:
                 refused = str(e)
@@ -410,5 +410,5 @@ def test_real_sqlserver_read_limit_and_write_modes() -> None:
         "SELECT count(*) FROM hub_sql_probe",
         "IF OBJECT_ID('hub_sql_probe') IS NOT NULL DROP TABLE hub_sql_probe",
     )
-    # SQL Server não tem transação só de leitura: no modo leitura, o rollback desfaz (use também login só leitura)
+    # SQL Server has no read-only transaction: in read mode, rollback undoes it (also use a read-only login)
     assert after_ro == [[0]] and after_rw == [[1]], (refused, after_ro, after_rw)

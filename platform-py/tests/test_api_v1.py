@@ -1,4 +1,4 @@
-"""API pública `/api/v1`: autorização, escopos, erros RFC 9457, paginação, limite de taxa e contrato."""
+"""Public API `/api/v1`: authorization, scopes, RFC 9457 errors, pagination, rate limit and contract."""
 
 from pathlib import Path
 from typing import Any
@@ -35,7 +35,7 @@ def test_table_is_consistent() -> None:
         if o.body and o.body != ops.MULTIPART:
             assert o.body in ops.sc.schemas()
         if o.target:
-            assert o.target[0] == o.method  # método interno = método público
+            assert o.target[0] == o.method  # internal method = public method
 
 
 def test_routing_matches_templates_and_reports_405() -> None:
@@ -105,25 +105,25 @@ def test_pagination_and_bad_numbers(hub: TestClient) -> None:
 def test_token_scopes_and_owner_rbac(hub: TestClient) -> None:
     ro = bearer(hub, make_token(hub, ["api:read"]))
     assert ro.get("/api/v1/apps").status_code == 200
-    # sem api:write a superfície de escrita nem aceita o token
+    # without api:write the write surface does not even accept the token
     r = ro.post("/api/v1/containers/x/restart")
     problem(r, 401, "unauthorized")
     assert r.headers["www-authenticate"].startswith("Bearer")
     assert ro.get("/api/v1/deployments").status_code == 200
     rw = bearer(hub, make_token(hub, ["api:read", "api:write"]))
     assert rw.get("/api/v1/status").status_code == 200
-    # token de CI (sem dono) não vale na API v1; token da API não vale no plano de controle interno
+    # CI token (no owner) is not valid for API v1; an API token is not valid on the internal control plane
     ci = bearer(hub, make_token(hub, ["upload", "status"]))
     assert ci.get("/api/v1/apps").status_code == 401
-    # ...mas vale nas ações dele (`hub deploy`/CI): status das implantações; nada além disso
+    # ...but it is valid for its own actions (`hub deploy`/CI): deployment status; nothing beyond that
     assert ci.get("/api/ops/deployments").status_code == 200
     assert ci.get("/api/ops/replicas").status_code == 401
     assert rw.get("/api/ops/deployments").status_code == 401
-    # segredos nunca são revelados pela API (a operação não existe mais)
+    # secrets are never revealed by the API (the operation no longer exists)
     assert rw.post("/api/v1/variables/FOO/reveal").status_code in (404, 405)
-    # token só vale nas superfícies do seu escopo (mcp não abre a API)
+    # a token is only valid on the surfaces within its scope (mcp does not open the API)
     assert bearer(hub, make_token(hub, ["mcp"])).get("/api/v1/apps").status_code == 401
-    # o RBAC do dono vale: usuário só com "Acessar aplicações" não lê operações
+    # the owner's RBAC applies: a user with only "Access applications" does not read operations
     colab = add_user(hub, "colab", ["Colaborador"])
     tok = make_token(colab, ["api:read", "api:write"])
     b2 = bearer(hub, tok)
@@ -137,8 +137,8 @@ def test_app_scoped_token_limits_apps_everywhere(hub: TestClient) -> None:
     sc = bearer(hub, make_token(hub, ["api:read", "api:write"], ["ativos"]))
     assert [a["id"] for a in sc.get("/api/v1/apps").json()["items"]] == ["ativos"]
     problem(sc.post("/api/v1/apps/servicos/backups"), 403, "forbidden")
-    problem(sc.post("/api/v1/deployments/99/approve"), 404, "not-found")  # id inexistente: nem vaza se existe
-    problem(sc.post("/api/v1/audit/verify"), 403, "forbidden")  # plataforma, sem app: negada a token restrito
+    problem(sc.post("/api/v1/deployments/99/approve"), 404, "not-found")  # unknown id: no leak
+    problem(sc.post("/api/v1/audit/verify"), 403, "forbidden")  # no app: denied to restricted token
 
 
 def test_writes_are_audited_and_rate_limited(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -156,13 +156,13 @@ def test_writes_are_audited_and_rate_limited(tmp_path: Path, monkeypatch: pytest
 def test_disabled_by_configuration(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     off = api_hub(tmp_path, monkeypatch, toml={"api": {"enabled": False}})
     problem(off.get("/api/v1/apps"), 404, "not-found")
-    assert off.get("/admin/env").status_code == 200  # a UI segue funcionando
+    assert off.get("/admin/env").status_code == 200  # the UI keeps working
     docs_off = api_hub(tmp_path, monkeypatch, env={"HUB_API_DOCS_ENABLED": "false"})
     problem(docs_off.get("/api/v1/openapi.json"), 404, "not-found")
     assert docs_off.get("/api/docs").status_code == 404
 
 
-# ---- contrato: toda resposta valida contra o esquema declarado ------------------------------------
+# ---- contract: every response validates against the declared schema ----
 
 DOC = ops.openapi()
 
@@ -198,7 +198,7 @@ def test_read_operations_answer_with_their_declared_schema(hub: TestClient, op: 
     assert not errors, (op.id, errors)
 
 
-# ---- tokens com dono nas demais superfícies -------------------------------------------------------
+# ---- tokens with an owner on the other surfaces ----
 
 
 def test_app_api_tokens_through_the_gateway(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -213,16 +213,16 @@ def test_app_api_tokens_through_the_gateway(tmp_path: Path, monkeypatch: pytest.
     hub = api_hub(tmp_path, monkeypatch, upstream=up)
     tok = make_token(hub, ["app-api"], ["ativos"])
     c = bearer(hub, tok)
-    r = c.post("/apps/ativos/api/v1/items")  # sem CSRF: não há navegador
+    r = c.post("/apps/ativos/api/v1/items")  # no CSRF: there is no browser
     assert r.status_code == 200 and r.json()["auth"] == "", "o token do hub nunca é repassado ao app"
-    assert c.get("/apps/servicos/api/v1/items").status_code == 403  # fora do escopo de apps do token
-    assert c.get("/apps/ativos").status_code == 401  # fora de /apps/{app}/api o token não vale
+    assert c.get("/apps/servicos/api/v1/items").status_code == 403  # outside the token's app scope
+    assert c.get("/apps/ativos").status_code == 401  # outside /apps/{app}/api the token is not valid
     assert c.get("/api/v1/apps").status_code == 401
     assert (
         hub.post("/_frag/ativos/_hub/mcp", json={}).status_code == 404
-    )  # o MCP interno do app nunca é alcançável
+    )  # the app's internal MCP is never reachable
     assert hub.post("/apps/ativos/api/../_hub/mcp", json={}).status_code // 100 == 4
-    # revogado: recusa na hora, nas três superfícies
+    # revoked: refused at once, on all three surfaces
     both = make_token(hub, ["mcp", "app-api"], ["ativos"], name="c")
     cc = bearer(hub, both)
     assert cc.get("/apps/ativos/api/v1/items").status_code == 200
@@ -245,7 +245,7 @@ def test_owner_changes_reach_the_token(hub: TestClient) -> None:
     colab = add_user(hub, "colab", ["Colaborador"])
     c = bearer(hub, make_token(colab, ["mcp", "api:read"]))
     assert rpc(c, "tools/list").status_code == 200
-    # dono que perde as funções perde as ferramentas junto
+    # an owner who loses the roles loses the tools with them
     assert hub.post("/api/admin/roles", json={"name": "Sem acesso", "level": "Padrão"}).status_code in (
         200,
         201,
@@ -254,7 +254,7 @@ def test_owner_changes_reach_the_token(hub: TestClient) -> None:
     assert hub.put(f"/api/admin/users/{uid}", json={"roles": ["Sem acesso"]}).status_code == 200
     names = {t["name"] for t in rpc(c, "tools/list").json()["result"]["tools"]}
     assert "apps_list" in names and "deployments_list" not in names and "tasks_list" not in names
-    # dono desativado: o token para de valer
+    # owner deactivated: the token stops working
     assert hub.put(f"/api/admin/users/{uid}", json={"active": False}).status_code == 200
     assert rpc(c, "tools/list").status_code == 401
 

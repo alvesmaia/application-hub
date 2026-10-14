@@ -1,4 +1,4 @@
-"""`python -m hub.admin`: administrador inicial com senha temporária e desativação das contas demo."""
+"""`python -m hub.admin`: initial administrator with a temporary password and deactivation of the demo accounts."""
 
 from __future__ import annotations
 

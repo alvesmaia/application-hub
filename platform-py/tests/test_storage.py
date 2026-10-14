@@ -1,4 +1,4 @@
-"""Armazenamento do broker: caminhos confinados, URL pré-assinada (vetores compartilhados com a versão anterior do hub), S3 e Graph com transporte simulado."""
+"""Broker storage: confined paths, pre-signed URL (vectors shared with the previous hub version), S3 and Graph with simulated transport."""
 
 from __future__ import annotations
 
@@ -187,7 +187,7 @@ async def test_s3_unreachable_is_unavailable() -> None:
     assert e.value.kind == "unavailable" and e.value.status == 503
 
 
-# ---- Graph: mapeamento de erros do token (o fluxo completo roda contra o simulador: test_graphsim.py) ----
+# ---- Graph: token error mapping (the full flow runs against the simulator: test_graphsim.py) ----
 
 
 def graph(handler: Any) -> GraphClient:

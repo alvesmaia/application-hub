@@ -1,4 +1,4 @@
-"""hub_update.py: a imagem em execução ganha tag antes do build (no containerd, sem tag ela some do ID)."""
+"""hub_update.py: the running image gets a tag before the build (in containerd, without a tag it vanishes from the ID)."""
 
 import importlib.util
 import subprocess
@@ -23,7 +23,7 @@ def test_build_tags_running_image_before_building(monkeypatch, tmp_path):
             tagged.add(args[3])
         if args[:3] == ("docker", "image", "inspect"):
             return subprocess.CompletedProcess(args, 0, "sha256:new\n", "")
-        if "build" in args and not tagged:  # build sem tag: a imagem antiga deixa de existir pelo ID
+        if "build" in args and not tagged:  # build without a tag: the old image stops existing by ID
             raise AssertionError("build antes de proteger a imagem atual")
         return subprocess.CompletedProcess(args, 0, "", "")
 

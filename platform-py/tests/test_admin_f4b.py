@@ -1,4 +1,4 @@
-"""F4b: `/admin` (Configurações), menu por permissão, Tokens de API com a seção OAuth."""
+"""F4b: `/admin` (Settings), menu by permission, API Tokens with the OAuth section."""
 
 from __future__ import annotations
 

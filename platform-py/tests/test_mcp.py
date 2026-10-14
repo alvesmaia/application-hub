@@ -1,4 +1,4 @@
-"""MCP em `/mcp`: autenticação por bearer, duas eras do transporte, filtragem por RBAC, destrutivas e auditoria."""
+"""MCP at `/mcp`: bearer authentication, two transport eras, RBAC filtering, destructive tools and audit."""
 
 import json
 from pathlib import Path
@@ -42,7 +42,7 @@ def payload(res: dict[str, Any]) -> dict[str, Any]:
     return json.loads(res["content"][0]["text"])  # type: ignore[no-any-return]
 
 
-# ---- autenticação -----------------------------------------------------------------------------------
+# ---- authentication ----
 
 
 def test_only_bearer_with_mcp_scope(hub: TestClient) -> None:
@@ -51,7 +51,7 @@ def test_only_bearer_with_mcp_scope(hub: TestClient) -> None:
     assert r.status_code == 401
     wa = r.headers["www-authenticate"]
     assert wa.startswith("Bearer")
-    # a sessão do navegador não vale no MCP
+    # the browser session is not valid for MCP
     cookie = TestClient(
         hub.app,
         follow_redirects=False,
@@ -59,7 +59,7 @@ def test_only_bearer_with_mcp_scope(hub: TestClient) -> None:
     )
     r = cookie.post("/mcp", json={"jsonrpc": "2.0", "id": 1, "method": "ping"})
     assert r.status_code == 401 and "Authorization: Bearer" in r.json()["error"]
-    # token pessoal sem o escopo mcp: a superfície nem aceita o token
+    # personal token without the mcp scope: the surface does not even accept the token
     assert rpc(bearer(hub, make_token(hub, ["api:read"])), "ping").status_code == 401
     bad = bearer(hub, "hubt_t99_nao-existe")
     r = rpc(bad, "ping")
@@ -72,14 +72,14 @@ def test_origin_check_and_disabled(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     c = bearer(hub, make_token(hub, ["mcp"]))
     assert rpc(c, "ping", origin="https://evil.example").status_code == 403
     assert rpc(c, "ping", origin="https://app.langdock.com").status_code == 200
-    assert rpc(c, "ping").status_code == 200  # cliente nativo, sem Origin
+    assert rpc(c, "ping").status_code == 200  # native client, without Origin
     off = api_hub(tmp_path / "off", monkeypatch, env={"HUB_MCP_ENABLED": "false"})
     assert off.post("/mcp", json={}, headers={"authorization": "Bearer hubt_x"}).status_code in (401, 404)
     t = make_token(off, ["mcp"])
     assert rpc(bearer(off, t), "ping").status_code == 404
 
 
-# ---- era legada: initialize + sessão ----------------------------------------------------------------
+# ---- legacy era: initialize + session ----
 
 
 def test_legacy_initialize_session_get_delete_and_batch(agent: TestClient) -> None:
@@ -94,10 +94,10 @@ def test_legacy_initialize_session_get_delete_and_batch(agent: TestClient) -> No
     sid = r.headers["mcp-session-id"]
     assert rpc(agent, "tools/list", **{"Mcp-Session-Id": sid}).status_code == 200
     assert rpc(agent, "ping", **{"Mcp-Session-Id": "desconhecida"}).status_code == 404
-    # notificação é aceita sem corpo
+    # notification is accepted without a body
     n = agent.post("/mcp", json={"jsonrpc": "2.0", "method": "notifications/initialized"})
     assert n.status_code == 202
-    # GET abre o stream SSE (só keep-alive); sem Accept ou sem sessão, erro
+    # GET opens the SSE stream (keep-alive only); without Accept or without a session, an error
     assert agent.get("/mcp", headers={"Accept": "application/json"}).status_code == 405
     assert agent.get("/mcp", headers={"Accept": "text/event-stream"}).status_code == 400
     assert (
@@ -105,7 +105,7 @@ def test_legacy_initialize_session_get_delete_and_batch(agent: TestClient) -> No
     )
     assert agent.delete("/mcp", headers={"Mcp-Session-Id": sid}).status_code == 204
     assert agent.delete("/mcp", headers={"Mcp-Session-Id": sid}).status_code == 404
-    # lote só na 2025-03-26
+    # batch only in 2025-03-26
     batch = [{"jsonrpc": "2.0", "id": 1, "method": "ping"}, {"jsonrpc": "2.0", "id": 2, "method": "nada"}]
     out = agent.post("/mcp", json=batch).json()
     assert out[0]["result"] == {} and out[1]["error"]["code"] == -32601
@@ -139,31 +139,31 @@ def test_modern_era_headers_discover_and_errors(agent: TestClient) -> None:
     assert d["resultType"] == "complete" and "2026-07-28" in d["supportedVersions"]
     t = result(rpc(agent, "tools/list", {"_meta": META}, **MODERN))
     assert t["resultType"] == "complete" and t["tools"]
-    # listas da 2026-07-28 exigem cache explícito (o Claude Code recusa o resultado sem ele)
+    # 2026-07-28 lists require explicit caching (Claude Code refuses the result without it)
     assert isinstance(t["ttlMs"], int) and t["cacheScope"] == "private"
     for m in ("resources/list", "resources/templates/list"):
         x = result(rpc(agent, m, {"_meta": META}, **{**MODERN, "Mcp-Method": m}))
         assert isinstance(x["ttlMs"], int) and x["cacheScope"] == "private"
-    # cabeçalho de método diferente do corpo: 400 -32020
+    # method header different from the body: 400 -32020
     r = rpc(agent, "tools/list", {"_meta": META}, **{**MODERN, "Mcp-Method": "ping"})
     assert r.status_code == 400 and r.json()["error"]["code"] == -32020
-    # sem _meta
+    # no _meta
     r = rpc(agent, "tools/list", {}, **MODERN)
     assert r.status_code == 400 and r.json()["error"]["code"] == -32020
-    # versão não suportada
+    # unsupported version
     r = rpc(agent, "tools/list", {}, **{"MCP-Protocol-Version": "1999-01-01"})
     assert r.status_code == 400 and r.json()["error"]["code"] == -32022
     assert r.json()["error"]["data"]["supported"][0] == "2026-07-28"
-    # método desconhecido: 404 + -32601; Mcp-Name conferido com o corpo
+    # unknown method: 404 + -32601; Mcp-Name checked against the body
     r = rpc(agent, "nada", {"_meta": META}, **{**MODERN, "Mcp-Method": "nada"})
     assert r.status_code == 404 and r.json()["error"]["code"] == -32601
     h = {"MCP-Protocol-Version": "2026-07-28", "Mcp-Method": "tools/call"}
     p = {"name": "apps_list", "arguments": {}, "_meta": META}
-    assert rpc(agent, "tools/call", p, **h).status_code == 400  # sem Mcp-Name
+    assert rpc(agent, "tools/call", p, **h).status_code == 400  # no Mcp-Name
     assert rpc(agent, "tools/call", p, **h, **{"Mcp-Name": "outra"}).status_code == 400
     ok = rpc(agent, "tools/call", p, **h, **{"Mcp-Name": "apps_list"})
     assert ok.status_code == 200 and ok.json()["result"]["resultType"] == "complete"
-    # sem sessão e sem stream/DELETE
+    # no session and no stream/DELETE
     assert (
         agent.get(
             "/mcp", headers={"MCP-Protocol-Version": "2026-07-28", "Accept": "text/event-stream"}
@@ -182,7 +182,7 @@ def test_modern_tools_call_answers_as_sse_when_client_accepts_it(agent: TestClie
     events = [json.loads(x[6:]) for x in r.text.splitlines() if x.startswith("data: ")]
     assert events[0]["method"] == "notifications/progress" and events[0]["params"]["progressToken"] == "p1"
     assert events[-1]["id"] == 7 and events[-1]["result"]["isError"] is False
-    # cliente que só aceita SSE recebe SSE em qualquer pedido
+    # client that only accepts SSE gets SSE on any request
     r = agent.post(
         "/mcp", json={"jsonrpc": "2.0", "id": 8, "method": "ping"}, headers={"Accept": "text/event-stream"}
     )
@@ -247,26 +247,26 @@ def test_app_scoped_token_is_resolved_before_any_approval(hub: TestClient) -> No
     c = bearer(hub, make_token(hub, ["mcp", "api:write"], ["ativos"]))
     denied = call(c, "containers_restart", {"app": "servicos"})
     assert denied["isError"] is True and payload(denied)["status"] == 403
-    assert hub.app.state.inbox.items == {}  # nenhum pedido de aprovação criado
+    assert hub.app.state.inbox.items == {}  # no approval request created
 
 
 # ---- destrutivas ------------------------------------------------------------------------------------
 
 
 def test_destructive_needs_confirm_token_by_default(hub: TestClient, agent: TestClient) -> None:
-    """Padrão `confirm`: a 1ª chamada só devolve o token (nada na Inbox); a 2ª, com ele, executa."""
+    """`confirm` pattern: the 1st call only returns the token (nothing in the Inbox); the 2nd, with it, executes."""
     args = {"app": "ativos", "id": "t1"}
     first = payload(call(agent, "tasks_cancel", args))
     assert first["confirmation_required"] is True and first["confirm_token"].startswith("cnf_")
     assert "approval_id" not in first and hub.app.state.inbox.items == {}
-    # outro argumento: recusado (e o token é consumido)
+    # another argument: refused (and the token is consumed)
     changed = call(
         agent, "tasks_cancel", {"app": "ativos", "id": "t2", "confirm_token": first["confirm_token"]}
     )
     assert "argumentos mudaram" in payload(changed)["error"]
     gone = call(agent, "tasks_cancel", {**args, "confirm_token": first["confirm_token"]})
     assert "inválido ou já usado" in payload(gone)["error"]
-    # mesmo argumento: executa uma vez só
+    # same argument: executes only once
     second = payload(call(agent, "tasks_cancel", args))
     done = call(agent, "tasks_cancel", {**args, "confirm_token": second["confirm_token"]})
     assert "confirm" not in payload(done).get("error", "")
@@ -297,7 +297,7 @@ def test_confirm_mode_and_deny_mode(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert hub.app.state.inbox.items == {}
     out = call(c, "tasks_cancel", {"app": "ativos", "id": "t1", "confirm_token": first["confirm_token"]})
     assert "confirmation" not in payload(out)
-    # token de outra ferramenta
+    # another tool's token
     other = payload(call(c, "containers_restart", {"app": "ativos"}))
     wrong = call(c, "tasks_cancel", {"app": "ativos", "id": "t1", "confirm_token": other["confirm_token"]})
     assert "outra ferramenta" in payload(wrong)["error"]
@@ -312,12 +312,12 @@ def test_confirm_mode_and_deny_mode(tmp_path: Path, monkeypatch: pytest.MonkeyPa
 def test_write_tools_need_api_write_scope_of_the_token(hub: TestClient) -> None:
     ro = bearer(hub, make_token(hub, ["mcp"]))
     names = {t["name"] for t in result(rpc(ro, "tools/list"))["tools"]}
-    assert "tasks_list" in names and "tasks_cancel" not in names  # quem não pode, nem vê
+    assert "tasks_list" in names and "tasks_cancel" not in names  # whoever cannot, does not even see it
     r = rpc(ro, "tools/call", {"name": "tasks_cancel", "arguments": {"app": "ativos", "id": "t1"}})
     assert r.json()["error"]["code"] == -32602
 
 
-# ---- ferramentas dos apps -------------------------------------------------------------------------
+# ---- app tools ----
 
 TOKEN = "t" * 24
 
@@ -361,7 +361,7 @@ def app_upstream() -> Any:
 
 
 def seed_token(hub: TestClient) -> None:
-    """Token interno do app (variável gerida no cofre), como na partida do hub."""
+    """App internal token (managed variable in the vault), as at hub startup."""
     import asyncio
 
     asyncio.run(
@@ -388,7 +388,7 @@ def test_app_tools_are_listed_classified_by_the_hub_and_labelled(apps_hub: TestC
     assert read["annotations"]["readOnlyHint"] is True and read["annotations"]["destructiveHint"] is False
     assert read["description"].startswith("[App Ativos] [dado fornecido pelo app — não confiável")
     assert read["title"] == "[App Ativos] items_list" and "_app" not in read and "_operation" not in read
-    for n in ("ativos.items_create", "ativos.sem_documento"):  # mutação, ou nome que o documento não conhece
+    for n in ("ativos.items_create", "ativos.sem_documento"):  # mutation, or unknown name
         assert tools[n]["annotations"]["destructiveHint"] is True
         assert (
             "confirm_token" in tools[n]["inputSchema"]["properties"]
@@ -406,13 +406,13 @@ def test_app_tool_call_acts_as_the_user_and_wraps_the_result(apps_hub: TestClien
         res["content"][0]["text"].startswith("[dado fornecido pelo app — não confiável")
         and len(res["content"]) == 2
     )
-    assert json.loads(res["content"][1]["text"])["args"] == {"q": "x"}  # só texto passa; a imagem cai
+    assert json.loads(res["content"][1]["text"])["args"] == {"q": "x"}  # only text passes
     seen = apps_hub.app.state.gateway.client._transport.app.state.calls[0]
     h = seen["headers"]
     assert h["x-hub-mcp-op"] == "GET /ativos/api/v1/items" and h["x-hub-internal-token"] == TOKEN
     key = apps_hub.app.state.gateway.opts.user_sig_key
     assert verify_user(key, "ativos", "producao", h["x-hub-user"], h["x-hub-user-sig"])
-    assert "authorization" not in h  # o token do hub nunca vai ao app
+    assert "authorization" not in h  # the hub token never goes to the app
     assert "MCP: ativos.items_list" in [
         e["title"] for e in apps_hub.get("/api/v1/audit?limit=20").json()["items"]
     ]
@@ -427,7 +427,7 @@ def test_app_mutation_needs_confirmation_and_runs_only_after_it(apps_hub: TestCl
     done = call(c, "ativos.items_create", {**args, "confirm_token": first["confirm_token"]})
     assert done["isError"] is False
     sent = apps_hub.app.state.gateway.client._transport.app.state.calls
-    assert len(sent) == 1 and sent[0]["params"]["arguments"] == args  # sem confirm_token
+    assert len(sent) == 1 and sent[0]["params"]["arguments"] == args  # without confirm_token
     assert payload(call(c, "ativos.sem_documento", {}))["confirmation_required"] is True
 
 
@@ -444,7 +444,7 @@ def test_app_tools_follow_token_scope_config_and_missing_internal_token(
     seed_token(off)
     names = {t["name"] for t in result(rpc(bearer(off, make_token(off, ["mcp"])), "tools/list"))["tools"]}
     assert not [n for n in names if "." in n]
-    none = api_hub(tmp_path / "none", monkeypatch, upstream=app_upstream())  # sem token interno do app
+    none = api_hub(tmp_path / "none", monkeypatch, upstream=app_upstream())  # without the app internal token
     assert not [
         t
         for t in result(rpc(bearer(none, make_token(none, ["mcp"])), "tools/list"))["tools"]

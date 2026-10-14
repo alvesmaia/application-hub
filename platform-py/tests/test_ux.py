@@ -98,7 +98,7 @@ def test_prefs_validation(client: TestClient) -> None:
 
 def test_app_visit_feeds_recents(client: TestClient) -> None:
     client.get("/apps/ativos/assets")
-    client.get("/apps/ativos/assets")  # repetida: um item só
+    client.get("/apps/ativos/assets")  # repeated: a single item
     client.get("/apps/ativos")
     prefs = client.get("/api/me/prefs").json()
     assert [r["path"] for r in prefs["recents"]] == ["/apps/ativos", "/apps/ativos/assets"]
@@ -168,10 +168,10 @@ def test_catalog_helpers_and_texts() -> None:
 
 
 def test_two_replicas_sharing_ux_json_do_not_lose_writes(tmp_path: Path) -> None:
-    """Duas réplicas no mesmo volume: cada escrita relê o arquivo sob trava; a leitura vê o que a outra gravou."""
+    """Two replicas on the same volume: each write rereads the file under lock; the read sees what the other one wrote."""
     a, b = UxStore(tmp_path / "ux.json"), UxStore(tmp_path / "ux.json")
     a.update("u1", theme="dark")
-    b.update("u2", theme="light")  # b ainda tinha a versão vazia em memória
+    b.update("u2", theme="light")  # b still had the empty version in memory
     b.toggle_favorite("u1", "ativos", True)
     assert UxStore(tmp_path / "ux.json").prefs("u1").theme == "dark"
     assert UxStore(tmp_path / "ux.json").prefs("u1").favorites == ["ativos"]

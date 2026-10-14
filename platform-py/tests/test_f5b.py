@@ -1,5 +1,5 @@
-"""F5b: guarda `app-hub-*` do Docker, blue/green (aprovar, prontidão, rollback, falha), staging, supervisão,
-provisionamento de banco e clone para staging. Docker simulado; um teste real fica atrás de `DOCKER_AVAILABLE=1`."""
+"""F5b: `app-hub-*` Docker guard, blue/green (approve, readiness, rollback, failure), staging, supervision,
+database provisioning and clone for staging. Simulated Docker; a real test sits behind `DOCKER_AVAILABLE=1`."""
 
 from __future__ import annotations
 
@@ -185,7 +185,7 @@ def upload(c: TestClient, env: str = "producao", version: str = "9.0.0") -> http
                   headers={"x-hub-request": "1"}))  # fmt: skip
 
 
-# ---- guarda: só app-hub-* -------------------------------------------------------------------------------------
+# ---- guard: only app-hub-* -------------------------------------------------------------------------------------
 def test_guard_refuses_everything_outside_hubpy(hub: TestClient, fake: FD) -> None:
     eng = hub.app.state.ops_engine  # type: ignore[attr-defined]
     for bad in (
@@ -233,7 +233,7 @@ def test_guard_lists_only_owned(hub: TestClient, fake: FD) -> None:
     assert g.containers.get("app-hub-app-ativos").name == "app-hub-app-ativos"
 
 
-# ---- peças puras -----------------------------------------------------------------------------------------------
+# ---- pure pieces ----
 def test_ready_staging_and_host_helpers() -> None:
     assert ro.ready_ok(200, {}) and not ro.ready_ok(503, {}) and not ro.ready_ok(200, {"x-hub-ready": "0"})
     assert ro.ready_path("ativos") == "/ativos/_hub/ready"
@@ -274,7 +274,7 @@ def test_approve_runs_bluegreen_then_rollback(hub: TestClient, fake: FD) -> None
     r = hub.post(f"/api/ops/deployments/{dep['id']}/approve?wait=true", headers=JSON)
     assert r.status_code == 200 and r.json()["status"] == m.IMPLANTADO, r.text
     kinds = [c[0] for c in fake.calls]
-    # candidato criado e pronto ANTES de o antigo sair; só então remoção e renomeação
+    # candidate created and ready BEFORE the old one leaves; only then removal and renaming
     assert kinds.index("create") < kinds.index("remove") < kinds.index("rename")
     create = next(c for c in fake.calls if c[0] == "create")
     assert create[1] == "app-hub-app-ativos__new" and create[2] == IMG_NEW
@@ -293,7 +293,7 @@ def test_approve_runs_bluegreen_then_rollback(hub: TestClient, fake: FD) -> None
     deps = hub.get("/api/ops/deployments").json()
     assert [d["status"] for d in deps if d["env"] == "Produção"] == [m.IMPLANTADO, m.SUBSTITUIDO]
     assert deps[-1]["origin"] == "Compose" and deps[-1]["image"].startswith("hub-ativos@sha256:")
-    # rollback: nova implantação com a imagem anterior (a original do compose)
+    # rollback: new deployment with the previous image (the original from compose)
     fake.images.get = lambda ref: SimpleNamespace(id="sha256:" + "aa" * 32, attrs={"Config": {"Env": []}})  # type: ignore[method-assign]
     cur = next(d for d in deps if d["status"] == m.IMPLANTADO)
     rb = hub.post(f"/api/ops/deployments/{cur['id']}/rollback?wait=true", headers=JSON)
@@ -311,11 +311,11 @@ def test_candidate_without_ready_route_is_refused_and_active_stays(hub: TestClie
     r = hub.post(f"/api/ops/deployments/{dep['id']}/approve?wait=true", headers=JSON)
     assert r.status_code == 422 and r.json()["status"] == m.FALHOU and "prontidão" in r.json()["note"]
     assert "app-hub-app-ativos__new" not in fake.cs  # candidato removido
-    assert fake.cs["app-hub-app-ativos"].attrs["Image"] == base_attrs()["Image"]  # o ativo ficou
+    assert fake.cs["app-hub-app-ativos"].attrs["Image"] == base_attrs()["Image"]  # the active one stayed
     assert ("remove", "app-hub-app-ativos") not in fake.calls
     reg = hub.app.state.gateway.registry  # type: ignore[attr-defined]
-    assert reg.get("ativos").upstream == "http://upstream"  # tráfego nunca trocou
-    READY["code"] = 503  # nunca fica pronto: estouro do prazo
+    assert reg.get("ativos").upstream == "http://upstream"  # traffic never switched
+    READY["code"] = 503  # never becomes ready: deadline overrun
     dep2 = upload(hub, version="9.0.1").json()["result"]["deployment"]
     r = hub.post(f"/api/ops/deployments/{dep2['id']}/approve?wait=true", headers=JSON)
     assert r.status_code == 422 and "não ficou pronto" in r.json()["note"]
@@ -366,9 +366,9 @@ def test_staging_deploys_alongside_and_needs_own_db(hub: TestClient, fake: FD) -
     env = stg.attrs["Config"]["Env"]
     assert "HUB_DB_URL=postgres://s@x/dbs" in env and not any(
         "postgres://prod" in e for e in env
-    )  # nunca o banco de produção
+    )  # never the production database
     assert "scr__staging:/scratch" in stg.attrs["HostConfig"]["Binds"]
-    assert fake.cs["app-hub-app-ativos"].attrs["Image"] == base_attrs()["Image"]  # produção intacta
+    assert fake.cs["app-hub-app-ativos"].attrs["Image"] == base_attrs()["Image"]  # production intact
     reg = hub.app.state.gateway.registry  # type: ignore[attr-defined]
     assert reg.staging["ativos"] == "http://app-hub-app-ativos__staging:8080"
     rows = hub.get("/api/ops/runtime").json()["apps"]
@@ -378,7 +378,7 @@ def test_staging_deploys_alongside_and_needs_own_db(hub: TestClient, fake: FD) -
     }
     page = hub.get("/admin/runtime").text
     assert "app-hub-app-ativos__staging" in page and "hub-env?to=staging" in page
-    # F19: o staging some (removido por fora) -> a supervisão recria a partir da última implantação de staging
+    # F19: staging disappears (removed externally) -> supervision recreates it from the last staging deployment
     hub.app.state.leader.leading = lambda: True  # type: ignore[attr-defined]
     del fake.cs["app-hub-app-ativos__staging"]
     out = pcall(hub, hub.app.state.ops_supervisor.tick)  # type: ignore[attr-defined]
@@ -389,7 +389,7 @@ def test_staging_mode_cookie_routes_gateway_to_staging(hub: TestClient, fake: FD
     seen: list[tuple[str, str]] = []
     reg = hub.app.state.gateway.registry  # type: ignore[attr-defined]
     reg.staging["ativos"] = "http://stg:8080"
-    stg = {"cookie": f"hub_session={SESSION}; hub_env=staging"}  # o cliente de teste fixa o cabeçalho cookie
+    stg = {"cookie": f"hub_session={SESSION}; hub_env=staging"}  # the test client sets the cookie header
     gw = hub.app.state.gateway  # type: ignore[attr-defined]
     orig = gw.client._transport
 
@@ -420,7 +420,7 @@ def test_staging_mode_cookie_routes_gateway_to_staging(hub: TestClient, fake: FD
         gw.client._transport = orig
 
 
-# ---- supervisão -------------------------------------------------------------------------------------------------
+# ---- supervision ----
 def test_supervisor_revives_crashed_but_not_stopped(hub: TestClient, fake: FD) -> None:
     sup = hub.app.state.ops_supervisor  # type: ignore[attr-defined]
     hub.app.state.leader.leading = lambda: True  # type: ignore[attr-defined]
@@ -428,7 +428,7 @@ def test_supervisor_revives_crashed_but_not_stopped(hub: TestClient, fake: FD) -
     out = pcall(hub, sup.tick)
     assert out and ("start", "app-hub-app-ativos") in fake.calls and sup.status("ativos")["restarts"] == 1
     assert "Container religado" in [e["title"] for e in hub.get("/api/admin/audit?limit=20").json()]
-    # parada pelo operador: não religa
+    # stopped by the operator: does not restart
     fake.calls.clear()
     assert hub.post("/api/ops/runtime/ativos/stop", headers=JSON).status_code == 200
     fake.cs["app-hub-app-ativos"].status = "exited"
@@ -436,7 +436,7 @@ def test_supervisor_revives_crashed_but_not_stopped(hub: TestClient, fake: FD) -
     assert ("start", "app-hub-app-ativos") not in fake.calls
     assert hub.post("/api/ops/runtime/ativos/start", headers=JSON).status_code == 200
     assert "ativos|producao" not in sup.stopped()
-    # recuo: logo em seguida não repete; no limite vira laço de quedas (alerta) e para
+    # back-off: right after, it does not repeat; at the limit it becomes a crash loop (alert) and stops
     sup.state["ativos|producao"].update(next=0, times=[__import__("time").time()] * 5)
     fake.cs["app-hub-app-ativos"].status = "exited"
     fake.calls.clear()
@@ -456,7 +456,7 @@ def test_supervisor_feeds_metrics_logs_and_never_touches_foreign(hub: TestClient
 
 # ---- provisionar / rotacionar banco ----------------------------------------------------------------------------
 class PsqlFake:
-    """Responde ao `psql` do container do Postgres: estado do papel/banco e registro dos comandos."""
+    """Answers the Postgres container's `psql`: role/database state and a record of the commands."""
 
     def __init__(self, role: str | None = None, owner: str | None = None, dbc: str = "") -> None:
         self.role, self.owner, self.dbc, self.sql, self.works = role, owner, dbc, [], True
@@ -491,13 +491,13 @@ def test_provision_database_creates_marked_role_and_db(
     )
     assert "@app-hub-app-db:5432/app_ativos" in v["value"]
     listing = hub.get("/api/admin/env").text
-    assert v["value"].split(":")[2].split("@")[0] not in listing  # senha nunca na API
+    assert v["value"].split(":")[2].split("@")[0] not in listing  # password never in the API
     assert "provisionamento: banco app_ativos" in json.dumps(hub.get("/api/admin/logs?minutes=60").json())
-    # staging: banco/papel/variável próprios
+    # staging: its own database/role/variable
     r = hub.post("/api/ops/provision/ativos/database?env=staging", headers=JSON)
     assert r.json()["provisioned"]["database"] == "app_ativos_staging"
     assert r.json()["provisioned"]["variable"] == "DATABASE_URL_ATIVOS_STAGING"
-    # papel/banco alheios (sem a marca do hub) são recusados
+    # foreign role/database (without the hub mark) is refused
     b._psql = PsqlFake(role="outra-coisa").psql
     assert hub.post("/api/ops/provision/coletor/database", headers=JSON).status_code == 503
     b._psql = PsqlFake(role="", owner="postgres", dbc="").psql
@@ -515,9 +515,7 @@ def test_provision_is_idempotent_and_rotate_changes_password(hub: TestClient, fa
     )["value"]
     ps.role, ps.owner, ps.dbc = "hub-managed:app=ativos", "app_ativos", "hub-managed:app=ativos"
     ps.sql.clear()
-    r = hub.post(
-        "/api/ops/provision/ativos/database", headers=JSON
-    )  # já funciona (psql do fake responde rc 0)
+    r = hub.post("/api/ops/provision/ativos/database", headers=JSON)  # already works (fake psql rc 0)
     assert r.json()["provisioned"]["changed"] is False and not ps.sql
     r = hub.post("/api/ops/rotate/ativos/database", headers=JSON)
     assert (
@@ -530,7 +528,7 @@ def test_provision_is_idempotent_and_rotate_changes_password(hub: TestClient, fa
     )["value"]
     assert second != first and "ALTER ROLE" in "\n".join(ps.sql)
     assert "Senha do banco rotacionada" in [e["title"] for e in hub.get("/api/admin/audit?limit=20").json()]
-    # sem provisionar: orientação em vez de erro obscuro
+    # without provisioning: guidance instead of an obscure error
     assert hub.post("/api/ops/rotate/coletor/database", headers=JSON).status_code == 409
 
 
@@ -593,7 +591,7 @@ def test_clone_backup_into_staging_database_only(hub: TestClient, fake: FD) -> N
     j = clone()
     assert (
         not j["ok"] and "Staging sem banco próprio" in j["message"]
-    )  # sem banco de staging provisionado: recusa
+    )  # no staging database provisioned: refused
     envs["staging"] = {"HUB_DB_URL": "postgres://s:p@db:5432/app_ativos_staging"}
     j = clone()
     assert j["ok"], j
@@ -603,7 +601,7 @@ def test_clone_backup_into_staging_database_only(hub: TestClient, fake: FD) -> N
     ).read_bytes() == b"hi"  # type: ignore[attr-defined]
     envs["staging"] = {
         "HUB_DB_URL": "postgres://u:p@db:5432/appdb"
-    }  # staging apontando para o banco de produção
+    }  # staging pointing at the production database
     assert "não pode ser o de produção" in clone()["message"]
     assert len(aside) == 1
 
@@ -624,7 +622,7 @@ def test_live_guard_blocks_foreign_containers() -> None:
 
 
 def test_restore_gives_objects_back_to_the_app_role(hub: TestClient, fake: FD) -> None:
-    """Restauração de banco provisionado (dono = papel do app): o dump entra como administrador e é devolvido ao dono."""
+    """Restore of a provisioned database (owner = app role): the dump comes in as administrator and is handed back to the owner."""
     b = hub.app.state.ops_backups  # type: ignore[attr-defined]
     stmts: list[str] = []
     loaded: list[bytes] = []
@@ -648,13 +646,13 @@ def test_restore_gives_objects_back_to_the_app_role(hub: TestClient, fake: FD) -
         stmts.extend(s)
         return "hub:aside=true\nhub:owner=hub\n"
 
-    b._psql = psql_admin  # dono = administrador: nada a devolver
+    b._psql = psql_admin  # owner = administrator: nothing to hand back
     asyncio.run(b._restore_db_aside("hub", b"x"))
     assert not any("OWNER TO" in q for q in stmts)
 
 
 def test_rollback_goes_to_previous_deployment_not_to_compose_baseline(hub: TestClient, fake: FD) -> None:
-    """F7a: a versão do compose é a MAIS antiga (id menor que a 1ª implantação); o rollback da 2ª volta à 1ª."""
+    """F7a: the compose version is the OLDEST (id lower than the 1st deployment); the rollback of the 2nd returns to the 1st."""
     ids: list[int] = []
     for v in ("9.0.0", "9.1.0"):
         dep = upload(hub, version=v).json()["result"]["deployment"]

@@ -92,7 +92,7 @@ async def test_outbox_validation_and_log_subscribers(tmp_path):
 
 
 def test_chain_writes_signed_checkpoints_every_100_events(tmp_path):
-    """F7a: a exportação de auditoria traz checkpoints assinados (`"t":"c"`)."""
+    """F7a: the audit export carries signed checkpoints (`"t":"c"`)."""
     (tmp_path / "vault").mkdir()
     (tmp_path / "master.key").write_text("00" * 32, encoding="ascii")
     vault = Vault.open(tmp_path / "vault", tmp_path / "master.key")
@@ -104,5 +104,5 @@ def test_chain_writes_signed_checkpoints_every_100_events(tmp_path):
     cps = [x for x in chain._lines() if x["t"] == "c"]
     assert [c["seq"] for c in cps] == [100, 200]
     assert chain.verify().ok and chain.report()["checkpoints"] == 2
-    assert AuditChain(tmp_path / "audit", vault).verify().ok  # reabrir não duplica nem quebra
+    assert AuditChain(tmp_path / "audit", vault).verify().ok  # reopening neither duplicates nor breaks it
     assert '"t":"c"' in chain.export()

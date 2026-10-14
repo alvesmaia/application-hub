@@ -1,4 +1,4 @@
-"""F19: lacunas de produção (rotação de senhas, build, poda, staging, trava de arquivos, auditoria, i18n)."""
+"""F19: production gaps (password rotation, build, pruning, staging, file locking, audit, i18n)."""
 
 from __future__ import annotations
 
@@ -87,7 +87,7 @@ def test_build_limits_and_prune_pins() -> None:
 
 
 def test_image_repos_follow_container_prefix(monkeypatch: pytest.MonkeyPatch) -> None:
-    """F17: instância isolada (`HUB_CONTAINER_PREFIX`) nunca etiqueta/poda imagens dos apps de produção."""
+    """F17: an isolated instance (`HUB_CONTAINER_PREFIX`) never labels or prunes images of production apps."""
     from types import SimpleNamespace
 
     from hub.ops import pipeline as pl
@@ -138,7 +138,7 @@ def test_audit_external_head_anchor(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     ch.append(ev)
     ch.append(ev | {"id": 2})
     assert (ch.external_head() or {}).get("seq") == 2 and ch.verify().ok
-    # rollback do diretório de dados (cadeia volta a 1 evento): a âncora externa denuncia
+    # rollback of the data directory (chain goes back to 1 event): the external anchor flags it
     lines = (tmp_path / "audit" / "chain.jsonl").read_text(encoding="utf-8").splitlines()
     (tmp_path / "audit" / "chain.jsonl").write_text(lines[0] + "\n", encoding="utf-8")
     import json
@@ -151,7 +151,7 @@ def test_audit_external_head_anchor(tmp_path: Path, monkeypatch: pytest.MonkeyPa
 
 
 def test_audit_head_webhook(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """HUB_AUDIT_HEAD_URL: cada cabeça assinada vai por POST (Bearer opcional), em segundo plano; falha vira aviso."""
+    """HUB_AUDIT_HEAD_URL: each signed head goes by POST (optional Bearer), in the background; a failure becomes a warning."""
     import json
 
     import httpx
@@ -202,5 +202,5 @@ def test_inbox_writes_merge_across_replicas(tmp_path: Path) -> None:
     a, b = InboxStore(tmp_path / "inbox.json"), InboxStore(tmp_path / "inbox.json")
     item = {"kind": "notification", "app": "ativos", "title": "x", "body": "", "source": "", "targets": {}}
     a.push(dict(item))
-    b.push(dict(item))  # b relê sob a trava antes de gravar: não apaga o item de a
+    b.push(dict(item))  # b rereads under the lock before writing: does not delete a's item
     assert len(InboxStore(tmp_path / "inbox.json").items) == 2

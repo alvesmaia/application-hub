@@ -1,4 +1,4 @@
-"""Hub de teste da API pública, do MCP e do OAuth: apps com manifesto, sessões por função e tokens por dono."""
+"""Test hub for the public API, MCP and OAuth: apps with manifest, per-role sessions and per-owner tokens."""
 
 from __future__ import annotations
 
@@ -54,7 +54,7 @@ def api_hub(
     handler: Any = None,
     upstream: Any = None,
 ) -> TestClient:
-    """Cliente com a sessão do Administrador (cabeçalhos de mesma origem)."""
+    """Client with the Administrator session (same-origin headers)."""
     monkeypatch.setenv("HUB_DATA_DIR", str(tmp_path))
     for k in _ENV:
         monkeypatch.delenv(k, raising=False)
@@ -79,7 +79,7 @@ def make_token(c: TestClient, actions: list[str], apps: list[str] | None = None,
 
 
 def bearer(c: TestClient, token: str, **headers: str) -> TestClient:
-    """Cliente só com `Authorization: Bearer` (sem cookie)."""
+    """Client with only `Authorization: Bearer` (no cookie)."""
     b = TestClient(c.app, follow_redirects=False)
     b.headers["authorization"] = f"Bearer {token}"
     b.headers.update(headers)

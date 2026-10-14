@@ -1,4 +1,4 @@
-"""`scripts/install.sh`: as opções com valor são lidas (regressão: `shiftASKED=1` sem `;`)."""
+"""`scripts/install.sh`: options with a value are read (regression: `shiftASKED=1` without `;`)."""
 
 import shutil
 import subprocess

@@ -1,4 +1,4 @@
-"""Administração (F3a): Usuários, Funções e permissões, Variáveis de ambiente; RBAC, auditoria e segredos."""
+"""Administration (F3a): Users, Roles and permissions, Environment variables; RBAC, audit and secrets."""
 
 from __future__ import annotations
 
@@ -81,7 +81,7 @@ def test_pure_helpers() -> None:
     assert "password_hash" not in v and v["local_password"] is True and next(iter(v)) == "id"
 
 
-# ---- usuários -----------------------------------------------------------------------------------
+# ---- users ----
 
 
 def test_users_crud_audit_and_no_hash_leak(hub: TestClient) -> None:
@@ -102,7 +102,7 @@ def test_users_crud_audit_and_no_hash_leak(hub: TestClient) -> None:
     listed = hub.get("/api/admin/users").json()
     assert {u["email"] for u in listed} == {"admin@demo.local", "ana@demo.local"}
     assert "argon2" not in json.dumps(listed)
-    # duplicado, função desconhecida, senha fraca, corpo inválido
+    # duplicate, unknown role, weak password, invalid body
     base = {"email": "ana@demo.local", "name": "Ana", "roles": ["Colaborador"], "password": PASSWORD}
     assert hub.post("/api/admin/users", json=base).status_code == 400
     assert hub.post(
@@ -129,7 +129,7 @@ def test_users_crud_audit_and_no_hash_leak(hub: TestClient) -> None:
     assert hub.put(f"/api/admin/users/{uid}", json={"active": False}).json()["active"] is False
     assert hub.put(f"/api/admin/users/{uid}", json={"active": True}).json()["active"] is True
     assert hub.put("/api/admin/users/nao-existe", json={"name": "x"}).status_code == 404
-    # redefinir senha: provisória, troca obrigatória; nunca a própria
+    # reset password: temporary, change required; never one's own
     r = hub.post(f"/api/admin/users/{uid}/reset-password", json={"password": "outra-senha-456"})
     assert r.status_code == 200 and r.json()["must_change_password"] is True
     assert hub.post(f"/api/admin/users/{uid}/reset-password", json={"password": "fraca"}).status_code == 400
@@ -138,7 +138,7 @@ def test_users_crud_audit_and_no_hash_leak(hub: TestClient) -> None:
         hub.post(f"/api/admin/users/{me}/reset-password", json={"password": "outra-senha-456"}).status_code
         == 403
     )
-    # excluir: só desativado, nunca a própria conta
+    # delete: only deactivated, never one's own account
     assert dele(hub, f"/api/admin/users/{uid}").status_code == 400
     assert dele(hub, f"/api/admin/users/{me}").status_code == 403
     hub.put(f"/api/admin/users/{uid}", json={"active": False})
@@ -147,7 +147,7 @@ def test_users_crud_audit_and_no_hash_leak(hub: TestClient) -> None:
     titles = audit_titles(hub)
     for t in ("Usuário criado", "Usuário alterado", "Senha redefinida", "Usuário excluído"):
         assert t in titles
-    assert hub.app.state.admin.chain.verify().ok  # toda escrita entrou na cadeia de auditoria
+    assert hub.app.state.admin.chain.verify().ok  # every write entered the audit chain
     details = json.dumps(asyncio.run(hub.app.state.admin.cfg.read())["audit"])  # type: ignore[attr-defined]
     assert PASSWORD not in details and "outra-senha-456" not in details
 
@@ -159,10 +159,10 @@ def test_users_self_protection_last_admin_and_unlock(hub: TestClient) -> None:
     assert hub.put(f"/api/admin/users/{me}", json={"roles": ["Colaborador"]}).status_code == 403
     assert hub.put(f"/api/admin/users/{me}", json={"name": "Outro Nome"}).status_code == 200
     other_admin = add_user(hub, "chefe", ["Administrador"])
-    # o outro administrador pode desativar o primeiro; ninguém desativa o último ativo
+    # the other administrator can deactivate the first; nobody deactivates the last active one
     assert other_admin.put(f"/api/admin/users/{me}", json={"active": False}).status_code == 200
     assert other_admin.put("/api/admin/users/chefe", json={"active": False}).status_code == 403
-    # bloqueio por tentativas: o desbloqueio zera contagem e atraso
+    # lockout after attempts: unlocking resets the count and the delay
     hub.app.state.login_failures[f"acct:1.2.3.4|{users[0]['email']}"] = [
         int(__import__("time").time() * 1000)
     ] * 5  # type: ignore[attr-defined]
@@ -183,7 +183,7 @@ def test_users_rbac_denials_and_privilege_escalation(hub: TestClient) -> None:
         assert c.get("/admin/roles").status_code == 403
     assert colab.get("/api/admin/env").status_code == 403 and colab.get("/admin/env").status_code == 403
     assert colab.get("/admin/connections").status_code == 403
-    # função com "Gerenciar usuários": gerencia usuários comuns, mas não escala privilégios
+    # role with "Manage users": manages regular users but does not escalate privileges
     assert (
         hub.post(
             "/api/admin/roles", json={"name": "RH", "description": "x", "level": "Alto", "members": 0}
@@ -217,16 +217,16 @@ def test_users_rbac_denials_and_privilege_escalation(hub: TestClient) -> None:
         ).status_code
         == 403
     )
-    # quem só gerencia usuários vê as funções mas não as altera (senão daria a si mesmo qualquer acesso)
+    # whoever only manages users sees the roles but does not change them (otherwise they would grant themselves any access)
     assert rh.get("/api/admin/roles").status_code == 200
     assert rh.post("/api/admin/roles", json={"name": "Y", "level": "Alto"}).status_code == 403
     assert rh.put("/api/admin/roles/RH/permissions/2", json={"granted": True}).status_code == 403
     assert "Só o Administrador" in dele(rh, "/api/admin/roles/RH").json()["error"]
-    # token de máquina sem sessão não chega às telas de administração
+    # machine token without a session does not reach the administration screens
     assert hub.get("/api/admin/users", headers={"authorization": "Bearer hubt_invalido"}).status_code == 401
 
 
-# ---- funções ------------------------------------------------------------------------------------
+# ---- roles ----
 
 
 def test_roles_crud_permissions_apps_and_live_effect(hub: TestClient) -> None:
@@ -251,7 +251,7 @@ def test_roles_crud_permissions_apps_and_live_effect(hub: TestClient) -> None:
         == "Alto"
     )
     assert hub.put("/api/admin/roles/Inexistente", json={"level": "Alto"}).status_code == 404
-    # a permissão vale na hora para quem já tem a função
+    # the permission applies immediately to whoever already has the role
     aud = add_user(hub, "aud", ["Auditor"])
     assert aud.get("/admin/audit").status_code == 403
     assert (
@@ -262,14 +262,14 @@ def test_roles_crud_permissions_apps_and_live_effect(hub: TestClient) -> None:
     assert hub.put("/api/admin/roles/Auditor/permissions/9", json={"granted": True}).status_code == 400
     assert hub.put("/api/admin/roles/Auditor/permissions/x", json={"granted": True}).status_code == 400
     assert hub.put("/api/admin/roles/Administrador/permissions/1", json={"granted": False}).status_code == 400
-    # aplicações permitidas
+    # allowed apps
     assert hub.put("/api/admin/roles/Auditor/apps", json={"apps": ["ativos", "ativos"]}).json()["apps"] == [
         "ativos"
     ]
     assert hub.put("/api/admin/roles/Auditor/apps", json={"apps": ["nao-existe"]}).status_code == 400
     assert hub.put("/api/admin/roles/Auditor/apps", json={"apps": None}).json().get("apps") is None
     assert hub.put("/api/admin/roles/Administrador/apps", json={"apps": ["ativos"]}).status_code == 400
-    # Administrador não se exclui; as demais sim
+    # Administrator cannot be deleted; the others can
     assert dele(hub, "/api/admin/roles/Administrador").status_code == 400
     assert dele(hub, "/api/admin/roles/Auditor").status_code == 204
     assert dele(hub, "/api/admin/roles/Auditor").status_code == 404
@@ -301,7 +301,7 @@ def test_roles_page_markup_editable_and_readonly(hub: TestClient) -> None:
     assert 'data-role-perm="0"' in ro and "disabled" in ro
 
 
-# ---- variáveis de ambiente ------------------------------------------------------------------------
+# ---- environment variables ----
 
 
 def test_env_seed_masking_and_page(hub: TestClient) -> None:
@@ -316,7 +316,7 @@ def test_env_seed_masking_and_page(hub: TestClient) -> None:
     ] is False
     html = hub.get("/admin/env").text
     assert "sk_live" not in html and "••••••••3f9a" in html
-    assert "data-env-reveal" not in html and "env-icon-placeholder" not in html  # segredo nunca é revelado
+    assert "data-env-reveal" not in html and "env-icon-placeholder" not in html  # secret is never revealed
     only = hub.get("/admin/env?app=servicos").text
     assert "NOTIFICATIONS_WEBHOOK_URL" in only and "FEATURE_FLAG_NEW_DASHBOARD" not in only
     assert 'data-env-app="servicos"' in only and 'data-env-app="ativos"' not in only
@@ -355,7 +355,7 @@ def test_env_crud_validation_audit_and_pending_restart(hub: TestClient) -> None:
         },
     ):
         assert hub.post("/api/admin/env", json=bad).status_code == 400, bad
-    # conflito de nome no container para o mesmo app × ambiente
+    # name conflict in the container for the same app × environment
     clash = {
         "name": "OUTRA",
         "value": "x",
@@ -364,7 +364,7 @@ def test_env_crud_validation_audit_and_pending_restart(hub: TestClient) -> None:
         "inject_as": "MINHA_VAR",
     }
     assert "já entra como MINHA_VAR" in hub.post("/api/admin/env", json=clash).json()["error"]
-    # editar sem valor mantém o atual (o formulário não recebe segredos)
+    # editing without a value keeps the current one (the form does not receive secrets)
     r = hub.put(
         "/api/admin/env/MINHA_VAR",
         json={
@@ -379,7 +379,7 @@ def test_env_crud_validation_audit_and_pending_restart(hub: TestClient) -> None:
         403,
         404,
         405,
-    )  # não existe mais
+    )  # no longer exists
     pend = asyncio.run(hub.app.state.admin.cfg.pending_restart())  # type: ignore[attr-defined]
     assert "MINHA_VAR" in pend["ativos"]["vars"] and "MINHA_VAR" in pend["coletor"]["vars"]
     assert "Reinício pendente" in hub.get("/admin/env").text
@@ -407,7 +407,7 @@ def test_env_secrets_are_sealed_on_disk_and_never_logged(
     )
     raw = (tmp_path / "admin.json").read_text(encoding="utf-8")
     assert SECRET not in raw and "senha-do-banco" not in raw and "sk_live_7f3ac82e9b3f9a" not in raw
-    assert "https://api.platform.internal" in raw  # as públicas ficam legíveis
+    assert "https://api.platform.internal" in raw  # public ones remain readable
     chain = (tmp_path / "audit" / "chain.jsonl").read_text(encoding="utf-8")
     assert SECRET not in chain and "senha-do-banco" not in chain
     assert SECRET not in caplog.text and "senha-do-banco" not in caplog.text
@@ -416,8 +416,8 @@ def test_env_secrets_are_sealed_on_disk_and_never_logged(
 
 
 def test_env_rbac_and_token_scope(hub: TestClient) -> None:
-    lead = add_user(hub, "lead", ["Tech Lead"])  # variáveis + configurações
-    po = add_user(hub, "po", ["Product Owner"])  # sem variáveis nem configurações
+    lead = add_user(hub, "lead", ["Tech Lead"])  # variables + settings
+    po = add_user(hub, "po", ["Product Owner"])  # no variables or settings
     assert po.get("/api/admin/env").status_code == 403 and po.get("/admin/env").status_code == 403
     assert lead.get("/api/admin/env").status_code == 200 and lead.get("/admin/env").status_code == 200
     assert (
@@ -426,7 +426,7 @@ def test_env_rbac_and_token_scope(hub: TestClient) -> None:
     )
     assert lead.post("/api/admin/env/AUTH_CLIENT_ID/reveal", json={}).status_code in (403, 404, 405)
     assert hub.post("/api/admin/roles", json={"name": "Leitor Config", "level": "Padrão"}).status_code == 201
-    hub.put("/api/admin/roles/Leitor Config/permissions/2", json={"granted": True})  # só editar_configuracoes
+    hub.put("/api/admin/roles/Leitor Config/permissions/2", json={"granted": True})  # editar_configuracoes
     cfg = add_user(hub, "cfg", ["Leitor Config"])
     assert cfg.get("/api/admin/env").status_code == 200  # leitura mascarada
     assert cfg.post("/api/admin/env", json={"name": "X", "value": "1", "kind": "publica"}).status_code == 403
@@ -453,11 +453,11 @@ def test_managed_variables_are_read_only_and_internal_tokens_live_in_the_vault(
     assert (
         var["managed"] is True and var["inject_as"] == "HUB_INTERNAL_TOKEN" and token not in json.dumps(var)
     )
-    assert token not in (tmp_path / "admin.json").read_text(encoding="utf-8")  # cifrado no cofre
-    # a busca federada e a Inbox usam o token do cofre (e não o ambiente do hub)
+    assert token not in (tmp_path / "admin.json").read_text(encoding="utf-8")  # encrypted in the vault
+    # federated search and the Inbox use the vault token (not the hub environment)
     monkeypatch.setenv("HUB_INTERNAL_TOKEN_ATIVOS", "valor-do-ambiente-que-nao-vale")
     assert srch.internal_token("ativos") == token
-    # somente leitura aqui; rotacionar é a ação auditada
+    # read-only here; rotating is the audited action
     ro = hub.put(
         "/api/admin/env/HUB_INTERNAL_TOKEN_ATIVOS",
         json={"value": "novo-valor-qualquer", "kind": "secreta", "bindings": var["bindings"]},
@@ -470,14 +470,14 @@ def test_managed_variables_are_read_only_and_internal_tokens_live_in_the_vault(
     with pytest.raises(Exception, match="sem token interno"):
         asyncio.run(cfg.rotate_internal_token("plataforma", "nao-existe"))
     assert "gerida" in hub.get("/admin/env").text
-    # "Rotacionar token" do card do app (POST /api/ops/rotate): troca o token e deixa o reinício pendente
+    # "Rotate token" on the app card (POST /api/ops/rotate): replaces the token and leaves the restart pending
     before = store.tokens["coletor"]
     r = hub.post("/api/ops/rotate/coletor/token", json={})
     assert (
         r.json() == {"variable": "HUB_INTERNAL_TOKEN_COLETOR", "restart_pending": True}
         and store.tokens["coletor"] != before
     )
-    assert hub.post("/api/ops/rotate/coletor/database", json={}).status_code == 409  # sem banco provisionado
+    assert hub.post("/api/ops/rotate/coletor/database", json={}).status_code == 409  # no database provisioned
     assert hub.post("/api/ops/rotate/nao-existe/token", json={}).status_code == 404
     assert hub.post("/api/ops/rotate/coletor/outro", json={}).status_code == 404
     assert (
@@ -499,7 +499,7 @@ def test_bootstrap_import_only_creates_missing_without_marking_restart(hub: Test
         },
         {"name": "LOG_LEVEL", "kind": "publica", "value": "debug", "bindings": []},
     ]
-    assert asyncio.run(cfg.import_bootstrap("plataforma", items)) == 1  # LOG_LEVEL já existe
+    assert asyncio.run(cfg.import_bootstrap("plataforma", items)) == 1  # LOG_LEVEL already exists
     assert asyncio.run(cfg.import_bootstrap("plataforma", items)) == 0
     assert asyncio.run(cfg.pending_restart()) == {}
     page = hub.get("/admin/env").text
@@ -521,7 +521,7 @@ def test_users_page_markup(hub: TestClient) -> None:
     assert 'data-user-new=""' in html and "/assets/users.js" in html and "2 usuários" in html
     assert html.count("data-user-id=") == 2 and "hub-row-menu-list" in html and "hub-cards-only" in html
     assert "argon2" not in html and "password_hash" not in html
-    # a própria conta nunca oferece "Desativar"
+    # one's own account never offers "Deactivate"
     row = html.split('data-user-id="u-test"')[1].split("</tr>")[0]
     assert "data-user-toggle" not in row and "Redefinir senha" in row
     assert "data-user-toggle" in html.split('data-user-id="bia"')[1]
@@ -530,8 +530,8 @@ def test_users_page_markup(hub: TestClient) -> None:
 
 
 def test_bootstrap_ignores_bindings_of_apps_outside_catalog(hub: TestClient) -> None:
-    """Instalação sem os apps de exemplo: a carga inicial cita apps que não existem — descarta o vínculo e segue
-    (antes o hub não subia: AdminError «Aplicação desconhecida»)."""
+    """Installation without the example apps: the initial load refers to apps that do not exist - discards the link and proceeds
+    (before, the hub would not start: AdminError «Aplicação desconhecida»)."""
     cfg = hub.app.state.admin.cfg  # type: ignore[attr-defined]
     items = [
         {"name": "DB_FANTASMA", "kind": "connection_string", "inject_as": "HUB_DB_URL",
@@ -540,7 +540,7 @@ def test_bootstrap_ignores_bindings_of_apps_outside_catalog(hub: TestClient) -> 
          "value": "postgres://u:p@h/db2",
          "bindings": [{"app": "nao-instalado", "env": "producao"}, {"app": "ativos", "env": "staging"}]},
     ]  # fmt: skip
-    assert asyncio.run(cfg.import_bootstrap("plataforma", items)) == 1  # só a mista entra
+    assert asyncio.run(cfg.import_bootstrap("plataforma", items)) == 1  # only the mixed one gets in
     env = asyncio.run(cfg.read())["env"]
     nomes = {e["name"]: e for e in env}
     assert "DB_FANTASMA" not in nomes

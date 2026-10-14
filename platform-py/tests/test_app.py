@@ -76,7 +76,7 @@ def test_shell_renders(client: TestClient) -> None:
 
 
 def test_pwa_manifest_start_shortcuts_and_offline(client: TestClient) -> None:
-    """F7a: `?start=` (só `/` ou app registrado), atalhos dos apps e `/offline` público."""
+    """F7a: `?start=` (only `/` or a registered app), app shortcuts and public `/offline`."""
     ids = [e.id for e in client.app.state.gateway.registry.entries()]  # type: ignore[attr-defined]
     app_id = ids[0]
     m = client.get(f"/manifest.webmanifest?start=/apps/{app_id}").json()
@@ -92,7 +92,7 @@ def test_pwa_manifest_start_shortcuts_and_offline(client: TestClient) -> None:
 
 
 def test_assets_cache_policy_and_revalidation(client: TestClient) -> None:
-    """F7a: assets revalidam (ETag → 304) em vez de `no-store`; fontes e vendor ficam em cache."""
+    """F7a: assets revalidate (ETag -> 304) instead of `no-store`; fonts and vendor files stay cached."""
     r = client.get("/assets/hub.css")
     assert r.status_code == 200 and r.headers["cache-control"] == "no-cache" and r.headers.get("etag")
     assert r.headers["cdn-cache-control"] == "no-store"
@@ -102,7 +102,7 @@ def test_assets_cache_policy_and_revalidation(client: TestClient) -> None:
 
 
 def test_credential_screens_use_noopener_allow_popups(client: TestClient) -> None:
-    """F7a: telas de credencial (login) abrem em grupo de navegação próprio; as demais ficam em same-origin."""
-    anon = TestClient(client.app)  # sem sessão: /login não redireciona
+    """F7a: credential screens (login) open in their own navigation group; the others stay same-origin."""
+    anon = TestClient(client.app)  # no session: /login does not redirect
     assert anon.get("/login").headers["cross-origin-opener-policy"] == "noopener-allow-popups"
     assert client.get("/healthz").headers["cross-origin-opener-policy"] == "same-origin"

@@ -1,7 +1,7 @@
-"""Cenário: cliente MCP (Copilot CLI, Claude Code…) entra pelo navegador com login único do Entra ID.
+"""Scenario: MCP client (Copilot CLI, Claude Code...) signs in through the browser with single sign-on via Entra ID.
 
-401 no /mcp → registro dinâmico → /oauth/authorize sem sessão → /login → Entra (falso, formato v2) → volta ao
-authorize → consentimento → código + PKCE → token do hub → /mcp. O token do Entra nunca chega ao cliente.
+401 on /mcp -> dynamic registration -> /oauth/authorize without a session -> /login -> Entra (fake, v2 format) -> back to
+authorize -> consent -> code + PKCE -> hub token -> /mcp. The Entra token never reaches the client.
 """
 
 from pathlib import Path
@@ -33,11 +33,11 @@ def test_mcp_login_via_entra_sso(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     monkeypatch.setattr(entra, "TRANSPORT", httpx.ASGITransport(app=fake.app))
     fake_entra.OVERRIDES.clear()
 
-    # 1. cliente sem token: 401 aponta a descoberta
+    # 1. client without a token: 401 points to discovery
     r = rpc(machine(hub), "tools/list")
     assert r.status_code == 401 and "resource_metadata" in r.headers["www-authenticate"]
 
-    # 2. registro dinâmico e abertura do navegador sem sessão
+    # 2. dynamic registration and opening the browser without a session
     cid = register(hub)["client_id"]
     verifier, challenge = pkce()
     browser = TestClient(hub.app, follow_redirects=False)
@@ -49,7 +49,7 @@ def test_mcp_login_via_entra_sso(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     assert nxt.startswith("/oauth/authorize?")
     assert "data-sso-entra" in browser.get(r.headers["location"]).text
 
-    # 3. "Entrar com Microsoft": Entra pede só openid/profile/email e devolve ao authorize
+    # 3. "Sign in with Microsoft": Entra asks only for openid/profile/email and returns to authorize
     r = browser.get("/auth/entra/login", params={"next": nxt})
     to_entra = r.headers["location"]
     assert to_entra.startswith(f"{AUTH}/{fake_entra.TENANT}/oauth2/v2.0/authorize?")
@@ -58,7 +58,7 @@ def test_mcp_login_via_entra_sso(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     r = browser.get(back.headers["location"].removeprefix(ISS))
     assert r.status_code == 303 and r.headers["location"] == nxt
 
-    # 4. consentimento como o usuário do Entra e troca do código (PKCE)
+    # 4. consent as the Entra user and code exchange (PKCE)
     page = browser.get(nxt)
     assert page.status_code == 200 and 'name="consent"' in page.text
     nonce = page.text.split('name="consent" value="', 1)[1].split('"', 1)[0]
@@ -68,9 +68,9 @@ def test_mcp_login_via_entra_sso(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     tok = exchange(hub, cid, code, verifier)
     assert tok.status_code == 200, tok.text
     body = tok.json()
-    assert body["token_type"].lower() == "bearer" and "id_token" not in body  # nada do Entra vaza ao cliente
+    assert body["token_type"].lower() == "bearer" and "id_token" not in body  # nothing from Entra leaks
 
-    # 5. o token do hub abre o /mcp
+    # 5. the hub token opens /mcp
     r = rpc(bearer(hub, body["access_token"]), "tools/list")
     assert r.status_code == 200 and r.json()["result"]["tools"]
     fake_entra.OVERRIDES.clear()

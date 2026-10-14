@@ -1,4 +1,4 @@
-"""F3c: implantações (pipeline, scripts), containers (Docker simulado), tarefas e backups; RBAC e auditoria das escritas."""
+"""F3c: deployments (pipeline, scripts), containers (simulated Docker), tasks and backups; RBAC and audit of writes."""
 
 from __future__ import annotations
 
@@ -78,7 +78,7 @@ def hub(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]
     monkeypatch.delenv("HUB_SCRIPTS_ALLOW_SELF_APPROVAL", raising=False)
     with make_hub(
         tmp_path, monkeypatch, upstream
-    ) as c:  # portal único: tarefas de fundo sobrevivem entre requisições
+    ) as c:  # single portal: background tasks survive between requests
         yield c
 
 
@@ -91,7 +91,7 @@ def audit_titles(c: TestClient) -> list[str]:
     return [e["title"] for e in c.get("/api/admin/audit?limit=100").json()]
 
 
-# ---- fakes do Docker ---------------------------------------------------------------------------------
+# ---- Docker fakes ----
 class FakeContainer:
     def __init__(self, cl: FakeDocker, name: str, status: str = "running") -> None:
         self.cl, self.name, self.status = cl, name, status
@@ -162,7 +162,7 @@ def docker(hub: TestClient) -> FakeDocker:
     return fake
 
 
-# ---- RBAC, páginas e API --------------------------------------------------------------------------------
+# ---- RBAC, pages and API ----
 def test_pages_render_and_rbac(hub: TestClient, docker: FakeDocker) -> None:
     for p, title in (
         ("deploys", "Implantações"),
@@ -180,7 +180,7 @@ def test_pages_render_and_rbac(hub: TestClient, docker: FakeDocker) -> None:
                         ("post", "/api/ops/runtime/ativos/restart"), ("put", "/api/ops/runtime/ativos/limits")):  # fmt: skip
         assert getattr(colab, method)(url, headers=JSON).status_code == 403, url
     assert hub.get("/api/ops/deployments").headers["cache-control"] == "no-store"
-    assert hub.post("/api/ops/backups/ativos/run", content=b"x").status_code == 415  # só application/json
+    assert hub.post("/api/ops/backups/ativos/run", content=b"x").status_code == 415  # only application/json
 
 
 def test_upload_pipeline_and_audit(hub: TestClient) -> None:
@@ -203,8 +203,8 @@ def test_upload_pipeline_and_audit(hub: TestClient) -> None:
     assert "novoapp" in page and 'data-ops-approve="' in page
     assert (
         page.count("data-detail-row=") == 1 and "data-ops-ver" in page
-    )  # uma linha por app + seletor de versões
-    # staging é implantado na hora; o app "novoapp" não está no registro: a implantação falha com motivo claro
+    )  # one row per app + version selector
+    # staging is deployed right away; the app "novoapp" is not in the registry: the deployment fails with a clear reason
     st = upload(hub, package(), "staging").json()
     assert not st["ok"] and st["result"]["deployment"]["env"] == "Staging"
     assert st["result"]["deployment"]["status"] == m.FALHOU and "não encontrada" in st["message"]
@@ -253,9 +253,9 @@ def test_scripts_approval_flow(hub: TestClient, monkeypatch: pytest.MonkeyPatch)
     assert dep["scripts"][0]["sha384"].startswith("sha384-")
     assert "REVISE" in upload(hub, package(scripts=True)).json()["steps"][4]["detail"]
     assert "Revisar: o app traz JavaScript próprio" in hub.get("/admin/deploys").text
-    # aprovar a implantação antes da revisão de segurança: recusado (400)
+    # approving the deployment before the security review: refused (400)
     assert hub.post(f"/api/ops/deployments/{dep['id']}/approve", headers=JSON).status_code == 400
-    # quem enviou não aprova o próprio JavaScript
+    # whoever submitted does not approve their own JavaScript
     r = hub.post(f"/api/ops/deployments/{dep['id']}/scripts/approve", headers=JSON)
     assert r.status_code == 400 and "outra pessoa" in r.json()["error"]
     assert "Aprovação de JavaScript próprio recusada" in audit_titles(hub)
@@ -266,8 +266,8 @@ def test_scripts_approval_flow(hub: TestClient, monkeypatch: pytest.MonkeyPatch)
     assert "JavaScript próprio aprovado (revisão de segurança)" in audit_titles(hub)
     assert (
         other.post(f"/api/ops/deployments/{dep['id']}/scripts/approve", headers=JSON).status_code == 400
-    )  # nada pendente
-    # autoaprovação só com a configuração explícita
+    )  # nothing pending
+    # self-approval only with the explicit configuration
     d2 = upload(hub, package(scripts=True, files={"ui/assets/x.js": b"console.log(2)"})).json()["result"][
         "deployment"
     ]
@@ -279,12 +279,12 @@ def test_deployment_actions(hub: TestClient) -> None:
     dep = upload(hub, package()).json()["result"]["deployment"]
     assert hub.post("/api/ops/deployments/999/approve", headers=JSON).status_code == 404
     assert hub.post(f"/api/ops/deployments/{dep['id']}/zzz", headers=JSON).status_code == 404
-    # aprovar: a transição vale; o app fora do registro falha no blue/green com motivo claro
+    # approve: the transition applies; the app outside the registry fails in blue/green with a clear reason
     r = hub.post(f"/api/ops/deployments/{dep['id']}/approve?wait=true", headers=JSON)
     assert r.status_code == 422 and r.json()["status"] == m.FALHOU and "não encontrada" in r.json()["note"]
     assert hub.post(f"/api/ops/deployments/{dep['id']}/rollback", headers=JSON).status_code == 400
     assert hub.post(f"/api/ops/deployments/{dep['id']}/promote", headers=JSON).status_code == 400
-    # promover uma versão ativa em staging cria o registro de produção aguardando aprovação
+    # promoting an active version in staging creates the production record awaiting approval
     ops = hub.app.state.ops  # type: ignore[attr-defined]
     d = ops.read()
     stg = {**dep, "id": d["next_deploy_id"], "env": "Staging", "status": m.IMPLANTADO, "version": "9.9.9"}
@@ -296,7 +296,7 @@ def test_deployment_actions(hub: TestClient) -> None:
     assert "Versão promovida para produção" in audit_titles(hub)
     assert (
         hub.post(f"/api/ops/deployments/{stg['id']}/promote", headers=JSON).status_code == 400
-    )  # já aguarda
+    )  # already waiting
     assert hub.post(f"/api/ops/deployments/{stg['id']}/promote", headers=JSON).status_code == 400
 
 
@@ -314,7 +314,7 @@ def test_model_transitions() -> None:
     ]
     with pytest.raises(OpsError, match="em andamento"):
         m.rollback(d, b["id"], now)
-    # rollback para a versão escolhida (qualquer produção substituída), não só a anterior
+    # rollback to the chosen version (any production replaced), not just the previous one
     d2: m.Data = {"deployments": [], "next_deploy_id": 1, "script_approvals": []}
     old = m.push(d2, {"app": "x", "version": "1", "env": m.PRODUCAO, "status": m.SUBSTITUIDO, "image": "i"})
     m.push(d2, {"app": "x", "version": "2", "env": m.PRODUCAO, "status": m.SUBSTITUIDO, "image": "j"})
@@ -329,7 +329,7 @@ def test_model_transitions() -> None:
     assert m.human(2048) == "2,0 KB" and m.human(5) == "5 B"
     assert m.active_scripts(d, "x", m.PRODUCAO) == []
     with pytest.raises(OpsError):
-        m.approve_scripts(d, b["id"], "n", "", False, now, True)  # sem id de usuário
+        m.approve_scripts(d, b["id"], "n", "", False, now, True)  # no user id
     with pytest.raises(OpsError, match="token"):
         m.approve_scripts(d, b["id"], "n", "u", True, now, True)
 
@@ -417,14 +417,14 @@ def test_runtime_actions_logs_inspect_limits(
     assert hub.post("/api/ops/runtime/nao/stop", headers=JSON).status_code == 404
     assert (
         hub.post("/api/ops/runtime/ativos/apply", headers=JSON).status_code == 422
-    )  # sem imagem local (Docker simulado)
+    )  # no local image (simulated Docker)
     assert hub.post("/api/ops/runtime/coletor/stop", headers=JSON).status_code == 503  # container inexistente
     lg = hub.get("/api/ops/runtime/ativos/logs?tail=10").json()
     assert [(i["level"], i["text"]) for i in lg["items"]] == [("INFO", "INFO ok"), ("ERROR", "ERROR falha")]
     env = hub.get("/api/ops/runtime/ativos/inspect").json()["Config"]["Env"]
     assert env == ["SECRET=••••", "A=••••"]
     assert hub.get("/api/ops/runtime/nao/logs/stream").status_code == 404
-    # limites: validação, admission control, aplicação no container vivo e auditoria
+    # limits: validation, admission control, application to the live container and audit
     ok = {"cpu": 0.5, "memory": "512Mi", "pids": 200}
     r = hub.put("/api/ops/runtime/ativos/limits", json=ok)
     assert r.status_code == 200 and "aplicado ao container app-hub-app-ativos" in r.json()["applied"]
@@ -522,18 +522,18 @@ def test_backup_run_least_privilege_and_vault(hub: TestClient, bk: FakeDocker, t
     assert rec["status"] == "Concluído" and rec["file"].startswith("ativos-") and "appdb" in rec["detail"]
     f = Path(hub.app.state.data_dir) / "backups" / "ativos" / rec["file"]  # type: ignore[attr-defined]
     assert hashlib.sha256(f.read_bytes()).hexdigest() == rec["sha256"]
-    # pg_dump rodou com o papel só leitura e a senha do cofre (nunca no ops.json em claro)
+    # pg_dump ran with the read-only role and the vault password (never in clear text in ops.json)
     dump = next(c for c in bk.calls if c[0] == "exec" and c[2][0] == "pg_dump")
     assert dump[2][dump[2].index("-U") + 1] == "hub_bkp_appdb"
     pw = dump[3]["PGPASSWORD"]
     raw = (Path(hub.app.state.data_dir) / "ops.json").read_text(encoding="utf-8")  # type: ignore[attr-defined]
     assert pw not in raw and "vault:v1:" in raw
-    assert hub.app.state.ops.secret("backup.pg:appdb") == pw  # type: ignore[attr-defined]  # estável entre backups
+    assert hub.app.state.ops.secret("backup.pg:appdb") == pw  # type: ignore[attr-defined]  # stable across backups
     assert "Backup concluído" in audit_titles(hub)
     assert (
         "Backup concluído" in hub.get("/admin/backups").text or "Concluído" in hub.get("/admin/backups").text
     )
-    # restauração, teste (banco temporário) e clone (F5)
+    # restore, test (temporary database) and clone (F5)
     rid = rec["id"]
     r = hub.post(f"/api/ops/backups/records/{rid}/restore", headers=JSON)
     assert wait_job(hub, r.json()["id"])["ok"]
@@ -543,13 +543,13 @@ def test_backup_run_least_privilege_and_vault(hub: TestClient, bk: FakeDocker, t
     assert {"psql", "createdb", "dropdb"} <= set(cmds)
     assert (
         hub.post(f"/api/ops/backups/records/{rid}/clone", headers=JSON).status_code == 202
-    )  # job (falha: sem banco de staging)
+    )  # job (failure: no staging database)
     assert hub.post(f"/api/ops/backups/records/{rid}/zzz", headers=JSON).status_code == 404
     assert hub.post("/api/ops/backups/records/999/restore", headers=JSON).status_code == 404
     titles = audit_titles(hub)
     assert "Restauração concluída" in titles and "Teste de restore concluído" in titles
     page = hub.get("/admin/backups").text
-    assert 'data-ops-restore="restore"' in page and "OK em" in page  # último teste de restauração
+    assert 'data-ops-restore="restore"' in page and "OK em" in page  # last restore test
 
 
 def test_backup_failure_and_busy(hub: TestClient, bk: FakeDocker) -> None:
@@ -563,7 +563,7 @@ def test_backup_failure_and_busy(hub: TestClient, bk: FakeDocker) -> None:
         "Backup falhou" in audit_titles(hub) and "Falhas nas últimas 24 h" in hub.get("/admin/backups").text
     )
     assert hub.post("/api/ops/backups/zzz/run", headers=JSON).status_code == 404
-    # app em manutenção bloqueia o backup até ser liberado
+    # app in maintenance blocks the backup until released
     ops = hub.app.state.ops  # type: ignore[attr-defined]
     d = ops.read()
     d["maintenance"]["ativos|producao"] = {"kind": "restauracao_falhou", "since": 1, "detail": "x"}
@@ -590,7 +590,7 @@ def test_backup_policy_and_retention(hub: TestClient, bk: FakeDocker) -> None:
         assert hub.put("/api/ops/backups/policies/ativos", json=bad).status_code == 400, bad
     assert hub.put("/api/ops/backups/policies/zzz", json=pol).status_code == 404
     ids = []
-    for _ in range(2):  # keep=1: o segundo backup expira o primeiro
+    for _ in range(2):  # keep=1: the second backup expires the first
         ids.append(
             wait_job(hub, hub.post("/api/ops/backups/ativos/run", headers=JSON).json()["id"])["result"][
                 "record"
@@ -649,7 +649,7 @@ def test_backup_units() -> None:
 
 
 def test_bundle_with_bucket_and_volumes(hub: TestClient, bk: FakeDocker, tmp_path: Path) -> None:
-    """Bucket por `mc mirror` (usuário só leitura) e volumes do disco entram no pacote; a restauração os devolve."""
+    """Bucket via `mc mirror` (read-only user) and disk volumes go into the package; the restore hands them back."""
     from hub.connections.provision import ObjectStore
 
     backups = hub.app.state.ops_backups  # type: ignore[attr-defined]
@@ -674,7 +674,7 @@ def test_bundle_with_bucket_and_volumes(hub: TestClient, bk: FakeDocker, tmp_pat
     jid = hub.post("/api/ops/backups/ativos/run", headers=JSON).json()["id"]
     j = wait_job(hub, jid)
     assert j["ok"], j["message"]
-    assert any("bkp-ativos-bkt" in " ".join(a) for a in seen)  # usuário só leitura criado
+    assert any("bkp-ativos-bkt" in " ".join(a) for a in seen)  # read-only user created
     rec = hub.get("/api/ops/backups").json()["history"][0]
     assert "bucket ativos-bkt" in rec["detail"] and "volume data" in rec["detail"]
     (vol / "a.txt").write_text("alterado", encoding="utf-8")
@@ -683,7 +683,7 @@ def test_bundle_with_bucket_and_volumes(hub: TestClient, bk: FakeDocker, tmp_pat
     )["ok"]
     assert (vol / "a.txt").read_text(encoding="utf-8") == "v1"
     assert any("mirror" in a and a[-1] == "hub/ativos-bkt" for a in seen)
-    # arquivo adulterado: sha256 não confere
+    # tampered file: sha256 does not match
     f = Path(hub.app.state.data_dir) / "backups" / "ativos" / rec["file"]  # type: ignore[attr-defined]
     f.write_bytes(f.read_bytes() + b"x")
     j = wait_job(hub, hub.post(f"/api/ops/backups/records/{rec['id']}/test", headers=JSON).json()["id"])
@@ -709,11 +709,11 @@ async def test_real_engine_probe() -> None:
     info = await rt.Engine().probe()
     assert info["reachable"], info["error"]
     assert all(x["name"].startswith(rt.prefix()) for x in info["live"])
-    assert HDR  # cabeçalhos do helper importados
+    assert HDR  # helper headers imported
 
 
 def test_sdk_page_and_manifest_validate(hub: TestClient) -> None:
-    """F7a: /admin/sdk existia só no menu (404); a validação de manifest serve a tela."""
+    """F7a: /admin/sdk existed only in the menu (404); manifest validation serves the screen."""
     assert hub.get("/admin/sdk").headers["location"] == "/admin/deploys"
     page = hub.get("/admin/deploys")
     assert page.status_code == 200 and "data-ops-validate" in page.text and "Validar o manifest" in page.text
@@ -735,8 +735,8 @@ def test_sdk_page_and_manifest_validate(hub: TestClient) -> None:
 
 
 def test_i18n_json_errors_and_js_catalog(hub: TestClient) -> None:
-    """F7a: erro JSON no idioma do navegador e catálogo do hub-i18n.js em /assets/i18n/<lang>.json."""
-    es = hub.get("/api/v1/jobs/999999", headers={"accept-language": "es-ES"})  # `es` saiu: vira en
+    """F7a: JSON error in the browser's language and hub-i18n.js catalog at /assets/i18n/<lang>.json."""
+    es = hub.get("/api/v1/jobs/999999", headers={"accept-language": "es-ES"})  # `es` was dropped: becomes en
     assert (
         es.status_code == 404 and es.json()["title"] == "Not found" and es.headers["content-language"] == "en"
     )
@@ -753,8 +753,8 @@ def test_i18n_json_errors_and_js_catalog(hub: TestClient) -> None:
 
 
 def test_same_origin_post_with_opaque_origin(hub: TestClient) -> None:
-    """F7a: `Referrer-Policy: no-referrer` faz o navegador mandar `Origin: null` num POST do próprio hub
-    (consentimento OAuth); `Sec-Fetch-Site: same-origin` basta. Origem cruzada continua barrada."""
+    """F7a: `Referrer-Policy: no-referrer` makes the browser send `Origin: null` on a POST from the hub itself
+    (OAuth consent); `Sec-Fetch-Site: same-origin` is enough. Cross-origin remains blocked."""
     ok = hub.post("/api/me/prefs", headers={"origin": "null", "sec-fetch-site": "same-origin"})
     assert ok.status_code != 403, ok.text
     bad = hub.post(
@@ -764,8 +764,8 @@ def test_same_origin_post_with_opaque_origin(hub: TestClient) -> None:
 
 
 def test_bearer_with_stray_session_cookie_skips_csrf_check(hub: TestClient) -> None:
-    """F7a: cliente de API com `Authorization: Bearer` e cookie de sessão junto (contexto herdado) não é barrado
-    pelo teste de mesma origem — a identidade vem do token; sem token, origem cruzada continua 403."""
+    """F7a: API client with `Authorization: Bearer` and a session cookie alongside (inherited context) is not blocked
+    by the same-origin test - the identity comes from the token; without a token, cross-origin stays 403."""
     tok = hub.post(
         "/api/admin/tokens", json={"name": "f7a", "actions": ["mcp"], "apps": [], "envs": []}
     ).json()["token"]
@@ -776,7 +776,7 @@ def test_bearer_with_stray_session_cookie_skips_csrf_check(hub: TestClient) -> N
 
 
 def test_forbidden_page_is_inside_the_shell_and_loader_text(hub: TestClient) -> None:
-    """F7a: 403 de página com cabeçalho de página (eyebrow da seção + título) e o texto do carregador."""
+    """F7a: 403 page with page header (section eyebrow + title) and the loader text."""
     reader = add_user(hub, "leitor-f7a", ["Leitor"])
     r = reader.get("/admin/users")
     assert r.status_code == 403
@@ -787,7 +787,7 @@ def test_forbidden_page_is_inside_the_shell_and_loader_text(hub: TestClient) -> 
 
 
 def test_tour_state_reaches_the_shell(hub: TestClient) -> None:
-    """F7a: `data-hub-tour` do <body> vem da preferência (antes era fixo em "done" e o tour guiado nunca abria)."""
+    """F7a: the <body>'s `data-hub-tour` comes from the preference (it was fixed to "done" before and the guided tour never opened)."""
     assert hub.put("/api/me/onboarding", json={"tour": ""}).status_code == 200
     assert 'data-hub-tour=""' in hub.get("/").text
     assert hub.put("/api/me/onboarding", json={"tour": "step:1"}).status_code == 200
@@ -797,7 +797,7 @@ def test_tour_state_reaches_the_shell(hub: TestClient) -> None:
 
 
 def test_rail_mode_cookie_is_per_context_and_loader_texts(hub: TestClient) -> None:
-    """F7a: o servidor desenha a página no modo do rail guardado (cookie `hub_rail_<ctx>`, à parte nos apps)."""
+    """F7a: the server draws the page in the rail mode stored in the cookie (`hub_rail_<ctx>`, separate in the apps)."""
 
     def get(path: str, **cookies: str) -> str:
         jar = "; ".join(["hub_session=test-session", *[f"hub_rail_{k}={v}" for k, v in cookies.items()]])
@@ -810,12 +810,12 @@ def test_rail_mode_cookie_is_per_context_and_loader_texts(hub: TestClient) -> No
     assert 'class="rail-collapsed in-app' in get("/apps/ativos", app="collapsed")
     assert 'class="rail-expanded' in get(
         "/applications", app="collapsed"
-    )  # a escolha de dentro não vaza para fora
+    )  # what is chosen inside does not leak outside
     assert 'class="rail-expanded' in get("/applications", hub="bogus")
 
 
 def test_approved_script_enters_the_page_csp(hub: TestClient) -> None:
-    """F7a: o hash do JavaScript próprio aprovado entra na CSP da página do app (antes era um stub vazio)."""
+    """F7a: the hash of the approved app's own JavaScript goes into the app page's CSP (it was an empty stub before)."""
     from hub.gateway.csp import approved_scripts
 
     ops = hub.app.state.ops  # type: ignore[attr-defined]
@@ -828,7 +828,7 @@ def test_approved_script_enters_the_page_csp(hub: TestClient) -> None:
     d["next_deploy_id"] += 1
     d["deployments"].insert(0, dep)
     ops.write(d)
-    assert approved_scripts("ativos", False) == []  # ainda sem a revisão de segurança
+    assert approved_scripts("ativos", False) == []  # still without the security review
     d = ops.read()
     d["script_approvals"].append(
         {"app": "ativos", "path": "ui/assets/x.js", "sha384": sha, "by": "r", "by_id": "r1", "at": 2}

@@ -1,4 +1,4 @@
-"""F3b: flags, métricas/SLOs, traces, analytics, logs, auditoria, saúde e as páginas/APIs de Observabilidade."""
+"""F3b: flags, metrics/SLOs, traces, analytics, logs, audit, health and the Observability pages/APIs."""
 
 from __future__ import annotations
 
@@ -87,8 +87,8 @@ def test_flag_evaluation_order() -> None:
     f = fl.parse_flag(flag_body())
     f.envs["producao"].rollout = fl.Rollout(percent=30, serve="on")
     assert fl.evaluate(f, "producao", "x", ["Administrador"]) == "on"
-    assert fl.evaluate(f, "staging", "x", ["Administrador"]) == "off"  # sem regra no ambiente
-    assert fl.evaluate(f, "producao", "", []) == "off"  # convidado fora do rollout
+    assert fl.evaluate(f, "staging", "x", ["Administrador"]) == "off"  # no rule in the environment
+    assert fl.evaluate(f, "producao", "", []) == "off"  # guest outside the rollout
     on = sum(fl.evaluate(f, "producao", f"u{i}", []) == "on" for i in range(10_000))
     assert 2_800 <= on <= 3_200
     f.envs["producao"].enabled = False
@@ -98,7 +98,7 @@ def test_flag_evaluation_order() -> None:
         [fl.user_digest("novo", "Ana@Demo.local")],
     )
     f.envs["producao"].rules[0].roles = []
-    assert fl.evaluate(f, "producao", "ana@demo.local", []) == "on"  # regra empurrada por resumo
+    assert fl.evaluate(f, "producao", "ana@demo.local", []) == "on"  # rule pushed by summary
     assert fl.evaluate(f, "producao", "bia@demo.local", []) == "off"
 
 
@@ -138,14 +138,14 @@ def test_flag_header_value_and_validation() -> None:
     assert fl.flag_detail(fl.parse_flag(flag_body())).startswith("novo · Produção: ligada, 1 regra(s)")
 
 
-# ---- métricas, SLOs e traces ----------------------------------------------------------------------
+# ---- metrics, SLOs and traces ----
 
 
 def test_red_metrics_and_percentiles() -> None:
     m, now = Metrics(), 1_800_000_000
     for i in range(100):
         m.observe("a", "producao", 503 if i < 5 else 200, 20.0 if i < 90 else 800.0, now)
-    m.observe("a", "producao", 404, 1.0, now)  # 4xx não é erro do servidor
+    m.observe("a", "producao", 404, 1.0, now)  # 4xx is not a server error
     w = m.window("a", "producao", 0, 2**40)
     assert (w.requests, w.errors) == (101, 5) and w.availability == pytest.approx(1 - 5 / 101)
     assert w.under(250) == pytest.approx(91 / 101)
@@ -258,7 +258,7 @@ def test_analytics_privacy_aggregates_and_csv(tmp_path: Path) -> None:
     a.record("u1", "action", "ativos", now=now)
     a.record("u1", "section", "ativos", "assets", now=now)
     a.record("u1", "page", "/admin/users", now=now)
-    a.record("u1", "search", "ana@x.com 123", n=0, now=now)  # com @: descartado
+    a.record("u1", "search", "ana@x.com 123", n=0, now=now)  # with @: discarded
     a.record("u1", "search", "contrato 12345", n=0, now=now)
     a.record("u1", "feature", "palette_open", now=now)
     a.record("u1", "feature", "inventada", now=now)
@@ -267,7 +267,7 @@ def test_analytics_privacy_aggregates_and_csv(tmp_path: Path) -> None:
     assert (s["dau"], s["wau"], s["mau"]) == (2, 2, 2) and s["funnel"] == [2, 2, 1]
     assert s["apps"] == [["ativos", 2, 2, 2, 2]] and s["searches"] == 2 and s["searches_zero"] == 2
     assert s["top_sections"] == [["ativos/assets", 1]] and s["features"] == [["palette_open", 1]]
-    assert s["zero_terms"][0][0].startswith("termo #")  # só hash, sem opt-in
+    assert s["zero_terms"][0][0].startswith("termo #")  # hash only, no opt-in
     a.set_raw_terms(True)
     a.record("u1", "search", "contrato 99", n=0, now=now)
     assert ["contrato ##", 1] in a.summary(now)["zero_terms"]
@@ -281,8 +281,8 @@ def test_analytics_privacy_aggregates_and_csv(tmp_path: Path) -> None:
     assert csv.startswith("dia;usuarios_ativos") and '"ativos";2;2;2;2' in csv
     first = a._h("user|u1")
     a.rotate_key(now)
-    assert a._h("user|u1") != first  # ids novos não se ligam aos antigos
-    assert Analytics(tmp_path, None).summary(now)["dau"] == 2  # recarrega do disco
+    assert a._h("user|u1") != first  # new ids do not link to the old ones
+    assert Analytics(tmp_path, None).summary(now)["dau"] == 2  # reloads from disk
 
 
 def test_analytics_retention_optout_and_disabled(tmp_path: Path) -> None:
@@ -335,7 +335,7 @@ def test_log_bus_filters() -> None:
     assert bus.lines[-1]["level"] == "WARN"
 
 
-# ---- páginas e APIs --------------------------------------------------------------------------------------
+# ---- pages and APIs ----
 
 
 def test_pages_render_and_rbac(hub: TestClient) -> None:
@@ -345,7 +345,7 @@ def test_pages_render_and_rbac(hub: TestClient) -> None:
     old = hub.get("/admin/observability?app=ativos", follow_redirects=False)
     assert old.status_code == 308 and old.headers["location"] == "/admin/health?app=ativos#obs"
     assert hub.get("/admin/analytics", follow_redirects=False).headers["location"] == "/admin#uso"
-    assert hub.get("/admin/flags", follow_redirects=False).status_code == 308  # tela removida
+    assert hub.get("/admin/flags", follow_redirects=False).status_code == 308  # removed screen
     assert "Logs · " in hub.get("/admin/logs").text and "Auditoria · " in hub.get("/admin/audit").text
     colab = add_user(hub, "colab", ["Colaborador"])
     for p in ("logs", "audit", "health", "observability", "analytics"):
@@ -359,7 +359,7 @@ def test_pages_render_and_rbac(hub: TestClient) -> None:
         "/api/admin/analytics",
     ):
         assert colab.get(url).status_code == 403, url
-    po = add_user(hub, "po", ["Product Owner"])  # ver auditoria, sem editar configurações
+    po = add_user(hub, "po", ["Product Owner"])  # view audit, without editing settings
     for p in ("logs", "audit", "health"):
         assert po.get(f"/admin/{p}").status_code == 200, p
     assert po.get("/api/admin/flags").status_code == 403
@@ -417,7 +417,7 @@ def test_flags_crud_is_audited_and_validated(hub: TestClient) -> None:
     assert "Feature flag desligada (kill switch)" in audit_titles(hub)
     assert hub.app.state.admin.chain.verify().ok  # type: ignore[attr-defined]
     many = [flag_body(f"f{i}") for i in range(fl.MAX_FLAGS_PER_APP)]
-    for body in many[: fl.MAX_FLAGS_PER_APP - 1]:  # já há 1 flag (v)
+    for body in many[: fl.MAX_FLAGS_PER_APP - 1]:  # already has 1 flag (v)
         assert hub.post("/api/admin/flags", json=body).status_code == 200
     assert hub.post("/api/admin/flags", json=flag_body("excesso")).status_code == 400
 
@@ -450,10 +450,10 @@ def test_gateway_observed_metrics_logs_traces_and_flags_header(hub: TestClient) 
     assert hub.get("/api/admin/logs/stats").json() == {"subscribers": 0}
     page = hub.get("/admin/logs").text
     assert "[gateway] GET /ativos/echo" in page and "log-level-info" in page
-    # app desconhecido: sem métrica, log em "platform"
+    # unknown app: no metric, log under "platform"
     assert hub.get("/_frag/nao-existe/x").status_code == 404
     assert ins.tel.metrics.window("nao-existe", "producao", 0, 2**40).requests == 0
-    # outro usuário (sem a regra por função) recebe a flag desligada
+    # another user (without the per-role rule) gets the flag off
     colab = add_user(hub, "colab", ["Colaborador"])
     assert colab.get("/_frag/ativos/echo").json()["headers"]["x-hub-flags"] == "resumo=off"
     assert "x-hub-flags" not in hub.get("/_frag/ativos/echo").json()["headers"] or True
@@ -470,7 +470,7 @@ def test_observability_on_health_page(hub: TestClient) -> None:
         'class="filter-chip active" href="/admin/health?app=ativos&amp;env=producao&amp;min=15#obs"' in r.text
     )
     assert "Sem dados" in hub.get("/admin/health?app=fornecedores&env=staging").text
-    # restrito a um app: não enxerga o trace de outro
+    # restricted to one app: does not see another app's trace
     asyncio.run(hub.app.state.admin.cfg.role_apps("t", "Product Owner", ["servicos"]))  # type: ignore[attr-defined]
     hub.app.state.roles = __import__("hub.auth", fromlist=["roles_for"]).roles_for(hub.app.state.data_dir)  # type: ignore[attr-defined]
     po = add_user(hub, "po2", ["Product Owner"])
@@ -493,7 +493,7 @@ def test_ingest_from_apps_is_validated(hub: TestClient) -> None:
         "hub.env": "producao",
     }
     assert ins.tel.metrics.last_gauges("ativos", "producao")["app"] == {"jobs_queued": 2.0}  # type: ignore[index]
-    # outro app não enxerta spans no trace de ativos
+    # another app does not graft spans onto the assets trace
     assert ins.ingest("contratos", "producao", {"spans": [{**good, "span_id": "d" * 16}]}) == 0
     assert len(ins.tel.traces.spans) == 1
 
@@ -625,7 +625,7 @@ def test_auto_incident_from_fast_burn(hub: TestClient) -> None:
 
     async def run() -> list[dict[str, Any]]:
         await ins.check_slo(slo)
-        await ins.check_slo(slo)  # sem duplicar
+        await ins.check_slo(slo)  # no duplication
         first = list(await ins.ops.incidents())
         assert len(first) == 1 and first[0]["kind"] == "auto" and first[0]["resolved"] is None
         ins.tel.metrics.series["ativos|producao"].coarse.clear()
@@ -675,7 +675,7 @@ def test_audit_page_verify_export_and_filter(hub: TestClient) -> None:
         and lines[0]["t"] == "e"
         and "Auditoria exportada (JSONL com provas)" in audit_titles(hub)
     )
-    # cadeia adulterada: a verificação acusa e a página mostra o bloqueio
+    # tampered chain: the verification flags it and the page shows the block
     chain = hub.app.state.admin.chain  # type: ignore[attr-defined]
     first = json.loads(chain.path.read_text(encoding="utf-8").splitlines()[0])
     first["hash"] = "f" * 64
@@ -720,12 +720,12 @@ def test_analytics_card_api_and_tracking(hub: TestClient) -> None:
         "Chave dos ids do analytics trocada",
     ):
         assert x in t, x
-    # opt-out: o usuário deixa de ser contado
+    # opt-out: the user stops being counted
     hub.put("/api/me/prefs", json={"analytics_opt_out": True})
     before = hub.get("/api/admin/analytics").json()["summary"]["top_pages"]
     hub.get("/inbox")
     assert hub.get("/api/admin/analytics").json()["summary"]["top_pages"] == before
-    assert HDR  # cabeçalhos de origem usados pelo cliente
+    assert HDR  # origin headers used by the client
 
 
 def test_login_and_search_feed_analytics(hub: TestClient) -> None:
@@ -791,7 +791,7 @@ def test_background_loops_probe_poll_and_push(hub: TestClient, monkeypatch: pyte
         "heavy_in_use": 1.0
     }  # type: ignore[index]
     w = ins.tel.metrics.window("ativos", "producao", 0, int(time.time()) + 600)
-    assert w.probes >= 1 and w.probes_ok == 0  # sonda sem resposta conta como fora do ar
+    assert w.probes >= 1 and w.probes_ok == 0  # probe with no response counts as down
     assert (Path(ins.tel.metrics.path).exists()) and ins.tel.metrics.path is not None  # type: ignore[arg-type]
 
 
@@ -855,11 +855,11 @@ def test_usage_tracking_page_and_rbac(hub: TestClient) -> None:
 
 
 def test_usage_ignores_analytics_opt_out_and_keeps_deleted_users(hub: TestClient) -> None:
-    # decisão deliberada: o opt-out vale só para o analytics anônimo; o admin vê o uso de todos
+    # deliberate decision: opt-out applies only to anonymous analytics; the admin sees everyone's usage
     hub.put("/api/me/prefs", json={"analytics_opt_out": True})
     hub.get("/apps/ativos")
     assert any(r["app"] == "ativos" for r in hub.get("/api/admin/usage").json()["rows"])
-    # usuário excluído: as linhas ficam (histórico), sem nome nem e-mail
+    # deleted user: the rows are kept (history), without name or e-mail
     ins = hub.app.state.insight  # type: ignore[attr-defined]
     ins.usage.record("u-excluido", "ativos", "open")
     row = next(r for r in hub.get("/api/admin/usage").json()["rows"] if r["user"] == "u-excluido")
@@ -875,12 +875,12 @@ def test_usage_page_period_filter(hub: TestClient) -> None:
     assert "u-antigo" in hub.get("/admin/usage?days=30").text
     assert "u-antigo" not in hub.get("/admin/usage?days=7").text
     assert "u-antigo" in hub.get("/admin/usage?days=90").text
-    page = hub.get("/admin/usage?days=999").text  # valor fora da lista volta a 30
+    page = hub.get("/admin/usage?days=999").text  # value outside the list goes back to 30
     assert 'value="30" selected' in page and "u-antigo" in page
 
 
 def test_two_replicas_telemetry_files_add_up(tmp_path: Path) -> None:
-    """Réplicas no mesmo volume: cada gravação junta com o arquivo (nada some) e todas convergem."""
+    """Replicas on the same volume: each write merges with the file (nothing is lost) and all of them converge."""
     from hub.insight.merge import merge3
     from hub.insight.usage import Usage
 
@@ -892,7 +892,7 @@ def test_two_replicas_telemetry_files_add_up(tmp_path: Path) -> None:
     u2.record("bia", "ativos", "action", now)
     u1.flush(90, now)
     u2.flush(90, now)
-    u1.flush(90, now)  # nada novo: só adota o que a outra gravou
+    u1.flush(90, now)  # nothing new: only adopts what the other one wrote
     rows = {(r["user"], r["app"]): r for r in Usage(tmp_path).query(now)["rows"]}
     assert rows[("ana", "ativos")]["opens"] == 2 and rows[("ana", "ativos")]["last"] == now + 5
     assert rows[("bia", "ativos")]["actions"] == 1

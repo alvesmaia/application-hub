@@ -1,4 +1,4 @@
-"""Administração › Conexões (F3a): CRUD, segredos, vínculos e variáveis geridas, broker e provisionamento."""
+"""Administration > Connections (F3a): CRUD, secrets, bindings and managed variables, broker and provisioning."""
 
 from __future__ import annotations
 
@@ -55,7 +55,7 @@ def dele(c: TestClient, url: str) -> Any:
 
 
 class FakeBackend:
-    """Provedor em memória no lugar do S3/Graph: registra o que o broker pede."""
+    """In-memory provider in place of S3/Graph: records what the broker asks for."""
 
     def __init__(self) -> None:
         self.files: dict[str, bytes] = {"a.txt": b"hello"}
@@ -157,7 +157,7 @@ def test_names_and_link_policy() -> None:
         and link_policy(anon, "coletor", "view", 1) == "organization"
     )
     with pytest.raises(ConnError, match="edição não liberados"):
-        link_policy(anon, "ativos", "edit", 1)  # nunca edição anônima
+        link_policy(anon, "ativos", "edit", 1)  # never anonymous editing
     s3 = {**c, "kind": "s3", "anonymous_link_apps": ["ativos"]}
     assert link_policy(s3, "ativos", "view", 1) == "anonymous"
     with pytest.raises(ConnError, match="pré-assinados"):
@@ -176,12 +176,12 @@ def test_who_of_and_source_guard() -> None:
         "",
     )
     actor, note = who_of({"x-hub-user": user, "x-hub-user-sig": sig}, key, "coletor", "producao", 1_000_000)
-    assert actor == "app:coletor" and "não verificado" in note  # assinatura de outro app não vale
+    assert actor == "app:coletor" and "não verificado" in note  # another app's signature is not valid
     assert who_of({"x-hub-user": user}, key, "ativos", "producao")[0] == "app:ativos"
     assert who_of({"x-hub-user": "%%%"}, key, "ativos", "producao") == ("app:ativos", "")
     assert who_of({}, key, "ativos", "producao") == ("app:ativos", "")
     nets = parse_cidrs("ativos=10.231.1.0/24, lixo, coletor=10.231.5.0/24, x=abc")
-    assert source_allowed({}, "ativos", None)  # sem lista = só o token
+    assert source_allowed({}, "ativos", None)  # no list = only the token
     assert source_allowed(nets, "ativos", "10.231.1.9") and not source_allowed(nets, "ativos", "10.231.5.9")
     assert not source_allowed(nets, "servicos", "10.231.1.9") and not source_allowed(nets, "ativos", None)
     assert source_allowed(nets, "ativos", "::ffff:10.231.1.9") and not source_allowed(
@@ -189,7 +189,7 @@ def test_who_of_and_source_guard() -> None:
     )
 
 
-# ---- conexões: API e segredos -------------------------------------------------------------------------
+# ---- connections: API and secrets ----
 
 
 def test_connection_crud_masks_secret_everywhere(hub: TestClient, tmp_path: Path) -> None:
@@ -209,14 +209,14 @@ def test_connection_crud_masks_secret_everywhere(hub: TestClient, tmp_path: Path
     html = hub.get("/admin/connections").text
     assert SECRET not in html and 'data-conn-row="docs-s3"' in html and "AKEY · ••••••••" in html
     assert "Nunca testada" in html and "Ativos · Produção" in html and "Armazenamento provisionado" in html
-    # nada em claro no disco nem na trilha; a chave do S3 fica cifrada no cofre
+    # nothing in clear text on disk or in the trail; the S3 key is encrypted in the vault
     disk = (tmp_path / "connections.json").read_text(encoding="utf-8")
     assert SECRET not in disk and '"secret": "' in disk
     assert SECRET not in (tmp_path / "audit" / "chain.jsonl").read_text(encoding="utf-8")
     assert SECRET not in (tmp_path / "admin.json").read_text(encoding="utf-8")
     titles = [e["title"] for e in run(hub.app.state.admin.cfg.read())["audit"]]  # type: ignore[attr-defined]
     assert "Conexão criada" in titles
-    # editar sem credencial mantém a atual; com credencial troca e audita sem o valor
+    # editing without a credential keeps the current one; with a credential it replaces it and audits without the value
     r = hub.put(
         "/api/admin/connections/docs-s3", json={**S3, "secret": "", "description": "novo", "max_upload_mb": 5}
     )
@@ -312,7 +312,7 @@ def test_connection_rbac_and_json_only(hub: TestClient) -> None:
         == 400
     )
     assert hub.get("/api/admin/connections", headers={"authorization": "Bearer hubt_x"}).status_code == 401
-    # sem corpo (ações como "provisionar armazenamento") não exige Content-Type; com corpo não-JSON continua 415
+    # no body (actions such as "provision storage") does not require Content-Type; with a non-JSON body it still returns 415
     empty = hub.post("/api/admin/connections/storage/ativos", headers={"content-type": ""})
     assert empty.status_code != 415
     assert hub.post("/api/admin/connections/storage/ativos", content="x=1",
@@ -341,8 +341,8 @@ def test_bindings_sync_managed_variables_and_pending_restart(hub: TestClient) ->
     assert "Reinício pendente" in hub.get("/admin/env").text
     assert (
         "Aplicar (reiniciar)" in hub.get("/admin/connections").text
-    )  # card do app com conexão e reinício pendente
-    # variáveis geridas do broker são reservadas à plataforma
+    )  # app card with a connection and a pending restart
+    # managed broker variables are reserved to the platform
     assert (
         hub.put(
             "/api/admin/env/HUB_STORAGE_URL", json={"value": "http://evil", "kind": "publica", "bindings": []}
@@ -355,7 +355,7 @@ def test_bindings_sync_managed_variables_and_pending_restart(hub: TestClient) ->
         ).status_code
         == 400
     )
-    # desvincular tira as variáveis do app; sem nenhum vínculo some também o endereço do broker
+    # unbinding removes the variables from the app; with no bindings left, the broker address also disappears
     hub.put(
         "/api/admin/connections/docs-s3/bindings", json={"bindings": [{"app": "ativos", "env": "producao"}]}
     )
@@ -379,7 +379,7 @@ def test_test_connection_records_last_test_and_audits(hub: TestClient) -> None:
     )
     html = hub.get("/admin/connections").text
     assert "Falhou · agora" in html and "status-maintenance" in html
-    # editar invalida o último teste (a revisão muda)
+    # editing invalidates the last test (the revision changes)
     hub.put("/api/admin/connections/docs-s3", json={**S3, "secret": ""})
     assert "Nunca testada" in hub.get("/admin/connections").text
 
@@ -393,7 +393,7 @@ def test_connections_page_markup(hub: TestClient) -> None:
     )
     assert "data-conn-provision-jump" in html and "Nenhuma conexão cadastrada." in html
     assert 'data-conn-storage-form=""' in html and "/assets/connections.js" in html
-    assert "O serviço de armazenamento do hub está desligado" in html  # broker sem HUB_BROKER_ADDR
+    assert "O serviço de armazenamento do hub está desligado" in html  # broker without HUB_BROKER_ADDR
     en = hub.get("/admin/connections", headers={"accept-language": "en"}).text
     assert "New connection" in en and "Never tested" not in en and "Provision storage" in en
 
@@ -448,7 +448,7 @@ def test_broker_authorizes_by_binding_and_operation_and_audits(hub: TestClient) 
         headers={**auth, "content-type": "text/plain"},
     )
     assert up.status_code == 201 and f.files["n.txt"] == b"12345"
-    # operação não liberada, conexão desconhecida e envio acima do limite
+    # operation not released, unknown connection and payload above the limit
     assert (
         b.delete("/_hub/storage/docs-s3/content", params={"path": "a.txt"}, headers=auth).status_code == 403
     )
@@ -474,7 +474,7 @@ def test_broker_authorizes_by_binding_and_operation_and_audits(hub: TestClient) 
         ).status_code
         == 400
     )
-    # auditoria: toda operação do app, com app, ambiente, conexão e resultado; nunca credenciais
+    # audit: every app operation, with app, environment, connection and result; never credentials
     audit = run(hub.app.state.admin.cfg.read())["audit"]  # type: ignore[attr-defined]
     mine = [e for e in audit if e["title"].startswith("Armazenamento")]
     titles = {e["title"] for e in mine}
@@ -507,25 +507,25 @@ def test_broker_isolation_between_apps_environments_and_rotation(hub: TestClient
     assert b.get("/_hub/storage/docs-s3/list", headers=h(ativos)).status_code == 200
     assert (
         b.get("/_hub/storage/docs-s3/list", headers=h(coletor)).status_code == 404
-    )  # outro app: nem sabe se existe
+    )  # other app: does not even know whether it exists
     assert b.get("/_hub/storage/outra/list", headers=h(ativos)).status_code == 404
-    # o token de produção não vale para staging (vínculo exato app × ambiente)
+    # the production token is not valid for staging (exact app x environment binding)
     hub.put(
         "/api/admin/connections/docs-s3/bindings",
         json={"bindings": [{"app": "ativos", "env": "producao"}, {"app": "ativos", "env": "staging"}]},
     )
     stg = token_of(hub, "ativos", "staging")
     assert stg != ativos and b.get("/_hub/storage", headers=h(stg)).json()["env"] == "staging"
-    # rotação: o token antigo deixa de valer na hora
+    # rotation: the old token stops working immediately
     assert hub.post("/api/admin/connections/tokens/ativos/producao/rotate", json={}).status_code == 200
     assert b.get("/_hub/storage", headers=h(ativos)).status_code == 401
     new = token_of(hub, "ativos")
     assert new != ativos and b.get("/_hub/storage", headers=h(new)).status_code == 200
     assert hub.post("/api/admin/connections/tokens/servicos/producao/rotate", json={}).status_code == 404
-    # desvincular corta o acesso já (antes de qualquer reinício do app)
+    # unbinding cuts access right away (before any app restart)
     hub.put("/api/admin/connections/docs-s3/bindings", json={"bindings": []})
     assert b.get("/_hub/storage/docs-s3/list", headers=h(new)).status_code in (401, 404)
-    # uma variável comum com o mesmo nome do token NÃO autentica
+    # an ordinary variable with the same name as the token does NOT authenticate
     hub.post(
         "/api/admin/env",
         json={
@@ -555,7 +555,7 @@ def test_broker_share_link_policy_move_and_provider_errors(hub: TestClient) -> N
     assert ok.status_code == 200 and "link:a.txt:view:anonymous:86400" in f.calls
     assert (
         b.post("/_hub/storage/docs-s3/share-link", json={"path": "a.txt"}, headers=auth).status_code == 200
-    )  # padrão 24 h
+    )  # default 24 h
     assert (
         b.post(
             "/_hub/storage/docs-s3/share-link", json={"path": "a.txt", "expires_hours": 99}, headers=auth
@@ -572,7 +572,7 @@ def test_broker_share_link_policy_move_and_provider_errors(hub: TestClient) -> N
     mv = b.post("/_hub/storage/docs-s3/move", json={"from": "a.txt", "to": "b/c.txt"}, headers=auth)
     assert mv.status_code == 200 and "b/c.txt" in f.files
     assert b.post("/_hub/storage/docs-s3/move", json={"from": "a.txt"}, headers=auth).status_code == 400
-    # erros do provedor viram status do contrato, sem o texto do provedor para o app
+    # provider errors become the contract status, without the provider's text for the app
     f.fail = StorageError("unavailable", "provedor limitando", 9, detail="corpo interno do provedor")
     r = b.get("/_hub/storage/docs-s3/list", headers=auth)
     assert r.status_code == 503 and r.headers["retry-after"] == "9" and "corpo interno" not in r.text
@@ -580,7 +580,7 @@ def test_broker_share_link_policy_move_and_provider_errors(hub: TestClient) -> N
     r = b.get("/_hub/storage/docs-s3/list", headers=auth)
     assert r.status_code == 502 and "Sites.Selected" not in r.text
     audit = json.dumps(run(hub.app.state.admin.cfg.read())["audit"])  # type: ignore[attr-defined]
-    assert "Sites.Selected faltando" in audit  # o detalhe do provedor fica só na auditoria
+    assert "Sites.Selected faltando" in audit  # the provider detail stays only in the audit
 
 
 def test_broker_attributes_verified_user_and_concurrency_limit(
@@ -622,11 +622,11 @@ async def test_broker_per_app_concurrency_limit(hub: TestClient, monkeypatch: py
         await asyncio.wait_for(entered.wait(), 5)
         busy = await c.get(
             "/_hub/storage/docs-s3/list", headers=auth
-        )  # sem vaga: o app já tem uma operação em curso
+        )  # no slot: the app already has an operation in progress
         assert busy.status_code == 429 and busy.headers["retry-after"] == "2"
         gate.set()
         assert (await first).status_code == 200
-        assert (await c.get("/_hub/storage/docs-s3/list", headers=auth)).status_code == 200  # a vaga voltou
+        assert (await c.get("/_hub/storage/docs-s3/list", headers=auth)).status_code == 200  # slot is back
     audit = (await hub.app.state.admin.cfg.read())["audit"]  # type: ignore[attr-defined]
     assert any(e["title"] == "Armazenamento: limite de operações simultâneas" for e in audit)
 
@@ -635,7 +635,7 @@ def test_broker_network_guard(hub: TestClient, monkeypatch: pytest.MonkeyPatch) 
     hub.post("/api/admin/connections", json=S3)
     fake(hub, "docs-s3")
     monkeypatch.setenv("HUB_BROKER_APP_CIDRS", "ativos=10.231.1.0/24")
-    b = broker_for(hub)  # o TestClient chega como "testclient": fora da rede do app
+    b = broker_for(hub)  # TestClient arrives as "testclient": outside the app's network
     r = b.get("/_hub/storage", headers={"authorization": f"Bearer {token_of(hub)}"})
     assert r.status_code == 403 and "Origem não permitida" in r.json()["error"]
     audit = run(hub.app.state.admin.cfg.read())["audit"]  # type: ignore[attr-defined]
@@ -655,7 +655,7 @@ class FakeMc:
         self.fail_on: str | None = None
 
     async def __call__(self, args: list[str], env: dict[str, str]) -> tuple[int, str]:
-        a = [x for x in args if x not in ("--quiet",)][2:]  # sem --config-dir <dir>
+        a = [x for x in args if x not in ("--quiet",)][2:]  # without --config-dir <dir>
         self.log.append(a)
         assert env["MC_HOST_hub"].startswith("http://hubadmin:")
         if self.fail_on and a[: len(self.fail_on.split())] == self.fail_on.split():
@@ -699,11 +699,11 @@ def test_provision_idempotent_with_undo_and_deprovision(hub: TestClient) -> None
     assert {"app-ativos"} == mc.buckets and {"app-ativos"} == mc.users
     status, again = run(prov.provision(conns, obj, "ativos", "producao", "admin", "http://hub-web:8081"))
     assert status == 200 and again["changed"] is False and len(conns.all()) == 1
-    # a conexão aparece na página e o app recebe as variáveis do broker
+    # the connection appears on the page and the app receives the broker variables
     html = hub.get("/admin/connections").text
     assert 'data-conn-storage-row="ativos|producao"' in html and "app-ativos" in html
     assert "HUB_STORAGE_TOKEN_ATIVOS_PRODUCAO" in {v["name"] for v in hub.get("/api/admin/env").json()}
-    # desprovisionar exige o nome do bucket; com objetos, force e a senha de quem pede
+    # deprovisioning requires the bucket name; with objects, force and the password of whoever asks
     fake_be = FakeBackend()
     conns.clients["app-ativos"] = (c["rev"], cast(Backend, fake_be))
 
@@ -751,7 +751,7 @@ def test_provision_idempotent_with_undo_and_deprovision(hub: TestClient) -> None
                 conns, obj, "ativos", "producao", "admin", {"confirm": "app-ativos"}, step_up, "u"
             )
         )
-    # falha no meio desfaz em ordem inversa e não deixa rastro; o segredo nunca vaza na mensagem
+    # failure midway rolls back in reverse order and leaves no trace; the secret never leaks into the message
     mc2 = FakeMc()
     mc2.fail_on = "admin policy attach"
     with pytest.raises(ConnError) as e:
@@ -760,7 +760,7 @@ def test_provision_idempotent_with_undo_and_deprovision(hub: TestClient) -> None
     assert not mc2.buckets and not mc2.users and "coletor" not in json.dumps(conns.storage)
     secret_tail = next(c for c in mc2.log if c[:3] == ["admin", "user", "add"])[-1]
     assert secret_tail not in str(e.value)
-    # recusa o que o hub não criou
+    # refuses what the hub did not create
     mc3 = FakeMc()
     mc3.buckets.add("app-servicos")
     with pytest.raises(ConnError, match="não foi provisionado pelo hub"):
