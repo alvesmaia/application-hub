@@ -109,6 +109,11 @@ master key and the first administrator (temporary password in `platform-py/.secr
 sample apps are on by default (compose profile `demo-apps`); `--no-demo-apps` installs the hub only. Upgrades:
 `docs/ATUALIZACAO.md`; changes: `CHANGELOG.md`.
 
+The interactive install also offers an optional SharePoint off-site copy of the backups (tenant, client id, site,
+folder; the client secret is read without echo and stored in the vault). Without a terminal: `SP_TENANT`,
+`SP_CLIENT_ID`, `SP_SITE`, `SP_FOLDER` and `SP_SECRET_FILE`. The app registration needs Graph `Sites.Selected`
+with the `write` role on that site.
+
 ## Development (in `platform-py/`)
 
 ```bash

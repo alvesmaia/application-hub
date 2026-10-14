@@ -24,6 +24,10 @@
 #   --clone              clones the repository first (--repo URL, --ref REF, --dir FOLDER)
 #   --get-compose        downloads the official docker-compose (pinned version, sha256 checked) to ~/.local/bin — for
 #                        RHEL/Rocky without root, where the distribution does not ship a compose provider
+#   SharePoint (optional) for the off-site copy of the backups: asked in the interactive install, or without a
+#   terminal via SP_TENANT, SP_CLIENT_ID, SP_SITE, SP_FOLDER (default Backups/hub) and SP_SECRET_FILE (file with the
+#   client secret). Creates the connection `backups-sharepoint` (secret in the vault) and sets HUB_BACKUP_OFFSITE_URL.
+#   The app registration needs Microsoft Graph Sites.Selected with the "write" role granted on that site.
 #   --yes                asks nothing (defaults + command-line options); in a terminal without instance options
 #                        of the instance the script asks for each one, with the default in [brackets]
 set -euo pipefail
@@ -80,9 +84,29 @@ if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && [ -t 0 ] && [ -r /dev/tty ]; then
   DEMO_IN=$([ "$DEMO" = 1 ] && echo s || echo n)
   ask DEMO_IN "Subir os 4 apps de exemplo? (s/n)" '^[snSN]$'
   case "$DEMO_IN" in s | S) DEMO=1 ;; *) DEMO=0 ;; esac
+  SP_IN=n
+  ask SP_IN "Configurar SharePoint para a cópia externa dos backups? (s/n)" '^[snSN]$'
+  case "$SP_IN" in
+  s | S)
+    SP_TENANT=${SP_TENANT:-} SP_CLIENT_ID=${SP_CLIENT_ID:-} SP_SITE=${SP_SITE:-} SP_FOLDER=${SP_FOLDER:-Backups/hub}
+    ask SP_TENANT "  Tenant ID do Entra ID (GUID ou dominio.onmicrosoft.com)" '^[0-9a-fA-F-]{36}$|^[a-zA-Z0-9.-]+\.[a-z]+$'
+    ask SP_CLIENT_ID "  Client ID do app registration (GUID)" '^[0-9a-fA-F-]{36}$'
+    ask SP_SITE "  Site (https://<empresa>.sharepoint.com[/sites/<site>])" '^https://[a-zA-Z0-9.-]+\.sharepoint\.com(/.*)?$'
+    ask SP_FOLDER "  Pasta dos backups no site" '^[^/].*$'
+    printf '  Segredo do cliente (não aparece na tela): ' > /dev/tty
+    stty -echo < /dev/tty 2>/dev/null || true
+    IFS= read -r SP_SECRET < /dev/tty || SP_SECRET=''
+    stty echo < /dev/tty 2>/dev/null || true
+    echo > /dev/tty
+    if [ -z "$SP_SECRET" ] || [ -z "$SP_TENANT" ] || [ -z "$SP_CLIENT_ID" ] || [ -z "$SP_SITE" ]; then
+      echo "resposta vazia: SharePoint não será configurado (cadastre depois em Administração › Conexões)"; SP_TENANT=''
+    fi
+    ;;
+  esac
   echo
   echo "Resumo: admin=$EMAIL  porta=$PORT  bind=$BIND  url=${PUBLIC_URL:-http://localhost:$PORT}"
   echo "        projeto=$PROJECT  subnet=$SUBNET.<n>.0/24  apps de exemplo=$([ "$DEMO" = 1 ] && echo sim || echo não)"
+  [ -n "${SP_TENANT:-}" ] && echo "        SharePoint (cópia dos backups)=$SP_SITE/$SP_FOLDER"
   printf 'Instalar com estas opções? (s/n) [s]: ' > /dev/tty
   IFS= read -r a < /dev/tty || a=s
   case "${a:-s}" in s | S) ;; *) echo "cancelado"; exit 1 ;; esac
@@ -206,6 +230,23 @@ if [ ! -s .secrets/primeiro-acesso.txt ]; then
   dc run --rm --no-deps -T app-hub-web python -m hub.admin create-admin --email "$EMAIL" --out /data/primeiro-acesso.txt >/dev/null
   dc run --rm --no-deps -T --entrypoint sh app-hub-web -c 'cat /data/primeiro-acesso.txt && rm -f /data/primeiro-acesso.txt' \
     > .secrets/primeiro-acesso.txt
+fi
+
+# SharePoint for the off-site copy of the backups (optional): interactive answers or SP_* + SP_SECRET_FILE
+if [ -z "${SP_SECRET:-}" ] && [ -n "${SP_SECRET_FILE:-}" ] && [ -s "$SP_SECRET_FILE" ]; then
+  IFS= read -r SP_SECRET < "$SP_SECRET_FILE"
+fi
+if [ -n "${SP_TENANT:-}" ] && [ -n "${SP_CLIENT_ID:-}" ] && [ -n "${SP_SITE:-}" ] && [ -n "${SP_SECRET:-}" ]; then
+  echo "4b/5 conexão SharePoint para a cópia externa dos backups"
+  printf '%s\n' "$SP_SECRET" | dc run --rm --no-deps -T app-hub-web python -m hub.admin add-sharepoint \
+    --name backups-sharepoint --tenant "$SP_TENANT" --client-id "$SP_CLIENT_ID" --site "$SP_SITE"
+  SP_SECRET=''
+  OFF="HUB_BACKUP_OFFSITE_URL=sharepoint://backups-sharepoint/${SP_FOLDER:-Backups/hub}"
+  if grep -q '^HUB_BACKUP_OFFSITE_URL=' "$ENVF"; then
+    sed -i "s#^HUB_BACKUP_OFFSITE_URL=.*#$OFF#" "$ENVF"
+  else
+    printf '%s\n' "$OFF" >> "$ENVF"
+  fi
 fi
 
 echo "5/5 subindo a pilha ($P)"

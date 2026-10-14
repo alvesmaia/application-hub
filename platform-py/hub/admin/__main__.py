@@ -60,6 +60,25 @@ async def deactivate_demo(store: AuthStore) -> int:
     return n
 
 
+def add_sharepoint(name: str, tenant: str, client_id: str, site: str) -> int:
+    """Used by `scripts/install.sh`: the connection goes to the store and the secret to the vault (never argv)."""
+    from hub.admin.store import AdminStore
+    from hub.connections.store import ConnError, ConnStore
+
+    secret = (getpass.getpass("Segredo do cliente: ") if sys.stdin.isatty() else sys.stdin.readline()).strip()
+    data = Path(os.getenv("HUB_DATA_DIR", "/data"))
+    vault = Vault.open(data)
+    store = ConnStore(data, vault, AdminStore(data, vault, apps=[]))
+    i = {"name": name, "kind": "sharepoint", "tenant_id": tenant, "client_id": client_id, "site": site,
+         "auth": "secret", "secret": secret}  # fmt: skip
+    try:
+        asyncio.run(store.update(name, i) if store.get(name) else store.create(i))
+    except ConnError as e:
+        raise SystemExit(f"conexão SharePoint: {e}") from e
+    print(f"conexão SharePoint {name} pronta; teste em Administração › Conexões")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m hub.admin")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -73,7 +92,16 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser(
         "set-entra-secret", help="guarda no cofre o segredo do cliente do Entra ID (entrada padrão)"
     )
+    sp = sub.add_parser(
+        "add-sharepoint", help="cria ou atualiza uma conexão SharePoint (segredo pela entrada padrão)"
+    )
+    sp.add_argument("--name", required=True)
+    sp.add_argument("--tenant", required=True)
+    sp.add_argument("--client-id", required=True)
+    sp.add_argument("--site", required=True)
     a = p.parse_args(argv)
+    if a.cmd == "add-sharepoint":
+        return add_sharepoint(a.name, a.tenant, a.client_id, a.site)
     if a.cmd == "set-entra-secret":
         secret = (
             getpass.getpass("Segredo do cliente: ") if sys.stdin.isatty() else sys.stdin.readline()

@@ -8,6 +8,9 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 ## [Unreleased]
 
 ### Added
+- `install.sh`: optional SharePoint questions for the off-site backup copy (or `SP_*` + `SP_SECRET_FILE` without a
+  terminal); creates the `backups-sharepoint` connection with `python -m hub.admin add-sharepoint` (secret via
+  stdin into the vault) and sets `HUB_BACKUP_OFFSITE_URL`.
 - Off-site backup copy to SharePoint: `HUB_BACKUP_OFFSITE_URL=sharepoint://<connection>/<folder>` sends each
   backup package through an existing SharePoint connection and reads it back checking the sha256.
 - `platform-py/scripts/db-tests.sh`: tests for the SQL broker against real PostgreSQL, MySQL and SQL Server in

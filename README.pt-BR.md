@@ -83,6 +83,10 @@ opções: `--public-url https://hub.empresa.com`, `--port`, `--project` (várias
 `--subnet`. Produção: [`docs/IMPLANTACAO.md`](docs/IMPLANTACAO.md); atualização: [`docs/ATUALIZACAO.md`](docs/ATUALIZACAO.md);
 mudanças: [`CHANGELOG.md`](CHANGELOG.md).
 
+A instalação interativa também oferece a cópia externa opcional dos backups no SharePoint (tenant, client id, site,
+pasta; o segredo é lido sem eco e guardado no cofre). Sem terminal: `SP_TENANT`, `SP_CLIENT_ID`, `SP_SITE`,
+`SP_FOLDER` e `SP_SECRET_FILE`. O app registration precisa do `Sites.Selected` do Graph com papel `write` no site.
+
 ## Desenvolvimento (em `platform-py/`)
 
 ```bash

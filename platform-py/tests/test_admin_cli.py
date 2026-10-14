@@ -27,3 +27,37 @@ def test_create_admin_and_deactivate_demo(tmp_path: Path, monkeypatch, capsys) -
     assert verify(password, admin["password_hash"])
     demos = [u for e, u in users.items() if e.endswith("@demo.local")]
     assert demos and not any(u["active"] or u.get("password_hash") for u in demos)
+
+
+def test_add_sharepoint_connection_from_the_installer(tmp_path: Path, monkeypatch, capsys) -> None:
+    import io
+
+    import pytest
+
+    from hub.admin.store import AdminStore
+    from hub.connections.store import ConnStore
+    from hub.vault import Vault
+
+    monkeypatch.setenv("HUB_DATA_DIR", str(tmp_path))
+    args = ["add-sharepoint", "--name", "backups-sharepoint", "--tenant", "7b369f6a-86a3-4b85-9b78-ac3bdf47a74d",
+            "--client-id", "DABA04DC-E352-4C55-8815-A19BD702B569", "--site", "https://contoso.sharepoint.com/sites/TI"]  # fmt: skip
+    monkeypatch.setattr("sys.stdin", io.StringIO("s3gredo-sp\n"))
+    assert main(args) == 0
+    vault = Vault.open(tmp_path)
+    c = ConnStore(tmp_path, vault, AdminStore(tmp_path, vault, apps=[])).get("backups-sharepoint")
+    assert (
+        c
+        and c["kind"] == "sharepoint"
+        and c["secret"] == "s3gredo-sp"
+        and c["client_id"].startswith("daba04dc")
+    )
+    assert "s3gredo" not in "".join(p.read_text(errors="ignore") for p in tmp_path.rglob("*") if p.is_file())
+    assert "s3gredo" not in capsys.readouterr().out
+    monkeypatch.setattr("sys.stdin", io.StringIO("s3gredo-novo\n"))
+    assert main(args) == 0  # running the installer again updates the same connection
+    vault = Vault.open(tmp_path)
+    c = ConnStore(tmp_path, vault, AdminStore(tmp_path, vault, apps=[])).get("backups-sharepoint")
+    assert c and c["secret"] == "s3gredo-novo"
+    monkeypatch.setattr("sys.stdin", io.StringIO("x\n"))
+    with pytest.raises(SystemExit):
+        main([*args[:-1], "http://nao-e-sharepoint"])
