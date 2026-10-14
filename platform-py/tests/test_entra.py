@@ -1,3 +1,4 @@
+import asyncio
 import json
 from collections.abc import Iterator
 from typing import Any
@@ -140,3 +141,15 @@ def test_multi_tenant_requires_allowed_tenants(sso: TestClient, monkeypatch: pyt
 def test_role_map_formats() -> None:
     assert entra.parse_role_map("a=Administrador, b = Leitor") == {"a": "Administrador", "b": "Leitor"}
     assert entra.parse_role_map('{"A":"X"}') == {"a": "X"}
+
+
+def test_sso_link_drops_unchanged_temporary_password(sso: TestClient) -> None:
+    """Vincular pelo e-mail um usuário que nunca trocou a senha temporária anula essa senha e não exige a troca."""
+    client = anon(client_for(create_app()))
+    store = client.app.state.auth  # type: ignore[attr-defined]
+    asyncio.run(store.create_user("ana@contoso.com", "Ana", ["Colaborador"], "Temporaria-123!", True))
+    r = flow(client, sso)
+    assert r.status_code == 303 and r.headers["location"] == "/applications"
+    u = next(u for u in users(client) if u["email"] == "ana@contoso.com")
+    assert u["must_change_password"] is False and u.get("password_hash") is None
+    assert asyncio.run(store.authenticate("ana@contoso.com", "Temporaria-123!")) is None

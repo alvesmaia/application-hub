@@ -278,6 +278,9 @@ class AuthStore:
                 d["users"].append(user)
             if not user["active"]:
                 return None, False
+            if user.get("must_change_password"):
+                # Senha temporária nunca trocada: anulada ao vincular (o SSO não exige a troca, e ela não fica ativa).
+                user.update(password_hash=None, must_change_password=False)
             user.update(sso_issuer=issuer, sso_subject=subject, last_login=now_ms(), updated_at=now_ms())
             if roles:
                 user["roles"] = roles

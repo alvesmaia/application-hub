@@ -40,6 +40,8 @@ Versões 0.x = pré-1.0: a API pode mudar entre versões menores.
   parada de ~10 s. Proxies próprios na frente continuam iguais (o destino é a mesma porta).
 
 ### Corrigido
+- Login pelo Entra ID de quem ainda tinha a senha temporária (ex.: o primeiro administrador) caía na troca
+  obrigatória de senha e o MCP via OAuth recusava o token; agora o vínculo SSO anula a senha temporária nunca trocada.
 - `hub_update.py`: no Docker com containerd, o `--build` falhava no backup porque a imagem em execução perdia a
   referência ao ganhar `latest` nova; agora ela recebe a tag `<proj>-web:pre-update` antes (backup, rollback e volta
   usam a tag). O backup do volume de dados não reprova mais quando um arquivo muda durante a cópia.
