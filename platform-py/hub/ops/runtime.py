@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import builtins
 import os
 import time
 from collections.abc import Callable
@@ -41,6 +40,9 @@ from hub.ops.capacity import (
 from hub.ops.capacity import (
     validate_limits as validate_limits,
 )
+from hub.ops.docker_guard import OWNED as OWNED
+from hub.ops.docker_guard import Guarded as Guarded
+from hub.ops.docker_guard import own as own
 from hub.ops.model import OpsError
 
 SEP = "__"
@@ -54,9 +56,6 @@ def container_name(app: str, env: str) -> str:
     return f"{prefix()}{app}{SEP}staging" if env == "staging" else f"{prefix()}{app}"
 
 
-OWNED = "app-hub-"  # the only slice of the daemon the hub sees (never hub-*, apphub-devtunnel or others)
-
-
 PLATFORM_DB = "app-hub-app-db"  # apps' database: matches the apps' prefix but belongs to the platform
 
 
@@ -66,115 +65,21 @@ def is_platform(name: str) -> bool:
     return name.startswith(OWNED) and (name in (PLATFORM_DB, db) or not name.startswith(prefix()))
 
 
-def own(name: str) -> str:
-    """Refuses (403) any name outside `app-hub-*`; all Docker operations go through here."""
-    if not isinstance(name, str) or not name.startswith(OWNED) or "/" in name or ":" in name:
-        raise OpsError(f"Operação recusada: o hub só gerencia containers {OWNED}* ({str(name)[:60]!r}).", 403)
-    return name
-
-
-_PODMAN: dict[str, tuple[bool, bool]] = {}  # per daemon; cgroup delegation is fixed while the hub runs
-
-
-def tmpfs_podman(opts: str) -> str:
-    """`rw,size=256m,uid=10001,gid=10001` → `rw,size=256m,U` (Podman does not accept uid/gid on tmpfs)."""
-    parts = [o for o in opts.split(",") if o]
-    keep: list[str] = [o for o in parts if not o.startswith(("uid=", "gid="))]
-    return ",".join([*keep, "U"] if len(keep) < len(parts) else keep)
-
-
-class _Containers:
-    def __init__(self, real: Any) -> None:
-        self._r = real
-
-    def get(self, name: str) -> Any:
-        return self._r.get(own(name))
-
-    def list(self, **kw: Any) -> builtins.list[Any]:
-        return [c for c in self._r.list(**kw) if str(c.name).startswith(OWNED)]
-
-
-class Guarded:
-    """The only Docker client surface the hub uses: containers only `app-hub-*`, images `app-hub-*` at build time."""
-
-    def __init__(self, real: Any) -> None:
-        self._cl, self.containers = real, _Containers(real.containers)
-
-    def podman(self) -> tuple[bool, bool]:
-        """(is Podman, has the `cpu` controller). Rootless Podman on RHEL 9 delegates only `memory pids` to the user: with
-        a CPU limit, every build `RUN` and container creation fail. Docker: (False, True)."""
-        base = str(getattr(getattr(self._cl, "api", None), "base_url", ""))
-        if base not in _PODMAN:
-            try:
-                r = self._cl.api._get(base + "/v4.0.0/libpod/info")
-                ctl = r.json()["host"]["cgroupControllers"] if r.status_code == 200 else None
-                _PODMAN[base] = (ctl is not None, ctl is None or "cpu" in ctl)
-            except Exception:  # no response: assumes Docker (the earlier behavior)
-                return (False, True)
-        return _PODMAN[base]
-
-    def version(self) -> dict[str, Any]:
-        return dict(self._cl.version())
-
-    def info(self) -> dict[str, Any]:
-        return dict(self._cl.info())
-
-    def image(self, ref: str) -> Any:
-        return self._cl.images.get(ref)
-
-    def build(self, path: str, tag: str, **kw: Any) -> Any:
-        if not tag.startswith(OWNED):
-            own(tag)
-        return self._cl.images.build(path=path, tag=tag, rm=True, **kw)
-
-    def build_stream(self, path: str, tag: str, dockerfile: str, memory: int, cpus: int = 0) -> Any:
-        """Builds `tag` (only `app-hub-*`) with a memory/swap cap (and CPUs) and returns the daemon's stream."""
-        own(tag.split(":", 1)[0])
-        limits: dict[str, Any] = {"memory": memory, "memswap": memory}
-        if self.podman()[1]:
-            limits["cpushares"] = 512
-        if cpus > 0 and self.podman()[1]:
-            limits["cpusetcpus"] = f"0-{cpus - 1}" if cpus > 1 else "0"
-        return self._cl.api.build(
-            path=path, tag=tag, dockerfile=dockerfile, rm=True, forcerm=True, decode=True, container_limits=limits,
-        )  # fmt: skip
-
-    def pinned(self, repo: str) -> builtins.list[tuple[str, str]]:
-        """(tag, LastTagTime) of the pinned images of `repo` (`app-hub-app-*`)."""
-        own(repo)
-        out: builtins.list[tuple[str, str]] = []
-        for im in self._cl.images.list(name=repo):
-            when = str((im.attrs.get("Metadata") or {}).get("LastTagTime", ""))
-            out += [(t, when) for t in im.tags if t.startswith(repo + ":")]
-        return out
-
-    def untag(self, ref: str) -> None:
-        own(ref.split(":", 1)[0])
-        self._cl.images.remove(ref, noprune=False)
-
-    def pin(self, image: str, repo: str, tag: str) -> None:
-        """Labels the image as `app-hub-app-*:<tag>`: a named image is not swept by `image prune`."""
-        own(repo)
-        self._cl.images.get(image).tag(repo, tag)
-
-    def create(self, image: str, name: str, **spec: Any) -> Any:
-        own(name)
-        podman, cpu = self.podman()
-        host = spec.get("host_config")
-        if isinstance(host, dict) and podman:
-            host = dict(host)
-            if not cpu:
-                for k in ("NanoCpus", "CpuShares", "CpuQuota", "CpuPeriod", "CpusetCpus"):
-                    host.pop(k, None)
-            if host.get("Tmpfs"):  # Podman refuses `uid=`/`gid=`; `U` gives the tmpfs to the container's user
-                host["Tmpfs"] = {path: tmpfs_podman(opts) for path, opts in host["Tmpfs"].items()}
-            spec["host_config"] = host
-        self._cl.api.create_container(image, name=name, **spec)
-        return self.containers.get(name)
-
-    def connect(self, network: str, container: str, **kw: Any) -> None:
-        own(container)
-        self._cl.api.connect_container_to_network(container, network, **kw)
+def _consume_build(stream: Any, deadline: float, timeout_s: float, emit: Callable[[str], Any]) -> str:
+    """Reads the daemon's build stream: log lines go to `emit`, errors and the deadline raise; returns the image ID."""
+    last = ""
+    for ch in stream:
+        if deadline and time.monotonic() > deadline:
+            getattr(stream, "close", lambda: None)()  # closing the stream cancels the build
+            raise OpsError(f"Build falhou: tempo limite de {int(timeout_s)} s excedido", 422)
+        if ch.get("error"):
+            raise OpsError(f"Build falhou: {str(ch['error']).strip()}"[:300], 422)
+        for ln in str(ch.get("stream") or "").splitlines():
+            if ln.strip():
+                emit(ln.rstrip())
+        if ch.get("aux", {}).get("ID"):
+            last = str(ch["aux"]["ID"])
+    return last
 
 
 def _default_client() -> Any:
@@ -394,7 +299,7 @@ class Engine:
             return ""
         return f"{repo}:{label}"
 
-    async def build(  # noqa: C901
+    async def build(
         self, path: str, tag: str, dockerfile: str, memory: int, on_line: Callable[[str], None],
         cpus: int = 0, timeout_s: float = 0,
     ) -> str:  # fmt: skip
@@ -403,21 +308,10 @@ class Engine:
         deadline = time.monotonic() + timeout_s if timeout_s > 0 else 0.0
 
         def go(cl: Any) -> str:
-            last = ""
             stream = cl.build_stream(path, tag, dockerfile, memory, cpus)
-            for ch in stream:
-                if deadline and time.monotonic() > deadline:
-                    getattr(stream, "close", lambda: None)()  # closing the stream cancels the build
-                    raise OpsError(f"Build falhou: tempo limite de {int(timeout_s)} s excedido", 422)
-                if ch.get("error"):
-                    raise OpsError(f"Build falhou: {str(ch['error']).strip()}"[:300], 422)
-                if ch.get("stream"):
-                    for ln in str(ch["stream"]).splitlines():
-                        if ln.strip():
-                            loop.call_soon_threadsafe(on_line, ln.rstrip())
-                if ch.get("aux", {}).get("ID"):
-                    last = str(ch["aux"]["ID"])
-            return last
+            return _consume_build(
+                stream, deadline, timeout_s, lambda ln: loop.call_soon_threadsafe(on_line, ln)
+            )
 
         try:
             return str(await self._run(go))
