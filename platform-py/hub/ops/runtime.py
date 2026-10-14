@@ -1,23 +1,49 @@
-"""Containers: host capacity, limits (admission control) and real state/actions via the Docker SDK (`app-hub-app-*`)."""
+"""Containers: names, platform guard and real state/actions via the Docker SDK (`app-hub-app-*`)."""
 
 from __future__ import annotations
 
 import asyncio
 import builtins
 import os
-import re
 import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from typing import Any
 
+from hub.ops.capacity import (  # re-exported: callers use rt.Host, rt.admit, …
+    GIB as GIB,
+)
+from hub.ops.capacity import (
+    MAX_CPU as MAX_CPU,
+)
+from hub.ops.capacity import (
+    MAX_MEMORY as MAX_MEMORY,
+)
+from hub.ops.capacity import (
+    MAX_PIDS as MAX_PIDS,
+)
+from hub.ops.capacity import (
+    Host as Host,
+)
+from hub.ops.capacity import (
+    admit as admit,
+)
+from hub.ops.capacity import (
+    allocated as allocated,
+)
+from hub.ops.capacity import (
+    memory_bytes as memory_bytes,
+)
+from hub.ops.capacity import (
+    resources_of as resources_of,
+)
+from hub.ops.capacity import (
+    validate_limits as validate_limits,
+)
 from hub.ops.model import OpsError
 
-GIB = 1024.0**3
 SEP = "__"
-MAX_CPU, MAX_PIDS, MAX_MEMORY = 4.0, 1024, 8 * 1024**3
-_MEM = re.compile(r"^(\d+)(Ki|Mi|Gi)$")
 
 
 def prefix() -> str:
@@ -26,96 +52,6 @@ def prefix() -> str:
 
 def container_name(app: str, env: str) -> str:
     return f"{prefix()}{app}{SEP}staging" if env == "staging" else f"{prefix()}{app}"
-
-
-def memory_bytes(s: str) -> int:
-    m = _MEM.match(s)
-    if not m:
-        raise OpsError(f"Limite inválido: memória {s!r} (use 512Mi ou 1Gi).")
-    return int(m.group(1)) * {"Ki": 1024, "Mi": 1024**2, "Gi": 1024**3}[m.group(2)]
-
-
-def resources_of(entry: Any, limits: dict[str, Any]) -> dict[str, Any]:
-    """Effective limits: edited in Containers or taken from the manifest."""
-    if entry.id in limits:
-        return dict(limits[entry.id])
-    r = (entry.manifest.model_extra or {}).get("resources") if entry.manifest else None
-    return {"cpu": 0.5, "memory": "256Mi", "pids": 100, **(r or {})}
-
-
-def validate_limits(l: dict[str, Any]) -> None:  # noqa: E741
-    try:
-        cpu, pids = float(l["cpu"]), int(l["pids"])
-        mem = memory_bytes(str(l["memory"]))
-    except (KeyError, TypeError, ValueError) as e:
-        raise OpsError("Limite inválido: informe cpu, memory e pids.") from e
-    if not 0 < cpu <= MAX_CPU:
-        raise OpsError(f"Limite inválido: cpu {cpu}.")
-    if mem > MAX_MEMORY or mem <= 0:
-        raise OpsError(f"Limite inválido: memory {l['memory']}.")
-    if not 0 < pids <= MAX_PIDS:
-        raise OpsError(f"Limite inválido: pids {pids}.")
-
-
-def _num(name: str) -> float | None:
-    try:
-        v = float(os.environ[name])
-    except (KeyError, ValueError):
-        return None
-    return v if v >= 0 else None
-
-
-class Host:
-    """Host capacity and system/platform reserves (vCPU, GiB)."""
-
-    def __init__(self, cpu: float | None = None, mem_gib: float | None = None) -> None:
-        cc, mc = _num("HUB_HOST_CPU"), _num("HUB_HOST_MEMORY_GIB")
-        self.cpu = cc or cpu or float(os.cpu_count() or 4)
-        self.mem_gib = mc or mem_gib or 16.0
-        self.system_cpu = _num("HUB_RESERVE_SYSTEM_CPU") or 0.5
-        self.system_mem_gib = _num("HUB_RESERVE_SYSTEM_MEMORY_GIB") or 1.0
-        self.platform_cpu = _num("HUB_RESERVE_PLATFORM_CPU") or 1.0
-        self.platform_mem_gib = _num("HUB_RESERVE_PLATFORM_MEMORY_GIB") or 2.0
-        self.source = (
-            f"{'CPU configurada' if cc else 'CPU do engine' if cpu else 'CPU detectada'} · "
-            f"{'memória configurada' if mc else 'memória do engine' if mem_gib else 'memória detectada'}"
-        )
-
-    @property
-    def available_cpu(self) -> float:
-        return self.cpu - self.system_cpu - self.platform_cpu
-
-    @property
-    def available_mem_gib(self) -> float:
-        return self.mem_gib - self.system_mem_gib - self.platform_mem_gib
-
-    def as_json(self) -> dict[str, Any]:
-        return {k: getattr(self, k) for k in ("cpu", "mem_gib", "system_cpu", "system_mem_gib", "platform_cpu",
-                                              "platform_mem_gib", "source")}  # fmt: skip
-
-
-def allocated(entries: list[Any], limits: dict[str, Any]) -> tuple[float, float]:
-    cpu = mem = 0.0
-    for e in entries:
-        r = resources_of(e, limits)
-        cpu += float(r["cpu"])
-        mem += memory_bytes(str(r["memory"])) / GIB
-    return cpu, mem
-
-
-def admit(host: Host, entries: list[Any], limits: dict[str, Any], app: str, new: dict[str, Any]) -> None:
-    cpu, mem = allocated(entries, {**limits, app: new})
-    br = lambda v: f"{v:.2f}".replace(".", ",")  # noqa: E731
-    if cpu > host.available_cpu + 1e-9:
-        raise OpsError(
-            f"Capacidade insuficiente: as aplicações somariam {br(cpu)} vCPU, mas o host tem "
-            f"{br(host.available_cpu)} vCPU disponíveis após as reservas de sistema e plataforma."
-        )
-    if mem > host.available_mem_gib + 1e-9:
-        raise OpsError(
-            f"Capacidade insuficiente: as aplicações somariam {br(mem)} GiB de memória, mas o host tem "
-            f"{br(host.available_mem_gib)} GiB disponíveis após as reservas."
-        )
 
 
 OWNED = "app-hub-"  # the only slice of the daemon the hub sees (never hub-*, apphub-devtunnel or others)
@@ -252,6 +188,7 @@ class Engine:
 
     def __init__(self, factory: Callable[[], Any] | None = None) -> None:
         self._cache: tuple[float, dict[str, Any]] | None = None
+        self._gen = 0
         self._flight: asyncio.Task[dict[str, Any]] | None = None
         self.factory = factory or _default_client
 
@@ -306,14 +243,16 @@ class Engine:
         return await asyncio.shield(self._flight)
 
     async def _refresh(self) -> dict[str, Any]:
-        f = self._factory
+        f, gen = self._factory, self._gen
         out = await self._probe()
-        if f is self._factory:
+        if f is self._factory and gen == self._gen:  # a mutation during the read makes this result stale
             self._cache = (time.monotonic(), out)
         return out
 
     def invalidate(self) -> None:
-        self._cache = None
+        """After a mutation: drops the cache and any read already in flight (it saw the old state)."""
+        self._cache, self._flight = None, None
+        self._gen += 1
 
     async def _probe(self) -> dict[str, Any]:
         def go(cl: Any) -> dict[str, Any]:

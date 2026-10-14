@@ -89,3 +89,27 @@ def test_container_whose_image_was_removed_does_not_break_the_listing() -> None:
 
     live = rt.Engine._live(Orphan(), None)
     assert live["name"] == "app-hub-objstore" and live["image"] == "app-hub-minio:0.10.0"
+
+
+async def test_refresh_started_before_a_mutation_is_not_served_after_it() -> None:
+    # a page reload right after "stop" must not get the state read before the stop (E2E 06-ops containers)
+    state = {"status": "running"}
+
+    def factory() -> Any:
+        c = _C(0)
+        c.status = state["status"]
+        time.sleep(0.3)  # slow probe: still in flight when the mutation lands
+        return SimpleNamespace(
+            version=lambda: {"Version": "1"}, info=lambda: {"NCPU": 2, "MemTotal": 1},
+            containers=SimpleNamespace(list=lambda **_: [c], get=lambda n: c),
+        )  # fmt: skip
+
+    e = rt.Engine(factory)
+    stale = asyncio.create_task(e.probe())
+    await asyncio.sleep(0.05)
+    state["status"] = "exited"
+    e.invalidate()  # what a mutating `_run` does
+    after = await e.probe()
+    assert after["live"][0]["state"] == "exited"
+    await stale
+    assert (await e.probe())["live"][0]["state"] == "exited"  # the stale result was not cached either

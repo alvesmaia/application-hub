@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from fastapi import APIRouter, FastAPI, Request
@@ -68,3 +68,8 @@ def env_key(v: str | None) -> str:
 
 def rollout_env(label: str) -> str:
     return "staging" if label in (m.STAGING, "staging") else "producao"
+
+
+def ctx(request: Request) -> OpsCtx:
+    """FastAPI dependency: the Operations state that `mount_ops` stored on the app."""
+    return cast(OpsCtx, request.app.state.ops_ctx)

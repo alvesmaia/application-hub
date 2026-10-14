@@ -21,7 +21,7 @@ from hub.gateway.csp import set_script_provider
 from hub.gateway.registry import Registry
 from hub.ops import jobs as jb
 from hub.ops import model as m
-from hub.ops import newapp
+from hub.ops import newapp, routes_backups, routes_deploys, routes_pages, routes_runtime
 from hub.ops import runtime as rt
 from hub.ops.backups import Backups
 from hub.ops.jobs import Jobs
@@ -29,10 +29,6 @@ from hub.ops.leader import Leader
 from hub.ops.model import OpsError, OpsStore, now_ms
 from hub.ops.opsctx import OpsCtx, br, env_key, rollout_env, tone  # noqa: F401 (re-exported)
 from hub.ops.rollout import Rollout
-from hub.ops.routes_backups import mount_backups
-from hub.ops.routes_deploys import mount_deploys
-from hub.ops.routes_pages import mount_pages
-from hub.ops.routes_runtime import mount_runtime
 from hub.ux.texts import tr
 
 
@@ -196,10 +192,12 @@ def mount_ops(  # noqa: C901, PLR0915
         need_app=need_app,
         body=body,
     )
-    mount_deploys(c)
-    runtime_state, list_tasks = mount_runtime(c)
-    mount_backups(c)
+    app.state.ops_ctx = c
+    for section in (routes_deploys, routes_runtime, routes_backups):
+        api.include_router(section.router)
+        section.mount(c)
     app.include_router(api)
 
-    mount_pages(c, runtime_state, list_tasks)
+    routes_pages.mount(c)
+    app.include_router(routes_pages.router)
     return store
