@@ -32,18 +32,27 @@ from __future__ import annotations
 import asyncio
 import datetime as dt
 import io
-import math
-import re
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
 from fastapi.responses import Response
-from markupsafe import Markup, escape
+from markupsafe import Markup
 
 from hub_sdk import locale
 from hub_sdk import sql as sql_mod
+from hub_sdk._dash_svg import PAD_B as PAD_B
+from hub_sdk._dash_svg import PAD_L as PAD_L
+from hub_sdk._dash_svg import PAD_R as PAD_R
+from hub_sdk._dash_svg import PAD_T as PAD_T
+from hub_sdk._dash_svg import SERIES as SERIES
+from hub_sdk._dash_svg import H as H
+from hub_sdk._dash_svg import W as W
+from hub_sdk._dash_svg import _axes, _frame, _from_result, _no_data, _pie
+from hub_sdk.dashboards_format import _attr, _num, _safe
+from hub_sdk.dashboards_format import compact as compact
+from hub_sdk.dashboards_format import fmt as fmt
 from hub_sdk.render import download_headers
 from hub_sdk.sql import SqlConnection, SqlResult
 
@@ -67,11 +76,6 @@ __all__ = [
     "to_csv",
     "to_xlsx",
 ]
-
-SERIES = 6  # cores categóricas (hub-dash-c0..c5)
-W, H = 640, 260
-PAD_L, PAD_R, PAD_T, PAD_B = 56, 16, 16, 40
-
 
 # ---- parameters and datasets ----------------------------------------------------------------------
 
@@ -179,65 +183,6 @@ class Dashboard:
         self._cache.clear()
 
 
-# ---- formatting ---------------------------------------------------------------------------------
-
-
-def fmt(v: Any, unit: str = "", places: int | None = None) -> str:
-    if v is None:
-        return "–"
-    if isinstance(v, bool) or not isinstance(v, int | float):
-        return str(v)
-    if places is None:
-        places = 0 if float(v).is_integer() or abs(v) >= 1000 else 2
-    s = locale.number(float(v), places)
-    if unit in ("R$", "US$", "€", "$"):
-        return f"{unit} {s}"
-    return f"{s} {unit}".strip() if unit else s
-
-
-def compact(v: float) -> str:
-    a = abs(v)
-    for div, suf in ((1e9, " bi"), (1e6, " mi"), (1e3, " mil")):
-        if a >= div:
-            return locale.number(v / div, 1 if a < div * 10 else 0) + locale.t(suf)
-    return locale.number(v, 0 if float(v).is_integer() else 1)
-
-
-def _num(v: Any) -> float:
-    if isinstance(v, bool) or v is None:
-        return 0.0
-    if isinstance(v, int | float):
-        return float(v) if math.isfinite(float(v)) else 0.0
-    try:
-        return float(str(v).replace(",", "."))
-    except ValueError:
-        return 0.0
-
-
-def _ticks(lo: float, hi: float, n: int = 4) -> list[float]:
-    if hi <= lo:
-        hi = lo + 1
-    raw = (hi - lo) / n
-    mag = 10 ** math.floor(math.log10(raw))
-    step = next(m * mag for m in (1, 2, 2.5, 5, 10) if m * mag >= raw)
-    start = math.floor(lo / step) * step
-    out: list[float] = []
-    v = start
-    while not out or out[-1] < hi - 1e-9:  # the last step covers the maximum
-        out.append(round(v, 10))
-        v += step
-    return out
-
-
-def _safe(html: str) -> Markup:
-    """HTML built here: every value coming from data/user went through :func:`_attr` (escaping)."""
-    return Markup(html)  # noqa: S704 — only own markup, escaped values
-
-
-def _attr(s: Any) -> str:
-    return str(escape(str(s)))
-
-
 # ---- KPIs ---------------------------------------------------------------------------------------
 
 
@@ -264,69 +209,6 @@ def kpis(items: Iterable[Markup]) -> Markup:
 Series = Sequence[tuple[str, Sequence[Any]]]
 
 
-def _from_result(
-    r: SqlResult, x: str, y: Sequence[str] | str
-) -> tuple[list[str], list[tuple[str, list[float]]]]:
-    ys = [y] if isinstance(y, str) else list(y)
-    labels = [str(v) if v is not None else "–" for v in r.column(x)]
-    return labels, [(c, [_num(v) for v in r.column(c)]) for c in ys]
-
-
-def _frame(title: str, body: str, legend: list[tuple[int, str]], desc: str, kind: str) -> Markup:
-    tid = "hub-dash-t-" + re.sub(r"[^a-z0-9]+", "-", f"{kind}-{title}".lower()).strip("-")[:48]
-    leg = ""
-    if legend:
-        leg = (
-            '<ul class="hub-dash-legend">'
-            + "".join(
-                f'<li><i class="hub-dash-c{i % SERIES}" aria-hidden="true"></i>{_attr(locale.t(n))}</li>'
-                for i, n in legend
-            )
-            + "</ul>"
-        )
-    head = f'<h3 class="hub-dash-title" id="{tid}">{_attr(locale.t(title))}</h3>' if title else ""
-    label = f'aria-labelledby="{tid}"' if title else f'aria-label="{_attr(desc)}"'
-    return _safe(
-        f'<figure class="hub-dash-chart hub-dash-k-{kind}">{head}'
-        f'<svg class="hub-dash-svg" viewBox="0 0 {W} {H}" role="img" {label} preserveAspectRatio="xMidYMid meet">'
-        f"<desc>{_attr(desc)}</desc>{body}</svg>{leg}</figure>"
-    )
-
-
-def _axes(
-    labels: list[str], lo: float, hi: float, unit: str, band: bool
-) -> tuple[str, Callable[[float], float], Callable[[int], float], float]:
-    ticks = _ticks(lo, hi)
-    lo, hi = min(ticks[0], lo), max(ticks[-1], hi)
-    pw, ph = W - PAD_L - PAD_R, H - PAD_T - PAD_B
-    n = max(len(labels), 1)
-    slot = pw / n
-
-    def y(v: float) -> float:
-        return PAD_T + ph - (v - lo) / (hi - lo) * ph
-
-    def x(i: int) -> float:
-        return PAD_L + slot * (i + 0.5) if band else PAD_L + (pw * i / (n - 1) if n > 1 else pw / 2)
-
-    parts = []
-    for t in ticks:
-        yy = y(t)
-        parts.append(
-            f'<line class="hub-dash-grid" x1="{PAD_L}" x2="{W - PAD_R}" y1="{yy:.1f}" y2="{yy:.1f}"/>'
-        )
-        parts.append(
-            f'<text class="hub-dash-axis" x="{PAD_L - 8}" y="{yy + 4:.1f}" text-anchor="end">{_attr(compact(t))}</text>'
-        )
-    every = max(1, math.ceil(n / 8))
-    for i, lab in enumerate(labels):
-        if i % every == 0 or (i == n - 1 and n <= 8):
-            short = lab if len(lab) <= 12 else lab[:11] + "…"
-            parts.append(
-                f'<text class="hub-dash-axis" x="{x(i):.1f}" y="{H - PAD_B + 18}" text-anchor="middle">{_attr(short)}</text>'
-            )
-    return "".join(parts), y, x, slot
-
-
 def chart(
     kind: str,
     labels: Sequence[Any],
@@ -340,13 +222,7 @@ def chart(
     if kind in ("pie", "donut"):
         return _pie(labs, ser[0] if ser else ("", []), title, unit, kind == "donut")
     if not labs or not ser:
-        return _frame(
-            title,
-            f'<text class="hub-dash-axis" x="{W / 2}" y="{H / 2}" text-anchor="middle">{_attr(locale.t("Sem dados"))}</text>',
-            [],
-            locale.t("Sem dados"),
-            kind,
-        )
+        return _no_data(title, kind)
     allv = [v for _, vals in ser for v in vals]
     lo, hi = min(0.0, *allv), max(0.0, *allv)
     grid, y, x, slot = _axes(labs, lo, hi, unit, kind == "bar")
@@ -383,54 +259,6 @@ def chart(
         )
     legend = [(i, n) for i, (n, _) in enumerate(ser)] if len(ser) > 1 else []
     return _frame(title, "".join(parts), legend, "; ".join(desc)[:900], kind)
-
-
-def _pie(labels: list[str], s: tuple[str, list[float]], title: str, unit: str, donut: bool) -> Markup:  # noqa: PLR0915
-    name, vals = s
-    pairs = [(lab, v) for lab, v in zip(labels, vals, strict=False) if v > 0]
-    total = sum(v for _, v in pairs)
-    kind = "donut" if donut else "pie"
-    if not pairs or total <= 0:
-        return _frame(
-            title,
-            f'<text class="hub-dash-axis" x="{W / 2}" y="{H / 2}" text-anchor="middle">{_attr(locale.t("Sem dados"))}</text>',
-            [],
-            locale.t("Sem dados"),
-            kind,
-        )
-    if len(pairs) > SERIES:  # o resto vira "Outros"
-        head, tail = pairs[: SERIES - 1], pairs[SERIES - 1 :]
-        pairs = [*head, (locale.t("Outros"), sum(v for _, v in tail))]
-    cx, cy, r = W / 2, H / 2, H / 2 - 16
-    ri = r * 0.6 if donut else 0.0
-    parts, a0 = [], -math.pi / 2
-    for i, (lab, v) in enumerate(pairs):
-        a1 = a0 + v / total * 2 * math.pi
-        tip = f"<title>{_attr(lab)}: {_attr(fmt(v, unit))} ({_attr(locale.number(v / total * 100, 1))}%)</title>"
-        if len(pairs) == 1:
-            ring = f'<circle class="hub-dash-slice hub-dash-c0" cx="{cx}" cy="{cy}" r="{r}">{tip}</circle>'
-            if donut:
-                ring += f'<circle class="hub-dash-hole" cx="{cx}" cy="{cy}" r="{ri:.1f}"/>'
-            parts.append(ring)
-            break
-        large = 1 if a1 - a0 > math.pi else 0
-        p1 = (cx + r * math.cos(a0), cy + r * math.sin(a0))
-        p2 = (cx + r * math.cos(a1), cy + r * math.sin(a1))
-        if donut:
-            q1 = (cx + ri * math.cos(a1), cy + ri * math.sin(a1))
-            q2 = (cx + ri * math.cos(a0), cy + ri * math.sin(a0))
-            d = (f"M{p1[0]:.1f},{p1[1]:.1f} A{r:.1f},{r:.1f} 0 {large} 1 {p2[0]:.1f},{p2[1]:.1f} "
-                 f"L{q1[0]:.1f},{q1[1]:.1f} A{ri:.1f},{ri:.1f} 0 {large} 0 {q2[0]:.1f},{q2[1]:.1f} Z")  # fmt: skip
-        else:
-            d = f"M{cx:.1f},{cy:.1f} L{p1[0]:.1f},{p1[1]:.1f} A{r:.1f},{r:.1f} 0 {large} 1 {p2[0]:.1f},{p2[1]:.1f} Z"
-        parts.append(f'<path class="hub-dash-slice hub-dash-c{i}" d="{d}">{tip}</path>')
-        a0 = a1
-    if donut:
-        parts.append(
-            f'<text class="hub-dash-total" x="{cx}" y="{cy + 7}" text-anchor="middle">{_attr(compact(total))}</text>'
-        )
-    desc = f"{locale.t(name)}: " + ", ".join(f"{lab} {fmt(v, unit)}" for lab, v in pairs)
-    return _frame(title, "".join(parts), [(i, lab) for i, (lab, _) in enumerate(pairs)], desc[:900], kind)
 
 
 def line_chart(r: SqlResult, x: str, y: Sequence[str] | str, title: str = "", unit: str = "") -> Markup:
