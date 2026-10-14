@@ -8,141 +8,24 @@ sharing link and `/_sim/*` (config, stats, reset). Files are kept in memory only
 from __future__ import annotations
 
 import asyncio
-import base64
-import hashlib
 import json
-import os
 import random
 import re
 import secrets
 import time
-from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
+from dataclasses import asdict
 from typing import Any
 from urllib.parse import parse_qsl, quote, unquote
 
-from cryptography import x509
-from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 
-CHUNK_UNIT = 320 * 1024
-SIMPLE_MAX = 4 * 1024 * 1024
-
-
-@dataclass
-class SimConfig:
-    tenant: str = "00000000-0000-0000-0000-00000000c0de"
-    client_id: str = "11111111-2222-3333-4444-555555555555"
-    client_secret: str = "segredo-do-simulador"  # noqa: S105
-    cert_pem: str = ""
-    hostname: str = "contoso.sharepoint.com"
-    site_path: str = "sites/Hub"
-    site_name: str = "Hub"
-    drives: list[str] = field(default_factory=lambda: ["Documentos", "Arquivos"])
-    token_ttl_s: int = 3600
-    throttle_every: int = 0
-    throttle_next: int = 0
-    throttle_retry_after: int = 1
-    fail_rate: float = 0.0
-    latency_ms: int = 0
-    max_bytes: int = 512 * 1024 * 1024
-    control: bool = True
-    deny_site: bool = False
-    link_expiry: str = ""
-
-    @classmethod
-    def from_env(cls, env: dict[str, str] | None = None) -> SimConfig:
-        e = os.environ if env is None else env
-        c = cls()
-        s = lambda k: e.get(k) or None  # noqa: E731
-        for attr, key in (
-            ("tenant", "TENANT"),
-            ("client_id", "CLIENT_ID"),
-            ("client_secret", "CLIENT_SECRET"),
-            ("hostname", "HOSTNAME"),
-            ("site_path", "SITE_PATH"),
-        ):
-            if v := s(f"GRAPHSIM_{key}"):
-                setattr(c, attr, v)
-        if v := s("GRAPHSIM_CERT_PEM_FILE"):
-            try:
-                with open(v, encoding="utf-8") as fh:
-                    c.cert_pem = fh.read()
-            except OSError:
-                c.cert_pem = ""
-        if v := s("GRAPHSIM_DRIVES"):
-            c.drives = [d.strip() for d in v.split(",")]
-        for attr, key in (
-            ("token_ttl_s", "TOKEN_TTL_S"),
-            ("throttle_every", "THROTTLE_EVERY"),
-            ("throttle_retry_after", "THROTTLE_RETRY_AFTER"),
-            ("latency_ms", "LATENCY_MS"),
-        ):
-            if (v := s(f"GRAPHSIM_{key}")) and v.isdigit():
-                setattr(c, attr, int(v))
-        if (v := s("GRAPHSIM_MAX_MB")) and v.isdigit():
-            c.max_bytes = int(v) << 20
-        if v := s("GRAPHSIM_FAIL_RATE"):
-            c.fail_rate = float(v)
-        c.control = s("GRAPHSIM_CONTROL") != "0"
-        return c
-
-    def site_id(self) -> str:
-        return f"{self.hostname},6f0d1e2a-0000-4000-8000-000000000001,6f0d1e2a-0000-4000-8000-000000000002"
-
-
-def drive_id(name: str) -> str:
-    return "b!sim_" + re.sub(r"[^A-Za-z0-9]", "_", name)
-
-
-def rfc3339(t: float | None = None) -> str:
-    return datetime.fromtimestamp(time.time() if t is None else t, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def _b64u_dec(s: str) -> bytes:
-    return base64.urlsafe_b64decode(s + "=" * (-len(s) % 4))
-
-
-def verify_assertion(jwt: str, pem: str) -> dict[str, Any] | None:
-    m = re.search(r"-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----", pem, re.S)
-    if not m:
-        return None
-    try:
-        cert = x509.load_pem_x509_certificate(m.group().encode())
-        der = cert.public_bytes(serialization.Encoding.DER)
-        si, sig = jwt.rsplit(".", 1)
-        h, c = si.split(".", 1)
-        pub = cert.public_key()
-        if not isinstance(pub, rsa.RSAPublicKey):
-            return None
-        pub.verify(_b64u_dec(sig), si.encode(), padding.PKCS1v15(), hashes.SHA256())
-        want = base64.urlsafe_b64encode(hashlib.sha1(der).digest()).rstrip(b"=").decode()  # noqa: S324
-        if json.loads(_b64u_dec(h)).get("x5t") != want:
-            return None
-        claims = json.loads(_b64u_dec(c))
-    except (ValueError, InvalidSignature, KeyError):
-        return None
-    return claims if isinstance(claims, dict) else None
-
-
-def gerr(status: int, code: str, msg: str) -> JSONResponse:
-    return JSONResponse({"error": {"code": code, "message": msg}}, status_code=status)
-
-
-def aad(status: int, err: str, desc: str) -> JSONResponse:
-    return JSONResponse({"error": err, "error_description": desc}, status_code=status)
-
-
-NOT_FOUND = ("itemNotFound", "The resource could not be found.")
-
-
-def base_url(req: Request) -> str:
-    return f"http://{req.headers.get('host', 'localhost')}"
+from graphsim import login
+from graphsim.common import CHUNK_UNIT, NOT_FOUND, SIMPLE_MAX, base_url, drive_id, gerr, rfc3339
+from graphsim.common import SimConfig as SimConfig
+from graphsim.common import verify_assertion as verify_assertion
 
 
 class Sim:
@@ -274,47 +157,7 @@ class Sim:
         return Response(status_code=404)
 
     def token(self, path: str, body: bytes) -> Response:
-        self.stats["token_requests"] += 1
-        cfg = self.cfg
-        tenant = path.lstrip("/").split("/")[0]
-        f = dict(parse_qsl(body.decode("utf-8", "replace")))
-        if tenant != cfg.tenant:
-            return aad(400, "invalid_request", f"AADSTS90002: Tenant '{tenant}' not found.")
-        if f.get("grant_type") != "client_credentials":
-            return aad(400, "unsupported_grant_type", "AADSTS70003: unsupported grant type")
-        if f.get("scope") != "https://graph.microsoft.com/.default":
-            return aad(400, "invalid_scope", "AADSTS70011: invalid scope")
-        cid = f.get("client_id", "")
-        if cid != cfg.client_id:
-            return aad(
-                400,
-                "unauthorized_client",
-                f"AADSTS700016: Application with identifier '{cid}' was not found in the directory.",
-            )
-        ok = False
-        if "client_secret" in f:
-            ok = bool(cfg.client_secret) and secrets.compare_digest(f["client_secret"], cfg.client_secret)
-        elif "client_assertion" in f:
-            self.stats["assertions"] += 1
-            cl = verify_assertion(f["client_assertion"], cfg.cert_pem)
-            now = time.time()
-            ok = bool(
-                cl
-                and cl.get("iss") == cid
-                and cl.get("sub") == cid
-                and str(cl.get("aud", "")).endswith(f"/{tenant}/oauth2/v2.0/token")
-                and cl.get("exp", 0) > now
-                and cl.get("nbf", 0) <= now + 60
-            )
-        if not ok:
-            return aad(401, "invalid_client", "AADSTS7000215: Invalid client secret or assertion provided.")
-        tok = "simtok-" + secrets.token_hex(16)
-        self.tokens[tok] = time.monotonic() + cfg.token_ttl_s
-        self.stats["tokens_issued"] += 1
-        t = cfg.token_ttl_s
-        return JSONResponse(
-            {"token_type": "Bearer", "expires_in": t, "ext_expires_in": t, "access_token": tok}
-        )
+        return login.token(self, path, body)
 
     # ---- Graph -----------------------------------------------------------------------------
     @staticmethod
@@ -382,7 +225,7 @@ class Sim:
             return JSONResponse(drives[0] if drives else None)
         return gerr(404, "itemNotFound", "rota do site desconhecida")
 
-    def graph(self, method: str, g: str, q: dict[str, str], req: Request, body: bytes) -> Response:  # noqa: C901, PLR0912, PLR0915
+    def graph(self, method: str, g: str, q: dict[str, str], req: Request, body: bytes) -> Response:
         if g.startswith("sites/"):
             return self.site(g)
         if not g.startswith("drives/"):
@@ -393,55 +236,60 @@ class Sim:
         drive, path, suffix = parsed
         if drive not in self.drives:
             return gerr(404, "itemNotFound", "drive não encontrado")
-        m = self.drives[drive]
-        key = (method, suffix)
-        if key == ("GET", ""):
-            n = m.get(path)
-            return JSONResponse(self.item_json(drive, path, n)) if n else gerr(404, *NOT_FOUND)
-        if key == ("DELETE", ""):
-            return self.delete_item(m, path)
-        if key == ("PATCH", ""):
-            return self.patch_item(drive, path, body)
-        if key == ("GET", "children"):
-            return self.children(drive, path, q, req)
-        if key == ("POST", "children"):
-            return self.create_folder(drive, path, body)
-        if key == ("GET", "content"):
-            n = m.get(path)
-            if n is None or n["folder"]:
-                return gerr(404, *NOT_FOUND)
-            tok = secrets.token_hex(16)
-            self.downloads[tok] = (drive, path)
-            return Response(status_code=302, headers={"location": f"{base_url(req)}/_dl/{tok}"})
-        if key == ("PUT", "content"):
-            if len(body) > SIMPLE_MAX:
-                return gerr(413, "requestTooLarge", "Use an upload session for files larger than 4 MB.")
-            self.stats["simple_uploads"] += 1
-            existed = path in m
-            r = self.put_file(drive, path, body, req.headers.get("content-type", ""))
-            if isinstance(r, Response):
-                return r
-            return JSONResponse(r, status_code=200 if existed else 201)
-        if key == ("POST", "createUploadSession"):
-            if not path:
-                return gerr(400, "invalidRequest", "caminho vazio")
-            sid = secrets.token_hex(16)
-            self.sessions[sid] = {"drive": drive, "path": path, "total": 0, "data": bytearray()}
-            self.stats["sessions"] += 1
-            return JSONResponse(
-                {
-                    "uploadUrl": f"{base_url(req)}/_upload/{sid}",
-                    "expirationDateTime": rfc3339(time.time() + 3600),
-                    "nextExpectedRanges": ["0-"],
-                }
-            )
-        if key == ("POST", "createLink"):
-            return self.create_link(drive, path, body)
+        ops = {
+            ("GET", ""): lambda: self.get_item(drive, path),
+            ("DELETE", ""): lambda: self.delete_item(self.drives[drive], path),
+            ("PATCH", ""): lambda: self.patch_item(drive, path, body),
+            ("GET", "children"): lambda: self.children(drive, path, q, req),
+            ("POST", "children"): lambda: self.create_folder(drive, path, body),
+            ("GET", "content"): lambda: self.download_link(drive, path, req),
+            ("PUT", "content"): lambda: self.simple_upload(drive, path, req, body),
+            ("POST", "createUploadSession"): lambda: self.create_session(drive, path, req),
+            ("POST", "createLink"): lambda: self.create_link(drive, path, body),
+        }
+        if op := ops.get((method, suffix)):
+            return op()
         if method == "DELETE" and suffix.startswith("permissions/"):
             if self.links.pop(unquote(suffix[12:]), None) is None:
                 return gerr(404, "itemNotFound", "permissão não encontrada")
             return Response(status_code=204)
         return gerr(405, "invalidRequest", "método não suportado")
+
+    def get_item(self, drive: str, path: str) -> Response:
+        n = self.drives[drive].get(path)
+        return JSONResponse(self.item_json(drive, path, n)) if n else gerr(404, *NOT_FOUND)
+
+    def download_link(self, drive: str, path: str, req: Request) -> Response:
+        n = self.drives[drive].get(path)
+        if n is None or n["folder"]:
+            return gerr(404, *NOT_FOUND)
+        tok = secrets.token_hex(16)
+        self.downloads[tok] = (drive, path)
+        return Response(status_code=302, headers={"location": f"{base_url(req)}/_dl/{tok}"})
+
+    def simple_upload(self, drive: str, path: str, req: Request, body: bytes) -> Response:
+        if len(body) > SIMPLE_MAX:
+            return gerr(413, "requestTooLarge", "Use an upload session for files larger than 4 MB.")
+        self.stats["simple_uploads"] += 1
+        existed = path in self.drives[drive]
+        r = self.put_file(drive, path, body, req.headers.get("content-type", ""))
+        if isinstance(r, Response):
+            return r
+        return JSONResponse(r, status_code=200 if existed else 201)
+
+    def create_session(self, drive: str, path: str, req: Request) -> Response:
+        if not path:
+            return gerr(400, "invalidRequest", "caminho vazio")
+        sid = secrets.token_hex(16)
+        self.sessions[sid] = {"drive": drive, "path": path, "total": 0, "data": bytearray()}
+        self.stats["sessions"] += 1
+        return JSONResponse(
+            {
+                "uploadUrl": f"{base_url(req)}/_upload/{sid}",
+                "expirationDateTime": rfc3339(time.time() + 3600),
+                "nextExpectedRanges": ["0-"],
+            }
+        )
 
     def delete_item(self, m: dict[str, dict[str, Any]], path: str) -> Response:
         if not path:
@@ -566,7 +414,7 @@ class Sim:
             m[dest + k[len(path) :]] = n
         return JSONResponse(self.item_json(drive, dest, m[dest]))
 
-    def upload_session(self, method: str, sid: str, req: Request, body: bytes) -> Response:  # noqa: C901
+    def upload_session(self, method: str, sid: str, req: Request, body: bytes) -> Response:
         if "authorization" in req.headers:
             return gerr(401, "unauthenticated", "Do not send Authorization to the upload URL.")
         s = self.sessions.get(sid)
@@ -579,6 +427,9 @@ class Sim:
             return JSONResponse({"nextExpectedRanges": [f"{len(s['data'])}-"]})
         if method != "PUT":
             return gerr(405, "invalidRequest", "método")
+        return self.put_chunk(sid, s, req, body)
+
+    def put_chunk(self, sid: str, s: dict[str, Any], req: Request, body: bytes) -> Response:
         mt = re.fullmatch(r"bytes (\d+)-(\d+)/(\d+)", req.headers.get("content-range", ""))
         if not mt:
             return gerr(400, "invalidRange", "Content-Range inválido")
