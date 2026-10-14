@@ -22,8 +22,8 @@ test('developers: navegação, âncoras, filtro e Markdown cru @core', async ({ 
   const nav = page.locator('nav.dev-nav');
   await expect(nav.locator('a[aria-current="page"]').first()).toHaveText(/Visão geral/);
   for (const [label, url, heading] of [['Publicar', '/developers/cli/hub-deploy', 'Publicar'], ['Banco de dados', '/developers/sdk/hub-sdk-db', 'Banco de dados'],
-    ['Primeiro app', '/developers/guias/primeiro-app', 'Primeiro app'], ['14. Manifesto', '/developers/contrato/14-manifesto', 'Manifesto'],
-    ['Instruções para agentes', '/developers/agente', 'Instruções para agentes']] as const) {
+    ['Primeiro app', '/developers/guias/primeiro-app', 'First app'], ['14. Manifest', '/developers/contrato/14-manifest', 'Manifest'],
+    ['Instruções para agentes', '/developers/agente', 'Instructions for agents']] as const) {
     await nav.locator('[data-dev-nav-filter]').fill(label);
     await nav.getByRole('link', { name: label, exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`${url}$`));
@@ -48,7 +48,7 @@ test('developers: navegação, âncoras, filtro e Markdown cru @core', async ({ 
   await expect(page.locator('nav.dev-nav').getByRole('link', { name: 'SDK', exact: true })).toBeHidden();
   const raw = await page.request.get('/dev/docs/cli.md');
   expect(raw.headers()['content-type']).toContain('text/markdown');
-  expect(await raw.text()).toContain('# Referência da CLI');
+  expect(await raw.text()).toContain('# CLI reference');
 });
 
 test('developers: «Nesta página» acompanha a rolagem com o trilho ativo', async ({ page }) => {
@@ -116,7 +116,7 @@ test.describe('documentação pública (sem sessão)', () => {
     await expect(page.locator('.platform-rail')).toHaveCount(0);
     await expect(page.locator('.hub-user-menu')).toHaveCount(0);
     await expect(page.locator('.platform-header').getByRole('link', { name: 'Entrar' })).toHaveAttribute('href', /\/login\?next=/);
-    await expect(page.getByRole('link', { name: 'crie um token' })).toHaveAttribute('href', /\/admin\/tokens$/);
+    await expect(page.getByRole('link', { name: 'create a token' })).toHaveAttribute('href', /\/admin\/tokens$/);
     await expect(page.locator('.dev-code .hl-nb, .dev-code [class^="hl-"]').first()).toBeVisible();
     await page.locator('[data-hub-copy-prompt-button]').click();
     await expect(page.locator('[data-hub-copy-prompt-button]')).toContainText('Prompt copiado');
