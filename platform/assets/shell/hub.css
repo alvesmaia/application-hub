@@ -782,10 +782,10 @@ body.in-app.rail-collapsed .workspace{left:56px}
 
 /* ---- Shell on a narrow screen (< 1024px, or touch in landscape with height < 600px): no rail
    and no side drawer; ☰ menu in the header's right corner. The same query is in
-   hub-ux.js (NARROW_Q) — change both. ----
+   hub-ux-rail.js (NARROW_Q) — change both. ----
    Brand on the left; on the right search (icon → full-screen palette), notifications and ☰ (the
    avatar moves inside the menu). The ☰ opens the `#hub-rail` itself as a top-down panel
-   under the header (`body.hub-drawer-open`, hub-ux.js) and turns into ✕. `.hub-drawer-only`
+   under the header (`body.hub-drawer-open`, hub-ux-rail.js) and turns into ✕. `.hub-drawer-only`
    items (user and account) only appear in the panel. */
 .hub-drawer-toggle,.hub-search-mobile,.hub-drawer-only{display:none}
 @media(max-width:1023px),(pointer:coarse) and (max-height:600px){
@@ -857,7 +857,7 @@ body.in-app.rail-collapsed .workspace{left:56px}
 @media(max-width:767px){.hub-palette-backdrop{padding:0}.hub-palette{width:100%;height:100dvh;max-height:none;border-radius:0;border:0}}
 @keyframes hub-panel-down{from{transform:translateY(-12px);opacity:0}to{transform:none;opacity:1}}
 @media(max-width:1023px) and (prefers-reduced-motion:reduce),(pointer:coarse) and (max-height:600px) and (prefers-reduced-motion:reduce){body.hub-drawer-open .platform-rail,body.in-app .workspace.menu-open .app-sidebar{animation:none}.hub-drawer-toggle svg path{transition:none}}
-/* ---- Column filters (`data-hub-colfilter`, hub-ux.js; guide in docs/DESIGN-TOKENS.md) ---- */
+/* ---- Column filters (`data-hub-colfilter`, hub-ux-colfilter.js; guide in docs/DESIGN-TOKENS.md) ---- */
 .hub-cf-th{display:inline-flex;align-items:center;gap:4px}
 .hub-cf-btn{display:inline-grid;place-items:center;width:24px;height:24px;min-width:24px;min-height:24px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--color-text-muted);cursor:pointer}
 .hub-cf-btn svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
