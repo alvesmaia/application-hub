@@ -10,7 +10,7 @@ import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import httpx
 
@@ -46,7 +46,7 @@ def _check_event(
     AuditEntry.model_validate(parsed)
     if parsed["id"] <= event_id:
         return "event id did not increase", (seq, previous, event_id)
-    return None, (line["seq"], digest, parsed["id"])
+    return None, cast(tuple[int, str, int], (line["seq"], digest, parsed["id"]))
 
 
 @dataclass
