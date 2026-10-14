@@ -163,6 +163,8 @@ class Body:
     async def read(self, n: int) -> bytes:
         buf = bytearray(self.carry[:n])
         self.carry = self.carry[n:]
+        if len(buf) == n:  # the carry already covers it: reading on would drop the rest of the carry
+            return bytes(buf)
         async for chunk in self.stream:
             if len(buf) + len(chunk) > n:
                 take = n - len(buf)

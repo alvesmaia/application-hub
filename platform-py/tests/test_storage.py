@@ -239,3 +239,18 @@ def test_endpoints_default_and_pinning(monkeypatch: pytest.MonkeyPatch) -> None:
     sim = Endpoints.from_env()
     assert not sim.is_default() and sim.content_url_ok("http://sim:9/upload/1", "")
     assert not sim.content_url_ok("http://other:9/upload/1", "")
+
+
+async def test_body_reads_exactly_when_input_chunks_are_bigger_than_the_reads() -> None:
+    from hub.storage import Body
+
+    data = bytes(range(256)) * 100
+
+    async def big() -> Any:
+        yield data[:20_000]
+        yield data[20_000:]
+
+    b = Body(big())
+    got = [await b.read(3_000) for _ in range(8)] + [await b.read(len(data) - 24_000)]
+    await b.expect_end()
+    assert b"".join(got) == data

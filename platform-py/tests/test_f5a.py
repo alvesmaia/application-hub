@@ -538,3 +538,52 @@ async def test_two_replicas_one_leader(states: Any, monkeypatch: pytest.MonkeyPa
         and await Leader(None).checked()
         and (await Leader(None).info())["shared"] is False
     )
+
+
+def test_offsite_copy_to_a_sharepoint_connection(
+    hub: TestClient, bk: FakeDocker, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from hub.storage import Body, Item
+
+    files: dict[str, bytes] = {}
+
+    class FakeGraph:
+        async def upload(self, rel: str, length: int, content_type: str, body: Body) -> Item:
+            files[rel] = await body.read(length)
+            return Item(path=rel, name=rel.rsplit("/", 1)[-1], size=length)
+
+        async def download(self, rel: str) -> tuple[str, int | None, Any]:
+            async def it() -> Any:
+                yield files[rel]
+
+            return "application/zip", len(files[rel]), it()
+
+    conns = {
+        "bk-sp": {"name": "bk-sp", "kind": "sharepoint", "rev": 1},
+        "s3": {"name": "s3", "kind": "s3", "rev": 1},
+    }
+    b = hub.app.state.ops_backups  # type: ignore[attr-defined]
+    b.conns = type(
+        "C", (), {"get": staticmethod(conns.get), "backend": staticmethod(lambda c: FakeGraph())}
+    )()
+    monkeypatch.setenv("HUB_BACKUP_OFFSITE_URL", "sharepoint://bk-sp/Backups/hub")
+    j = wait_job(hub, hub.post("/api/ops/backups/ativos/run", headers=JSON).json()["id"])
+    assert j["ok"]
+    rec = hub.get("/api/ops/backups").json()["history"][0]
+    assert f"cópia externa em SharePoint bk-sp/Backups/hub/ativos/{rec['file']}" in rec["detail"]
+    assert files[f"Backups/hub/ativos/{rec['file']}"] == (b.root / "ativos" / rec["file"]).read_bytes()
+    files_before = dict(files)
+    FakeGraph.download = lambda self, rel: _corrupt(files_before[rel])  # type: ignore[method-assign]
+    with pytest.raises(OpsError, match="diverge"):
+        call(hub, b.offsite, "ativos", "producao", rec["file"])
+    for bad in ("sharepoint://nao-existe", "sharepoint://s3"):
+        monkeypatch.setenv("HUB_BACKUP_OFFSITE_URL", bad)
+        with pytest.raises(OpsError, match="SharePoint"):
+            call(hub, b.offsite, "ativos", "producao", rec["file"])
+
+
+async def _corrupt(data: bytes) -> tuple[str, int | None, Any]:
+    async def it() -> Any:
+        yield data + b"x"
+
+    return "application/zip", len(data) + 1, it()

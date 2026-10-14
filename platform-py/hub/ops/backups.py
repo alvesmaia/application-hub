@@ -17,7 +17,7 @@ import re
 import tempfile
 import time
 import zipfile
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote, urlsplit
@@ -25,6 +25,7 @@ from urllib.parse import quote, urlsplit
 from hub.connections.provision import ObjectStore
 from hub.ops.model import OpsError, OpsStore, human, now_ms
 from hub.ops.runtime import Engine, exec_in
+from hub.storage import Body, StorageError
 
 ROLE_FILE = "/tmp/hub-role.sql"  # noqa: S108 - inside the Postgres container
 RESTORE_FILE = "/tmp/hub-restore.sql"  # noqa: S108
@@ -156,6 +157,7 @@ class Backups:
         self.db_container = os.getenv("HUB_BACKUP_DB_CONTAINER", "app-hub-app-db")
         self.db_admin = os.getenv("HUB_DB_ADMIN_USER", "hub")
         self.root = data_dir / "backups"
+        self.conns: Any = None  # ConnStore (set by the app): `sharepoint://` off-site target
 
     # ---- credenciais ------------------------------------------------------------------------------------
     async def ensure_pg_role(self, db: str, rotate: bool = False) -> tuple[str, str]:
@@ -521,6 +523,8 @@ class Backups:
         url = os.getenv("HUB_BACKUP_OFFSITE_URL", "").strip()
         if not url:
             return None
+        if url.startswith("sharepoint://"):
+            return await self._offsite_sharepoint(url, app, env, name)
         u = urlsplit(url)
         parts = [p for p in u.path.split("/") if p]
         if not (
@@ -547,6 +551,32 @@ class Backups:
             ):
                 raise OpsError("cópia externa lida de volta diverge do pacote")
         return f"{u.hostname}/{key}"
+
+    async def _offsite_sharepoint(self, url: str, app: str, env: str, name: str) -> str:
+        """`sharepoint://<connection>[/folder]`: uploads the package through an existing SharePoint connection
+        (Administration › Connections; credentials stay in the vault) and downloads it back checking the sha256."""
+        conn, _, folder = url.removeprefix("sharepoint://").partition("/")
+        c = self.conns.get(conn) if self.conns else None
+        if not c or c.get("kind") != "sharepoint":
+            raise OpsError(f"cópia externa: conexão SharePoint {conn!r} não encontrada")
+        sub = app if env != "staging" else f"{app}__staging"
+        rel, src = "/".join(p for p in (*folder.split("/"), sub, name) if p), self.root / sub / name
+        data = src.read_bytes()
+
+        async def feed() -> AsyncIterator[bytes]:
+            for i in range(0, len(data), 4 << 20):
+                yield data[i : i + (4 << 20)]
+
+        client = self.conns.backend(c)
+        try:
+            await client.upload(rel, len(data), "application/zip", Body(feed()))
+            _, _, body = await client.download(rel)
+            back = b"".join([chunk async for chunk in body])
+        except StorageError as e:
+            raise OpsError(f"cópia externa (SharePoint): {e.admin_text()}") from e
+        if hashlib.sha256(back).digest() != hashlib.sha256(data).digest():
+            raise OpsError("cópia externa lida de volta diverge do pacote")
+        return f"SharePoint {conn}/{rel}"
 
     async def _restore_bucket(self, bucket: str, files: dict[str, bytes]) -> str:
         with tempfile.TemporaryDirectory(prefix="hub-rb-") as tmp:

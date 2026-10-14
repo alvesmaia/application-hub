@@ -1110,6 +1110,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
     mount_connections(app, templates, page_ctx, icon, conns, admin, ObjectStore())
     mount_insight(app, templates, page_ctx, icon, insight, gateway.client)
     mount_ops(app, templates, page_ctx, icon, gateway.client, data_dir)
+    app.state.ops_backups.conns = conns  # off-site backup copy to a SharePoint connection
     mount_v1(app)
     mount_mcp(app)
     mount_oauth(app, templates)

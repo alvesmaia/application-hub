@@ -487,3 +487,29 @@ def test_certificate_input_validation(
     )
     ok = hub.post("/api/admin/connections", json=b(certificate_b64=base64.b64encode(pem.encode()).decode()))
     assert ok.status_code == 201 and "PRIVATE" not in ok.text
+
+
+def test_backup_offsite_copy_goes_to_the_sharepoint_site(sim: Sim, tmp_path: Path) -> None:
+    from types import SimpleNamespace
+
+    from hub.ops.backups import Backups
+
+    pkg = tmp_path / "backups" / "ativos" / "ativos-1.zip"
+    pkg.parent.mkdir(parents=True)
+    pkg.write_bytes(bytes(range(256)) * 24_000)  # ~6 MB: goes through the chunked upload session
+    g = client(sim)
+    conn = {"name": "bk-sp", "kind": "sharepoint"}
+    me: Any = SimpleNamespace(
+        root=tmp_path / "backups",
+        conns=SimpleNamespace(get=lambda n: conn if n == "bk-sp" else None, backend=lambda c: g),
+    )
+    dest = run(
+        Backups._offsite_sharepoint(me, "sharepoint://bk-sp/Backups", "ativos", "producao", "ativos-1.zip")
+    )
+    assert dest == "SharePoint bk-sp/Backups/ativos/ativos-1.zip"
+    _, _, body = run(g.download("Backups/ativos/ativos-1.zip"))
+
+    async def read() -> bytes:
+        return b"".join([c async for c in body])
+
+    assert run(read()) == pkg.read_bytes()

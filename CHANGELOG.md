@@ -8,6 +8,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 ## [Unreleased]
 
 ### Added
+- Off-site backup copy to SharePoint: `HUB_BACKUP_OFFSITE_URL=sharepoint://<connection>/<folder>` sends each
+  backup package through an existing SharePoint connection and reads it back checking the sha256.
 - `platform-py/scripts/db-tests.sh`: tests for the SQL broker against real PostgreSQL, MySQL and SQL Server in
   disposable containers.
 - Webhook audit anchor: `HUB_AUDIT_HEAD_URL` (+ `HUB_AUDIT_HEAD_TOKEN`) receives the signed audit head on each event,
@@ -74,6 +76,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   Your own proxies in front keep working unchanged (the target is the same port).
 
 ### Fixed
+- Storage broker: an upload whose input chunks were bigger than the upload blocks (e.g. SharePoint upload
+  sessions) lost data and failed with "O corpo terminou antes do tamanho declarado".
 - Containers page: a container whose image was removed (e.g. by `docker image prune`) blanked the whole page
   ("Sem conexão" for every app); it now falls back to the image name in the container config.
 - `hub_update.py --build` built the code of the folder that created the container, not of the checkout running the
