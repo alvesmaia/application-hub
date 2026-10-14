@@ -123,10 +123,10 @@ async function appPage(b, { mocks = '', respond } = {}) {
   await page.route('https://hub.test/**', async (route) => {
     const req = route.request();
     const u = new URL(req.url());
-    const file = { '/assets/hub-safe.js': 'hub-safe.js', '/assets/hub-kit.js': 'hub-kit.js', '/assets/hub-device.js': 'hub-device.js', '/assets/vendor/zxing.min.js': 'vendor/zxing.min.js' }[u.pathname];
+    const file = { '/assets/hub-safe.js': 'hub-safe.js', '/assets/hub-kit.js': 'hub-kit.js', '/assets/hub-device.js': 'hub-device.js', '/assets/hub-device-camera.js': 'hub-device-camera.js', '/assets/hub-device-forms.js': 'hub-device-forms.js', '/assets/hub-device-mount.js': 'hub-device-mount.js', '/assets/vendor/zxing.min.js': 'vendor/zxing.min.js' }[u.pathname];
     if (file) return route.fulfill({ contentType: 'text/javascript; charset=utf-8', body: fs.readFileSync(path.join(assets, file)) });
     if (u.pathname === '/coletor/x') {
-      return route.fulfill({ contentType: 'text/html; charset=utf-8', headers: { 'content-security-policy': CSP }, body: `<!doctype html><html><head></head><body><main id="app-root">${APP}</main><div id="toast"></div><script src="/assets/hub-safe.js"></script><script src="/assets/hub-kit.js"></script><script data-hub-app="coletor" data-hub-frag="/_frag" src="/assets/hub-device.js"></script></body></html>` });
+      return route.fulfill({ contentType: 'text/html; charset=utf-8', headers: { 'content-security-policy': CSP }, body: `<!doctype html><html><head></head><body><main id="app-root">${APP}</main><div id="toast"></div><script src="/assets/hub-safe.js"></script><script src="/assets/hub-kit.js"></script><script data-hub-app="coletor" data-hub-frag="/_frag" src="/assets/hub-device.js"></script><script src="/assets/hub-device-camera.js"></script><script src="/assets/hub-device-forms.js"></script><script src="/assets/hub-device-mount.js"></script></body></html>` });
     }
     if (u.pathname.startsWith('/_frag/coletor/') && req.method() === 'POST') {
       const p = { path: u.pathname, body: req.postData() || '', key: req.headers()['idempotency-key'] };
