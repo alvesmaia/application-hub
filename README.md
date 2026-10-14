@@ -38,6 +38,56 @@ and over **MCP** for AI assistants (`/mcp`, same access control as the UI).
 
 Details and history: [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md).
 
+## Dependencies
+
+Pinned versions as of this release (Python packages: `uv.lock`; images: compose files and Dockerfiles).
+Licenses of bundled third-party files are in [`NOTICE`](NOTICE).
+
+**Services (containers)**
+
+| Component | Version / image | Role | License | Defined in |
+|---|---|---|---|---|
+| Caddy | `caddy:2.10.0-alpine` (Docker Hub) | Edge reverse proxy (port 8090; zero-downtime swaps) | Apache-2.0 | `platform-py/docker-compose.yml`, `platform-py/infra/edge/Caddyfile` |
+| PostgreSQL | `postgres:16-alpine` (Docker Hub) | Hub state database and apps' database | PostgreSQL License | `platform-py/docker-compose.yml`, `docker-compose.apps.yml` |
+| MinIO + mc | `RELEASE.2025-09-07T16-13-09Z` / `RELEASE.2025-08-13T08-35-41Z`, built from source | S3-compatible object storage (app files, backups) | AGPL-3.0 (separate program, network only) | `platform-py/infra/minio/Dockerfile` |
+| Python | `python:3.12-slim` (hub), `python:3.12-slim-bookworm` (apps) | Runtime of the hub and the sample apps | PSF-2.0 | `platform-py/Dockerfile`, app Dockerfiles |
+| OpenTelemetry Collector | `otel/opentelemetry-collector-contrib:0.135.0` | Optional: telemetry (`observability` profile) | Apache-2.0 | `platform-py/docker-compose.observability.yml` |
+| Jaeger | `jaegertracing/jaeger:2.10.0` | Optional: trace viewer (`observability` profile) | Apache-2.0 | `platform-py/docker-compose.observability.yml` |
+
+**Python packages (hub)**
+
+| Package | Version | Use | License |
+|---|---|---|---|
+| FastAPI | 0.142.2 | Web framework | MIT |
+| Uvicorn | 0.54.0 | ASGI server | BSD-3-Clause |
+| Jinja2 | 3.1.6 | Server-side templates | BSD-3-Clause |
+| Pydantic / pydantic-settings | 2.13.5 / 2.15.0 | Models and configuration | MIT |
+| asyncpg | 0.31.0 | PostgreSQL driver | Apache-2.0 |
+| PyMySQL | 1.2.3 | MySQL/MariaDB connections (SQL broker) | MIT |
+| python-tds | 1.17.1 | SQL Server connections (SQL broker) | MIT |
+| cryptography | 50.0.2 | Vault encryption, signatures | Apache-2.0 / BSD-3-Clause |
+| argon2-cffi | 25.1.0 | Password hashing | MIT |
+| httpx | 0.28.1 | HTTP client (gateway, Entra ID, Graph) | BSD-3-Clause |
+| websockets | 17.2 | WebSocket gateway | BSD-3-Clause |
+| docker (docker-py) | 7.2.0 | Container runtime control | Apache-2.0 |
+| markdown-it-py / Pygments | 4.2.0 / 2.21.0 | Developer portal rendering | MIT / BSD-2-Clause |
+
+**Python packages (SDK and sample apps, optional extras)**
+
+| Package | Version | Use | License |
+|---|---|---|---|
+| SQLAlchemy / Alembic | 2.0.44 / 1.17.1 | App database access and migrations | MIT |
+| psycopg | 3.2.12 | PostgreSQL driver for apps | LGPL-3.0 |
+| openpyxl / python-calamine | 3.1.5 / 0.8.2 | Excel write / read | MIT |
+
+**Front-end (bundled in the repository)**
+
+| Component | Version | Use | License |
+|---|---|---|---|
+| @zxing/library | 0.23.0 | Barcode/QR decoding in the browser | Apache-2.0 |
+| Nunito Sans, Red Hat Display, Red Hat Mono | — | Fonts | SIL OFL 1.1 |
+| Lucide icons | — | Theme icons | ISC |
+
 ## Architecture
 
 - **Stack:** Python 3.12 (`uv`), FastAPI + Jinja2 (SSR), asyncpg, PostgreSQL, MinIO, Docker.

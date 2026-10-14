@@ -37,6 +37,26 @@ Portal corporativo único (white label) que hospeda várias aplicações interna
 
 Detalhes e histórico: [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md).
 
+## Dependências
+
+Versões fixadas nesta versão (pacotes Python: `uv.lock`; imagens: arquivos compose e Dockerfiles).
+Licenças dos arquivos de terceiros incluídos estão no [`NOTICE`](NOTICE).
+
+| Componente | Versão / imagem | Papel | Licença |
+|---|---|---|---|
+| Caddy | `caddy:2.10.0-alpine` | Proxy de borda (porta 8090; troca sem parada) | Apache-2.0 |
+| PostgreSQL | `postgres:16-alpine` | Banco de estado do hub e banco dos apps | PostgreSQL License |
+| MinIO + mc | `RELEASE.2025-09-07T16-13-09Z` / `RELEASE.2025-08-13T08-35-41Z`, compilados do código-fonte | Armazenamento S3 (arquivos dos apps, backups) | AGPL-3.0 (programa separado, só pela rede) |
+| Python | `python:3.12-slim` / `3.12-slim-bookworm` | Execução do hub e dos apps | PSF-2.0 |
+| OpenTelemetry Collector / Jaeger | `0.135.0` / `2.10.0` | Opcional: telemetria (perfil `observability`) | Apache-2.0 |
+| FastAPI, Uvicorn, Jinja2, Pydantic | 0.142.2, 0.54.0, 3.1.6, 2.13.5 | Framework web, servidor, templates, modelos | MIT / BSD-3-Clause |
+| asyncpg, PyMySQL, python-tds | 0.31.0, 1.2.3, 1.17.1 | Drivers PostgreSQL, MySQL, SQL Server | Apache-2.0 / MIT |
+| cryptography, argon2-cffi, httpx, websockets, docker-py | 50.0.2, 25.1.0, 0.28.1, 17.2, 7.2.0 | Cofre, senhas, HTTP, WebSocket, contêineres | Apache-2.0 / MIT / BSD-3-Clause |
+| SQLAlchemy, Alembic, psycopg, openpyxl | 2.0.44, 1.17.1, 3.2.12, 3.1.5 | SDK e apps de exemplo (opcionais) | MIT / LGPL-3.0 (psycopg) |
+| @zxing/library, fontes, ícones Lucide | 0.23.0 | Leitura de código de barras, fontes, ícones | Apache-2.0 / SIL OFL 1.1 / ISC |
+
+Lista completa em inglês, com onde cada item é definido: [`README.md`](README.md#dependencies).
+
 ## Documentação
 
 | Documento | Para quê |

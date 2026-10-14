@@ -29,6 +29,7 @@ image workflow (separate programs, used over the network only, never linked):
   platform-py/infra/minio/Dockerfile contain unmodified upstream binaries; their corresponding
   source is the upstream tag named in that Dockerfile (MINIO_VERSION / MC_VERSION).
 - PostgreSQL (official postgres:16-alpine image) — PostgreSQL License.
+- Caddy (official caddy:2.10.0-alpine image, edge reverse proxy) — Apache License 2.0.
 
 Python and JavaScript dependencies are installed at build time from their registries
 (see the pyproject.toml / uv.lock and package.json files) and keep their own licenses.
