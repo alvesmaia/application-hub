@@ -35,3 +35,6 @@ __pycache__/
 /platform/.env
 /platform/.dev.env
 docs/migracao/status/*.log
+
+# Backup local do repositório privado antigo (não versionar)
+/backup/
