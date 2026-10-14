@@ -155,6 +155,7 @@ test('política do carregamento: deep link, novas tentativas e erros', () => {
 const jsdomPath = path.join(platform, 'demo-apps/tools/node_modules/jsdom');
 const hasJsdom = fs.existsSync(jsdomPath);
 const hubJs = fs.readFileSync(path.join(platform, 'assets/shell/hub.js'), 'utf8');
+const hubNavJs = fs.readFileSync(path.join(platform, 'assets/shell/hub-nav.js'), 'utf8');
 // Wave 12 (2.1): hub.js only inserts app HTML through the sanitizer (hub-safe.js).
 const safeJs = fs.readFileSync(path.join(platform, 'assets/shell/hub-safe.js'), 'utf8');
 
@@ -191,6 +192,7 @@ function appPage({ url, respond, local = {}, session = {}, navType = 'navigate' 
   Object.defineProperty(w.document, 'currentScript', { get: () => s, configurable: true });
   w.eval(safeJs);
   w.eval(hubJs);
+  w.eval(hubNavJs);
   return { w, calls };
 }
 
