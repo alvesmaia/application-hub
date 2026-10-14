@@ -116,6 +116,7 @@ _SCRIPTS = (
     "logshare.js",
     "admin.js",
     "ops.js",
+    "ops-drawer.js",
     "insights.js",
     "ux.js",
     "devdocs.js",
