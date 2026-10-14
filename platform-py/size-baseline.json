@@ -11,7 +11,6 @@
   "platform-py/hub/ops/devdocs.py": 502,
   "platform-py/hub/ops/runtime.py": 599,
   "platform-py/hub/storage/graph.py": 508,
-  "platform-py/hub/vault/__init__.py": 552,
   "platform/assets/shell/hub-device.js": 1287,
   "platform/assets/shell/hub-kit.js": 745,
   "platform/assets/shell/hub-ux.js": 1265,
