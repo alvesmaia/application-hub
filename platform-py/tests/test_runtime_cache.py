@@ -74,3 +74,18 @@ async def test_probe_single_flight_and_invalidate() -> None:
     e.invalidate()
     await e.probe()
     assert len(calls) == 2
+
+
+def test_container_whose_image_was_removed_does_not_break_the_listing() -> None:
+    import docker.errors
+
+    class Orphan:
+        name, status = "app-hub-objstore", "running"
+        attrs: dict[str, Any] = {"Config": {"Image": "app-hub-minio:0.10.0"}}  # noqa: RUF012
+
+        @property
+        def image(self) -> Any:
+            raise docker.errors.ImageNotFound("No such image: sha256:f2ce")
+
+    live = rt.Engine._live(Orphan(), None)
+    assert live["name"] == "app-hub-objstore" and live["image"] == "app-hub-minio:0.10.0"

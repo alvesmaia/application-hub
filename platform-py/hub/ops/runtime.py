@@ -283,7 +283,10 @@ class Engine:
                 stats.get("memory_stats", {}).get("limit"),
             )
             pids = stats.get("pids_stats", {}).get("current")
-        tags = c.image.tags if getattr(c, "image", None) else []
+        try:  # the image may have been removed while the container runs: fall back to Config.Image
+            tags = c.image.tags if getattr(c, "image", None) else []
+        except Exception:
+            tags = []
         return {"name": c.name, "state": c.status, "status": _status_text(c), "image": (tags[0] if tags else
                 str(c.attrs.get("Config", {}).get("Image", ""))), "cpu_used": cpu, "mem_used": mem,
                 "mem_limit": limit, "pids": pids, "host": c.attrs.get("HostConfig", {}),
