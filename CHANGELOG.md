@@ -7,6 +7,10 @@ Versões 0.x = pré-1.0: a API pode mudar entre versões menores.
 
 ## [Unreleased]
 
+### Validado
+- Login MCP via Entra ID real (13/10/2026): locatário do dono, Claude Code e GitHub Copilot CLI autenticados
+  pelo navegador (OAuth 2.1 do hub com sessão SSO); tokens com escopos `mcp api:write` registrados na auditoria.
+
 ### Removido
 - Idioma espanhol (`es`): o hub e o SDK ficam em pt-BR e inglês. Quem tinha `es` salvo ou navegador em espanhol
   passa a ver inglês; `PUT /api/me/prefs` com `lang: "es"` responde 400.
