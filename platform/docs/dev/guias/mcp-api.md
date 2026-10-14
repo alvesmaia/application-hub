@@ -1,19 +1,19 @@
-# API e MCP do app
+# App API and MCP
 
-Todo app expõe uma API JSON em `/<id>/api/v1/*` e o documento `openapi.json`.
+Every app exposes a JSON API at `/<id>/api/v1/*` and the `openapi.json` document.
 
-- Cada rota tem `operation_id`: vira o nome da ferramenta MCP do app no MCP do hub.
-- Leituras são `GET`; toda mutação (`POST`/`PUT`/`PATCH`/`DELETE`) exige aprovação quando chamada por MCP.
-- Erros em RFC 9457 (`hub_sdk.api.problem`); sem identidade, `401`.
-- `hub check` regenera o `openapi.json`; o pacote é recusado sem ele.
+- Each route has an `operation_id`: it becomes the app's MCP tool name in the hub MCP.
+- Reads are `GET`; every mutation (`POST`/`PUT`/`PATCH`/`DELETE`) requires approval when called through MCP.
+- Errors in RFC 9457 (`hub_sdk.api.problem`); without identity, `401`.
+- `hub check` regenerates `openapi.json`; the package is refused without it.
 
-## Usar o MCP do hub num agente
+## Use the hub MCP in an agent
 
 ```bash
 hub mcp --hub @HUB@ --token-file ~/.hub-token
 ```
 
-`hub mcp` é um servidor MCP por stdio que repassa ao `@HUB@/mcp` com o seu token. Clientes com OAuth 2.1 podem
-usar `@HUB@/mcp` direto.
+`hub mcp` is an MCP server over stdio that forwards to `@HUB@/mcp` with your token. Clients with OAuth 2.1 can
+use `@HUB@/mcp` directly.
 
-Detalhes: Contrato §23 e §24 ([Contrato](/developers/contrato)).
+Details: Contract §23 and §24 ([Contract](/developers/contrato)).

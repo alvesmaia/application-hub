@@ -1,6 +1,6 @@
-# Armazenamento de arquivos
+# File storage
 
-Declare `"storage"` em `requires` e use uma conexão pelo nome:
+Declare `"storage"` in `requires` and use a connection by name:
 
 ```python
 from hub_sdk import storage
@@ -8,9 +8,9 @@ from hub_sdk import storage
 conn = storage.connection("arquivos")
 ```
 
-- No `hub dev`, grava em `.hub/storage/` (`LocalConnection`, mesma API).
-- No hub, o broker de armazenamento fala com S3 ou SharePoint; a credencial nunca chega ao app.
-- Caminhos são normalizados (`clean_path`); `..` e caminhos absolutos são recusados.
+- In `hub dev`, it writes to `.hub/storage/` (`LocalConnection`, same API).
+- In the hub, the storage broker talks to S3 or SharePoint; the credential never reaches the app.
+- Paths are normalized (`clean_path`); `..` and absolute paths are refused.
 
-Métodos da conexão: [Referência do SDK](/developers/sdk/hub-sdk-storage). Regras: Contrato §22
-([Contrato](/developers/contrato)).
+Connection methods: [SDK reference](/developers/sdk/hub-sdk-storage). Rules: Contract §22
+([Contract](/developers/contrato)).

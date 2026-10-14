@@ -1,7 +1,7 @@
-# Banco: SQLite e Postgres
+# Database: SQLite and Postgres
 
-O mesmo código roda nos dois: **SQLite** em `.hub/dev.db` no `hub dev` e **Postgres** no hub (banco e papel
-próprios por app e ambiente, provisionados por `requires.database`).
+The same code runs on both: **SQLite** in `.hub/dev.db` under `hub dev` and **Postgres** in the hub (database and role
+of its own per app and environment, provisioned by `requires.database`).
 
 ```python
 from hub_sdk import db
@@ -10,11 +10,11 @@ engine = db.engine()
 db.upgrade("src/estoque/migrations")
 ```
 
-`db.engine()` usa a URL do hub (`HUB_DB_URL`) e, no dev, `.hub/dev.db`; `db.upgrade` aplica as migrações Alembic.
+`db.engine()` uses the hub URL (`HUB_DB_URL`) and, in dev, `.hub/dev.db`; `db.upgrade` applies the Alembic migrations.
 
-## Regras
+## Rules
 
-- Esquema só por migração Alembic em `src/<pacote>/migrations/versions/` (aplicadas na subida).
-- SQLAlchemy Core com parâmetros; nada de SQL montado com texto do usuário.
-- Evite recursos exclusivos de um dos bancos; se precisar, teste nos dois.
-- Outro banco local: `hub project create … --db postgresql://…` (vai para `.env` como `DATABASE_URL`).
+- Schema only through Alembic migration in `src/<pacote>/migrations/versions/` (applied at startup).
+- SQLAlchemy Core with parameters; no SQL built from user text.
+- Avoid features exclusive to one of the databases; if you need one, test on both.
+- Another local database: `hub project create … --db postgresql://…` (goes to `.env` as `DATABASE_URL`).

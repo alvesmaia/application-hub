@@ -1,23 +1,23 @@
-# Começar
+# Getting started
 
-Crie um app da plataforma, rode no seu computador e publique neste hub. Pré-requisito: **uv** e Python 3.12 —
-sem Docker, sem Postgres, sem acesso ao repositório.
+Create a platform app, run it on your computer and publish it to this hub. Prerequisites: **uv** and Python 3.12 —
+no Docker, no Postgres, no access to the repository.
 
-> **Agentes de código:** leiam [`/dev/llms.txt`](@HUB@/dev/llms.txt). Ele lista o Markdown original de cada página
-> (`/dev/docs/<página>.md`), com o código completo. Um resumo do HTML perde os exemplos.
+> **Coding agents:** read [`/dev/llms.txt`](@HUB@/dev/llms.txt). It lists the original Markdown of each page
+> (`/dev/docs/<página>.md`), with the complete code. A summary of the HTML loses the examples.
 
-## Instalar a CLI
+## Install the CLI
 
 ```bash
 uv tool install hub-cli --index @HUB@/dev/cli/simple/
 hub --help
 ```
 
-O índice `@HUB@/dev/cli/simple/` é público e só leitura (wheels da `hub-cli` e do `hub-sdk`). Já instalada?
-Atualize com `uv tool install --reinstall hub-cli --index @HUB@/dev/cli/simple/`. Hoje há uma stack:
+The index `@HUB@/dev/cli/simple/` is public and read-only (wheels of `hub-cli` and `hub-sdk`). Already installed?
+Update with `uv tool install --reinstall hub-cli --index @HUB@/dev/cli/simple/`. Today there is one stack:
 `python-fastapi` (`hub project stacks`).
 
-## Primeiro app em 5 comandos
+## First app in 5 commands
 
 ```bash
 hub project create estoque --stack python-fastapi --yes
@@ -27,34 +27,34 @@ hub dev
 hub deploy --env staging --yes
 ```
 
-1. `hub project create` gera o app a partir do template (manifesto, telas, API, testes, `AGENTS.md`).
-2. `uv sync` instala as dependências (o SDK vem em `vendor/`).
-3. `hub check` roda lint, tipos, testes com cobertura, manifesto, `openapi.json` e conformidade local.
-4. `hub dev` sobe um hub local com o app dentro do shell em `http://localhost:4173/apps/estoque`.
-5. `hub deploy` empacota e envia; produção (`--env production`) fica pendente de aprovação.
+1. `hub project create` generates the app from the template (manifest, screens, API, tests, `AGENTS.md`).
+2. `uv sync` installs the dependencies (the SDK comes in `vendor/`).
+3. `hub check` runs lint, types, tests with coverage, manifest, `openapi.json` and local conformance.
+4. `hub dev` starts a local hub with the app inside the shell at `http://localhost:4173/apps/estoque`.
+5. `hub deploy` packages and sends it; production (`--env production`) stays pending approval.
 
-## Token (só para publicar)
+## Token (only to publish)
 
-`project create`, `check` e `dev` funcionam sem login. Para publicar, [crie um token](@HUB@/admin/tokens) com as ações **envio** e **status** em Credenciais e salve-o na CLI (o token é
-pedido sem eco e fica fora do projeto):
+`project create`, `check` and `dev` work without login. To publish, [create a token](@HUB@/admin/tokens) with the **envio** (send) and **status** actions under Credenciais (Credentials) and save it in the CLI (the token is
+requested without echo and stays outside the project):
 
 ```bash
 hub login --hub @HUB@
 ```
 
-Em CI, use `--token-file` ou a variável `HUB_TOKEN`; nunca escreva o token em arquivos do projeto.
+In CI, use `--token-file` or the `HUB_TOKEN` variable; never write the token to project files.
 
-## Regras que o `hub check` cobra
+## Rules that `hub check` enforces
 
-- **API obrigatória** (Contrato §23): mantenha `install_api` no `app.py` e `"api": {"enabled": true}` no manifesto,
-  mesmo que o app só tenha telas. Mudou rota? O `hub check` regenera o `openapi.json`; só o `pytest` falha com ele velho.
-- **Formatação**: `uv run ruff format . && uv run ruff check --fix .` corrige o que o `hub check` aponta.
-- **Sem JavaScript próprio**: comportamento de tela vem dos atributos `data-hub-*`
-  ([Padrões de tela](/developers/guias/telas)); tempo real em [Tempo real](/developers/guias/tempo-real).
-- `hub dev` recarrega ao mudar `src/`; mudou `pyproject.toml` ou `manifest.json`? `uv sync` e suba o `hub dev` de novo.
+- **Mandatory API** (Contract §23): keep `install_api` in `app.py` and `"api": {"enabled": true}` in the manifest,
+  even if the app only has screens. Changed a route? `hub check` regenerates `openapi.json`; only `pytest` fails with the old one.
+- **Formatting**: `uv run ruff format . && uv run ruff check --fix .` fixes what `hub check` reports.
+- **No app JavaScript of your own**: screen behavior comes from `data-hub-*` attributes
+  ([Screen patterns](/developers/guias/telas)); real-time in [Real-time](/developers/guias/tempo-real).
+- `hub dev` reloads when you change `src/`; changed `pyproject.toml` or `manifest.json`? Run `uv sync` and start `hub dev` again.
 
-## Próximos passos
+## Next steps
 
-- [Referência da CLI](/developers/cli) e [do SDK](/developers/sdk)
-- [Guias](/developers/guias): primeiro app, publicação, banco, armazenamento, telas, API e MCP
-- [Contrato do app](/developers/contrato): o que o hub exige de todo app
+- [CLI reference](/developers/cli) and [SDK reference](/developers/sdk)
+- [Guides](/developers/guias): first app, publishing, database, storage, screens, API and MCP
+- [App contract](/developers/contrato): what the hub requires of every app

@@ -1,55 +1,55 @@
-# Tempo real (SSE ou WebSocket)
+# Real-time (SSE or WebSocket)
 
-Mostre as mudanças para todos os usuários sem recarregar a página e **sem JavaScript próprio**: o app
-manda HTML e o hub insere na tela. Dois atributos fazem isso:
+Show changes to all users without reloading the page and **without app JavaScript of its own**: the app
+sends HTML and the hub inserts it into the screen. Two attributes do this:
 
-| Atributo | Transporte | Quando usar |
+| Attribute | Transport | When to use |
 |---|---|---|
-| `data-hub-sse="{{ base }}/eventos"` | SSE (`text/event-stream`), servidor → navegador | o padrão: avisos, quadros, painéis |
-| `data-hub-ws="{{ base }}/ws/…"` | WebSocket (só em `/apps/{id}/ws/…`) | quando você precisa de WebSocket; as ações continuam em `data-hub-post` |
+| `data-hub-sse="{{ base }}/eventos"` | SSE (`text/event-stream`), server → browser | the default: notices, boards, dashboards |
+| `data-hub-ws="{{ base }}/ws/…"` | WebSocket (only at `/apps/{id}/ws/…`) | when you need WebSocket; actions still use `data-hub-post` |
 
-As mensagens têm o mesmo formato nos dois. Cada uma é um JSON:
+The messages have the same format in both. Each one is a JSON object:
 
-- `{"html": "…", "target": "#id", "swap": "outerHTML"}` troca um trecho da tela (o HTML passa pelo
-  sanitizador do hub);
-- `{"fragments": [ … ]}` manda até 20 trocas de uma vez;
-- `{"text": "…", "target": "#id"}` troca só o texto;
-- `{"event": "nome", "data": …}` dispara o evento `hub:sse` (ou `hub:ws`) no contêiner.
+- `{"html": "…", "target": "#id", "swap": "outerHTML"}` replaces a piece of the screen (the HTML goes through the
+  hub sanitizer);
+- `{"fragments": [ … ]}` sends up to 20 swaps at once;
+- `{"text": "…", "target": "#id"}` replaces only the text;
+- `{"event": "nome", "data": …}` fires the `hub:sse` (or `hub:ws`) event on the container.
 
-Se a conexão cai, o hub reconecta com espera crescente. Enquanto isso, o `data-hub-get` com
-`data-hub-trigger="every 5s"` do mesmo contêiner faz polling. Mande sempre o **estado atual**, não as
-diferenças: assim, reconectar ou fazer polling dá o mesmo resultado.
+If the connection drops, the hub reconnects with increasing back-off. Meanwhile, the `data-hub-get` with
+`data-hub-trigger="every 5s"` on the same container polls. Always send the **current state**, not the differences: this way,
+reconnecting or polling gives the same result.
 
-O exemplo abaixo usa o projeto do `hub project create` (`app.py`, `store.py` e `templates/`). Troque
-`quadro` e `store.list_items` pelo que o seu app mostra.
+The example below uses the project from `hub project create` (`app.py`, `store.py` and `templates/`). Replace
+`quadro` and `store.list_items` with what your app shows.
 
-## 1. Canal de avisos (`hub_sdk.realtime`)
+## 1. Notification channel (`hub_sdk.realtime`)
 
-O SDK traz o canal pronto: `from hub_sdk.realtime import canal, sse`. Com Postgres (no hub), o aviso passa
-por `LISTEN`/`NOTIFY` e alcança todas as réplicas. Com SQLite (no `hub dev`), o aviso fica no próprio processo.
-Não precisa instalar nada além do `hub-sdk` do modelo.
+The SDK ships the channel ready: `from hub_sdk.realtime import channel, sse`. With Postgres (in the hub), the notice goes
+through `LISTEN`/`NOTIFY` and reaches all replicas. With SQLite (in `hub dev`), the notice stays in the process itself.
+Nothing to install beyond the `hub-sdk` from the template.
 
-- `await canal.iniciar()` / `await canal.fechar()` no lifespan;
-- `canal.mensagens(funcao)` entrega o estado atual na conexão e de novo a cada aviso (`None` = ping);
-- `sse(canal.mensagens(...))` devolve a resposta `text/event-stream` pronta;
-- `canal.avisar(engine)` depois do commit de cada mudança.
+- `await channel.start()` / `await channel.close()` in the lifespan;
+- `channel.messages(funcao)` delivers the current state on the connection and again on each notice (`None` = ping);
+- `sse(channel.messages(...))` returns the ready `text/event-stream` response;
+- `channel.notify(engine)` after the commit of each change.
 
-## 2. Rotas e lifespan (`app.py`)
+## 2. Routes and lifespan (`app.py`)
 
 ```python
 import contextlib
 import json
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
-from hub_sdk.realtime import canal, sse
+from hub_sdk.realtime import channel, sse
 
-# dentro de create_app(), no lifespan que já existe:
+# inside create_app(), in the existing lifespan:
     async with sdk.lifespan(app):
-        await canal.iniciar()
+        await channel.start()
         yield
-        await canal.fechar()
+        await channel.close()
 
-# dentro de create_app(), junto das outras rotas:
+# inside create_app(), next to the other routes:
     def mensagem_do_quadro(base: str) -> str:
         html = render.render("quadro.html", base=base, items=store.list_items(engine))
         return json.dumps({"html": html})
@@ -57,29 +57,29 @@ from hub_sdk.realtime import canal, sse
     @app.get(f"/{APP_ID}/eventos")
     async def eventos(req: Request) -> StreamingResponse:
         base = public_base(req)
-        return sse(canal.mensagens(lambda: mensagem_do_quadro(base)))  # o ping mantém a conexão viva
+        return sse(channel.messages(lambda: mensagem_do_quadro(base)))  # the ping keeps the connection alive
 
-    @app.websocket(f"/{APP_ID}/ws/quadro")  # só se usar data-hub-ws
+    @app.websocket(f"/{APP_ID}/ws/quadro")  # only if you use data-hub-ws
     async def ws_quadro(ws: WebSocket) -> None:
         await ws.accept()
         base = public_base(ws)
         with contextlib.suppress(WebSocketDisconnect):
-            async for m in canal.mensagens(lambda: mensagem_do_quadro(base)):
-                if m is not None:  # o hub já manda ping no WebSocket
+            async for m in channel.messages(lambda: mensagem_do_quadro(base)):
+                if m is not None:  # the hub already sends ping over WebSocket
                     await ws.send_text(m)
 ```
 
-Em cada rota que muda os dados, depois de gravar:
+In each route that changes data, after writing:
 
 ```python
         store.add_item(engine, item.name, item.quantity)
-        canal.avisar(engine)
+        channel.notify(engine)
 ```
 
-Conexão que cai: no WebSocket, o hub fecha o socket sem resposta em 60 s, e o próximo envio encerra o
-laço. No SSE, o servidor percebe no próximo `: ping`.
+Dropped connection: over WebSocket, the hub closes the socket without a response after 60 s, and the next send ends the
+loop. Over SSE, the server notices on the next `: ping`.
 
-## 3. Tela (`templates/quadro.html`)
+## 3. Screen (`templates/quadro.html`)
 
 ```html
 <section id="quadro"
@@ -89,12 +89,12 @@ laço. No SSE, o servidor percebe no próximo `: ping`.
 </section>
 ```
 
-O contêiner é o alvo padrão (`outerHTML`). Por isso o HTML enviado traz o próprio
-`<section id="quadro" …>` com os mesmos atributos e continua ligado. Para WebSocket, troque
-`data-hub-sse="{{ base }}/eventos"` por `data-hub-ws="{{ base }}/ws/quadro"`. O `data-hub-get` aponta
-para uma rota que devolve só o `quadro.html` (`render.fragment("quadro.html", …)`), e não a página inteira.
+The container is the default target (`outerHTML`). That is why the HTML sent carries its own
+`<section id="quadro" …>` with the same attributes and stays connected. For WebSocket, replace
+`data-hub-sse="{{ base }}/eventos"` with `data-hub-ws="{{ base }}/ws/quadro"`. The `data-hub-get` points
+to a route that returns only `quadro.html` (`render.fragment("quadro.html", …)`), not the whole page.
 
-As ações continuam formulários normais, que mandam a resposta para o quadro:
+Actions remain normal forms, which send the response to the board:
 
 ```html
 <form method="post" action="{{ base }}/itens" data-hub-target="#quadro">
@@ -102,40 +102,40 @@ As ações continuam formulários normais, que mandam a resposta para o quadro:
 </form>
 ```
 
-Com `data-hub-target`, a resposta **inteira** substitui o `#quadro`. Por isso a rota do POST devolve só o
-fragmento: `return render.fragment("quadro.html", base=public_base(req), items=store.list_items(engine))`,
-depois de `canal.avisar(engine)`. Quem envia vê a resposta na hora; as outras abas recebem pelo SSE ou
-WebSocket. Sem `data-hub-target`, a resposta troca a página toda, e a rota devolve a página.
+With `data-hub-target`, the **whole** response replaces `#quadro`. For that reason the POST route returns only the
+fragment: `return render.fragment("quadro.html", base=public_base(req), items=store.list_items(engine))`,
+after `channel.notify(engine)`. Whoever sends sees the response right away; the other tabs receive it through SSE or
+WebSocket. Without `data-hub-target`, the response replaces the whole page, and the route returns the page.
 
-## Testes
+## Tests
 
-- **WebSocket:** o `TestClient` funciona: `with client.websocket_connect("/<id>/ws/quadro") as ws:
-  ws.receive_text()`. Pelo hub (porta do `hub dev`), mande também `Origin: http://localhost:4173`. Sem o
-  `Origin` igual ao `Host`, o hub recusa com 403.
-- **SSE:** o `TestClient` espera a resposta inteira, então **trava num fluxo infinito**. Teste o canal
-  direto:
+- **WebSocket:** `TestClient` works: `with client.websocket_connect("/<id>/ws/quadro") as ws:
+  ws.receive_text()`. Through the hub (`hub dev` port), also send `Origin: http://localhost:4173`. Without an
+  `Origin` equal to `Host`, the hub refuses with 403.
+- **SSE:** `TestClient` waits for the whole response, so it **hangs on an infinite stream**. Test the channel
+  directly:
 
 ```python
 import asyncio
 
-from hub_sdk.realtime import Canal
+from hub_sdk.realtime import Channel
 
 
-def test_canal_acorda_as_conexoes() -> None:
+def test_channel_wakes_connections() -> None:
     async def caso() -> None:
-        c = Canal()
-        await c.iniciar()
+        c = Channel()
+        await c.start()
         n = iter(range(10))
-        fluxo = c.mensagens(lambda: str(next(n)))
-        assert await anext(fluxo) == "0"  # estado atual ao conectar
+        fluxo = c.messages(lambda: str(next(n)))
+        assert await anext(fluxo) == "0"  # current state on connect
         proximo = asyncio.ensure_future(anext(fluxo))
         await asyncio.sleep(0)
-        c._acordar()
+        c._wake()
         assert await proximo == "1"
         await fluxo.aclose()
 
     asyncio.run(caso())
 ```
 
-Para testar de ponta a ponta, abra duas abas no `hub dev` e mude algo numa delas. Por linha de comando:
+For end-to-end testing, open two tabs in `hub dev` and change something in one of them. From the command line:
 `curl -N http://localhost:4173/_frag/<id>/eventos`.

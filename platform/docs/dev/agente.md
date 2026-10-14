@@ -1,63 +1,63 @@
-# Instruções para agentes
+# Instructions for agents
 
-Você é um agente de código. Siga estes passos para criar e publicar um app neste Application Hub
-(`@HUB@`). Se o pedido não disser o que o app faz, pergunte antes de começar.
+You are a coding agent. Follow these steps to create and publish an app on this Application Hub
+(`@HUB@`). If the request does not say what the app does, ask before starting.
 
-## 1. Instalar a CLI
+## 1. Install the CLI
 
-Pré-requisito: **uv** e Python 3.12. A CLI vem do índice público deste hub:
+Prerequisite: **uv** and Python 3.12. The CLI comes from this hub's public index:
 
 ```bash
 uv tool install hub-cli --index @HUB@/dev/cli/simple/
 hub --help
 ```
 
-## 2. Criar o projeto
+## 2. Create the project
 
-Escolha um id (2–32 caracteres: `a-z`, `0-9`, `-`) e gere o projeto sem perguntas:
+Choose an id (2–32 characters: `a-z`, `0-9`, `-`) and generate the project without prompts:
 
 ```bash
 hub project create <id-do-app> --stack python-fastapi --yes --json
 cd <id-do-app> && uv sync
 ```
 
-## 3. Ler as regras
+## 3. Read the rules
 
-- O `AGENTS.md` gerado na raiz do projeto: estrutura, comandos e regras do template.
-- O contrato do app: [@HUB@/dev/docs/contrato.md](@HUB@/dev/docs/contrato.md) — o que o hub exige de todo app.
-- Referências: [CLI](@HUB@/dev/docs/cli.md) e [SDK](@HUB@/dev/docs/sdk.md).
+- The `AGENTS.md` generated at the project root: structure, commands and template rules.
+- The app contract: [@HUB@/dev/docs/contrato.md](@HUB@/dev/docs/contrato.md) — what the hub requires of every app.
+- References: [CLI](@HUB@/dev/docs/cli.md) and [SDK](@HUB@/dev/docs/sdk.md).
 
-## 4. Desenvolver
+## 4. Develop
 
-- Sem JavaScript próprio: comportamentos de tela com atributos `data-hub-*`.
-- Links sempre pela base pública do app (`{{ base }}` nos templates), nunca `/<id>/…` cru.
-- Toda tela e rota nova com teste.
+- No app JavaScript of your own: screen behaviors use `data-hub-*` attributes.
+- Links always use the app's public base (`{{ base }}` in the templates), never a raw `/<id>/…`.
+- Every new screen and route comes with a test.
 
-## 5. Verificar
+## 5. Verify
 
 ```bash
-hub check   # lint, tipos, testes, manifesto, openapi.json e conformidade
-hub dev     # hub local com o app no shell: http://localhost:4173/apps/<id-do-app>
+hub check   # lint, types, tests, manifest, openapi.json and conformance
+hub dev     # local hub with the app in the shell: http://localhost:4173/apps/<id-do-app>
 ```
 
-Repita até o `hub check` ficar verde.
+Repeat until `hub check` is green.
 
-## 6. Publicar
+## 6. Publish
 
-O token vem do dono do hub; a CLI pede o token sem eco e o guarda fora do projeto:
+The token comes from the hub owner; the CLI asks for the token without echo and stores it outside the project:
 
 ```bash
 hub login --hub @HUB@
 hub deploy --env staging --yes
 ```
 
-Sem acesso ao hub, gere o pacote e entregue o arquivo `.hubapp`:
+Without access to the hub, generate the package and deliver the `.hubapp` file:
 
 ```bash
 hub pack --build-dir .
 ```
 
-## Regras
+## Rules
 
-- Nunca faça commit de segredos (`.env`, tokens, chaves); nunca escreva o token em arquivos do projeto.
-- Produção (`--env production`) só com aprovação no hub — publique em staging e peça a aprovação.
+- Never commit secrets (`.env`, tokens, keys); never write the token to project files.
+- Production (`--env production`) only with approval in the hub — publish to staging and request the approval.

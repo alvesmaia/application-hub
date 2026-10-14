@@ -1,23 +1,23 @@
-# Padrões de tela (`data-hub-*`)
+# Screen patterns (`data-hub-*`)
 
-Apps não têm JavaScript próprio. O hub interpreta atributos no HTML dos fragmentos.
+Apps have no JavaScript of their own. The hub interprets attributes in the HTML of the fragments.
 
-| Atributo | O que faz |
+| Attribute | What it does |
 |---|---|
-| `data-hub-get` / `data-hub-post` | busca ou envia e insere a resposta (`data-hub-target`, `data-hub-swap`) |
+| `data-hub-get` / `data-hub-post` | fetches or sends and inserts the response (`data-hub-target`, `data-hub-swap`) |
 | `data-hub-trigger` | `click`, `submit`, `change`, `input`, `load`, `every 5s` |
-| `data-hub-confirm` | confirmação antes da ação |
-| `data-hub-modal` | abre um `<template>` num modal do hub |
-| `data-hub-toast` | mensagem curta depois da ação |
-| `data-hub-filter` | filtra linhas de uma tabela |
-| `data-hub-table`, `data-hub-sort` | paginação e ordenação no cliente |
-| `data-hub-copy`, `data-hub-copy-from` | copiar para a área de transferência |
-| `data-hub-tabs`, `data-hub-tab` | abas acessíveis |
-| `data-hub-validate` | mensagens de validação junto do campo |
-| `data-hub-chart` | gráfico do hub |
-| `data-hub-sse`, `data-hub-ws` | tempo real por SSE ou WebSocket, com polling de reserva ([Tempo real](/developers/guias/tempo-real)) |
+| `data-hub-confirm` | confirmation before the action |
+| `data-hub-modal` | opens a `<template>` in a hub modal |
+| `data-hub-toast` | short message after the action |
+| `data-hub-filter` | filters the rows of a table |
+| `data-hub-table`, `data-hub-sort` | pagination and sorting on the client |
+| `data-hub-copy`, `data-hub-copy-from` | copy to the clipboard |
+| `data-hub-tabs`, `data-hub-tab` | accessible tabs |
+| `data-hub-validate` | validation messages next to the field |
+| `data-hub-chart` | hub chart |
+| `data-hub-sse`, `data-hub-ws` | real-time via SSE or WebSocket, with fallback polling ([Real-time](/developers/guias/tempo-real)) |
 
-Exemplo:
+Example:
 
 ```html
 <form data-hub-get="{{ base }}/lista" data-hub-target="#lista" data-hub-swap="innerHTML" data-hub-trigger="input">
@@ -26,30 +26,29 @@ Exemplo:
 <div id="lista"></div>
 ```
 
-`data-hub-confirm="Excluir o cartão?"` vai no `<form>` ou no botão de envio (também em links e em botões com
-`data-hub-post`). O hub mostra o diálogo dele antes de enviar.
+`data-hub-confirm="Excluir o cartão?"` goes on the `<form>` or on the submit button (also on links and on buttons with
+`data-hub-post`). The hub shows its own dialog before sending.
 
-Classes prontas do hub: botões `primary-button`, `secondary-button`, `danger-button` e `icon-button`;
-painéis `hub-panel` e `hub-panel-head`; formulários `hub-form-grid`, `form-field` e `hub-actions`; avisos
-`hub-notice` (+ `hub-notice-error`); tabelas `data-table` dentro de `hub-table-scroll`; vazio `empty-state`. O
-modelo do `hub project create` usa todas. Cores só por tokens (`var(--…)`).
+Ready-made hub classes: buttons `primary-button`, `secondary-button`, `danger-button` and `icon-button`;
+panels `hub-panel` and `hub-panel-head`; forms `hub-form-grid`, `form-field` and `hub-actions`; notices
+`hub-notice` (+ `hub-notice-error`); tables `data-table` inside `hub-table-scroll`; empty `empty-state`. The
+model from `hub project create` uses all of them. Colors only through tokens (`var(--…)`).
 
-Lista completa e regras: Contrato §25 ([Contrato](/developers/contrato)).
+Full list and rules: Contract §25 ([Contract](/developers/contrato)).
 
-## Testar sem navegador
+## Test without a browser
 
-O certo é abrir a tela no hub (`hub dev` e depois `/apps/<id>`). Para um teste rápido por linha de comando,
-chame o **fragmento**, não a página: os formulários do hub enviam para `/_frag/<id>/…`. A página `/apps/<id>/…`
-não aceita POST (`405`), e o fragmento exige os cabeçalhos que o shell manda — sem eles vem `403`, e um POST
-sem `Idempotency-Key` de 8 a 128 caracteres vem `400`.
+The right way is to open the screen in the hub (`hub dev` and then `/apps/<id>`). For a quick test from the command line,
+call the **fragment**, not the page: the hub's forms send to `/_frag/<id>/…`. The page `/apps/<id>/…`
+does not accept POST (`405`), and the fragment requires the headers the shell sends — without them you get `403`, and a POST
+without an `Idempotency-Key` of 8 to 128 characters gets `400`.
 
 ```bash
 hub dev &                                     # http://localhost:4173
 H='-H Origin:http://localhost:4173 -H Sec-Fetch-Site:same-origin -H X-Requested-With:XMLHttpRequest'
-curl -s $H http://localhost:4173/_frag/<id>/                      # fragmento inicial
-K="-H Idempotency-Key:$(date +%s)-teste"      # POST: chave de 8 a 128 caracteres
+curl -s $H http://localhost:4173/_frag/<id>/                      # initial fragment
+K="-H Idempotency-Key:$(date +%s)-teste"      # POST: key of 8 to 128 characters
 curl -s $H $K -d "name=Arroz&quantity=2" http://localhost:4173/_frag/<id>/itens
 ```
 
-Troque `<id>` pelo id do app. A conformidade do `hub check` usa exatamente essas rotas.
-
+Replace `<id>` with the app id. The `hub check` conformance uses exactly these routes.

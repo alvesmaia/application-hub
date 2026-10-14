@@ -1,4 +1,4 @@
-# Publicar em staging e produção
+# Publish to staging and production
 
 ## Staging
 
@@ -7,35 +7,35 @@ hub login --hub @HUB@
 hub deploy --env staging --yes
 ```
 
-O hub valida o pacote (manifesto, contrato, imagem), provisiona o que o manifesto pede em `requires` e implanta em
-blue/green. Abra o app em staging pelo seletor de ambiente do hub.
+The hub validates the package (manifest, contract, image), provisions what the manifest asks for in `requires` and deploys
+blue/green. Open the app in staging from the hub's environment selector.
 
-## Produção
+## Production
 
 ```bash
 hub deploy --env production --yes
 ```
 
-A versão fica **aguardando aprovação** na tela Implantações; quem aprova é um operador do hub.
+The version stays **waiting for approval** on the Deployments screen; a hub operator approves it.
 
-## Variáveis e segredos
+## Variables and secrets
 
-Os valores de `requires.variables` e `requires.secrets` vêm de `deploy.<env>.env` (ou são perguntados; segredo sem
-eco). A CLI só mostra os nomes, nunca os valores. Não faça commit desses arquivos.
+The values of `requires.variables` and `requires.secrets` come from `deploy.<env>.env` (or are asked for; secrets without echo). The
+CLI only shows the names, never the values. Do not commit these files.
 
-## Sem acesso ao hub
+## Without access to the hub
 
 ```bash
 hub pack --build-dir .
 ```
 
-Gera o `.hubapp` para envio manual na tela Implantações (mesmo pipeline e provisionamento).
+Generates the `.hubapp` for manual upload on the Deployments screen (same pipeline and provisioning).
 
-O pacote vai até **20 MB**. Ele leva o manifesto, o `openapi.json`, a pasta `ui/` e o contexto de build
-(`build/**`) — **não** as dependências: quem as instala é o `Dockerfile`, durante o build no hub. Se estourar o
-limite, o `hub pack` diz quais são os maiores arquivos; o caso comum é um `.venv/` ou um `vendor/` copiado para
-`build/` (acrescente ao `.dockerignore`).
+The package can be up to **20 MB**. It carries the manifest, the `openapi.json`, the `ui/` folder and the build context
+(`build/**`) — **not** the dependencies: the `Dockerfile` installs them during the build in the hub. If it exceeds the
+limit, `hub pack` lists the largest files; the common case is a `.venv/` or a `vendor/` copied into
+`build/` (add it to `.dockerignore`).
 
-## Códigos de saída
+## Exit codes
 
-`0` ok · `1` pacote rejeitado · `2` validação · `3` token recusado · `4` hub inacessível.
+`0` ok · `1` package rejected · `2` validation · `3` token refused · `4` hub unreachable.

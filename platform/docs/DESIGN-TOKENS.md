@@ -1,213 +1,213 @@
-# Design tokens — identidade Alvesmaia
+# Design tokens — Alvesmaia identity
 
-Fonte única do visual da plataforma: **`assets/shell/tokens.css`**, servido em
-`/assets/tokens.css` pelo hub-web e pelo `hub dev` e carregado **antes** de `styles.css`.
-Os fragmentos dos apps são renderizados dentro do mesmo documento do shell,
-então usam as mesmas variáveis sem importar nada.
+Single source of the platform's look: **`assets/shell/tokens.css`**, served at
+`/assets/tokens.css` by hub-web and `hub dev` and loaded **before** `styles.css`.
+App fragments are rendered inside the same shell document,
+so they use the same variables without importing anything.
 
 ```
-tokens.css   → primitivas + semânticas + escalas (espaço, raio, tipo, sombra, camadas, movimento)
-theme.css    → tema da instalação (white label): redefine só semânticas (hoje --color-accent)
-styles.css   → componentes do shell (mockup), só com var(--…)
-hub.css / ops.css / auth.css / demo.css / app.css → idem
+tokens.css   → primitives + semantics + scales (space, radius, type, shadow, layers, motion)
+theme.css    → installation theme (white label): redefines only semantics (today --color-accent)
+styles.css   → shell components (mockup), only with var(--…)
+hub.css / ops.css / auth.css / demo.css / app.css → same
 ```
 
-## Identidade Alvesmaia (cores, fontes, linhas — sem logo)
+## Alvesmaia identity (colors, fonts, lines — no logo)
 
-Fonte única das cores: **`scripts/brand-palette.json`**. Cada **papel** tem um valor claro e
-um escuro (grafite) escolhidos à mão; nada é calculado. `node scripts/gen-dark-theme.mjs`
-grava em `tokens.css` o bloco `paleta:inicio/fim` (`--am-<papel>` claros + primitivas) e o
-bloco `tema-escuro:inicio/fim` (só os `--am-<papel>` escuros); `--check` (nos testes JS e no
-`node scripts/gen-dark-theme.mjs --check`) falha se algo estiver desatualizado **ou** se algum par declarado em
-`contrast` ficar abaixo de 4,5:1 (texto) / 3:1 (forma, borda de campo) em qualquer tema.
+Single source of the colors: **`scripts/brand-palette.json`**. Each **role** has a light and a
+dark (graphite) value chosen by hand; nothing is computed. `node scripts/gen-dark-theme.mjs`
+writes to `tokens.css` the `paleta:inicio/fim` block (`--am-<role>` light + primitives) and the
+`tema-escuro:inicio/fim` block (only the dark `--am-<role>`); `--check` (in the JS tests and in
+`node scripts/gen-dark-theme.mjs --check`) fails if something is out of date **or** if any pair declared in
+`contrast` falls below 4.5:1 (text) / 3:1 (shape, field border) in any theme.
 
-| Papel | Claro | Escuro | Uso |
+| Role | Light | Dark | Use |
 |---|---|---|---|
-| `page` | `#F4F6FB` | `#191919` | fundo da página |
-| `surface` / `raised` | `#FFFFFF` | `#202020` / `#272727` | cartões, tabelas, campos / popover, menu, modal |
-| `alt` / `hover` | `#F6F8FD` / `#F0F3F8` | `#1E1E1E` / `#252525` | rodapé de lista, zebra / linha em hover e divisória de linha |
-| `border` / `border-strong` | `#E1E6F0` / `#C9D2E3` | `#2F2F2F` / `#3D3D3D` | borda de cartão / decorativa forte, barra de rolagem |
-| `control` | `#7B8799` | `#6B6B6B` | borda de campo (≥ 3:1) |
-| `tint` / `tint-border` | `#EEF1FF` / `#C5D0FF` | `#232733` / `#3A4266` | chip, realce / borda do botão secundário |
-| `title` / `body` | `#102A43` / `#334E68` | `#FFFFFF` / `#EDEDED` | títulos / texto corrido |
-| `secondary` / `faint` / `ink` | `#52606D` / `#5F6B7A` / `#0F1E2B` | `#A5A5A5` / `#9A9A9A` / `#FFFFFF` | rótulos / discreto / quase preto |
-| `primary` / `primary-hover` / `on-primary` | `#3A4FD8` / `#2E3FB8` / `#FFFFFF` | `#8FA3FF` / `#AEBCFF` / `#08122E` | botão primário, links, texto de destaque |
-| `fill` | `#3A4FD8` | `#4A64F5` | preenchimento índigo com texto branco nos dois temas (apps) |
-| `accent` / `accent-soft` | `#4F6BFF` / `#8FA3FF` | `#4F6BFF` / `#6F86FF` | formas, gráficos, foco — **nunca texto corrido** |
-| `ok`, `ok-bg` | `#0B6B3A`, `#DDF5E8` | `#4FC79A`, `#1A2E25` | sucesso (também `ok-border`, `ok-shape`) |
-| `warn`, `warn-bg` | `#8A4B00`, `#FFF1D6` | `#E0A661`, `#2E2517` | aviso (também `warn-border`, `warn-shape`) |
-| `err`, `err-bg` | `#9B1C1C`, `#FDECEC` | `#F08B7C`, `#33201E` | erro (também `err-border`, `err-shape`, `err-fill`) |
-| `neutral-bg` | `#EEF0F4` | `#272727` | selo neutro (texto `secondary`) |
+| `page` | `#F4F6FB` | `#191919` | page background |
+| `surface` / `raised` | `#FFFFFF` | `#202020` / `#272727` | cards, tables, fields / popover, menu, modal |
+| `alt` / `hover` | `#F6F8FD` / `#F0F3F8` | `#1E1E1E` / `#252525` | list footer, zebra / row on hover and row divider |
+| `border` / `border-strong` | `#E1E6F0` / `#C9D2E3` | `#2F2F2F` / `#3D3D3D` | card border / strong decorative, scrollbar |
+| `control` | `#7B8799` | `#6B6B6B` | field border (≥ 3:1) |
+| `tint` / `tint-border` | `#EEF1FF` / `#C5D0FF` | `#232733` / `#3A4266` | chip, highlight / secondary button border |
+| `title` / `body` | `#102A43` / `#334E68` | `#FFFFFF` / `#EDEDED` | titles / running text |
+| `secondary` / `faint` / `ink` | `#52606D` / `#5F6B7A` / `#0F1E2B` | `#A5A5A5` / `#9A9A9A` / `#FFFFFF` | labels / subdued / near black |
+| `primary` / `primary-hover` / `on-primary` | `#3A4FD8` / `#2E3FB8` / `#FFFFFF` | `#8FA3FF` / `#AEBCFF` / `#08122E` | primary button, links, highlighted text |
+| `fill` | `#3A4FD8` | `#4A64F5` | indigo fill with white text in both themes (apps) |
+| `accent` / `accent-soft` | `#4F6BFF` / `#8FA3FF` | `#4F6BFF` / `#6F86FF` | shapes, charts, focus — **never running text** |
+| `ok`, `ok-bg` | `#0B6B3A`, `#DDF5E8` | `#4FC79A`, `#1A2E25` | success (also `ok-border`, `ok-shape`) |
+| `warn`, `warn-bg` | `#8A4B00`, `#FFF1D6` | `#E0A661`, `#2E2517` | warning (also `warn-border`, `warn-shape`) |
+| `err`, `err-bg` | `#9B1C1C`, `#FDECEC` | `#F08B7C`, `#33201E` | error (also `err-border`, `err-shape`, `err-fill`) |
+| `neutral-bg` | `#EEF0F4` | `#272727` | neutral badge (text `secondary`) |
 | `chrome` / `chrome-raised` | `#102A43` / `#17365A` | `#1E1E1E` / `#272727` | header + rail / tooltip, toast |
-| `chrome-text` / `chrome-text-2` / `chrome-icon` | `#FFFFFF` / `#B8C4D6` / `#C5D0FF` | `#FFFFFF` / `#A5A5A5` / `#C5D0FF` | texto, secundário e ícones sobre o cromo |
+| `chrome-text` / `chrome-text-2` / `chrome-icon` | `#FFFFFF` / `#B8C4D6` / `#C5D0FF` | `#FFFFFF` / `#A5A5A5` / `#C5D0FF` | text, secondary and icons over the chrome |
 
-Item ativo do rail/sidebar: fundo `rgba(79,107,255,.28)`, texto branco e
+Active item in the rail/sidebar: background `rgba(79,107,255,.28)`, white text and
 `box-shadow: inset 3px 0 0 #4F6BFF` (`--color-chrome-active-bg`, `--color-chrome-active-bar`).
-Foco: `outline: 2px solid` `--color-focus` (`#4F6BFF`), deslocamento 2px (-2px dentro de
-tabelas, popovers e modais).
+Focus: `outline: 2px solid` `--color-focus` (`#4F6BFF`), 2px offset (-2px inside
+tables, popovers and modals).
 
-**Fontes** (as mesmas do site da Alvesmaia), servidas pelo próprio hub em `/assets/fonts/`
-(woff2 variáveis, `font-display: swap`; licença SIL OFL 1.1 em `/assets/fonts/OFL-NunitoSans.txt`
-e `/assets/fonts/OFL.txt`). **Nunito Sans** (eixo 400–900, subconjunto latin — cobre os acentos
-de pt-BR; `format("woff2-variations")`) em toda a interface: `--font-body`, `--font-ui` e
-`--font-display` (títulos, KPIs). **Red Hat Display** só no nome da aplicação no header
-(`--font-brand`, `.brand-name`). `--font-mono` **Red Hat Mono** (chaves, valores, IDs, código).
-O shell pré-carrega Nunito Sans e Red Hat Display; CSP `font-src 'self'`; reservas
-`system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif` e
+**Fonts** (the same as the Alvesmaia site), served by the hub itself at `/assets/fonts/`
+(variable woff2, `font-display: swap`; SIL OFL 1.1 license at `/assets/fonts/OFL-NunitoSans.txt`
+and `/assets/fonts/OFL.txt`). **Nunito Sans** (axis 400–900, latin subset — covers the accents
+of pt-BR; `format("woff2-variations")`) across the whole interface: `--font-body`, `--font-ui` and
+`--font-display` (titles, KPIs). **Red Hat Display** only in the application name in the header
+(`--font-brand`, `.brand-name`). `--font-mono` **Red Hat Mono** (keys, values, IDs, code).
+The shell preloads Nunito Sans and Red Hat Display; CSP `font-src 'self'`; fallbacks
+`system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif` and
 `ui-monospace, Consolas, monospace`.
 
-**Tamanhos** (px reais — o `html` não tem `zoom`): corpo 13px/400, `letter-spacing: -.005em`;
-h1–h6 800, `letter-spacing: -.02em` — h1 26px (22px no cabeçalho de app, 24px em telas baixas),
-h2 16px, título de cartão 15px; KPI 27px/800 `tabular-nums`; botões 13px/500, `line-height 1.4`,
-`padding 6px 14px`, altura 32px (12px dentro de tabelas); abas/pílulas 13px/500 (28px); selos
-12px/600; cabeçalho de tabela 11px/600 MAIÚSCULAS `letter-spacing: .05em` `secondary`; célula
-13px, `padding 8px 12px`; itens de navegação 500 (ativo 600), 32px de altura e 2px entre itens;
-eyebrow 12px/700, `letter-spacing: .12em`, cor primária. Piso: texto ≥ 12px (exceto o cabeçalho
-de tabela), alvos clicáveis ≥ 28px. Header 41px, rail expandido 204px, ícone da marca 34px,
-busca centrada na largura total (máx. 440px).
+**Sizes** (real px — the `html` has no `zoom`): body 13px/400, `letter-spacing: -.005em`;
+h1–h6 800, `letter-spacing: -.02em` — h1 26px (22px in the app header, 24px on short screens),
+h2 16px, card title 15px; KPI 27px/800 `tabular-nums`; buttons 13px/500, `line-height 1.4`,
+`padding 6px 14px`, height 32px (12px inside tables); tabs/pills 13px/500 (28px); badges
+12px/600; table header 11px/600 UPPERCASE `letter-spacing: .05em` `secondary`; cell
+13px, `padding 8px 12px`; navigation items 500 (active 600), 32px high and 2px between items;
+eyebrow 12px/700, `letter-spacing: .12em`, primary color. Floor: text ≥ 12px (except the table header),
+clickable targets ≥ 28px. Header 41px, expanded rail 204px, brand icon 34px,
+search centered across the full width (max. 440px).
 
-**Linhas e formas**: bordas sempre 1px; cartão com borda `border`, raio 12, **sem sombra**;
-linhas de tabela separadas por 1px `hover` (`#F0F3F8`), cabeçalho por 1px `border`; botões,
-campos e selects raio 8 (36-40px de altura); linhas clicáveis e itens de menu raio 6; pílulas
-e abas raio 16 (30-32px); selos raio 11. Sombra só em elemento flutuante (tooltip, toast,
-menu, modal): `0 8px 24px rgba(16,42,67,.16)` (escuro `0 18px 44px rgba(0,0,0,.44)`).
-Botão primário cheio (`primary`, texto `on-primary` 700); secundário branco com borda
-`tint-border` e texto `primary`; botão de ícone 32-40px quadrado, raio 8. Tabelas densas
-(linha ~38-40px, 14px, números à direita com `tabular-nums`), barras de rolagem finas (6px,
-polegar `border-strong`). As regras ficam no fim de `hub.css` ("Identidade Alvesmaia"), por
-cima das camadas herdadas do mockup.
+**Lines and shapes**: borders always 1px; card with a `border` border, radius 12, **no shadow**;
+table rows separated by a 1px `hover` line (`#F0F3F8`), header by a 1px `border`; buttons,
+fields and selects radius 8 (36–40px high); clickable rows and menu items radius 6; pills
+and tabs radius 16 (30–32px); badges radius 11. Shadow only on floating elements (tooltip, toast,
+menu, modal): `0 8px 24px rgba(16,42,67,.16)` (dark `0 18px 44px rgba(0,0,0,.44)`).
+Solid primary button (`primary`, text `on-primary` 700); secondary button white with a
+`tint-border` border and `primary` text; icon button 32–40px square, radius 8. Dense tables
+(row ~38–40px, 14px, numbers right-aligned with `tabular-nums`), thin scrollbars (6px,
+thumb `border-strong`). The rules sit at the end of `hub.css` ("Identidade Alvesmaia" (Alvesmaia identity)), on top
+of the mockup's inherited layers.
 
-## Camadas
+## Layers
 
-0. **Papéis**: `--am-<papel>` (tabela acima), gerados de `scripts/brand-palette.json`.
-1. **Primitivas de cor**: `--c-<família>-<luminosidade>`, nomes herdados do mockup que o CSS
-   antigo ainda usa; hoje cada uma é só um apelido de um papel (`--c-blue-31: var(--am-primary)`)
-   ou um valor fixo nos dois temas (`{"fixed": "#hex"}`, ex.: o terminal de logs, escuro
-   sempre). O mapeamento está em `primitives` do JSON.
-2. **Semânticas**: o que componentes novos devem usar:
+0. **Roles**: `--am-<role>` (table above), generated from `scripts/brand-palette.json`.
+1. **Color primitives**: `--c-<family>-<lightness>`, names inherited from the mockup that the old CSS
+   still uses; today each one is only an alias of a role (`--c-blue-31: var(--am-primary)`)
+   or a fixed value in both themes (`{"fixed": "#hex"}`, e.g. the log terminal, always dark).
+   The mapping is in `primitives` of the JSON.
+2. **Semantics**: what new components should use:
 
-| Token | Uso |
+| Token | Use |
 |---|---|
-| `--color-bg` | fundo da página |
-| `--color-surface`, `--color-surface-raised`, `--color-surface-muted`, `--color-surface-sunken`, `--color-surface-hover` | cartões, flutuantes, faixas alternadas, hover |
-| `--color-text`, `--color-text-strong`, `--color-text-ink`, `--color-text-secondary`, `--color-text-muted`, `--color-text-subtle` | textos por ênfase |
-| `--color-text-inverse`, `--color-border-inverse` | texto/borda brancos (sobre cromo e preenchimentos) |
-| `--color-border`, `--color-border-strong`/`--color-border-control`, `--color-divider` | bordas, borda de campo (3:1), divisórias |
-| `--color-accent`, `--color-accent-hover`, `--color-on-accent` | primário (links, botões, texto de destaque), **white label** |
-| `--color-accent-shape`, `--color-accent-shape-2`, `--color-focus` | formas, gráficos e foco (`#4F6BFF`) |
-| `--color-tint`, `--color-tint-border`, `--color-accent-soft` | chips e realces |
-| `--color-brand` | cor de título (navy no claro, branco no escuro) |
-| `--color-chrome*` | header e rail (fundo, texto, ícones, item ativo) |
-| `--color-success/-warning/-danger` (+ `-soft`, `-shape`), `--color-danger-strong`, `--color-info(-soft)`, `--color-neutral-soft` | estados |
-| `--focus-ring`, `--focus-ring-color` | anel de foco |
-| `--app-color`, `--app-ink` | identidade do app aberto (o `hub.js` publica a partir do catálogo) |
+| `--color-bg` | page background |
+| `--color-surface`, `--color-surface-raised`, `--color-surface-muted`, `--color-surface-sunken`, `--color-surface-hover` | cards, floating elements, alternating bands, hover |
+| `--color-text`, `--color-text-strong`, `--color-text-ink`, `--color-text-secondary`, `--color-text-muted`, `--color-text-subtle` | texts by emphasis |
+| `--color-text-inverse`, `--color-border-inverse` | white text/border (over the chrome and fills) |
+| `--color-border`, `--color-border-strong`/`--color-border-control`, `--color-divider` | borders, field border (3:1), dividers |
+| `--color-accent`, `--color-accent-hover`, `--color-on-accent` | primary (links, buttons, highlighted text), **white label** |
+| `--color-accent-shape`, `--color-accent-shape-2`, `--color-focus` | shapes, charts and focus (`#4F6BFF`) |
+| `--color-tint`, `--color-tint-border`, `--color-accent-soft` | chips and highlights |
+| `--color-brand` | title color (navy in light, white in dark) |
+| `--color-chrome*` | header and rail (background, text, icons, active item) |
+| `--color-success/-warning/-danger` (+ `-soft`, `-shape`), `--color-danger-strong`, `--color-info(-soft)`, `--color-neutral-soft` | states |
+| `--focus-ring`, `--focus-ring-color` | focus ring |
+| `--app-color`, `--app-ink` | identity of the open app (`hub.js` publishes it from the catalog) |
 
-3. **Escalas**
+3. **Scales**
 
-| Grupo | Tokens |
+| Group | Tokens |
 |---|---|
-| Espaço | `--space-2 … --space-48` (nome = px; escala fechada 2,4,6,8,10,12,14,16,18,20,24,28,32,40,44,48) |
-| Raio | `--radius-2xs` (2) `xs` (4) `sm` (5) `md` (6) `lg` (7) `xl` (8) `2xl` (9) `3xl` (10) `4xl` (11) `5xl` (12) `6xl` (14) `7xl` (20) `pill` `round` |
-| Tipografia | `--font-body`/`--font-ui`/`--font-display` (Nunito Sans), `--font-brand` (Red Hat Display, só a marca), `--font-mono`/`--font-mono-alt` (Red Hat Mono); `--font-size-4xs`…`--font-size-sm` (12px, piso) … `--font-size-base` (14px) … `--font-size-7xl` (27px) |
-| Sombras | `--shadow-card` (`none`), `--shadow-popover`, `--shadow-modal` (só flutuantes) |
-| Camadas | `--z-raised` 1 · `--z-rail` 25 · `--z-header` 30 · `--z-rail-restore` 35 · `--z-popover` 40 · `--z-overlay` 45 · `--z-backdrop` 49 · `--z-sidebar` 50 · `--z-tooltip` 60 · `--z-toast` 70 · `--z-menu` 80 |
-| Movimento | `--ease-emphasized`, `--duration-fast`, `--duration-base` (zerados com `prefers-reduced-motion`) |
+| Space | `--space-2 … --space-48` (name = px; closed scale 2,4,6,8,10,12,14,16,18,20,24,28,32,40,44,48) |
+| Radius | `--radius-2xs` (2) `xs` (4) `sm` (5) `md` (6) `lg` (7) `xl` (8) `2xl` (9) `3xl` (10) `4xl` (11) `5xl` (12) `6xl` (14) `7xl` (20) `pill` `round` |
+| Typography | `--font-body`/`--font-ui`/`--font-display` (Nunito Sans), `--font-brand` (Red Hat Display, brand only), `--font-mono`/`--font-mono-alt` (Red Hat Mono); `--font-size-4xs`…`--font-size-sm` (12px, floor) … `--font-size-base` (14px) … `--font-size-7xl` (27px) |
+| Shadows | `--shadow-card` (`none`), `--shadow-popover`, `--shadow-modal` (floating only) |
+| Layers | `--z-raised` 1 · `--z-rail` 25 · `--z-header` 30 · `--z-rail-restore` 35 · `--z-popover` 40 · `--z-overlay` 45 · `--z-backdrop` 49 · `--z-sidebar` 50 · `--z-tooltip` 60 · `--z-toast` 70 · `--z-menu` 80 |
+| Motion | `--ease-emphasized`, `--duration-fast`, `--duration-base` (zeroed with `prefers-reduced-motion`) |
 
 ## White label
 
-Plataforma › Configurações › **Cor da marca**: salva `brand_color` (`#rrggbb`, validado no
-servidor — nada além de hex chega ao CSS) e `/assets/theme.css` passa a ter
-`:root { --color-accent: <cor>; }`. Tudo que usa o accent (botões primários do shell, links,
-foco, eyebrows, destaques dos apps que seguem os tokens) muda na hora, sem rebuild.
+Plataforma › Configurações › **Brand color** («Cor da marca»): saves `brand_color` (`#rrggbb`, validated on the
+server — nothing but hex reaches the CSS) and `/assets/theme.css` now has
+`:root { --color-accent: <cor>; }`. Everything that uses the accent (shell primary buttons, links,
+focus, eyebrows, highlights of apps that follow the tokens) changes immediately, with no rebuild.
 
-## Tema escuro (grafite)
+## Dark theme (graphite)
 
-Os valores escuros são **explícitos** (coluna "Escuro" acima, em `scripts/brand-palette.json`);
-o gerador só os escreve no bloco `tema-escuro:inicio/fim` de `tokens.css` (não editar à mão).
-Vale para `:root[data-theme="dark"]` (escolha do usuário, gravada no servidor e posta no
-`<html>` pelo shell) e, quando o usuário escolhe "Automático (sistema)", para
-`prefers-color-scheme: dark` (`:root[data-theme="auto"]`). **O padrão é o tema claro**: quem
-nunca escolheu (preferência ausente ou o antigo valor vazio) recebe `data-theme="light"` do
-servidor, mesmo com o SO escuro — sem flash; `<meta name="color-scheme">` acompanha
-(`light` / `dark` / `light dark` no automático). Telas de login/credenciais são sempre claras. Como primitivas e semânticas apontam para `--am-*` por
-`var()`, o bloco escuro redefine só os papéis.
+The dark values are **explicit** (the "Escuro" (Dark) column above, in `scripts/brand-palette.json`);
+the generator only writes them to the `tema-escuro:inicio/fim` block of `tokens.css` (do not edit by hand).
+It applies to `:root[data-theme="dark"]` (the user's choice, saved on the server and posted to the
+`<html>` by the shell) and, when the user chooses "Automático (sistema)" (Automatic (system)), to
+`prefers-color-scheme: dark` (`:root[data-theme="auto"]`). **The default is the light theme**: whoever
+never chose (missing preference or the old empty value) gets `data-theme="light"` from the
+server, even with a dark OS — no flash; `<meta name="color-scheme">` follows
+(`light` / `dark` / `light dark` in automatic). Login/credential screens are always light. Since primitives and semantics point to `--am-*` through
+`var()`, the dark block redefines only the roles.
 
-- **Cromo**: navy no claro, grafite (`#1E1E1E`) no escuro, com a mesma barra índigo no item
-  ativo. Não há mais regra especial "cromo mantém o claro".
-- **Apps do mockup**: `app2.css`/`app3.css` não têm cor literal: o gerador trocou cada uma por
-  um token do hub (`var(--am-<papel>)`, `color-mix` quando havia transparência), escolhido pela
-  propriedade (texto/borda/fundo) e pela cor; cor literal nova nesses arquivos é convertida ao
-  rodar o gerador e reprovada no `--check`. A paleta terracota/floresta própria desses apps saiu
-  (não passava no contraste dos dois temas); a identidade de cada app segue em `--app-ink`/
-  `--app-color` (catálogo; tintas de `fornecedores`/`contratos` escurecidas para 4,5:1).
-- **Cor da marca** (white label): no escuro o `theme.css` usa a cor da marca misturada com
-  branco (45%), para manter o contraste.
-- **Gráficos**: `hub-chart.js` usa a paleta de séries da identidade (`#4F6BFF` primeiro).
-- **Contraste**: o `--check` garante os pares declarados; a sonda `tests-e2e/a11y-probe.mjs`
-  (axe, dois temas) mede as páginas reais. O antigo `scripts/fix-contrast.mjs` (ajuste
-  automático sobre um tema calculado) foi aposentado: ajuste o papel no JSON e rode o gerador.
+- **Chrome**: navy in light, graphite (`#1E1E1E`) in dark, with the same indigo bar on the active item. There is
+  no longer a special rule "chrome keeps light".
+- **Mockup apps**: `app2.css`/`app3.css` have no literal colors: the generator replaced each one with
+  a hub token (`var(--am-<role>)`, `color-mix` where there was transparency), chosen by the
+  property (text/border/background) and by the color; a new literal color in those files is converted when
+  the generator runs and rejected by `--check`. These apps' own terracotta/forest palette was removed
+  (it did not pass contrast in both themes); each app's identity stays in `--app-ink`/
+  `--app-color` (catalog; `fornecedores`/`contratos` inks darkened to 4.5:1).
+- **Brand color** (white label): in dark, `theme.css` mixes the brand color with
+  white (45%), to keep the contrast.
+- **Charts**: `hub-chart.js` uses the identity's series palette (`#4F6BFF` first).
+- **Contrast**: `--check` guarantees the declared pairs; the probe `tests-e2e/a11y-probe.mjs`
+  (axe, both themes) measures the real pages. The old `scripts/fix-contrast.mjs` (automatic adjustment on a
+  computed theme) was retired: adjust the role in the JSON and run the generator.
 
-## Para quem escreve apps
+## For app authors
 
-- Use as semânticas (`var(--color-text-muted)`, `var(--space-12)`, `var(--radius-xl)`…) e
-  `var(--app-ink)`/`var(--app-color)` para a identidade do seu app.
-- O SDK Python (`templates/*.html`) e os fragmentos dos apps usam só classes do shell e tokens;
-  o CSS próprio de cada app (`demo.css`, `app.css`, `app2.css`, `app3.css`) também.
+- Use the semantics (`var(--color-text-muted)`, `var(--space-12)`, `var(--radius-xl)`…) and
+  `var(--app-ink)`/`var(--app-color)` for your app's identity.
+- The Python SDK (`templates/*.html`) and the app fragments use only shell classes and tokens;
+  each app's own CSS (`demo.css`, `app.css`, `app2.css`, `app3.css`) does too.
 
-## Celular e tabelas responsivas (hub)
+## Mobile and responsive tables (hub)
 
-CSS só do hub (`hub.css`; não é contrato de app — nenhum `data-hub-*` novo):
+CSS only for the hub (`hub.css`; not an app contract — no new `data-hub-*`):
 
-- **Tabela → cartões** (`.hub-table-cards` na `<table>`, `.hub-cards-panel` no painel).
-  ≥ 1024px tabela normal; 768–1023px some `.hub-col-secondary`; < 768px cada `<tr>` vira
-  cartão: `td.hub-card-title` (`.hub-avatar` + nome + `.hub-truncate` com `title`) e
-  `td.hub-card-actions` (menu "⋯", alvo ≥ 40px) na 1ª linha; demais células com rótulo de
-  `data-label`. `.hub-hide-cards` some e `.hub-cards-only` aparece nos cartões (ex.:
-  "Editar" dentro do menu). Use `role="table|rowgroup|row|columnheader|cell"` explícitos
-  (o `display` muda e o navegador perderia a semântica). Aplicado em Acesso › Usuários.
-- **Filtros por coluna** (`<table data-hub-colfilter data-hub-colfilter-empty="…">`, só nas
-  telas do hub — `hub-ux.js`; não exposto aos apps): cada `<th data-hub-col="chave"
-  data-hub-col-label="Rótulo" [data-hub-col-type="list|date"]>` ganha um funil (cheio quando
-  ativo) que abre um popover com ordenar A→Z/Z→A, lista de valores com busca (> 8 valores) e
-  "Selecionar todos" — ou intervalo De/Até para datas — e Limpar/Aplicar. Valor da célula:
-  `data-hub-value` (datas em ms) ou o texto. Estado na URL (`f.<chave>=a,b`,
-  `f.<chave>=AAAA-MM-DD..AAAA-MM-DD`, `sort=<chave>:asc|desc`) — o link é compartilhável.
-  Linha "Filtros ativos: … ✕ · Limpar tudo" acima da tabela. < 768px o popover vira folha de
-  baixo para cima e o botão "Filtros" lista as colunas (serve ao layout de cartões, sem
-  cabeçalho). Aplicado em Operação › Tarefas.
-- **Botão com menu** (`details.hub-row-menu.hub-new-menu` com `summary.primary-button`):
-  uma ação principal com variações ("Nova conexão ▾"); itens `role="menuitem"`, setas ↑/↓.
-- **Menu "⋯"** (`details.hub-row-menu`): `hub-ux.js` vira para cima
-  (`.hub-row-menu--up`) ou alinha à esquerda (`--start`) quando sairia da tela.
-- **Folha** (`.modal.hub-sheet`): < 768px o modal ocupa a tela, ações fixas no rodapé,
-  campos ≥ 44px, uma coluna.
-- **Shell < 768px**: sem rail; marca à esquerda e, à direita, busca (ícone; paleta ⌘K em
-  tela cheia), notificações e ☰ (`[data-hub-drawer-toggle]`; avatar vai para o menu). O ☰
-  abre o `#hub-rail` como painel de largura total de cima para baixo sob o header
-  (`body.hub-drawer-open`; usuário no topo e conta/tema/idioma/Sair no fim — blocos
-  `.hub-drawer-only`) e vira ✕; foco preso, Esc/fundo/✕/toque num item fecham, rolagem da
-  página travada. No app, a barra fixa "☰ App · Seção" (`[data-hub-menu="open"]`, rótulo
-  posto pelo hub.js) abre as seções do app como painel logo abaixo dela. E2E
-  `tests/22-mobile.spec.ts`; varredura com unidades `admin-*-390`.
+- **Table → cards** (`.hub-table-cards` on the `<table>`, `.hub-cards-panel` on the panel).
+  ≥ 1024px normal table; 768–1023px `.hub-col-secondary` disappears; < 768px each `<tr>` becomes a
+  card: `td.hub-card-title` (`.hub-avatar` + name + `.hub-truncate` with `title`) and
+  `td.hub-card-actions` (menu "⋯", target ≥ 40px) in the 1st row; other cells with a label from
+  `data-label`. `.hub-hide-cards` disappears and `.hub-cards-only` appears in the cards (e.g.
+  "Editar" (Edit) inside the menu). Use explicit `role="table|rowgroup|row|columnheader|cell"`
+  (the `display` changes and the browser would lose the semantics). Applied in Acesso › Usuários (Access › Users).
+- **Column filters** (`<table data-hub-colfilter data-hub-colfilter-empty="…">`, only in the hub
+  screens — `hub-ux.js`; not exposed to apps): each `<th data-hub-col="chave"
+  data-hub-col-label="Rótulo" [data-hub-col-type="list|date"]>` gets a funnel (filled when
+  active) that opens a popover with sort A→Z/Z→A, a searchable list of values (> 8 values) and
+  "Selecionar todos" (Select all) — or a From/To range for dates — and Limpar (Clear)/Aplicar (Apply). Cell value:
+  `data-hub-value` (dates in ms) or the text. State in the URL (`f.<chave>=a,b`,
+  `f.<chave>=AAAA-MM-DD..AAAA-MM-DD`, `sort=<chave>:asc|desc`) — the link is shareable.
+  "Filtros ativos" (Active filters) line: … ✕ · "Limpar tudo" (Clear all) above the table. < 768px the popover becomes a bottom sheet
+  and the "Filtros" (Filters) button lists the columns (suits the card layout, which has no
+  header). Applied in Operação › Tarefas (Operations › Tasks).
+- **Button with menu** (`details.hub-row-menu.hub-new-menu` with `summary.primary-button`):
+  a main action with variations ("Nova conexão ▾" (New connection)); items `role="menuitem"`, arrows ↑/↓.
+- **"⋯" menu** (`details.hub-row-menu`): `hub-ux.js` opens upward
+  (`.hub-row-menu--up`) or aligns to the left (`--start`) when it would leave the screen.
+- **Sheet** (`.modal.hub-sheet`): < 768px the modal fills the screen, actions fixed in the footer,
+  fields ≥ 44px, one column.
+- **Shell < 768px**: no rail; brand on the left and, on the right, search (icon; ⌘K palette full screen),
+  notifications and ☰ (`[data-hub-drawer-toggle]`; avatar goes to the menu). The ☰
+  opens the `#hub-rail` as a full-width panel from top to bottom under the header
+  (`body.hub-drawer-open`; user at the top and account/theme/language/Sair (Sign out) at the end — blocks
+  `.hub-drawer-only`) and becomes ✕; focus trapped, Esc/background/✕/tapping an item closes it, page scrolling
+  locked. In the app, the fixed bar "☰ App · Seção" (Section) (`[data-hub-menu="open"]`, label set
+  by hub.js) opens the app's sections as a panel right below it. E2E
+  `tests/22-mobile.spec.ts`; sweep with units `admin-*-390`.
 
-## Regressão visual
+## Visual regression
 
-`tests-e2e/visual/visual.spec.ts` + `playwright.visual.config.ts`: 12 telas (login, início,
-catálogo, Administração, Operações, `ativos`, `servicos`) comparadas com a referência gravada
-**antes** da extração (tolerância de 1% de pixels; horários relativos e o rail — que ganhou
-itens novos na onda 8 — mascarados). Rodar com o hub nativo (`bash scripts/demo.sh` em dados
-novos):
+`tests-e2e/visual/visual.spec.ts` + `playwright.visual.config.ts`: 12 screens (login, home,
+catalog, Administration, Operations, `ativos`, `servicos`) compared with the reference recorded
+**before** the extraction (1% pixel tolerance; relative times and the rail — which gained
+new items in wave 8 — masked). Run with the native hub (`bash scripts/demo.sh` on
+fresh data):
 
 ```bash
 cd platform/tests-e2e
-npx playwright test -c playwright.visual.config.ts            # compara
-npx playwright test -c playwright.visual.config.ts --update-snapshots  # nova referência
+npx playwright test -c playwright.visual.config.ts            # compares
+npx playwright test -c playwright.visual.config.ts --update-snapshots  # new reference
 ```
 
-Onda 9: referências regravadas (Início novo, header com busca/Inbox, cinzas escurecidos para contraste) e 12 telas novas no tema escuro — 24/24 estáveis em duas rodadas.
+Wave 9: references re-recorded (new Início (Home), header with search/Inbox, grays darkened for contrast) and 12 new screens in the dark theme — 24/24 stable across two runs.
 
-Identidade Alvesmaia: referências regravadas de propósito (troca de tema: cores, fontes Red Hat e linhas).
+Alvesmaia identity: references deliberately re-recorded (theme change: colors, Red Hat fonts and lines).
 
-Resultado da onda 8: 11/12 telas idênticas à referência; a de Configurações difere só pelos
-campos novos (cor da marca, status pública e painel do cofre). As referências são por
-plataforma (`-win32`), por isso a suíte não roda no CI Linux.
+Wave 8 result: 11/12 screens identical to the reference; the Settings one differs only by the
+new fields (brand color, public status and vault panel). References are per
+platform (`-win32`), so the suite does not run in the Linux CI.

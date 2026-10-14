@@ -1,30 +1,30 @@
-# Dashboards nos apps (BI leve)
+# Dashboards in apps (lightweight BI)
 
-Guia para desenvolvedores e agentes. Dashboards são telas comuns do app: SQL → KPIs, gráficos SVG e tabelas,
-renderizados **no servidor** (sem JavaScript do app), com os tokens do hub (claro e escuro).
+Guide for developers and agents. Dashboards are ordinary app screens: SQL → KPIs, SVG charts and tables,
+rendered **on the server** (no app JavaScript), using the hub tokens (light and dark).
 
-## Começar
+## Getting started
 
 ```bash
-hub project create vendas --template dashboard --yes   # ou --with dashboards
+hub project create vendas --template dashboard --yes   # or --with dashboards
 cd vendas && uv sync && hub check && hub dev            # http://localhost:4173/apps/vendas/painel
 ```
 
-O template traz: tela **Painel** (4 KPIs, gráfico de área, rosca, tabela com filtro/paginação, filtro por região,
-exportação CSV/XLSX), `src/<pkg>/painel.py` (datasets), `dev/connections.toml` + `dev/vendas.sql` (dados de exemplo)
-e `tests/test_painel.py`.
+The template includes the **Painel** (Dashboard) screen (4 KPIs, area chart, donut, table with filter/pagination, region filter,
+CSV/XLSX export), `src/<pkg>/painel.py` (datasets), `dev/connections.toml` + `dev/vendas.sql` (sample data)
+and `tests/test_painel.py`.
 
-## Fonte dos dados
+## Data source
 
-| Onde | Como |
+| Where | How |
 |---|---|
-| Hub | Administração › Conexões → **Banco PostgreSQL / MySQL / SQL Server**; teste e vincule ao app × ambiente. O app consulta pelo broker (`hub_sdk.sql.connection("vendas")`); senha só no cofre do hub. |
-| `hub dev` | `.hub/connections.toml` (copiado de `dev/connections.toml` na 1ª vez; `dev/<nome>.sql` vira `.hub/<nome>.db`). `url` = SQLite ou banco real (`postgresql+psycopg://…`, `mysql+pymysql://…`, `mssql+pytds://…` com o driver no projeto). |
-| Banco do próprio app | `hub_sdk.sql.from_engine(hub_sdk.db.engine())`. |
+| Hub | «Administração › Conexões» (Administration › Connections) → **Banco PostgreSQL / MySQL / SQL Server**; test and bind to the app × environment. The app queries through the broker (`hub_sdk.sql.connection("vendas")`); the password is only in the hub vault. |
+| `hub dev` | `.hub/connections.toml` (copied from `dev/connections.toml` the first time; `dev/<nome>.sql` becomes `.hub/<nome>.db`). `url` = SQLite or a real database (`postgresql+psycopg://…`, `mysql+pymysql://…`, `mssql+pytds://…` with the driver in the project). |
+| The app's own database | `hub_sdk.sql.from_engine(hub_sdk.db.engine())`. |
 
-Regras do broker: somente leitura por padrão (uma instrução `SELECT`/`WITH`, transação de leitura), limite de linhas
-(`truncated` quando corta) e de tempo, auditoria sem dados. Escreva SQL **portável** e **parametrizado** (`:nome`);
-nunca f-string com valor de usuário.
+Broker rules: read-only by default (one `SELECT`/`WITH` statement, read transaction), row limit
+(`truncated` when cut) and time limit, audit without data. Write **portable** and **parameterized** SQL (`:nome`);
+never an f-string with a user value.
 
 ## API (`hub_sdk.dashboards`, extra `hub-sdk[dashboards]`)
 
@@ -35,25 +35,25 @@ REGIAO = dash.Param("regiao", "Região", options=[("", "Todas"), ("Sul", "Sul")]
 BOARD = dash.Dashboard("Vendas", [
     dash.Dataset("por_mes", "select mes, sum(valor) as receita from vendas "
                  "where (:regiao = '' or regiao = :regiao) group by mes order by mes",
-                 "vendas", params=("regiao",), ttl=60),            # cache por combinação de filtros
+                 "vendas", params=("regiao",), ttl=60),            # cache per filter combination
 ], [REGIAO])
 
-values = BOARD.values(request.query_params)        # validados (opção fora da lista → padrão)
+values = BOARD.values(request.query_params)        # validated (option outside the list → default)
 r = await BOARD.load("por_mes", values)            # SqlResult: columns, rows, truncated, dicts(), column()
 dash.kpis([dash.kpi("Receita", 1234.5, "R$", delta=0.12)])
-dash.line_chart(r, "mes", ["receita"], "Receita", "R$")   # também area_chart, bar_chart, pie_chart, donut_chart
+dash.line_chart(r, "mes", ["receita"], "Receita", "R$")   # also area_chart, bar_chart, pie_chart, donut_chart
 dash.table(r, [("mes", "Mês"), ("receita", "Receita")], units={"receita": "R$"})
 dash.filters_form(BOARD.params, values, f"{base}/painel")  # <form method="get">
 dash.export_links(f"/_frag/{APP_ID}/painel/exportar", values)
-dash.export_response(r, "xlsx", "vendas")         # ou "csv" (";", BOM, fórmulas neutralizadas)
+dash.export_response(r, "xlsx", "vendas")         # or "csv" (";", BOM, formulas neutralized)
 ```
 
-Tudo devolve `Markup` (valores escapados). No template: `{{ grafico }}`. Sirva `dash.CSS` junto do `app.css`
-(o shell só carrega `demo.css` e `app.css`). Downloads: link `download` para `/_frag/<app>/…`.
+Everything returns `Markup` (values escaped). In the template: `{{ grafico }}`. Serve `dash.CSS` together with `app.css`
+(the shell only loads `demo.css` and `app.css`). Downloads: `download` link to `/_frag/<app>/…`.
 
-## Boas práticas
+## Best practices
 
-- Agregue no banco (`group by`); traga para a tela só o necessário (`max_rows`).
-- Até 6 séries por gráfico; pizza/rosca agrupa o excedente em «Outros».
-- Conexão ausente → mostre aviso (o template mostra «Vincule a conexão…»), nunca 503 (o shell entende como reinício).
-- Teste com a conexão local (`HUB_SQL_LOCAL_FILE`) — veja `tests/test_painel.py`.
+- Aggregate in the database (`group by`); bring only what is needed to the screen (`max_rows`).
+- Up to 6 series per chart; pie/donut groups the excess into «Outros» (Others).
+- Missing connection → show a warning (the template shows «Vincule a conexão…» (Bind the connection…)), never 503 (the shell interprets it as a restart).
+- Test with the local connection (`HUB_SQL_LOCAL_FILE`) — see `tests/test_painel.py`.

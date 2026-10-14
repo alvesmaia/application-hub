@@ -1,22 +1,22 @@
 # platform/
 
-Peças compartilhadas da stack Python. O hub em si está em [`../platform-py/`](../platform-py/); comandos e
-guardrails em [`../AGENTS.md`](../AGENTS.md).
+Shared parts of the Python stack. The hub itself lives in [`../platform-py/`](../platform-py/); commands and
+guardrails are in [`../AGENTS.md`](../AGENTS.md).
 
-| Pasta | Conteúdo |
+| Folder | Contents |
 |---|---|
-| `assets/shell` | Front-end do shell servido em `/assets/` (CSS, `hub*.js`, `tokens.css`, fontes, `vendor/`) |
-| `assets/web` | JS/CSS das telas do hub (Administração, Operações, Conexões, UX) |
-| `assets/i18n` | Catálogo de traduções (`catalog.json`) e `allowlist.json` |
-| `config` | Registro de apps (`apps.json`, `apps.compose.json`), sementes de variáveis, `hub.example.toml` |
-| `demo-apps-py` | Apps oficiais em Python: `ativos`, `fornecedores`, `servicos`, `coletor` |
-| `demo-apps` | CSS e fragmentos compartilhados dos apps de demonstração |
-| `sdk-python` | SDK `hub_sdk` |
-| `conformance` | Suíte de conformidade caixa-preta (rodar por `platform-py/scripts/conformance.sh`) |
+| `assets/shell` | Shell front end served at `/assets/` (CSS, `hub*.js`, `tokens.css`, fonts, `vendor/`) |
+| `assets/web` | JS/CSS for the hub screens (Administration, Operations, Connections, UX) |
+| `assets/i18n` | Translation catalog (`catalog.json`) and `allowlist.json` |
+| `config` | App registry (`apps.json`, `apps.compose.json`), variable seeds, `hub.example.toml` |
+| `demo-apps-py` | Official Python apps: `ativos`, `fornecedores`, `servicos`, `coletor` |
+| `demo-apps` | Shared CSS and fragments for the demo apps |
+| `sdk-python` | `hub_sdk` SDK |
+| `conformance` | Black-box conformance suite (run via `platform-py/scripts/conformance.sh`) |
 | `docs` | `CONTRATO-APP.md`, `DESIGN-TOKENS.md`, `A11Y-TECLADO.md`, OpenAPI |
-| `js-tests` | Testes do JS do shell (`node --test js-tests/`) |
-| `tests-e2e` | Playwright e varredura de UI (`ui-sweep/`) |
-| `loadtest` | `py-dr.mjs`, `py-resilience.mjs`, `py-build-live.mjs`, `mcp-client`; resultados históricos em `results/` |
-| `infra` | Imagens auxiliares (MinIO/mc, OTel Collector) |
-| `samples` | Pacotes `.hubapp` de exemplo |
-| `scripts` | Paleta/tema (`gen-dark-theme.mjs`), ícones PWA, MinIO, túnel de dev, pacotes de exemplo |
+| `js-tests` | Tests for the shell JS (`node --test js-tests/`) |
+| `tests-e2e` | Playwright and UI sweep (`ui-sweep/`) |
+| `loadtest` | `py-dr.mjs`, `py-resilience.mjs`, `py-build-live.mjs`, `mcp-client`; historical results in `results/` |
+| `infra` | Auxiliary images (MinIO/mc, OTel Collector) |
+| `samples` | Example `.hubapp` packages |
+| `scripts` | Palette/theme (`gen-dark-theme.mjs`), PWA icons, MinIO, dev tunnel, example packages |
