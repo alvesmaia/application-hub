@@ -33,10 +33,11 @@ nativa do agente (`docs/migracao/TASKS.md` é o quadro da migração F0–F7, en
 - Carga com réplicas: medida em 13/10/2026 (1 contêiner = 200 usuários; 2 atrás da borda = 300; tabela em
   `docs/IMPLANTACAO.md`). Falta: modo de escala pronto no compose (N cópias do hub + borda em `round_robin`) e
   `uvicorn --workers` (cada processo tenta abrir a porta 8081 do broker e cai).
-- Lacunas menores: ODBC.
 
 ## Ideias futuras
 
+- **ODBC no broker SQL:** fora do roadmap em 14/10/2026. Postgres, MySQL e SQL Server já têm conexão nativa; ODBC
+  só faria sentido com o driver de um banco específico (Oracle, DB2…) dentro da imagem do hub.
 - **Aprovação humana de ação de agente no hub:** removida em 13/10/2026 (padrão MCP passou a `confirm`; a
   confirmação fica com o cliente de IA). Se voltar: pedido "Aprovar ação do agente" na Inbox com botão
   **Autorizar** + modal de confirmação (sem senha), aprovável só pela sessão do navegador (o token do agente nunca
