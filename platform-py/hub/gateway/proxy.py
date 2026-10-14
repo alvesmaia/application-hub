@@ -202,6 +202,35 @@ class _Tripped(Exception):
     pass
 
 
+class _Upload:
+    """Request body streamed upstream: trips past the app's limit and signals its end (start of the deadline)."""
+
+    def __init__(self, request: Request, limit: int) -> None:
+        self.request, self.limit = request, limit
+        self.done = asyncio.Event()
+        self.tripped = False
+
+    async def chunks(self) -> AsyncIterator[bytes]:
+        seen = 0
+        try:
+            async for chunk in self.request.stream():
+                seen += len(chunk)
+                if seen > self.limit:
+                    self.tripped = True
+                    raise _Tripped
+                yield chunk
+        finally:
+            self.done.set()
+
+
+async def _relay(up: httpx.Response) -> AsyncIterator[bytes]:
+    try:
+        async for chunk in up.aiter_raw():  # idleness: the client's read timeout
+            yield chunk
+    finally:
+        await up.aclose()
+
+
 class Gateway:
     def __init__(
         self,
@@ -257,35 +286,34 @@ class Gateway:
             )
         return app, ident
 
-    async def forward(self, request: Request, app_id: str, rest: str) -> Response:  # noqa: C901, PLR0912, PLR0915
-        """Forwards to `{upstream}/{app_id}{rest}` (rest starts with `/` or is empty)."""
-        checked = self.pre_check(request, app_id)
-        if isinstance(checked, Response):
-            return checked
-        app, ident = checked
-        env = "producao"
-        if request.cookies.get("hub_env") == "staging":  # staging mode (set at /hub-env); needs permission
-            if not ident.can_view_staging():
-                return friendly(403, "Staging restrito", f"Você não tem permissão para ver {app.name} em staging. "
-                                f"Volte para produção em /hub-env?to=producao&next=/apps/{app.id}.")  # fmt: skip
-            if (up := self.registry.staging.get(app.id)) is None:
-                return friendly(404, "Staging indisponível", f"{app.name} não tem versão implantada em staging. "
-                                f"Volte para produção em /hub-env?to=producao&next=/apps/{app.id}.")  # fmt: skip
-            app, env = replace(app, upstream=up), "staging"
-        hdrs = {k.lower(): v for k, v in request.headers.items()}
-        method = request.method
-        if getattr(request.state, "token", None) is None and not csrf_ok(hdrs, method):  # token: no browser
+    def _staging(self, request: Request, app: AppEntry, ident: Identity) -> tuple[AppEntry, str] | Response:
+        """The environment to forward to: staging only with the `hub_env` cookie and the permission."""
+        if request.cookies.get("hub_env") != "staging":  # staging mode (set at /hub-env); needs permission
+            return app, "producao"
+        if not ident.can_view_staging():
+            return friendly(403, "Staging restrito", f"Você não tem permissão para ver {app.name} em staging. "
+                            f"Volte para produção em /hub-env?to=producao&next=/apps/{app.id}.")  # fmt: skip
+        if (up := self.registry.staging.get(app.id)) is None:
+            return friendly(404, "Staging indisponível", f"{app.name} não tem versão implantada em staging. "
+                            f"Volte para produção em /hub-env?to=producao&next=/apps/{app.id}.")  # fmt: skip
+        return replace(app, upstream=up), "staging"
+
+    def _admit(self, request: Request, app: AppEntry, hdrs: dict[str, str], n: int | None) -> Response | None:
+        if getattr(request.state, "token", None) is None and not csrf_ok(
+            hdrs, request.method
+        ):  # token: no browser
             return friendly(
                 403,
                 "Requisição bloqueada",
                 "Não foi possível confirmar que esta ação veio deste site. Recarregue a página e tente novamente.",
             )
-        limit = app.max_upload_bytes
-        declared = hdrs.get("content-length")
-        n = int(declared) if declared and declared.isdigit() else None
-        if n is not None and n > limit:
+        if n is not None and n > app.max_upload_bytes:
             return self._too_large(app)
+        return None
 
+    def _build(
+        self, request: Request, app: AppEntry, ident: Identity, env: str, content: AsyncIterator[bytes] | None
+    ) -> httpx.Request:
         key = self.opts.user_sig_key
         up_headers = build_upstream_headers(list(request.headers.items()), app, ident, env, key)
         if self.extra_headers:
@@ -295,60 +323,57 @@ class Gateway:
         # the upstream path = everything after the request's public prefix (/_frag or /apps)
         tail = raw_path.split("/", 2)[2] if raw_path.count("/") >= 2 else ""
         url = f"{app.upstream.rstrip('/')}/{tail}" + (f"?{query}" if query else "")
+        return self.client.build_request(request.method, url, headers=up_headers, content=content)
 
-        done = asyncio.Event()
-        tripped = False
+    async def _deadline(self, done: asyncio.Event) -> None:
+        await done.wait()
+        await asyncio.sleep(self.opts.response_timeout)
 
-        async def body() -> AsyncIterator[bytes]:
-            nonlocal tripped
-            seen = 0
-            try:
-                async for chunk in request.stream():
-                    seen += len(chunk)
-                    if seen > limit:
-                        tripped = True
-                        raise _Tripped
-                    yield chunk
-            finally:
-                done.set()
-
-        has_body = n != 0 and (n is not None or "transfer-encoding" in hdrs)
-        if not has_body:
-            done.set()
-        upstream_req = self.client.build_request(
-            method, url, headers=up_headers, content=body() if has_body else None
-        )
+    async def _send(
+        self, app: AppEntry, upstream_req: httpx.Request, upload: _Upload
+    ) -> httpx.Response | Response:
         send = asyncio.ensure_future(self.client.send(upstream_req, stream=True))
-
-        async def deadline() -> None:
-            await done.wait()
-            await asyncio.sleep(self.opts.response_timeout)
-
-        dl = asyncio.ensure_future(deadline())
+        dl = asyncio.ensure_future(self._deadline(upload.done))
         try:
             await asyncio.wait({send, dl}, return_when=asyncio.FIRST_COMPLETED)
             if not send.done():  # response deadline exceeded
                 send.cancel()
                 return _unavailable(app, 504)
             try:
-                up = send.result()
+                return send.result()
             except (httpx.TimeoutException, TimeoutError):
                 return _unavailable(app, 504)
             except (httpx.HTTPError, _Tripped, OSError):
-                if tripped:
+                if upload.tripped:
                     return self._too_large(app)
                 return _unavailable(app, 502)
         finally:
             dl.cancel()
 
-        async def stream() -> AsyncIterator[bytes]:
-            try:
-                async for chunk in up.aiter_raw():  # idleness: the client's read timeout
-                    yield chunk
-            finally:
-                await up.aclose()
-
-        resp = StreamingResponse(stream(), status_code=up.status_code)
+    async def forward(self, request: Request, app_id: str, rest: str) -> Response:
+        """Forwards to `{upstream}/{app_id}{rest}` (rest starts with `/` or is empty)."""
+        checked = self.pre_check(request, app_id)
+        if isinstance(checked, Response):
+            return checked
+        app, ident = checked
+        staged = self._staging(request, app, ident)
+        if isinstance(staged, Response):
+            return staged
+        app, env = staged
+        hdrs = {k.lower(): v for k, v in request.headers.items()}
+        declared = hdrs.get("content-length")
+        n = int(declared) if declared and declared.isdigit() else None
+        if (denied := self._admit(request, app, hdrs, n)) is not None:
+            return denied
+        upload = _Upload(request, app.max_upload_bytes)
+        has_body = n != 0 and (n is not None or "transfer-encoding" in hdrs)
+        if not has_body:
+            upload.done.set()
+        upstream_req = self._build(request, app, ident, env, upload.chunks() if has_body else None)
+        up = await self._send(app, upstream_req, upload)
+        if isinstance(up, Response):
+            return up
+        resp = StreamingResponse(_relay(up), status_code=up.status_code)
         resp.raw_headers = filter_response_headers(list(up.headers.multi_items()), app.id)
         return resp
 
