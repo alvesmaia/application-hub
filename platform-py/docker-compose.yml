@@ -95,7 +95,7 @@ services:
       MINIO_ROOT_PASSWORD: ${APP_HUB_OBJSTORE_PASSWORD:-hubpy-objstore-dev}
       MINIO_BROWSER: "off"
     volumes:
-      - app-hub-objstore-data:/data
+      - ${HUB_OBJSTORE_DIR:-app-hub-objstore-data}:/data   # HUB_OBJSTORE_DIR = host folder (e.g. a 1 TB disk); default: Docker volume
     security_opt: [no-new-privileges]
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]

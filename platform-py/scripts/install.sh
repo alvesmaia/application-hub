@@ -24,10 +24,15 @@
 #   --clone              clones the repository first (--repo URL, --ref REF, --dir FOLDER)
 #   --get-compose        downloads the official docker-compose (pinned version, sha256 checked) to ~/.local/bin — for
 #                        RHEL/Rocky without root, where the distribution does not ship a compose provider
-#   SharePoint (optional) for the off-site copy of the backups: asked in the interactive install, or without a
-#   terminal via SP_TENANT, SP_CLIENT_ID, SP_SITE, SP_FOLDER (default Backups/hub) and SP_SECRET_FILE (file with the
-#   client secret). Creates the connection `backups-sharepoint` (secret in the vault) and sets HUB_BACKUP_OFFSITE_URL.
-#   The app registration needs Microsoft Graph Sites.Selected with the "write" role granted on that site.
+#   --config-only        only writes platform-py/.prod.env (no Docker): to review the answers before installing
+#
+# Advanced options (interactive install, "Revisar opções avançadas?"): each one shows the RECOMMENDED value in
+# [brackets] and Enter keeps it — MinIO data folder, audit anchor folder and webhook, off-site backup copy
+# (none / SharePoint / S3), sign-in with Microsoft Entra ID, admin network restriction, proxy/tunnel in front,
+# telemetry, new-version notice, public developer docs and build CPUs. Secrets are read without echo and go to the
+# vault or to .prod.env (0600), never to the command line. Without a terminal, SharePoint can still be set with
+# SP_TENANT, SP_CLIENT_ID, SP_SITE, SP_FOLDER (default Backups/hub) and SP_SECRET_FILE; everything else: edit .prod.env.
+# INSTALL_TTY=<file> reads the answers from a file instead of the terminal (tests).
 #   --yes                asks nothing (defaults + command-line options); in a terminal without instance options
 #                        of the instance the script asks for each one, with the default in [brackets]
 set -euo pipefail
@@ -35,7 +40,9 @@ export MSYS_NO_PATHCONV=1
 
 EMAIL=admin@example.com PUBLIC_URL="" PORT=8090 BIND=127.0.0.1 PROJECT=app-hub SUBNET=10.231 DEMO=1
 CLONE=0 REPO=https://github.com/alvesmaia/application-hub.git REF=main DIR=./application-hub
-GET_COMPOSE=0 YES=0 ASKED=0 PUBLIC_URL_IN=''
+GET_COMPOSE=0 YES=0 ASKED=0 PUBLIC_URL_IN='' CONFIG_ONLY=0
+TTY=${INSTALL_TTY:-/dev/tty}
+exec 4>&2  # questions: the terminal (opened below) or, with INSTALL_TTY, stderr
 COMPOSE_VER=v2.29.7
 COMPOSE_SHA=383ce6698cd5d5bbf958d2c8489ed75094e34a77d340404d9f32c4ae9e12baf0
 while [ $# -gt 0 ]; do
@@ -52,8 +59,9 @@ while [ $# -gt 0 ]; do
     --ref) REF=$2; shift ;;
     --dir) DIR=$2; shift ;;
     --get-compose) GET_COMPOSE=1 ;;
+    --config-only) CONFIG_ONLY=1 ;;
     -y | --yes) YES=1 ;;
-    -h | --help) sed -n '2,31p' "$0"; exit 0 ;;
+    -h | --help) sed -n '2,41p' "$0"; exit 0 ;;
     *) echo "opção desconhecida: $1" >&2; exit 2 ;;
   esac
   shift
@@ -63,17 +71,30 @@ ask() { # ask <variable> <question> [validator]; EOF or 3 errors = keeps the def
   eval "cur=\$$1"
   while [ "$i" -lt 3 ]; do
     i=$((i + 1))
-    printf '%s [%s]: ' "$2" "$cur" > /dev/tty
-    IFS= read -r ans < /dev/tty || { eval "$1=\$cur"; echo > /dev/tty; return 0; }
+    printf '%s [%s]: ' "$2" "$cur" >&4
+    IFS= read -r ans <&3 || { eval "$1=\$cur"; echo >&4; return 0; }
     [ -z "$ans" ] && ans=$cur
     if [ -z "${3:-}" ] || echo "$ans" | grep -Eq "$3"; then eval "$1=\$ans"; return 0; fi
-    echo "valor inválido" > /dev/tty
+    echo "valor inválido" >&4
   done
   eval "$1=\$cur"
-  echo "usando o padrão: $cur" > /dev/tty
+  echo "usando o padrão: $cur" >&4
 }
-if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && [ -t 0 ] && [ -r /dev/tty ]; then
-  echo "Instalação do Application Hub — Enter aceita o valor entre [colchetes]."
+secret() { # secret <variable> <question>: no echo (the answer never shows on the screen)
+  printf '%s: ' "$2" >&4
+  stty -echo < "$TTY" 2>/dev/null || true
+  IFS= read -r "$1" <&3 || eval "$1=''"
+  stty echo < "$TTY" 2>/dev/null || true
+  echo >&4
+}
+yes_no() { case "$1" in s | S | y | Y) return 0 ;; *) return 1 ;; esac; }
+ADV=n OBJ_DIR="" HEAD_DIR="" HEAD_URL="" HEAD_TOKEN="" OFF_KIND=nenhuma OFF_S3="" ENTRA=n
+ENTRA_TENANT="" ENTRA_CLIENT="" ENTRA_DOMAINS="" ENTRA_ROLE=Colaborador ENTRA_LOCAL=admins ENTRA_SECRET=""
+ADMIN_CIDRS="" PROXY="" PROXIES=172.16.0.0/12 TELEMETRY=s OTLP="" UPDATES=s PUBDOCS=s BUILD_CPUS=2
+if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0 ] && [ -r /dev/tty ]; }; }; then
+  exec 3< "$TTY"
+  [ -n "${INSTALL_TTY:-}" ] || exec 4> /dev/tty
+  echo "Instalação do Application Hub — o valor entre [colchetes] é o recomendado; Enter o mantém."
   ask EMAIL "E-mail do primeiro administrador" '^[^@ ]+@[^@ ]+\.[^@ ]+$'
   ask PORT "Porta do hub no host" '^[0-9]{2,5}$'
   ask BIND "Endereço de escuta (127.0.0.1 = só esta máquina)" '^[0-9.]+$|^::$'
@@ -84,35 +105,66 @@ if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && [ -t 0 ] && [ -r /dev/tty ]; then
   DEMO_IN=$([ "$DEMO" = 1 ] && echo s || echo n)
   ask DEMO_IN "Subir os 4 apps de exemplo? (s/n)" '^[snSN]$'
   case "$DEMO_IN" in s | S) DEMO=1 ;; *) DEMO=0 ;; esac
-  SP_IN=n
-  ask SP_IN "Configurar SharePoint para a cópia externa dos backups? (s/n)" '^[snSN]$'
-  case "$SP_IN" in
-  s | S)
-    SP_TENANT=${SP_TENANT:-} SP_CLIENT_ID=${SP_CLIENT_ID:-} SP_SITE=${SP_SITE:-} SP_FOLDER=${SP_FOLDER:-Backups/hub}
-    ask SP_TENANT "  Tenant ID do Entra ID (GUID ou dominio.onmicrosoft.com)" '^[0-9a-fA-F-]{36}$|^[a-zA-Z0-9.-]+\.[a-z]+$'
-    ask SP_CLIENT_ID "  Client ID do app registration (GUID)" '^[0-9a-fA-F-]{36}$'
-    ask SP_SITE "  Site (https://<empresa>.sharepoint.com[/sites/<site>])" '^https://[a-zA-Z0-9.-]+\.sharepoint\.com(/.*)?$'
-    ask SP_FOLDER "  Pasta dos backups no site" '^[^/].*$'
-    printf '  Segredo do cliente (não aparece na tela): ' > /dev/tty
-    stty -echo < /dev/tty 2>/dev/null || true
-    IFS= read -r SP_SECRET < /dev/tty || SP_SECRET=''
-    stty echo < /dev/tty 2>/dev/null || true
-    echo > /dev/tty
-    if [ -z "$SP_SECRET" ] || [ -z "$SP_TENANT" ] || [ -z "$SP_CLIENT_ID" ] || [ -z "$SP_SITE" ]; then
-      echo "resposta vazia: SharePoint não será configurado (cadastre depois em Administração › Conexões)"; SP_TENANT=''
+  echo
+  ask ADV "Revisar opções avançadas? Enter mantém todas no recomendado (s/n)" '^[snSN]$'
+  if yes_no "$ADV"; then
+    echo "Opções avançadas — o valor entre [colchetes] é o recomendado; Enter o mantém."
+    ask OBJ_DIR "Pasta do host para os arquivos (MinIO); vazio = volume Docker (recomendado)" '^$|^/.+'
+    ask HEAD_DIR "Pasta da âncora da auditoria (outro disco/NFS); vazio = ./.secrets/audit-head" '^$|^/.+|^\./.+'
+    ask HEAD_URL "Webhook da âncora da auditoria (https://…); vazio = sem webhook (recomendado)" '^$|^https://.+'
+    [ -n "$HEAD_URL" ] && secret HEAD_TOKEN "  Token Bearer do webhook (vazio = nenhum)"
+    ask OFF_KIND "Cópia externa dos backups: nenhuma | sharepoint | s3" '^(nenhuma|sharepoint|s3)$'
+    case "$OFF_KIND" in
+    sharepoint)
+      SP_TENANT=${SP_TENANT:-} SP_CLIENT_ID=${SP_CLIENT_ID:-} SP_SITE=${SP_SITE:-} SP_FOLDER=${SP_FOLDER:-Backups/hub}
+      ask SP_TENANT "  Tenant ID do Entra ID (GUID ou dominio.onmicrosoft.com)" '^[0-9a-fA-F-]{36}$|^[a-zA-Z0-9.-]+\.[a-z]+$'
+      ask SP_CLIENT_ID "  Client ID do app registration (GUID)" '^[0-9a-fA-F-]{36}$'
+      ask SP_SITE "  Site (https://<empresa>.sharepoint.com[/sites/<site>])" '^https://[a-zA-Z0-9.-]+\.sharepoint\.com(/.*)?$'
+      ask SP_FOLDER "  Pasta dos backups no site" '^[^/].*$'
+      secret SP_SECRET "  Segredo do cliente (não aparece na tela)"
+      if [ -z "$SP_SECRET" ] || [ -z "$SP_TENANT" ] || [ -z "$SP_CLIENT_ID" ] || [ -z "$SP_SITE" ]; then
+        echo "resposta vazia: SharePoint não será configurado (cadastre depois em Administração › Conexões)"; SP_TENANT=''
+      fi
+      ;;
+    s3) secret OFF_S3 "  URL S3 com a chave (https://chave:segredo@host:porta/bucket[/prefixo]; não aparece na tela)" ;;
+    esac
+    ask ENTRA "Login com conta Microsoft (Entra ID)? (s/n)" '^[snSN]$'
+    if yes_no "$ENTRA"; then
+      echo "  Registre no app a Redirect URI: ${PUBLIC_URL:-http://localhost:$PORT}/auth/entra/callback"
+      ask ENTRA_TENANT "  Tenant ID (GUID; organizations/common = várias empresas)" '^[0-9a-fA-F-]{36}$|^(organizations|common)$|^[a-zA-Z0-9.-]+\.[a-z]+$'
+      ask ENTRA_CLIENT "  Client ID do app registration (GUID)" '^[0-9a-fA-F-]{36}$'
+      ask ENTRA_DOMAINS "  Domínios de e-mail aceitos (vírgula; vazio = qualquer um do tenant)" '^$|^[a-zA-Z0-9.,-]+$'
+      ask ENTRA_ROLE "  Papel de quem entra pela primeira vez" '^(Leitor|Colaborador|Operador|Administrador)$'
+      ask ENTRA_LOCAL "  Login com e-mail e senha: admins (recomendado) | todos | nenhum" '^(admins|todos|nenhum)$'
+      secret ENTRA_SECRET "  Segredo do cliente (não aparece na tela)"
+      if [ -z "$ENTRA_SECRET" ] || [ -z "$ENTRA_TENANT" ] || [ -z "$ENTRA_CLIENT" ]; then
+        echo "resposta vazia: login Microsoft não será configurado"; ENTRA=n
+      fi
     fi
-    ;;
-  esac
+    ask ADMIN_CIDRS "Redes com acesso à Administração (CIDR, vírgula); vazio = sem restrição" '^$|^[0-9a-fA-F.:/,]+$'
+    PROXY=$(case "${PUBLIC_URL:-}" in https://*) echo s ;; *) echo n ;; esac)
+    ask PROXY "Há proxy/túnel com HTTPS na frente do hub? (s/n)" '^[snSN]$'
+    yes_no "$PROXY" && ask PROXIES "  Rede do proxy confiável (CIDR)" '^[0-9a-fA-F.:/,]+$'
+    ask TELEMETRY "Métricas e traces internos (s/n)" '^[snSN]$'
+    yes_no "$TELEMETRY" && ask OTLP "  Coletor OTLP externo (http://host:4318); vazio = nenhum (recomendado)" '^$|^https?://.+'
+    ask UPDATES "Avisar quando houver versão nova (s/n)" '^[snSN]$'
+    ask PUBDOCS "Documentação de desenvolvedor aberta sem login (s/n)" '^[snSN]$'
+    ask BUILD_CPUS "CPUs para construir apps enviados ao hub" '^[1-9][0-9]?$'
+  fi
   echo
   echo "Resumo: admin=$EMAIL  porta=$PORT  bind=$BIND  url=${PUBLIC_URL:-http://localhost:$PORT}"
   echo "        projeto=$PROJECT  subnet=$SUBNET.<n>.0/24  apps de exemplo=$([ "$DEMO" = 1 ] && echo sim || echo não)"
-  [ -n "${SP_TENANT:-}" ] && echo "        SharePoint (cópia dos backups)=$SP_SITE/$SP_FOLDER"
-  printf 'Instalar com estas opções? (s/n) [s]: ' > /dev/tty
-  IFS= read -r a < /dev/tty || a=s
+  if yes_no "$ADV"; then
+    echo "        arquivos=${OBJ_DIR:-volume Docker}  âncora=${HEAD_DIR:-./.secrets/audit-head}${HEAD_URL:+ + webhook}"
+    echo "        cópia externa=$OFF_KIND${SP_TENANT:+ ($SP_SITE/$SP_FOLDER)}  login Microsoft=$(yes_no "$ENTRA" && echo sim || echo não)"
+    echo "        Administração=${ADMIN_CIDRS:-sem restrição}  proxy=$PROXY  telemetria=$TELEMETRY  avisos=$UPDATES  docs públicas=$PUBDOCS"
+  fi
+  printf 'Instalar com estas opções? (s/n) [s]: ' >&4
+  IFS= read -r a <&3 || a=s
   case "${a:-s}" in s | S) ;; *) echo "cancelado"; exit 1 ;; esac
 fi
 case "$PROJECT" in app-hub | app-hub-*) ;; *) echo "--project deve começar com app-hub (trava do hub)" >&2; exit 2 ;; esac
-command -v docker >/dev/null || { echo "Docker não encontrado (Podman: instale podman-docker)" >&2; exit 1; }
+[ "$CONFIG_ONLY" = 1 ] || command -v docker >/dev/null || { echo "Docker não encontrado (Podman: instale podman-docker)" >&2; exit 1; }
 get_compose() { # official binary in ~/.local/bin (no root); pinned version and sha256 checked
   local url=https://github.com/docker/compose/releases/download/$COMPOSE_VER/docker-compose-linux-x86_64
   local dest=$HOME/.local/bin/docker-compose tmp
@@ -129,10 +181,10 @@ get_compose() { # official binary in ~/.local/bin (no root); pinned version and 
   case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) PATH="$HOME/.local/bin:$PATH"; export PATH;
     echo "aviso: acrescente \$HOME/.local/bin ao PATH do seu shell (~/.bashrc)" >&2 ;; esac
 }
-if ! docker compose version >/dev/null 2>&1; then
+if [ "$CONFIG_ONLY" = 0 ] && ! docker compose version >/dev/null 2>&1; then
   if [ "$GET_COMPOSE" = 0 ] && [ "$YES" = 0 ] && [ -t 0 ] && [ -r /dev/tty ]; then
     printf 'Docker Compose v2 não encontrado. Baixar o binário oficial %s em ~/.local/bin? (s/n) [s]: ' "$COMPOSE_VER" > /dev/tty
-    IFS= read -r a < /dev/tty || a=s
+    IFS= read -r a < "$TTY" || a=s
     case "${a:-s}" in s | S) GET_COMPOSE=1 ;; esac
   fi
   if [ "$GET_COMPOSE" = 1 ]; then
@@ -146,7 +198,7 @@ if ! docker compose version >/dev/null 2>&1; then
 fi
 # Podman rootless (RHEL/Rocky/Fedora): the socket belongs to the user, not /var/run/docker.sock
 ROOTLESS_SOCK=""
-if docker --version 2>/dev/null | grep -qi podman && [ "$(podman info --format '{{.Host.Security.Rootless}}' 2>/dev/null)" = true ]; then
+if [ "$CONFIG_ONLY" = 0 ] && docker --version 2>/dev/null | grep -qi podman && [ "$(podman info --format '{{.Host.Security.Rootless}}' 2>/dev/null)" = true ]; then
   ROOTLESS_SOCK="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/podman/podman.sock"
   [ -S "$ROOTLESS_SOCK" ] || { echo "Podman rootless sem socket: rode  systemctl --user enable --now podman.socket" >&2; exit 1; }
   loginctl show-user "$(id -un)" -p Linger 2>/dev/null | grep -q yes ||
@@ -199,11 +251,46 @@ if [ ! -f "$ENVF" ]; then
   elif [ -n "${DOCKER_GID:-}" ]; then
     echo "DOCKER_GID=$DOCKER_GID" >> "$ENVF"
   elif [ "$(uname -s)" = Linux ]; then
-    echo "DOCKER_GID=$(stat -c %g /var/run/docker.sock)" >> "$ENVF"
+    echo "DOCKER_GID=$(stat -c %g /var/run/docker.sock 2>/dev/null || echo 0)" >> "$ENVF"
   fi
   echo "segredos novos em platform-py/$ENVF (0600)"
 else
   echo "usando platform-py/$ENVF existente (segredos mantidos)"
+fi
+setv() { # setv KEY VALUE: replaces or appends in .prod.env (VALUE may contain any character)
+  local tmp
+  tmp=$(mktemp)
+  grep -v "^$1=" "$ENVF" > "$tmp" || true
+  printf '%s=%s\n' "$1" "$2" >> "$tmp"
+  cat "$tmp" > "$ENVF"
+  rm -f "$tmp"
+}
+if yes_no "$ADV"; then
+  [ -n "$OBJ_DIR" ] && { mkdir -p "$OBJ_DIR" 2>/dev/null || true; setv HUB_OBJSTORE_DIR "$OBJ_DIR"; }
+  [ -n "$HEAD_DIR" ] && { mkdir -p "$HEAD_DIR" 2>/dev/null || true; setv HUB_AUDIT_HEAD_DIR "$HEAD_DIR"; }
+  [ -n "$HEAD_URL" ] && setv HUB_AUDIT_HEAD_URL "$HEAD_URL"
+  [ -n "$HEAD_TOKEN" ] && setv HUB_AUDIT_HEAD_TOKEN "$HEAD_TOKEN"
+  [ -n "$OFF_S3" ] && setv HUB_BACKUP_OFFSITE_URL "$OFF_S3"
+  if yes_no "$ENTRA"; then
+    setv HUB_SSO_PROVIDER entra
+    setv HUB_ENTRA_TENANT_ID "$ENTRA_TENANT"
+    setv HUB_ENTRA_CLIENT_ID "$ENTRA_CLIENT"
+    [ -n "$ENTRA_DOMAINS" ] && setv HUB_ENTRA_ALLOWED_DOMAINS "$ENTRA_DOMAINS"
+    setv HUB_ENTRA_DEFAULT_ROLE "$ENTRA_ROLE"
+    setv HUB_LOCAL_LOGIN "$(case "$ENTRA_LOCAL" in todos) echo 1 ;; nenhum) echo 0 ;; *) echo admins ;; esac)"
+  fi
+  [ -n "$ADMIN_CIDRS" ] && setv HUB_ADMIN_ALLOWED_CIDRS "$ADMIN_CIDRS"
+  if yes_no "$PROXY"; then setv HUB_TRUST_PROXY_HEADERS 1; setv HUB_TRUSTED_PROXIES "$PROXIES"; fi
+  yes_no "$TELEMETRY" || setv HUB_TELEMETRY 0
+  [ -n "$OTLP" ] && setv OTEL_EXPORTER_OTLP_ENDPOINT "$OTLP"
+  yes_no "$UPDATES" || setv HUB_UPDATE_CHECK 0
+  yes_no "$PUBDOCS" || setv HUB_PUBLIC_DOCS 0
+  [ "$BUILD_CPUS" != 2 ] && setv HUB_BUILD_CPUS "$BUILD_CPUS"
+  HEAD_TOKEN='' OFF_S3=''
+fi
+if [ "$CONFIG_ONLY" = 1 ]; then
+  echo "platform-py/$ENVF pronto (--config-only: nada foi instalado)"
+  exit 0
 fi
 umask 077
 mkdir -p .secrets/audit-head
@@ -247,6 +334,12 @@ if [ -n "${SP_TENANT:-}" ] && [ -n "${SP_CLIENT_ID:-}" ] && [ -n "${SP_SITE:-}" 
   else
     printf '%s\n' "$OFF" >> "$ENVF"
   fi
+fi
+
+if [ -n "${ENTRA_SECRET:-}" ]; then
+  echo "4c/5 segredo do login Microsoft no cofre"
+  printf '%s\n' "$ENTRA_SECRET" | dc run --rm --no-deps -T app-hub-web python -m hub.admin set-entra-secret >/dev/null
+  ENTRA_SECRET=''
 fi
 
 echo "5/5 subindo a pilha ($P)"

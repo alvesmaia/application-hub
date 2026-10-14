@@ -8,6 +8,10 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 ## [Unreleased]
 
 ### Added
+- `install.sh`: "Revisar opções avançadas?" with every optional setting (MinIO folder, audit anchor folder and
+  webhook, off-site copy none/SharePoint/S3, Entra ID sign-in, admin CIDRs, proxy, telemetry, update notice,
+  public docs, build CPUs); the recommended value is the default and Enter keeps it. `--config-only` only writes
+  `.prod.env`; `HUB_OBJSTORE_DIR` puts the MinIO data on a host folder.
 - `install.sh`: optional SharePoint questions for the off-site backup copy (or `SP_*` + `SP_SECRET_FILE` without a
   terminal); creates the `backups-sharepoint` connection with `python -m hub.admin add-sharepoint` (secret via
   stdin into the vault) and sets `HUB_BACKUP_OFFSITE_URL`.

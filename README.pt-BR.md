@@ -83,9 +83,13 @@ opções: `--public-url https://hub.empresa.com`, `--port`, `--project` (várias
 `--subnet`. Produção: [`docs/IMPLANTACAO.md`](docs/IMPLANTACAO.md); atualização: [`docs/ATUALIZACAO.md`](docs/ATUALIZACAO.md);
 mudanças: [`CHANGELOG.md`](CHANGELOG.md).
 
-A instalação interativa também oferece a cópia externa opcional dos backups no SharePoint (tenant, client id, site,
-pasta; o segredo é lido sem eco e guardado no cofre). Sem terminal: `SP_TENANT`, `SP_CLIENT_ID`, `SP_SITE`,
-`SP_FOLDER` e `SP_SECRET_FILE`. O app registration precisa do `Sites.Selected` do Graph com papel `write` no site.
+A instalação interativa pergunta o básico e depois "Revisar opções avançadas?" — cada opção mostra o valor
+**recomendado** entre [colchetes] e Enter o mantém: pasta dos arquivos do MinIO (ex.: um disco dedicado), pasta e
+webhook da âncora da auditoria, cópia externa dos backups (nenhuma / SharePoint / S3), login com Microsoft Entra ID,
+restrição de rede da Administração, proxy/túnel na frente, telemetria, aviso de versão nova, docs públicas e CPUs do
+build. Segredos são lidos sem eco (os do Entra e do SharePoint vão para o cofre). `--config-only` só gera o
+`platform-py/.prod.env` para revisar antes. Sem terminal, SharePoint por `SP_TENANT`, `SP_CLIENT_ID`, `SP_SITE`,
+`SP_FOLDER`, `SP_SECRET_FILE`.
 
 ## Desenvolvimento (em `platform-py/`)
 
