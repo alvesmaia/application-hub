@@ -35,6 +35,20 @@ def _head_msg(seq: int, digest: str, event_id: int) -> bytes:
     return f"hub-audit-head:v1:{seq}:{digest}:{event_id}".encode()
 
 
+def _check_event(
+    line: dict[str, Any], seq: int, previous: str, event_id: int
+) -> tuple[str | None, tuple[int, str, int]]:
+    event = line["event"]
+    digest = entry_hash(line["seq"], line["prev"], event)
+    if line["seq"] != seq + 1 or line["prev"] != previous or line["hash"] != digest:
+        return "invalid chain", (seq, previous, event_id)
+    parsed = json.loads(event)
+    AuditEntry.model_validate(parsed)
+    if parsed["id"] <= event_id:
+        return "event id did not increase", (seq, previous, event_id)
+    return None, (line["seq"], digest, parsed["id"])
+
+
 @dataclass
 class Verification:
     ok: bool
@@ -74,34 +88,31 @@ class AuditChain:
             return []
         return [json.loads(s) for s in self.path.read_text(encoding="utf-8").splitlines() if s]
 
-    def verify(self) -> Verification:  # noqa: C901, PLR0912, PLR0915
-        seq, previous, event_id, problems = 0, GENESIS, 0, []
-        events: list[dict[str, Any]] = []
+    def _check_checkpoint(self, line: dict[str, Any], seq: int, previous: str) -> str | None:
+        msg = f"hub-audit-checkpoint:v1:{line['seq']}:{line['hash']}:{line['at']}".encode()
+        if self.vault and (
+            line["pk"] not in self.vault.trusted_public_keys
+            or not verify_signature(line["pk"], msg, line["sig"])
+        ):
+            return "invalid checkpoint signature"
+        if line["seq"] != seq or line["hash"] != previous:
+            return "checkpoint mismatch"
+        return None
+
+    def _scan(self, problems: list[str]) -> tuple[int, str, int]:
+        """Walks chain.jsonl; returns (seq, hash, event id) of the last valid event."""
+        seq, previous, event_id = 0, GENESIS, 0
         try:
             for n, line in enumerate(self._lines(), 1):
                 if line["t"] == "e":
-                    event = line["event"]
-                    digest = entry_hash(line["seq"], line["prev"], event)
-                    if line["seq"] != seq + 1 or line["prev"] != previous or line["hash"] != digest:
-                        problems.append(f"line {n}: invalid chain")
+                    problem, state = _check_event(line, seq, previous, event_id)
+                    if problem:
+                        problems.append(f"line {n}: {problem}")
                         break
-                    parsed = json.loads(event)
-                    AuditEntry.model_validate(parsed)
-                    if parsed["id"] <= event_id:
-                        problems.append(f"line {n}: event id did not increase")
-                        break
-                    seq, previous, event_id = line["seq"], digest, parsed["id"]
-                    events.append(parsed)
+                    seq, previous, event_id = state
                 elif line["t"] == "c":
-                    msg = f"hub-audit-checkpoint:v1:{line['seq']}:{line['hash']}:{line['at']}".encode()
-                    if self.vault and (
-                        line["pk"] not in self.vault.trusted_public_keys
-                        or not verify_signature(line["pk"], msg, line["sig"])
-                    ):
-                        problems.append(f"line {n}: invalid checkpoint signature")
-                        break
-                    if line["seq"] != seq or line["hash"] != previous:
-                        problems.append(f"line {n}: checkpoint mismatch")
+                    if problem := self._check_checkpoint(line, seq, previous):
+                        problems.append(f"line {n}: {problem}")
                         break
                     self.last_checkpoint = seq
                 else:
@@ -109,29 +120,44 @@ class AuditChain:
                     break
         except (OSError, ValueError, KeyError, TypeError) as e:
             problems.append(f"invalid chain: {e}")
+        return seq, previous, event_id
+
+    def _check_head(self, seq: int, previous: str, event_id: int) -> str | None:
         try:
             head = json.loads(self.head_path.read_text(encoding="utf-8"))
             if (head["seq"], head["hash"], head["event_id"]) != (seq, previous, event_id):
-                problems.append("signed head does not match chain")
-            elif self.vault and (
+                return "signed head does not match chain"
+            if self.vault and (
                 head.get("pk") not in self.vault.trusted_public_keys
                 or not verify_signature(head["pk"], _head_msg(seq, previous, event_id), head.get("sig", ""))
             ):
-                problems.append("invalid head signature")
+                return "invalid head signature"
         except FileNotFoundError:
             if seq:
-                problems.append("signed head missing")
+                return "signed head missing"
         except (OSError, ValueError, KeyError, TypeError) as e:
-            problems.append(f"invalid head: {e}")
-        if self.vault:
-            try:
-                raw = self.vault.protected(ANCHOR)
-                if raw:
-                    anchor = json.loads(raw)
-                    if seq < anchor["seq"] or (seq == anchor["seq"] and previous != anchor["hash"]):
-                        problems.append("chain older than protected anchor")
-            except (ValueError, KeyError) as e:
-                problems.append(f"invalid protected anchor: {e}")
+            return f"invalid head: {e}"
+        return None
+
+    def _check_anchor(self, seq: int, previous: str) -> str | None:
+        if not self.vault:
+            return None
+        try:
+            raw = self.vault.protected(ANCHOR)
+            if raw:
+                anchor = json.loads(raw)
+                if seq < anchor["seq"] or (seq == anchor["seq"] and previous != anchor["hash"]):
+                    return "chain older than protected anchor"
+        except (ValueError, KeyError) as e:
+            return f"invalid protected anchor: {e}"
+        return None
+
+    def verify(self) -> Verification:
+        problems: list[str] = []
+        seq, previous, event_id = self._scan(problems)
+        for problem in (self._check_head(seq, previous, event_id), self._check_anchor(seq, previous)):
+            if problem:
+                problems.append(problem)
         if (ext := self.external_head()) and (
             seq < ext["seq"] or (seq == ext["seq"] and previous != ext["hash"])
         ):
