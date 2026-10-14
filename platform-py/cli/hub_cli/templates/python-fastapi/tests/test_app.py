@@ -1,4 +1,4 @@
-"""Testes do app sobre o app real (lifespan incluído), banco SQLite descartável."""
+"""App tests against the real app (lifespan included), with a throwaway SQLite database."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from __PKG__.__main__ import main
 IDENT = json.dumps({"user": "ana@exemplo", "name": "Ana"}).encode()
 USER = base64.urlsafe_b64encode(IDENT).decode().rstrip("=")
 H = {"x-hub-user": USER, "x-hub-base": "/apps/__APP_ID__"}
-A = "/__APP_ID__"  # caminho do app no upstream
+A = "/__APP_ID__"  # app path upstream
 
 
 @pytest.fixture
@@ -65,9 +65,9 @@ def test_ready_and_openapi_in_sync(client: TestClient) -> None:
         op["operationId"] for item in doc["paths"].values() for op in item.values()
     }
     committed = Path(__file__).resolve().parents[1] / "openapi.json"
-    if committed.is_file():  # `hub check` gera; o pacote leva o mesmo documento
+    if committed.is_file():  # `hub check` generates it; the package ships the same document
         stale = json.loads(committed.read_text(encoding="utf-8")) != doc
-        assert not stale, "openapi.json desatualizado: rode `hub check`, que gera o arquivo de novo"
+        assert not stale, "openapi.json is stale: run `hub check`, which regenerates the file"
 
 
 def test_main_health_without_server(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -1,4 +1,4 @@
-"""Tabela de itens."""
+"""Items table."""
 
 import sqlalchemy as sa
 from alembic import op

@@ -1,6 +1,6 @@
-"""Dados do app em SQLAlchemy Core (SQLite no `hub dev`, Postgres no hub — mesma API).
+"""App data in SQLAlchemy Core (SQLite under `hub dev`, Postgres on the hub — same API).
 
-O esquema muda só por migração Alembic (``migrations/versions``); ``metadata`` espelha as tabelas.
+The schema changes only through an Alembic migration (``migrations/versions``); ``metadata`` mirrors the tables.
 """
 
 from __future__ import annotations

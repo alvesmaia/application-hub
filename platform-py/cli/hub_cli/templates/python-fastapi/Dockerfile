@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
-# __APP_NAME__ (Python 3.12 + FastAPI + hub_sdk). O hub constrói esta imagem a partir do pacote (`hub pack`/`hub deploy`).
-# Usuário não-root, raiz somente leitura compatível (bytecode pré-compilado, temporários em /scratch), HEALTHCHECK sem curl.
+# __APP_NAME__ (Python 3.12 + FastAPI + hub_sdk). The hub builds this image from the package (`hub pack`/`hub deploy`).
+# Non-root user, read-only root compatible (precompiled bytecode, temporary files in /scratch), HEALTHCHECK without curl.
 FROM python:3.12-slim-bookworm AS builder
 RUN pip install --no-cache-dir uv==0.12.23
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT=/opt/venv

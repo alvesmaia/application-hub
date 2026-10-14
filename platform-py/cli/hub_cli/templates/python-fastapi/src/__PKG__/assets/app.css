@@ -1,2 +1,2 @@
-/* Estilos próprios do app (o shell carrega demo.css + app.css). Use os tokens do hub (var(--…)), nunca cores literais. */
+/* The app's own styles (the shell loads demo.css + app.css). Use the hub tokens (var(--…)), never literal colors. */
 .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-16); }

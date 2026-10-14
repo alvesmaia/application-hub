@@ -1,8 +1,8 @@
-"""__APP_NAME__ — app da Application Hub (FastAPI + hub_sdk, SSR com Jinja2, sem JavaScript próprio).
+"""__APP_NAME__ — Application Hub app (FastAPI + hub_sdk, SSR with Jinja2, no custom JavaScript).
 
-Rotas servidas em ``/__APP_ID__/…`` (o navegador vê ``/apps/__APP_ID__/…``; o hub busca os fragmentos em
-``/_frag/__APP_ID__/…``). Links sempre com a base pública (``x-hub-base``, variável ``base`` nos templates).
-API JSON em ``/__APP_ID__/api/v1/*`` (OpenAPI em ``/__APP_ID__/api/openapi.json``; vira ferramenta MCP no hub).
+Routes served under ``/__APP_ID__/…`` (the browser sees ``/apps/__APP_ID__/…``; the hub fetches fragments from
+``/_frag/__APP_ID__/…``). Links always use the public base (``x-hub-base``, the ``base`` variable in templates).
+JSON API at ``/__APP_ID__/api/v1/*`` (OpenAPI at ``/__APP_ID__/api/openapi.json``; becomes an MCP tool on the hub).
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ log = logging.getLogger("__PKG__")
 APP_ID = "__APP_ID__"
 VERSION = "0.1.0"
 HERE = Path(__file__).resolve().parent
-# demo.css = estilos padrão dos fragmentos (sidebar, painéis, formulários); app.css = os do app.
+# demo.css = default fragment styles (sidebar, panels, forms); app.css = the app's own styles.
 ASSETS = ("demo.css", "app.css")
 
 INFO = AppInfo(
@@ -44,7 +44,7 @@ INFO = AppInfo(
 
 
 class ItemIn(BaseModel):
-    """Entrada de item (formulário e API) — validada nas bordas."""
+    """Item input (form and API), validated at the edges."""
 
     name: str = Field(min_length=1, max_length=80)
     quantity: int = Field(ge=0, le=1_000_000)
@@ -57,7 +57,7 @@ class ItemOut(BaseModel):
 
 
 def public_base(req: HTTPConnection) -> str:
-    """Base pública do app (``/apps/__APP_ID__``) — cabeçalho ``x-hub-base`` do hub."""
+    """Public base of the app (``/apps/__APP_ID__``), from the hub's ``x-hub-base`` header."""
     b = req.headers.get("x-hub-base", "").strip()
     ok = b.startswith("/apps/") and all(c.isalnum() or c in "/-_" for c in b)
     return b if ok else f"/apps/{APP_ID}"
@@ -82,7 +82,7 @@ def create_app() -> FastAPI:
 
     @app.get(f"/{APP_ID}/assets/{{name}}")
     async def asset(name: str) -> Response:
-        if name not in ASSETS:  # lista fechada: nenhum caminho vindo do cliente
+        if name not in ASSETS:  # closed list: no client-supplied path
             return render.not_found()
         css = (HERE / "assets" / name).read_bytes()
         return Response(css, media_type="text/css; charset=utf-8", headers={"Cache-Control": "no-cache"})
@@ -104,7 +104,7 @@ def create_app() -> FastAPI:
         return page(req, "itens.html", "itens", items=store.list_items(engine), error="")
 
     @app.post(f"/{APP_ID}/itens")
-    def criar(
+    def create(
         req: Request, name: Annotated[str, Form()] = "", quantity: Annotated[str, Form()] = "0"
     ) -> Response:
         try:
@@ -117,21 +117,21 @@ def create_app() -> FastAPI:
         return page(req, "itens.html", "itens", items=store.list_items(engine), error="")
 
     @app.get(f"/{APP_ID}/api/v1/itens", operation_id="listar_itens", response_model=list[ItemOut])
-    def api_listar(req: Request) -> Any:
+    def api_list(req: Request) -> Any:
         who = require_user(req)
         if isinstance(who, JSONResponse):
             return who
         return store.list_items(engine)
 
     @app.post(f"/{APP_ID}/api/v1/itens", operation_id="criar_item", status_code=201, response_model=ItemOut)
-    def api_criar(req: Request, body: ItemIn) -> Any:
+    def api_create(req: Request, body: ItemIn) -> Any:
         who = require_user(req)
         if isinstance(who, JSONResponse):
             return who
         return store.add_item(engine, body.name, body.quantity)
 
     @app.get(f"/{APP_ID}/{{section}}")
-    def desconhecida(section: str) -> Response:
+    def unknown_section(section: str) -> Response:
         return render.not_found()
 
     install_api(app, APP_ID, title="__APP_NAME__", version=VERSION)

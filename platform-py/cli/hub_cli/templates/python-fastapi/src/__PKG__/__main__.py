@@ -1,8 +1,8 @@
 """``python -m __PKG__ [serve|--health|openapi]``.
 
-- ``serve`` (padrão): uvicorn em ``HOST`` (127.0.0.1; a imagem usa 0.0.0.0) e ``PORT`` (8080).
-- ``--health``: ``GET /__APP_ID__/_hub/ready`` no próprio app (HEALTHCHECK da imagem); sai 0 com 200.
-- ``openapi``: imprime o OpenAPI da API v1 (o ``hub pack`` embute como openapi.json).
+- ``serve`` (default): uvicorn on ``HOST`` (127.0.0.1; the image uses 0.0.0.0) and ``PORT`` (8080).
+- ``--health``: ``GET /__APP_ID__/_hub/ready`` on the app itself (the image's HEALTHCHECK); exits 0 on 200.
+- ``openapi``: prints the API v1 OpenAPI document (``hub pack`` embeds it as openapi.json).
 """
 
 from __future__ import annotations

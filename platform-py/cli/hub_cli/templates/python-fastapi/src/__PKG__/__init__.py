@@ -1,1 +1,1 @@
-"""__APP_NAME__ — app da Application Hub."""
+"""__APP_NAME__ — Application Hub app."""

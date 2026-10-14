@@ -1,7 +1,7 @@
 [project]
 name = "__APP_ID__"
 version = "0.1.0"
-description = "__APP_NAME__ — app da Application Hub (Python + FastAPI + hub_sdk)"
+description = "__APP_NAME__ — Application Hub app (Python + FastAPI + hub_sdk)"
 requires-python = ">=3.12"
 dependencies = [
   "hub-sdk[sql]==0.2.0",
@@ -12,7 +12,7 @@ dependencies = [
 [dependency-groups]
 dev = ["pytest==9.1.1", "pytest-cov>=7", "httpx==0.28.1", "ruff==0.16.9", "ty>=0.0.84"]
 
-# O SDK vem junto do projeto (vendor/): nada de acesso ao repositório do hub.
+# The SDK ships with the project (vendor/): no access to the hub repository.
 [tool.uv.sources]
 hub-sdk = { path = "vendor/__SDK_WHEEL__" }
 

@@ -1,5 +1,5 @@
-"""Painel (kit de dashboards) sobre o app real: conexão SQL local (mesma do `hub dev`), filtro, KPIs,
-gráficos SVG, tabela, exportação CSV/XLSX e o aviso quando a conexão não está vinculada."""
+"""Dashboard (dashboards kit) on the real app: local SQL connection (same as `hub dev`), filter, KPIs,
+SVG charts, table, CSV/XLSX export, and the warning shown when the connection is not bound."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from __PKG__ import painel
 ROOT = Path(__file__).resolve().parents[1]
 USER = base64.urlsafe_b64encode(json.dumps({"user": "ana@exemplo"}).encode()).decode().rstrip("=")
 H = {"x-hub-user": USER, "x-hub-base": "/apps/__APP_ID__"}
-A = "/__APP_ID__"  # caminho do app no upstream
+A = "/__APP_ID__"  # app path upstream
 
 
 def _app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, connections: str) -> TestClient:
@@ -45,7 +45,7 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClie
         yield c
 
 
-def test_painel_kpis_charts_table_and_filter(client: TestClient) -> None:
+def test_dashboard_kpis_charts_table_and_filter(client: TestClient) -> None:
     r = client.get(f"{A}/painel", headers=H)
     assert r.status_code == 200, r.text
     html = r.text
@@ -56,12 +56,12 @@ def test_painel_kpis_charts_table_and_filter(client: TestClient) -> None:
     assert "/_frag/__APP_ID__/painel/exportar?format=csv" in html
     assert 'href="/__APP_ID__/' not in html
     assert "<script" not in html
-    todas = html.count("<tr>")
-    sul = client.get(f"{A}/painel", params={"regiao": "Sul"}, headers=H).text
-    assert sul.count("<tr>") < todas and '<option value="Sul" selected>' in sul
-    # filtro inválido cai no padrão (nunca vai cru para o SQL)
-    hostil = client.get(f"{A}/painel", params={"regiao": "x' or 1=1"}, headers=H).text
-    assert hostil.count("<tr>") == todas
+    all_rows = html.count("<tr>")
+    south = client.get(f"{A}/painel", params={"regiao": "Sul"}, headers=H).text
+    assert south.count("<tr>") < all_rows and '<option value="Sul" selected>' in south
+    # invalid filter falls back to the default (never goes raw into the SQL)
+    hostile = client.get(f"{A}/painel", params={"regiao": "x' or 1=1"}, headers=H).text
+    assert hostile.count("<tr>") == all_rows
 
 
 def test_export_csv_and_xlsx(client: TestClient) -> None:
@@ -77,7 +77,7 @@ def test_export_csv_and_xlsx(client: TestClient) -> None:
     assert rows[0] == ("mes", "regiao", "produto", "pedidos", "valor") and len(rows) == 73
 
 
-def test_painel_without_connection_explains(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_dashboard_without_connection_explains(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     with _app(tmp_path, monkeypatch, "") as c:
         r = c.get(f"{A}/painel", headers=H)
         assert r.status_code == 200 and "Vincule a conexão vendas" in r.text and "hub-dash-kpi" not in r.text

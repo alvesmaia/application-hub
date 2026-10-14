@@ -1,6 +1,6 @@
-# Conexões SQL locais do `hub dev` (copiado para .hub/connections.toml na 1ª execução; edite lá).
-# No hub, a conexão de mesmo nome vem de Administração › Conexões (vinculada ao app × ambiente).
-# url: sqlite:///.hub/<nome>.db (criado de dev/<nome>.sql) ou um banco real com o driver no projeto:
+# Local SQL connections for `hub dev` (copied to .hub/connections.toml on the first run; edit it there).
+# On the hub, the connection with the same name comes from Administração › Conexões (bound to app × environment).
+# url: sqlite:///.hub/<name>.db (created from dev/<name>.sql) or a real database with its driver in the project:
 #   postgresql+psycopg://usuario:senha@localhost:5432/vendas
 #   mysql+pymysql://usuario:senha@localhost:3306/vendas     (uv add pymysql)
 #   mssql+pytds://usuario:senha@localhost:1433/vendas       (uv add sqlalchemy-pytds)
