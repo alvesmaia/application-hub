@@ -15,9 +15,10 @@ from hub_sdk.storage import Item
 from typing_extensions import override
 
 from fornecedores import lookup as lk
-from fornecedores.app import generic_term, s3_config, search_hits
+from fornecedores.app import s3_config
 from fornecedores.ficha import ficha_pdf
 from fornecedores.pdf import Pdf, pdf_string
+from fornecedores.search import generic_term, search_hits
 from fornecedores.suppliers import (
     SUPPLIERS,
     attach_max_bytes,
