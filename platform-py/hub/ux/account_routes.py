@@ -6,7 +6,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta, timezone
-from typing import Any
+from typing import Any, cast
 from urllib.parse import parse_qs
 
 from fastapi import APIRouter, Depends, FastAPI, Request
@@ -55,8 +55,7 @@ class AccountCtx:
 
 
 def ctx(request: Request) -> AccountCtx:
-    c: AccountCtx = request.app.state.account_ctx
-    return c
+    return cast(AccountCtx, request.app.state.account_ctx)
 
 
 router = APIRouter()

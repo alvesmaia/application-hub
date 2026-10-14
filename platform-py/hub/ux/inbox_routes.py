@@ -234,8 +234,7 @@ class InboxCtx:
 
 
 def ctx(request: Request) -> InboxCtx:
-    c: InboxCtx = request.app.state.inbox_ctx
-    return c
+    return cast(InboxCtx, request.app.state.inbox_ctx)
 
 
 def ids_of(raw: list[str] | None) -> list[int]:

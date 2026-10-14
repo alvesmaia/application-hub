@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import Any
+from typing import Any, cast
 from urllib.parse import parse_qsl, quote
 
 from fastapi import FastAPI, Request
@@ -65,12 +65,13 @@ async def _asgi_call(request: Request, scope: dict[str, Any], body: bytes) -> tu
         sent = True
         return {"type": "http.request", "body": body, "more_body": False}
 
-    status, chunks = 500, []
+    status: int = 500
+    chunks: list[bytes] = []
 
     async def send(msg: dict[str, Any]) -> None:
         nonlocal status
         if msg["type"] == "http.response.start":
-            status = msg["status"]
+            status = cast(int, msg["status"])
         elif msg["type"] == "http.response.body":
             chunks.append(msg.get("body", b""))
 

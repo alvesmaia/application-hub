@@ -191,7 +191,7 @@ class Rollout:
 
 def _labels(base: dict[str, Any], app: str, k: str, version: str) -> dict[str, str]:
     staging = k == "staging"
-    labels = {a: b for a, b in (base.get("Config", {}).get("Labels") or {}).items()
+    labels: dict[str, str] = {a: b for a, b in (base.get("Config", {}).get("Labels") or {}).items()
               if not staging or not a.startswith("com.docker.compose")}  # fmt: skip
     labels |= {"hub.py": "1", "hub.app": app, "hub.env": k, "hub.version": version, "hub.role": "app"}
     if staging:  # else it inherits the image's project label; Docker Desktop groups it as a ghost project

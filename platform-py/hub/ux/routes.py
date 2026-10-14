@@ -138,8 +138,7 @@ class UxCtx:
 
 
 def ctx(request: Request) -> UxCtx:
-    c: UxCtx = request.app.state.ux_ctx
-    return c
+    return cast(UxCtx, request.app.state.ux_ctx)
 
 
 _HELPERS: dict[str, Any] = {"icon": icon}
