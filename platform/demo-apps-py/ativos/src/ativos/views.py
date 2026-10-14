@@ -7,6 +7,9 @@ from __future__ import annotations
 import datetime as dt
 from typing import Any
 
+from fastapi.responses import Response
+from hub_sdk.render import html
+
 from ativos.model import (
     CATEGORIES,
     COL,
@@ -251,3 +254,25 @@ def job_panel(j: dict[str, Any]) -> str:
 
 
 _ = dt
+
+
+def not_found() -> Response:
+    return html(
+        '<section class="empty-state"><h1>Página não encontrada</h1><p>Esta seção não existe. '
+        '<a href="/apps/ativos">Voltar ao início do app</a>.</p></section>',
+        404,
+    )
+
+
+def retry_after(resp: Response, secs: int = 2) -> Response:
+    resp.headers["retry-after"] = str(secs)
+    return resp
+
+
+def conflict(current: int, sent: int) -> str:
+    return notice(
+        "error",
+        "Este ativo foi alterado por outra pessoa",
+        f"Você editou a versão {sent}, mas a versão atual é {current}. Suas alterações não foram salvas. "
+        "Recarregue o ativo para ver os dados atuais e edite novamente.",
+    )

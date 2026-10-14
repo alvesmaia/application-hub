@@ -220,7 +220,7 @@ def main(argv: list[str] | None = None) -> int:
     if cmd == "seed":
         import asyncio
 
-        from ativos.app import run_seed
+        from ativos.seed import run_seed
 
         logging.basicConfig(level=logging.WARNING, format="%(asctime)s %(name)s %(levelname)s %(message)s")
         return asyncio.run(run_seed())
