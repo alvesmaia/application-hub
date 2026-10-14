@@ -4,7 +4,6 @@
   "platform-py/hub/api/mcp.py": 654,
   "platform-py/hub/api/v1.py": 605,
   "platform-py/hub/app.py": 1119,
-  "platform-py/hub/connections/store.py": 662,
   "platform-py/hub/ops/backups.py": 603,
   "platform-py/hub/ops/devdocs.py": 502,
   "platform-py/hub/ops/runtime.py": 599,
