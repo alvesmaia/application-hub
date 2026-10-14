@@ -63,7 +63,30 @@ async def works(b: Backups, name: str, url: str) -> bool:
     return rc == 0
 
 
-async def provision(b: Backups, cfg: Any, actor: str, app: str, env: str) -> dict[str, Any]:  # noqa: C901
+def _ddl(name: str, mark: str, pw: str, role_c: str | None, owner: str | None) -> list[str]:
+    q = _qi(name)
+    stmts = [f"ALTER ROLE {q} WITH LOGIN PASSWORD {_lit(pw)}" if role_c is not None else
+             f"CREATE ROLE {q} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE PASSWORD {_lit(pw)} CONNECTION LIMIT 40",
+             f"COMMENT ON ROLE {q} IS {_lit(mark)}"]  # fmt: skip
+    if owner is None:
+        stmts += [f"CREATE DATABASE {q} OWNER {q}", f"COMMENT ON DATABASE {q} IS {_lit(mark)}"]
+    stmts.append(f"REVOKE ALL ON DATABASE {q} FROM PUBLIC")
+    stmts.append(f"GRANT CONNECT, TEMPORARY ON DATABASE {q} TO {q}")
+    return stmts
+
+
+async def _unbind_other_staging_dbs(cfg: Any, app: str, var: str) -> None:
+    """Staging never stores a production database credential."""
+    async with cfg.s.locked(True) as d:
+        for v in list(d["env"]):
+            mine = [x for x in v["bindings"] if x["app"] == app and x["env"] == "staging"]
+            if v["name"] != var and v.get("inject_as") == "HUB_DB_URL" and mine:
+                v["bindings"] = [x for x in v["bindings"] if x not in mine]
+                if not v["bindings"]:
+                    d["env"].remove(v)
+
+
+async def provision(b: Backups, cfg: Any, actor: str, app: str, env: str) -> dict[str, Any]:
     name, mark, var = db_name(app, env), marker(app, env), variable(app, env)
     if name in ("postgres", b.db_admin) or name.startswith("pg_"):
         raise OpsError(f"nome reservado para banco/usuário: {name}")
@@ -87,24 +110,10 @@ async def provision(b: Backups, cfg: Any, actor: str, app: str, env: str) -> dic
     if owner is not None and (owner != name or db_c != mark):
         raise OpsError(f"o banco {name} já existe e não foi criado pelo hub: recusado")
     pw = secrets.token_hex(24)
-    q = _qi(name)
-    stmts = [f"ALTER ROLE {q} WITH LOGIN PASSWORD {_lit(pw)}" if role_c is not None else
-             f"CREATE ROLE {q} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE PASSWORD {_lit(pw)} CONNECTION LIMIT 40",
-             f"COMMENT ON ROLE {q} IS {_lit(mark)}"]  # fmt: skip
-    if owner is None:
-        stmts += [f"CREATE DATABASE {q} OWNER {q}", f"COMMENT ON DATABASE {q} IS {_lit(mark)}"]
-    stmts.append(f"REVOKE ALL ON DATABASE {q} FROM PUBLIC")
-    stmts.append(f"GRANT CONNECT, TEMPORARY ON DATABASE {q} TO {q}")
-    await b._psql("postgres", *stmts)
+    await b._psql("postgres", *_ddl(name, mark, pw, role_c, owner))
     bindings = [{"app": app, "env": env}]
-    if env == "staging":  # staging never stores a production database credential
-        async with cfg.s.locked(True) as d:
-            for v in list(d["env"]):
-                mine = [x for x in v["bindings"] if x["app"] == app and x["env"] == "staging"]
-                if v["name"] != var and v.get("inject_as") == "HUB_DB_URL" and mine:
-                    v["bindings"] = [x for x in v["bindings"] if x not in mine]
-                    if not v["bindings"]:
-                        d["env"].remove(v)
+    if env == "staging":
+        await _unbind_other_staging_dbs(cfg, app, var)
     await cfg.upsert_managed(actor, {"name": var, "value": f"postgresql://{name}:{pw}@{host()}/{name}",
                                      "kind": "connection_string", "bindings": bindings, "inject_as": "HUB_DB_URL",
                                      "managed": True}, "Banco provisionado")  # fmt: skip

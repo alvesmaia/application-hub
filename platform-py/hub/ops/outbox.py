@@ -105,23 +105,16 @@ class Outbox:
         else:
             self.app.state.inbox.push(item)
 
-    async def pull_app(self, app_id: str, upstream: str, token: str, after: int) -> dict[str, Any]:  # noqa: C901, PLR0915
-        admin, base = self.app.state.admin, f"{upstream.rstrip('/')}/{app_id}/_hub/outbox"
-        r = await self.client.get(
-            f"{base}?after={after}&limit={PAGE}", headers={TOKEN_HEADER: token}, timeout=10
-        )
-        if r.status_code >= 300:
-            raise OSError(f"outbox respondeu {r.status_code}")
-        if len(r.content) > MAX_BODY:
-            raise OSError(f"resposta maior que {MAX_BODY // 1024} KiB")
-        events = list(r.json()["events"])[:PAGE]
+    async def pull_app(self, app_id: str, upstream: str, token: str, after: int) -> dict[str, Any]:
+        base = f"{upstream.rstrip('/')}/{app_id}/_hub/outbox"
+        events = await self._fetch(base, token, after)
         out = {
             "fetched": len(events),
             "recorded": 0,
             "last_seq": max((int(e["id"]) for e in events), default=after),
         }
         pending, seen = set(await self.ingest.pending(app_id)), []
-        async with admin.locked() as data:
+        async with self.app.state.admin.locked() as data:
             in_audit = {
                 e["source"] for e in data.get("audit", []) if e.get("scope") == app_id and e.get("source")
             }
@@ -136,30 +129,49 @@ class Outbox:
             if any(s == eid for s, _ in seen):
                 continue
             seen.append((eid, int(ev["id"])))
-            if eid in pending or eid in in_audit:
-                continue
-            if ev.get("kind") in ("notification", "approval_request"):
-                self._notice(app_id, ev)
-            elif ev.get("kind") == "audit":
-                tgt, det = cut(ev.get("target"), 200), cut(ev.get("detail"), 500)
-                user = cut(ev.get("user"), 120).strip() or "desconhecido"
-                detail = f"{tgt} · {det}" if tgt and det else tgt or det
-                await admin.audit(
-                    user, cut(ev.get("action"), 80), detail, icon="clock", scope=app_id, source=eid
-                )
-                out["recorded"] += 1
+            if eid not in pending and eid not in in_audit:
+                out["recorded"] += await self._apply(app_id, eid, ev)
         await self.ingest.recorded(app_id, seen, out["recorded"])
-        ids = await self.ingest.pending(app_id)
-        if ids and await self.leader.checked():
-            for i in range(0, len(ids), 1000):
-                chunk = ids[i : i + 1000]
-                a = await self.client.post(
-                    f"{base}/ack", headers={TOKEN_HEADER: token}, json={"ids": chunk}, timeout=10
-                )
-                if a.status_code >= 300:
-                    break
-                await self.ingest.acked(app_id, chunk)
+        await self._ack(app_id, base, token)
         return out
+
+    async def _fetch(self, base: str, token: str, after: int) -> list[dict[str, Any]]:
+        r = await self.client.get(
+            f"{base}?after={after}&limit={PAGE}", headers={TOKEN_HEADER: token}, timeout=10
+        )
+        if r.status_code >= 300:
+            raise OSError(f"outbox respondeu {r.status_code}")
+        if len(r.content) > MAX_BODY:
+            raise OSError(f"resposta maior que {MAX_BODY // 1024} KiB")
+        return list(r.json()["events"])[:PAGE]
+
+    async def _apply(self, app_id: str, eid: str, ev: dict[str, Any]) -> int:
+        """Delivers one new event; returns 1 when it was written to the audit log."""
+        if ev.get("kind") in ("notification", "approval_request"):
+            self._notice(app_id, ev)
+            return 0
+        if ev.get("kind") != "audit":
+            return 0
+        tgt, det = cut(ev.get("target"), 200), cut(ev.get("detail"), 500)
+        user = cut(ev.get("user"), 120).strip() or "desconhecido"
+        detail = f"{tgt} · {det}" if tgt and det else tgt or det
+        await self.app.state.admin.audit(
+            user, cut(ev.get("action"), 80), detail, icon="clock", scope=app_id, source=eid
+        )
+        return 1
+
+    async def _ack(self, app_id: str, base: str, token: str) -> None:
+        ids = await self.ingest.pending(app_id)
+        if not ids or not await self.leader.checked():
+            return
+        for i in range(0, len(ids), 1000):
+            chunk = ids[i : i + 1000]
+            a = await self.client.post(
+                f"{base}/ack", headers={TOKEN_HEADER: token}, json={"ids": chunk}, timeout=10
+            )
+            if a.status_code >= 300:
+                break
+            await self.ingest.acked(app_id, chunk)
 
     async def tick(self) -> None:
         """One round: each app with an internal token, several pages if there is a backlog."""

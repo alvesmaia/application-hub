@@ -204,7 +204,28 @@ def _read(path: Path) -> Any:
         return {}
 
 
-def _platform_hits(c: Ctx, q: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:  # noqa: C901
+def _deploy_hits(c: Ctx) -> list[dict[str, Any]]:
+    names = {e.id: e.name for e in c.reg.entries()}
+    deployed = _read(c.data_dir / "deployments.json")
+    return [
+        _hit(f"{names.get(app, app)} {version}", "Produção", "/admin/deploys", "Implantação", -0.5)
+        for app, version in (deployed.items() if isinstance(deployed, dict) else [])
+        if c.can_app(app)
+    ]
+
+
+def _variable_hits(c: Ctx) -> list[dict[str, Any]]:
+    out = []
+    for v in _read(c.data_dir / "admin.json").get("env", []):
+        internal = v["name"].startswith("HUB_")
+        if not internal or c.superuser:
+            sub = "Interna da plataforma" if internal else ""
+            out.append(_hit(v["name"], sub, f"/admin/env?q={quote(v['name'])}", "Variável de ambiente", -0.5))
+    return out
+
+
+def _candidates(c: Ctx) -> list[dict[str, Any]]:
+    """Everything of the platform the requester may find, before matching the query."""
     all_ = platform_entities(c)
     if "gerenciar_usuarios" in c.perms:
         all_ += [
@@ -212,25 +233,15 @@ def _platform_hits(c: Ctx, q: str) -> tuple[list[dict[str, Any]], list[dict[str,
             for u in c.users[:5000]
         ]
     if "editar_configuracoes" in c.perms:
-        names = {e.id: e.name for e in c.reg.entries()}
-        deployed = _read(c.data_dir / "deployments.json")
-        for app, version in deployed.items() if isinstance(deployed, dict) else []:
-            if c.can_app(app):
-                all_.append(
-                    _hit(
-                        f"{names.get(app, app)} {version}", "Produção", "/admin/deploys", "Implantação", -0.5
-                    )
-                )
+        all_ += _deploy_hits(c)
     if {"gerenciar_variaveis", "editar_configuracoes"} & set(c.perms):
-        for v in _read(c.data_dir / "admin.json").get("env", []):
-            internal = v["name"].startswith("HUB_")
-            if not internal or c.superuser:
-                sub = "Interna da plataforma" if internal else ""
-                all_.append(
-                    _hit(v["name"], sub, f"/admin/env?q={quote(v['name'])}", "Variável de ambiente", -0.5)
-                )
+        all_ += _variable_hits(c)
+    return all_
+
+
+def _platform_hits(c: Ctx, q: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     hits = []
-    for x in all_:
+    for x in _candidates(c):
         s = max(score(x["title"], q), score(x["subtitle"], q) * 0.8)
         if x["score"] < 0:
             s *= 0.5
@@ -269,23 +280,10 @@ async def _ask_app(
     return hits[:limit]
 
 
-async def search(c: Ctx, q: str, only_app: str | None = None, per_app: int = PER_APP) -> Results:  # noqa: PLR0915
-    t0 = time.monotonic()
-    q = q.strip()[:100]
-    out = Results(q=q)
-    if not q:
-        return out
-    platform, admin = ([], []) if only_app else _platform_hits(c, q)
-    if platform:
-        out.groups.append(
-            {
-                "id": "platform",
-                "label": t("search.platform", c.lang),
-                "hits": platform,
-                "section": "platform",
-                "more_url": "",
-            }
-        )
+async def _app_groups(
+    c: Ctx, q: str, only_app: str | None, per_app: int, out: Results
+) -> list[dict[str, Any]]:
+    """Asks the apps in parallel; a failure marks the result partial, a 404 skips the app for 5 min."""
     ident = c.identity
     ident.locale = c.lang
     headers = {"x-hub-user": ident.header_value(), "x-hub-locale": c.lang}
@@ -315,6 +313,23 @@ async def search(c: Ctx, q: str, only_app: str | None = None, per_app: int = PER
         elif ans:
             more = f"/search?q={quote(q)}&app={e.id}" if not only_app and len(ans) >= per_app else ""
             groups.append({"id": e.id, "label": e.name, "hits": ans, "section": "app", "more_url": more})
+    return groups
+
+
+def _section(gid: str, label: str, hits: list[dict[str, Any]]) -> dict[str, Any]:
+    return {"id": gid, "label": label, "hits": hits, "section": gid, "more_url": ""}
+
+
+async def search(c: Ctx, q: str, only_app: str | None = None, per_app: int = PER_APP) -> Results:
+    t0 = time.monotonic()
+    q = q.strip()[:100]
+    out = Results(q=q)
+    if not q:
+        return out
+    platform, admin = ([], []) if only_app else _platform_hits(c, q)
+    if platform:
+        out.groups.append(_section("platform", t("search.platform", c.lang), platform))
+    groups = await _app_groups(c, q, only_app, per_app, out)
 
     def best(g: dict[str, Any]) -> float:
         return float(max((h["score"] for h in g["hits"]), default=0.0))
@@ -327,15 +342,7 @@ async def search(c: Ctx, q: str, only_app: str | None = None, per_app: int = PER
     else:
         out.groups += groups
     if admin:
-        out.groups.append(
-            {
-                "id": "admin",
-                "label": t("search.admin", c.lang),
-                "hits": admin,
-                "section": "admin",
-                "more_url": "",
-            }
-        )
+        out.groups.append(_section("admin", t("search.admin", c.lang), admin))
     out.total = sum(len(g["hits"]) for g in out.groups)
     out.took_ms = int((time.monotonic() - t0) * 1000)
     return out

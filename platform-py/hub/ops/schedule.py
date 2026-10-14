@@ -26,7 +26,43 @@ def _hm(x: str) -> tuple[int, int]:
     return h, m
 
 
-def normalize(s: str) -> str | None:  # noqa: C901
+def _weekly(low: str) -> str:
+    parts = low[7:].split()
+    day = parts[0] if parts else ""
+    dow = next(
+        (i for i, d in enumerate(_DOW) if day.startswith(d) or (d == "sáb" and day.startswith("sab"))),
+        None,
+    )
+    if dow is None:
+        raise OpsError(f"dia da semana inválido: {day}")
+    h, m = _hm(parts[1] if len(parts) > 1 else "")
+    return f"{m} {h} * * {dow}"
+
+
+def _every(t: str, low: str) -> str:
+    mt = re.match(r"^(\d+)\s*(h|min)", low[6:].strip())
+    if not mt:
+        raise OpsError(f"intervalo inválido: {t}")
+    n = int(mt.group(1))
+    if mt.group(2) == "h" and 1 <= n <= 23:
+        return f"0 */{n} * * *"
+    if mt.group(2) == "min" and 1 <= n <= 59:
+        return f"*/{n} * * * *"
+    raise OpsError(f"intervalo inválido: {t}")
+
+
+def _cron(t: str) -> str:
+    fields = t.split()
+    bounds = ((0, 59), (0, 23), (1, 31), (1, 12), (0, 7))
+    if len(fields) != 5 or not all(
+        _FIELD.match(f) and all(lo <= int(n) <= hi for n in re.findall(r"(?<!/)\d+", f))
+        for f, (lo, hi) in zip(fields, bounds, strict=True)
+    ):
+        raise OpsError(f'Agenda inválida: {t!r} (cron de 5 campos ou "Diário 02:00", "A cada 6 h", "Manual")')
+    return t
+
+
+def normalize(s: str) -> str | None:
     """5-field cron, or `None` for manual execution."""
     t = s.strip()
     low = t.lower()
@@ -37,34 +73,10 @@ def normalize(s: str) -> str | None:  # noqa: C901
             h, m = _hm(low[len(p) :])
             return f"{m} {h} * * *"
     if low.startswith("semanal"):
-        parts = low[7:].split()
-        day = parts[0] if parts else ""
-        dow = next(
-            (i for i, d in enumerate(_DOW) if day.startswith(d) or (d == "sáb" and day.startswith("sab"))),
-            None,
-        )
-        if dow is None:
-            raise OpsError(f"dia da semana inválido: {day}")
-        h, m = _hm(parts[1] if len(parts) > 1 else "")
-        return f"{m} {h} * * {dow}"
+        return _weekly(low)
     if low.startswith("a cada"):
-        mt = re.match(r"^(\d+)\s*(h|min)", low[6:].strip())
-        if not mt:
-            raise OpsError(f"intervalo inválido: {t}")
-        n = int(mt.group(1))
-        if mt.group(2) == "h" and 1 <= n <= 23:
-            return f"0 */{n} * * *"
-        if mt.group(2) == "min" and 1 <= n <= 59:
-            return f"*/{n} * * * *"
-        raise OpsError(f"intervalo inválido: {t}")
-    fields = t.split()
-    bounds = ((0, 59), (0, 23), (1, 31), (1, 12), (0, 7))
-    if len(fields) != 5 or not all(
-        _FIELD.match(f) and all(lo <= int(n) <= hi for n in re.findall(r"(?<!/)\d+", f))
-        for f, (lo, hi) in zip(fields, bounds, strict=True)
-    ):
-        raise OpsError(f'Agenda inválida: {t!r} (cron de 5 campos ou "Diário 02:00", "A cada 6 h", "Manual")')
-    return t
+        return _every(t, low)
+    return _cron(t)
 
 
 def _field(f: str, lo: int, hi: int) -> set[int]:

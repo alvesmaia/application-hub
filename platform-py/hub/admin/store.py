@@ -14,7 +14,8 @@ from pathlib import Path
 from typing import Any, cast
 
 from hub.admin.chain import AuditChain
-from hub.admin.config import INTERNAL_TOKEN_ENV, ConfigOps, injected_name, seed
+from hub.admin.config import INTERNAL_TOKEN_ENV, injected_name, seed
+from hub.admin.config_env import ConfigOps
 from hub.models import AdminDocument, AuditEntry
 from hub.state import StateDb
 from hub.vault import Vault, is_sealed

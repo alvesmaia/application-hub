@@ -39,43 +39,51 @@ class Supervisor:
             (s.add if on else s.discard)(f"{app}|{env}")
             d["stopped"] = sorted(s)
 
-    async def tick(self) -> list[str]:  # noqa: C901, PLR0915
+    async def tick(self) -> list[str]:
         st = self.app.state
-        eng, reg = st.ops_engine, st.gateway.registry
-        info = await eng.probe(0)
+        info = await st.ops_engine.probe(0)
         if not info["reachable"]:
             return []
         live = {x["name"]: x for x in info["live"]}
-        for e in reg.entries():  # gateway staging = running `<app>__staging` container (any replica)
+        self._sync_staging(live)
+        data, stopped = st.ops.read(), self.stopped()
+        out: list[str] = []
+        for e in st.gateway.registry.entries():
+            for env in ("producao", "staging"):
+                if r := await self._check(e, env, live, data, stopped):
+                    out.append(r)
+        self.leader.ran("supervisor")
+        return out
+
+    def _sync_staging(self, live: dict[str, Any]) -> None:
+        """Gateway staging = running `<app>__staging` container (any replica)."""
+        st = self.app.state
+        reg = st.gateway.registry
+        for e in reg.entries():
             n = rt.container_name(e.id, "staging")
             if n in live and live[n]["state"] == "running":
                 reg.staging[e.id] = st.ops_rollout.url_of(n)
             else:
                 reg.staging.pop(e.id, None)
-        data, stopped = st.ops.read(), self.stopped()
-        out: list[str] = []
-        for e in reg.entries():
-            for env in ("producao", "staging"):
-                name = rt.container_name(e.id, env)
-                lv = live.get(name)
-                if lv is None:
-                    heal = env == "staging" and self.leader.leading() and f"{e.id}|{env}" not in stopped
-                    if heal and (r := await self.heal_staging(e, data)):
-                        out.append(r)
-                    continue
-                st.insight.tel.metrics.set_resources(e.id, env, lv["cpu_used"], lv["mem_used"])
-                with contextlib.suppress(Exception):
-                    await self.ship_logs(name, e.id)
-                key = f"{e.id}|{env}"
-                if key in stopped or key in data["maintenance"] or not self.leader.leading():
-                    continue
-                if lv["state"] != "running" or "(unhealthy)" in lv["status"]:
-                    if r := await self.revive(e.id, env, name, lv["state"]):
-                        out.append(r)
-                elif (s := self.state.get(key)) and time.time() - s["last"] > WINDOW_S:
-                    self.state.pop(key, None)
-        self.leader.ran("supervisor")
-        return out
+
+    async def _check(self, e: Any, env: str, live: dict[str, Any], data: dict[str, Any],
+                     stopped: set[str]) -> str | None:  # fmt: skip
+        name = rt.container_name(e.id, env)
+        key = f"{e.id}|{env}"
+        lv = live.get(name)
+        if lv is None:
+            heal = env == "staging" and self.leader.leading() and key not in stopped
+            return await self.heal_staging(e, data) if heal else None
+        self.app.state.insight.tel.metrics.set_resources(e.id, env, lv["cpu_used"], lv["mem_used"])
+        with contextlib.suppress(Exception):
+            await self.ship_logs(name, e.id)
+        if key in stopped or key in data["maintenance"] or not self.leader.leading():
+            return None
+        if lv["state"] != "running" or "(unhealthy)" in lv["status"]:
+            return await self.revive(e.id, env, name, lv["state"])
+        if (s := self.state.get(key)) and time.time() - s["last"] > WINDOW_S:
+            self.state.pop(key, None)
+        return None
 
     async def heal_staging(self, e: Any, data: dict[str, Any]) -> str | None:
         """Recreates the `<app>__staging` that disappeared, from the last staging deployment (with backoff)."""

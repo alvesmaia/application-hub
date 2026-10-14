@@ -121,7 +121,7 @@ class Rollout:
         async with lock:
             return await self._apply(app, k, limits, version, image, progress or (lambda *_: None))
 
-    async def _apply(self, app: str, k: str, limits: dict[str, Any], version: str, image: str | None,  # noqa: PLR0915
+    async def _apply(self, app: str, k: str, limits: dict[str, Any], version: str, image: str | None,
                      say: Progress) -> dict[str, Any]:  # fmt: skip
         staging = k == "staging"
         name, prod = rt.container_name(app, k), rt.container_name(app, "producao")
@@ -134,24 +134,8 @@ class Rollout:
         img_id, _ = await self.engine.image_ref(ref)
         if staging:
             staging_env_check(await self.env_vars(), app)
-        carried: dict[str, str] = {}
-        if not staging and base.get(
-            "Image"
-        ):  # what compose/the operator injected into the current container (beyond the image)
-            try:
-                _, old_img = await self.engine.image_ref(str(base.get("Image", "")))
-            except OpsError:
-                old_img = {}
-            had = env_dict(old_img.get("Config", {}).get("Env") or [])
-            carried = {
-                a: b for a, b in env_dict(base.get("Config", {}).get("Env") or []).items() if had.get(a) != b
-            }
+        carried = {} if staging or not base.get("Image") else await self._carried(base)
         env = {**carried, "HUB_APP_ID": app, "PORT": "8080", **await self.app_env(app, k)}
-        labels = {a: b for a, b in (base.get("Config", {}).get("Labels") or {}).items()
-                  if not staging or not a.startswith("com.docker.compose")}  # fmt: skip
-        labels |= {"hub.py": "1", "hub.app": app, "hub.env": k, "hub.version": version, "hub.role": "app"}
-        if staging:  # else it inherits the image's project label; Docker Desktop groups it as a ghost project
-            labels["com.docker.compose.project"] = "app-hub"
         cand = f"{name}__new"
         await self.engine.remove(cand, 1)
         host = host_for(base.get("HostConfig") or {}, limits, staging)
@@ -159,19 +143,10 @@ class Rollout:
             (base.get("NetworkSettings", {}).get("Networks") or {}) or [host.get("NetworkMode", "default")]
         )
         say(15, f"Criando o candidato {cand}")
-        await self.engine.launch(cand, img_id, env, labels, host, nets)
-        try:
-            say(35, "Aguardando a prontidão do candidato")
-            await self.probe(self.url_of(cand), app, cand, _num("HUB_ROLLOUT_TIMEOUT_S", 90))
-            say(65, "Trocando o tráfego para o candidato")
-            self.route(app, k, self.url_of(cand), version)
-        except BaseException:
-            await self.engine.remove(cand, 1)
-            raise
-        if old is not None:  # previous image pinned by name: rollback never depends on it escaping a prune
-            pre = "keep-stg-" if k == "staging" else "keep-"
-            await self.engine.pin(str(old.get("Image", "")), app, f"{pre}{str(old.get('Image', ''))[7:19]}")
-            await self.engine.prune_pins(app, int(_num("HUB_KEEP_IMAGES", 3)))
+        await self.engine.launch(cand, img_id, env, _labels(base, app, k, version), host, nets)
+        await self._switch(app, k, cand, version, say)
+        if old is not None:
+            await self._pin(old, app, k)
         say(75, "Esgotando requisições do container anterior")
         await asyncio.sleep(_num("HUB_ROLLOUT_DRAIN_S", 5))
         if old is not None:
@@ -181,8 +156,44 @@ class Rollout:
         say(100, "Concluído")
         return {"container": name, "image": ref, "upstream": self.url_of(name)}
 
+    async def _carried(self, base: dict[str, Any]) -> dict[str, str]:
+        """What compose/the operator injected into the current container (beyond the image)."""
+        try:
+            _, old_img = await self.engine.image_ref(str(base.get("Image", "")))
+        except OpsError:
+            old_img = {}
+        had = env_dict(old_img.get("Config", {}).get("Env") or [])
+        return {a: b for a, b in env_dict(base.get("Config", {}).get("Env") or []).items() if had.get(a) != b}
+
+    async def _pin(self, old: dict[str, Any], app: str, k: str) -> None:
+        """Previous image pinned by name: rollback never depends on it escaping a prune."""
+        pre = "keep-stg-" if k == "staging" else "keep-"
+        await self.engine.pin(str(old.get("Image", "")), app, f"{pre}{str(old.get('Image', ''))[7:19]}")
+        await self.engine.prune_pins(app, int(_num("HUB_KEEP_IMAGES", 3)))
+
+    async def _switch(self, app: str, k: str, cand: str, version: str, say: Progress) -> None:
+        """Waits for the candidate's readiness and routes traffic to it; a failure removes the candidate."""
+        try:
+            say(35, "Aguardando a prontidão do candidato")
+            await self.probe(self.url_of(cand), app, cand, _num("HUB_ROLLOUT_TIMEOUT_S", 90))
+            say(65, "Trocando o tráfego para o candidato")
+            self.route(app, k, self.url_of(cand), version)
+        except BaseException:
+            await self.engine.remove(cand, 1)
+            raise
+
     def route(self, app: str, k: str, url: str, version: str) -> None:
         if k == "staging":
             self.registry.staging[app] = url
         else:
             self.registry.set_upstream(app, url, version)
+
+
+def _labels(base: dict[str, Any], app: str, k: str, version: str) -> dict[str, str]:
+    staging = k == "staging"
+    labels: dict[str, str] = {a: b for a, b in (base.get("Config", {}).get("Labels") or {}).items()
+              if not staging or not a.startswith("com.docker.compose")}  # fmt: skip
+    labels |= {"hub.py": "1", "hub.app": app, "hub.env": k, "hub.version": version, "hub.role": "app"}
+    if staging:  # else it inherits the image's project label; Docker Desktop groups it as a ghost project
+        labels["com.docker.compose.project"] = "app-hub"
+    return labels
