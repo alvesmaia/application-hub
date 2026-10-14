@@ -94,10 +94,6 @@ linked SQL connection (``source`` = name), a :class:`hub_sdk.sql.SqlConnection`,
 - `async load(name: str, values: Mapping[str, Any] | None=None, conn: SqlConnection | None=None) -> SqlResult` — Runs (or returns from the cache) the dataset ``name`` with the values of its parameters.
 - `clear() -> None`
 
-### `fmt(v: Any, unit: str='', places: int | None=None) -> str`
-
-### `compact(v: float) -> str`
-
 ### `kpi(label: str, value: Any, unit: str='', hint: str='', delta: float | None=None) -> Markup`
 
 KPI card. ``delta`` (fraction, e.g. 0.12 = +12%) becomes an arrow and a color (up/down).
@@ -141,6 +137,14 @@ neutralized as in the CSV.
 ### `export_response(r: SqlResult, fmt_: str, filename: str) -> Response`
 
 Download response (``csv`` or ``xlsx``) with ``Content-Disposition`` and ``no-store``.
+
+## `hub_sdk.dashboards_format`
+
+Number formatting and escaping shared by :mod:`hub_sdk.dashboards` (KPIs, tables, charts).
+
+### `fmt(v: Any, unit: str='', places: int | None=None) -> str`
+
+### `compact(v: float) -> str`
 
 ## `hub_sdk.db`
 
@@ -327,6 +331,11 @@ Environment declared by the hub (`producao`/`staging`); default is production.
 
 Durable jobs in the ``hub_jobs`` table (table, SQL and states have a stable format: do not change without a migration).
 
+## `hub_sdk.jobs_model`
+
+Model of the durable jobs (:mod:`hub_sdk.jobs`): states, contract of a job type, the job row,
+the attempt outcomes and the handler protocol.
+
 ### `label(status: str) -> str`
 
 ### class `JobSpec`
@@ -381,16 +390,21 @@ Implementation of a job type.
 Extra events of the final state (wave 9: e.g. notification to the hub Inbox), if the
 handler defines ``final_events(job, status, detail)``; written in the same transaction.
 
-### `async enqueue_with(conn: Any, spec: JobSpec, payload: Any, user: str, idempotency_key: str | None=None) -> tuple[Job, bool]`
-
-Enqueues with ``conn`` (e.g. inside the transaction that also writes the audit).
-With ``idempotency_key``, the same key (and type) returns the existing one (``False``).
-
 ### `async after_final(handler: Handler | None, job: Job, status: str) -> None`
 
 Optional hook ``handler.after_final(job, status)`` (sync or ``async``),
 called **after** the terminal state is committed (e.g. deleting the upload). Errors
 only go to the log.
+
+## `hub_sdk.jobs_store`
+
+Queue operations of the durable jobs (:mod:`hub_sdk.jobs`) over ``hub_jobs``: enqueue, claim,
+cancel, retry, reap and the attempt's final state (with its outbox events in the same transaction).
+
+### `async enqueue_with(conn: Any, spec: JobSpec, payload: Any, user: str, idempotency_key: str | None=None) -> tuple[Job, bool]`
+
+Enqueues with ``conn`` (e.g. inside the transaction that also writes the audit).
+With ``idempotency_key``, the same key (and type) returns the existing one (``False``).
 
 ### class `Jobs`
 
@@ -406,6 +420,11 @@ only go to the log.
 - `async retry(job_id: str) -> Job`
 - `async heartbeat(job_id: str, token: str, lease: float) -> None`
 - `async finish(spec: JobSpec, handler: Handler, job: Job, outcome: Any, error: JobError | None) -> None` — Records the attempt's result (state + final event in the same transaction); in a terminal state, calls :func:`after_final` after committing.
+
+## `hub_sdk.jobs_worker`
+
+Running the durable jobs (:mod:`hub_sdk.jobs`): the attempt's context (checkpoint, progress,
+memory phase), the heartbeat that fences it and the worker that claims jobs.
 
 ### class `JobCtx`
 
@@ -794,6 +813,48 @@ App file storage (wave 10, contract item 22): platform connections through the *
 app's own bucket (**direct S3**, ``HUB_S3_*``). Switching backend is configuration
 (binding in Administration › Connections), not code.
 
+### class `BrokerConnection`
+
+Through the hub's broker (app's internal network, token per app × environment).
+
+- `via_broker() -> bool`
+- `async upload(path: str, data: Body, content_type: str, length: int | None=None) -> Item`
+- `async download(path: str) -> Download`
+- `async list(prefix: str='') -> builtins.list[Item]`
+- `async meta(path: str) -> Item`
+- `async delete(path: str) -> None`
+- `async move(src: str, dst: str) -> Item`
+- `async share_link(path: str, kind: str='view', expires_hours: int=24) -> ShareLink`
+
+### `bound() -> list[tuple[str, str]]`
+
+Connections linked to this app × environment (``HUB_CONNECTIONS`` = ``name=type,…``).
+
+### class `LocalConnection`
+
+Local folder with the same API (``hub dev``: ``HUB_STORAGE_LOCAL_DIR``). No share links.
+
+- `async upload(path: str, data: Body, content_type: str, length: int | None=None) -> Item`
+- `async download(path: str) -> Download`
+- `async list(prefix: str='') -> builtins.list[Item]`
+- `async meta(path: str) -> Item`
+- `async delete(path: str) -> None`
+- `async move(src: str, dst: str) -> Item`
+
+### `connection(name: str) -> Connection | None`
+
+Connection ``name`` through the hub's broker, if linked to this app × environment
+(in ``hub dev``, ``HUB_STORAGE_LOCAL_DIR`` = local folder with the same API).
+
+### `s3_direct(name: str, cfg: S3Config) -> Connection`
+
+App's own bucket (direct S3/MinIO).
+
+## `hub_sdk.storage_core`
+
+Shared pieces of :mod:`hub_sdk.storage`: errors, items, path rules, streaming downloads, the HTTP
+transport and the :class:`Connection` interface every backend implements.
+
 ### class `StorageError`
 
 Storage failure: HTTP ``status`` (400 path, 403 operation not allowed,
@@ -836,18 +897,9 @@ A storage connection (use :func:`connection` or :func:`s3_direct`).
 - `async move(src: str, dst: str) -> Item`
 - `async share_link(path: str, kind: str='view', expires_hours: int=24) -> ShareLink`
 
-### class `BrokerConnection`
+## `hub_sdk.storage_s3`
 
-Through the hub's broker (app's internal network, token per app × environment).
-
-- `via_broker() -> bool`
-- `async upload(path: str, data: Body, content_type: str, length: int | None=None) -> Item`
-- `async download(path: str) -> Download`
-- `async list(prefix: str='') -> builtins.list[Item]`
-- `async meta(path: str) -> Item`
-- `async delete(path: str) -> None`
-- `async move(src: str, dst: str) -> Item`
-- `async share_link(path: str, kind: str='view', expires_hours: int=24) -> ShareLink`
+Direct S3/MinIO backend of :mod:`hub_sdk.storage` (SigV4 with ``UNSIGNED-PAYLOAD``, presigned URLs).
 
 ### class `S3Config`
 
@@ -865,30 +917,6 @@ App's bucket (S3/MinIO) direct, SigV4 with ``UNSIGNED-PAYLOAD``.
 - `presign_get(key: str, secs: int, now: dt.datetime) -> str` — Pre-signed read URL.
 - `presign_put_path(path: str, secs: int, now: dt.datetime | None=None) -> str` — Pre-signed upload URL (``PUT``) for ``path`` (relative to the base folder) — two-phase uploads (wave 12, 2.9).
 - `presign(method: str, key: str, secs: int, now: dt.datetime) -> str` — SigV4 signature in the query string (``GET``/``PUT``).
-
-### `bound() -> list[tuple[str, str]]`
-
-Connections linked to this app × environment (``HUB_CONNECTIONS`` = ``name=type,…``).
-
-### class `LocalConnection`
-
-Local folder with the same API (``hub dev``: ``HUB_STORAGE_LOCAL_DIR``). No share links.
-
-- `async upload(path: str, data: Body, content_type: str, length: int | None=None) -> Item`
-- `async download(path: str) -> Download`
-- `async list(prefix: str='') -> builtins.list[Item]`
-- `async meta(path: str) -> Item`
-- `async delete(path: str) -> None`
-- `async move(src: str, dst: str) -> Item`
-
-### `connection(name: str) -> Connection | None`
-
-Connection ``name`` through the hub's broker, if linked to this app × environment
-(in ``hub dev``, ``HUB_STORAGE_LOCAL_DIR`` = local folder with the same API).
-
-### `s3_direct(name: str, cfg: S3Config) -> Connection`
-
-App's own bucket (direct S3/MinIO).
 
 ## `hub_sdk.telemetry`
 

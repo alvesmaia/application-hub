@@ -118,6 +118,9 @@ PART_TITLES = {
     "hub_sdk.shutdown": "Desligamento gracioso", "hub_sdk.sql": "Consultas SQL a conexões",
     "hub_sdk.stack": "Stack do app", "hub_sdk.storage": "Armazenamento de arquivos",
     "hub_sdk.telemetry": "Telemetria", "hub_sdk.uploads": "Envio de arquivos em duas fases",
+    "hub_sdk.dashboards_format": "Dashboards: formatação", "hub_sdk.jobs_model": "Tarefas: modelo",
+    "hub_sdk.jobs_store": "Tarefas: fila no banco", "hub_sdk.jobs_worker": "Tarefas: execução",
+    "hub_sdk.storage_core": "Armazenamento: caminhos e erros", "hub_sdk.storage_s3": "Armazenamento: S3",
 }  # fmt: skip
 
 

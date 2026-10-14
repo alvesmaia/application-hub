@@ -25,8 +25,10 @@
   - ▶️ agent B: api (mcp, v1, rest), admin, ops (remaining), ux, gateway
 
 ## SDK, apps, CLI, JS
-- ▶️ 5 · SDK Python: jobs.py, storage.py, idempotency.py, dashboards.py + 17 noqa
-  - ▶️ agent C (worktree)
+- ✅ 5 · SDK Python: jobs.py, storage.py, idempotency.py, dashboards.py + 17 noqa
+  - ✅ agent C: 4 files < 500, 17/17 noqa removed, public API unchanged (AST check); SDK 117 passed
+  - ✅ dev docs regenerated (6 new SDK sections titled)
+  - ⬜ DB-backed SDK tests (21 skipped without Postgres) in the heavy validation
 - ▶️ 6 · Sample apps: app.py of ativos/coletor/servicos/fornecedores, ativos/importer.py + 21 noqa
   - ▶️ agent D (worktree)
 - ✅ 7 · CLI and scripts: 9 noqa
