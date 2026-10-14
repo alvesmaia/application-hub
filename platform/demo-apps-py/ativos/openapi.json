@@ -2,7 +2,7 @@
   "components": {
     "schemas": {
       "AssetFields": {
-        "description": "Campos editáveis de um ativo (a validação por coluna é a da tela).",
+        "description": "Editable fields of an asset (the per-column validation is the screen's).",
         "examples": [
           {
             "category": "Tecnologia",
@@ -160,7 +160,7 @@
         "type": "object"
       },
       "AssetRow": {
-        "description": "Linha da lista de ativos.",
+        "description": "Row of the asset list.",
         "properties": {
           "acquisition_date": {
             "anyOf": [
@@ -318,7 +318,7 @@
         "type": "object"
       },
       "Registration": {
-        "description": "Pedido de cadastro documentado (saga de exemplo, onda 12 — 2.9).",
+        "description": "Documented registration request (example saga, wave 12 — 2.9).",
         "properties": {
           "category": {
             "anyOf": [
