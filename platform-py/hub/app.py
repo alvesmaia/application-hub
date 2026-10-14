@@ -110,17 +110,10 @@ _HEADERS = {
     "cross-origin-resource-policy": "same-origin",
     "permissions-policy": "camera=(self), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
 }
-_SCRIPTS = (
-    "hub-ux.js",
-    "hub-i18n.js",
-    "logshare.js",
-    "admin.js",
-    "ops.js",
-    "ops-drawer.js",
-    "insights.js",
-    "ux.js",
-    "devdocs.js",
-)
+# hub-ux.js and the files split from it, in load order.
+_UX_SCRIPTS = ("hub-ux.js", "hub-ux-palette.js", "hub-ux-rail.js", "hub-ux-colfilter.js", "hub-ux-pages.js")
+_WEB_SCRIPTS = ("hub-i18n.js", "logshare.js", "admin.js", "ops.js", "ops-drawer.js", "insights.js", "ux.js")
+_SCRIPTS = (*_UX_SCRIPTS, *_WEB_SCRIPTS, "devdocs.js")
 _ICONS = [
     {"purpose": "any", "sizes": "192x192", "src": "/assets/icon-192.png", "type": "image/png"},
     {"purpose": "any", "sizes": "512x512", "src": "/assets/icon-512.png", "type": "image/png"},
@@ -1080,7 +1073,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
             return JSONResponse({k: v for k, v in item.items() if k != "hash"})
 
     def app_page_ctx(request: Request) -> dict[str, Any]:
-        return page_ctx(request, "rail-hidden in-app") | {"scripts": ("hub-ux.js",)}
+        return page_ctx(request, "rail-hidden in-app") | {"scripts": _UX_SCRIPTS}
 
     mount_inbox(app, templates, page_ctx, gateway.client)
     mount_account(app, templates, page_ctx, icon)

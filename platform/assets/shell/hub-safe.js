@@ -279,7 +279,7 @@
     try { url = new URL(String(u), location.href); } catch (_) { return false; }
     if (url.origin !== location.origin) return false;
     if (url.pathname.startsWith('/assets/') && !url.pathname.includes('..')) return true;
-    // Wave 13: the hub's service worker (registered by hub-ux.js; the CSP only accepts it as a worker).
+    // Wave 13: the hub's service worker (registered by hub-ux-pages.js; the CSP only accepts it as a worker).
     if (url.pathname === '/hub-sw.js' && !url.search) return true;
     return Boolean(approved && approved.has(url.pathname));
   }

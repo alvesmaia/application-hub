@@ -13,7 +13,8 @@ const CACHE = `hub-shell-${VERSION}`;
 const PRECACHE = [
   '/offline',
   '/assets/tokens.css', '/assets/theme.css', '/assets/styles.css', '/assets/hub.css',
-  '/assets/hub-ux.js', '/assets/hub-safe.js', '/assets/hub-kit.js', '/assets/hub-kit-mount.js', '/assets/hub-chart.js', '/assets/hub-device.js', '/assets/hub-device-camera.js', '/assets/hub-device-forms.js', '/assets/hub-device-mount.js',
+  '/assets/hub-ux.js', '/assets/hub-ux-palette.js', '/assets/hub-ux-rail.js', '/assets/hub-ux-colfilter.js', '/assets/hub-ux-pages.js',
+  '/assets/hub-safe.js', '/assets/hub-kit.js', '/assets/hub-kit-mount.js', '/assets/hub-chart.js', '/assets/hub-device.js', '/assets/hub-device-camera.js', '/assets/hub-device-forms.js', '/assets/hub-device-mount.js',
   '/assets/hub.js', '/assets/hub-nav.js',
   '/assets/logo.svg', '/assets/icon-192.png', '/assets/icon-512.png',
   '/assets/fonts/nunito-sans-latin-wght-normal.woff2', '/assets/fonts/red-hat-display-latin-wght-normal.woff2',
