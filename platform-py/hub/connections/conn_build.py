@@ -151,7 +151,7 @@ def _sharepoint_auth(c: dict[str, Any], i: dict[str, Any], secret: str, creating
     c["auth"] = auth
 
 
-def _sql(c: dict[str, Any], i: dict[str, Any], secret: str, creating: bool) -> None:  # noqa: C901, PLR0915
+def _sql_target(c: dict[str, Any], i: dict[str, Any]) -> dict[str, Any]:
     host = str(i.get("host", "")).strip()
     if not re.fullmatch(r"[A-Za-z0-9]([A-Za-z0-9.\-]{0,252})", host):
         raise ConnError("Servidor: nome ou IP do banco (ex.: db.empresa.local).")
@@ -165,25 +165,30 @@ def _sql(c: dict[str, Any], i: dict[str, Any], secret: str, creating: bool) -> N
     ssl = str(i.get("ssl") or c["ssl"] or "prefer")
     if ssl not in ("disable", "prefer", "require"):
         raise ConnError("TLS: disable, prefer ou require.")
+    return {"host": host, "port": port, "database": database, "username": username, "ssl": ssl}
+
+
+def _sql_limits(c: dict[str, Any], i: dict[str, Any]) -> dict[str, Any]:
     mr = i.get("max_rows", c["max_rows"])
     if not isinstance(mr, int) or not 1 <= mr <= MAX_ROWS_CAP:
         raise ConnError(f"Máximo de linhas por consulta: de 1 a {MAX_ROWS_CAP}.")
     ts = i.get("timeout_s", c["timeout_s"])
     if not isinstance(ts, int) or not 1 <= ts <= MAX_TIMEOUT_S:
         raise ConnError(f"Tempo máximo por consulta: de 1 a {MAX_TIMEOUT_S} s.")
+    return {"max_rows": mr, "timeout_s": ts}
+
+
+def _sql(c: dict[str, Any], i: dict[str, Any], secret: str, creating: bool) -> None:
+    target = _sql_target(c, i)
+    limits = _sql_limits(c, i)
     if not secret and creating:
         raise ConnError("Informe a senha do usuário do banco.")
     if secret:
         c["secret"], c["credential_updated_at"] = secret, now_ms()
     c.update(
-        host=host,
-        port=port,
-        database=database,
-        username=username,
-        ssl=ssl,
+        **target,
         readonly=bool(i.get("readonly", c["readonly"])),
-        max_rows=mr,
-        timeout_s=ts,
+        **limits,
         allowed_ops=["query"],
         auth="secret",
         share_scope="",

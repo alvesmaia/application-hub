@@ -156,34 +156,37 @@ def _placeholder(
     return "%s" if style == "format" else "?"
 
 
-def bind(sql: str, params: dict[str, Any], style: str) -> tuple[str, list[Any]]:  # noqa: PLR0915
+def _esc(part: str, style: str) -> str:
+    # "format" drivers apply `%` to the whole query, including literals
+    return part.replace("%", "%%") if style == "format" else part
+
+
+def _next_token(
+    sql: str, i: int, params: dict[str, Any], style: str, values: list[Any], order: dict[str, int]
+) -> tuple[str, int]:
+    """Translated text of the token at `i` and the index after it."""
+    if (j := _literal_end(sql, i)) is not None:
+        return _esc(sql[i:j], style), j
+    c = sql[i]
+    if c == ":" and sql.startswith("::", i):
+        return "::", i + 2
+    if c == ":" and (m := re.match(r":([A-Za-z_]\w*)", sql[i:])):
+        return _placeholder(m.group(1), params, style, values, order), i + len(m.group(0))
+    if c == "%" and style == "format":
+        return "%%", i + 1
+    return c, i + 1
+
+
+def bind(sql: str, params: dict[str, Any], style: str) -> tuple[str, list[Any]]:
     """``:name`` → ``$1`` (postgres), ``%s`` (mysql/sqlserver) or ``?`` (sqlite), outside quotes and comments."""
     _check_params(params)
     out: list[str] = []
     values: list[Any] = []
     order: dict[str, int] = {}
-
-    def esc(part: str) -> str:  # "format" drivers apply `%` to the whole query, including literals
-        return part.replace("%", "%%") if style == "format" else part
-
     i, n = 0, len(sql)
     while i < n:
-        c = sql[i]
-        if (j := _literal_end(sql, i)) is not None:
-            out.append(esc(sql[i:j]))
-            i = j
-        elif c == ":" and sql.startswith("::", i):
-            out.append("::")
-            i += 2
-        elif c == ":" and (m := re.match(r":([A-Za-z_]\w*)", sql[i:])):
-            out.append(_placeholder(m.group(1), params, style, values, order))
-            i += len(m.group(0))
-        elif c == "%" and style == "format":
-            out.append("%%")
-            i += 1
-        else:
-            out.append(c)
-            i += 1
+        part, i = _next_token(sql, i, params, style, values, order)
+        out.append(part)
     return "".join(out), values
 
 
@@ -304,7 +307,22 @@ class SqlBackend:
             return await asyncio.to_thread(self._mssql, sql, params, fetch)
         raise SqlError("Tipo de banco desconhecido.")  # pragma: no cover
 
-    async def _pg(self, sql: str, params: dict[str, Any], fetch: int) -> tuple[list[str], list[Any]]:  # noqa: PLR0915
+    async def _pg(self, sql: str, params: dict[str, Any], fetch: int) -> tuple[list[str], list[Any]]:
+        pool = await self._pg_pool()
+        q, values = bind(sql, params, "dollar")
+        async with pool.acquire() as conn:
+            tx = conn.transaction(readonly=self.cfg.readonly)
+            await tx.start()
+            try:
+                cols, rows = await self._pg_fetch(conn, q, values, fetch)
+            except BaseException:
+                await tx.rollback()
+                raise
+            # read-only: nothing is kept; read and write: commit
+            await (tx.rollback() if self.cfg.readonly else tx.commit())
+        return cols, [list(r.values()) for r in rows]
+
+    async def _pg_pool(self) -> Any:
         import asyncpg
 
         async with self._pool_lock:
@@ -323,25 +341,18 @@ class SqlBackend:
                     command_timeout=self.cfg.timeout_s + 1,
                     server_settings={"application_name": "app-hub-broker"},
                 )
-        q, values = bind(sql, params, "dollar")
-        async with self._pool.acquire() as conn:
-            tx = conn.transaction(readonly=self.cfg.readonly)
-            await tx.start()
-            try:
-                await conn.execute(f"SET LOCAL statement_timeout = {int(self.cfg.timeout_s * 1000)}")
-                stmt = await conn.prepare(q)
-                cols = [a.name for a in stmt.get_attributes()]
-                if cols:
-                    rows = await (await stmt.cursor(*values)).fetch(fetch)
-                else:  # write/command: no rows
-                    await stmt.fetch(*values)
-                    rows = []
-            except BaseException:
-                await tx.rollback()
-                raise
-            # read-only: nothing is kept; read and write: commit
-            await (tx.rollback() if self.cfg.readonly else tx.commit())
-        return cols, [list(r.values()) for r in rows]
+        return self._pool
+
+    async def _pg_fetch(
+        self, conn: Any, q: str, values: list[Any], fetch: int
+    ) -> tuple[list[str], list[Any]]:
+        await conn.execute(f"SET LOCAL statement_timeout = {int(self.cfg.timeout_s * 1000)}")
+        stmt = await conn.prepare(q)
+        cols = [a.name for a in stmt.get_attributes()]
+        if not cols:  # write/command: no rows
+            await stmt.fetch(*values)
+            return cols, []
+        return cols, await (await stmt.cursor(*values)).fetch(fetch)
 
     def _mysql(self, sql: str, params: dict[str, Any], fetch: int) -> tuple[list[str], list[Any]]:
         import pymysql
