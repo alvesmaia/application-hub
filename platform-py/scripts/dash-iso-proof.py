@@ -1,7 +1,7 @@
 """Proof for the dashboard kit on the isolated instance (`scripts/iso-instance.sh up`): creates the PostgreSQL connection
 `vendas` (sample database in the iso app-db), tests it, creates a CI token and writes it to `$TEMP/dash-proof/token`.
-After `hub deploy --env staging`, run with `bind` to link the connection to the app in staging.
-Usage: uv run python scripts/dash-iso-proof.py setup|bind|check"""
+After `hub deploy --env staging`, run with `link` to link the connection to the app in staging.
+Usage: uv run python scripts/dash-iso-proof.py setup|link|check"""
 
 from __future__ import annotations
 
@@ -12,14 +12,16 @@ from pathlib import Path
 import httpx
 
 HUB = "http://127.0.0.1:8093"
-ENV = dict(line.split("=", 1) for line in Path(".iso-instance.env").read_text().splitlines() if "=" in line)
 OUT = Path(os.environ["TEMP"]) / "dash-proof"
 
 
 def client() -> httpx.Client:
+    env = dict(
+        line.split("=", 1) for line in Path(".iso-instance.env").read_text().splitlines() if "=" in line
+    )
     c = httpx.Client(base_url=HUB, headers={"origin": HUB}, timeout=60)
     r = c.post(
-        "/login", data={"email": "admin@demo.local", "password": ENV["HUB_DEMO_PASSWORD"], "next": "/"}
+        "/login", data={"email": "admin@demo.local", "password": env["HUB_DEMO_PASSWORD"], "next": "/"}
     )
     if r.status_code not in (200, 303):
         raise SystemExit(f"login: HTTP {r.status_code}")
@@ -74,10 +76,18 @@ def check(c: httpx.Client) -> None:
     )
 
 
-def main(cmd: str) -> None:
-    c = client()
-    {"setup": setup, "link": link}.get(cmd, check)(c)
+COMMANDS = {"setup": setup, "link": link, "check": check}
+
+
+def main(argv: list[str]) -> None:
+    if len(argv) != 2 or argv[1] not in COMMANDS:
+        print(
+            f"usage: uv run python scripts/dash-iso-proof.py setup|link|check (got {argv[1:]!r})",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+    COMMANDS[argv[1]](client())
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(sys.argv)

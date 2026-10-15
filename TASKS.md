@@ -6,7 +6,8 @@
   - ✅ workaround routes.extend removido dos 4 apps; openapi.json idêntico
 
 ## Scripts
-- ⬜ 12 · dash-iso-proof.py: ajuda diz bind, código usa link
+- ✅ 12 · dash-iso-proof.py: ajuda diz bind, código usa link
+  - ✅ ajuda = setup|link|check; comando desconhecido → uso + exit 2 (antes rodava check); teste
 
 ## Apps
 - ⬜ 11 · Links dos apps pela base pública (x-hub-base)
