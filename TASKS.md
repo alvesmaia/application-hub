@@ -33,4 +33,7 @@
 - ⛔ 26 · Login OAuth do MCP falha externamente (cliente registrou às 18:21 e parou) — aguardando cliente usado e erro visto
 
 ## Fechamento
-- ⬜ 21 · Integração, E2E das telas, ui-sweep, deploy na :8090, limpeza
+- ✅ 21 · Integração, E2E das telas, ui-sweep, deploy na :8090, limpeza
+  - ✅ hub-check --all verde; E2E completo na instância isolada (141 + specs corrigidos 16/16)
+  - ✅ ui-sweep --quick: 0 achados (docs logadas voltaram a seguir o tema da conta)
+  - ✅ hub_update sem parada; 4 apps reconstruídos (pino keep-20261015b), ready 200, sem avisos de operation id
