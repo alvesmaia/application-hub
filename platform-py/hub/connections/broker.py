@@ -113,21 +113,41 @@ async def download(request: Request, name: str, path: str = "", b: BrokerCtx = D
     return StreamingResponse(body(), media_type=ctype, headers=headers)
 
 
+def _declared_length(request: Request) -> int | None:
+    raw_len = request.headers.get("content-length", "")
+    return int(raw_len) if raw_len.isdigit() else None
+
+
+def _upload_ctype(request: Request) -> str:
+    ctype = request.headers.get("content-type", "")
+    if not ctype or len(ctype) > 200 or "\r" in ctype or "\n" in ctype:
+        return "application/octet-stream"
+    return ctype
+
+
+async def _limited(request: Request, length: int) -> AsyncIterator[bytes]:
+    seen = 0
+    async for chunk in request.stream():
+        seen += len(chunk)
+        if seen > length:
+            raise StorageError("invalid", "O corpo é maior que o tamanho declarado (Content-Length).")
+        yield chunk
+
+
 @router.put("/_hub/storage/{name}/content")
-async def upload(request: Request, name: str, path: str = "", b: BrokerCtx = Depends(bctx)) -> Response:  # noqa: C901, PLR0915
+async def upload(request: Request, name: str, path: str = "", b: BrokerCtx = Depends(bctx)) -> Response:
     c = await b.authorize(request, name, "enviar", ("upload",))
     if isinstance(c, JSONResponse):
         return c
     shown = clip(path, 200)
-    raw_len = request.headers.get("content-length", "")
-    if not raw_len.isdigit():
+    length = _declared_length(request)
+    if length is None:
         return await c.fail(
             "enviar",
             shown,
             411,
             "Envie o Content-Length (o hub não guarda o arquivo inteiro na memória).",
         )
-    length = int(raw_len)
     if length > c.conn["max_upload_mb"] * 1024 * 1024:
         return await c.fail(
             "enviar",
@@ -135,25 +155,14 @@ async def upload(request: Request, name: str, path: str = "", b: BrokerCtx = Dep
             413,
             f"Arquivo acima do limite desta conexão ({c.conn['max_upload_mb']} MB).",
         )
-    ctype = request.headers.get("content-type", "")
-    if not ctype or len(ctype) > 200 or "\r" in ctype or "\n" in ctype:
-        ctype = "application/octet-stream"
+    ctype = _upload_ctype(request)
     try:
         clean_file(path)  # path validated before reading the body
     except StorageError as e:
         return await c.storage_fail("enviar", shown, e)
     detail = f"{shown} · {length} bytes · {ctype}"
-
-    async def limited() -> AsyncIterator[bytes]:
-        seen = 0
-        async for chunk in request.stream():
-            seen += len(chunk)
-            if seen > length:
-                raise StorageError("invalid", "O corpo é maior que o tamanho declarado (Content-Length).")
-            yield chunk
-
     try:
-        item = await c.backend.upload(path, length, ctype, Body(limited()))
+        item = await c.backend.upload(path, length, ctype, Body(_limited(request, length)))
     except StorageError as e:
         return await c.storage_fail("enviar", detail, e)
     c.release()

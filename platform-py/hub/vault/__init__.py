@@ -41,6 +41,10 @@ _META_AAD = b"hub-vault:keyring-meta:v2"
 _SEED_AAD = b"hub-vault:audit-seed:v2"
 
 
+def _explicit_key_file(key_file: Path | None) -> Path | None:
+    return key_file or (Path(os.environ["HUB_MASTER_KEY_FILE"]) if os.getenv("HUB_MASTER_KEY_FILE") else None)
+
+
 class Vault:
     data_dir: Path
     key_file: Path | None
@@ -49,24 +53,16 @@ class Vault:
     _meta: dict[str, Any]
     _deks: dict[str, bytes]
 
-    def __init__(self, data_dir: Path, key_file: Path | None = None, *, kek: bytes | None = None) -> None:  # noqa: PLR0915
+    def __init__(self, data_dir: Path, key_file: Path | None = None, *, kek: bytes | None = None) -> None:
         self.data_dir = data_dir
-        explicit_key = key_file or (
-            Path(os.environ["HUB_MASTER_KEY_FILE"]) if os.getenv("HUB_MASTER_KEY_FILE") else None
-        )
-        self.key_file = explicit_key or data_dir / DEFAULT_KEY_FILE
+        explicit_key = _explicit_key_file(key_file)
+        key_path = explicit_key or data_dir / DEFAULT_KEY_FILE
+        self.key_file = key_path
         self.keyring_path = data_dir / KEYRING_FILE
         data_dir.mkdir(parents=True, exist_ok=True)
         self.generated_key = False
         if kek is None:
-            try:
-                kek = read_key_file(self.key_file)
-            except FileNotFoundError:
-                if explicit_key is not None:
-                    raise
-                kek = secrets.token_bytes(32)
-                write_key_file(self.key_file, kek)
-                self.generated_key = True
+            kek = self._read_or_generate_kek(key_path, explicit_key is not None)
         if len(kek) != 32:
             raise ValueError("master key must be 32 bytes")
         self._kek = kek
@@ -77,11 +73,21 @@ class Vault:
         else:
             self._load()
 
+    def _read_or_generate_kek(self, key_path: Path, explicit: bool) -> bytes:
+        """Only the default key file is generated on first run; a missing explicit file is an error."""
+        try:
+            return read_key_file(key_path)
+        except FileNotFoundError:
+            if explicit:
+                raise
+        kek = secrets.token_bytes(32)
+        write_key_file(key_path, kek)
+        self.generated_key = True
+        return kek
+
     @classmethod
     def open(cls, data_dir: Path, key_file: Path | None = None) -> Vault:
-        selected = key_file or (
-            Path(os.environ["HUB_MASTER_KEY_FILE"]) if os.getenv("HUB_MASTER_KEY_FILE") else None
-        )
+        selected = _explicit_key_file(key_file)
         try:
             return cls(data_dir, selected)
         except Exception as first_error:

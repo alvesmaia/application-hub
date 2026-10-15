@@ -23,7 +23,18 @@ from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 
 from graphsim import login
-from graphsim.common import CHUNK_UNIT, NOT_FOUND, SIMPLE_MAX, base_url, drive_id, gerr, rfc3339
+from graphsim.common import (
+    CHUNK_UNIT,
+    NOT_FOUND,
+    SIMPLE_MAX,
+    base_url,
+    drive_id,
+    gerr,
+    json_dict,
+    move_parent,
+    move_tree,
+    rfc3339,
+)
 from graphsim.common import SimConfig as SimConfig
 from graphsim.common import verify_assertion as verify_assertion
 
@@ -90,7 +101,7 @@ class Sim:
         return [k for k in self.drives.get(drive_id(drive), {}) if k]
 
     # ---- entry point ---------------------------------------------------------------------------
-    async def handle(self, req: Request) -> Response:  # noqa: C901
+    async def handle(self, req: Request) -> Response:
         path, method = req.url.path, req.method
         body = await req.body()
         self.stats["requests"] += 1
@@ -102,6 +113,9 @@ class Sim:
             await asyncio.sleep(self.cfg.latency_ms / 1000)
         if r := self.throttle():
             return r
+        return self._route(method, path, req, body)
+
+    def _route(self, method: str, path: str, req: Request, body: bytes) -> Response:
         if path.endswith("/oauth2/v2.0/token") and method == "POST":
             return self.token(path, body)
         if path.startswith("/_upload/"):
@@ -381,24 +395,17 @@ class Sim:
         n = m[full] = self._node(self._next_id(), name, True)
         return JSONResponse(self.item_json(drive, full, n), status_code=201)
 
-    def patch_item(self, drive: str, path: str, body: bytes) -> Response:  # noqa: C901, PLR0915
-        try:
-            v = json.loads(body)
-        except ValueError:
-            return gerr(400, "invalidRequest", "corpo inválido")
-        if not isinstance(v, dict):
+    def patch_item(self, drive: str, path: str, body: bytes) -> Response:
+        v = json_dict(body)
+        if v is None:
             return gerr(400, "invalidRequest", "corpo inválido")
         m = self.drives[drive]
         node = m.get(path)
         if node is None:
             return gerr(404, *NOT_FOUND)
-        pid = (v.get("parentReference") or {}).get("id")
-        if pid:
-            parent = next((p for p, n in m.items() if n["id"] == pid and n["folder"]), None)
-            if parent is None:
-                return gerr(404, "itemNotFound", "pasta de destino inexistente")
-        else:
-            parent = path.rsplit("/", 1)[0] if "/" in path else ""
+        parent = move_parent(m, v, path)
+        if parent is None:
+            return gerr(404, "itemNotFound", "pasta de destino inexistente")
         name = v.get("name") or node["name"]
         dest = f"{parent}/{name}" if parent else name
         if dest != path and dest in m:
@@ -407,11 +414,7 @@ class Sim:
             )
         if dest.startswith(path + "/"):
             return gerr(400, "invalidRequest", "não é possível mover para dentro de si")
-        for k in [k for k in m if k == path or k.startswith(path + "/")]:
-            n = m.pop(k)
-            if k == path:
-                n.update(name=name, modified=rfc3339(), version=n["version"] + 1)
-            m[dest + k[len(path) :]] = n
+        move_tree(m, path, dest, name)
         return JSONResponse(self.item_json(drive, dest, m[dest]))
 
     def upload_session(self, method: str, sid: str, req: Request, body: bytes) -> Response:

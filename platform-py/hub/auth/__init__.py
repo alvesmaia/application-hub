@@ -9,11 +9,18 @@ import secrets
 import time
 import unicodedata
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
 
+from hub.auth.authfile import (
+    bootstrap_password,
+    demo_shared_password,
+    demo_users_enabled,
+    write_auth_file,
+    write_bootstrap_note,
+)
 from hub.auth.net import _cidrs as _cidrs
 from hub.auth.net import client_ip as client_ip
 from hub.auth.net import control_allowed as control_allowed
@@ -91,6 +98,18 @@ def _keep_one_admin(
         raise ValueError("É preciso manter ao menos um administrador ativo.")
 
 
+def _apply_user_changes(
+    user: dict[str, Any], name: str | None, roles: list[str] | None, active: bool | None
+) -> None:
+    if name is not None:
+        user["name"] = name.strip()
+    if roles is not None:
+        user["roles"] = roles
+    if active is not None:
+        user["active"] = active
+    user["updated_at"] = now_ms()
+
+
 @dataclass
 class AuthStore:
     path: Path
@@ -104,7 +123,7 @@ class AuthStore:
             self.path.write_text('{"users":[],"sessions":[],"tokens":[],"next_id":0}', encoding="utf-8")
 
     @asynccontextmanager
-    async def locked(self, write: bool = False) -> AsyncIterator[dict[str, Any]]:  # noqa: C901, PLR0915
+    async def locked(self, write: bool = False) -> AsyncIterator[dict[str, Any]]:
         async with self._lock:
             if self.db:
                 async with self.db.file_lock("auth.json", write=write):
@@ -114,21 +133,7 @@ class AuthStore:
                 data = self._read()
                 yield data
             if write:
-                data.pop("dropped", None)
-                if self.db:
-                    data["sessions"] = []
-                for user in data["users"]:
-                    for key in ("password_hash", "sso_subject", "sso_issuer"):
-                        if user.get(key) is None:
-                            user.pop(key, None)
-                for token in data["tokens"]:
-                    if token.get("owner") is None:
-                        token.pop("owner", None)
-                tmp = self.path.with_suffix(".json.tmp")
-                tmp.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-                with suppress(OSError):
-                    tmp.chmod(0o600)
-                os.replace(tmp, self.path)
+                write_auth_file(self.path, data, bool(self.db))
 
     def _read(self) -> dict[str, Any]:
         try:
@@ -143,41 +148,30 @@ class AuthStore:
         d["next_id"] += 1
         return f"{prefix}{d['next_id']}{secrets.token_hex(4)}"
 
-    async def bootstrap(self) -> None:  # noqa: C901, PLR0915
+    async def bootstrap(self) -> None:
         async with self.locked(True) as d:
-            if os.getenv("HUB_DEMO_USERS", "").lower() in ("1", "true", "yes", "on"):
-                shared = os.getenv("HUB_DEMO_PASSWORD") or None
-                if shared and policy(shared):
-                    shared = None
-                for email, name, role, default in _DEMO_USERS:
-                    password = shared or default
-                    u = next((x for x in d["users"] if x["email"] == email), None)
-                    if u is None:
-                        u = self._new_user(d, email, name, role, password, False)
-                        d["users"].append(u)
-                    else:
-                        u.update(name=name, password_hash=PH.hash(password), must_change_password=False)
+            if demo_users_enabled():
+                self._bootstrap_demo(d)
                 return
             if d["users"]:
                 return
             email = os.getenv("HUB_BOOTSTRAP_ADMIN_EMAIL", "admin@hub.local").strip().lower()
-            configured = os.getenv("HUB_BOOTSTRAP_ADMIN_PASSWORD")
-            generated = not configured
-            alphabet = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789-_.!@#%+="
-            password = configured or ""
-            while not configured and policy(password):
-                password = "".join(secrets.choice(alphabet) for _ in range(20))
-            if err := policy(password):
-                raise ValueError(f"HUB_BOOTSTRAP_ADMIN_PASSWORD: {err}")
+            password, generated = bootstrap_password()
             u = self._new_user(d, email, "Administrador", "Administrador", password, generated)
             d["users"].append(u)
             if generated:
-                f = self.path.parent / "bootstrap-admin.txt"
-                f.write_text(
-                    f"Administrador inicial da plataforma\nE-mail: {email}\nSenha: {password}\n\nTroque a senha no primeiro acesso.\n",
-                    encoding="utf-8",
-                )
-                f.chmod(0o600)
+                write_bootstrap_note(self.path.parent, email, password)
+
+    def _bootstrap_demo(self, d: dict[str, Any]) -> None:
+        shared = demo_shared_password()
+        for email, name, role, default in _DEMO_USERS:
+            password = shared or default
+            u = next((x for x in d["users"] if x["email"] == email), None)
+            if u is None:
+                u = self._new_user(d, email, name, role, password, False)
+                d["users"].append(u)
+            else:
+                u.update(name=name, password_hash=PH.hash(password), must_change_password=False)
 
     def _new_user(
         self, d: dict[str, Any], email: str, name: str, role: str, password: str, change: bool
@@ -336,7 +330,7 @@ class AuthStore:
             d["users"].append(user)
             return user.copy()
 
-    async def update_user(  # noqa: C901, PLR0915
+    async def update_user(
         self,
         user_id: str,
         *,
@@ -353,13 +347,7 @@ class AuthStore:
             if user is None:
                 raise LookupError("Usuário não encontrado.")
             _keep_one_admin(d["users"], user, roles, active)
-            if name is not None:
-                user["name"] = name.strip()
-            if roles is not None:
-                user["roles"] = roles
-            if active is not None:
-                user["active"] = active
-            user["updated_at"] = now_ms()
+            _apply_user_changes(user, name, roles, active)
             result = user.copy()
             if not user["active"]:
                 d["sessions"] = [s for s in d["sessions"] if s["user_id"] != user_id]

@@ -88,23 +88,10 @@ def _read_header(f: IO[bytes], deks: dict[str, bytes], aad: str) -> tuple[AESGCM
     return AESGCM(file_key), chunk_aad
 
 
-def _decrypt_chunks(f: IO[bytes], out: IO[bytes], gcm: AESGCM, chunk_aad: bytes) -> int:  # noqa: PLR0915
+def _decrypt_chunks(f: IO[bytes], out: IO[bytes], gcm: AESGCM, chunk_aad: bytes) -> int:
     total = counter = 0
     while True:
-        size = struct.unpack(">I", f.read(4))[0]
-        if size < 16 or size > CHUNK + 16:
-            raise ValueError("invalid chunk")
-        encrypted = f.read(size)
-        if len(encrypted) != size:
-            raise ValueError("truncated chunk")
-        nonce = bytes([0, 0, 0, 0]) + counter.to_bytes(8, "big")
-        try:
-            plain = gcm.decrypt(nonce, encrypted, chunk_aad)
-            last = False
-        except Exception:
-            nonce = bytes([1, 0, 0, 0]) + counter.to_bytes(8, "big")
-            plain = gcm.decrypt(nonce, encrypted, chunk_aad)
-            last = True
+        plain, last = _open_chunk(gcm, counter, _read_chunk(f), chunk_aad)
         out.write(plain)
         total += len(plain)
         if last:
@@ -112,3 +99,23 @@ def _decrypt_chunks(f: IO[bytes], out: IO[bytes], gcm: AESGCM, chunk_aad: bytes)
                 raise ValueError("trailing data")
             return total
         counter += 1
+
+
+def _read_chunk(f: IO[bytes]) -> bytes:
+    size = struct.unpack(">I", f.read(4))[0]
+    if size < 16 or size > CHUNK + 16:
+        raise ValueError("invalid chunk")
+    encrypted = f.read(size)
+    if len(encrypted) != size:
+        raise ValueError("truncated chunk")
+    return encrypted
+
+
+def _open_chunk(gcm: AESGCM, counter: int, encrypted: bytes, chunk_aad: bytes) -> tuple[bytes, bool]:
+    """(plaintext, is_last): the last chunk is the one that only opens with the final-chunk nonce flag."""
+    nonce = bytes([0, 0, 0, 0]) + counter.to_bytes(8, "big")
+    try:
+        return gcm.decrypt(nonce, encrypted, chunk_aad), False
+    except Exception:
+        nonce = bytes([1, 0, 0, 0]) + counter.to_bytes(8, "big")
+        return gcm.decrypt(nonce, encrypted, chunk_aad), True

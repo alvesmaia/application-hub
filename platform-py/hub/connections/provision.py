@@ -166,7 +166,58 @@ async def _recheck(
     }
 
 
-async def provision(  # noqa: PLR0915
+async def _refuse_unmanaged(store: ObjectStore, name: str, existing: dict[str, Any] | None) -> None:
+    if existing is not None:
+        raise ConnError(
+            f"Já existe uma conexão {name} que não foi provisionada pelo hub: renomeie ou exclua-a antes.",
+            409,
+        )
+    if await store.bucket_exists(name):
+        raise ConnError(f"O bucket {name} já existe e não foi provisionado pelo hub: recusado.", 409)
+
+
+async def _create(
+    conns: ConnStore,
+    store: ObjectStore,
+    app: str,
+    env: str,
+    secret: str,
+    who: str,
+    broker_url: str,
+    done: list[str],
+) -> dict[str, Any]:
+    """Bucket + user + connection; `done` records each step for the caller's rollback."""
+    name = names(app, env)
+    await store.ensure(name, name, secret)
+    await conns.create(
+        {
+            "name": name,
+            "kind": "s3",
+            "description": f"Provisionado pelo hub para {app} ({env}) — bucket e usuário próprios",
+            "endpoint": store.endpoint,
+            "bucket": name,
+            "region": "us-east-1",
+            "access_key": name,
+            "secret": secret,
+            "bindings": [{"app": app, "env": env}],
+        }
+    )
+    done.append("connection")
+    await conns.sync_env(who, broker_url)
+    rec = {
+        "app": app,
+        "env": env,
+        "bucket": name,
+        "user": name,
+        "connection": name,
+        "created_at": int(time.time() * 1000),
+        "created_by": who,
+    }
+    await conns.storage_update(lambda s: [*(p for p in s if not (p["app"] == app and p["env"] == env)), rec])
+    return rec
+
+
+async def provision(
     conns: ConnStore, store: ObjectStore, app: str, env: str, who: str, broker_url: str
 ) -> tuple[int, dict[str, Any]]:
     if app not in conns.apps:
@@ -178,46 +229,13 @@ async def provision(  # noqa: PLR0915
     rec = next((p for p in conns.storage if p["app"] == app and p["env"] == env), None)
     if rec:
         return await _recheck(conns, store, rec, existing, who, broker_url)
-    if existing is not None:
-        raise ConnError(
-            f"Já existe uma conexão {name} que não foi provisionada pelo hub: renomeie ou exclua-a antes.",
-            409,
-        )
-    if await store.bucket_exists(name):
-        raise ConnError(f"O bucket {name} já existe e não foi provisionado pelo hub: recusado.", 409)
+    await _refuse_unmanaged(store, name, existing)
     secret = secrets.token_hex(24)
     # The script may create the bucket and the user before failing: both go into the rollback (the bucket does not exist here;
     # a user that already existed is never touched).
     done = ["bucket"] + ([] if await store.user_exists(name) else ["user"])
     try:
-        await store.ensure(name, name, secret)
-        await conns.create(
-            {
-                "name": name,
-                "kind": "s3",
-                "description": f"Provisionado pelo hub para {app} ({env}) — bucket e usuário próprios",
-                "endpoint": store.endpoint,
-                "bucket": name,
-                "region": "us-east-1",
-                "access_key": name,
-                "secret": secret,
-                "bindings": [{"app": app, "env": env}],
-            }
-        )
-        done.append("connection")
-        await conns.sync_env(who, broker_url)
-        rec = {
-            "app": app,
-            "env": env,
-            "bucket": name,
-            "user": name,
-            "connection": name,
-            "created_at": int(time.time() * 1000),
-            "created_by": who,
-        }
-        await conns.storage_update(
-            lambda s: [*(p for p in s if not (p["app"] == app and p["env"] == env)), rec]
-        )
+        rec = await _create(conns, store, app, env, secret, who, broker_url, done)
     except (ConnError, StorageError) as e:
         notes = await _undo(conns, store, name, done, who, broker_url)
         raise ConnError(f"{e} · {' · '.join(notes)}" if notes else str(e), getattr(e, "status", 502)) from e
@@ -247,7 +265,7 @@ async def _undo(
     return notes
 
 
-async def deprovision(  # noqa: C901, PLR0915
+async def deprovision(
     conns: ConnStore,
     store: ObjectStore,
     app: str,
@@ -265,22 +283,44 @@ async def deprovision(  # noqa: C901, PLR0915
     if reason := store.available():
         raise ConnError(reason, 503)
     conn = conns.get(rec["connection"])
-    has_objects = False
-    if conn is not None:
-        try:
-            has_objects = bool(await cast(Any, conns.backend(conn)).ls(""))  # type: ignore[arg-type]
-        except StorageError as e:
-            raise ConnError(f"Object store: {e.message}", 502) from e
+    has_objects = conn is not None and await _has_objects(conns, conn)
     if has_objects:
-        if not body.get("force"):
-            raise ConnError(
-                f"O bucket {rec['bucket']} tem objetos: esvazie-o ou confirme a remoção com force e sua senha.",
-                409,
-            )
-        if err := await step_up(str(body.get("password", ""))):
-            raise ConnError(err, 403)
+        await _confirm_force(rec, body, step_up)
+    steps = await _remove(conns, store, rec, conn is not None, has_objects, who, broker_url)
+    await conns.storage_update(lambda s: [p for p in s if not (p["app"] == app and p["env"] == env)])
+    return {"removed": True, "steps": steps}
+
+
+async def _has_objects(conns: ConnStore, conn: dict[str, Any]) -> bool:
+    try:
+        return bool(await cast(Any, conns.backend(conn)).ls(""))  # type: ignore[arg-type]
+    except StorageError as e:
+        raise ConnError(f"Object store: {e.message}", 502) from e
+
+
+async def _confirm_force(
+    rec: dict[str, Any], body: dict[str, Any], step_up: Callable[[str], Awaitable[str | None]]
+) -> None:
+    if not body.get("force"):
+        raise ConnError(
+            f"O bucket {rec['bucket']} tem objetos: esvazie-o ou confirme a remoção com force e sua senha.",
+            409,
+        )
+    if err := await step_up(str(body.get("password", ""))):
+        raise ConnError(err, 403)
+
+
+async def _remove(
+    conns: ConnStore,
+    store: ObjectStore,
+    rec: dict[str, Any],
+    has_conn: bool,
+    has_objects: bool,
+    who: str,
+    broker_url: str,
+) -> list[str]:
     steps: list[str] = []
-    if conn is not None:
+    if has_conn:
         await conns.delete(rec["connection"])
         await conns.sync_env(who, broker_url)
         steps.append(f"conexão {rec['connection']} excluída")
@@ -290,5 +330,4 @@ async def deprovision(  # noqa: C901, PLR0915
     steps.append(
         f"bucket {rec['bucket']} apagado{' com os objetos (force + senha)' if has_objects else ' (vazio)'}"
     )
-    await conns.storage_update(lambda s: [p for p in s if not (p["app"] == app and p["env"] == env)])
-    return {"removed": True, "steps": steps}
+    return steps
