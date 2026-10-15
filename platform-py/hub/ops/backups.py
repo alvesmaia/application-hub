@@ -355,7 +355,7 @@ class Backups(BackupOffsite):
         """Staging's own database, refused when missing, not created yet or shared with production."""
         sdb, _b = parse_targets(await self.app_env(app, "staging"))
         if not sdb:
-            raise OpsError("Staging sem banco próprio: provisione o banco de staging (Variáveis › Banco próprio de staging) antes de clonar.")  # fmt: skip
+            raise OpsError("Staging sem banco próprio: provisione o banco de staging (Containers › detalhes do app › Banco próprio de staging) antes de clonar.")  # fmt: skip
         if sdb in {parse_targets(await self.app_env(app, "producao"))[0], *SYSTEM_DBS}:
             raise OpsError("O banco de staging não pode ser o de produção.")
         owner = (

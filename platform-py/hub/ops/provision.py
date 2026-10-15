@@ -125,10 +125,16 @@ async def provision(b: Backups, cfg: Any, actor: str, app: str, env: str) -> dic
 async def rotate(b: Backups, cfg: Any, actor: str, app: str, env: str = "producao") -> str:
     name, var = db_name(app, env), variable(app, env)
     if not any(v["name"] == var and v.get("managed") for v in (await cfg.read())["env"]):
-        raise OpsError("banco não provisionado pela plataforma: use Provisionar banco", 409)
+        raise OpsError(
+            "banco não provisionado pela plataforma: use Provisionar banco em Containers › detalhes do app",
+            409,
+        )
     role_c, _, _ = await _state(b, name)
     if role_c != marker(app, env):
-        raise OpsError(f"o papel {name} não existe (ou não é do hub): use Provisionar banco", 409)
+        raise OpsError(
+            f"o papel {name} não existe (ou não é do hub): use Provisionar banco em Containers › detalhes do app",
+            409,
+        )
     pw = secrets.token_hex(24)
     await b._psql("postgres", f"ALTER ROLE {_qi(name)} WITH PASSWORD {_lit(pw)}")
     await cfg.rotate_managed(

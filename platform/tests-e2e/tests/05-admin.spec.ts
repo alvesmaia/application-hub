@@ -45,10 +45,11 @@ test('variáveis: criar, segredo nunca revelável, rotacionar e aplicar', async 
   await expect(page.locator('tr[data-item]').filter({ hasText: VAR_PUB })).toBeVisible();
   await expect(page.locator('tr[data-item] [data-env-unbound]')).toHaveCount(0);
   await expect(page.locator('tr[data-item]').filter({ hasText: VAR_PUB }).locator('[data-env-app-chip="fornecedores"]')).toBeVisible();
-  // Rotate the suppliers' internal token (API; the per-application cards left this page) → restart pending → Apply (blue/green).
-  const rot = await page.request.post('/api/ops/rotate/fornecedores/token', { data: {}, headers: { origin: HUB } });
-  expect(rot.status(), await rot.text()).toBe(200);
-  await page.goto('/admin/env');
+  // Rotate the suppliers' internal token (Containers › app details) → restart pending → Apply (blue/green).
+  await page.goto('/admin/runtime');
+  await page.click('tr[data-ops-row="fornecedores|producao"]');
+  await page.locator('[data-ops-detail="fornecedores|producao"] [data-ops-rotate="fornecedores|token"]').click();
+  await expect(toast(page)).toContainText('rotacionada');
   const apply = page.locator('[data-ops-apply="fornecedores"]').first();
   await expect(apply).toBeVisible();
   await apply.click();

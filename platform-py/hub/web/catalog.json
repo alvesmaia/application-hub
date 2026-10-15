@@ -1260,10 +1260,6 @@
 "Contract"
 ],
 [
-"Contrato de variáveis de staging: {} vale em produção e em staging. Staging nunca recebe credenciais de banco de produção — tire o vínculo de staging e provisione o banco de staging (Containers → “Banco próprio de staging”).",
-"Staging variables contract: {} applies in production and in staging. Staging never receives production database credentials — remove the staging binding and provision the staging database (Containers → “Own staging database”)."
-],
-[
 "Contrato para desenvolver, empacotar e publicar aplicações no hub.",
 "Contract to develop, package and publish applications on the hub."
 ],
@@ -4108,10 +4104,6 @@
 "Staging not found for this application."
 ],
 [
-"Staging sem banco próprio: provisione o banco de staging (Containers → “Banco próprio de staging”) antes de implantar em staging. O staging nunca recebe a credencial do banco de produção.",
-"Staging without its own database: provision the staging database (Containers → “Own staging database”) before deploying to staging. Staging never receives the production database credential."
-],
-[
 "Status",
 "Status"
 ],
@@ -4988,10 +4980,6 @@
 "database not cloned: staging has no own database"
 ],
 [
-"banco não provisionado pela plataforma: use Provisionar banco",
-"database not provisioned by the platform: use Provision database"
-],
-[
 "banco protegido no manifesto: {}",
 "protected database in the manifest: {}"
 ],
@@ -5794,10 +5782,6 @@
 [
 "o papel {name} já existe e não foi criado pelo hub: recusado",
 "role {name} already exists and was not created by the hub: refused"
-],
-[
-"o papel {name} não existe: use Provisionar banco",
-"role {name} does not exist: use Provision database"
 ],
 [
 "o papel {role} já existe e não é o papel de backup do hub: recusado",
@@ -7520,10 +7504,6 @@
 "Database password rotation is unavailable in this hub."
 ],
 [
-"Staging sem banco próprio: provisione o banco de staging (Variáveis › Banco próprio de staging) antes de clonar.",
-"Staging without its own database: provision the staging database (Variables › Own staging database) before cloning."
-],
-[
 "Só o Administrador altera funções e permissões.",
 "Only the Administrator changes roles and permissions."
 ],
@@ -7838,5 +7818,49 @@
 [
 "Nenhuma variável cadastrada.",
 "No variables yet."
+],
+[
+"Verificar banco",
+"Check database"
+],
+[
+"Provisionar banco",
+"Provision database"
+],
+[
+"Banco próprio de staging",
+"Own staging database"
+],
+[
+"Rotacionar senha do banco",
+"Rotate database password"
+],
+[
+"Banco app_<id>_staging, variável só de staging",
+"Database app_<id>_staging, staging-only variable"
+],
+[
+"Banco app_",
+"Database app_"
+],
+[
+"banco não provisionado pela plataforma: use Provisionar banco em Containers › detalhes do app",
+"database not provisioned by the platform: use Provision database in Containers › app details"
+],
+[
+"o papel {name} não existe (ou não é do hub): use Provisionar banco em Containers › detalhes do app",
+"role {name} does not exist (or is not the hub's): use Provision database in Containers › app details"
+],
+[
+"Staging sem banco próprio: provisione o banco de staging (Containers › detalhes do app › Banco próprio de staging) antes de clonar.",
+"Staging without its own database: provision the staging database (Containers › app details › Own staging database) before cloning."
+],
+[
+"Staging sem banco próprio: provisione o banco de staging (Containers › detalhes do app › Banco próprio de staging) antes de implantar em staging.",
+"Staging without its own database: provision the staging database (Containers › app details › Own staging database) before deploying to staging."
+],
+[
+"Contrato de variáveis de staging: {} vale em produção e em staging. Staging nunca recebe credenciais de banco de produção — tire o vínculo de staging e provisione o banco de staging (Containers › detalhes do app › Banco próprio de staging).",
+"Staging variables contract: {} applies in production and in staging. Staging never receives production database credentials — remove the staging binding and provision the staging database (Containers › app details › Own staging database)."
 ]
 ]

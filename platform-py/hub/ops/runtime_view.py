@@ -76,6 +76,11 @@ def _bound_vars(raw: list[Row], r: Row) -> str:
     return json.dumps(dict(sorted(vars_.items())), indent=2, ensure_ascii=False)
 
 
+def _has_db(raw: list[Row], app: str) -> bool:
+    """The app already has a database variable (any environment): "Check database" and password rotation."""
+    return any(injected_name(v) == "HUB_DB_URL" and any(b["app"] == app for b in v["bindings"]) for v in raw)
+
+
 def _usage(lv: Row | None, r: Row) -> tuple[str, str, float | None, float]:
     mem_mib = r["memory_bytes"] / MIB
     cpu = f"{br(lv['cpu_used'], 2) if lv and lv['cpu_used'] is not None else '—'} / {br(r['cpu'], 2)} vCPU"
@@ -106,6 +111,7 @@ def container_view(r: Row, lv: Row | None, raw: list[Row], reachable: bool) -> R
         "limits": json.dumps({"app": r["id"], "name": r["name"], "cpu": r["cpu"], "memory": r["memory"], "pids": r["pids"]}),
         "pending": r["restart_pending"], "alert": alert, "facts": facts,
         "vars_json": _bound_vars(raw, r), "staging_href": f"/hub-env?to=staging&next=/apps/{r['id']}",
+        "has_db": _has_db(raw, r["id"]),
     }  # fmt: skip
 
 
