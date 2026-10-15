@@ -12,7 +12,7 @@ from fastapi.templating import Jinja2Templates
 from hub import devmode, gate, middleware, routes_login, routes_me, routes_static
 from hub.admin.routes import mount_admin
 from hub.admin.store import AdminStore
-from hub.api.config import load_cfg
+from hub.api.config import HubCfg, load_cfg
 from hub.api.cors import Cors
 from hub.api.mcp import mount_mcp
 from hub.api.oauth import OAuth, mount_oauth
@@ -46,7 +46,7 @@ from hub.webctx import initials as initials
 _WEB = Path(__file__).parent / "web"
 
 
-def create_app(settings: Settings | None = None, gateway: Gateway | None = None) -> FastAPI:  # noqa: PLR0915
+def create_app(settings: Settings | None = None, gateway: Gateway | None = None) -> FastAPI:
     devmode.startup_check()
     settings = settings or load_settings()
     apicfg = load_cfg(settings.config)
@@ -61,6 +61,23 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
     srch.token_source = lambda app_id: admin.tokens.get(app_id)
 
     app = FastAPI(title=settings.brand, docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
+    _init_state(app, apicfg, auth_store, admin, conns, broker_addr, gateway, data_dir)
+    w = _shell(
+        app, settings, gateway, auth_store, Insight(data_dir, vault, admin, gateway.registry, app.state.ux)
+    )
+    w.load_sso(settings.config, vault)
+    for r in (routes_static.router, routes_login.router, routes_me.router):
+        app.include_router(r)
+    _mount_sections(app, w, conns, admin)
+    app.add_middleware(Cors, mcp_path=apicfg.mcp.path)
+    return app
+
+
+def _init_state(
+    app: FastAPI, apicfg: HubCfg, auth_store: AuthStore, admin: AdminStore, conns: ConnStore, broker_addr: str,
+    gateway: Gateway, data_dir: Path,
+) -> None:  # fmt: skip
+    """Shared stores on `app.state` (before the shell, which reads them)."""
     app.state.admin, app.state.conns, app.state.broker_enabled = (
         admin,
         conns,
@@ -76,15 +93,6 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
     app.state.gateway, app.state.data_dir = gateway, data_dir
     app.state.ux = UxStore(data_dir / "ux.json")
     app.state.inbox = InboxStore(data_dir / "inbox.json")
-    w = _shell(
-        app, settings, gateway, auth_store, Insight(data_dir, vault, admin, gateway.registry, app.state.ux)
-    )
-    w.load_sso(settings.config, vault)
-    for r in (routes_static.router, routes_login.router, routes_me.router):
-        app.include_router(r)
-    _mount_sections(app, w, conns, admin)
-    app.add_middleware(Cors, mcp_path=apicfg.mcp.path)
-    return app
 
 
 def _shell(

@@ -38,17 +38,12 @@ _SAFE = ("GET", "HEAD", "OPTIONS")
 Principal = tuple[dict[str, Any] | None, dict[str, Any] | None]
 
 
-async def authentication(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:  # noqa: C901
+async def authentication(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     path, method = request.url.path, request.method
     request.state.lang = resolve("", request.headers.get("accept-language"))
     request.state.theme = "light"
-    mcp = request.app.state.apicfg.mcp
-    if machine_public(path, mcp.path):  # discovery/token/register: no session
-        if not control_allowed(request, mcp.public_network, mcp.path):
-            return Response("Acesso negado: origem não permitida.", status_code=403)
-        return await call_next(request)
-    if path == "/login" or path.startswith(("/auth/entra/",)) or path.startswith(_PUBLIC_PREFIXES):
-        return await call_next(request)
+    if (public := await _public(request, call_next, path)) is not None:
+        return public
     facade = request.scope.get("hub_facade")  # in-process call from API v1/MCP (already authorized)
     authz = request.headers.get("authorization", "")
     got = await _identify(request, facade, authz)
@@ -65,6 +60,20 @@ async def authentication(request: Request, call_next: Callable[[Request], Awaita
     if _denied(path, method, token, perms, apps):
         return _forbidden(request, path)
     return await _proceed(request, call_next, user, path, facade)
+
+
+async def _public(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]], path: str
+) -> Response | None:
+    """Routes answered without a session; `None` = not public, go on authenticating."""
+    mcp = request.app.state.apicfg.mcp
+    if machine_public(path, mcp.path):  # discovery/token/register: no session
+        if not control_allowed(request, mcp.public_network, mcp.path):
+            return Response("Acesso negado: origem não permitida.", status_code=403)
+        return await call_next(request)
+    if path == "/login" or path.startswith(("/auth/entra/",)) or path.startswith(_PUBLIC_PREFIXES):
+        return await call_next(request)
+    return None
 
 
 async def _proceed(

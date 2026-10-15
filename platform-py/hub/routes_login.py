@@ -60,7 +60,7 @@ async def entra_login(request: Request, next: str = "/", w: WebCtx = Depends(web
 
 
 @router.get("/auth/entra/callback")
-async def entra_callback(request: Request, w: WebCtx = Depends(web)) -> Response:  # noqa: PLR0915
+async def entra_callback(request: Request, w: WebCtx = Depends(web)) -> Response:
     if not (sso := w.sso):
         return RedirectResponse("/login", status_code=303)
     try:
@@ -79,11 +79,23 @@ async def entra_callback(request: Request, w: WebCtx = Depends(web)) -> Response
             str(e) if isinstance(e, entra.SsoError) else "Não foi possível concluir o login com a Microsoft."
         )
     if user is None:
-        if admin_store:
-            await admin_store.audit("SSO", "Login SSO recusado", f"{error} · via {ip}", icon="users")
-        resp = w.login_page(request, next_url, error, status=401)
-        resp.delete_cookie(SSO_COOKIE, path="/auth/entra/")
-        return resp
+        return await _sso_refused(request, w, admin_store, ip, error, next_url)
+    return await _sso_signed_in(request, w, admin_store, ip, user, next_url)
+
+
+async def _sso_refused(
+    request: Request, w: WebCtx, admin_store: Any, ip: str, error: str, next_url: str
+) -> Response:
+    if admin_store:
+        await admin_store.audit("SSO", "Login SSO recusado", f"{error} · via {ip}", icon="users")
+    resp = w.login_page(request, next_url, error, status=401)
+    resp.delete_cookie(SSO_COOKIE, path="/auth/entra/")
+    return resp
+
+
+async def _sso_signed_in(
+    request: Request, w: WebCtx, admin_store: Any, ip: str, user: dict[str, Any], next_url: str
+) -> Response:
     if admin_store:
         await admin_store.audit(
             user["name"], "Acesso à plataforma", f"Login SSO (Entra ID) via {ip}", icon="users"
@@ -96,10 +108,8 @@ async def entra_callback(request: Request, w: WebCtx = Depends(web)) -> Response
     return resp
 
 
-async def _sso_user(  # noqa: PLR0915
-    request: Request, w: WebCtx, sso: entra.EntraConfig, pending: dict[str, Any], admin_store: Any
-) -> dict[str, Any]:
-    """Validates the Entra ID answer and returns the hub user (created on first login); `SsoError` says why not."""
+async def _sso_claims(request: Request, sso: entra.EntraConfig, pending: dict[str, Any]) -> dict[str, Any]:
+    """Checks the answer (error, state) and exchanges the code for validated ID token claims."""
     q = request.query_params
     if q.get("error"):
         raise entra.SsoError("O Microsoft Entra ID recusou o login.")
@@ -107,7 +117,10 @@ async def _sso_user(  # noqa: PLR0915
     if not state or not secrets.compare_digest(state, str(pending.get("state", ""))):
         raise entra.SsoError("Sessão de login expirada; tente de novo.")
     id_token = await sso.exchange(q.get("code", ""), str(pending["verifier"]), sso_redirect_uri(request))
-    claims = await sso.validate(id_token, str(pending.get("nonce", "")))
+    return await sso.validate(id_token, str(pending.get("nonce", "")))
+
+
+def _sso_email(sso: entra.EntraConfig, claims: dict[str, Any]) -> str:
     raw_email = str(claims.get("email") or claims.get("preferred_username") or "")
     try:
         email = normalize_email(raw_email)
@@ -115,6 +128,15 @@ async def _sso_user(  # noqa: PLR0915
         raise entra.SsoError("A conta Microsoft não informou um e-mail válido.") from e
     if not sso.domain_ok(email):
         raise entra.SsoError("Este domínio de e-mail não tem acesso à plataforma.")
+    return email
+
+
+async def _sso_user(
+    request: Request, w: WebCtx, sso: entra.EntraConfig, pending: dict[str, Any], admin_store: Any
+) -> dict[str, Any]:
+    """Validates the Entra ID answer and returns the hub user (created on first login); `SsoError` says why not."""
+    claims = await _sso_claims(request, sso, pending)
+    email = _sso_email(sso, claims)
     user, created = await w.auth_store.sso_login(
         str(claims["tid"]),
         str(claims.get("oid") or claims["sub"]),
@@ -143,7 +165,7 @@ def _cross_site(request: Request) -> bool:
 
 
 @router.post("/login")
-async def login_post(request: Request, w: WebCtx = Depends(web)) -> Response:  # noqa: PLR0915
+async def login_post(request: Request, w: WebCtx = Depends(web)) -> Response:
     form = parse_qs((await request.body()).decode("utf-8", "replace"))
     try:
         login = LoginInput.model_validate(
@@ -155,6 +177,11 @@ async def login_post(request: Request, w: WebCtx = Depends(web)) -> Response:  #
     next_url = form.get("next", ["/"])[0]
     if _cross_site(request):
         return Response("Requisição bloqueada.", status_code=403)
+    return await _check_password(request, w, email, password, next_url)
+
+
+async def _check_password(request: Request, w: WebCtx, email: str, password: str, next_url: str) -> Response:
+    """Rate limit (per account and per IP) before the password check; only failures count."""
     ip = client_ip(request)
     limits = (positive_env("HUB_LOGIN_RATE_ACCOUNT", 5, 1000), positive_env("HUB_LOGIN_RATE_IP", 30, 10_000))
     buckets = (f"acct:{ip}|{email}", f"ip:{ip}")
