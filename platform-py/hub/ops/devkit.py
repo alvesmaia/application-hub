@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from fastapi import APIRouter, FastAPI, Request
-from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, RedirectResponse, Response
 
 from hub.ops import devdocs
 from hub.ux.texts import tr
@@ -48,7 +48,7 @@ def docs() -> dict[str, Path]:
     agents = root / "docs" / "AGENTS-app.md"
     if not agents.is_file():
         agents = _REPO / "platform-py" / "cli" / "hub_cli" / "templates" / "python-fastapi" / "AGENTS.md"
-    return {"agents": agents, "contrato": root / "docs" / "CONTRATO-APP.md"}
+    return {"AGENTS-app": agents, "contrato": root / "docs" / "CONTRATO-APP.md"}
 
 
 def wheels() -> list[Path]:
@@ -108,8 +108,16 @@ async def wheel_file(name: str) -> Response:
     return FileResponse(match, media_type="application/octet-stream", filename=match.name)
 
 
+RENAMED_DOCS = {
+    "agente": "AGENTS",
+    "agents": "AGENTS-app",
+}  # old names: prompts and links already copied elsewhere
+
+
 @router.get("/dev/docs/{doc}.md")
 async def doc_file(request: Request, doc: str) -> Response:
+    if doc in RENAMED_DOCS:
+        return RedirectResponse(f"/dev/docs/{RENAMED_DOCS[doc]}.md", status_code=308)
     p = docs().get(doc)
     if p is not None and p.is_file():
         text: str | None = p.read_text(encoding="utf-8")

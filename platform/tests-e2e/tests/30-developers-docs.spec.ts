@@ -128,7 +128,7 @@ test.describe('documentação pública (sem sessão)', () => {
     await page.locator('[data-hub-copy-prompt-button]').click();
     await expect(page.locator('[data-hub-copy-prompt-button]')).toContainText('Prompt copiado');
     expect((await copied(page))[0]).toMatch(/\/dev\/docs\/agente\.md/);
-    const md = await page.request.get('/dev/docs/agente.md');
+    const md = await page.request.get('/dev/docs/AGENTS.md');
     expect(md.status()).toBe(200);
     expect(md.headers()['content-type']).toContain('text/markdown');
     expect(await md.text()).toContain('hub project create <id-do-app> --stack python-fastapi --yes --json');

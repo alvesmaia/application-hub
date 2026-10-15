@@ -31,7 +31,8 @@ def test_simple_index_is_public(hub: TestClient) -> None:
     assert anon.get("/dev/cli/simple/nada/").status_code == 404
     assert anon.get("/dev/cli/files/hub_cli-0.2.0-py3-none-any.whl").content == b"PK-cli"
     assert anon.get("/dev/cli/files/outro.txt").status_code == 404
-    r = anon.get("/dev/docs/agente.md")
+    r = anon.get("/dev/docs/AGENTS.md")
+    assert r.status_code == 200 and r.text.startswith("# Instructions for agents")
     assert r.status_code == 200 and r.headers["content-type"].startswith("text/markdown")
     assert "hub project create <id-do-app> --stack python-fastapi --yes --json" in r.text
     assert "http://testserver/dev/cli/simple/" in r.text and devdocs.HUB_MARK not in r.text
@@ -48,7 +49,7 @@ def test_docs_are_public_without_shell(hub: TestClient) -> None:
         and "data-hub-palette" not in page.text
         and "Ver em Markdown</a></div>" not in page.text
     )
-    assert "http://testserver/dev/docs/agente.md" in page.text
+    assert "http://testserver/dev/docs/AGENTS.md" in page.text
     assert anon.get("/developers/agente").status_code == 200
     llms = anon.get("/llms.txt")  # index for agents, public like the pages
     assert llms.status_code == 200 and "http://testserver/dev/docs/guia-tempo-real.md" in llms.text
@@ -65,7 +66,7 @@ def test_docs_are_public_without_shell(hub: TestClient) -> None:
 def test_docs_private_when_disabled(hub: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("HUB_PUBLIC_DOCS", "0")
     anon = TestClient(hub.app)
-    for url in ("/developers", "/developers/cli", "/dev/docs/agente.md"):
+    for url in ("/developers", "/developers/cli", "/dev/docs/AGENTS.md"):
         r = anon.get(url, follow_redirects=False)
         assert r.status_code == 303 and r.headers["location"].startswith("/login"), url
     assert anon.get("/dev/cli/simple/").status_code == 200
@@ -90,10 +91,14 @@ def test_developers_page_and_docs(hub: TestClient) -> None:
     assert "hub-cli 0.2.0" not in r.text and "python-fastapi" in r.text
     assert (
         "data-hub-copy-prompt" in r.text
-        and "Siga as instruções em http://testserver/dev/docs/agente.md" in r.text
+        and "Siga as instruções em http://testserver/dev/docs/AGENTS.md" in r.text
     )
     assert "staging" in r.text and 'aria-current="page"' in r.text
-    assert hub.get("/dev/docs/agents.md").text.startswith("# AGENTS.md")
+    assert hub.get("/dev/docs/AGENTS-app.md").text.startswith("# AGENTS.md")
+    # old names keep working: links and prompts already copied elsewhere
+    for old, new in (("agente", "AGENTS"), ("agents", "AGENTS-app")):
+        r = hub.get(f"/dev/docs/{old}.md", follow_redirects=False)
+        assert r.status_code == 308 and r.headers["location"] == f"/dev/docs/{new}.md", old
     assert hub.get("/dev/docs/nada.md").status_code == 404
     raw = hub.get("/dev/docs/comecar.md").text
     assert "http://testserver/dev/cli/simple/" in raw and devdocs.HUB_MARK not in raw

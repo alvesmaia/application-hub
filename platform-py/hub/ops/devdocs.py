@@ -61,7 +61,7 @@ GUIDES = (
 )
 DOCS = (
     Doc("", "comecar", "Começar", "dev/comecar.md", "comecar"),
-    Doc("agente", "comecar", "Instruções para agentes", "dev/agente.md", "agente"),
+    Doc("agente", "comecar", "Instruções para agentes", "dev/AGENTS.md", "AGENTS"),
     Doc("cli", "cli", "CLI", "dev/cli.md", "cli", split=True),
     Doc("sdk", "sdk", "SDK", "dev/sdk.md", "sdk", split=True),
     *GUIDES,
@@ -367,8 +367,8 @@ AGENTS = (("claude", "Claude Code"), ("codex", "OpenAI Codex"), ("copilot", "Git
           ("cursor", "Cursor"), ("opencode", "OpenCode"))  # fmt: skip
 
 _PROMPTS = {
-    "pt-BR": "Siga as instruções em {base}/dev/docs/agente.md para criar e publicar um app neste Application Hub.",
-    "en": "Follow the instructions at {base}/dev/docs/agente.md to create and publish an app on this Application Hub.",
+    "pt-BR": "Siga as instruções em {base}/dev/docs/AGENTS.md para criar e publicar um app neste Application Hub.",
+    "en": "Follow the instructions at {base}/dev/docs/AGENTS.md to create and publish an app on this Application Hub.",
 }
 
 

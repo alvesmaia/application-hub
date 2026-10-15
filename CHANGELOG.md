@@ -7,6 +7,10 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Changed
+- Developer docs: the agent instructions (and the copy-prompt button) are served at `/dev/docs/AGENTS.md`, the app
+  rules at `/dev/docs/AGENTS-app.md`; the old `agente.md`/`agents.md` answer 308.
+
 ### Added
 - GitHub icon in the global header (new tab, pt-BR/en label) pointing to `HUB_SOURCE_URL` (default
   `https://github.com/alvesmaia/application-hub`; empty or non-`https://` hides it).
