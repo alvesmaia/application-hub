@@ -31,6 +31,7 @@ and over **MCP** for AI assistants (`/mcp`, same access control as the UI).
 | Item | Status | Notes |
 |---|---|---|
 | Multiple servers under one hub (the hub manages Docker hosts on several servers and places/moves apps across them) | Idea | Scale by adding servers instead of hub replicas. Today one hub drives the Docker of its own host; one container serves ≈ 200 concurrent users |
+| Developer docs (`/developers`) in both languages: one English and one Portuguese version, following the UI language | Planned | Today the guides are English only, while the page chrome follows the visitor's language (pt-BR by default) and the SDK reference titles are fixed in Portuguese (`hub/ops/devdocs.py`) |
 | ODBC in the SQL broker | Idea | Only with a specific database driver (Oracle, DB2…) in the image; Postgres, MySQL and SQL Server are native |
 | Human approval of agent actions in the Inbox | Idea | Today destructive actions are confirmed by the AI client (`confirm_token`) |
 | English i18n keys and English ids for the sample apps | Idea | Code, comments and docs are already English; these touch every UI string and require data migration |

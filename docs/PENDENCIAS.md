@@ -32,6 +32,10 @@ native task list.
   history and the Rust stack) was archived as `alvesmaia/application-hub-py`.
 - Load: measured on 13/10/2026 (1 container = 200 users; table in `docs/IMPLANTACAO.md`). Hub replicas in compose and
   `uvicorn --workers` are not pursued (decided 15/10/2026).
+- **Developer docs in both languages:** `/developers` needs one English and one Portuguese version of the guides
+  (`platform/docs/dev/`), chosen by the UI language. Today the guides are English only (since 14/10/2026), the page
+  chrome follows the visitor's language (pt-BR by default) and the SDK reference titles are fixed in Portuguese
+  (`hub/ops/devdocs.py`), so the page mixes both.
 
 ## Future ideas
 

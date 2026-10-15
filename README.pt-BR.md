@@ -30,6 +30,7 @@ Portal corporativo único (white label) que hospeda várias aplicações interna
 | Item | Status | Observação |
 |---|---|---|
 | Vários servidores sob um único hub (o hub gerencia o Docker de vários servidores e sobe/move os apps entre eles) | Ideia | Escalar com mais servidores em vez de réplicas do hub. Hoje um hub comanda o Docker do próprio servidor; um contêiner atende ≈ 200 usuários simultâneos |
+| Documentação para desenvolvedores (`/developers`) nos dois idiomas: uma versão em inglês e outra em português, seguindo o idioma da tela | Planejado | Hoje os guias estão só em inglês, a moldura da página segue o idioma do visitante (pt-BR por padrão) e os títulos da referência do SDK estão fixos em português (`hub/ops/devdocs.py`) |
 | ODBC no broker SQL | Ideia | Só com o driver de um banco específico (Oracle, DB2…) na imagem; Postgres, MySQL e SQL Server já são nativos |
 | Aprovação humana de ação de agente na Inbox | Ideia | Hoje a confirmação de ações destrutivas fica com o cliente de IA (`confirm_token`) |
 | Chaves do i18n e ids dos apps de exemplo em inglês | Ideia | Código, comentários e docs já estão em inglês; isso mexe em todo texto de tela e exige migração de dados |
