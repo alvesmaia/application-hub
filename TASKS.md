@@ -44,10 +44,13 @@
 ## Closing
 - ▶️ 9 · Size baseline already empty (no code file > 500 lines). Tighten limits (20 statements, complexity 8), empty baseline, heavy validation, CHANGELOG
   - ✅ limits tightened (complexity 8, 20 statements, 3 nested blocks); 105 noqa marked
-  - ▶️ agent G: hub ops, admin, gateway, ux, scripts (29)
-  - ▶️ agent H1: hub api, insight, app/gate/lifespan/routes_login (24)
-  - ▶️ agent H2: hub connections, auth, vault, storage, graphsim (18)
-  - ▶️ agent I: SDK + CLI (15)
-  - ▶️ agent J: sample apps (18)
-  - ⬜ heavy validation: full E2E, DR, chaos, SDK DB tests
+  - ✅ agent G: hub ops, admin, gateway, ux, scripts (29)
+  - ✅ agent H1: hub api, insight, app/gate/lifespan/routes_login (24)
+  - ✅ agent H2: hub connections, auth, vault, storage, graphsim (18)
+  - ✅ agent I: SDK + CLI (15)
+  - ✅ agent J: sample apps (18)
+  - ✅ PLR1702 enforced via explicit preview; 12 nested-block cases refactored (agent K)
+  - ✅ bug fixed: auth.json written outside the cross-replica lock (lost update with several replicas)
+  - ✅ zero size noqa in the repo; hub-check --all 30/30
+  - ▶️ heavy validation: full E2E, DR, chaos, SDK DB tests
   - ⬜ CHANGELOG + PENDENCIAS; deploy to the owner instance (hub_update)
