@@ -295,19 +295,16 @@ class ImportHandler:
         """Writes the valid rows of the batch (``COPY``); returns (written, extra errors, COPY failed)."""
         if not good:
             return 0, [], False
-        errs: list[tuple[int, str, str, str]] = []
-        try:  # noqa: PLR1702
+        try:
             async with ctx.pool.acquire() as c, c.transaction():
                 tags = [v[0] for _, v in good]
                 existing = {
                     r["tag"] for r in await c.fetch("SELECT tag FROM assets WHERE tag = ANY($1)", tags)
                 }
-                fresh = []
-                for n, v in good:
-                    if v[0] in existing:
-                        errs.append((n, COLS[0].header, v[0], "patrimônio já cadastrado"))
-                    else:
-                        fresh.append(tuple(v))
+                errs: list[tuple[int, str, str, str]] = [
+                    (n, COLS[0].header, v[0], "patrimônio já cadastrado") for n, v in good if v[0] in existing
+                ]
+                fresh = [tuple(v) for _, v in good if v[0] not in existing]
                 if fresh:
                     await c.copy_records_to_table("assets", records=fresh, columns=[c_.key for c_ in COLS])
                 return len(fresh), errs, False
@@ -460,16 +457,14 @@ def count_xlsx(path: Path) -> dict[str, int]:
     """Validates the spreadsheet the way the import would (without DB)."""
     r = Reader(path)
     valid = rejected = 0
-    try:  # noqa: PLR1702
+    try:
         while True:
             b = r.batch(BATCH)
             if not b:
                 break
-            for _, v, _e in b:
-                if v is None:
-                    rejected += 1
-                else:
-                    valid += 1
+            bad = sum(1 for _, v, _e in b if v is None)
+            rejected += bad
+            valid += len(b) - bad
     finally:
         r.close()
     return {"total": r.total, "valid": valid, "rejected": rejected}
