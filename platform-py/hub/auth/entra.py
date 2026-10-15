@@ -59,6 +59,18 @@ def parse_role_map(raw: Any) -> dict[str, str]:
     return out
 
 
+def _split_jwt(token: str) -> tuple[str, str, str, dict[str, Any], dict[str, Any]]:
+    """Segments plus decoded header/claims of an RS256 id_token (only RS256 is accepted)."""
+    try:
+        h64, c64, s64 = token.split(".")
+        header, claims = json.loads(_b64d(h64)), json.loads(_b64d(c64))
+    except ValueError as e:
+        raise SsoError("Resposta de login inválida.") from e
+    if header.get("alg") != "RS256":
+        raise SsoError("Resposta de login inválida.")
+    return h64, c64, s64, header, claims
+
+
 @dataclass
 class EntraConfig:
     tenant: str
@@ -124,23 +136,24 @@ class EntraConfig:
             raise SsoError("O Microsoft Entra ID recusou o login.")
         return str(r.json()["id_token"])
 
-    async def validate(self, token: str, nonce: str) -> dict[str, Any]:  # noqa: C901, PLR0915
-        try:
-            h64, c64, s64 = token.split(".")
-            header, claims = json.loads(_b64d(h64)), json.loads(_b64d(c64))
-        except ValueError as e:
-            raise SsoError("Resposta de login inválida.") from e
-        if header.get("alg") != "RS256":
-            raise SsoError("Resposta de login inválida.")
+    async def validate(self, token: str, nonce: str) -> dict[str, Any]:
+        h64, c64, s64, header, claims = _split_jwt(token)
+        await self._verify_signature(header, f"{h64}.{c64}".encode(), s64)
+        self._check_claims(claims, nonce)
+        return dict(claims)
+
+    async def _verify_signature(self, header: dict[str, Any], signed: bytes, s64: str) -> None:
         kid = str(header.get("kid", ""))
         key = (await self._keys(False)).get(kid) or (await self._keys(True)).get(kid)
         if not key:
             raise SsoError("Assinatura do login inválida.")
         pub = RSAPublicNumbers(int.from_bytes(_b64d(key["e"])), int.from_bytes(_b64d(key["n"]))).public_key()
         try:
-            pub.verify(_b64d(s64), f"{h64}.{c64}".encode(), PKCS1v15(), SHA256())
+            pub.verify(_b64d(s64), signed, PKCS1v15(), SHA256())
         except Exception as e:
             raise SsoError("Assinatura do login inválida.") from e
+
+    def _check_claims(self, claims: dict[str, Any], nonce: str) -> None:
         now, tid = int(time.time()), str(claims.get("tid", ""))
         if claims.get("aud") != self.client_id:
             raise SsoError("Resposta de login inválida.")
@@ -152,7 +165,6 @@ class EntraConfig:
             raise SsoError("Resposta de login inválida.")
         if not self.tenant_ok(tid):
             raise SsoError("Esta organização não tem acesso à plataforma.")
-        return dict(claims)
 
     def authorize_url(self, redirect_uri: str) -> tuple[str, dict[str, str]]:
         state, nonce, verifier = (secrets.token_urlsafe(24) for _ in range(3))
