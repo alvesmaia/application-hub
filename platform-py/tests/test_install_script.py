@@ -80,8 +80,8 @@ def test_every_advanced_answer_reaches_prod_env_and_secrets_stay_off_the_screen(
         "s3",  # off-site copy
         "https://k:segredo-s3@s3.exemplo.com:9000/bk/hub",  # S3 URL (no echo)
         "s",  # Entra ID
-        "7b369f6a-86a3-4b85-9b78-ac3bdf47a74d",
-        "daba04dc-e352-4c55-8815-a19bd702b569",
+        "11111111-2222-4333-8444-555555555555",
+        "66666666-7777-4888-9999-000000000000",
         "exemplo.com",
         "Leitor",
         "",  # local login: admins (recommended)
@@ -102,7 +102,7 @@ def test_every_advanced_answer_reaches_prod_env_and_secrets_stay_off_the_screen(
         and env["HUB_AUDIT_HEAD_TOKEN"] == "tok-ancora-123"
     )
     assert env["HUB_BACKUP_OFFSITE_URL"] == "https://k:segredo-s3@s3.exemplo.com:9000/bk/hub"
-    assert env["HUB_SSO_PROVIDER"] == "entra" and env["HUB_ENTRA_CLIENT_ID"].startswith("daba04dc")
+    assert env["HUB_SSO_PROVIDER"] == "entra" and env["HUB_ENTRA_CLIENT_ID"].startswith("66666666")
     assert env["HUB_ENTRA_ALLOWED_DOMAINS"] == "exemplo.com" and env["HUB_ENTRA_DEFAULT_ROLE"] == "Leitor"
     assert env["HUB_LOCAL_LOGIN"] == "admins" and env["HUB_ADMIN_ALLOWED_CIDRS"] == "10.0.0.0/8"
     assert env["HUB_TRUST_PROXY_HEADERS"] == "1" and env["HUB_TRUSTED_PROXIES"] == "172.16.0.0/12"

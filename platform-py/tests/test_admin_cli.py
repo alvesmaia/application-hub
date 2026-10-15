@@ -39,7 +39,7 @@ def test_add_sharepoint_connection_from_the_installer(tmp_path: Path, monkeypatc
     from hub.vault import Vault
 
     monkeypatch.setenv("HUB_DATA_DIR", str(tmp_path))
-    args = ["add-sharepoint", "--name", "backups-sharepoint", "--tenant", "7b369f6a-86a3-4b85-9b78-ac3bdf47a74d",
+    args = ["add-sharepoint", "--name", "backups-sharepoint", "--tenant", "11111111-2222-4333-8444-555555555555",
             "--client-id", "DABA04DC-E352-4C55-8815-A19BD702B569", "--site", "https://contoso.sharepoint.com/sites/TI"]  # fmt: skip
     monkeypatch.setattr("sys.stdin", io.StringIO("s3gredo-sp\n"))
     assert main(args) == 0

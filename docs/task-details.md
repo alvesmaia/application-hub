@@ -108,3 +108,7 @@ Concluídas em 2026-10-15 (`1d189a8`). Lista final como estava no TASKS.md (pend
 ✅ **Task 16 — confirmação**
 
 2026-10-15: backup manual dos 4 apps ao mesmo tempo (como o agendador) na :8090, todos "Concluído": ativos 314,3 MB, fornecedores, servicos 529,7 MB, coletor (registros 64–67).
+
+✅ **Task 14 — App de teste do Entra**
+
+2026-10-15: registro "Application Hub - backup SharePoint (teste)" apagado via `az ad app delete` (sem conexões na :8090; restaurável por 30 dias em Aplicativos excluídos). IDs reais de tenant/app nos testes trocados por GUIDs fictícios.
