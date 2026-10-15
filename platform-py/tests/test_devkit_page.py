@@ -171,3 +171,18 @@ def test_every_code_box_and_signature_is_colored() -> None:
         html = devdocs.render_md(text)[0] if text else ""
         assert all("hl-" in pre for pre in re.findall(r"<pre.*?</pre>", html, re.S)), d.slug
         assert not re.search(r"<h[2-4][^>]*>(class )?<code>", html), d.slug
+
+
+def test_developers_lives_in_the_user_menu_not_the_rail(hub: TestClient) -> None:
+    html = hub.get("/admin/users").text
+    rail = html.split('<aside class="platform-rail"', 1)[1].split('<div class="hub-drawer-account', 1)[0]
+    popover = html.split('class="header-popover hub-user-popover"', 1)[1].split("</details>", 1)[0]
+    assert 'href="/developers"' not in rail
+    assert 'href="/developers" data-hub-developers=""' in popover and "Desenvolvedores" in popover
+
+
+def test_developers_menu_entry_follows_the_old_rail_rule() -> None:
+    from hub.ux.shell import can_open
+
+    assert can_open("/developers", ["editar_configuracoes"])
+    assert not can_open("/developers", ["ver_auditoria"]) and not can_open("/developers", [])

@@ -72,17 +72,19 @@ def theme_of(pref: str) -> tuple[str, str]:
     return {"dark": ("dark", "dark"), "auto": ("auto", "light dark")}.get(pref, ("light", "light"))
 
 
-def visible_nav(nav: dict[str, Any], perms: list[str]) -> dict[str, Any]:
-    """Administration menu, only with what the user can open."""
+def can_open(href: str, perms: list[str]) -> bool:
+    """Whether a menu entry shows: `/admin/<segment>` rule; other routes need `editar_configuracoes`."""
     from hub.auth import admin_required
 
-    def ok(href: str) -> bool:
-        parts = href.strip("/").split("/")
-        return any(p in perms for p in admin_required(parts[1] if len(parts) > 1 else ""))
+    parts = href.strip("/").split("/")
+    return any(p in perms for p in admin_required(parts[1] if len(parts) > 1 else ""))
 
+
+def visible_nav(nav: dict[str, Any], perms: list[str]) -> dict[str, Any]:
+    """Administration menu, only with what the user can open."""
     groups = []
     for g in nav["groups"]:
-        items = [i for i in g["items"] if ok(i["href"])]
+        items = [i for i in g["items"] if can_open(i["href"], perms)]
         if items:
             groups.append(g | {"items": items})
     return nav | {"groups": groups}

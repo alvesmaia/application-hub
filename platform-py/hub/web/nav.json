@@ -45,14 +45,6 @@
      "icon": "<path d=\"M6 4v16l14-8Z\"/>"
     },
     {
-     "href": "/developers",
-     "label": "Desenvolvedores",
-     "icon": "<path d=\"m8 8-4 4 4 4M16 8l4 4-4 4M14 4l-4 16\"/>",
-     "also": [
-      "/dev/docs"
-     ]
-    },
-    {
      "href": "/admin/runtime",
      "label": "Containers",
      "icon": "<path d=\"m12 3 9 5-9 5-9-5 9-5Z\"/><path d=\"m3 8 9 5 9-5M3 8v9l9 5 9-5V8M12 13v9\"/>"

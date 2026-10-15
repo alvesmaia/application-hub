@@ -18,13 +18,14 @@ test.afterAll(async () => {
   await api.put('/api/me/prefs', { data: { theme: '', lang: '' } });
 });
 
-test('menu do usuário só com Configurações, tour e Sair @core', async ({ page }) => {
+test('menu do usuário só com Minha conta, Desenvolvedores, tour e Sair @core', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/applications');
   await page.locator('details.hub-user-menu > summary').click();
   const pop = page.locator('.hub-user-popover');
   await expect(pop.locator('.hub-user-who')).toBeVisible();
   await expect(pop.getByRole('link', { name: 'Minha conta' })).toBeVisible();
+  await expect(pop.getByRole('link', { name: 'Desenvolvedores' })).toHaveAttribute('href', '/developers');
   await expect(pop.getByRole('button', { name: 'Fazer o tour guiado' })).toBeVisible();
   await expect(pop.getByRole('button', { name: 'Sair' })).toBeVisible();
   await expect(pop.locator('[role="radiogroup"], select')).toHaveCount(0);

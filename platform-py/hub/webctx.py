@@ -17,7 +17,7 @@ from hub.config import Settings
 from hub.gateway.proxy import Gateway
 from hub.insight.runtime import Insight
 from hub.ux.inbox_routes import bell_of
-from hub.ux.shell import i18n_for, nav_for, platform_palette, tabs_for, theme_of, visible_nav
+from hub.ux.shell import can_open, i18n_for, nav_for, platform_palette, tabs_for, theme_of, visible_nav
 from hub.ux.texts import t, tn, tr
 
 THEME = "#0a2848"
@@ -137,6 +137,7 @@ class WebCtx:
             "user": user,
             "perms": " ".join(perms),
             "nav": visible_nav(nav_for(lang), perms),
+            "dev_menu": can_open("/developers", perms),  # user menu; same rule the rail item had
             "path": request.url.path,
             "tabs": tabs_for(request.url.path, request.query_params.get("tab", ""), perms),
             "manifest_href": _manifest_href(request.url.path),

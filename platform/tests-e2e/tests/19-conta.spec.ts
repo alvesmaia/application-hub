@@ -201,6 +201,7 @@ test('Rail: seções administrativas no nível principal (sem "Administração")
     await expect(page.locator(`#${id}`)).toBeVisible();
   }
   await expect(groups.nth(0).locator('a.rail-subitem').first()).toHaveAttribute('href', '/admin/users');
+  await expect(page.locator('#hub-admin-menu a[href="/developers"]')).toHaveCount(0);  // lives in the user menu
   await expect(page.locator('#hub-admin-menu a.rail-subitem.active')).toHaveAttribute('href', '/admin/users');
   // N1: by default only the current page's section opens (the rail fits at 1280×720).
   await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k.startsWith('hub-admin-groups:')) localStorage.removeItem(k); });
