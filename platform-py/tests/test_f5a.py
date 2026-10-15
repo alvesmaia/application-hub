@@ -191,6 +191,10 @@ def set_policy(c: TestClient, **kw: Any) -> None:
 
 def test_scheduler_runs_skips_and_defers(hub: TestClient, bk: FakeDocker) -> None:
     sched, ops = hub.app.state.ops_scheduler, hub.app.state.ops  # type: ignore[attr-defined]
+    # the other apps' default "Diário 02:00" also falls due when the test runs near 02:00: keep them manual
+    for other in ("coletor", "fornecedores", "servicos"):
+        pol = {"schedule": "Manual", "keep": 7, "volumes": ["data"], "hooks": False, "destination": "Local"}
+        assert hub.put(f"/api/ops/backups/policies/{other}", json=pol).status_code == 200
     set_policy(hub)
     t0 = now_ms()
     assert call(hub, sched.tick, t0) == []

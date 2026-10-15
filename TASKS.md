@@ -31,7 +31,7 @@
 - ✅ 5 · SDK Python: jobs.py, storage.py, idempotency.py, dashboards.py + 17 noqa
   - ✅ agent C: 4 files < 500, 17/17 noqa removed, public API unchanged (AST check); SDK 117 passed
   - ✅ dev docs regenerated (6 new SDK sections titled)
-  - ⬜ DB-backed SDK tests (21 skipped without Postgres) in the heavy validation
+  - ✅ DB-backed SDK tests with Postgres: 137 passed
 - ✅ 6 · Sample apps: app.py of ativos/coletor/servicos/fornecedores, ativos/importer.py + 21 noqa
   - ✅ agent D: app.py 58–136 lines, routes/ per area, 21/21 noqa removed, OpenAPI identical
 - ✅ 7 · CLI and scripts: 9 noqa
