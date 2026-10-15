@@ -152,15 +152,20 @@ def _job(r: httpx.Response) -> dict[str, Any]:
     return job
 
 
-def deploy(directory: Path, env: str, hub: str | None, token: str | None, env_file: Path | None,  # noqa: PLR0915
-           tty: bool) -> dict[str, Any]:  # fmt: skip
-    target = ENVS.get(env)
-    if target is None:
-        raise CliError("--env: use staging ou production", VALIDATION)
+def _valid_manifest(directory: Path) -> dict[str, Any]:
     m = check._manifest(directory)
     probs = check.manifest_problems(m)
     if probs:
         raise CliError("manifesto inválido: " + "; ".join(probs), VALIDATION)
+    return m
+
+
+def deploy(directory: Path, env: str, hub: str | None, token: str | None, env_file: Path | None,
+           tty: bool) -> dict[str, Any]:  # fmt: skip
+    target = ENVS.get(env)
+    if target is None:
+        raise CliError("--env: use staging ou production", VALIDATION)
+    m = _valid_manifest(directory)
     h, t = resolve(hub, token)
     env_file = env_file or directory / f"deploy.{env}.env"
     values = collect_values(m, env_file, tty)

@@ -192,14 +192,19 @@ def conformance(directory: Path, upstream: str, app_id: str, log: Path | None = 
     return fails
 
 
-@contextlib.contextmanager
-def _running_app(directory: Path) -> Iterator[tuple[str, str, dict[str, str], Path, str]]:  # noqa: PLR0915
-    """Starts the app (SQLite in .hub/) and returns (upstream, id, env, log, error); error != "" = not ready."""
-    app_id = str(_manifest(directory)["id"])
-    port = dev.free_port()
+def _check_env(directory: Path, app_id: str, port: int) -> dict[str, str]:
     env = dev.app_env(directory, app_id, port)
     env["DATABASE_URL"] = f"sqlite:///{(directory.resolve() / '.hub' / 'check.db').as_posix()}"
     env["HUB_STORAGE_LOCAL_DIR"] = str(directory.resolve() / ".hub" / "check-storage")
+    return env
+
+
+@contextlib.contextmanager
+def _running_app(directory: Path) -> Iterator[tuple[str, str, dict[str, str], Path, str]]:
+    """Starts the app (SQLite in .hub/) and returns (upstream, id, env, log, error); error != "" = not ready."""
+    app_id = str(_manifest(directory)["id"])
+    port = dev.free_port()
+    env = _check_env(directory, app_id, port)
     cmd = dev.app_command(directory, app_id.replace("-", "_"), port, reload=False)
     os.environ.setdefault("HUB_DATA_DIR", str(directory.resolve() / ".hub" / "hubdata"))
     log = directory.resolve() / ".hub" / "check-app.log"

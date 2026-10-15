@@ -115,7 +115,17 @@ def _copy_layers(layers: list[Path], directory: Path, subst: dict[str, str]) -> 
     return files
 
 
-def create(  # noqa: PLR0915
+def _repo_demo_css(directory: Path, pkg: str) -> list[str]:
+    # The wheel bundles demo.css; when running from the repository (editable install) it comes from platform/demo-apps.
+    css = directory / "src" / pkg / "assets" / "demo.css"
+    repo_css = Path(__file__).resolve().parents[3] / "platform" / "demo-apps" / "assets" / "demo.css"
+    if css.is_file() or not repo_css.is_file():
+        return []
+    shutil.copy2(repo_css, css)
+    return [css.relative_to(directory).as_posix()]
+
+
+def create(
     app_id: str,
     name: str,
     stack: str,
@@ -142,12 +152,8 @@ def create(  # noqa: PLR0915
     if template == "dashboard" and not layers[-1].is_dir():
         raise CliError(f"--template dashboard: indisponível para a stack {stack}", 2)
     files = _copy_layers(layers, directory, subst)
-    # The wheel bundles demo.css; when running from the repository (editable install) it comes from platform/demo-apps.
-    css = directory / "src" / subst["__PKG__"] / "assets" / "demo.css"
-    repo_css = Path(__file__).resolve().parents[3] / "platform" / "demo-apps" / "assets" / "demo.css"
-    if stack == "python-fastapi" and not css.is_file() and repo_css.is_file():
-        shutil.copy2(repo_css, css)
-        files.append(css.relative_to(directory).as_posix())
+    if stack == "python-fastapi":
+        files += _repo_demo_css(directory, pkg)
     (directory / "vendor").mkdir(exist_ok=True)
     shutil.copy2(wheel, directory / "vendor" / wheel.name)
     files.append(f"vendor/{wheel.name}")
