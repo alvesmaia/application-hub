@@ -610,6 +610,11 @@ HTML fragments with the shell's look (Jinja2) and common responses.
 
 ### `html(body: str, status: int=200, headers: dict[str, str] | None=None) -> HTMLResponse`
 
+### `public_base(conn: HTTPConnection, app_id: str) -> str`
+
+App's public base for links/forms: the hub's ``x-hub-base`` (``/apps/{id}``), or that
+default when the header is missing or has anything besides letters, digits, ``/`` and ``-``.
+
 ### class `Renderer`
 
 The app's Jinja2 environment: the app's templates (``templates_dir``) + the SDK's
