@@ -30,7 +30,11 @@
 
 ## MCP / OAuth
 - ✅ 25 · Avisos "Duplicate Operation ID" nos apps desde o openapi_of da tarefa 10
-- ⛔ 26 · Login OAuth do MCP falha externamente (cliente registrou às 18:21 e parou) — aguardando cliente usado e erro visto
+- ⛔ 26 · Login OAuth do MCP falha externamente — servidor OK em todas as etapas; falta o cliente e o erro visto
+  - ✅ público: /mcp 401 + resource_metadata; metadata 200; /oauth/register, token, revoke passam pelo Access
+  - ✅ registro dinâmico com retorno https (claude.ai) aceito; /oauth/authorize → Access → /login com a URL inteira
+  - ✅ login Entra guarda a URL de volta (cookie Secure/HttpOnly/Lax, 10 min); app do Entra do login intacto
+  - ⬜ dono remove os clientes diag-claude-ai e diag-copilot-cli em Credenciais › OAuth
 
 ## Fechamento
 - ✅ 21 · Integração, E2E das telas, ui-sweep, deploy na :8090, limpeza
