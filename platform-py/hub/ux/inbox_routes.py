@@ -18,6 +18,7 @@ from pydantic import BaseModel, ValidationError, field_validator
 from hub.gateway.identity import Identity
 from hub.ux import search as srch
 from hub.ux.inbox import InboxError, InboxStore, Who
+from hub.ux.pager import paginate
 from hub.ux.shell import nav_for
 from hub.ux.store import KINDS, UxStore
 from hub.ux.texts import tn
@@ -267,8 +268,10 @@ router = APIRouter()
 async def inbox_page(request: Request, filter: str = "all", c: InboxCtx = Depends(ctx)) -> Response:
     entries = entries_of(request)
     prefs = c.store.prefs(request.state.user["id"])
+    items, pager = paginate(request, filter_entries(entries, filter))
     page = c.page_ctx(request) | {
-        "items": filter_entries(entries, filter)[:200],
+        "items": items,
+        "pager": pager,
         "filter": filter,
         "filters": [(f, f"inbox.{f}") for f in FILTERS],
         "unread_all": InboxStore.unread(entries),
