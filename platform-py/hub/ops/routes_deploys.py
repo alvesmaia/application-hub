@@ -7,6 +7,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse, Response
+from starlette.datastructures import FormData, UploadFile
 
 from hub.ops import model as m
 from hub.ops import newapp
@@ -18,9 +19,7 @@ from hub.ops.opsctx import OpsCtx, ctx
 router = APIRouter()
 
 
-@router.post("/packages")
-async def upload(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:  # noqa: PLR0915
-    form = await request.form()
+async def _package(form: FormData) -> tuple[UploadFile, bytes]:
     up = form.get("package")
     if up is None or isinstance(up, str):
         raise OpsError("Selecione um arquivo .hubapp (campo package).")
@@ -33,6 +32,11 @@ async def upload(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:  # n
             if data
             else "Selecione um arquivo .hubapp (campo package)."
         )
+    return up, data
+
+
+def _upload_target(request: Request, form: FormData) -> tuple[str, str | None]:
+    """(environment, commit SHA or None) of an upload, refusing invalid values."""
     raw_env = request.query_params.get("env") or str(form.get("env") or "")
     env = {"staging": "staging", "producao": "producao", "produção": "producao"}.get(raw_env.lower())
     if env is None:
@@ -42,6 +46,14 @@ async def upload(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:  # n
         7 <= len(commit) <= 40 and all(c in "0123456789abcdefABCDEF" for c in commit)
     ):
         raise OpsError("Commit inválido: informe o SHA (7 a 40 hex).")
+    return env, commit
+
+
+@router.post("/packages")
+async def upload(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:
+    form = await request.form()
+    up, data = await _package(form)
+    env, commit = _upload_target(request, form)
     file_name = "".join(c for c in (up.filename or "pacote.hubapp") if c.isprintable())[:120]
     ci = request.query_params.get("origin") == "ci"
     origin = "GitHub Actions" if ci else "Import manual"
@@ -125,12 +137,8 @@ async def approve_scripts(dep_id: int, request: Request, ops: OpsCtx = Depends(c
     return {"deployment": dep, "approved": lst}
 
 
-@router.post("/deployments/{dep_id}/{action}")
-async def deployment_action(  # noqa: PLR0915
-    dep_id: int, action: str, request: Request, ops: OpsCtx = Depends(ctx)
-) -> Response:
-    if action not in ("approve", "promote", "rollback"):
-        raise OpsError("Ação inválida.", 404)
+async def _record_action(ops: OpsCtx, dep_id: int, action: str) -> tuple[Data, Data]:
+    """Applies the action to the store; returns (deployment, source deployment of a promotion or {})."""
     now = now_ms()
     src: Data = {}
     async with ops.store.locked(True) as d:
@@ -141,6 +149,16 @@ async def deployment_action(  # noqa: PLR0915
             dep = m.approve(d, dep_id)
         else:
             dep = m.rollback(d, dep_id, now)
+    return dep, src
+
+
+@router.post("/deployments/{dep_id}/{action}")
+async def deployment_action(
+    dep_id: int, action: str, request: Request, ops: OpsCtx = Depends(ctx)
+) -> Response:
+    if action not in ("approve", "promote", "rollback"):
+        raise OpsError("Ação inválida.", 404)
+    dep, src = await _record_action(ops, dep_id, action)
     actor = ops.actor_of(request)
     title = {"promote": "Promoção", "approve": "Aprovação", "rollback": "Rollback"}[action]
     job = await ops.jobs.create(

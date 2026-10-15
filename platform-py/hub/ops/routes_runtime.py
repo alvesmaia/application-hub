@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import Response, StreamingResponse
 
 from hub.admin.routes import bound_summary
+from hub.gateway.registry import AppEntry
 from hub.ops import jobs as jb
 from hub.ops import model as m
 from hub.ops import provision as pv
@@ -79,8 +80,21 @@ async def get_runtime(ops: OpsCtx = Depends(ctx)) -> Any:
     }
 
 
+async def _apply_limits(ops: OpsCtx, app_id: str, lim: dict[str, Any]) -> str:
+    """Pushes the saved limits to the running containers (both environments); returns what happened."""
+    parts = []
+    for env in ("producao", "staging"):
+        name = rt.container_name(app_id, env)
+        try:
+            if await ops.eng.update_limits(name, lim["cpu"], lim["memory"], lim["pids"]):
+                parts.append(f"aplicado ao container {name}")
+        except Exception as e:
+            parts.append(f"falha ao aplicar a {name}: {e}"[:200])
+    return "salvo; " + "; ".join(parts) if parts else "salvo; será aplicado na próxima criação do container"
+
+
 @router.put("/runtime/{app_id}/limits")
-async def put_limits(app_id: str, request: Request, ops: OpsCtx = Depends(ctx)) -> Any:  # noqa: PLR0915
+async def put_limits(app_id: str, request: Request, ops: OpsCtx = Depends(ctx)) -> Any:
     ops.need_app(app_id)
     lim = await ops.body(request)
     rt.validate_limits(lim)
@@ -98,17 +112,7 @@ async def put_limits(app_id: str, request: Request, ops: OpsCtx = Depends(ctx)) 
     await ops.admin.audit(
         ops.actor_of(request), "Limites de container alterados", detail, icon="settings", scope=app_id
     )
-    parts = []
-    for env in ("producao", "staging"):
-        name = rt.container_name(app_id, env)
-        try:
-            if await ops.eng.update_limits(name, lim["cpu"], lim["memory"], lim["pids"]):
-                parts.append(f"aplicado ao container {name}")
-        except Exception as e:
-            parts.append(f"falha ao aplicar a {name}: {e}"[:200])
-    applied = (
-        "salvo; " + "; ".join(parts) if parts else "salvo; será aplicado na próxima criação do container"
-    )
+    applied = await _apply_limits(ops, app_id, lim)
     ops.log("INFO", app_id, ops.actor_of(request), f"limites {detail} · {applied}")
     return {"limits": lim, "applied": applied}
 
@@ -183,8 +187,28 @@ async def rotate_db(ops: OpsCtx, app_id: str, actor: str, env: str = "producao")
     return var
 
 
+async def _recreate(
+    ops: OpsCtx, request: Request, app_id: str, e: AppEntry, k: str, name: str, data: Data
+) -> dict[str, Any]:
+    """`apply`: blue/green with the same image and the current variables."""
+    lim = rt.resources_of(e, data["limits"])
+    await ops.rollout.apply(app_id, k, lim, e.version or "—", None)
+    if k == "producao":
+        await ops.admin.cfg.clear_pending(app_id)
+    await ops.admin.audit(ops.actor_of(request), "Container recriado com as variáveis atuais", f"{e.name} · {name}",
+                          icon="box", scope=app_id)  # fmt: skip
+    ops.log(
+        "INFO",
+        app_id,
+        ops.actor_of(request),
+        f"container {name} recriado com as variáveis atuais (blue/green)",
+    )
+    return {"container": name, "action": "apply",
+            "detail": f"{e.name} · {name} recriado(s) com a mesma imagem e as variáveis atuais, sem indisponibilidade (blue/green)."}  # fmt: skip
+
+
 @router.post("/runtime/{app_id}/{action}")
-async def runtime_action(  # noqa: PLR0915
+async def runtime_action(
     app_id: str, action: str, request: Request, env: str | None = None, ops: OpsCtx = Depends(ctx)
 ) -> Any:
     e = ops.need_app(app_id)
@@ -197,20 +221,7 @@ async def runtime_action(  # noqa: PLR0915
     name = rt.container_name(app_id, k)
     sup = getattr(ops.app.state, "ops_supervisor", None)
     if action == "apply":
-        lim = rt.resources_of(e, data["limits"])
-        await ops.rollout.apply(app_id, k, lim, e.version or "—", None)
-        if k == "producao":
-            await ops.admin.cfg.clear_pending(app_id)
-        await ops.admin.audit(ops.actor_of(request), "Container recriado com as variáveis atuais", f"{e.name} · {name}",
-                          icon="box", scope=app_id)  # fmt: skip
-        ops.log(
-            "INFO",
-            app_id,
-            ops.actor_of(request),
-            f"container {name} recriado com as variáveis atuais (blue/green)",
-        )
-        return {"container": name, "action": "apply",
-                "detail": f"{e.name} · {name} recriado(s) com a mesma imagem e as variáveis atuais, sem indisponibilidade (blue/green)."}  # fmt: skip
+        return await _recreate(ops, request, app_id, e, k, name, data)
     await ops.eng.action(name, action)
     if sup:
         await sup.mark_stopped(app_id, k, action == "stop")
@@ -229,8 +240,26 @@ async def list_tasks(ops: OpsCtx = Depends(ctx)) -> Any:
     return await jb.list_all(ops.client, targets, ops.name_of)
 
 
+async def _app_task_call(ops: OpsCtx, url: str, token: str) -> dict[str, Any]:
+    """POSTs the task action to the app; returns its `job`, or OpsError with the app's error."""
+    try:
+        r = await ops.client.post(url, headers={jb.TOKEN_HEADER: token}, timeout=10)
+    except httpx.HTTPError as ex:
+        raise OpsError(f"app sem resposta ({ex})", 409) from ex
+    try:
+        out = r.json()
+    except ValueError:
+        out = {}
+    if r.status_code >= 300:
+        raise OpsError(
+            out.get("error") or f"o app respondeu {r.status_code}",
+            404 if "não encontrada" in str(out) else 409,
+        )
+    return out.get("job") or {}
+
+
 @router.post("/tasks/{app_id}/{task_id}/{action}")
-async def task_action(  # noqa: PLR0915
+async def task_action(
     app_id: str,
     task_id: str,
     action: str,
@@ -249,21 +278,7 @@ async def task_action(  # noqa: PLR0915
     token = ops.admin.tokens.get(app_id)
     if not token:
         raise OpsError("App sem token interno.", 409)
-    try:
-        r = await ops.client.post(f"{e.upstream.rstrip('/')}/{app_id}/_hub/jobs/{task_id}/{action}",
-                              headers={jb.TOKEN_HEADER: token}, timeout=10)  # fmt: skip
-    except httpx.HTTPError as ex:
-        raise OpsError(f"app sem resposta ({ex})", 409) from ex
-    try:
-        out = r.json()
-    except ValueError:
-        out = {}
-    if r.status_code >= 300:
-        raise OpsError(
-            out.get("error") or f"o app respondeu {r.status_code}",
-            404 if "não encontrada" in str(out) else 409,
-        )
-    job = out.get("job") or {}
+    job = await _app_task_call(ops, f"{e.upstream.rstrip('/')}/{app_id}/_hub/jobs/{task_id}/{action}", token)
     await ops.admin.audit(ops.actor_of(request), title, f"{e.name} · {job.get('kind', '')} · {job.get('id', task_id)}",
                       icon="clock", scope=app_id)  # fmt: skip
     ops.log(
