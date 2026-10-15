@@ -67,29 +67,39 @@ def _translate_text(loc: str, raw: str, out: list[str]) -> None:
         out.append(raw)
 
 
-def en_numbers(s: str) -> str:  # noqa: PLR0915
+def _starts_number(c: str, i: int) -> bool:
+    prev_ok = i == 0 or not (c[i - 1].isalnum() or c[i - 1] in "-.,/_")
+    return "0" <= c[i] <= "9" and prev_ok
+
+
+def _number_end(c: str, i: int) -> tuple[int, bool]:
+    """End of the number starting at ``i`` (trailing ``.,/`` left out) and whether it stands
+    alone (not glued to a code such as ``12ab`` or ``3-B``)."""
+    n = len(c)
+    j = i
+    while j < n and ("0" <= c[j] <= "9" or c[j] in ".,/"):
+        j += 1
+    end = j
+    while end > i and c[end - 1] in ".,/":
+        end -= 1
+    next_ok = end == n or end < j or not (c[end].isalnum() or c[end] in "-_")
+    return end, next_ok
+
+
+def en_numbers(s: str) -> str:
     """Pt-BR → en-US numbers and dates within a text (``2.055`` → ``2,055``, ``3,6`` →
     ``3.6``, ``05/01/2017`` → ``01/05/2017``); codes, versions and IPs stay intact."""
-    c = s
     out: list[str] = []
     i = 0
-    n = len(c)
-    while i < n:
-        prev_ok = i == 0 or not (c[i - 1].isalnum() or c[i - 1] in "-.,/_")
-        if "0" <= c[i] <= "9" and prev_ok:
-            j = i
-            while j < n and ("0" <= c[j] <= "9" or c[j] in ".,/"):
-                j += 1
-            end = j
-            while end > i and c[end - 1] in ".,/":
-                end -= 1
-            next_ok = end == n or end < j or not (c[end].isalnum() or c[end] in "-_")
-            tok = c[i:end]
-            out.append(_en_token(tok) if next_ok else tok)
-            i = end
+    while i < len(s):
+        if not _starts_number(s, i):
+            out.append(s[i])
+            i += 1
             continue
-        out.append(c[i])
-        i += 1
+        end, alone = _number_end(s, i)
+        tok = s[i:end]
+        out.append(_en_token(tok) if alone else tok)
+        i = end
     return "".join(out)
 
 
@@ -156,7 +166,19 @@ def _translate_tag(loc: str, tag: str, out: list[str]) -> None:
         rest = rest[vlen:]
 
 
-def tr_html(loc: str, html: str) -> str:  # noqa: PLR0915
+def _copy_raw_text(tag: str, rest: str, out: list[str]) -> str:
+    """After a ``<script>``/``<style>``/``<textarea>`` tag, copies its content untranslated."""
+    low = tag.lower()
+    for raw in ("script", "style", "textarea"):
+        if low.startswith(f"<{raw}"):
+            k = rest.lower().find(f"</{raw}")
+            k = len(rest) if k < 0 else k
+            out.append(rest[:k])
+            rest = rest[k:]
+    return rest
+
+
+def tr_html(loc: str, html: str) -> str:
     """Translates the HTML (text between tags and some attributes); ``<script>``/``<style>``/
     ``<textarea>`` intactos."""
     if loc == "pt-BR":
@@ -174,15 +196,44 @@ def tr_html(loc: str, html: str) -> str:  # noqa: PLR0915
         end = j + 1 if j >= 0 else len(rest)
         tag = rest[:end]
         _translate_tag(loc, tag, out)
-        rest = rest[end:]
-        low = tag.lower()
-        for raw in ("script", "style", "textarea"):
-            if low.startswith(f"<{raw}"):
-                k = rest.lower().find(f"</{raw}")
-                k = len(rest) if k < 0 else k
-                out.append(rest[:k])
-                rest = rest[k:]
+        rest = _copy_raw_text(tag, rest[end:], out)
     return "".join(out)
+
+
+class _HtmlTranslatingSend:
+    """``send`` that holds a ``text/html`` response until its last chunk and sends it
+    translated (with the new ``content-length``); other responses pass straight through."""
+
+    def __init__(self, loc: str, send: Send) -> None:
+        self.loc = loc
+        self.send = send
+        self.start: Message | None = None
+        self.body = bytearray()
+        self.html = False
+
+    async def __call__(self, msg: Message) -> None:
+        if msg["type"] == "http.response.start":
+            ct = next((v for k, v in msg["headers"] if k.lower() == b"content-type"), b"")
+            self.html = ct.startswith(b"text/html")
+            if self.html:
+                self.start = msg
+                return
+            await self.send(msg)
+        elif self.html and msg["type"] == "http.response.body":
+            self.body.extend(msg.get("body", b""))
+            if not msg.get("more_body"):
+                await self._flush()
+        else:
+            await self.send(msg)
+
+    async def _flush(self) -> None:
+        start = self.start
+        assert start is not None
+        text = tr_html(self.loc, self.body.decode("utf-8", "replace")).encode()
+        hs = [(k, v) for k, v in start["headers"] if k.lower() != b"content-length"]
+        hs.append((b"content-length", str(len(text)).encode()))
+        await self.send({**start, "headers": hs})
+        await self.send({"type": "http.response.body", "body": text})
 
 
 class I18nMiddleware:
@@ -191,7 +242,7 @@ class I18nMiddleware:
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # noqa: PLR0915
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
@@ -200,33 +251,7 @@ class I18nMiddleware:
         if loc == "pt-BR":
             await self.app(scope, receive, send)
             return
-        start: Message | None = None
-        body = bytearray()
-        html = False
-
-        async def wrapper(msg: Message) -> None:
-            nonlocal start, html
-            if msg["type"] == "http.response.start":
-                ct = next((v for k, v in msg["headers"] if k.lower() == b"content-type"), b"")
-                html = ct.startswith(b"text/html")
-                if html:
-                    start = msg
-                    return
-                await send(msg)
-            elif html and msg["type"] == "http.response.body":
-                body.extend(msg.get("body", b""))
-                if msg.get("more_body"):
-                    return
-                assert start is not None
-                text = tr_html(loc, body.decode("utf-8", "replace")).encode()
-                hs = [(k, v) for k, v in start["headers"] if k.lower() != b"content-length"]
-                hs.append((b"content-length", str(len(text)).encode()))
-                await send({**start, "headers": hs})
-                await send({"type": "http.response.body", "body": text})
-            else:
-                await send(msg)
-
-        await self.app(scope, receive, wrapper)
+        await self.app(scope, receive, _HtmlTranslatingSend(loc, send))
 
 
 # ---- hub context (user, today, greeting) --------------------------------------
