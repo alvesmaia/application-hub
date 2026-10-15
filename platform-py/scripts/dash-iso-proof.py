@@ -26,50 +26,57 @@ def client() -> httpx.Client:
     return c
 
 
-def main(cmd: str) -> None:  # noqa: PLR0915
+def setup(c: httpx.Client) -> None:
+    body = {
+        "name": "vendas",
+        "kind": "postgres",
+        "description": "Vendas (exemplo do kit de dashboards)",
+        "host": "app-hub-app-db",
+        "port": 5432,
+        "database": "vendas_src",
+        "username": "vendas_leitor",
+        "secret": os.environ["VENDAS_PW"],
+        "ssl": "disable",
+        "bindings": [],
+    }
+    r = c.post("/api/admin/connections", json=body)
+    print("criar", r.status_code, r.text[:200])
+    t = c.post("/api/admin/connections/vendas/test").json()
+    print("teste", t["ok"], [(s["key"], s["ok"], s["detail"][:40]) for s in t["steps"]])
+    tok = c.post(
+        "/api/admin/tokens",
+        json={"name": "dash-proof", "apps": [], "actions": ["upload", "status"], "expires_days": 1},
+    )
+    print("token", tok.status_code)
+    OUT.mkdir(exist_ok=True)
+    (OUT / "token").write_text(tok.json()["token"], encoding="utf-8")
+
+
+def link(c: httpx.Client) -> None:
+    r = c.put(
+        "/api/admin/connections/vendas/bindings",
+        json={"bindings": [{"app": "vendas-bi", "env": "staging"}]},
+    )
+    print("vínculo", r.status_code)
+    print("aplicar", c.post("/api/ops/runtime/vendas-bi/apply?env=staging", json={}).status_code)
+
+
+def check(c: httpx.Client) -> None:
+    c.get("/hub-env?to=staging&next=/apps/vendas-bi")
+    r = c.get("/_frag/vendas-bi/painel")
+    print("painel", r.status_code, "kpis" if "hub-dash-kpi" in r.text else r.text[-300:])
+    audit = c.get("/api/admin/audit").text
+    print(
+        "auditoria Consulta SQL:",
+        "Consulta SQL" in audit,
+        "senha ausente:",
+        os.environ["VENDAS_PW"] not in audit,
+    )
+
+
+def main(cmd: str) -> None:
     c = client()
-    if cmd == "setup":
-        body = {
-            "name": "vendas",
-            "kind": "postgres",
-            "description": "Vendas (exemplo do kit de dashboards)",
-            "host": "app-hub-app-db",
-            "port": 5432,
-            "database": "vendas_src",
-            "username": "vendas_leitor",
-            "secret": os.environ["VENDAS_PW"],
-            "ssl": "disable",
-            "bindings": [],
-        }
-        r = c.post("/api/admin/connections", json=body)
-        print("criar", r.status_code, r.text[:200])
-        t = c.post("/api/admin/connections/vendas/test").json()
-        print("teste", t["ok"], [(s["key"], s["ok"], s["detail"][:40]) for s in t["steps"]])
-        tok = c.post(
-            "/api/admin/tokens",
-            json={"name": "dash-proof", "apps": [], "actions": ["upload", "status"], "expires_days": 1},
-        )
-        print("token", tok.status_code)
-        OUT.mkdir(exist_ok=True)
-        (OUT / "token").write_text(tok.json()["token"], encoding="utf-8")
-    elif cmd == "link":
-        r = c.put(
-            "/api/admin/connections/vendas/bindings",
-            json={"bindings": [{"app": "vendas-bi", "env": "staging"}]},
-        )
-        print("vínculo", r.status_code)
-        print("aplicar", c.post("/api/ops/runtime/vendas-bi/apply?env=staging", json={}).status_code)
-    else:
-        c.get("/hub-env?to=staging&next=/apps/vendas-bi")
-        r = c.get("/_frag/vendas-bi/painel")
-        print("painel", r.status_code, "kpis" if "hub-dash-kpi" in r.text else r.text[-300:])
-        audit = c.get("/api/admin/audit").text
-        print(
-            "auditoria Consulta SQL:",
-            "Consulta SQL" in audit,
-            "senha ausente:",
-            os.environ["VENDAS_PW"] not in audit,
-        )
+    {"setup": setup, "link": link}.get(cmd, check)(c)
 
 
 if __name__ == "__main__":

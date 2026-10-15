@@ -265,20 +265,29 @@ def _new_image(
     return new
 
 
-def _roll_out(a: argparse.Namespace, new: str, current: str, prev: str) -> int:  # noqa: PLR0915
+def _swap_and_watch(a: argparse.Namespace, new: str, current: str, prev: str) -> tuple[str, bool] | None:
+    """(version, healthy) after the swap; None when it failed before the hub was even swapped (already undone)."""
     main_name, next_name, edge = f"{a.project}-web", f"{a.project}-web-next", f"{a.project}-edge"
-    repo = f"{a.project}-web"
     try:
         version = swap(main_name, next_name, new, a.timeout)
-        healthy = watch(main_name, edge, a.watch)
+        return version, watch(main_name, edge, a.watch)
     except RuntimeError as e:
         say(str(e))
-        healthy = False
         if (m := inspect(main_name)) is not None and m["Image"] == current:  # the hub was not even swapped
             drop(next_name)
-            run("docker", "tag", prev, f"{repo}:latest")
+            run("docker", "tag", prev, f"{a.project}-web:latest")
             say("nada foi trocado; o hub segue na versão anterior")
-            return 1
+            return None
+    return "", False
+
+
+def _roll_out(a: argparse.Namespace, new: str, current: str, prev: str) -> int:
+    main_name, next_name = f"{a.project}-web", f"{a.project}-web-next"
+    repo = f"{a.project}-web"
+    result = _swap_and_watch(a, new, current, prev)
+    if result is None:
+        return 1
+    version, healthy = result
     if healthy:
         drop(next_name)
         say(f"concluído: versão {version} no ar, sem parada. Volta: hub_update.py --rollback")
