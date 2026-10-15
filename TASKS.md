@@ -42,7 +42,7 @@
   - ✅ E2E 06/29 + Coletor 25/28: 23 passed; ui-sweep --quick: 0 findings
 
 ## Closing
-- ▶️ 9 · Size baseline already empty (no code file > 500 lines). Tighten limits (20 statements, complexity 8), empty baseline, heavy validation, CHANGELOG
+- ✅ 9 · Size baseline already empty (no code file > 500 lines). Tighten limits (20 statements, complexity 8), empty baseline, heavy validation, CHANGELOG
   - ✅ limits tightened (complexity 8, 20 statements, 3 nested blocks); 105 noqa marked
   - ✅ agent G: hub ops, admin, gateway, ux, scripts (29)
   - ✅ agent H1: hub api, insight, app/gate/lifespan/routes_login (24)
@@ -56,4 +56,4 @@
   - ✅ chaos found: rollout dropped network aliases (502 after hub restart) — fixed + test
   - ✅ DB tests with Postgres: hub 506, SDK 137, apps 42/43/31/29 passed (2 stale tests fixed)
   - ✅ CHANGELOG
-  - ⬜ deploy to the owner instance (hub_update)
+  - ✅ owner instance updated (hub_update, zero downtime); healthz/readyz 200, tunnel 302
