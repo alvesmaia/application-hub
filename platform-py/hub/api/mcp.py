@@ -12,7 +12,7 @@ import asyncio
 import base64
 import json
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any, cast
 
@@ -74,35 +74,68 @@ def instructions(app: FastAPI) -> str:
 SERVER_INFO = {"name": "application-hub", "title": "Application Hub", "version": "0.0.0"}
 
 
-async def dispatch(  # noqa: C901
+Handler = Callable[[Request, P, dict[str, Any], str], Awaitable[dict[str, Any]]]
+
+
+async def _initialize(request: Request, p: P, params: dict[str, Any], client: str) -> dict[str, Any]:
+    req = params.get("protocolVersion")
+    return {"protocolVersion": req if req in LEGACY else PROTOCOL, "capabilities": capabilities(),
+            "serverInfo": SERVER_INFO, "instructions": instructions(request.app)}  # fmt: skip
+
+
+async def _discover(request: Request, p: P, params: dict[str, Any], client: str) -> dict[str, Any]:
+    return {"resultType": "complete", "supportedVersions": list(SUPPORTED), "capabilities": capabilities(),
+            "_meta": {"io.modelcontextprotocol/serverInfo": SERVER_INFO}, "instructions": instructions(request.app)}  # fmt: skip
+
+
+async def _ping(request: Request, p: P, params: dict[str, Any], client: str) -> dict[str, Any]:
+    return {}
+
+
+async def _tools_list(request: Request, p: P, params: dict[str, Any], client: str) -> dict[str, Any]:
+    tools = await tools_for(request, p)
+    return {"tools": [{k: v for k, v in t.items() if not k.startswith("_")} for t in tools]}
+
+
+async def _tools_call(request: Request, p: P, params: dict[str, Any], client: str) -> dict[str, Any]:
+    return await tools_call(request, p, params, client)
+
+
+async def _resources_list(request: Request, p: P, params: dict[str, Any], client: str) -> dict[str, Any]:
+    if not request.app.state.apicfg.api.enabled:
+        return {"resources": []}
+    return {"resources": [{"uri": u, "name": n, "title": t, "mimeType": "application/json"}
+                          for u, n, t, _ in RESOURCES]}  # fmt: skip
+
+
+async def _templates_list(request: Request, p: P, params: dict[str, Any], client: str) -> dict[str, Any]:
+    return {"resourceTemplates": []}
+
+
+async def _resources_read(request: Request, p: P, params: dict[str, Any], client: str) -> dict[str, Any]:
+    return await resources_read(request, p, params)
+
+
+METHODS: dict[str, Handler] = {
+    "initialize": _initialize,
+    "server/discover": _discover,
+    "ping": _ping,
+    "tools/list": _tools_list,
+    "tools/call": _tools_call,
+    "resources/list": _resources_list,
+    "resources/templates/list": _templates_list,
+    "resources/read": _resources_read,
+}
+
+
+async def dispatch(
     request: Request, p: P, method: str, params: dict[str, Any], client: str
 ) -> dict[str, Any]:
-    app = request.app
-    match method:
-        case "initialize":
-            req = params.get("protocolVersion")
-            return {"protocolVersion": req if req in LEGACY else PROTOCOL, "capabilities": capabilities(),
-                    "serverInfo": SERVER_INFO, "instructions": instructions(app)}  # fmt: skip
-        case "server/discover":
-            return {"resultType": "complete", "supportedVersions": list(SUPPORTED), "capabilities": capabilities(),
-                    "_meta": {"io.modelcontextprotocol/serverInfo": SERVER_INFO}, "instructions": instructions(app)}  # fmt: skip
-        case "ping":
-            return {}
-        case "tools/list":
-            tools = await tools_for(request, p)
-            return {"tools": [{k: v for k, v in t.items() if not k.startswith("_")} for t in tools]}
-        case "tools/call":
-            return await tools_call(request, p, params, client)
-        case "resources/list":
-            if not app.state.apicfg.api.enabled:
-                return {"resources": []}
-            return {"resources": [{"uri": u, "name": n, "title": t, "mimeType": "application/json"}
-                                  for u, n, t, _ in RESOURCES]}  # fmt: skip
-        case "resources/templates/list":
-            return {"resourceTemplates": []}
-        case "resources/read":
-            return await resources_read(request, p, params)
-    raise Rpc(METHOD_NOT_FOUND, f"método não suportado: {method}")
+    # Compare instead of hashing: a non-string method from the wire must fall through to METHOD_NOT_FOUND.
+    fn = next((f for k, f in METHODS.items() if k == method), None)
+    if fn is None:
+        raise Rpc(METHOD_NOT_FOUND, f"método não suportado: {method}")
+    return await fn(request, p, params, client)
 
 
 def hv(h: Any, k: str) -> str | None:
@@ -119,7 +152,23 @@ def header_value(v: str) -> str | None:
     return v
 
 
-def check_modern_headers(h: Any, msg: dict[str, Any], meta_ver: str) -> str | None:  # noqa: C901
+def _check_name_header(h: Any, method: str, params: dict[str, Any]) -> str | None:
+    """`Mcp-Name` must mirror the tool/prompt name or resource URI of the body (only for those methods)."""
+    body_name = {"tools/call": params.get("name"), "prompts/get": params.get("name"),
+                 "resources/read": params.get("uri")}.get(method)  # fmt: skip
+    if body_name is None:
+        return None
+    raw = hv(h, "mcp-name")
+    if raw is None:
+        return "cabeçalho Mcp-Name ausente"
+    if (x := header_value(raw)) is None:
+        return "Mcp-Name com codificação inválida"
+    if x != body_name:
+        return f"Mcp-Name {x!r} difere do corpo ({body_name!r})"
+    return None
+
+
+def check_modern_headers(h: Any, msg: dict[str, Any], meta_ver: str) -> str | None:
     if (v := hv(h, VERSION)) is None:
         return "cabeçalho MCP-Protocol-Version ausente"
     if v != meta_ver:
@@ -129,18 +178,7 @@ def check_modern_headers(h: Any, msg: dict[str, Any], meta_ver: str) -> str | No
         return "cabeçalho Mcp-Method ausente"
     if m != method:
         return f"Mcp-Method {m!r} difere do corpo ({method!r})"
-    params = msg.get("params") or {}
-    body_name = {"tools/call": params.get("name"), "prompts/get": params.get("name"),
-                 "resources/read": params.get("uri")}.get(method)  # fmt: skip
-    if body_name is not None:
-        raw = hv(h, "mcp-name")
-        if raw is None:
-            return "cabeçalho Mcp-Name ausente"
-        if (x := header_value(raw)) is None:
-            return "Mcp-Name com codificação inválida"
-        if x != body_name:
-            return f"Mcp-Name {x!r} difere do corpo ({body_name!r})"
-    return None
+    return _check_name_header(h, method, msg.get("params") or {})
 
 
 def accepts(h: Any, ct: str, exact: bool = False) -> bool:
@@ -383,10 +421,28 @@ async def handle(request: Request) -> Response:
     return await _post(request, p, version, session)
 
 
-async def handle_batch(  # noqa: C901
+async def _batch_item(request: Request, p: P, session: str | None, msg: Any) -> dict[str, Any] | None:
+    """One answer of a legacy batch; `None` for notifications and accepted responses (nothing to send back)."""
+    c = classify(msg)
+    if c is None or isinstance(c, dict):
+        return c
+    if c[1] == "initialize":
+        return rpc_error(c[0], INVALID_REQUEST, "initialize não pode ir em lote")
+    client = await client_of(request.app, session, msg, request.headers)
+    try:
+        return {
+            "jsonrpc": "2.0",
+            "id": c[0],
+            "result": await dispatch(request, p, c[1], msg.get("params") or {}, client),
+        }
+    except Rpc as e:
+        return rpc_error(c[0], e.code, e.message)
+
+
+async def handle_batch(
     request: Request, p: P, who: str, session: str | None, version: str | None, batch: list[Any]
 ) -> Response:
-    app, h = request.app, request.headers
+    app = request.app
     if version and version != "2025-03-26":
         return json_response(400, rpc_error(None, INVALID_REQUEST, "lotes (batch) só na revisão 2025-03-26"))
     if not batch or len(batch) > 50:
@@ -395,25 +451,8 @@ async def handle_batch(  # noqa: C901
         return plain(404, "Sessão MCP desconhecida ou vencida: inicialize de novo.")
     out: list[Any] = []
     for msg in batch:
-        c = classify(msg)
-        if isinstance(c, dict):
-            out.append(c)
-        elif c is None:
-            continue
-        elif c[1] == "initialize":
-            out.append(rpc_error(c[0], INVALID_REQUEST, "initialize não pode ir em lote"))
-        else:
-            client = await client_of(app, session, msg, h)
-            try:
-                out.append(
-                    {
-                        "jsonrpc": "2.0",
-                        "id": c[0],
-                        "result": await dispatch(request, p, c[1], msg.get("params") or {}, client),
-                    }
-                )
-            except Rpc as e:
-                out.append(rpc_error(c[0], e.code, e.message))
+        if (item := await _batch_item(request, p, session, msg)) is not None:
+            out.append(item)
     return Response(status_code=202) if not out else json_response(200, out)
 
 
