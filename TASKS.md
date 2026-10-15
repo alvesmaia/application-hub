@@ -19,12 +19,13 @@
   - ✅ long functions split: deploy_jobs.py, backup_jobs.py, backup_policy.py, runtime_view.py, backups_view.py (HTML identical)
   - ✅ OpsCtx is a class with the helpers; mount_ops only wires (79 lines); pattern in AGENTS.md
   - ✅ pytest 494 passed, E2E 06-ops/29 7/7
-- ▶️ 4 · Split the other large hub files (oauth.py, app.py, 15 files 500–720) and clear the hub noqa (69)
+- ✅ 4 · Split the other large hub files (oauth.py, app.py, 15 files 500–720) and clear the hub noqa (69)
   - ✅ oauth.py 1168 → oauth_{util,base,clients,authorize,tokens}.py + oauth.py (all < 300); pytest 494, E2E 13 2/2
   - ✅ agent A: app.py 1119 → 142, auth/state/vault/storage/graphsim/insight/connections split; 8 out of the baseline
   - ✅ agent B: api/admin/ops/ux/gateway — all noqa in scope removed, 7 files out of the baseline; pytest 494
-  - ⬜ hub/filelock.py: 1 function over the limit
-  - ⬜ oauth*.py: 7 functions still over the limits (admin_action, mount_oauth, authorize_get, fetch_cimd, register, code_grant, refresh_grant)
+  - ✅ hub/filelock.py split
+  - ✅ oauth*.py: last 7 functions split, mount_oauth → module router; responses identical
+  - ✅ zero size noqa left in the repo; hub-check --all 30/30
 
 ## SDK, apps, CLI, JS
 - ✅ 5 · SDK Python: jobs.py, storage.py, idempotency.py, dashboards.py + 17 noqa
@@ -41,4 +42,4 @@
   - ✅ E2E 06/29 + Coletor 25/28: 23 passed; ui-sweep --quick: 0 findings
 
 ## Closing
-- ⬜ 9 · Size baseline already empty (no code file > 500 lines). Tighten limits (20 statements, complexity 8), empty baseline, heavy validation, CHANGELOG
+- ▶️ 9 · Size baseline already empty (no code file > 500 lines). Tighten limits (20 statements, complexity 8), empty baseline, heavy validation, CHANGELOG
