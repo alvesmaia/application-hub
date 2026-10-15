@@ -23,7 +23,6 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
-from fastapi.routing import APIRoute
 
 from hub_sdk.identity import Identity, parse_identity
 
@@ -56,9 +55,12 @@ def require_user(request: Request) -> Identity | JSONResponse:
 
 def openapi_of(app: FastAPI, app_id: str, title: str, version: str) -> dict[str, Any]:
     """OpenAPI document with only the ``/{app_id}/api/`` routes."""
+    # All routes, then filter: an ``include_router`` router is one opaque route that only
+    # ``get_openapi`` expands, so filtering ``app.routes`` by path would miss it.
+    doc = get_openapi(title=title, version=version, openapi_version="3.1.0", routes=app.routes)
     prefix = f"/{app_id}/api/"
-    routes = [r for r in app.routes if isinstance(r, APIRoute) and r.path.startswith(prefix)]
-    doc = get_openapi(title=title, version=version, openapi_version="3.1.0", routes=routes)
+    doc["paths"] = {p: v for p, v in doc.get("paths", {}).items() if p.startswith(prefix)}
+    _drop_unused_schemas(doc)
     # Wave 12 (2.4): relative server, hub
     # security schemes and typed RFC 9457 errors (``Problem``) on every operation.
     doc["servers"] = [{"url": "/"}]
@@ -86,6 +88,34 @@ def openapi_of(app: FastAPI, app_id: str, title: str, version: str) -> dict[str,
                     },
                 )
     return doc
+
+
+def _refs(node: Any) -> set[str]:
+    """Names of the ``#/components/schemas/<name>`` references anywhere under ``node``."""
+    found: set[str] = set()
+    if isinstance(node, dict):
+        ref = node.get("$ref")
+        if isinstance(ref, str):
+            found.add(ref.rsplit("/", 1)[-1])
+        node = list(node.values())
+    if isinstance(node, list):
+        for v in node:
+            found |= _refs(v)
+    return found
+
+
+def _drop_unused_schemas(doc: dict[str, Any]) -> None:
+    """Keeps only the schemas reachable from the API paths (not those of page routes)."""
+    schemas = doc.get("components", {}).get("schemas", {})
+    seen: set[str] = set()
+    todo = _refs(doc["paths"])
+    while todo:
+        name = todo.pop()
+        if name not in seen and name in schemas:
+            seen.add(name)
+            todo |= _refs(schemas[name])
+    for name in set(schemas) - seen:
+        del schemas[name]
 
 
 PROBLEM_SCHEMA: dict[str, Any] = {

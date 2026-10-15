@@ -326,7 +326,5 @@ async def approvals_pending(req: Request, st: StateDep) -> Response:
 
 def install(app: FastAPI) -> None:
     app.exception_handler(RequestValidationError)(_invalid)
-    # Added route by route, not with ``include_router``: FastAPI wraps an included router in one
-    # opaque route, and ``hub_sdk.api.openapi_of`` only sees the app's direct ``APIRoute``s.
-    app.router.routes.extend(router.routes)
+    app.include_router(router)
     install_api(app, "servicos", title=TITLE, version=VERSION)

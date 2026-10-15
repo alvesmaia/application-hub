@@ -7,6 +7,7 @@ from typing import Any
 import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
+from pydantic import BaseModel
 
 from hub_sdk import mcp
 from hub_sdk.api import DESTRUCTIVE, NO_MCP, install_api, problem, require_user
@@ -191,6 +192,39 @@ def test_openapi_has_hub_conventions_and_typed_problem() -> None:
         for op in item.values():
             ref = op["responses"]["4XX"]["content"]["application/problem+json"]["schema"]
             assert ref == {"$ref": "#/components/schemas/Problem"}
+
+
+class Thing(BaseModel):
+    name: str
+
+
+class PageOnly(BaseModel):
+    x: int
+
+
+def test_openapi_sees_routes_added_with_include_router() -> None:
+    """FastAPI wraps an included router in one opaque route: its API routes must still be listed,
+    and schemas used only by routes outside ``/{app}/api/`` stay out of the document."""
+    from fastapi import APIRouter
+
+    from hub_sdk.api import openapi_of
+
+    r = APIRouter()
+
+    @r.post("/demo/api/v1/things", operation_id="things_create")
+    async def things_create(body: Thing) -> Thing:
+        return body
+
+    @r.post("/demo/page")
+    async def page(body: PageOnly) -> PageOnly:
+        return body
+
+    app = FastAPI(openapi_url=None)
+    app.include_router(r)
+    doc = openapi_of(app, "demo", "Demo", "1.0.0")
+    assert list(doc["paths"]) == ["/demo/api/v1/things"]
+    assert "Thing" in doc["components"]["schemas"]
+    assert "PageOnly" not in doc["components"]["schemas"]
 
 
 def test_mcp_inline_refs_keeps_deep_nullable_types() -> None:
