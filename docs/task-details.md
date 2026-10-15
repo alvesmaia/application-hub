@@ -104,3 +104,7 @@ Concluídas em 2026-10-15 (`1d189a8`). Lista final como estava no TASKS.md (pend
 - ✅ 15 · E2E dos apps, ui-sweep --quick, CHANGELOG, limpeza
   - ✅ conformidade 4/4; E2E apps 35 passed (07 exige o 06 antes); ui-sweep --quick 0 achados
   - ✅ CHANGELOG; worktrees e instância isolada removidas
+
+✅ **Task 16 — confirmação**
+
+2026-10-15: backup manual dos 4 apps ao mesmo tempo (como o agendador) na :8090, todos "Concluído": ativos 314,3 MB, fornecedores, servicos 529,7 MB, coletor (registros 64–67).
