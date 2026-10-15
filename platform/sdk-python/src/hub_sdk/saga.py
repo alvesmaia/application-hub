@@ -24,7 +24,7 @@ from __future__ import annotations
 import json
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, NoReturn
 
 from hub_sdk import outbox
 from hub_sdk.jobs import JobCtx, JobError, JobFail, JobRetry, JobSpec
@@ -36,26 +36,30 @@ def new_state(names: Sequence[str]) -> dict[str, Any]:
     return {"v": 1, "state": "running", "steps": [{"name": n, "state": "pending"} for n in names]}
 
 
-def next_action(s: dict[str, Any]) -> str:  # noqa: C901
+def next_action(s: dict[str, Any]) -> str:
     """Next action from the saved state: ``run:i``, ``compensate:i``, ``complete``,
     ``compensated`` or ``failed``."""
     steps = s.get("steps") or []
     st = s.get("state")
     if st == "running":
-        for i, p in enumerate(steps):
-            if p.get("state") != "done":
-                return f"run:{i}"
-        return "complete"
+        return _next_forward(steps)
     if st == "compensating":
-        for i in range(len(steps) - 1, -1, -1):
-            if steps[i].get("state") in ("done", "attempted", "compensating"):
-                return f"compensate:{i}"
-        return "compensated"
-    if st == "completed":
-        return "complete"
-    if st == "compensated":
-        return "compensated"
-    return "failed"
+        return _next_backward(steps)
+    return {"completed": "complete", "compensated": "compensated"}.get(str(st), "failed")
+
+
+def _next_forward(steps: list[dict[str, Any]]) -> str:
+    for i, p in enumerate(steps):
+        if p.get("state") != "done":
+            return f"run:{i}"
+    return "complete"
+
+
+def _next_backward(steps: list[dict[str, Any]]) -> str:
+    for i in range(len(steps) - 1, -1, -1):
+        if steps[i].get("state") in ("done", "attempted", "compensating"):
+            return f"compensate:{i}"
+    return "compensated"
 
 
 def state_of(checkpoint: Any, names: Sequence[str]) -> dict[str, Any]:
@@ -164,7 +168,7 @@ class Saga:
             pool=ctx.pool,
         )
 
-    async def run(self, ctx: JobCtx) -> Any:  # noqa: PLR0915
+    async def run(self, ctx: JobCtx) -> Any:
         names = [s.name for s in self.steps]
         st = state_of(ctx.checkpoint, names)
         last = ctx.job.attempts >= ctx.job.max_attempts
@@ -175,21 +179,26 @@ class Saga:
                 await self._run_step(ctx, st, int(nxt[4:]), last)
             elif nxt.startswith("compensate:"):
                 await self._compensate_step(ctx, st, int(nxt[11:]))
-            elif nxt == "complete":
-                if st["state"] != "completed":
-                    st["state"] = "completed"
-                    await self._save(ctx, st)
-                return {
-                    "saga": "completed",
-                    "outputs": {p["name"]: p["output"] for p in st["steps"] if p.get("output") is not None},
-                }
-            elif nxt == "compensated":
-                if st["state"] != "compensated":
-                    st["state"] = "compensated"
-                    await self._save(ctx, st)
-                raise JobFail(f"saga compensada — {st.get('reason') or ''}")
             else:
-                raise JobFail(f"saga com compensação pendente de intervenção — {st.get('reason') or ''}")
+                return await self._finish(ctx, st, nxt)
+
+    async def _finish(self, ctx: JobCtx, st: dict[str, Any], nxt: str) -> Any:
+        """Terminal action: ``complete`` returns the outputs; anything else fails the job."""
+        if nxt == "complete":
+            await self._mark(ctx, st, "completed")
+            return {
+                "saga": "completed",
+                "outputs": {p["name"]: p["output"] for p in st["steps"] if p.get("output") is not None},
+            }
+        if nxt == "compensated":
+            await self._mark(ctx, st, "compensated")
+            raise JobFail(f"saga compensada — {st.get('reason') or ''}")
+        raise JobFail(f"saga com compensação pendente de intervenção — {st.get('reason') or ''}")
+
+    async def _mark(self, ctx: JobCtx, st: dict[str, Any], state: str) -> None:
+        if st["state"] != state:
+            st["state"] = state
+            await self._save(ctx, st)
 
     async def _run_step(self, ctx: JobCtx, st: dict[str, Any], i: int, last: bool) -> None:
         """Step ``i`` forward; a definitive failure (or a transient one on the last attempt) switches
@@ -223,23 +232,18 @@ class Saga:
         st["reason"] = f"{name}: {e}"
         await self._save(ctx, st)
 
-    async def _compensate_step(self, ctx: JobCtx, st: dict[str, Any], i: int) -> None:  # noqa: PLR0915
+    async def _compensate_step(self, ctx: JobCtx, st: dict[str, Any], i: int) -> None:
         name = self.steps[i].name
         if st["steps"][i]["state"] != "compensating":
             st["steps"][i]["state"] = "compensating"
             await self._save(ctx, st)
-        sc = self._ctx(ctx, st, name, f"{ctx.job.id}:{name}:undo")
-        sc.output = st["steps"][i].get("output")
+        sc = self._undo_ctx(ctx, st, i)
         comp = self.steps[i].compensate
         try:
             if comp is not None:
                 await comp(sc)
         except JobFail as e:
-            st["steps"][i]["state"] = "failed"
-            st["steps"][i]["error"] = str(e)
-            st["state"] = "failed"
-            await self._save(ctx, st)
-            raise JobFail(f"compensação de {name} falhou (intervenção manual): {e}") from e
+            await self._fail_compensation(ctx, st, i, e)
         except JobRetry as e:
             raise JobRetry(f"compensação de {name}: {e}") from e
         except JobError:
@@ -248,3 +252,18 @@ class Saga:
             raise JobRetry(f"compensação de {name}: {e.__class__.__name__}: {e}") from e
         st["steps"][i]["state"] = "compensated"
         await self._save(ctx, st)
+
+    def _undo_ctx(self, ctx: JobCtx, st: dict[str, Any], i: int) -> StepCtx:
+        name = self.steps[i].name
+        sc = self._ctx(ctx, st, name, f"{ctx.job.id}:{name}:undo")
+        sc.output = st["steps"][i].get("output")
+        return sc
+
+    async def _fail_compensation(self, ctx: JobCtx, st: dict[str, Any], i: int, e: JobFail) -> NoReturn:
+        """A definitive compensation error leaves the saga ``failed`` for manual intervention."""
+        name = self.steps[i].name
+        st["steps"][i]["state"] = "failed"
+        st["steps"][i]["error"] = str(e)
+        st["state"] = "failed"
+        await self._save(ctx, st)
+        raise JobFail(f"compensação de {name} falhou (intervenção manual): {e}") from e

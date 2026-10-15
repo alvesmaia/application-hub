@@ -247,22 +247,13 @@ class TraceMiddleware:
         self.app = app
         self.telemetry = telemetry
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # noqa: PLR0915
-        if scope.get("type") != "http":
-            await self.app(scope, receive, send)
-            return
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         path = str(scope.get("path", ""))
-        segs = path.split("/")
-        if len(segs) > 2 and segs[2] == "_hub":
+        if not _traced(scope, path):
             await self.app(scope, receive, send)
             return
         tel = self.telemetry()
-        tp = None
-        for k, v in scope.get("headers", []):
-            if k == b"traceparent":
-                tp = v.decode("latin-1")
-                break
-        parent = TraceContext.parse(tp)
+        parent = TraceContext.parse(_traceparent(scope))
         ctx = parent.child() if parent else TraceContext.root()
         status = {"code": 500}
 
@@ -278,20 +269,43 @@ class TraceMiddleware:
             await self.app(scope, receive, send_wrapper)
         finally:
             _CURRENT.reset(token)
-            code = status["code"]
-            tel.record(
-                tel.span_dict(
-                    ctx,
-                    parent.span_id if parent else None,
-                    f"{method} {_route_name(path)}",
-                    "server",
-                    start,
-                    now_us() - start,
-                    code >= 500,
-                    {
-                        "http.method": method,
-                        "http.target": redact_target(path),
-                        "http.status_code": str(code),
-                    },
-                )
-            )
+            tel.record(_server_span(tel, ctx, parent, method, path, start, status["code"]))
+
+
+def _server_span(
+    tel: Telemetry,
+    ctx: TraceContext,
+    parent: TraceContext | None,
+    method: str,
+    path: str,
+    start: int,
+    code: int,
+) -> dict[str, Any]:
+    return tel.span_dict(
+        ctx,
+        parent.span_id if parent else None,
+        f"{method} {_route_name(path)}",
+        "server",
+        start,
+        now_us() - start,
+        code >= 500,
+        {
+            "http.method": method,
+            "http.target": redact_target(path),
+            "http.status_code": str(code),
+        },
+    )
+
+
+def _traced(scope: Scope, path: str) -> bool:
+    if scope.get("type") != "http":
+        return False
+    segs = path.split("/")
+    return not (len(segs) > 2 and segs[2] == "_hub")
+
+
+def _traceparent(scope: Scope) -> str | None:
+    for k, v in scope.get("headers", []):
+        if k == b"traceparent":
+            return str(v.decode("latin-1"))
+    return None

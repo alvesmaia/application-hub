@@ -181,7 +181,7 @@ class Uploads:
             return None
         return str(r["path"] or "") if r["promoted"] else str(r["staging_path"])
 
-    async def cancel(self, upload_id: str) -> None:  # noqa: C901, PLR0915
+    async def cancel(self, upload_id: str) -> None:
         """Undoes an upload (compensation) under the row lock — serialized with the promotion:
         deletes the staging and, if already promoted, the target, and marks ``cancelled``. Idempotent."""
         async with self.pool.acquire() as c, c.transaction():
@@ -195,26 +195,29 @@ class Uploads:
             paths = [r["staging_path"]]
             owned = bool(r["promoted"])
             if not owned and r["state"] == "committed" and r["path"]:
-                # Re-review P3: promotion that crashed after the move and before marking — staging
-                # is gone and the target is the confirmed version → it also belongs to this upload.
-                v = await c.fetchrow("SELECT size, etag FROM hub_uploads WHERE id = $1", upload_id)
-                try:
-                    await self.store.meta(r["staging_path"])
-                except StorageError as e:
-                    if e.status == 404:
-                        try:
-                            owned = _same_version(v, await self.store.meta(r["path"]))
-                        except StorageError:
-                            owned = False
+                owned = await self._crashed_promotion_owns(c, r, upload_id)
             if owned and r["path"]:
                 paths.append(r["path"])
             for p in paths:
-                try:
-                    await self.store.delete(p)
-                except StorageError as e:
-                    if e.status != 404:
-                        raise
+                await self._delete_if_present(p)
             await c.execute("UPDATE hub_uploads SET state = 'cancelled' WHERE id = $1", upload_id)
+
+    async def _crashed_promotion_owns(self, c: Any, r: Any, upload_id: str) -> bool:
+        # Re-review P3: promotion that crashed after the move and before marking — staging
+        # is gone and the target is the confirmed version → it also belongs to this upload.
+        v = await c.fetchrow("SELECT size, etag FROM hub_uploads WHERE id = $1", upload_id)
+        try:
+            await self.store.meta(r["staging_path"])
+        except StorageError as e:
+            if e.status == 404:
+                return await self._is_version(v, r["path"])
+        return False
+
+    async def _is_version(self, v: Any, path: str) -> bool:
+        try:
+            return _same_version(v, await self.store.meta(path))
+        except StorageError:
+            return False
 
     async def promote(self, upload_id: str) -> None:
         """Promotes (idempotent) under the row lock: checks the confirmed version
@@ -234,7 +237,7 @@ class Uploads:
             await self._promote_files(r)
             await c.execute("UPDATE hub_uploads SET promoted_at = now() WHERE id = $1", upload_id)
 
-    async def _promote_files(self, r: Any) -> None:  # noqa: PLR0915
+    async def _promote_files(self, r: Any) -> None:
         staging, dest = r["staging_path"], r["path"]
         try:
             cur = await self.store.meta(staging)
@@ -245,12 +248,18 @@ class Uploads:
             return
         if not _same_version(r, cur):
             raise JobFail("o arquivo de staging mudou depois da confirmação: recusado")
+        await self._require_absent(dest)
+        await self._move_verified(r, staging, dest)
+
+    async def _require_absent(self, dest: str) -> None:
         try:
             await self.store.meta(dest)
             raise JobFail(f"o destino {dest} já existe: não sobrescrito")
         except StorageError as e:
             if e.status != 404:
                 raise _job_error(e) from e
+
+    async def _move_verified(self, r: Any, staging: str, dest: str) -> None:
         try:
             await self.store.move(staging, dest)
             moved = await self.store.meta(dest)

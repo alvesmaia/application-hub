@@ -156,19 +156,17 @@ class _Internal:
             return _err(503, str(ex))
         return {"jobs": [j.to_json() for j in lst], "enabled": True}
 
-    async def job_action(self, req: Request, job_id: str, action: str) -> Any:  # noqa: C901
+    async def job_action(self, req: Request, job_id: str, action: str) -> Any:
         if (e := self.auth(req)) is not None:
             return e
         jobs_ = self.jb()
         if jobs_ is None:
             return _err(404, "este app não tem tarefas duráveis")
+        act = {"retry": jobs_.retry, "cancel": jobs_.cancel}.get(action)
+        if act is None:
+            return _err(404, "ação desconhecida")
         try:
-            if action == "retry":
-                j = await jobs_.retry(job_id)
-            elif action == "cancel":
-                j = await jobs_.cancel(job_id)
-            else:
-                return _err(404, "ação desconhecida")
+            j = await act(job_id)
         except LookupError as ex:
             return _err(404, str(ex))
         except ValueError as ex:

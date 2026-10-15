@@ -98,15 +98,19 @@ class BrokerSql(SqlConnection):
     def _copy(self) -> SqlConnection:
         return BrokerSql(self.name, self.kind, self.base, self._token)
 
-    @override
-    async def query(  # noqa: PLR0915
-        self, sql: str, params: dict[str, Any] | None = None, max_rows: int | None = None
-    ) -> SqlResult:
+    def _headers(self) -> dict[str, str]:
         h = {"Authorization": f"Bearer {self._token}", "Content-Type": "application/json"}
         if self.user is not None:
             h["x-hub-user"] = self.user
             if self.user_sig is not None:
                 h["x-hub-user-sig"] = self.user_sig
+        return h
+
+    @override
+    async def query(
+        self, sql: str, params: dict[str, Any] | None = None, max_rows: int | None = None
+    ) -> SqlResult:
+        h = self._headers()
         body = json.dumps({"sql": sql, "params": params or {}, "max_rows": max_rows}).encode()
         url = f"{self.base}/_hub/sql/{quote(self.name, safe='')}/query"
         for attempt in range(1, 4):

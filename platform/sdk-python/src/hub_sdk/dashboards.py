@@ -49,7 +49,7 @@ from hub_sdk._dash_svg import PAD_T as PAD_T
 from hub_sdk._dash_svg import SERIES as SERIES
 from hub_sdk._dash_svg import H as H
 from hub_sdk._dash_svg import W as W
-from hub_sdk._dash_svg import _axes, _frame, _from_result, _no_data, _pie
+from hub_sdk._dash_svg import _axes, _bar_marks, _frame, _from_result, _line_marks, _no_data, _pie
 from hub_sdk.dashboards_format import _attr, _num, _safe
 from hub_sdk.dashboards_format import compact as compact
 from hub_sdk.dashboards_format import fmt as fmt
@@ -209,7 +209,7 @@ def kpis(items: Iterable[Markup]) -> Markup:
 Series = Sequence[tuple[str, Sequence[Any]]]
 
 
-def chart(  # noqa: C901, PLR0915
+def chart(
     kind: str,
     labels: Sequence[Any],
     series: Series,
@@ -226,39 +226,16 @@ def chart(  # noqa: C901, PLR0915
     allv = [v for _, vals in ser for v in vals]
     lo, hi = min(0.0, *allv), max(0.0, *allv)
     grid, y, x, slot = _axes(labs, lo, hi, unit, kind == "bar")
-    parts = [grid]
-    desc = []
     if kind == "bar":
-        bw = slot * 0.7 / len(ser)
-        for si, (name, vals) in enumerate(ser):
-            for i, v in enumerate(vals):
-                x0 = PAD_L + slot * i + slot * 0.15 + bw * si
-                y0, y1 = y(0), y(v)
-                parts.append(
-                    f'<rect class="hub-dash-bar hub-dash-c{si}" x="{x0:.1f}" y="{min(y0, y1):.1f}" width="{max(bw - 2, 1):.1f}" '
-                    f'height="{abs(y0 - y1):.1f}" rx="2"><title>{_attr(locale.t(name))} · {_attr(labs[i])}: {_attr(fmt(v, unit))}</title></rect>'
-                )
+        marks = _bar_marks(ser, labs, unit, slot, y)
     else:
-        for si, (name, vals) in enumerate(ser):
-            pts = [(x(i), y(v)) for i, v in enumerate(vals)]
-            line = " ".join(f"{a:.1f},{b:.1f}" for a, b in pts)
-            if kind == "area" and len(pts) > 1:
-                base = y(max(lo, 0.0))
-                parts.append(
-                    f'<polygon class="hub-dash-area hub-dash-c{si}" points="{pts[0][0]:.1f},{base:.1f} {line} {pts[-1][0]:.1f},{base:.1f}"/>'
-                )
-            parts.append(f'<polyline class="hub-dash-line hub-dash-c{si}" points="{line}"/>')
-            for i, (a, b) in enumerate(pts):
-                parts.append(
-                    f'<circle class="hub-dash-dot hub-dash-c{si}" cx="{a:.1f}" cy="{b:.1f}" r="3">'
-                    f"<title>{_attr(locale.t(name))} · {_attr(labs[i])}: {_attr(fmt(vals[i], unit))}</title></circle>"
-                )
-    for name, vals in ser:
-        desc.append(
-            f"{locale.t(name)}: " + ", ".join(f"{labs[i]} {fmt(v, unit)}" for i, v in enumerate(vals[:24]))
-        )
+        marks = _line_marks(ser, labs, unit, kind == "area", x, y, lo)
+    desc = [
+        f"{locale.t(name)}: " + ", ".join(f"{labs[i]} {fmt(v, unit)}" for i, v in enumerate(vals[:24]))
+        for name, vals in ser
+    ]
     legend = [(i, n) for i, (n, _) in enumerate(ser)] if len(ser) > 1 else []
-    return _frame(title, "".join(parts), legend, "; ".join(desc)[:900], kind)
+    return _frame(title, grid + "".join(marks), legend, "; ".join(desc)[:900], kind)
 
 
 def line_chart(r: SqlResult, x: str, y: Sequence[str] | str, title: str = "", unit: str = "") -> Markup:

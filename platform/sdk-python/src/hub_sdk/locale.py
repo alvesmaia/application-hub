@@ -38,20 +38,27 @@ def from_accept_language(v: str | None) -> str | None:
     best: tuple[float, int, str] | None = None
     for i, part in enumerate((v or "").split(",")[:20]):
         bits = part.split(";")
-        q = 1.0
-        for b in bits[1:]:
-            b = b.strip()
-            if b.startswith("q="):
-                try:
-                    q = float(b[2:])
-                except ValueError:
-                    q = 0.0
+        q = _q_weight(bits[1:])
         code = parse(bits[0])
         if q <= 0 or code is None:
             continue
         if best is None or q > best[0] or (q == best[0] and i < best[1]):
             best = (q, i, code)
     return best[2] if best else None
+
+
+def _q_weight(params: list[str]) -> float:
+    # The last `q=` wins and a malformed one counts as 0 (the language is skipped).
+    q = 1.0
+    for b in params:
+        b = b.strip()
+        if not b.startswith("q="):
+            continue
+        try:
+            q = float(b[2:])
+        except ValueError:
+            q = 0.0
+    return q
 
 
 def from_headers(headers: Mapping[str, str]) -> str:

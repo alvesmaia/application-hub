@@ -80,6 +80,52 @@ def _axes(
     return "".join(parts), y, x, slot
 
 
+_NumSeries = list[tuple[str, list[float]]]
+
+
+def _bar_marks(
+    ser: _NumSeries, labs: list[str], unit: str, slot: float, y: Callable[[float], float]
+) -> list[str]:
+    bw = slot * 0.7 / len(ser)
+    parts = []
+    for si, (name, vals) in enumerate(ser):
+        for i, v in enumerate(vals):
+            x0 = PAD_L + slot * i + slot * 0.15 + bw * si
+            y0, y1 = y(0), y(v)
+            parts.append(
+                f'<rect class="hub-dash-bar hub-dash-c{si}" x="{x0:.1f}" y="{min(y0, y1):.1f}" width="{max(bw - 2, 1):.1f}" '
+                f'height="{abs(y0 - y1):.1f}" rx="2"><title>{_attr(locale.t(name))} · {_attr(labs[i])}: {_attr(fmt(v, unit))}</title></rect>'
+            )
+    return parts
+
+
+def _line_marks(
+    ser: _NumSeries,
+    labs: list[str],
+    unit: str,
+    area: bool,
+    x: Callable[[int], float],
+    y: Callable[[float], float],
+    lo: float,
+) -> list[str]:
+    parts = []
+    for si, (name, vals) in enumerate(ser):
+        pts = [(x(i), y(v)) for i, v in enumerate(vals)]
+        line = " ".join(f"{a:.1f},{b:.1f}" for a, b in pts)
+        if area and len(pts) > 1:
+            base = y(max(lo, 0.0))
+            parts.append(
+                f'<polygon class="hub-dash-area hub-dash-c{si}" points="{pts[0][0]:.1f},{base:.1f} {line} {pts[-1][0]:.1f},{base:.1f}"/>'
+            )
+        parts.append(f'<polyline class="hub-dash-line hub-dash-c{si}" points="{line}"/>')
+        parts.extend(
+            f'<circle class="hub-dash-dot hub-dash-c{si}" cx="{a:.1f}" cy="{b:.1f}" r="3">'
+            f"<title>{_attr(locale.t(name))} · {_attr(labs[i])}: {_attr(fmt(vals[i], unit))}</title></circle>"
+            for i, (a, b) in enumerate(pts)
+        )
+    return parts
+
+
 def _no_data(title: str, kind: str) -> Markup:
     return _frame(
         title,

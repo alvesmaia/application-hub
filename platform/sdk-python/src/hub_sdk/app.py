@@ -83,7 +83,7 @@ def scratch_dir(app_id: str) -> Path:
 
 
 class HubSdk:
-    def __init__(  # noqa: PLR0915
+    def __init__(
         self,
         app_id: str,
         db_url: str | None,
@@ -112,8 +112,11 @@ class HubSdk:
         self.after_migrate = after_migrate
         self._bg: list[asyncio.Task[Any]] = []
         self.version = os.environ.get("HUB_APP_VERSION_MARKER", "").strip() or "dev"
+        self._init_extensions()
+
+    def _init_extensions(self) -> None:
         # Wave 8: traces (the hub fetches them at /_hub/telemetry) and flags pushed by the hub.
-        self.telemetry = Telemetry(app_id)
+        self.telemetry = Telemetry(self.app_id)
         self.flags = FlagStore()
         # Wave 9: federated search and Inbox approvals (set before `install`).
         self.search: SearchFn | None = None
@@ -198,44 +201,50 @@ class HubSdk:
 
     # ---- lifecycle ----------------------------------------------------------------
     @contextlib.asynccontextmanager
-    async def lifespan(self, _app: FastAPI) -> AsyncGenerator[None]:  # noqa: PLR0915
+    async def lifespan(self, _app: FastAPI) -> AsyncGenerator[None]:
         self.shutdown.chain_signals()
         if self.db is not None:
-            await self.db.open("web", jobs_inline=self.jobs_mode == "inline")
-            self.outbox = Outbox.postgres(self.db.pool)
-            self.idem = Idempotency.postgres(self.db.idem_pool)
-            self.jobs = self._new_jobs()
-            am = self.after_migrate
-            after = (lambda: am(self)) if am is not None else None
-            self.db.spawn_migrations(self.app_id, self.app_sql, after)
-            if self.handlers and self.jobs_mode == "inline":
-                db = self.db
-                self.worker = Worker(
-                    self.jobs, self.handlers, self.heavy, self.shutdown, ready=lambda: db.ready
-                )
-                self._bg.append(self.worker.spawn())
-            self._bg.append(asyncio.create_task(self._cleanup_loop()))
-            self._bg.append(asyncio.create_task(self._job_counts_loop()))
+            await self._start_web(self.db)
         log.warning("%s: no ar%s", self.app_id, " (pool Postgres do SDK ligado)" if self.db else "")
         try:
             yield
         finally:
             self.shutdown.trigger()
-            drained = await self.shutdown.drain(DRAIN_S)
-            log.warning(
-                "%s: encerrado (%s)",
-                self.app_id,
-                "tarefas devolvidas à fila" if drained else "tempo esgotado; leases vencem sozinhos",
-            )
-            for t in self._bg:
-                t.cancel()
-            for t in self._bg:
-                with contextlib.suppress(asyncio.CancelledError, Exception):
-                    await t
+            await self._drain_and_stop("encerrado")
             if self.db is not None:
                 await self.db.close()
 
-    async def run_worker_process(self) -> None:  # noqa: PLR0915
+    async def _start_web(self, db: Database) -> None:
+        await db.open("web", jobs_inline=self.jobs_mode == "inline")
+        self.outbox = Outbox.postgres(db.pool)
+        self.idem = Idempotency.postgres(db.idem_pool)
+        jobs = self._new_jobs()
+        self.jobs = jobs
+        am = self.after_migrate
+        after = (lambda: am(self)) if am is not None else None
+        db.spawn_migrations(self.app_id, self.app_sql, after)
+        if self.handlers and self.jobs_mode == "inline":
+            self.worker = Worker(jobs, self.handlers, self.heavy, self.shutdown, ready=lambda: db.ready)
+            self._bg.append(self.worker.spawn())
+        self._bg.append(asyncio.create_task(self._cleanup_loop()))
+        self._bg.append(asyncio.create_task(self._job_counts_loop()))
+
+    async def _drain_and_stop(self, what: str) -> None:
+        """Drains in-flight work (``DRAIN_S``), logs the outcome and stops the background tasks."""
+        drained = await self.shutdown.drain(DRAIN_S)
+        log.warning(
+            "%s: %s (%s)",
+            self.app_id,
+            what,
+            "tarefas devolvidas à fila" if drained else "tempo esgotado; leases vencem sozinhos",
+        )
+        for t in self._bg:
+            t.cancel()
+        for t in self._bg:
+            with contextlib.suppress(asyncio.CancelledError, Exception):
+                await t
+
+    async def run_worker_process(self) -> None:
         """Jobs process (``HUB_JOBS_MODE=process``): only the jobs worker and the
         periodic cleanup, until SIGTERM/SIGINT; drains like the web (8 s)."""
         self._install_signals()
@@ -252,40 +261,34 @@ class HubSdk:
         self.db.spawn_migrations(self.app_id, self.app_sql, None)
         db = self.db
         killed = _int_env(KILLED_PID_ENV)
-
-        async def on_ready() -> None:
-            # The supervisor notifies (HUB_JOBS_KILLED_PID) that the previous process died from
-            # SIGKILL (cgroup OOM): the jobs that were in a memory phase become
-            # `failed` with a clear reason, instead of 5 attempts that would kill the process again.
-            ids = jobs.take_markers(killed)
-            if killed is not None and ids:
-                failed = await jobs.fail_killed(ids, f"{killed}-", KILLED_BY_MEMORY)
-                log.warning(
-                    "%s: %d tarefa(s) marcadas como falha após o processo %s ser morto (memória)",
-                    self.app_id,
-                    len(failed),
-                    killed,
-                )
-
         self.worker = Worker(
-            jobs, self.handlers, self.heavy, self.shutdown, ready=lambda: db.ready, on_ready=on_ready
+            jobs,
+            self.handlers,
+            self.heavy,
+            self.shutdown,
+            ready=lambda: db.ready,
+            on_ready=lambda: self._fail_killed_jobs(jobs, killed),
         )
         self._bg.append(self.worker.spawn())
         self._bg.append(asyncio.create_task(self._cleanup_loop()))
         log.warning("%s: processo de tarefas no ar (pid %s)", self.app_id, os.getpid())
         await self.shutdown.wait()
-        drained = await self.shutdown.drain(DRAIN_S)
-        log.warning(
-            "%s: processo de tarefas encerrado (%s)",
-            self.app_id,
-            "tarefas devolvidas à fila" if drained else "tempo esgotado; leases vencem sozinhos",
-        )
-        for t in self._bg:
-            t.cancel()
-        for t in self._bg:
-            with contextlib.suppress(asyncio.CancelledError, Exception):
-                await t
-        await self.db.close()
+        await self._drain_and_stop("processo de tarefas encerrado")
+        await db.close()
+
+    async def _fail_killed_jobs(self, jobs: Jobs, killed: int | None) -> None:
+        # The supervisor notifies (HUB_JOBS_KILLED_PID) that the previous process died from
+        # SIGKILL (cgroup OOM): the jobs that were in a memory phase become
+        # `failed` with a clear reason, instead of 5 attempts that would kill the process again.
+        ids = jobs.take_markers(killed)
+        if killed is not None and ids:
+            failed = await jobs.fail_killed(ids, f"{killed}-", KILLED_BY_MEMORY)
+            log.warning(
+                "%s: %d tarefa(s) marcadas como falha após o processo %s ser morto (memória)",
+                self.app_id,
+                len(failed),
+                killed,
+            )
 
     def _new_jobs(self) -> Jobs:
         assert self.db is not None  # noqa: S101 -- startup initializes database before job construction
@@ -315,21 +318,27 @@ class HubSdk:
         the DB is ready, or within 60 s) and then every ``CLEANUP_EVERY_S``."""
         first = True
         while not self.shutdown.triggered:
-            waiter = asyncio.create_task(self.shutdown.wait())
-            try:
-                if first:
-                    for _ in range(120):
-                        if self.db is None or self.db_ready or self._stopping():
-                            break
-                        await asyncio.sleep(0.5)
-                else:
-                    await asyncio.wait({waiter}, timeout=CLEANUP_EVERY_S)
-            finally:
-                waiter.cancel()
+            await self._wait_next_cleanup(first)
             first = False
             if self._stopping():
                 return
             await self.run_cleanup()
+
+    async def _wait_next_cleanup(self, first: bool) -> None:
+        waiter = asyncio.create_task(self.shutdown.wait())
+        try:
+            if first:
+                await self._wait_db_ready()
+            else:
+                await asyncio.wait({waiter}, timeout=CLEANUP_EVERY_S)
+        finally:
+            waiter.cancel()
+
+    async def _wait_db_ready(self) -> None:
+        for _ in range(120):
+            if self.db is None or self.db_ready or self._stopping():
+                return
+            await asyncio.sleep(0.5)
 
     async def _job_counts_loop(self) -> None:
         """Jobs queued/running (saturation gauge), every 10 s."""
