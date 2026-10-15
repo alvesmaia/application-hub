@@ -87,6 +87,32 @@ def _valid_hex(s: Any, n: int) -> bool:
     return isinstance(s, str) and len(s) == n and all(c in "0123456789abcdef" for c in s)
 
 
+def _root_span(
+    request: Request, app_id: str, ctx: tuple[str, str], rest: str, who: dict[str, Any], t0_us: int, ms: float,
+    status: int,
+) -> dict[str, Any]:  # fmt: skip
+    """Root span of one `/_frag` call (the target is redacted: no ids, emails or tokens leave the hub)."""
+    return {
+        "trace_id": ctx[0],
+        "span_id": ctx[1],
+        "parent_id": None,
+        "name": f"{request.method} /{app_id}",
+        "service": "hub",
+        "kind": "server",
+        "start_us": t0_us,
+        "duration_us": int(ms * 1000),
+        "error": status >= 500,
+        "attrs": {
+            "http.method": request.method,
+            "http.target": redact_target(rest),
+            "http.status_code": str(status),
+            "hub.app": app_id,
+            "hub.env": "producao",
+            "enduser.id": str(who.get("id", ""))[:100],
+        },
+    }
+
+
 class Insight:
     def __init__(
         self, data_dir: Path, vault: Vault | None, admin: AdminStore, registry: Registry, ux: Any
@@ -120,7 +146,7 @@ class Insight:
         value = fl.header_value(getattr(request.state, "flag_objs", []), app_id, "producao", user, roles)
         return [*out, (fl.HEADER, value)] if value else out
 
-    async def observed(  # noqa: PLR0915
+    async def observed(
         self, request: Request, app_id: str, call: Callable[[], Awaitable[Response]]
     ) -> Response:
         """Wraps `/_frag`: root span + RED metrics + a line in the logs console."""
@@ -133,42 +159,28 @@ class Insight:
         rest = request.url.path.removeprefix("/_frag")
         t0, t0_us = time.monotonic(), time.time_ns() // 1000
         on = enabled() and known
-        if on:
-            self.tel.metrics.inflight_inc(app_id, "producao")
-            self.tel.traces.claim(ctx[0], app_id)
-        try:
-            resp = await call()
-        finally:
-            if on:
-                self.tel.metrics.inflight_dec(app_id, "producao")
+        resp = await self._counted(app_id, ctx[0], on, call)
         ms = (time.monotonic() - t0) * 1000
         if on:
             self.tel.metrics.observe(app_id, "producao", resp.status_code, ms)
-            self.tel.traces.record(
-                {
-                    "trace_id": ctx[0],
-                    "span_id": ctx[1],
-                    "parent_id": None,
-                    "name": f"{request.method} /{app_id}",
-                    "service": "hub",
-                    "kind": "server",
-                    "start_us": t0_us,
-                    "duration_us": int(ms * 1000),
-                    "error": resp.status_code >= 500,
-                    "attrs": {
-                        "http.method": request.method,
-                        "http.target": redact_target(rest),
-                        "http.status_code": str(resp.status_code),
-                        "hub.app": app_id,
-                        "hub.env": "producao",
-                        "enduser.id": str(who.get("id", ""))[:100],
-                    },
-                }
-            )
+            self.tel.traces.record(_root_span(request, app_id, ctx, rest, who, t0_us, ms, resp.status_code))
         self.admin.logs.gateway(
             request.method, rest, resp.status_code, int(ms), app_id if known else "platform", who["name"]
         )
         return resp
+
+    async def _counted(
+        self, app_id: str, trace_id: str, on: bool, call: Callable[[], Awaitable[Response]]
+    ) -> Response:
+        """Runs the call inside the in-flight gauge (only when telemetry is on and the app is known)."""
+        if on:
+            self.tel.metrics.inflight_inc(app_id, "producao")
+            self.tel.traces.claim(trace_id, app_id)
+        try:
+            return await call()
+        finally:
+            if on:
+                self.tel.metrics.inflight_dec(app_id, "producao")
 
     def span_for_api(self, request: Request, status: int, started: float, started_us: int) -> None:
         """Control-plane actions (`/api/*` that change something) become hub spans."""
@@ -197,30 +209,38 @@ class Insight:
         )
 
     # ---- analytics ---------------------------------------------------------------------------------------
-    def track(self, request: Request, status: int, can_app: Callable[[str], bool]) -> None:  # noqa: C901
+    def track(self, request: Request, status: int, can_app: Callable[[str], bool]) -> None:
         if not 200 <= status < 400 or (user := getattr(request.state, "user", None)) is None:
             return
-        uid, segs, rec = user["id"], request.url.path.strip("/").split("/"), self.analytics.record
+        uid, segs = user["id"], request.url.path.strip("/").split("/")
         if request.method == "GET":
-            if segs[0] == "_frag":
-                sec = segs[2] if len(segs) > 2 else ""
-                ok = sec and re.fullmatch(r"[A-Za-z0-9_-]{1,64}", sec) and not sec.startswith(("_", "e2e"))
-                if request.headers.get("x-hub-nav") and ok and can_app(segs[1]):
-                    rec(uid, "section", segs[1], sec)
-                    self.usage.record(uid, segs[1], "section")
-            elif segs[0] in ("api", "assets", "account"):
-                return
-            elif (key := page_key(segs)) is not None:
-                rec(uid, "page", key)
-                self.usage.record(uid, PLATFORM, "page")
-            elif (
-                segs[0] == "apps" and 2 <= len(segs) <= 3 and self.registry.get(segs[1]) and can_app(segs[1])
-            ):
-                rec(uid, "open", segs[1])
-                self.usage.record(uid, segs[1], "open")
+            self._track_get(request, uid, segs, can_app)
         elif segs[0] == "_frag" and len(segs) > 1:
-            rec(uid, "action", segs[1])
+            self.analytics.record(uid, "action", segs[1])
             self.usage.record(uid, segs[1], "action")
+
+    def _track_get(self, request: Request, uid: str, segs: list[str], can_app: Callable[[str], bool]) -> None:
+        rec = self.analytics.record
+        if segs[0] == "_frag":
+            self._track_section(request, uid, segs, can_app)
+        elif segs[0] in ("api", "assets", "account"):
+            return
+        elif (key := page_key(segs)) is not None:
+            rec(uid, "page", key)
+            self.usage.record(uid, PLATFORM, "page")
+        elif segs[0] == "apps" and 2 <= len(segs) <= 3 and self.registry.get(segs[1]) and can_app(segs[1]):
+            rec(uid, "open", segs[1])
+            self.usage.record(uid, segs[1], "open")
+
+    def _track_section(
+        self, request: Request, uid: str, segs: list[str], can_app: Callable[[str], bool]
+    ) -> None:
+        """Section navigation inside an app counts only when the shell marked it (`x-hub-nav`)."""
+        sec = segs[2] if len(segs) > 2 else ""
+        ok = sec and re.fullmatch(r"[A-Za-z0-9_-]{1,64}", sec) and not sec.startswith(("_", "e2e"))
+        if request.headers.get("x-hub-nav") and ok and can_app(segs[1]):
+            self.analytics.record(uid, "section", segs[1], sec)
+            self.usage.record(uid, segs[1], "section")
 
     # ---- tarefas ---------------------------------------------------------------------------------------
     def start(self, client: httpx.AsyncClient) -> None:
@@ -296,7 +316,7 @@ class Insight:
         e = self.registry.get(app_id)
         return (e.display.get("short") or e.name) if e else "Plataforma"
 
-    async def _app_channel(self, client: httpx.AsyncClient) -> None:  # noqa: PLR0915
+    async def _app_channel(self, client: httpx.AsyncClient) -> None:
         """Fetches new spans and meters from each app (`/{id}/_hub/telemetry`, internal token)."""
         every = max(int(os.environ.get("HUB_TELEMETRY_POLL_MS", "2000") or 2000), 200) / 1000
         cursor: dict[str, int] = {}
@@ -309,20 +329,25 @@ class Insight:
                 if not (token := self.admin.tokens.get(app_id)):
                     continue
                 await self._push_flags(client, app_id, up, token, objs, version, pushed)
-                if not enabled():
-                    continue
-                try:
-                    r = await client.get(
-                        f"{up}/{app_id}/_hub/telemetry?after={cursor.get(app_id, 0)}",
-                        headers={"x-hub-internal-token": token},
-                        timeout=3,
-                    )
-                    if r.is_success:
-                        body = r.json()
-                        self.ingest(app_id, "producao", body)
-                        cursor[app_id] = int(body.get("next", cursor.get(app_id, 0)))
-                except (httpx.HTTPError, ValueError, TypeError):
-                    continue
+                if enabled():
+                    await self._pull_telemetry(client, app_id, up, token, cursor)
+
+    async def _pull_telemetry(
+        self, client: httpx.AsyncClient, app_id: str, up: str, token: str, cursor: dict[str, int]
+    ) -> None:
+        """One poll of the app's telemetry since `cursor`; a failed poll retries from the same cursor."""
+        try:
+            r = await client.get(
+                f"{up}/{app_id}/_hub/telemetry?after={cursor.get(app_id, 0)}",
+                headers={"x-hub-internal-token": token},
+                timeout=3,
+            )
+            if r.is_success:
+                body = r.json()
+                self.ingest(app_id, "producao", body)
+                cursor[app_id] = int(body.get("next", cursor.get(app_id, 0)))
+        except (httpx.HTTPError, ValueError, TypeError):
+            return
 
     @staticmethod
     async def _push_flags(

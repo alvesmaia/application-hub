@@ -14,6 +14,7 @@ import re
 import secrets
 import time
 from collections import Counter
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -66,6 +67,36 @@ def _new_day() -> dict[str, Any]:
 
 def _top(items: Counter[str] | dict[str, int], n: int) -> list[list[Any]]:
     return [[k, v] for k, v in sorted(items.items(), key=lambda kv: (-kv[1], kv[0]))[:n]]
+
+
+def _tally_login(day: dict[str, Any], uid: int, kind: str, a: str, b: str) -> None:
+    day["f_login"].add(uid)
+    _bump(day["events"], "login")
+
+
+def _tally_page(day: dict[str, Any], uid: int, kind: str, a: str, b: str) -> None:
+    _bump(day["pages"], a)
+
+
+def _tally_open(day: dict[str, Any], uid: int, kind: str, a: str, b: str) -> None:
+    _bump(day["app_opens" if kind == "open" else "sections"], a if kind == "open" else f"{a}/{b}")
+    day["f_open"].add(uid)
+    if a in day["app_users"] or len(day["app_users"]) < MAX_KEYS:
+        day["app_users"].setdefault(a, set()).add(uid)
+
+
+def _tally_action(day: dict[str, Any], uid: int, kind: str, a: str, b: str) -> None:
+    day["f_action"].add(uid)
+    _bump(day["events"], f"acao:{a}")
+
+
+_TALLY: dict[str, Callable[[dict[str, Any], int, str, str, str], None]] = {
+    "login": _tally_login,
+    "page": _tally_page,
+    "open": _tally_open,
+    "section": _tally_open,
+    "action": _tally_action,
+}
 
 
 class Analytics:
@@ -167,28 +198,21 @@ class Analytics:
         self.dirty = True
         self._tally(day, uid, kind, a, b, n)
 
-    def _tally(self, day: dict[str, Any], uid: int, kind: str, a: str, b: str, n: int) -> None:  # noqa: C901, PLR0915
-        if kind == "login":
-            day["f_login"].add(uid)
-            _bump(day["events"], "login")
-        elif kind == "page":
-            _bump(day["pages"], a)
-        elif kind in ("open", "section"):
-            _bump(day["app_opens" if kind == "open" else "sections"], a if kind == "open" else f"{a}/{b}")
-            day["f_open"].add(uid)
-            if a in day["app_users"] or len(day["app_users"]) < MAX_KEYS:
-                day["app_users"].setdefault(a, set()).add(uid)
-        elif kind == "action":
-            day["f_action"].add(uid)
-            _bump(day["events"], f"acao:{a}")
-        elif kind == "search":
-            day["searches"] += 1
-            if n == 0:
-                day["searches_zero"] += 1
-                if t := norm_term(a):
-                    _bump(day["zero_terms"], t if self.raw_terms else self._term_label(t))
-        elif kind == "feature" and a in FEATURES:
-            _bump(day["features"], a)
+    def _tally(self, day: dict[str, Any], uid: int, kind: str, a: str, b: str, n: int) -> None:
+        if kind == "search":
+            self._tally_search(day, a, n)
+        elif kind == "feature":
+            if a in FEATURES:
+                _bump(day["features"], a)
+        elif (fn := _TALLY.get(kind)) is not None:
+            fn(day, uid, kind, a, b)
+
+    def _tally_search(self, day: dict[str, Any], a: str, n: int) -> None:
+        day["searches"] += 1
+        if n == 0:
+            day["searches_zero"] += 1
+            if t := norm_term(a):
+                _bump(day["zero_terms"], t if self.raw_terms else self._term_label(t))
 
     def record_global(self, name: str, app: str, now: int | None = None) -> None:
         if self.enabled:
@@ -290,7 +314,7 @@ class Analytics:
         }
         return json.dumps(doc, separators=(",", ":")).encode()
 
-    def flush(self, now: int | None = None) -> None:  # noqa: PLR0915
+    def flush(self, now: int | None = None) -> None:
         """Applies retention, rotates the expired key and writes (if it changed)."""
         now = int(time.time() * 1000) if now is None else now
         if now - self.key_since >= self.retention * DAY_MS:
@@ -301,10 +325,13 @@ class Analytics:
             self.dirty = True
         if not self.path:
             return
-        with file_lock(self.path):  # replicas on the same volume: merges what the others wrote
+        self._merge_write(self.path, keep)
+
+    def _merge_write(self, path: Path, keep: str) -> None:
+        with file_lock(path):  # replicas on the same volume: merges what the others wrote
             file: dict[str, Any] = {}
             try:
-                raw = json.loads(self.path.read_text(encoding="utf-8")).get("days", {})
+                raw = json.loads(path.read_text(encoding="utf-8")).get("days", {})
                 file = {k: self._load_day(v) for k, v in raw.items()}
             except (OSError, ValueError, TypeError, AttributeError):
                 pass
@@ -312,6 +339,6 @@ class Analytics:
             changed = self.dirty or merged != file
             self.days, self.base, self.dirty = merged, snapshot(merged), False
             if changed:
-                tmp = self.path.with_suffix(f".json.{os.getpid()}.tmp")
+                tmp = path.with_suffix(f".json.{os.getpid()}.tmp")
                 tmp.write_bytes(self._dump())
-                os.replace(tmp, self.path)
+                os.replace(tmp, path)
