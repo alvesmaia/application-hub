@@ -134,6 +134,7 @@ class WebCtx:
             "rail_ctx": rail_ctx,
             "staging": request.cookies.get("hub_env") == "staging",
             "brand": self.settings.brand,
+            "source_url": self.settings.source_url,
             "user": user,
             "perms": " ".join(perms),
             "nav": visible_nav(nav_for(lang), perms),

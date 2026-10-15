@@ -7,6 +7,7 @@ import pytest
 from api_helper import api_hub
 from fastapi.testclient import TestClient
 
+from hub.config import DEFAULT_SOURCE_URL
 from hub.ops import devdocs, devkit
 
 
@@ -77,7 +78,9 @@ def test_no_owner_brand_in_ui(hub: TestClient) -> None:
     cat = (Path(__file__).parents[1] / "hub/web/catalog.json").read_text(encoding="utf-8")
     assert not bad.search(cat)
     for url in ("/", "/developers", "/applications", "/manifest.webmanifest"):
-        assert not bad.search(hub.get(url).text), url
+        # the header source link (HUB_SOURCE_URL default) is deliberate
+        html = hub.get(url).text.replace(DEFAULT_SOURCE_URL, "")
+        assert not bad.search(html), url
 
 
 def test_developers_page_and_docs(hub: TestClient) -> None:

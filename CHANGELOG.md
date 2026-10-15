@@ -8,6 +8,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 ## [Unreleased]
 
 ### Added
+- GitHub icon in the global header (new tab, pt-BR/en label) pointing to `HUB_SOURCE_URL` (default
+  `https://github.com/alvesmaia/application-hub`; empty or non-`https://` hides it).
 - `install.sh`: "Revisar opções avançadas?" with every optional setting (MinIO folder, audit anchor folder and
   webhook, off-site copy none/SharePoint/S3, Entra ID sign-in, admin CIDRs, proxy, telemetry, update notice,
   public docs, build CPUs); the recommended value is the default and Enter keeps it. `--config-only` only writes

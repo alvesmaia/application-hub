@@ -26,7 +26,8 @@ input `version`) and publishes `ghcr.io/<owner>/app-hub-{web,minio,mc,ativos,for
 
 - [ ] `cp prod.env.example .prod.env && chmod 600 .prod.env`; fill in **all** required variables with new values per server (`openssl rand -hex 24`): `HUB_PUBLIC_URL` (https), `APP_HUB_DB_PASSWORD`,
       `APP_HUB_APP_DB_PASSWORD`, `APP_HUB_OBJSTORE_PASSWORD`, `HUB_INTERNAL_TOKEN_<APP>` (4). Optional: CIDRs
-      (`HUB_ADMIN_ALLOWED_CIDRS`, `HUB_TRUSTED_PROXIES`, `HUB_BROKER_APP_CIDRS`), `HUB_USER_SIG_KEY`, telemetry.
+      (`HUB_ADMIN_ALLOWED_CIDRS`, `HUB_TRUSTED_PROXIES`, `HUB_BROKER_APP_CIDRS`), `HUB_USER_SIG_KEY`, telemetry,
+      `HUB_SOURCE_URL` (GitHub link in the header; default the project repo, empty = hidden, only `https://`).
       **Do not** set `HUB_DEMO_USERS`/`HUB_DEMO_PASSWORD`.
 - [ ] Start: `docker compose --env-file .prod.env -f docker-compose.yml -f docker-compose.apps.yml -f docker-compose.prod.yml up -d --build`
       (refuses to start if a variable is missing; Secure cookies; app test routes disabled). Sample apps: `COMPOSE_PROFILES=demo-apps` in `.prod.env`.

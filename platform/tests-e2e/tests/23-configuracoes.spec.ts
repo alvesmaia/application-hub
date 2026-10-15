@@ -18,6 +18,22 @@ test.afterAll(async () => {
   await api.put('/api/me/prefs', { data: { theme: '', lang: '' } });
 });
 
+// HUB_SOURCE_URL (default = project repo); a stack started with it empty has no icon and skips the checks.
+test('header: ícone do GitHub abre o código-fonte em nova guia, também no celular @core', async ({ page }) => {
+  for (const vp of [{ width: 1440, height: 900 }, MOBILE.viewport]) {
+    await page.setViewportSize(vp);
+    await page.goto('/applications');
+    const gh = page.locator('.platform-header a[data-hub-source]');
+    test.skip((await gh.count()) === 0, 'HUB_SOURCE_URL vazio nesta instância');
+    await expect(gh).toBeVisible();
+    await expect(gh).toHaveAttribute('href', /^https:\/\//);
+    await expect(gh).toHaveAttribute('target', '_blank');
+    await expect(gh).toHaveAttribute('rel', 'noopener');
+    await expect(gh).toHaveAccessibleName('Código-fonte no GitHub (abre em nova guia)');
+    await noOverflow(page);
+  }
+});
+
 test('menu do usuário só com Minha conta, Desenvolvedores, tour e Sair @core', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/applications');

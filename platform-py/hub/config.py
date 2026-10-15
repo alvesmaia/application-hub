@@ -7,12 +7,14 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, override
+from urllib.parse import urlsplit
 
 from pydantic import Field
 from pydantic.fields import FieldInfo
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 _REPO = Path(__file__).resolve().parents[2]
+DEFAULT_SOURCE_URL = "https://github.com/alvesmaia/application-hub"
 
 
 class _TomlSource(PydanticBaseSettingsSource):
@@ -33,6 +35,7 @@ class _Environment(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="HUB_", extra="ignore")
 
     brand: str = "Application Hub"
+    source_url: str = DEFAULT_SOURCE_URL
     config: dict[str, Any] = Field(default_factory=dict)
 
     @classmethod
@@ -59,6 +62,13 @@ class Settings:
     brand: str
     config: dict[str, Any]
     asset_dirs: tuple[Path, ...]
+    source_url: str = DEFAULT_SOURCE_URL  # "" = no GitHub link in the header
+
+
+def https_only(url: str) -> str:
+    """The URL itself when it is https with a host; "" otherwise (the header link is then hidden)."""
+    parts = urlsplit(url.strip())
+    return parts.geturl() if parts.scheme == "https" and parts.netloc else ""
 
 
 def load_settings() -> Settings:
@@ -70,4 +80,4 @@ def load_settings() -> Settings:
         if dirs
         else (root / "assets/shell", root / "assets/web")
     )
-    return Settings(env.brand, env.config, asset_dirs)
+    return Settings(env.brand, env.config, asset_dirs, https_only(env.source_url))

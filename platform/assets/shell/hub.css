@@ -216,6 +216,8 @@ code,kbd,pre,samp,.mono,.hub-mono{font-family:var(--font-mono)}
 .brand,.brand-name{color:var(--color-chrome-text)}
 .brand-name span,.brand-subtitle{color:var(--color-chrome-text-2)!important}
 .platform-header .icon-button,.platform-header .chevron{color:var(--color-chrome-icon)}
+/* GitHub mark (filled, unlike the stroked icons); HUB_SOURCE_URL. */
+.hub-source-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}.hub-source-link svg{width:18px;height:18px;fill:currentColor;stroke:none}.platform-header .hub-source-link:hover{color:var(--color-chrome-text)}
 .user-copy strong{color:var(--color-chrome-text)}
 .user-copy small{color:var(--color-chrome-text-2)}
 .header-search,button.header-search.hub-search-trigger{color:var(--color-chrome-text-2);border-radius:8px}
@@ -808,7 +810,8 @@ body.in-app.rail-collapsed .workspace{left:56px}
   .hub-drawer-toggle[aria-expanded="true"] svg path:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
   .hub-search-mobile{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;border:0;background:none;color:inherit}
   .hub-search-mobile svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
-  .platform-header .hub-notif-menu>summary{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+  .platform-header .hub-notif-menu>summary,.platform-header .hub-source-link{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+  .platform-header .hub-source-link{padding:0}
   /* Rail off-screen until the panel opens. */
   body:not(.hub-drawer-open) .platform-rail{display:none!important}
   body .app-root{margin-left:0!important}
