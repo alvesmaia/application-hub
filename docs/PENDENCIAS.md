@@ -30,12 +30,14 @@ native task list.
   the file under a lock).
 - **Repository:** since 14/10/2026 the public `alvesmaia/application-hub` is the only one; the old private one (full
   history and the Rust stack) was archived as `alvesmaia/application-hub-py`.
-- Load with replicas: measured on 13/10/2026 (1 container = 200 users; 2 behind the edge = 300; table in
-  `docs/IMPLANTACAO.md`). Missing: a scale mode ready in compose (N copies of the hub + edge with `round_robin`) and
-  `uvicorn --workers` (each process tries to open broker port 8081 and fails).
+- Load: measured on 13/10/2026 (1 container = 200 users; table in `docs/IMPLANTACAO.md`). Hub replicas in compose and
+  `uvicorn --workers` are not pursued (decided 15/10/2026).
 
 ## Future ideas
 
+- **Multiple servers under one hub:** a single hub manages the Docker of several servers and places/moves apps
+  between them, so the platform scales by adding servers (instead of hub replicas). Today the hub drives only its own
+  host's Docker (`hub/ops`, guard `docker_guard.py`).
 - **English i18n keys:** the catalogs still use the pt-BR text as the key (`t()`/`tr()`); switching keys to English
   touches every call and template (~4,900 entries). Code, comments and docs are English since 14/10/2026.
 - **English ids for the sample apps** (`ativos`, `fornecedores`, `servicos`, `coletor`): needs database/data migration and

@@ -29,8 +29,7 @@ Portal corporativo único (white label) que hospeda várias aplicações interna
 
 | Item | Status | Observação |
 |---|---|---|
-| Modo de escala pronto no compose (N cópias do hub atrás da borda em `round_robin`) | Planejado | Hoje: 1 contêiner ≈ 200 usuários simultâneos; 2 contêineres ≈ 300 (montagem manual) |
-| Vários processos por contêiner (`uvicorn --workers`) | Planejado | Cada processo tenta abrir a porta interna do broker (8081) |
+| Vários servidores sob um único hub (o hub gerencia o Docker de vários servidores e sobe/move os apps entre eles) | Ideia | Escalar com mais servidores em vez de réplicas do hub. Hoje um hub comanda o Docker do próprio servidor; um contêiner atende ≈ 200 usuários simultâneos |
 | ODBC no broker SQL | Ideia | Só com o driver de um banco específico (Oracle, DB2…) na imagem; Postgres, MySQL e SQL Server já são nativos |
 | Aprovação humana de ação de agente na Inbox | Ideia | Hoje a confirmação de ações destrutivas fica com o cliente de IA (`confirm_token`) |
 | Chaves do i18n e ids dos apps de exemplo em inglês | Ideia | Código, comentários e docs já estão em inglês; isso mexe em todo texto de tela e exige migração de dados |
