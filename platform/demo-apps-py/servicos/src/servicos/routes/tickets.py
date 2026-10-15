@@ -133,35 +133,61 @@ def _opened(proto: str, due: Any, needs_approval: bool) -> Response:
     )
 
 
-@router.post("/servicos/requests")
-async def open_ticket(req: Request, st: StateDep) -> Response:  # noqa: PLR0915
-    n = db_notice(st)
-    if n is not None:
-        return html(views.new_form(n), 503)
+@dataclass(frozen=True)
+class NewTicket:
+    """The "open ticket" form, already trimmed and checked."""
+
+    title: str
+    cat: str
+    pri: str
+    desc: str
+    needs_approval: bool
+
+
+async def _new_ticket_form(req: Request) -> NewTicket | None:
+    """The form's fields, or ``None`` when title/category/priority are missing or invalid."""
     f = {k: str(v) for k, v in (await req.form()).items()}
     title = param(f, "title")[:160]
     cat = pick(param(f, "category"), CATEGORIES)
     pri = pick(param(f, "priority"), PRIORITIES)
     desc = param(f, "description")[:4000]
     if not title or not cat or not pri or any(ord(ch) < 32 or ord(ch) == 127 for ch in title):
+        return None
+    return NewTicket(title, cat, pri, desc, param(f, "approval") == "1")
+
+
+async def _insert_ticket(
+    st: State, req: Request, t: NewTicket, user: str, login: str, due: Any, first: str
+) -> str:
+    """Inserts the ticket (audit and approval request in the same transaction); its protocol."""
+    async with st.sdk.pool.acquire() as c, c.transaction():
+        row = await c.fetchrow(INSERT_SQL, t.title, user, t.cat, t.pri, t.desc, due, first)
+        proto, tid = row["protocol"], row["id"]
+        await audit_tx(c, req, "Chamado aberto", proto, f"{t.cat} · {t.pri} · {t.title}")
+        if t.needs_approval:
+            await request_approval(c, tid, proto, t.title, login, user)
+    return str(proto)  # text column: already a str; narrows asyncpg's Any
+
+
+@router.post("/servicos/requests")
+async def open_ticket(req: Request, st: StateDep) -> Response:
+    n = db_notice(st)
+    if n is not None:
+        return html(views.new_form(n), 503)
+    t = await _new_ticket_form(req)
+    if t is None:
         msg = notice("error", "Verifique os campos", "Título, categoria e prioridade são obrigatórios.")
         return html(views.new_form(msg), 422)
     user = user_of(req)
     login = identity_of(req).user or user
-    needs_approval = param(f, "approval") == "1"
-    first = "Aguardando" if needs_approval else "Aberto"
-    due = utcnow() + sla_for(pri)
+    first = "Aguardando" if t.needs_approval else "Aberto"
+    due = utcnow() + sla_for(t.pri)
     try:
-        async with st.sdk.pool.acquire() as c, c.transaction():
-            row = await c.fetchrow(INSERT_SQL, title, user, cat, pri, desc, due, first)
-            proto, tid = row["protocol"], row["id"]
-            await audit_tx(c, req, "Chamado aberto", proto, f"{cat} · {pri} · {title}")
-            if needs_approval:
-                await request_approval(c, tid, proto, title, login, user)
+        proto = await _insert_ticket(st, req, t, user, login, due, first)
     except DBERR as e:
         msg = notice("error", "Não foi possível abrir o chamado", str(e))
         return html(views.new_form(msg), 503)
-    return _opened(proto, due, needs_approval)
+    return _opened(proto, due, t.needs_approval)
 
 
 def _cell(msg: str) -> str:

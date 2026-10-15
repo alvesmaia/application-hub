@@ -51,17 +51,23 @@ async def _push(st: State, ws: WebSocket, view: str, q: asyncio.Queue[str], rx: 
         await ws.send_text(await ws_payload(st, ws, view))
 
 
+def _refusal_code(st: State, user: str) -> int | None:
+    """WebSocket close code when the socket cannot be served (``None`` = accept)."""
+    if user == "anonimo":
+        return 1008
+    if db_notice(st) is not None:
+        return 1013
+    return None
+
+
 @router.websocket("/coletor/ws/live")
-async def ws_live(ws: WebSocket, st: StateDep) -> None:  # noqa: PLR0915
+async def ws_live(ws: WebSocket, st: StateDep) -> None:
     """Live state of the user: on each reading/session change, the screen fragment
     (``view=folha`` or ``escanear``) is redrawn and sent (hub-kit ``data-hub-ws``)."""
     view = "escanear" if ws.query_params.get("view") == "escanear" else "folha"
     user = user_login(ws)
-    if user == "anonimo":
-        await ws.close(code=1008)
-        return
-    if db_notice(st) is not None:
-        await ws.close(code=1013)
+    if (code := _refusal_code(st, user)) is not None:
+        await ws.close(code=code)
         return
     _locale.use(_locale.from_headers(ws.headers))  # the socket task has its own context
     await ws.accept()

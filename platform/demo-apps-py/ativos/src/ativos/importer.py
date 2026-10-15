@@ -65,12 +65,24 @@ class Validator:
             raise JobFail(str(e)) from e
         self.tags: set[str] = set()
 
-    def check(  # noqa: C901, PLR0915
+    def check(
         self, row: int, cells: list[Any] | tuple[Any, ...]
     ) -> tuple[list[Any] | None, list[tuple[int, str, str, str]]] | None:
         """``None`` = blank row; otherwise (values in COLS order | ``None``, errors)."""
         if all(v is None or (isinstance(v, str) and not v.strip()) for v in cells):
             return None
+        values, present, errs = self._normalize(row, cells)
+        for ci, col in enumerate(COLS):
+            if col.required and not present[ci]:
+                errs.append((row, col.header, "", "campo obrigatório"))
+        if not errs:
+            self._check_tag(row, values[0] or "", errs)
+        return (None if errs else values), errs
+
+    def _normalize(
+        self, row: int, cells: list[Any] | tuple[Any, ...]
+    ) -> tuple[list[Any], list[bool], list[tuple[int, str, str, str]]]:
+        """(values in COLS order, columns present in the sheet, conversion errors)."""
         values: list[Any] = [None] * len(COLS)
         present = [False] * len(COLS)
         errs: list[tuple[int, str, str, str]] = []
@@ -83,16 +95,13 @@ class Validator:
                 values[ci] = normalize(COLS[ci], raw)
             except Invalid as e:
                 errs.append((row, COLS[ci].header, raw_text(raw), str(e)))
-        for ci, col in enumerate(COLS):
-            if col.required and not present[ci]:
-                errs.append((row, col.header, "", "campo obrigatório"))
-        if not errs:
-            tag = values[0] or ""
-            if tag in self.tags:
-                errs.append((row, COLS[0].header, tag, "patrimônio duplicado na planilha"))
-            else:
-                self.tags.add(tag)
-        return (None if errs else values), errs
+        return values, present, errs
+
+    def _check_tag(self, row: int, tag: str, errs: list[tuple[int, str, str, str]]) -> None:
+        if tag in self.tags:
+            errs.append((row, COLS[0].header, tag, "patrimônio duplicado na planilha"))
+        else:
+            self.tags.add(tag)
 
 
 def raw_text(v: Any) -> str:

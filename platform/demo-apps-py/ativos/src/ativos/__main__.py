@@ -190,50 +190,74 @@ def serve() -> int:
     return 0
 
 
-def main(argv: list[str] | None = None) -> int:  # noqa: PLR0915
+def _gen_xlsx(args: list[str]) -> int:
+    from ativos.importer import generate_xlsx
+
+    rows = int(args[1]) if len(args) > 1 else 100_000
+    out = Path(args[2] if len(args) > 2 else "ativos-exemplo.xlsx")
+    bad = int(args[3]) if len(args) > 3 else 10
+    prefix = args[4] if len(args) > 4 else "IMP-"
+    generate_xlsx(out, rows, bad, prefix)
+    print(f"gen-xlsx: {out}: {rows} linhas, ~{bad} erros por mil, {out.stat().st_size / 1048576:.1f} MB")
+    return 0
+
+
+def _count_xlsx(args: list[str]) -> int:
+    from ativos.importer import count_xlsx
+
+    print(json.dumps(count_xlsx(Path(args[1]))))
+    return 0
+
+
+def _openapi() -> int:
+    # Wave 11: OpenAPI of API v1 (`hub pack` embeds it as openapi.json).
+    from ativos.app import create_app
+
+    doc = json.dumps(create_app().state.hub_api_doc(), ensure_ascii=False, indent=2, sort_keys=True)
+    sys.stdout.buffer.write(doc.encode("utf-8") + b"\n")
+    return 0
+
+
+def _log_warnings() -> None:
+    logging.basicConfig(level=logging.WARNING, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+
+
+def _seed() -> int:
+    import asyncio
+
+    from ativos.seed import run_seed
+
+    _log_warnings()
+    return asyncio.run(run_seed())
+
+
+def _worker() -> int:
+    import asyncio
+
+    from ativos.app import run_worker
+
+    _log_warnings()
+    asyncio.run(run_worker())
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     cmd = args[0] if args else "serve"
     if cmd == "--health":
         return health()
     if cmd == "gen-xlsx":
-        from ativos.importer import generate_xlsx
-
-        rows = int(args[1]) if len(args) > 1 else 100_000
-        out = Path(args[2] if len(args) > 2 else "ativos-exemplo.xlsx")
-        bad = int(args[3]) if len(args) > 3 else 10
-        prefix = args[4] if len(args) > 4 else "IMP-"
-        generate_xlsx(out, rows, bad, prefix)
-        print(f"gen-xlsx: {out}: {rows} linhas, ~{bad} erros por mil, {out.stat().st_size / 1048576:.1f} MB")
-        return 0
+        return _gen_xlsx(args)
     if cmd == "count-xlsx":
-        from ativos.importer import count_xlsx
-
-        print(json.dumps(count_xlsx(Path(args[1]))))
-        return 0
+        return _count_xlsx(args)
     if cmd == "openapi":
-        # Wave 11: OpenAPI of API v1 (`hub pack` embeds it as openapi.json).
-        from ativos.app import create_app
-
-        doc = json.dumps(create_app().state.hub_api_doc(), ensure_ascii=False, indent=2, sort_keys=True)
-        sys.stdout.buffer.write(doc.encode("utf-8") + b"\n")
-        return 0
+        return _openapi()
     if cmd == "seed":
-        import asyncio
-
-        from ativos.seed import run_seed
-
-        logging.basicConfig(level=logging.WARNING, format="%(asctime)s %(name)s %(levelname)s %(message)s")
-        return asyncio.run(run_seed())
+        return _seed()
     if cmd == "serve":
         return serve()
     if cmd == "worker":
-        import asyncio
-
-        from ativos.app import run_worker
-
-        logging.basicConfig(level=logging.WARNING, format="%(asctime)s %(name)s %(levelname)s %(message)s")
-        asyncio.run(run_worker())
-        return 0
+        return _worker()
     print(__doc__, file=sys.stderr)
     return 2
 

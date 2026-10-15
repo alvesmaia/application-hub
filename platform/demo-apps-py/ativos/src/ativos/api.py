@@ -256,13 +256,46 @@ async def assets_create(req: Request, st: StateDep, body: AssetFields) -> Respon
     return JSONResponse(asset_json(row) if row else {"id": id}, status_code=201)
 
 
+def _write_failed(e: Exception, transient_msg: str) -> Response:
+    """503 when the database dropped (the client may retry), 500 otherwise."""
+    return _unavailable(transient_msg) if transient(e) else problem(500, str(e))
+
+
+_UPDATE_KEYS = tuple(k for k in EDIT_FIELDS if k != "tag")
+
+
+def _merged_fields(current: Any, body: AssetUpdate) -> dict[str, Any]:
+    # Missing fields keep their current value.
+    merged = {k: v for k, v in asset_values(current).items() if v != ""}
+    merged.update(body.fields.model_dump(exclude_none=True))
+    return merged
+
+
+async def _update_asset(
+    st: State, req: Request, id: int, body: AssetUpdate, tag: str, vals: dict[str, Any]
+) -> int | None:
+    """New version, or ``None`` when ``body.version`` is stale."""
+    async with st.sdk.pool.acquire() as c, c.transaction():
+        version = await c.fetchval(
+            "UPDATE assets SET name=$3, category=$4, location=$5, status=$6, responsible=$7, department=$8, "
+            "acquisition_date=$9, acquisition_value_cents=$10, notes=$11, version = version + 1, "
+            "updated_at = now() WHERE id = $1 AND version = $2 RETURNING version",
+            id,
+            body.version,
+            *[vals[k] for k in _UPDATE_KEYS],
+        )
+        if version is not None:
+            await audit_tx(c, req, "Ativo atualizado (API)", tag, f"versão {body.version} → {version}")
+    return None if version is None else int(version)
+
+
 @router.put(
     f"{BASE}/assets/{{id}}",
     operation_id="assets_update",
     tags=["Ativos"],
     summary="Altera um ativo (envie a versão lida; 409 se mudou)",
 )
-async def assets_update(req: Request, st: StateDep, id: int, body: AssetUpdate) -> Response:  # noqa: C901
+async def assets_update(req: Request, st: StateDep, id: int, body: AssetUpdate) -> Response:
     if isinstance(u := require_user(req), JSONResponse):
         return u
     if not db_ok(st):
@@ -273,31 +306,13 @@ async def assets_update(req: Request, st: StateDep, id: int, body: AssetUpdate) 
         return _unavailable(str(e))
     if current is None:
         return problem(404, "ativo não encontrado")
-    # Missing fields keep their current value.
-    merged = {k: v for k, v in asset_values(current).items() if v != ""}
-    merged.update(body.fields.model_dump(exclude_none=True))
-    keys = tuple(k for k in EDIT_FIELDS if k != "tag")
-    vals, errs = validate(merged, keys)
+    vals, errs = validate(_merged_fields(current, body), _UPDATE_KEYS)
     if errs:
         return problem(422, errs)
     try:
-        async with st.sdk.pool.acquire() as c, c.transaction():
-            version = await c.fetchval(
-                "UPDATE assets SET name=$3, category=$4, location=$5, status=$6, responsible=$7, department=$8, "
-                "acquisition_date=$9, acquisition_value_cents=$10, notes=$11, version = version + 1, "
-                "updated_at = now() WHERE id = $1 AND version = $2 RETURNING version",
-                id,
-                body.version,
-                *[vals[k] for k in keys],
-            )
-            if version is not None:
-                await audit_tx(
-                    c, req, "Ativo atualizado (API)", current["tag"], f"versão {body.version} → {version}"
-                )
+        version = await _update_asset(st, req, id, body, current["tag"], vals)
     except (OSError, asyncpg.PostgresError) as e:
-        if transient(e):
-            return _unavailable("banco indisponível; nada foi confirmado")
-        return problem(500, str(e))
+        return _write_failed(e, "banco indisponível; nada foi confirmado")
     if version is None:
         return problem(
             409, "o ativo foi alterado por outra pessoa: leia de novo e reenvie com a versão atual"

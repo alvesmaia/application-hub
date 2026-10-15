@@ -38,8 +38,7 @@ def check_zip_entries(entries: list[tuple[str, int, int]]) -> None:
         )
     total = 0
     for name, compressed, uncompressed in entries:
-        is_sheet = name.startswith("xl/worksheets/") and name.endswith(".xml")
-        entry_max = MAX_ZIP_SHEET_UNCOMPRESSED if is_sheet else MAX_ZIP_ENTRY_UNCOMPRESSED
+        entry_max = _entry_cap(name)
         if uncompressed > entry_max:
             raise JobFail(
                 f"Arquivo .xlsx inválido: um item do arquivo descomprime para mais de {entry_max >> 20} MB."
@@ -92,34 +91,47 @@ def _inflated_size(f: Any, method: int, compressed: int, cap: int) -> int:
     return total
 
 
-def actual_entries(path: Path) -> list[tuple[str, int, int]]:  # noqa: PLR0915
+def _entry_cap(name: str) -> int:
+    is_sheet = name.startswith("xl/worksheets/") and name.endswith(".xml")
+    return MAX_ZIP_SHEET_UNCOMPRESSED if is_sheet else MAX_ZIP_ENTRY_UNCOMPRESSED
+
+
+def _seek_data(f: Any, info: zipfile.ZipInfo) -> None:
+    """Positions ``f`` at the entry's data, past its local header (whose name/extra lengths
+    may differ from the central directory's)."""
+    f.seek(info.header_offset)
+    h = f.read(_LOCAL.size)
+    if len(h) < _LOCAL.size or h[:4] != b"PK\x03\x04":
+        raise JobFail(INVALID)
+    name_len, extra_len = _LOCAL.unpack(h)[-2:]
+    f.seek(info.header_offset + _LOCAL.size + name_len + extra_len)
+
+
+def _measure_entries(z: zipfile.ZipFile, f: Any) -> list[tuple[str, int, int]]:
+    infos = z.infolist()
+    if len(infos) > MAX_ZIP_ENTRIES:
+        check_zip_entries([(i.filename, 0, 0) for i in infos])
+    out: list[tuple[str, int, int]] = []
+    total = 0
+    for i in infos:
+        cap = max(0, min(_entry_cap(i.filename), MAX_ZIP_TOTAL_UNCOMPRESSED - total))
+        _seek_data(f, i)
+        real = _inflated_size(f, i.compress_type, i.compress_size, cap)
+        out.append((i.filename, i.compress_size, max(real, i.file_size)))
+        total += real
+        if real > cap:
+            break  # check_zip_entries refuses with the right message
+    return out
+
+
+def actual_entries(path: Path) -> list[tuple[str, int, int]]:
     """(name, compressed, REAL uncompressed) of each entry. The central directory (and the
     local header) belong to the file's author: a zip can declare 1 KB and decompress to
     gigabytes. Here each entry is decompressed as a stream and counted, with a cap — which is exactly
     what calamine will read afterwards."""
     try:
         with zipfile.ZipFile(path) as z, path.open("rb") as f:
-            infos = z.infolist()
-            if len(infos) > MAX_ZIP_ENTRIES:
-                check_zip_entries([(i.filename, 0, 0) for i in infos])
-            out: list[tuple[str, int, int]] = []
-            total = 0
-            for i in infos:
-                is_sheet = i.filename.startswith("xl/worksheets/") and i.filename.endswith(".xml")
-                entry_max = MAX_ZIP_SHEET_UNCOMPRESSED if is_sheet else MAX_ZIP_ENTRY_UNCOMPRESSED
-                cap = max(0, min(entry_max, MAX_ZIP_TOTAL_UNCOMPRESSED - total))
-                f.seek(i.header_offset)
-                h = f.read(_LOCAL.size)
-                if len(h) < _LOCAL.size or h[:4] != b"PK\x03\x04":
-                    raise JobFail(INVALID)
-                name_len, extra_len = _LOCAL.unpack(h)[-2:]
-                f.seek(i.header_offset + _LOCAL.size + name_len + extra_len)
-                real = _inflated_size(f, i.compress_type, i.compress_size, cap)
-                out.append((i.filename, i.compress_size, max(real, i.file_size)))
-                total += real
-                if real > cap:
-                    break  # check_zip_entries refuses with the right message
-            return out
+            return _measure_entries(z, f)
     except (zipfile.BadZipFile, zlib.error, OSError, struct.error, EOFError) as e:
         raise JobFail(INVALID) from e
 
