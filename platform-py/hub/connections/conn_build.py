@@ -151,7 +151,7 @@ def _sharepoint_auth(c: dict[str, Any], i: dict[str, Any], secret: str, creating
     c["auth"] = auth
 
 
-def _sql(c: dict[str, Any], i: dict[str, Any], secret: str, creating: bool) -> None:
+def _sql(c: dict[str, Any], i: dict[str, Any], secret: str, creating: bool) -> None:  # noqa: C901, PLR0915
     host = str(i.get("host", "")).strip()
     if not re.fullmatch(r"[A-Za-z0-9]([A-Za-z0-9.\-]{0,252})", host):
         raise ConnError("Servidor: nome ou IP do banco (ex.: db.empresa.local).")

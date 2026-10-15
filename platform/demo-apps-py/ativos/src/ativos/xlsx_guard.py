@@ -92,7 +92,7 @@ def _inflated_size(f: Any, method: int, compressed: int, cap: int) -> int:
     return total
 
 
-def actual_entries(path: Path) -> list[tuple[str, int, int]]:
+def actual_entries(path: Path) -> list[tuple[str, int, int]]:  # noqa: PLR0915
     """(name, compressed, REAL uncompressed) of each entry. The central directory (and the
     local header) belong to the file's author: a zip can declare 1 KB and decompress to
     gigabytes. Here each entry is decompressed as a stream and counted, with a cap — which is exactly

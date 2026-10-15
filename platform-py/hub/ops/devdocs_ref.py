@@ -104,7 +104,7 @@ def _sig(fn: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
     return f"{pre}{fn.name}({ast.unparse(a)}){ret}"
 
 
-def sdk_reference() -> str:
+def sdk_reference() -> str:  # noqa: C901, PLR0915
     src = _REPO / "platform" / "sdk-python" / "src" / "hub_sdk"
     lines = [_GEN, "# SDK reference (`hub_sdk`)", "",
              "Generated from the signatures and docstrings of the `hub_sdk` package. Public names only (no `_`).", ""]  # fmt: skip

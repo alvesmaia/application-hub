@@ -107,7 +107,7 @@ class BackupDb:
             )
         return f"banco {db} verificado em banco temporário ({human(len(sql))})"
 
-    async def _restore_db_aside(self, db: str, sql: bytes) -> str:
+    async def _restore_db_aside(self, db: str, sql: bytes) -> str:  # noqa: C901, PLR0915
         """Non-transactional mode: the current database is renamed "aside" (`<db>_pre<n>`, intact), the dump goes into a new
         database with the original name, and only at the end is the aside copy deleted; any failure gives the original its name back."""
         if db in SYSTEM_DBS or db.startswith("pg_") or not _DB.match(db):

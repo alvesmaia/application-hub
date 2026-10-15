@@ -38,7 +38,7 @@ _SAFE = ("GET", "HEAD", "OPTIONS")
 Principal = tuple[dict[str, Any] | None, dict[str, Any] | None]
 
 
-async def authentication(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+async def authentication(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:  # noqa: C901
     path, method = request.url.path, request.method
     request.state.lang = resolve("", request.headers.get("accept-language"))
     request.state.theme = "light"

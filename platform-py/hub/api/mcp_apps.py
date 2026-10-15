@@ -145,7 +145,7 @@ async def ops_map(request: Request, p: P, e: Any, token: str) -> dict[str, dict[
     return await _cached(request.app, "ops", e, 300, fetch)  # type: ignore[no-any-return]
 
 
-async def app_tools(request: Request, p: P, mode: str, confirm_desc: str, note: Any) -> list[dict[str, Any]]:
+async def app_tools(request: Request, p: P, mode: str, confirm_desc: str, note: Any) -> list[dict[str, Any]]:  # noqa: PLR0915
     out: list[dict[str, Any]] = []
     for e, token in app_targets(request, p):
         m = e.manifest.mcp
@@ -215,7 +215,7 @@ def wrap_result(app: FastAPI, app_id: str, r: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-async def run_app(
+async def run_app(  # noqa: PLR0915
     request: Request, p: P, src: dict[str, Any], args: dict[str, Any], text_result: Any
 ) -> dict[str, Any]:
     """Calls the tool in the app on behalf of the user; the result comes back labeled as app data."""

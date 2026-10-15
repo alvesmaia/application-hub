@@ -114,7 +114,7 @@ async def download(request: Request, name: str, path: str = "", b: BrokerCtx = D
 
 
 @router.put("/_hub/storage/{name}/content")
-async def upload(request: Request, name: str, path: str = "", b: BrokerCtx = Depends(bctx)) -> Response:
+async def upload(request: Request, name: str, path: str = "", b: BrokerCtx = Depends(bctx)) -> Response:  # noqa: C901, PLR0915
     c = await b.authorize(request, name, "enviar", ("upload",))
     if isinstance(c, JSONResponse):
         return c

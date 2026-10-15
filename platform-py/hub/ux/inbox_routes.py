@@ -103,7 +103,7 @@ def bell_of(request: Request) -> tuple[int, list[dict[str, Any]]]:
     return InboxStore.unread(entries), [e for e in entries if not e["archived"] and e["in_app"]][:8]
 
 
-async def stream_events(
+async def stream_events(  # noqa: PLR0915
     inbox: InboxStore,
     count: Callable[[], int],
     *,

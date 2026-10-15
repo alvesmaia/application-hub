@@ -26,7 +26,7 @@ def client() -> httpx.Client:
     return c
 
 
-def main(cmd: str) -> None:
+def main(cmd: str) -> None:  # noqa: PLR0915
     c = client()
     if cmd == "setup":
         body = {

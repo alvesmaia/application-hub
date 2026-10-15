@@ -45,7 +45,7 @@ class SimConfig:
     link_expiry: str = ""
 
     @classmethod
-    def from_env(cls, env: dict[str, str] | None = None) -> SimConfig:
+    def from_env(cls, env: dict[str, str] | None = None) -> SimConfig:  # noqa: C901
         e = os.environ if env is None else env
         c = cls()
         s = lambda k: e.get(k) or None  # noqa: E731

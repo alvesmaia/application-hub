@@ -30,7 +30,7 @@ class Background:
         print(f"hub: {msg}", flush=True)
         self.app.state.admin.logs.add(level, "platform", "plataforma", f"[réplicas] {msg}", "hub")
 
-    async def start(self, db: StateDb | None, outbox_every: float = 5) -> None:
+    async def start(self, db: StateDb | None, outbox_every: float = 5) -> None:  # noqa: PLR0915
         st = self.app.state
         st.ops_jobs.db = db
         st.ops_jobs.start()

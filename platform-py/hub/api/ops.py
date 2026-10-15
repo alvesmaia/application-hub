@@ -219,7 +219,7 @@ def route(method: str, rel: str) -> tuple[Op, dict[str, str]] | bool:
     return hit
 
 
-def openapi() -> dict[str, Any]:
+def openapi() -> dict[str, Any]:  # noqa: C901, PLR0915
     paths: dict[str, Any] = {}
     problem = {"$ref": "#/components/responses/Problem"}
     for op in OPS:

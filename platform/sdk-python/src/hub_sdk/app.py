@@ -83,7 +83,7 @@ def scratch_dir(app_id: str) -> Path:
 
 
 class HubSdk:
-    def __init__(
+    def __init__(  # noqa: PLR0915
         self,
         app_id: str,
         db_url: str | None,
@@ -198,7 +198,7 @@ class HubSdk:
 
     # ---- lifecycle ----------------------------------------------------------------
     @contextlib.asynccontextmanager
-    async def lifespan(self, _app: FastAPI) -> AsyncGenerator[None]:
+    async def lifespan(self, _app: FastAPI) -> AsyncGenerator[None]:  # noqa: PLR0915
         self.shutdown.chain_signals()
         if self.db is not None:
             await self.db.open("web", jobs_inline=self.jobs_mode == "inline")
@@ -235,7 +235,7 @@ class HubSdk:
             if self.db is not None:
                 await self.db.close()
 
-    async def run_worker_process(self) -> None:
+    async def run_worker_process(self) -> None:  # noqa: PLR0915
         """Jobs process (``HUB_JOBS_MODE=process``): only the jobs worker and the
         periodic cleanup, until SIGTERM/SIGINT; drains like the web (8 s)."""
         self._install_signals()

@@ -166,7 +166,7 @@ async def _recheck(
     }
 
 
-async def provision(
+async def provision(  # noqa: PLR0915
     conns: ConnStore, store: ObjectStore, app: str, env: str, who: str, broker_url: str
 ) -> tuple[int, dict[str, Any]]:
     if app not in conns.apps:
@@ -247,7 +247,7 @@ async def _undo(
     return notes
 
 
-async def deprovision(
+async def deprovision(  # noqa: C901, PLR0915
     conns: ConnStore,
     store: ObjectStore,
     app: str,

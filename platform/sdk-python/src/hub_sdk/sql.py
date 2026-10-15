@@ -99,7 +99,7 @@ class BrokerSql(SqlConnection):
         return BrokerSql(self.name, self.kind, self.base, self._token)
 
     @override
-    async def query(
+    async def query(  # noqa: PLR0915
         self, sql: str, params: dict[str, Any] | None = None, max_rows: int | None = None
     ) -> SqlResult:
         h = {"Authorization": f"Bearer {self._token}", "Content-Type": "application/json"}

@@ -88,7 +88,7 @@ def _read_header(f: IO[bytes], deks: dict[str, bytes], aad: str) -> tuple[AESGCM
     return AESGCM(file_key), chunk_aad
 
 
-def _decrypt_chunks(f: IO[bytes], out: IO[bytes], gcm: AESGCM, chunk_aad: bytes) -> int:
+def _decrypt_chunks(f: IO[bytes], out: IO[bytes], gcm: AESGCM, chunk_aad: bytes) -> int:  # noqa: PLR0915
     total = counter = 0
     while True:
         size = struct.unpack(">I", f.read(4))[0]

@@ -134,7 +134,7 @@ def _opened(proto: str, due: Any, needs_approval: bool) -> Response:
 
 
 @router.post("/servicos/requests")
-async def open_ticket(req: Request, st: StateDep) -> Response:
+async def open_ticket(req: Request, st: StateDep) -> Response:  # noqa: PLR0915
     n = db_notice(st)
     if n is not None:
         return html(views.new_form(n), 503)

@@ -146,7 +146,7 @@ router = APIRouter()
 
 
 @router.get("/", response_class=HTMLResponse)
-async def home(request: Request, c: UxCtx = Depends(ctx)) -> Response:
+async def home(request: Request, c: UxCtx = Depends(ctx)) -> Response:  # noqa: PLR0915
     user = request.state.user
     lang = request.state.lang
     perms = cast(list[str], request.state.permissions)

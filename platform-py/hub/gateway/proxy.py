@@ -136,7 +136,7 @@ def _unavailable(app: AppEntry, status: int) -> Response:
     )
 
 
-def build_upstream_headers(
+def build_upstream_headers(  # noqa: C901, PLR0915
     req_headers: list[tuple[str, str]],
     app: AppEntry,
     identity: Identity,
@@ -172,7 +172,7 @@ def build_upstream_headers(
     return out
 
 
-def filter_response_headers(raw: list[tuple[str, str]], app_id: str) -> list[tuple[bytes, bytes]]:
+def filter_response_headers(raw: list[tuple[str, str]], app_id: str) -> list[tuple[bytes, bytes]]:  # noqa: C901
     listed: set[str] = set()
     for k, v in raw:
         if k.lower() == "connection":

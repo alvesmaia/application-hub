@@ -65,7 +65,7 @@ class Validator:
             raise JobFail(str(e)) from e
         self.tags: set[str] = set()
 
-    def check(
+    def check(  # noqa: C901, PLR0915
         self, row: int, cells: list[Any] | tuple[Any, ...]
     ) -> tuple[list[Any] | None, list[tuple[int, str, str, str]]] | None:
         """``None`` = blank row; otherwise (values in COLS order | ``None``, errors)."""

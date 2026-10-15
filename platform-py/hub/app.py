@@ -46,7 +46,7 @@ from hub.webctx import initials as initials
 _WEB = Path(__file__).parent / "web"
 
 
-def create_app(settings: Settings | None = None, gateway: Gateway | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, gateway: Gateway | None = None) -> FastAPI:  # noqa: PLR0915
     devmode.startup_check()
     settings = settings or load_settings()
     apicfg = load_cfg(settings.config)

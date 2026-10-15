@@ -50,7 +50,7 @@ class Usage:
             row[3] = max(row[3], now)
         self.dirty = True
 
-    def query(self, now: int, days: int = 30, user: str = "", app: str = "") -> dict[str, Any]:
+    def query(self, now: int, days: int = 30, user: str = "", app: str = "") -> dict[str, Any]:  # noqa: PLR0915
         """Totals in the period per (user, app), per user and per app; exact filters."""
         days = min(max(days, 1), 400)
         keep = day_key(now - (days - 1) * DAY_MS)
@@ -103,7 +103,7 @@ class Usage:
             )
         return "\n".join(out) + "\n"
 
-    def flush(self, retention_days: int, now: int | None = None) -> None:
+    def flush(self, retention_days: int, now: int | None = None) -> None:  # noqa: PLR0915
         now = int(time.time() * 1000) if now is None else now
         keep = day_key(now - retention_days * DAY_MS)
         for k in [k for k in self.days if k < keep]:

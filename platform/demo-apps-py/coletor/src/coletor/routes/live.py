@@ -52,7 +52,7 @@ async def _push(st: State, ws: WebSocket, view: str, q: asyncio.Queue[str], rx: 
 
 
 @router.websocket("/coletor/ws/live")
-async def ws_live(ws: WebSocket, st: StateDep) -> None:
+async def ws_live(ws: WebSocket, st: StateDep) -> None:  # noqa: PLR0915
     """Live state of the user: on each reading/session change, the screen fragment
     (``view=folha`` or ``escanear``) is redrawn and sent (hub-kit ``data-hub-ws``)."""
     view = "escanear" if ws.query_params.get("view") == "escanear" else "folha"

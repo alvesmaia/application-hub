@@ -262,7 +262,7 @@ async def assets_create(req: Request, st: StateDep, body: AssetFields) -> Respon
     tags=["Ativos"],
     summary="Altera um ativo (envie a versão lida; 409 se mudou)",
 )
-async def assets_update(req: Request, st: StateDep, id: int, body: AssetUpdate) -> Response:
+async def assets_update(req: Request, st: StateDep, id: int, body: AssetUpdate) -> Response:  # noqa: C901
     if isinstance(u := require_user(req), JSONResponse):
         return u
     if not db_ok(st):

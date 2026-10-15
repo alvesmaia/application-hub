@@ -209,7 +209,7 @@ def kpis(items: Iterable[Markup]) -> Markup:
 Series = Sequence[tuple[str, Sequence[Any]]]
 
 
-def chart(
+def chart(  # noqa: C901, PLR0915
     kind: str,
     labels: Sequence[Any],
     series: Series,

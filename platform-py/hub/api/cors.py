@@ -39,7 +39,7 @@ class Cors:
     def __init__(self, app: ASGIApp, mcp_path: str = "/mcp") -> None:
         self.app, self.mcp_path = app, mcp_path
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # noqa: PLR0915
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
         path, method = scope["path"], scope["method"]

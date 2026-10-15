@@ -167,7 +167,7 @@ class Analytics:
         self.dirty = True
         self._tally(day, uid, kind, a, b, n)
 
-    def _tally(self, day: dict[str, Any], uid: int, kind: str, a: str, b: str, n: int) -> None:
+    def _tally(self, day: dict[str, Any], uid: int, kind: str, a: str, b: str, n: int) -> None:  # noqa: C901, PLR0915
         if kind == "login":
             day["f_login"].add(uid)
             _bump(day["events"], "login")
@@ -290,7 +290,7 @@ class Analytics:
         }
         return json.dumps(doc, separators=(",", ":")).encode()
 
-    def flush(self, now: int | None = None) -> None:
+    def flush(self, now: int | None = None) -> None:  # noqa: PLR0915
         """Applies retention, rotates the expired key and writes (if it changed)."""
         now = int(time.time() * 1000) if now is None else now
         if now - self.key_since >= self.retention * DAY_MS:

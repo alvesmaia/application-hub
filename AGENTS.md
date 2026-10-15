@@ -38,7 +38,7 @@ Short and imperative on purpose; based on Akita's "Clean Code for AI Agents".
 
 - **Functions:** 4 to 20 lines, one thing each; split if longer. At most 2 levels of indentation: early returns instead of nested `if`.
 - **Files:** under 500 lines (200–300 is ideal), one responsibility per module; no "god files".
-- **Enforced by `hub-check`:** ruff `C901` (complexity > 10), `PLR0912` (> 12 branches), `PLR0915` (> 30 statements) in every project, and the file-size ratchet (`platform-py/size-baseline.json`). Existing excess is marked `# noqa: C901…` or listed in the baseline: touching such code means shrinking it, never growing it; remove the `noqa`/baseline entry once it fits. Never add a new `noqa` or baseline entry for these rules.
+- **Enforced by `hub-check`:** ruff `C901` (complexity > 8), `PLR0912` (> 12 branches), `PLR0915` (> 20 statements), `PLR1702` (> 3 nested blocks) in every project, and the file-size ratchet (`platform-py/size-baseline.json`). Existing excess is marked `# noqa: C901…` or listed in the baseline: touching such code means shrinking it, never growing it; remove the `noqa`/baseline entry once it fits. Never add a new `noqa` or baseline entry for these rules.
 - **Names:** specific enough to grep (no `data`, `handler`, `Manager`); explicit types (no bare `dict`/`Any` at boundaries).
 - **No duplication:** extract shared logic; reuse what already exists before writing new code.
 - **Errors:** exception messages carry the offending value and the expected shape.

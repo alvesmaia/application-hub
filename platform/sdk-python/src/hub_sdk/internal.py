@@ -156,7 +156,7 @@ class _Internal:
             return _err(503, str(ex))
         return {"jobs": [j.to_json() for j in lst], "enabled": True}
 
-    async def job_action(self, req: Request, job_id: str, action: str) -> Any:
+    async def job_action(self, req: Request, job_id: str, action: str) -> Any:  # noqa: C901
         if (e := self.auth(req)) is not None:
             return e
         jobs_ = self.jb()

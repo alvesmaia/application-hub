@@ -73,7 +73,7 @@ class InsightOps:
         return [Flag.model_validate(f) for f in (await self.flags())[0]]
 
     # ---- flags ---------------------------------------------------------------------------------------
-    async def upsert_flag(self, actor: str, raw: dict[str, Any], create: bool) -> dict[str, Any]:
+    async def upsert_flag(self, actor: str, raw: dict[str, Any], create: bool) -> dict[str, Any]:  # noqa: C901, PLR0915
         try:
             flag = parse_flag(raw)
             if flag.app not in self.s.apps:

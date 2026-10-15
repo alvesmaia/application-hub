@@ -49,7 +49,7 @@ class Vault:
     _meta: dict[str, Any]
     _deks: dict[str, bytes]
 
-    def __init__(self, data_dir: Path, key_file: Path | None = None, *, kek: bytes | None = None) -> None:
+    def __init__(self, data_dir: Path, key_file: Path | None = None, *, kek: bytes | None = None) -> None:  # noqa: PLR0915
         self.data_dir = data_dir
         explicit_key = key_file or (
             Path(os.environ["HUB_MASTER_KEY_FILE"]) if os.getenv("HUB_MASTER_KEY_FILE") else None

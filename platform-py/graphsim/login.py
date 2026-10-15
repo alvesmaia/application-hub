@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from graphsim.sim import Sim
 
 
-def token(sim: Sim, path: str, body: bytes) -> Response:
+def token(sim: Sim, path: str, body: bytes) -> Response:  # noqa: PLR0915
     sim.stats["token_requests"] += 1
     cfg = sim.cfg
     tenant = path.lstrip("/").split("/")[0]

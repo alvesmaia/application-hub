@@ -298,7 +298,7 @@ class S3Client:
         sig = hmac.new(_signing_key(self.cfg.secret_key, date, self.cfg.region), sts.encode(), hashlib.sha256)
         return f"{base}{path_enc}?{cq}&X-Amz-Signature={sig.hexdigest()}"
 
-    async def test(self) -> list[dict[str, Any]]:
+    async def test(self) -> list[dict[str, Any]]:  # noqa: PLR0915
         s = Steps()
 
         async def bucket() -> tuple[None, str]:

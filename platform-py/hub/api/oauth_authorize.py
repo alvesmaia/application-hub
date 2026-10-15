@@ -140,7 +140,7 @@ class OAuthAuthorize(OAuthClients):
             '<button type="submit" name="decision" value="deny" class="secondary-button" data-oauth-deny="">Recusar</button></div>\n</form>'
         )  # fmt: skip
 
-    async def authorize_post(self, request: Request, body: bytes) -> Response:
+    async def authorize_post(self, request: Request, body: bytes) -> Response:  # noqa: PLR0915
         text = body.decode("utf-8", "replace")
         f = form(text)
         if not (iss := self.issuer(request)):

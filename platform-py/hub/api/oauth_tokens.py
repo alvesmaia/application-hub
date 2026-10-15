@@ -95,7 +95,7 @@ class OAuthTokens(OAuthAuthorize):
         await self.rec.del_where(K_REFRESH, "grant_id", gid)
         return g  # type: ignore[no-any-return]
 
-    async def token(self, request: Request, body: bytes) -> Response:
+    async def token(self, request: Request, body: bytes) -> Response:  # noqa: C901
         app, now = request.app, now_ms()
         if not await self.hit(app, f"oauth-token:{client_ip(request)}", TOKEN_PER_IP):
             return self.oerr(429, "slow_down", "Pedidos demais; tente mais tarde.")

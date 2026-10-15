@@ -69,7 +69,7 @@ def app_states(
     ]
 
 
-def status_data(
+def status_data(  # noqa: PLR0915
     reg: Registry,
     visible: set[str] | None,
     now: float,

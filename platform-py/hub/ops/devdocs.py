@@ -232,7 +232,7 @@ _LEXERS = {"bash": "bash", "sh": "bash", "shell": "bash", "console": "bash", "py
            "typescript": "typescript"}  # fmt: skip
 
 
-def _bash_pass(tokens: Any) -> Any:
+def _bash_pass(tokens: Any) -> Any:  # noqa: PLR0915
     """Pygments marks few tokens in Bash: the 1st word of each command = function, `-f`/`--flag` = option,
     `\\` at the end of the line = operator."""
     from pygments.token import Comment, Keyword, Name, Operator, Punctuation, String, Text
@@ -310,7 +310,7 @@ def _md() -> Any:
     return md
 
 
-def render_md(
+def render_md(  # noqa: PLR0915
     text: str, labels: tuple[str, str] = ("Copiar", "Copiado")
 ) -> tuple[str, list[tuple[int, str, str]]]:
     """Markdown → HTML (anchors on headings, copy button on blocks, scrollable tables) + summary."""

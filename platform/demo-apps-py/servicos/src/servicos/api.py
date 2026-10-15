@@ -203,7 +203,7 @@ async def tickets_open(req: Request, body: TicketIn, st: StateDep) -> Response:
     summary="Muda o status de um chamado (envie a versão lida)",
     openapi_extra=DESTRUCTIVE,
 )
-async def tickets_set_status(req: Request, id: int, body: StatusIn, st: StateDep) -> Response:
+async def tickets_set_status(req: Request, id: int, body: StatusIn, st: StateDep) -> Response:  # noqa: C901
     if isinstance(u := require_user(req), JSONResponse):
         return u
     if not db_ok(st):

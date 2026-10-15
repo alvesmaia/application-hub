@@ -67,7 +67,7 @@ def _translate_text(loc: str, raw: str, out: list[str]) -> None:
         out.append(raw)
 
 
-def en_numbers(s: str) -> str:
+def en_numbers(s: str) -> str:  # noqa: PLR0915
     """Pt-BR → en-US numbers and dates within a text (``2.055`` → ``2,055``, ``3,6`` →
     ``3.6``, ``05/01/2017`` → ``01/05/2017``); codes, versions and IPs stay intact."""
     c = s
@@ -156,7 +156,7 @@ def _translate_tag(loc: str, tag: str, out: list[str]) -> None:
         rest = rest[vlen:]
 
 
-def tr_html(loc: str, html: str) -> str:
+def tr_html(loc: str, html: str) -> str:  # noqa: PLR0915
     """Translates the HTML (text between tags and some attributes); ``<script>``/``<style>``/
     ``<textarea>`` intactos."""
     if loc == "pt-BR":
@@ -191,7 +191,7 @@ class I18nMiddleware:
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # noqa: PLR0915
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return

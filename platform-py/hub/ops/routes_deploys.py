@@ -19,7 +19,7 @@ router = APIRouter()
 
 
 @router.post("/packages")
-async def upload(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:
+async def upload(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:  # noqa: PLR0915
     form = await request.form()
     up = form.get("package")
     if up is None or isinstance(up, str):
@@ -126,7 +126,7 @@ async def approve_scripts(dep_id: int, request: Request, ops: OpsCtx = Depends(c
 
 
 @router.post("/deployments/{dep_id}/{action}")
-async def deployment_action(
+async def deployment_action(  # noqa: PLR0915
     dep_id: int, action: str, request: Request, ops: OpsCtx = Depends(ctx)
 ) -> Response:
     if action not in ("approve", "promote", "rollback"):

@@ -106,7 +106,7 @@ class Supervisor:
         await st.admin.audit(ACTOR, "Staging recriado", msg, icon="box", scope=e.id)
         return msg
 
-    async def revive(self, app: str, env: str, name: str, why: str) -> str | None:
+    async def revive(self, app: str, env: str, name: str, why: str) -> str | None:  # noqa: PLR0915
         st, now = self.app.state, time.time()
         s = self.state.setdefault(f"{app}|{env}", {"restarts": 0, "last": 0.0, "next": 0.0, "loop": False,
                                                     "times": []})  # fmt: skip

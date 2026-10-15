@@ -265,7 +265,7 @@ def _new_image(
     return new
 
 
-def _roll_out(a: argparse.Namespace, new: str, current: str, prev: str) -> int:
+def _roll_out(a: argparse.Namespace, new: str, current: str, prev: str) -> int:  # noqa: PLR0915
     main_name, next_name, edge = f"{a.project}-web", f"{a.project}-web-next", f"{a.project}-edge"
     repo = f"{a.project}-web"
     try:

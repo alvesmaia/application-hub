@@ -177,7 +177,7 @@ class AuditChain:
                 return self._append(event, migrated)
         return self._append(event, migrated)
 
-    def _append(self, event: dict[str, Any], migrated: bool) -> int:
+    def _append(self, event: dict[str, Any], migrated: bool) -> int:  # noqa: PLR0915
         AuditEntry.model_validate(event)
         if self.blocked:
             raise RuntimeError(f"audit chain blocked: {self.blocked}")

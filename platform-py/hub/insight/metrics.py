@@ -141,7 +141,7 @@ class Metrics:
     def _pend(self, key: str, t: int) -> Bucket:
         return self._pending.setdefault((key, t), Bucket(t))
 
-    def save(self) -> None:
+    def save(self) -> None:  # noqa: C901, PLR0915
         if not self.path:
             return
         with file_lock(self.path):

@@ -156,7 +156,7 @@ def _placeholder(
     return "%s" if style == "format" else "?"
 
 
-def bind(sql: str, params: dict[str, Any], style: str) -> tuple[str, list[Any]]:
+def bind(sql: str, params: dict[str, Any], style: str) -> tuple[str, list[Any]]:  # noqa: PLR0915
     """``:name`` → ``$1`` (postgres), ``%s`` (mysql/sqlserver) or ``?`` (sqlite), outside quotes and comments."""
     _check_params(params)
     out: list[str] = []
@@ -304,7 +304,7 @@ class SqlBackend:
             return await asyncio.to_thread(self._mssql, sql, params, fetch)
         raise SqlError("Tipo de banco desconhecido.")  # pragma: no cover
 
-    async def _pg(self, sql: str, params: dict[str, Any], fetch: int) -> tuple[list[str], list[Any]]:
+    async def _pg(self, sql: str, params: dict[str, Any], fetch: int) -> tuple[list[str], list[Any]]:  # noqa: PLR0915
         import asyncpg
 
         async with self._pool_lock:

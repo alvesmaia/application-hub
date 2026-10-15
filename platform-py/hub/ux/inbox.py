@@ -311,7 +311,7 @@ class InboxStore:
         return True
 
     @_txn
-    def begin(
+    def begin(  # noqa: PLR0915
         self, who: Who, item_id: int, decision: str, comment: str, app_name: str = ""
     ) -> dict[str, Any]:
         """Validates and decides: access immediately; an app request holds a reservation (`sending`) until the app confirms."""

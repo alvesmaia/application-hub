@@ -85,7 +85,7 @@ class Lookup:
         """Seconds left with the circuit breaker open (0 = closed)."""
         return int(max(0.0, self.open_until - time.monotonic())) if self.open_until is not None else 0
 
-    def _get(self, url: str) -> CnpjInfo:
+    def _get(self, url: str) -> CnpjInfo:  # noqa: PLR0915
         u = urlsplit(url)
         cls = http.client.HTTPSConnection if u.scheme == "https" else http.client.HTTPConnection
         try:
@@ -125,7 +125,7 @@ class Lookup:
         except TimeoutError as e:
             raise _Fail(True, f"sem resposta em {int(self.timeout * 1000)} ms") from e
 
-    async def lookup(self, cnpj: str) -> Outcome:
+    async def lookup(self, cnpj: str) -> Outcome:  # noqa: C901, PLR0915
         d = digits(cnpj)
         if self.base is None:
             return Outcome(

@@ -247,7 +247,7 @@ class TraceMiddleware:
         self.app = app
         self.telemetry = telemetry
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # noqa: PLR0915
         if scope.get("type") != "http":
             await self.app(scope, receive, send)
             return

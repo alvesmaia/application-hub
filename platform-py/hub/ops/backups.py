@@ -234,7 +234,7 @@ class Backups(BackupOffsite):
         (d / name).write_bytes(buf.getvalue())
         return buf.getvalue()
 
-    async def create_bundle(
+    async def create_bundle(  # noqa: PLR0915
         self, app: str, env: str, volumes: list[str], hooks: bool, progress: Progress
     ) -> tuple[str, str, dict[str, Any]]:  # fmt: skip
         """Writes `<data>/backups/<app>/<app>-<ms>.zip`; returns (name, sha256, manifest)."""
@@ -300,7 +300,7 @@ class Backups(BackupOffsite):
                 raise OpsError(f"Conferência sha256 falhou em {n}.")
         return man, files
 
-    async def restore_bundle(
+    async def restore_bundle(  # noqa: C901
         self, app: str, env: str, name: str, sha: str, action: str, progress: Progress
     ) -> tuple[int, str]:
         if action == "clone":
@@ -330,7 +330,7 @@ class Backups(BackupOffsite):
                 )
         return len(files), " · ".join(done) or f"{len(files)} arquivos conferidos (sha256)"
 
-    async def clone_to_staging(
+    async def clone_to_staging(  # noqa: C901, PLR0915
         self, app: str, env: str, name: str, sha: str, progress: Progress
     ) -> tuple[int, str]:
         """Clones the backup to staging: the dump goes into staging's own database (objects owned by its role) and the volumes

@@ -80,7 +80,7 @@ async def get_runtime(ops: OpsCtx = Depends(ctx)) -> Any:
 
 
 @router.put("/runtime/{app_id}/limits")
-async def put_limits(app_id: str, request: Request, ops: OpsCtx = Depends(ctx)) -> Any:
+async def put_limits(app_id: str, request: Request, ops: OpsCtx = Depends(ctx)) -> Any:  # noqa: PLR0915
     ops.need_app(app_id)
     lim = await ops.body(request)
     rt.validate_limits(lim)
@@ -184,7 +184,7 @@ async def rotate_db(ops: OpsCtx, app_id: str, actor: str, env: str = "producao")
 
 
 @router.post("/runtime/{app_id}/{action}")
-async def runtime_action(
+async def runtime_action(  # noqa: PLR0915
     app_id: str, action: str, request: Request, env: str | None = None, ops: OpsCtx = Depends(ctx)
 ) -> Any:
     e = ops.need_app(app_id)
@@ -230,7 +230,7 @@ async def list_tasks(ops: OpsCtx = Depends(ctx)) -> Any:
 
 
 @router.post("/tasks/{app_id}/{task_id}/{action}")
-async def task_action(
+async def task_action(  # noqa: PLR0915
     app_id: str,
     task_id: str,
     action: str,

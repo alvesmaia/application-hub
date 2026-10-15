@@ -80,7 +80,7 @@ async def _attach_db(app: FastAPI) -> StateDb | None:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: PLR0915
     db = await _attach_db(app)
     await app.state.auth.bootstrap()
     await startup_admin(app)

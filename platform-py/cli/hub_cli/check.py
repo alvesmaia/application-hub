@@ -193,7 +193,7 @@ def conformance(directory: Path, upstream: str, app_id: str, log: Path | None = 
 
 
 @contextlib.contextmanager
-def _running_app(directory: Path) -> Iterator[tuple[str, str, dict[str, str], Path, str]]:
+def _running_app(directory: Path) -> Iterator[tuple[str, str, dict[str, str], Path, str]]:  # noqa: PLR0915
     """Starts the app (SQLite in .hub/) and returns (upstream, id, env, log, error); error != "" = not ready."""
     app_id = str(_manifest(directory)["id"])
     port = dev.free_port()

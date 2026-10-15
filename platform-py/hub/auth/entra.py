@@ -124,7 +124,7 @@ class EntraConfig:
             raise SsoError("O Microsoft Entra ID recusou o login.")
         return str(r.json()["id_token"])
 
-    async def validate(self, token: str, nonce: str) -> dict[str, Any]:
+    async def validate(self, token: str, nonce: str) -> dict[str, Any]:  # noqa: C901, PLR0915
         try:
             h64, c64, s64 = token.split(".")
             header, claims = json.loads(_b64d(h64)), json.loads(_b64d(c64))

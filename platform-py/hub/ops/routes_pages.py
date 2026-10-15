@@ -164,7 +164,7 @@ async def old_sdk(ops: OpsCtx = Depends(ctx)) -> Response:
 
 
 @router.get("/admin/tasks", response_class=HTMLResponse)
-async def tasks_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:
+async def tasks_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:  # noqa: PLR0915
     q = request.query_params
     app_f = q.get("app") if ops.registry.get(q.get("app", "")) else None
     st_f = q.get("status") if q.get("status") in dict(TASK_STATUSES) else None

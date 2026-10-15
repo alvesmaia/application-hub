@@ -393,7 +393,7 @@ class Engine:
             raise OpsError(f"Inspect indisponível: {e}"[:300], 503) from e
 
 
-def human_duration(sec: float) -> str:
+def human_duration(sec: float) -> str:  # noqa: C901
     """Like `docker ps` (HumanDuration)."""
     s = int(sec)
     if s < 1:

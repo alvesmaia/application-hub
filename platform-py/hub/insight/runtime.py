@@ -120,7 +120,7 @@ class Insight:
         value = fl.header_value(getattr(request.state, "flag_objs", []), app_id, "producao", user, roles)
         return [*out, (fl.HEADER, value)] if value else out
 
-    async def observed(
+    async def observed(  # noqa: PLR0915
         self, request: Request, app_id: str, call: Callable[[], Awaitable[Response]]
     ) -> Response:
         """Wraps `/_frag`: root span + RED metrics + a line in the logs console."""
@@ -197,7 +197,7 @@ class Insight:
         )
 
     # ---- analytics ---------------------------------------------------------------------------------------
-    def track(self, request: Request, status: int, can_app: Callable[[str], bool]) -> None:
+    def track(self, request: Request, status: int, can_app: Callable[[str], bool]) -> None:  # noqa: C901
         if not 200 <= status < 400 or (user := getattr(request.state, "user", None)) is None:
             return
         uid, segs, rec = user["id"], request.url.path.strip("/").split("/"), self.analytics.record
@@ -296,7 +296,7 @@ class Insight:
         e = self.registry.get(app_id)
         return (e.display.get("short") or e.name) if e else "Plataforma"
 
-    async def _app_channel(self, client: httpx.AsyncClient) -> None:
+    async def _app_channel(self, client: httpx.AsyncClient) -> None:  # noqa: PLR0915
         """Fetches new spans and meters from each app (`/{id}/_hub/telemetry`, internal token)."""
         every = max(int(os.environ.get("HUB_TELEMETRY_POLL_MS", "2000") or 2000), 200) / 1000
         cursor: dict[str, int] = {}

@@ -50,7 +50,7 @@ async def _locate(g: GraphClient, s: Steps) -> str:
     return cast(str, await s.run("drive", drive) or "")
 
 
-async def _write_read_delete(g: GraphClient, s: Steps) -> None:
+async def _write_read_delete(g: GraphClient, s: Steps) -> None:  # noqa: PLR0915
     probe_name = f".hub-sonda-{random.randrange(16**8):08x}.txt"  # noqa: S311
     data = bytes(random.choices(b"abcdefghijklmnopqrstuvwxyz0123456789", k=64))  # noqa: S311
 

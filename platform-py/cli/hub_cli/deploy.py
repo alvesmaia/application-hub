@@ -152,7 +152,7 @@ def _job(r: httpx.Response) -> dict[str, Any]:
     return job
 
 
-def deploy(directory: Path, env: str, hub: str | None, token: str | None, env_file: Path | None,
+def deploy(directory: Path, env: str, hub: str | None, token: str | None, env_file: Path | None,  # noqa: PLR0915
            tty: bool) -> dict[str, Any]:  # fmt: skip
     target = ENVS.get(env)
     if target is None:

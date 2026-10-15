@@ -90,7 +90,7 @@ class Sim:
         return [k for k in self.drives.get(drive_id(drive), {}) if k]
 
     # ---- entry point ---------------------------------------------------------------------------
-    async def handle(self, req: Request) -> Response:
+    async def handle(self, req: Request) -> Response:  # noqa: C901
         path, method = req.url.path, req.method
         body = await req.body()
         self.stats["requests"] += 1
@@ -381,7 +381,7 @@ class Sim:
         n = m[full] = self._node(self._next_id(), name, True)
         return JSONResponse(self.item_json(drive, full, n), status_code=201)
 
-    def patch_item(self, drive: str, path: str, body: bytes) -> Response:
+    def patch_item(self, drive: str, path: str, body: bytes) -> Response:  # noqa: C901, PLR0915
         try:
             v = json.loads(body)
         except ValueError:

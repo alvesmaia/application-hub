@@ -121,7 +121,7 @@ class Rollout:
         async with lock:
             return await self._apply(app, k, limits, version, image, progress or (lambda *_: None))
 
-    async def _apply(self, app: str, k: str, limits: dict[str, Any], version: str, image: str | None,
+    async def _apply(self, app: str, k: str, limits: dict[str, Any], version: str, image: str | None,  # noqa: PLR0915
                      say: Progress) -> dict[str, Any]:  # fmt: skip
         staging = k == "staging"
         name, prod = rt.container_name(app, k), rt.container_name(app, "producao")

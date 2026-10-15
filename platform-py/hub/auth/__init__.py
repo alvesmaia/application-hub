@@ -104,7 +104,7 @@ class AuthStore:
             self.path.write_text('{"users":[],"sessions":[],"tokens":[],"next_id":0}', encoding="utf-8")
 
     @asynccontextmanager
-    async def locked(self, write: bool = False) -> AsyncIterator[dict[str, Any]]:
+    async def locked(self, write: bool = False) -> AsyncIterator[dict[str, Any]]:  # noqa: C901, PLR0915
         async with self._lock:
             if self.db:
                 async with self.db.file_lock("auth.json", write=write):
@@ -143,7 +143,7 @@ class AuthStore:
         d["next_id"] += 1
         return f"{prefix}{d['next_id']}{secrets.token_hex(4)}"
 
-    async def bootstrap(self) -> None:
+    async def bootstrap(self) -> None:  # noqa: C901, PLR0915
         async with self.locked(True) as d:
             if os.getenv("HUB_DEMO_USERS", "").lower() in ("1", "true", "yes", "on"):
                 shared = os.getenv("HUB_DEMO_PASSWORD") or None
@@ -336,7 +336,7 @@ class AuthStore:
             d["users"].append(user)
             return user.copy()
 
-    async def update_user(
+    async def update_user(  # noqa: C901, PLR0915
         self,
         user_id: str,
         *,

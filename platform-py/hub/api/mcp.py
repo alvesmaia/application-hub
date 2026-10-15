@@ -74,7 +74,7 @@ def instructions(app: FastAPI) -> str:
 SERVER_INFO = {"name": "application-hub", "title": "Application Hub", "version": "0.0.0"}
 
 
-async def dispatch(
+async def dispatch(  # noqa: C901
     request: Request, p: P, method: str, params: dict[str, Any], client: str
 ) -> dict[str, Any]:
     app = request.app
@@ -119,7 +119,7 @@ def header_value(v: str) -> str | None:
     return v
 
 
-def check_modern_headers(h: Any, msg: dict[str, Any], meta_ver: str) -> str | None:
+def check_modern_headers(h: Any, msg: dict[str, Any], meta_ver: str) -> str | None:  # noqa: C901
     if (v := hv(h, VERSION)) is None:
         return "cabeçalho MCP-Protocol-Version ausente"
     if v != meta_ver:
@@ -383,7 +383,7 @@ async def handle(request: Request) -> Response:
     return await _post(request, p, version, session)
 
 
-async def handle_batch(
+async def handle_batch(  # noqa: C901
     request: Request, p: P, who: str, session: str | None, version: str | None, batch: list[Any]
 ) -> Response:
     app, h = request.app, request.headers

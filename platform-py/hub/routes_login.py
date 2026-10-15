@@ -60,7 +60,7 @@ async def entra_login(request: Request, next: str = "/", w: WebCtx = Depends(web
 
 
 @router.get("/auth/entra/callback")
-async def entra_callback(request: Request, w: WebCtx = Depends(web)) -> Response:
+async def entra_callback(request: Request, w: WebCtx = Depends(web)) -> Response:  # noqa: PLR0915
     if not (sso := w.sso):
         return RedirectResponse("/login", status_code=303)
     try:
@@ -96,7 +96,7 @@ async def entra_callback(request: Request, w: WebCtx = Depends(web)) -> Response
     return resp
 
 
-async def _sso_user(
+async def _sso_user(  # noqa: PLR0915
     request: Request, w: WebCtx, sso: entra.EntraConfig, pending: dict[str, Any], admin_store: Any
 ) -> dict[str, Any]:
     """Validates the Entra ID answer and returns the hub user (created on first login); `SsoError` says why not."""
@@ -143,7 +143,7 @@ def _cross_site(request: Request) -> bool:
 
 
 @router.post("/login")
-async def login_post(request: Request, w: WebCtx = Depends(web)) -> Response:
+async def login_post(request: Request, w: WebCtx = Depends(web)) -> Response:  # noqa: PLR0915
     form = parse_qs((await request.body()).decode("utf-8", "replace"))
     try:
         login = LoginInput.model_validate(

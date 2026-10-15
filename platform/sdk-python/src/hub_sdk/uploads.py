@@ -181,7 +181,7 @@ class Uploads:
             return None
         return str(r["path"] or "") if r["promoted"] else str(r["staging_path"])
 
-    async def cancel(self, upload_id: str) -> None:
+    async def cancel(self, upload_id: str) -> None:  # noqa: C901, PLR0915
         """Undoes an upload (compensation) under the row lock — serialized with the promotion:
         deletes the staging and, if already promoted, the target, and marks ``cancelled``. Idempotent."""
         async with self.pool.acquire() as c, c.transaction():
@@ -234,7 +234,7 @@ class Uploads:
             await self._promote_files(r)
             await c.execute("UPDATE hub_uploads SET promoted_at = now() WHERE id = $1", upload_id)
 
-    async def _promote_files(self, r: Any) -> None:
+    async def _promote_files(self, r: Any) -> None:  # noqa: PLR0915
         staging, dest = r["staging_path"], r["path"]
         try:
             cur = await self.store.meta(staging)

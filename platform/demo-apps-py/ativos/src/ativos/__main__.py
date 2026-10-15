@@ -190,7 +190,7 @@ def serve() -> int:
     return 0
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None) -> int:  # noqa: PLR0915
     args = list(sys.argv[1:] if argv is None else argv)
     cmd = args[0] if args else "serve"
     if cmd == "--health":

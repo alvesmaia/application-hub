@@ -36,7 +36,7 @@ def new_state(names: Sequence[str]) -> dict[str, Any]:
     return {"v": 1, "state": "running", "steps": [{"name": n, "state": "pending"} for n in names]}
 
 
-def next_action(s: dict[str, Any]) -> str:
+def next_action(s: dict[str, Any]) -> str:  # noqa: C901
     """Next action from the saved state: ``run:i``, ``compensate:i``, ``complete``,
     ``compensated`` or ``failed``."""
     steps = s.get("steps") or []
@@ -164,7 +164,7 @@ class Saga:
             pool=ctx.pool,
         )
 
-    async def run(self, ctx: JobCtx) -> Any:
+    async def run(self, ctx: JobCtx) -> Any:  # noqa: PLR0915
         names = [s.name for s in self.steps]
         st = state_of(ctx.checkpoint, names)
         last = ctx.job.attempts >= ctx.job.max_attempts
@@ -223,7 +223,7 @@ class Saga:
         st["reason"] = f"{name}: {e}"
         await self._save(ctx, st)
 
-    async def _compensate_step(self, ctx: JobCtx, st: dict[str, Any], i: int) -> None:
+    async def _compensate_step(self, ctx: JobCtx, st: dict[str, Any], i: int) -> None:  # noqa: PLR0915
         name = self.steps[i].name
         if st["steps"][i]["state"] != "compensating":
             st["steps"][i]["state"] = "compensating"

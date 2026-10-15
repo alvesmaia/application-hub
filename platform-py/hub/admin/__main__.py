@@ -79,7 +79,7 @@ def add_sharepoint(name: str, tenant: str, client_id: str, site: str) -> int:
     return 0
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None) -> int:  # noqa: PLR0915
     p = argparse.ArgumentParser(prog="python -m hub.admin")
     sub = p.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("create-admin", help="cria (ou reinicia) um administrador com senha temporária")

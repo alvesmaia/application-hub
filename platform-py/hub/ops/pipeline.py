@@ -41,7 +41,7 @@ def step(i: int) -> dict[str, Any]:
     return {"name": STEPS[i][0], "description": STEPS[i][1], "state": "pending", "detail": ""}
 
 
-def read_zip(data: bytes) -> dict[str, bytes]:
+def read_zip(data: bytes) -> dict[str, bytes]:  # noqa: C901, PLR0915
     """In-memory entries; refuses zip-slip, links, duplicates and zip bombs."""
     try:
         z = zipfile.ZipFile(io.BytesIO(data))
@@ -169,7 +169,7 @@ async def _run_step(i: int, r: _Run) -> tuple[str, str]:
     return (_step_contract if i == 3 else _step_frontend)(r, m)
 
 
-async def run_all(
+async def run_all(  # noqa: PLR0915
     data: bytes, env: str, registered: list[Any], probe: Probe | None = None, allow_without_api: bool = False,
     on_step: Callable[[list[dict[str, Any]]], None] | None = None,
 ) -> dict[str, Any]:  # fmt: skip

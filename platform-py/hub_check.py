@@ -147,7 +147,7 @@ def project_steps(path: Path, fast: bool) -> list[tuple[str, list[str], Path]]:
     return [(f"{path.name}/{n}", c, path) for n, c in steps]
 
 
-def main() -> int:
+def main() -> int:  # noqa: PLR0915
     ap = argparse.ArgumentParser(prog="hub-check")
     ap.add_argument("--fast", action="store_true", help="so ruff, formato e ty")
     ap.add_argument("--all", action="store_true", help="tambem cli, sdk e cada app")
