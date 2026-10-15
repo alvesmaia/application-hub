@@ -18,7 +18,7 @@ from hub.gateway.registry import Registry
 from hub.insight.analytics import FEATURES
 from hub.ux import catalog, status
 from hub.ux.inbox_routes import entries_of
-from hub.ux.store import KINDS, STEPS, WIDGETS, Channel, UxStore, valid_layout
+from hub.ux.store import KINDS, STEPS, WIDGETS, Channel, Prefs, UxStore, valid_layout
 from hub.ux.texts import ago, t, tn, tr
 
 _WEB = Path(__file__).parent.parent / "web"
@@ -145,16 +145,8 @@ _HELPERS: dict[str, Any] = {"icon": icon}
 router = APIRouter()
 
 
-@router.get("/", response_class=HTMLResponse)
-async def home(request: Request, c: UxCtx = Depends(ctx)) -> Response:  # noqa: PLR0915
-    user = request.state.user
-    lang = request.state.lang
-    perms = cast(list[str], request.state.permissions)
-    prefs = c.store.prefs(user["id"])
-    layout, source = c.store.layout_for(user["id"], user["roles"])
-    vis = visible(request)
-    mine = catalog.cards(c.reg, c.data_dir, prefs.favorites, vis, allowed=True, lang=lang)
-    shown = [(w, False) for w in layout if w in WIDGETS] + [(w, True) for w in WIDGETS if w not in layout]
+def _recents(c: UxCtx, prefs: Prefs, lang: str) -> list[tuple[str, str, str]]:
+    """Recent pages as (path, label, "ago"), deduplicated by their current path."""
     now = now_ms()
     seen: set[str] = set()
     recents = []
@@ -164,11 +156,34 @@ async def home(request: Request, c: UxCtx = Depends(ctx)) -> Response:  # noqa: 
             continue
         seen.add(path)
         recents.append((path, catalog.path_label(c.reg, path) or r.label, ago(r.at, now, lang)))
-    inbox_items = [e for e in entries_of(request) if not e["archived"] and e["in_app"]]
+    return recents
+
+
+def _onboarding(prefs: Prefs, perms: list[str], lang: str) -> dict[str, Any]:
     steps = [(k, link, k in prefs.steps) for k, perm, link in STEPS if perm is None or perm in perms]
     done = sum(1 for s in steps if s[2])
     total = len(steps)
     progress = f"{done}/{total}"
+    return {
+        "steps": [{"key": k, "label": t(f"step.{k}", lang), "link": link, "done": d} for k, link, d in steps],
+        "progress": progress,
+        "progress_label": tn("widget.progress", progress, lang),
+        "progress_pct": str(done * 100 // total if total else 100),
+        "all_done": done == total,
+    }
+
+
+@router.get("/", response_class=HTMLResponse)
+async def home(request: Request, c: UxCtx = Depends(ctx)) -> Response:
+    user = request.state.user
+    lang = request.state.lang
+    perms = cast(list[str], request.state.permissions)
+    prefs = c.store.prefs(user["id"])
+    layout, source = c.store.layout_for(user["id"], user["roles"])
+    vis = visible(request)
+    mine = catalog.cards(c.reg, c.data_dir, prefs.favorites, vis, allowed=True, lang=lang)
+    shown = [(w, False) for w in layout if w in WIDGETS] + [(w, True) for w in WIDGETS if w not in layout]
+    inbox_items = [e for e in entries_of(request) if not e["archived"] and e["in_app"]]
     page = {**c.page_ctx(request), **_HELPERS} | {
         "greeting": tn("home.greeting", (user["name"].split() or [""])[0], lang),
         "subtitle": tn("home.subtitle", len(mine), lang),
@@ -177,15 +192,11 @@ async def home(request: Request, c: UxCtx = Depends(ctx)) -> Response:  # noqa: 
         "layout_source": source,
         "widget_options": [(w, t(f"widget.{w}", lang)) for w in WIDGETS],
         "favs": [card for f in prefs.favorites for card in mine if card.id == f],
-        "recents": recents,
+        "recents": _recents(c, prefs, lang),
         "inbox": inbox_items[:5],
         "unread": sum(1 for e in inbox_items[:5] if not e["read"]),
         "states": [(i, n, *catalog.state_label(k, lang)) for i, n, k in await c.live_states(request, vis)],
-        "steps": [{"key": k, "label": t(f"step.{k}", lang), "link": link, "done": d} for k, link, d in steps],
-        "progress": progress,
-        "progress_label": tn("widget.progress", progress, lang),
-        "progress_pct": str(done * 100 // total if total else 100),
-        "all_done": done == total,
+        **_onboarding(prefs, perms, lang),
         "analytics": "editar_configuracoes" in perms,
     }
     return c.templates.TemplateResponse(request, "home.html", page)

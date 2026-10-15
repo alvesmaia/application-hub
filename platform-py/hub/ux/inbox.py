@@ -310,11 +310,27 @@ class InboxStore:
         self._save()
         return True
 
-    @_txn
-    def begin(  # noqa: PLR0915
-        self, who: Who, item_id: int, decision: str, comment: str, app_name: str = ""
-    ) -> dict[str, Any]:
-        """Validates and decides: access immediately; an app request holds a reservation (`sending`) until the app confirms."""
+    def _notify_access_result(
+        self, who: Who, it: dict[str, Any], item_id: int, final: str, comment: str, app_name: str
+    ) -> None:
+        """The person who asked for access receives the result in the Inbox."""
+        name = app_name or it["app"]
+        self.push(
+            item_of(
+                "notification",
+                it["app"],
+                f"Acesso a {name} liberado" if final == "approved" else f"Pedido de acesso a {name} recusado",
+                body=comment,
+                link=f"/apps/{it['app']}",
+                level="success" if final == "approved" else "warning",
+                source=f"access-result:{item_id}",
+                by=who.email or who.name,
+                to_users=[it["by_id"]],
+            )
+        )
+
+    def _decidable(self, who: Who, item_id: int, decision: str) -> dict[str, Any]:
+        """The item `who` may decide now, or the InboxError that says why not (checked in this order)."""
         it = self.items.get(item_id)
         if not it or not it["approval"] or not targets(it, who):
             raise InboxError(404, "Pedido não encontrado.")
@@ -322,9 +338,17 @@ class InboxStore:
             raise InboxError(400, "Decisão inválida.")
         if not can_decide(it, who):
             raise InboxError(403, "Você não pode decidir este pedido.")
-        ap = it["approval"]
-        if ap["status"] not in ("pending", "error"):
+        if it["approval"]["status"] not in ("pending", "error"):
             raise InboxError(409, "Este pedido já foi decidido ou expirou.")
+        return it
+
+    @_txn
+    def begin(
+        self, who: Who, item_id: int, decision: str, comment: str, app_name: str = ""
+    ) -> dict[str, Any]:
+        """Validates and decides: access immediately; an app request holds a reservation (`sending`) until the app confirms."""
+        it = self._decidable(who, item_id, decision)
+        ap = it["approval"]
         final = "approved" if decision == "approve" else "rejected"
         ap.update(decided_by=who.email or who.name, decided_at=now_ms(), comment=comment, error="")
         ap["status"] = "sending" if it["kind"] == "approval" else final
@@ -332,23 +356,8 @@ class InboxStore:
             apps = self.grants.setdefault(it["by_id"], [])
             if it["app"] not in apps:
                 apps.append(it["app"])
-        if it["kind"] == "access":  # the person who asked receives the result in the Inbox
-            name = app_name or it["app"]
-            self.push(
-                item_of(
-                    "notification",
-                    it["app"],
-                    f"Acesso a {name} liberado"
-                    if final == "approved"
-                    else f"Pedido de acesso a {name} recusado",
-                    body=comment,
-                    link=f"/apps/{it['app']}",
-                    level="success" if final == "approved" else "warning",
-                    source=f"access-result:{item_id}",
-                    by=who.email or who.name,
-                    to_users=[it["by_id"]],
-                )
-            )
+        if it["kind"] == "access":
+            self._notify_access_result(who, it, item_id, final, comment, app_name)
         self._save()
         return it
 

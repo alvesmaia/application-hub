@@ -69,7 +69,59 @@ def app_states(
     ]
 
 
-def status_data(  # noqa: PLR0915
+def _uptime_bars(days: list[tuple[int, float | None]]) -> list[tuple[str, str]]:
+    bars: list[tuple[str, str]] = []
+    for t, v in days:
+        date = _label(t * 1000)
+        cls = "none" if v is None else "ok" if v >= 0.999 else "warn" if v >= 0.98 else "bad"
+        bars.append((f"uptime-bar uptime-{cls}", f"{date}: sem dados" if v is None else f"{date}: {pct(v)}"))
+    return bars
+
+
+def _slo_line(m: Metrics | None, slos: list[dict[str, Any]], app_id: str) -> str | None:
+    slo = next((s for s in slos if s["app"] == app_id and s["env"] == "producao"), None)
+    if not (slo and m):
+        return None
+    x = slo_status(m, slo)
+    return (
+        f"SLO {num(slo['availability'], 2)}% · atual {pct(x['availability'])} · "
+        f"orçamento restante {pct(max(x['budget_remaining'], -9.99))}"
+    )
+
+
+def _status_app(
+    m: Metrics | None, slos: list[dict[str, Any]], app_id: str, name: str, key: str, now: float
+) -> StatusApp:
+    label, css = state_label(key)
+    days = daily_uptime(m, app_id, "producao", 30, int(now)) if m else []
+    known = [v for _, v in days if v is not None]
+    uptime = f"{pct(sum(known) / len(known))} em 30 dias" if known else "sem dados"
+    bars = _uptime_bars(days)
+    return StatusApp(
+        name, "Produção", label, css, uptime, bars or _empty_bars(now), _slo_line(m, slos, app_id)
+    )
+
+
+def _incident_row(i: dict[str, Any], names: dict[str, str], ms: int) -> dict[str, Any]:
+    done = i["resolved"] is not None
+    return {
+        "id": i["id"],
+        "title": i["title"],
+        "meta": f"{names.get(i['app'], 'Plataforma')} · {env_label(i['env'])} · "
+        f"{'automático' if i['kind'] == 'auto' else 'manual'}"
+        + (
+            f" · resolvido {relative(i['resolved'], ms)}"
+            if done
+            else f" · desde {relative(i['started'], ms)}"
+        ),
+        "css": "status-pill status-draft" if done else _PILL.get(i["severity"], _PILL["minor"]),
+        "state": "Resolvido" if done else "Indisponível" if i["severity"] == "major" else "Em andamento",
+        "notes": [(f"{n['author']} · {relative(n['at'], ms)}", n["text"]) for n in reversed(i["notes"][-5:])],
+        "open": not done,
+    }
+
+
+def status_data(
     reg: Registry,
     visible: set[str] | None,
     now: float,
@@ -82,54 +134,9 @@ def status_data(  # noqa: PLR0915
     open_ = [i for i in incidents if i["resolved"] is None]
     slos = admin_data.get("slos", [])
     names = {e.id: e.display.get("short") or e.name for e in reg.entries()}
-    now_i = int(now)
-    for app_id, name, key in app_states(reg, visible, m, incidents):
-        label, css = state_label(key)
-        days = daily_uptime(m, app_id, "producao", 30, now_i) if m else []
-        known = [v for _, v in days if v is not None]
-        bars: list[tuple[str, str]] = []
-        for t, v in days:
-            date = _label(t * 1000)
-            cls = "none" if v is None else "ok" if v >= 0.999 else "warn" if v >= 0.98 else "bad"
-            bars.append(
-                (f"uptime-bar uptime-{cls}", f"{date}: sem dados" if v is None else f"{date}: {pct(v)}")
-            )
-        slo = next((s for s in slos if s["app"] == app_id and s["env"] == "producao"), None)
-        line = None
-        if slo and m:
-            x = slo_status(m, slo)
-            line = (
-                f"SLO {num(slo['availability'], 2)}% · atual {pct(x['availability'])} · "
-                f"orçamento restante {pct(max(x['budget_remaining'], -9.99))}"
-            )
-        uptime = f"{pct(sum(known) / len(known))} em 30 dias" if known else "sem dados"
-        data.apps.append(StatusApp(name, "Produção", label, css, uptime, bars or _empty_bars(now), line))
+    data.apps = [_status_app(m, slos, a, n, k, now) for a, n, k in app_states(reg, visible, m, incidents)]
     ms = int(now * 1000)
-    for i in incidents[:30]:
-        done = i["resolved"] is not None
-        data.incidents.append(
-            {
-                "id": i["id"],
-                "title": i["title"],
-                "meta": f"{names.get(i['app'], 'Plataforma')} · {env_label(i['env'])} · "
-                f"{'automático' if i['kind'] == 'auto' else 'manual'}"
-                + (
-                    f" · resolvido {relative(i['resolved'], ms)}"
-                    if done
-                    else f" · desde {relative(i['started'], ms)}"
-                ),
-                "css": "status-pill status-draft" if done else _PILL.get(i["severity"], _PILL["minor"]),
-                "state": "Resolvido"
-                if done
-                else "Indisponível"
-                if i["severity"] == "major"
-                else "Em andamento",
-                "notes": [
-                    (f"{n['author']} · {relative(n['at'], ms)}", n["text"]) for n in reversed(i["notes"][-5:])
-                ],
-                "open": not done,
-            }
-        )
+    data.incidents = [_incident_row(i, names, ms) for i in incidents[:30]]
     if any(i["severity"] == "major" for i in open_):
         data.overall = "Há aplicações indisponíveis"
     elif open_:
