@@ -60,7 +60,7 @@ class Leader:
         ]
 
     async def _watch(self, takeover: Hook) -> None:
-        while True:
+        while True:  # noqa: PLR1702
             now = self.leading()
             if now != self.was:
                 self.was = now

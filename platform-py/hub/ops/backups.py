@@ -172,7 +172,7 @@ class Backups(BackupOffsite):
 
     async def rotate_all(self, apps: list[str]) -> list[str]:
         lines: list[str] = []
-        for app in apps:
+        for app in apps:  # noqa: PLR1702
             for env in ("producao", "staging"):
                 db, bucket = parse_targets(await self.app_env(app, env))
                 for what, fn, tgt in (

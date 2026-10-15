@@ -296,7 +296,7 @@ class ImportHandler:
         if not good:
             return 0, [], False
         errs: list[tuple[int, str, str, str]] = []
-        try:
+        try:  # noqa: PLR1702
             async with ctx.pool.acquire() as c, c.transaction():
                 tags = [v[0] for _, v in good]
                 existing = {
@@ -460,7 +460,7 @@ def count_xlsx(path: Path) -> dict[str, int]:
     """Validates the spreadsheet the way the import would (without DB)."""
     r = Reader(path)
     valid = rejected = 0
-    try:
+    try:  # noqa: PLR1702
         while True:
             b = r.batch(BATCH)
             if not b:

@@ -175,7 +175,7 @@ class Outbox:
 
     async def tick(self) -> None:
         """One round: each app with an internal token, several pages if there is a backlog."""
-        for e in self.app.state.gateway.registry.entries():
+        for e in self.app.state.gateway.registry.entries():  # noqa: PLR1702
             if not (token := self.app.state.admin.tokens.get(e.id)):
                 continue
             after = 0

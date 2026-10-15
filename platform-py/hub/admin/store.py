@@ -62,7 +62,7 @@ class AdminStore:
 
     @asynccontextmanager
     async def locked(self, write: bool = False) -> AsyncIterator[dict[str, Any]]:
-        async with self.lock:
+        async with self.lock:  # noqa: PLR1702
             if self.db:
                 async with self.db.file_lock("admin.json", write=write):
                     data = self._read()

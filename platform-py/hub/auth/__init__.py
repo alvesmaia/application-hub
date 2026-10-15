@@ -124,7 +124,7 @@ class AuthStore:
 
     @asynccontextmanager
     async def locked(self, write: bool = False) -> AsyncIterator[dict[str, Any]]:
-        async with self._lock:
+        async with self._lock:  # noqa: PLR1702
             if self.db:  # the write stays inside the cross-replica lock, or another replica can overwrite it
                 async with self.db.file_lock("auth.json", write=write):
                     data = self._read()

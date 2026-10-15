@@ -147,22 +147,17 @@ def project_steps(path: Path, fast: bool) -> list[tuple[str, list[str], Path]]:
     return [(f"{path.name}/{n}", c, path) for n, c in steps]
 
 
-def main() -> int:  # noqa: PLR0915
+def _args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(prog="hub-check")
     ap.add_argument("--fast", action="store_true", help="so ruff, formato e ty")
     ap.add_argument("--all", action="store_true", help="tambem cli, sdk e cada app")
     ap.add_argument("--ty-files", nargs="+", metavar="ARQ", help="so ty nesses arquivos (pre-commit)")
     ap.add_argument("--sizes", action="store_true", help="only the file-size ratchet")
-    a = ap.parse_args()
-    if a.sizes:
-        return check_sizes()
-    if a.ty_files:
-        return ty_files(a.ty_files)
-    steps = hub_steps(a.fast)
-    if a.all:
-        projs = _projects()
-        for p in projs:
-            steps += project_steps(p, a.fast)
+    return ap.parse_args()
+
+
+def run_steps(steps: list[tuple[str, list[str], Path]]) -> list[tuple[str, bool, float]]:
+    """Runs the steps in order and stops at the first failure."""
     results: list[tuple[str, bool, float]] = []
     for label, cmd, cwd in steps:
         print(f"\n=== {label}: {' '.join(cmd)}", flush=True)
@@ -171,12 +166,28 @@ def main() -> int:  # noqa: PLR0915
         results.append((label, ok, time.monotonic() - t))
         if not ok:
             break
+    return results
+
+
+def summary(results: list[tuple[str, bool, float]], total: int) -> int:
     print("\n--- resumo")
     for label, ok, dt in results:
         print(f"{'OK  ' if ok else 'FAIL'} {label} ({dt:.1f}s)")
     bad = [r for r in results if not r[1]]
-    print(f"\nFALHOU em {bad[0][0]}" if bad else f"\nVERDE ({len(results)}/{len(steps)} etapas)")
+    print(f"\nFALHOU em {bad[0][0]}" if bad else f"\nVERDE ({len(results)}/{total} etapas)")
     return 1 if bad else 0
+
+
+def main() -> int:
+    a = _args()
+    if a.sizes:
+        return check_sizes()
+    if a.ty_files:
+        return ty_files(a.ty_files)
+    steps = hub_steps(a.fast)
+    for p in _projects() if a.all else []:
+        steps += project_steps(p, a.fast)
+    return summary(run_steps(steps), len(steps))
 
 
 if __name__ == "__main__":

@@ -114,7 +114,7 @@ def tabs_for(path: str, tab: str, perms: list[str]) -> list[tuple[str, str, bool
 def eyebrow_for(path: str, lang: str) -> str:
     """Line above a page's title: the route's menu group (`/admin/users` → "Access")."""
     path = path.split("?")[0]
-    if path == "/admin" or path.startswith("/admin/"):
+    if path == "/admin" or path.startswith("/admin/"):  # noqa: PLR1702
         best: tuple[int, str] | None = None
         for g in nav_for(lang)["groups"]:
             for it in g["items"]:

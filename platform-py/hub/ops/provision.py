@@ -77,7 +77,7 @@ def _ddl(name: str, mark: str, pw: str, role_c: str | None, owner: str | None) -
 
 async def _unbind_other_staging_dbs(cfg: Any, app: str, var: str) -> None:
     """Staging never stores a production database credential."""
-    async with cfg.s.locked(True) as d:
+    async with cfg.s.locked(True) as d:  # noqa: PLR1702
         for v in list(d["env"]):
             mine = [x for x in v["bindings"] if x["app"] == app and x["env"] == "staging"]
             if v["name"] != var and v.get("inject_as") == "HUB_DB_URL" and mine:

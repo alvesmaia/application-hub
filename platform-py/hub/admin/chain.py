@@ -102,7 +102,7 @@ class AuditChain:
     def _scan(self, problems: list[str]) -> tuple[int, str, int]:
         """Walks chain.jsonl; returns (seq, hash, event id) of the last valid event."""
         seq, previous, event_id = 0, GENESIS, 0
-        try:
+        try:  # noqa: PLR1702
             for n, line in enumerate(self._lines(), 1):
                 if line["t"] == "e":
                     problem, state = _check_event(line, seq, previous, event_id)

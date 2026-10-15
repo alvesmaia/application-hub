@@ -104,7 +104,7 @@ async def _spool(up: UploadFile, dest: Path, name: str, limit: int) -> tuple[str
     size, head, ct = 0, b"", ""
     declared = up.content_type or ""
     out = await asyncio.to_thread(partial(dest.open, "wb"))
-    try:
+    try:  # noqa: PLR1702
         while chunk := await up.read(1024 * 1024):
             if not ct:
                 head += chunk[: max(0, 16 - len(head))]

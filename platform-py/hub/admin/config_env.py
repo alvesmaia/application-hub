@@ -327,7 +327,7 @@ class ConfigOps(RoleOps):
 
     async def import_bootstrap(self, actor: str, items: list[dict[str, Any]]) -> int:
         """Initial load (`HUB_APP_ENV_FILE`): only what does not exist yet, without marking a restart."""
-        async with self.s.locked(True) as d:
+        async with self.s.locked(True) as d:  # noqa: PLR1702
             n = 0
             for raw in items:
                 if any(e["name"] == raw["name"] for e in d["env"]):
