@@ -21,6 +21,7 @@ from ativos.state import (
     State,
     StateDep,
     audit_tx,
+    base_of,
     db_notice,
     get_job,
     list_assets,
@@ -57,40 +58,40 @@ def _write_failed(
     return html(wrap_msg(notice("error", title, importer.db_error_text(e))), 500)
 
 
-async def _panel(st: State, q: Mapping[str, str], f: Filter) -> str:
+async def _panel(st: State, q: Mapping[str, str], f: Filter, base: str) -> str:
     """The panel above the list (``?edit=``, ``?new=1``, ``?import=1``, ``?job=``)."""
     edit = param(q, "edit")
     if re.fullmatch(r"-?\d+", edit):
         row = await load_asset(st, int(edit))
         if row:
-            return views.editor(row, "", f.qs())
+            return views.editor(row, base, "", f.qs())
         return notice("warn", "Ativo não encontrado", "Ele pode ter sido excluído.")
     if param(q, "new") == "1":
-        return views.creator({})
+        return views.creator({}, base)
     if param(q, "import") == "1":
-        return import_form()
+        return import_form(base)
     if param(q, "job"):
         j = await get_job(st, param(q, "job"), importer.KIND)
         if j is not None:
-            return views.job_panel(importer.job_view(j))
+            return views.job_panel(importer.job_view(j), base)
     return ""
 
 
-async def _list_body(st: State, f: Filter, panel: str) -> str:
+async def _list_body(st: State, f: Filter, panel: str, base: str) -> str:
     try:
         total, rows = await list_assets(st, f)
     except DB_ERRORS as e:
-        return views.page_header("Inventário", views.header_actions(f)) + notice(
+        return views.page_header("Inventário", views.header_actions(f, base)) + notice(
             "error", "Erro ao consultar os ativos", str(e)
         )
     return (
         views.page_header(
             f"{thousands(total)} ativos encontrados. Busca, filtros e ordenação no servidor.",
-            views.header_actions(f),
+            views.header_actions(f, base),
         )
         + panel
         + '<div id="export-panel"></div>'
-        + views.table(f, total, rows)
+        + views.table(f, total, rows, base)
     )
 
 
@@ -104,22 +105,22 @@ async def assets_page(req: Request, st: StateDep) -> Response:
     q = dict(req.query_params)
     f = Filter.from_query(q)
     try:
-        panel = await _panel(st, q, f)
+        panel = await _panel(st, q, f, base_of(req))
     except DB_ERRORS as e:
         panel = notice("error", "Erro ao carregar o ativo", str(e))
-    body = await _list_body(st, f, panel)
+    body = await _list_body(st, f, panel, base_of(req))
     tpl = st.fragment("assets", req) or ""
     return html(wrap(tpl, body))
 
 
 @router.post("/ativos/assets")
 async def create(req: Request, st: StateDep) -> Response:
-    form = values_from(await req.form())
+    form, base = values_from(await req.form()), base_of(req)
     if (n := db_notice(st)) is not None:
-        return html(views.creator(form, n), 503)
+        return html(views.creator(form, base, n), 503)
     vals, errs = validate(form, EDIT_FIELDS)
     if errs:
-        return html(views.creator(form, notice("error", "Verifique os campos", errs)), 422)
+        return html(views.creator(form, base, notice("error", "Verifique os campos", errs)), 422)
     tag = vals["tag"]
     try:
         async with st.sdk.pool.acquire() as c, c.transaction():
@@ -127,12 +128,12 @@ async def create(req: Request, st: StateDep) -> Response:
             await audit_tx(c, req, "Ativo cadastrado", tag, vals["name"] or "")
     except asyncpg.UniqueViolationError:
         msg = notice("error", "Patrimônio já cadastrado", "Use outro número de patrimônio.")
-        return html(views.creator(form, msg), 409)
+        return html(views.creator(form, base, msg), 409)
     except DB_ERRORS as e:
-        return _write_failed(e, partial(views.creator, form), "Erro ao cadastrar")
+        return _write_failed(e, partial(views.creator, form, base), "Erro ao cadastrar")
     row = await load_asset(st, aid)
     ok = notice("ok", "Ativo cadastrado", f"Patrimônio {tag} criado.")
-    return html(views.editor(row, ok) if row else notice("ok", "Ativo cadastrado", tag), 201)
+    return html(views.editor(row, base, ok) if row else notice("ok", "Ativo cadastrado", tag), 201)
 
 
 async def _save(st: State, req: Request, aid: int, sent: int, vals: dict[str, Any], tag: str) -> Any:
@@ -144,21 +145,22 @@ async def _save(st: State, req: Request, aid: int, sent: int, vals: dict[str, An
     return version
 
 
-async def _stale(st: State, aid: int, sent: int) -> Response:
+async def _stale(st: State, aid: int, sent: int, base: str) -> Response:
     """Outdated version (or the asset is gone): 409 with the message."""
     latest = await load_asset(st, aid)
     if latest is None:
         msg = notice("error", "Este ativo foi excluído por outra pessoa", "Suas alterações não foram salvas.")
         return html(msg, 409)
-    return html(views.editor(latest, conflict(latest["version"], sent)), 409)
+    return html(views.editor(latest, base, conflict(latest["version"], sent)), 409)
 
 
 # Routes with a parameter go last: `/itens/import` and `/itens/export.*` take precedence
 # (``app.create_app`` includes the import and export routers first).
 @router.api_route("/ativos/itens/{aid}", methods=["POST", "GET"])
 async def update(req: Request, aid: str, st: StateDep) -> Response:
+    base = base_of(req)
     if req.method == "GET" or not aid.isdigit():
-        return not_found()
+        return not_found(base)
     aid_n = int(aid)
     if (n := db_notice(st)) is not None:
         return html(n, 503)
@@ -173,30 +175,31 @@ async def update(req: Request, aid: str, st: StateDep) -> Response:
         return html(msg, 404)
     vals, errs = validate(form, UPDATE_KEYS)
     if errs:
-        return html(views.editor(current, notice("error", "Verifique os campos", errs)), 422)
+        return html(views.editor(current, base, notice("error", "Verifique os campos", errs)), 422)
     try:
         version = await _save(st, req, aid_n, sent, vals, views.asset_values(current)["tag"])
     except DB_ERRORS as e:
-        return _write_failed(e, partial(views.editor, current), "Erro ao salvar")
+        return _write_failed(e, partial(views.editor, current, base), "Erro ao salvar")
     if version is None:
-        return await _stale(st, aid_n, sent)
+        return await _stale(st, aid_n, sent, base)
     row = await load_asset(st, aid_n) or current
     ok = notice("ok", "Alterações salvas", f"Versão {row['version']} gravada.")
-    return html(views.editor(row, ok))
+    return html(views.editor(row, base, ok))
 
 
-def _deleted(row: Any) -> Response:
+def _deleted(row: Any, base: str) -> Response:
     return html(
         '<section class="content-panel hub-panel" id="asset-editor">'
         + notice("ok", "Ativo excluído", f"{row['tag']} · {row['name']}")
-        + '<div class="modal-actions"><a class="primary-button" href="/apps/ativos/assets">Voltar à lista</a></div></section>'
+        + f'<div class="modal-actions"><a class="primary-button" href="{base}/assets">Voltar à lista</a></div></section>'
     )
 
 
 @router.api_route("/ativos/itens/{aid}/delete", methods=["POST", "GET"])
 async def delete(req: Request, aid: str, st: StateDep) -> Response:
+    base = base_of(req)
     if req.method == "GET" or not aid.isdigit():
-        return not_found()
+        return not_found(base)
     aid_n = int(aid)
     if (n := db_notice(st)) is not None:
         return html(n, 503)
@@ -211,8 +214,8 @@ async def delete(req: Request, aid: str, st: StateDep) -> Response:
     except DB_ERRORS as e:
         return _write_failed(e, str, "Erro ao excluir", "Nada foi excluído")
     if row is not None:
-        return _deleted(row)
+        return _deleted(row, base)
     cur = await load_asset(st, aid_n)
     if cur is not None:
-        return html(views.editor(cur, conflict(cur["version"], sent)), 409)
+        return html(views.editor(cur, base, conflict(cur["version"], sent)), 409)
     return html(notice("warn", "Ativo não encontrado", "Ele já foi excluído."), 404)

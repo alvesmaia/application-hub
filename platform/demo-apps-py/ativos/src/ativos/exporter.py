@@ -176,14 +176,14 @@ def _append(ws: Any, rows: list[list[Any]]) -> None:
         ws.append(r)
 
 
-def panel(j: Job) -> str:
+def panel(j: Job, base: str) -> str:
     """Export panel (polling while running; download link when finished)."""
     jid = esc(j.id)
     if j.status in ("queued", "running"):
         queued = j.status == "queued"
         retry = f" · tentativa {j.attempts} de {j.max_attempts}" if j.attempts > 1 else ""
         return (
-            f'<section class="content-panel hub-panel" id="export-panel" data-hub-poll="/apps/ativos/itens/export/{jid}" '
+            f'<section class="content-panel hub-panel" id="export-panel" data-hub-poll="{base}/itens/export/{jid}" '
             f'data-hub-interval="1000"><div class="hub-panel-head"><div><span class="eyebrow">'
             f"{'EXPORTAÇÃO NA FILA' if queued else 'EXPORTAÇÃO EM ANDAMENTO'}</span><h2>ativos.xlsx</h2>"
             f'<p class="hub-muted">{thousands(j.progress_done)} linhas gravadas · {j.elapsed_s:.0f} s{retry}</p></div></div>'

@@ -5,6 +5,7 @@ from __future__ import annotations
 import unicodedata
 from typing import Any
 
+from hub_sdk import base
 from hub_sdk.app import HubSdk
 from hub_sdk.search import SearchHit, SearchQuery, like_pattern, score
 
@@ -63,7 +64,7 @@ def make_search(sdk: HubSdk) -> Any:
             SearchHit(
                 title=r["name"],
                 subtitle=f"{r['tag']} · {r['category']} · {r['location']}",
-                url=f"/apps/ativos/assets{query([('q', r['tag'])])}",
+                url=f"{base('ativos')}/assets{query([('q', r['tag'])])}",
                 kind=kind,
                 score=_score(r, q, generic),
             )

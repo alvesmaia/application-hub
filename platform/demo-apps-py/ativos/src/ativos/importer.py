@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any
 
 import asyncpg
-from hub_sdk import outbox
+from hub_sdk import base, outbox
 from hub_sdk.jobs import Job, JobCtx, JobFail, JobRetry, JobSpec
 from hub_sdk.render import BOM, csv_line
 
@@ -346,7 +346,7 @@ class ImportHandler:
                 job.user,
                 title,
                 body=body,
-                link=f"/apps/ativos/assets?import={job.id}",
+                link=f"{base('ativos')}/assets?import={job.id}",
                 to_users=[login] if login else [],
                 level=level,
             )

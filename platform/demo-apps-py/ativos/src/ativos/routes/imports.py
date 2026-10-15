@@ -18,7 +18,17 @@ from starlette.datastructures import UploadFile
 
 from ativos import importer, views
 from ativos.seed import int_env
-from ativos.state import DB_ERRORS, State, StateDep, audit_tx, db_notice, get_job, jobs_ready, user_of
+from ativos.state import (
+    DB_ERRORS,
+    State,
+    StateDep,
+    audit_tx,
+    base_of,
+    db_notice,
+    get_job,
+    jobs_ready,
+    user_of,
+)
 from ativos.ui import esc, notice
 from ativos.views import not_found
 
@@ -33,8 +43,8 @@ def import_max_mb() -> int:
     return int_env("HUB_IMPORT_MAX_MB", 50)
 
 
-def import_form(msg: str = "") -> str:
-    return views.import_form(msg, import_max_mb(), importer.MAX_ROWS)
+def import_form(base: str, msg: str = "") -> str:
+    return views.import_form(msg, import_max_mb(), importer.MAX_ROWS, base)
 
 
 class ImportRefused(Exception):
@@ -135,42 +145,43 @@ async def _start(st: State, req: Request) -> Job:
 
 @router.api_route("/ativos/itens/import", methods=["POST", "GET"])
 async def start_import(req: Request, st: StateDep) -> Response:
+    base = base_of(req)
     if req.method == "GET":
-        return not_found()
+        return not_found(base)
     if (n := db_notice(st)) is not None:
-        return html(import_form(n), 503)
+        return html(import_form(base, n), 503)
     try:
         job = await _start(st, req)
     except ImportRefused as e:
-        return html(import_form(notice("error", e.title, e.text)), e.status)
+        return html(import_form(base, notice("error", e.title, e.text)), e.status)
     st.sdk.wake()
-    return html(views.job_panel(importer.job_view(job)), 202)
+    return html(views.job_panel(importer.job_view(job), base), 202)
 
 
 @router.get("/ativos/itens/import/{job_id}")
-async def import_status(job_id: str, st: StateDep) -> Response:
+async def import_status(job_id: str, req: Request, st: StateDep) -> Response:
     if not jobs_ready(st):
         n = db_notice(st) or ""
         return html(
             '<section class="content-panel hub-panel" id="import-panel" '
-            f'data-hub-poll="/apps/ativos/itens/import/{esc(job_id)}" data-hub-interval="3000">{n}</section>',
+            f'data-hub-poll="{base_of(req)}/itens/import/{esc(job_id)}" data-hub-interval="3000">{n}</section>',
             503,
         )
     j = await get_job(st, job_id, importer.KIND)
     if j is None:
         msg = notice("warn", "Importação não encontrada", "Confira o link ou envie a planilha novamente.")
         return html(f'<section class="content-panel hub-panel" id="import-panel">{msg}</section>', 404)
-    return html(views.job_panel(importer.job_view(j)))
+    return html(views.job_panel(importer.job_view(j), base_of(req)))
 
 
 @router.get("/ativos/itens/import/{job_id}/erros.csv")
-async def import_errors(job_id: str, st: StateDep) -> Response:
+async def import_errors(job_id: str, req: Request, st: StateDep) -> Response:
     j = await get_job(st, job_id, importer.KIND) if jobs_ready(st) else None
     if j is None:
-        return not_found()
+        return not_found(base_of(req))
     p = Path(str((j.payload or {}).get("report_path", "")))
     if not await asyncio.to_thread(p.is_file):
-        return not_found()
+        return not_found(base_of(req))
     return FileResponse(
         p, headers=download_headers("text/csv; charset=utf-8", f"erros-importacao-{j.id}.csv")
     )

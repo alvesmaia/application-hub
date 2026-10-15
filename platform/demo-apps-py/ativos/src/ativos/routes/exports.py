@@ -14,7 +14,7 @@ from hub_sdk.render import busy, download_headers, html
 from ativos import exporter
 from ativos.query import Filter
 from ativos.routes.imports import XLSX
-from ativos.state import DB_ERRORS, StateDep, db_notice, get_job, jobs_ready, user_of, values_from
+from ativos.state import DB_ERRORS, StateDep, base_of, db_notice, get_job, jobs_ready, user_of, values_from
 from ativos.ui import notice
 from ativos.views import not_found
 
@@ -45,7 +45,7 @@ async def export_csv(req: Request, st: StateDep) -> Response:
 @router.api_route("/ativos/itens/export.xlsx", methods=["POST", "GET"])
 async def export_xlsx(req: Request, st: StateDep) -> Response:
     if req.method == "GET":
-        return not_found()
+        return not_found(base_of(req))
     if (n := db_notice(st)) is not None:
         return html(n, 503)
     if st.sdk.jobs is None:
@@ -62,24 +62,24 @@ async def export_xlsx(req: Request, st: StateDep) -> Response:
     except DB_ERRORS as e:
         return export_error(str(e))
     st.sdk.wake()
-    return html(exporter.panel(job), 202)
+    return html(exporter.panel(job, base_of(req)), 202)
 
 
 @router.get("/ativos/itens/export/{job_id}")
-async def export_status(job_id: str, st: StateDep) -> Response:
+async def export_status(job_id: str, req: Request, st: StateDep) -> Response:
     if not jobs_ready(st):
         return export_error("banco indisponível")
     j = await get_job(st, job_id, exporter.KIND)
     if j is None:
         return html(notice("warn", "Exportação não encontrada", "Gere a exportação de novo."), 404)
-    return html(exporter.panel(j))
+    return html(exporter.panel(j, base_of(req)))
 
 
 @router.get("/ativos/itens/export/{job_id}/ativos.xlsx")
-async def export_download(job_id: str, st: StateDep) -> Response:
+async def export_download(job_id: str, req: Request, st: StateDep) -> Response:
     j = await get_job(st, job_id, exporter.KIND) if jobs_ready(st) else None
     if j is None or j.status != "done":
-        return not_found()
+        return not_found(base_of(req))
     p = exporter.out_path(st.scratch, j.id)
     if not await asyncio.to_thread(p.is_file):
         msg = notice(

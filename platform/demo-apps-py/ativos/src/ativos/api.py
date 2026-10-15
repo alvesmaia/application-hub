@@ -27,6 +27,7 @@ from ativos.state import (
     State,
     StateDep,
     audit_tx,
+    base_of,
     db_notice,
     get_job,
     jobs_ready,
@@ -410,7 +411,7 @@ async def assets_export(req: Request, st: StateDep, body: ExportIn) -> Response:
         return _unavailable(str(e))
     st.sdk.wake()
     return JSONResponse(
-        {"job": job.id, "status": job.status, "status_url": f"/apps/ativos/api/v1/exports/{job.id}"},
+        {"job": job.id, "status": job.status, "status_url": f"{base_of(req)}/api/v1/exports/{job.id}"},
         status_code=202,
     )
 
@@ -436,7 +437,7 @@ async def assets_export_status(req: Request, st: StateDep, job: str) -> Response
             "progress_done": j.progress_done,
             "progress_total": j.progress_total,
             "error": j.error,
-            "download": f"/apps/ativos/itens/export/{j.id}/ativos.xlsx" if j.result is not None else None,
+            "download": f"{base_of(req)}/itens/export/{j.id}/ativos.xlsx" if j.result is not None else None,
         }
     )
 

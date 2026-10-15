@@ -84,6 +84,30 @@ async def test_flag_banner_and_locale(running: Running) -> None:
     assert "Overview" in en.text and en.headers["content-type"].startswith("text/html")
 
 
+async def _public_pages(c: httpx.AsyncClient, headers: dict[str, str]) -> list[str]:
+    """A static fragment, two views built in Python and the 404 page, all without DB."""
+    return [
+        (await c.get("/ativos/dashboard", headers=headers)).text,
+        (await c.post("/ativos/assets", data={"tag": "x"}, headers=headers)).text,
+        (await c.get("/ativos/itens/import/abc", headers=headers)).text,
+        (await c.get("/ativos/nada", headers=headers)).text,
+    ]
+
+
+async def test_links_follow_the_public_base(running: Running) -> None:
+    alt = await _public_pages(running.client, {"x-hub-base": "/apps/ativos-alt"})
+    assert all("/apps/ativos/" not in t for t in alt)
+    assert all("/apps/ativos-alt" in t for t in alt)
+    assert 'href="/apps/ativos-alt/assets"' in alt[0] and 'action="/apps/ativos-alt/assets"' in alt[1]
+    assert 'data-hub-poll="/apps/ativos-alt/itens/import/abc"' in alt[2]
+    assert 'href="/apps/ativos-alt"' in alt[3]
+    default = await _public_pages(running.client, {})
+    assert all("/apps/ativos" in t and "ativos-alt" not in t for t in default)
+    # an invalid header falls back to the default base
+    bad = await _public_pages(running.client, {"x-hub-base": '/apps/x"><script>'})
+    assert all("<script>" not in t and "/apps/ativos" in t for t in bad)
+
+
 def form(**over: str) -> dict[str, str]:
     base = {
         "tag": "TT-0001",

@@ -16,6 +16,7 @@ from hub_sdk.idempotency import idem_ctx
 from hub_sdk.identity import identity_of
 from hub_sdk.jobs import Job
 from hub_sdk.locale import from_headers
+from hub_sdk.render import public_base
 
 from ativos.i18n import personalize
 from ativos.model import COLS, PAGE_SIZE
@@ -34,7 +35,7 @@ class State:
         self.templates: dict[str, str] = {}
 
     def fragment(self, name: str, req: Request) -> str | None:
-        """Static mockup fragment with the hub context (user, language, date, app name)."""
+        """Static mockup fragment with the hub context (user, language, date, app name, public base)."""
         body = self.templates.get(name)
         if body is None:
             p = HERE / "fragments" / f"{name}.html"
@@ -43,6 +44,7 @@ class State:
             except OSError:
                 return None
             self.templates[name] = body
+        body = body.replace("{{ base }}", base_of(req))
         return personalize(body, user_of(req), from_headers(req.headers))
 
 
@@ -51,6 +53,11 @@ def state(req: Request) -> State:
 
 
 StateDep = Annotated[State, Depends(state)]
+
+
+def base_of(req: Request) -> str:
+    """Public base of the app's links/forms for this request (``x-hub-base``, else ``/apps/ativos``)."""
+    return public_base(req, "ativos")
 
 
 def user_of(req: Request) -> str:

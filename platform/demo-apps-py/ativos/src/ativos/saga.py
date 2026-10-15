@@ -14,7 +14,7 @@ import os
 from typing import Any
 
 import asyncpg
-from hub_sdk import outbox, storage
+from hub_sdk import base, outbox, storage
 from hub_sdk.jobs import JobFail, JobRetry, JobSpec
 from hub_sdk.saga import Saga, StepCtx
 from hub_sdk.uploads import Uploads
@@ -151,7 +151,7 @@ async def notificar(c: StepCtx) -> Any:
             user,
             "Ativo cadastrado com documento",
             body=f"O ativo {tag} foi cadastrado.",
-            link="/apps/ativos/assets",
+            link=f"{base('ativos')}/assets",
             to_users=[user],
         )
         return {"event": await outbox.write(conn, ev)}

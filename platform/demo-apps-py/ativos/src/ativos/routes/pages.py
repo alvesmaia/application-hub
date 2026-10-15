@@ -10,7 +10,7 @@ from fastapi.responses import Response
 from hub_sdk import flags
 from hub_sdk.render import html
 
-from ativos.state import HERE, State, StateDep
+from ativos.state import HERE, State, StateDep, base_of
 from ativos.views import not_found
 
 FLAG_NOVO_RESUMO = "novo-resumo"
@@ -31,7 +31,7 @@ def shared_assets_dir() -> Path:
 def dashboard_page(st: State, req: Request) -> Response:
     body = st.fragment("dashboard", req)
     if body is None:
-        return not_found()
+        return not_found(base_of(req))
     # Wave 8 — demo feature flag `novo-resumo` (Platform › Feature flags): the
     # hub evaluates it for the user and sends it in `x-hub-flags`.
     if flags.from_headers(req.headers).is_on(FLAG_NOVO_RESUMO):
@@ -54,7 +54,7 @@ async def dashboard(req: Request, st: StateDep) -> Response:
 @router.get("/ativos/_skeleton")
 async def skeleton(req: Request, st: StateDep) -> Response:
     body = st.fragment("_skeleton", req)
-    return html(body) if body is not None else not_found()
+    return html(body) if body is not None else not_found(base_of(req))
 
 
 @router.get("/ativos/assets/{name}")
@@ -76,8 +76,8 @@ async def asset(name: str) -> Response:
 @router.get("/ativos/{section}")
 async def other(req: Request, section: str, st: StateDep) -> Response:
     if section not in SECTIONS:
-        return not_found()
+        return not_found(base_of(req))
     if section == "dashboard":
         return dashboard_page(st, req)
     body = st.fragment(section, req)
-    return html(body) if body is not None else not_found()
+    return html(body) if body is not None else not_found(base_of(req))
