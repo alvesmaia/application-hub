@@ -30,14 +30,19 @@ class Background:
         print(f"hub: {msg}", flush=True)
         self.app.state.admin.logs.add(level, "platform", "plataforma", f"[réplicas] {msg}", "hub")
 
-    async def start(self, db: StateDb | None, outbox_every: float = 5) -> None:  # noqa: PLR0915
+    def _leader(self, db: StateDb | None) -> Leader:
         st = self.app.state
-        st.ops_jobs.db = db
-        st.ops_jobs.start()
         st.leader = leader = Leader(db, self.say)
         st.insight.is_leader = leader.leading
         st.insight.on_alert = st.platform_alert
         st.insight.hub_jobs = st.ops_jobs.running_all
+        return leader
+
+    async def start(self, db: StateDb | None, outbox_every: float = 5) -> None:
+        st = self.app.state
+        st.ops_jobs.db = db
+        st.ops_jobs.start()
+        leader = self._leader(db)
         outbox = Outbox(self.app, self.client, leader, OutboxIngest(self.data_dir / "outbox"))
         sched = Scheduler(self.app, leader)
         st.ops_outbox, st.ops_scheduler = outbox, sched
