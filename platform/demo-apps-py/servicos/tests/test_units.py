@@ -89,12 +89,12 @@ def test_nav_injection_and_helpers() -> None:
         '<nav><a class="nav-item active" href="/apps/servicos/requests">S</a>'
         '<a class="nav-item " href="/apps/servicos/settings">C</a></nav>'
     )
-    out = views.inject_nav(body, "requests")
+    out = views.inject_nav(body, "requests", "/apps/servicos")
     assert out.index("Relatórios") < out.index("settings")
     assert 'class="nav-item active" href="/apps/servicos/requests"' in out
-    rep = views.inject_nav(body, "reports")
+    rep = views.inject_nav(body, "reports", "/apps/servicos")
     assert 'class="nav-item active" href="/apps/servicos/reports"' in rep and 'class="nav-item "' in rep
-    assert views.inject_nav("<p>sem sidebar</p>", "requests") == "<p>sem sidebar</p>"
+    assert views.inject_nav("<p>sem sidebar</p>", "requests", "/apps/servicos") == "<p>sem sidebar</p>"
     assert "selected>Alta" in views.options(("Baixa", "Alta"), "Alta")
     assert "Todos" in views.options((), "", "Todos")
     assert thousands(12345678) == "12.345.678" and thousands(-5) == "-5"

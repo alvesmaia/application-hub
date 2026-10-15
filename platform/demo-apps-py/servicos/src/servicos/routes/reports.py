@@ -8,7 +8,7 @@ from hub_sdk.heavy import Permit
 from hub_sdk.render import busy, download_headers, html
 
 from servicos import report, views
-from servicos.state import DBERR, State, StateDep, db_notice, session_key, user_of, with_cookie
+from servicos.state import DBERR, State, StateDep, base_of, db_notice, session_key, user_of, with_cookie
 from servicos.ui import notice, param, thousands, wrap
 
 router = APIRouter()
@@ -50,7 +50,7 @@ async def reports(req: Request, st: StateDep) -> Response:
     key, new_sid = session_key(req)
     q = dict(req.query_params)
     params = report.Params.from_query(q)
-    body = views.reports_head(params)
+    body = views.reports_head(params, base_of(req))
     if not param(q, "de"):
         body += notice(
             "info",

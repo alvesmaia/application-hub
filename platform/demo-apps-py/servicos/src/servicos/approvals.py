@@ -7,7 +7,7 @@ import re
 from typing import Any
 
 from hub_sdk import approvals as ap
-from hub_sdk import outbox
+from hub_sdk import base, outbox
 from hub_sdk.app import HubSdk
 
 from servicos.state import to_i64
@@ -35,7 +35,7 @@ async def request_approval(
         f"sd-{ticket_id}",
         f"Aprovar chamado {protocol}",
         f"{requester_name} pediu aprovação: {title}",
-        f"/apps/servicos/requests?protocolo={url_enc(protocol)}",
+        f"{base('servicos')}/requests?protocolo={url_enc(protocol)}",
         to_roles=approver_roles(),
         level="warning",
     )
@@ -96,7 +96,7 @@ async def _announce(c: Any, row: Any, d: ap.ApprovalDecision) -> None:
             who,
             f"Chamado {proto} {verb}",
             f"{who} {verb} o seu pedido: {title}",
-            f"/apps/servicos/requests?protocolo={url_enc(proto)}",
+            f"{base('servicos')}/requests?protocolo={url_enc(proto)}",
             to_users=[row["requested_by"]],
             level="success" if d.status == "approved" else "warning",
         ),

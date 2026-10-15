@@ -9,7 +9,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import Response
 from hub_sdk.render import html
 
-from servicos.state import HERE, State, StateDep
+from servicos.state import HERE, State, StateDep, base_of
 from servicos.views import not_found
 
 CSS = "text/css; charset=utf-8"
@@ -28,7 +28,7 @@ def shared_assets_dir() -> Path:
 
 def static(st: State, name: str, req: Request) -> Response:
     body = st.page(name, req) if name in SECTIONS else None
-    return html(body) if body is not None else not_found()
+    return html(body) if body is not None else not_found(base_of(req))
 
 
 @router.get("/servicos")
@@ -40,7 +40,7 @@ async def dashboard(req: Request, st: StateDep) -> Response:
 @router.get("/servicos/_skeleton")
 async def skeleton(req: Request, st: StateDep) -> Response:
     body = st.skeleton(req)
-    return html(body) if body is not None else not_found()
+    return html(body) if body is not None else not_found(base_of(req))
 
 
 @router.get("/servicos/assets/{name}")

@@ -18,6 +18,7 @@ from hub_sdk.app import HubSdk
 from hub_sdk.idempotency import idem_ctx
 from hub_sdk.identity import identity_of
 from hub_sdk.locale import from_headers
+from hub_sdk.render import public_base
 
 from servicos import views
 from servicos.i18n import personalize
@@ -64,7 +65,8 @@ class State:
         if body is None:
             return None
         body = personalize(body, user_of(req), from_headers(req.headers))
-        return views.inject_nav(body, active or section)
+        base = base_of(req)
+        return views.inject_nav(body.replace("{{ base }}", base), active or section, base)
 
     async def status_counts(self) -> dict[str, int]:
         """Count per status (15 s cache: a ``GROUP BY`` over millions of rows on every page
@@ -90,6 +92,11 @@ def state(req: Request) -> State:
 
 
 StateDep = Annotated[State, Depends(state)]
+
+
+def base_of(req: Request) -> str:
+    """Public base of the app's links (the hub's ``x-hub-base``, or ``/apps/servicos``)."""
+    return public_base(req, "servicos")
 
 
 def user_of(req: Request) -> str:

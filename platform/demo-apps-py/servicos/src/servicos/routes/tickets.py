@@ -30,6 +30,7 @@ from servicos.state import (
     State,
     StateDep,
     audit_tx,
+    base_of,
     db_notice,
     session_key,
     to_i64,
@@ -92,15 +93,16 @@ async def _fetch_page(st: State, f: TicketFilter) -> tuple[list[Any] | None, str
         return None, str(e)
 
 
-async def _list_body(st: State, q: Mapping[str, str]) -> str:
+async def _list_body(st: State, q: Mapping[str, str], base: str) -> str:
     f = TicketFilter.from_query(q)
     rows, err = await _fetch_page(st, f)
-    body = views.heading_and_stats(await st.status_counts())
+    body = views.heading_and_stats(await st.status_counts(), base)
     if param(q, "new") == "1":
-        body += views.new_form()
-    body += views.filters(f.proto, f.status, f.cat, f.pri)
+        body += views.new_form(base)
+    body += views.filters(f.proto, f.status, f.cat, f.pri, base)
     if rows is not None:
-        body += views.table(rows, views.base_query(f.status, f.cat, f.pri, f.proto), f.before is not None)
+        qs = views.base_query(f.status, f.cat, f.pri, f.proto)
+        body += views.table(rows, qs, f.before is not None, base)
     else:
         body += notice("error", "Erro ao consultar os chamados", err)
     return body
@@ -116,19 +118,19 @@ async def requests_page(req: Request, st: StateDep) -> Response:
         t = st.page("requests", req) or ""
         marker = '<div class="app3-request-stats">'
         return with_cookie(html(t.replace(marker, f"{n}{marker}", 1)), new_sid)
-    body = await _list_body(st, q)
+    body = await _list_body(st, q, base_of(req))
     tpl = st.page("requests", req) or ""
     return with_cookie(html(wrap(tpl, f'<div class="app3-page">{body}</div>')), new_sid)
 
 
-def _opened(proto: str, due: Any, needs_approval: bool) -> Response:
+def _opened(proto: str, due: Any, needs_approval: bool, base: str) -> Response:
     extra = " · aguardando aprovação na Inbox" if needs_approval else ""
     return html(
         '<section class="app3-panel hub-panel" id="ticket-new">'
         + notice("ok", "Chamado aberto", f"Protocolo {proto} · SLA até {due:%d/%m %H:%M}{extra}")
         + '<div class="modal-actions"><a class="secondary-button" '
-        f'href="/apps/servicos/requests?protocolo={url_enc(proto)}">Ver chamado</a>'
-        '<a class="app3-primary" href="/apps/servicos/requests?new=1">Abrir outro</a></div></section>',
+        f'href="{base}/requests?protocolo={url_enc(proto)}">Ver chamado</a>'
+        f'<a class="app3-primary" href="{base}/requests?new=1">Abrir outro</a></div></section>',
         201,
     )
 
@@ -171,13 +173,14 @@ async def _insert_ticket(
 
 @router.post("/servicos/requests")
 async def open_ticket(req: Request, st: StateDep) -> Response:
+    base = base_of(req)
     n = db_notice(st)
     if n is not None:
-        return html(views.new_form(n), 503)
+        return html(views.new_form(base, n), 503)
     t = await _new_ticket_form(req)
     if t is None:
         msg = notice("error", "Verifique os campos", "Título, categoria e prioridade são obrigatórios.")
-        return html(views.new_form(msg), 422)
+        return html(views.new_form(base, msg), 422)
     user = user_of(req)
     login = identity_of(req).user or user
     first = "Aguardando" if t.needs_approval else "Aberto"
@@ -186,8 +189,8 @@ async def open_ticket(req: Request, st: StateDep) -> Response:
         proto = await _insert_ticket(st, req, t, user, login, due, first)
     except DBERR as e:
         msg = notice("error", "Não foi possível abrir o chamado", str(e))
-        return html(views.new_form(msg), 503)
-    return _opened(proto, due, t.needs_approval)
+        return html(views.new_form(base, msg), 503)
+    return _opened(proto, due, t.needs_approval, base)
 
 
 def _cell(msg: str) -> str:
@@ -208,7 +211,7 @@ def _update_failed(e: BaseException) -> Response:
     return html(notice("error", "Erro ao atualizar", str(e)), 500)
 
 
-async def _conflict(st: State, ident: int, sent: int) -> Response:
+async def _conflict(st: State, ident: int, sent: int, base: str) -> Response:
     """The update matched nothing: the ticket is gone (404) or someone changed it first (409)."""
     try:
         async with st.sdk.pool.acquire() as c:
@@ -223,14 +226,14 @@ async def _conflict(st: State, ident: int, sent: int) -> Response:
         f"Você atualizou a versão {sent}, mas a atual é {cur['version']} ({cur['status']}). "
         "Nada foi gravado; revise e tente de novo.",
     )
-    return html(views.row_html(cur, _cell(msg)), 409)
+    return html(views.row_html(cur, base, _cell(msg)), 409)
 
 
 @router.api_route("/servicos/requests/{tid}", methods=["POST", "GET"])
 async def update_ticket(req: Request, tid: str, st: StateDep) -> Response:
-    ident = to_i64(tid)
+    ident, base = to_i64(tid), base_of(req)
     if req.method == "GET" or ident is None:
-        return not_found()
+        return not_found(base)
     n = db_notice(st)
     if n is not None:
         return html(n, 503)
@@ -245,5 +248,5 @@ async def update_ticket(req: Request, tid: str, st: StateDep) -> Response:
     except DBERR as e:
         return _update_failed(e)
     if row is None:
-        return await _conflict(st, ident, sent)
-    return html(views.row_html(row, _cell(notice("ok", "Atualizado", f"Versão {row['version']}"))))
+        return await _conflict(st, ident, sent, base)
+    return html(views.row_html(row, base, _cell(notice("ok", "Atualizado", f"Versão {row['version']}"))))

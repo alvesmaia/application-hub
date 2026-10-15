@@ -5,6 +5,7 @@ from __future__ import annotations
 import unicodedata
 from typing import Any
 
+from hub_sdk import base
 from hub_sdk.app import HubSdk
 from hub_sdk.search import SearchHit, SearchQuery, like_pattern, score
 
@@ -60,7 +61,7 @@ def _score(r: Any, q: SearchQuery, exact: str, generic: bool) -> float:
 
 def make_search(sdk: HubSdk) -> Any:
     """Federated search (wave 9): exact reference (unique index) + title/reference across the 20k most
-    recent tickets → ``/apps/servicos/requests?protocolo=<protocolo>``."""
+    recent tickets → ``{base}/requests?protocolo=<protocolo>``."""
 
     async def search(q: SearchQuery) -> list[SearchHit]:
         if sdk.pool is None or not sdk.db_ready:
@@ -74,7 +75,7 @@ def make_search(sdk: HubSdk) -> Any:
             SearchHit(
                 title=r["title"],
                 subtitle=f"{r['protocol']} · {r['status']} · {r['category']}",
-                url=f"/apps/servicos/requests?protocolo={url_enc(r['protocol'])}",
+                url=f"{base('servicos')}/requests?protocolo={url_enc(r['protocol'])}",
                 kind=kind,
                 score=_score(r, q, exact, generic),
             )
