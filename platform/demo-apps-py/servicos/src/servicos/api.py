@@ -196,6 +196,15 @@ async def tickets_open(req: Request, body: TicketIn, st: StateDep) -> Response:
     )
 
 
+async def _update_status(st: State, req: Request, id: int, version: int, status: str) -> Any:
+    """Updated row, or ``None`` when the version is stale or the ticket does not exist."""
+    async with st.sdk.pool.acquire() as c, c.transaction():
+        row = await c.fetchrow(UPDATE_SQL, id, version, status)
+        if row is not None:
+            await audit_tx(c, req, "Chamado atualizado (API)", row["protocol"], f"status: {status}")
+    return row
+
+
 @router.put(
     f"{BASE}/tickets/{{id}}/status",
     operation_id="tickets_set_status",
@@ -203,7 +212,7 @@ async def tickets_open(req: Request, body: TicketIn, st: StateDep) -> Response:
     summary="Muda o status de um chamado (envie a versão lida)",
     openapi_extra=DESTRUCTIVE,
 )
-async def tickets_set_status(req: Request, id: int, body: StatusIn, st: StateDep) -> Response:  # noqa: C901
+async def tickets_set_status(req: Request, id: int, body: StatusIn, st: StateDep) -> Response:
     if isinstance(u := require_user(req), JSONResponse):
         return u
     if not db_ok(st):
@@ -214,10 +223,7 @@ async def tickets_set_status(req: Request, id: int, body: StatusIn, st: StateDep
     if not -(2**31) <= body.version < 2**31:
         return problem(409, "versão desatualizada ou chamado inexistente: leia de novo")
     try:
-        async with st.sdk.pool.acquire() as c, c.transaction():
-            row = await c.fetchrow(UPDATE_SQL, id, body.version, status)
-            if row is not None:
-                await audit_tx(c, req, "Chamado atualizado (API)", row["protocol"], f"status: {status}")
+        row = await _update_status(st, req, id, body.version, status)
     except DBERR as e:
         if transient(e):
             return _unavailable("banco indisponível; nada foi confirmado")
