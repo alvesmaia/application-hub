@@ -319,8 +319,7 @@ def test_env_seed_masking_and_page(hub: TestClient) -> None:
     assert "data-env-reveal" not in html and "env-icon-placeholder" not in html  # secret is never revealed
     only = hub.get("/admin/env?app=servicos").text
     assert "NOTIFICATIONS_WEBHOOK_URL" in only and "FEATURE_FLAG_NEW_DASHBOARD" not in only
-    assert 'data-env-app="servicos"' in only and 'data-env-app="ativos"' not in only
-    assert 'data-apps="servicos"' in only and "Provisionar banco" in only
+    assert 'data-env-app-chip="servicos"' in only and 'value="servicos" checked' in only
     assert "app=desconhecido" not in hub.get("/admin/env?app=desconhecido").text
 
 
@@ -382,7 +381,7 @@ def test_env_crud_validation_audit_and_pending_restart(hub: TestClient) -> None:
     )  # no longer exists
     pend = asyncio.run(hub.app.state.admin.cfg.pending_restart())  # type: ignore[attr-defined]
     assert "MINHA_VAR" in pend["ativos"]["vars"] and "MINHA_VAR" in pend["coletor"]["vars"]
-    assert "Reinício pendente" in hub.get("/admin/env").text
+    assert "Aplicações com reinício pendente" in hub.get("/admin/env").text
     assert hub.put("/api/admin/env/NAO_EXISTE", json={"value": "x", "kind": "publica"}).status_code == 404
     assert dele(hub, "/api/admin/env/MINHA_VAR").status_code == 204
     assert dele(hub, "/api/admin/env/MINHA_VAR").status_code == 404
@@ -503,11 +502,7 @@ def test_bootstrap_import_only_creates_missing_without_marking_restart(hub: Test
     assert asyncio.run(cfg.import_bootstrap("plataforma", items)) == 0
     assert asyncio.run(cfg.pending_restart()) == {}
     page = hub.get("/admin/env").text
-    assert (
-        "Verificar banco" in page
-        and "Rotacionar senha do banco" in page
-        and "HUB_DB_URL (connection string) [P]" in page
-    )
+    assert "→ <code>HUB_DB_URL</code>" in page and "postgres://u:p@h/db" not in page
 
 
 def test_users_page_markup(hub: TestClient) -> None:

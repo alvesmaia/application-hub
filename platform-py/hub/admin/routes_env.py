@@ -7,9 +7,8 @@ from typing import Any
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, Response
 
-from hub.admin.adminctx import AdminCtx, actor_of, body, bound_summary, ctx, dumps, json_only, relative
-from hub.admin.config import KIND_LABEL, AdminError, bound_to, injected_name, is_secret, masked
-from hub.auth import now_ms
+from hub.admin.adminctx import AdminCtx, actor_of, body, ctx, dumps, json_only
+from hub.admin.config import KIND_LABEL, AdminError, bound_to, is_secret, masked
 
 api = APIRouter()
 pages = APIRouter()
@@ -49,7 +48,7 @@ async def _rotate_db(request: Request, c: AdminCtx, app_id: str) -> Any:
 
 @pages.post("/api/ops/rotate/{app_id}/{what}", dependencies=[Depends(json_only)])
 async def rotate_secret(request: Request, app_id: str, what: str, c: AdminCtx = Depends(ctx)) -> Any:
-    """The "Rotate token" button of the Per application card (the database password depends on the F5 provisioning)."""
+    """Rotates an app's internal token or database password (the database password depends on the F5 provisioning)."""
     if app_id not in c.store.apps:
         raise AdminError("Aplicação não encontrada.", 404)
     if what not in ("token", "database"):
@@ -60,8 +59,9 @@ async def rotate_secret(request: Request, app_id: str, what: str, c: AdminCtx = 
     return {"variable": var["name"], "restart_pending": app_id in await c.store.cfg.pending_restart()}
 
 
-def _env_row(v: dict[str, Any]) -> dict[str, Any]:
+def _env_row(v: dict[str, Any], short: dict[str, str]) -> dict[str, Any]:
     m = masked(v)
+    bound = [(a, short.get(a, a)) for a in sorted({b["app"] for b in v["bindings"]})]
     title = [v["name"]]
     if v.get("inject_as"):
         title.append(f"no container: {v['inject_as']}")
@@ -74,7 +74,8 @@ def _env_row(v: dict[str, Any]) -> dict[str, Any]:
         "kind": KIND_LABEL[v["kind"]],
         "injected": v.get("inject_as"),
         "managed": bool(v.get("managed")),
-        "apps": " ".join(sorted({b["app"] for b in v["bindings"]})),
+        "apps": bound,
+        "apps_title": ", ".join(s for _, s in bound),
         "name_title": " · ".join(title),
         "menu": f"env:{v['name']}",
         "item": dumps(
@@ -90,33 +91,15 @@ def _env_row(v: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _app_card(
-    a: dict[str, str], env: list[dict[str, Any]], p: dict[str, Any] | None, now: int
-) -> dict[str, Any]:
-    bound = [v for v in env if bound_to(v, a["id"])]
-    return {
-        "id": a["id"],
-        "name": a["name"],
-        "icon": a["icon"],
-        "icon_style": f"background:{a['color']};color:{a['ink']}",
-        "has_db": any(injected_name(v) == "HUB_DB_URL" for v in bound),
-        "vars": [bound_summary(v, a["id"]) for v in bound],
-        "is_pending": p is not None,
-        "pending": f"Reinício pendente desde {relative(p['since'], now)} · alteradas: {', '.join(p['vars'])}"
-        if p
-        else None,
-    }
-
-
 @pages.get("/admin/env", response_class=HTMLResponse)
-async def env_page(request: Request, app: str = "", c: AdminCtx = Depends(ctx)) -> Response:
+async def env_page(request: Request, c: AdminCtx = Depends(ctx)) -> Response:
     apps = c.refs()
-    flt = app if app in {a["id"] for a in apps} else ""
+    picked = set(request.query_params.getlist("app")) & {r["id"] for r in apps}  # unknown ids are ignored
     data = await c.store.cfg.read()
-    rows = [_env_row(v) for v in data["env"] if not flt or bound_to(v, flt)]
+    short = {a["id"]: a["short"] for a in apps}
+    # no filter = everything (unbound included); with a filter, only variables bound to a picked app
+    rows = [_env_row(v, short) for v in data["env"] if not picked or any(bound_to(v, a) for a in picked)]
     pending = data.get("pending_restart", {})
-    now = now_ms()
-    cards = [_app_card(a, data["env"], pending.get(a["id"]), now) for a in apps if not flt or flt == a["id"]]
     return c.render(
         request,
         "admin_env.html",
@@ -124,8 +107,8 @@ async def env_page(request: Request, app: str = "", c: AdminCtx = Depends(ctx)) 
         "Variáveis de ambiente",
         "Variáveis e connection strings vinculadas a cada aplicação e ambiente; injetadas no container a cada implantação ou reinício.",
         apps=apps,
+        picked=picked,
         rows=rows,
-        cards=cards,
         pending_apps=[
             (a["id"], a["name"], len(pending[a["id"]]["vars"])) for a in apps if a["id"] in pending
         ],

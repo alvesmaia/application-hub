@@ -38,24 +38,18 @@
 .ops-legend{display:flex;flex-wrap:wrap;gap:var(--space-12);margin-top:var(--space-12);font-size:var(--font-size-2xs);color:var(--color-text-secondary)}
 .ops-legend span:before{content:"";display:inline-block;width:8px;height:8px;border-radius:var(--radius-2xs);margin-right:5px;vertical-align:-1px}
 .ops-legend .sys:before{background:var(--color-text-subtle)}.ops-legend .plat:before{background:var(--color-accent)}.ops-legend .apps:before{background:var(--color-info)}.ops-legend .free:before{background:var(--c-blue-89-3)}
-.ops-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-14)}
 .ops-container{display:grid;gap:var(--space-10)}
-.ops-container-top{display:flex;align-items:center;gap:var(--space-10)}
-.ops-container-top>div{flex:1;min-width:0}
-.ops-container-top strong{display:block;font:700 12px var(--font-display)}
 .ops-image{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ops-meter{display:grid;grid-template-columns:62px 1fr auto;gap:var(--space-8);align-items:center;font-size:var(--font-size-xs);color:var(--color-text-secondary)}
 .ops-meter em{font-style:normal;font-size:var(--font-size-2xs);color:var(--muted)}
 .ops-bar{height:6px;border-radius:var(--radius-xs);background:var(--c-blue-95-2);overflow:hidden}
 .ops-bar span{display:block;height:100%;background:var(--color-accent);border-radius:var(--radius-xs)}
 .ops-bar.warn span{background:var(--color-warning)}
-.ops-tags{display:flex;flex-wrap:wrap;gap:5px}
-.ops-tags span{font-size:var(--font-size-2xs);padding:3px 7px;border-radius:var(--radius-7xl);background:var(--c-blue-95-15);color:var(--color-text-secondary)}
 .ops-cmds{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-8)}
 .ops-cmd{border:1px solid var(--c-blue-94-5);border-radius:var(--radius-xl);padding:var(--space-10) 11px}
 .ops-cmd small{display:block;font-size:var(--font-size-2xs);color:var(--muted);margin-top:var(--space-6);line-height:1.5}
-@media (max-width:1000px){.ops-grid-2,.ops-cmds{grid-template-columns:1fr}.ops-cards{grid-template-columns:1fr 1fr}}
-@media (max-width:640px){.ops-cards{grid-template-columns:1fr}.ops-inline{flex-direction:column;align-items:stretch}.content-panel{overflow-x:auto}}
+@media (max-width:1000px){.ops-grid-2,.ops-cmds{grid-template-columns:1fr}}
+@media (max-width:640px){.ops-inline{flex-direction:column;align-items:stretch}.content-panel{overflow-x:auto}}
 /* --- Additions from the real implementation (failure states, banner, progress, SDK) --- */
 .ops-steps li.failed,.ops-steps li.warn{opacity:1}
 .ops-steps li.failed .ops-step-dot{background:var(--color-danger);border-color:var(--color-danger)}
@@ -179,10 +173,11 @@
 .env-table .env-icon-btn{width:28px;height:28px;padding:0}
 .env-table td .env-icon-btn,.env-table td .row-action{width:28px;height:28px;min-height:28px;min-width:28px;padding:0;line-height:28px}
 .env-table td .env-actions{height:24px;align-items:center}
-.ops-cards{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
-.ops-cards>.panel{min-width:0}
-.ops-container-top strong,.ops-tags span{overflow-wrap:anywhere}
-.env-table th:nth-child(1){width:31%}.env-table th:nth-child(2){width:15%}.env-table th:nth-child(3){width:25%}.env-table th:nth-child(4){width:120px}.env-table th:nth-child(5){width:68px}
+.env-table th:nth-child(1){width:30%}.env-table th:nth-child(2){width:13%}.env-table th:nth-child(3){width:24%}.env-table th:nth-child(4){width:auto}.env-table th:nth-child(5){width:68px}
+/* "Application" column: its filter popover must escape the clipped header cell. */
+.env-table th.env-app-col{overflow:visible}
+.env-app-filter{margin:0}
+.env-app-filter .hub-row-menu-list{left:0;right:auto}
 .env-table td:nth-child(2) .status-pill{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block}
 .env-table td:last-child{padding:6px 10px;text-align:left}
 td.ops-actions{display:table-cell}
@@ -194,16 +189,13 @@ td.ops-actions{display:table-cell}
 .ops-steps li:not(.running):not(.done):not(.skipped):not(.failed):not(.warn) strong{color:var(--color-text-secondary)}
 .ops-steps li small{color:var(--color-text-secondary)}
 /* Containers: name on one line (ellipsis), pills on the second, metrics aligned. */
-.ops-container-top{align-items:flex-start}
 .ops-container-id{flex:1;min-width:0;display:grid;gap:4px}
 .ops-container-id>strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;word-break:normal;font-size:13px}
 .ops-container-pills{display:flex;flex-wrap:wrap;gap:6px}
 .ops-container-id small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ops-container .ops-meter{min-height:22px}
-.ops-cards{align-items:stretch}
 .ops-container{display:flex;flex-direction:column}
 .ops-container .ops-actions{margin-top:auto}
-.ops-tags code{font-size:12px;background:none;padding:0;color:inherit}
 .ops-legend{row-gap:6px}
 .ops-grid-2>*{min-width:0}
 .ops-grid-2{align-items:start}

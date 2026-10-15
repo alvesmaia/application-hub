@@ -149,13 +149,4 @@
       if (e.key === 'Escape' && !dr.hidden && !document.querySelector('dialog[open]')) close();
     });
   }
-
-  document.addEventListener('change', (e) => {
-    const m = e.target.closest && e.target.closest('[data-multi]');
-    if (!m) return;
-    const on = $$('input:checked', m).map((i) => i.value);
-    const lab = m.querySelector('[data-multi-label]');
-    lab.textContent = on.length ? `${lab.dataset.base} (${on.length})` : lab.dataset.base;
-    $$(`${m.dataset.multi} tr[data-apps]`).forEach((r) => r.classList.toggle('multi-off', on.length > 0 && !r.dataset.apps.split(' ').some((a) => on.includes(a))));
-  });
 })();

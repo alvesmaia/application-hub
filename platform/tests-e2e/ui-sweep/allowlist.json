@@ -34,12 +34,6 @@
     },
     {
       "check": "jargao",
-      "route": "^/admin/env$",
-      "message": "Reinício pendente desde",
-      "reason": "Aviso 'Reinício pendente… alteradas: HUB_X' na tela de Variáveis de ambiente (administração): lista as próprias variáveis alteradas, que é o dado que o administrador precisa ver para decidir Aplicar; aparece só quando há alteração pendente (mesmo texto da implementação Rust)."
-    },
-    {
-      "check": "jargao",
       "route": "^/inbox$",
       "message": "Ferramenta: .* Operação:|Cliente declarado",
       "reason": "Pedido de aprovação de agente de IA: o texto mostra a operação da API a ser aprovada (informação de segurança para quem aprova); só existe quando há pedido de agente pendente (mesmo texto da implementação Rust)."

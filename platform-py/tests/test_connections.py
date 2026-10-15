@@ -338,7 +338,7 @@ def test_bindings_sync_managed_variables_and_pending_restart(hub: TestClient) ->
         and tok["value"].startswith("••••••••")
     )
     assert env["HUB_STORAGE_URL"]["value"] == "http://hub-web:8081"
-    assert "Reinício pendente" in hub.get("/admin/env").text
+    assert "Aplicações com reinício pendente" in hub.get("/admin/env").text
     assert (
         "Aplicar (reiniciar)" in hub.get("/admin/connections").text
     )  # app card with a connection and a pending restart

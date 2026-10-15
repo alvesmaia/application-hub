@@ -736,14 +736,6 @@
 "Backups without database/object store configured (HUB_DB_ADMIN_URL/HUB_S3_ADMIN_URL)."
 ],
 [
-"Banco app_",
-"Database app_"
-],
-[
-"Banco app_<id>_staging, variável só de staging",
-"Database app_<id>_staging, staging-only variable"
-],
-[
 "Banco atual",
 "Current database"
 ],
@@ -758,10 +750,6 @@
 [
 "Banco provisionado",
 "Database provisioned"
-],
-[
-"Banco próprio de staging",
-"Own staging database"
 ],
 [
 "Banco {x} já provisionado e acessível.",
@@ -2800,10 +2788,6 @@
 "No tasks with these filters."
 ],
 [
-"Nenhuma variável para esta aplicação.",
-"No variables for this application."
-],
-[
 "Nome",
 "Name"
 ],
@@ -3440,10 +3424,6 @@
 "Provisioning unavailable: container runtime off (HUB_RUNTIME_DEPLOY≠1)."
 ],
 [
-"Provisionar banco",
-"Provision database"
-],
-[
 "Pré-restauração",
 "Pre-restore"
 ],
@@ -3622,10 +3602,6 @@
 [
 "Reinício pendente",
 "Restart pending"
-],
-[
-"Reinício pendente desde {} · alteradas: {}",
-"Restart pending since {} · changed: {}"
 ],
 [
 "Rejeitado",
@@ -3810,10 +3786,6 @@
 [
 "Rotacionar credenciais de backup",
 "Rotate backup credentials"
-],
-[
-"Rotacionar senha do banco",
-"Rotate database password"
 ],
 [
 "Rotacionar token",
@@ -4770,10 +4742,6 @@
 [
 "Verificar agora",
 "Check now"
-],
-[
-"Verificar banco",
-"Check database"
 ],
 [
 "Verificar integridade",
@@ -5834,10 +5802,6 @@
 [
 "o papel {role} já existe e não é o papel de backup do hub: recusado",
 "role {role} already exists and is not the hub backup role: refused"
-],
-[
-"o que cada container recebe (segredos só pelo nome)",
-"what each container receives (secrets by name only)"
 ],
 [
 "o usuário {user} já existe no MinIO e não foi criado pelo hub: recusado (nunca é alterado nem removido)",
@@ -7862,5 +7826,17 @@
 [
 "Código-fonte no GitHub",
 "Source code on GitHub"
+],
+[
+"Nenhuma aplicação",
+"No application"
+],
+[
+"Nenhuma variável para as aplicações escolhidas.",
+"No variables for the chosen applications."
+],
+[
+"Nenhuma variável cadastrada.",
+"No variables yet."
 ]
 ]

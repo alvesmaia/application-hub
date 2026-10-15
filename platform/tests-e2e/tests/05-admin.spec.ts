@@ -36,9 +36,19 @@ test('variáveis: criar, segredo nunca revelável, rotacionar e aplicar', async 
   await expect(page.locator('[data-env-reveal]')).toHaveCount(0);
   const rv = await page.request.post(`/api/admin/env/${VAR_SECRET}/reveal`, { data: {}, headers: { origin: HUB } });
   expect([403, 404, 405]).toContain(rv.status());
-  // Rotate the suppliers' internal token → restart pending → Apply (blue/green).
-  await page.click('[data-ops-rotate="fornecedores|token"]');
-  await expect(toast(page)).toContainText('rotacionada');
+  // "Application" column filter (server-side, ?app=): only variables bound to the picked apps; unbound ones only without a filter.
+  const filter = page.locator('th.env-app-col details');
+  await filter.locator('summary').click();
+  await filter.locator('input[name="app"][value="fornecedores"]').check();
+  await filter.locator('button[type="submit"]').click();
+  await expect(page).toHaveURL(/[?&]app=fornecedores/);
+  await expect(page.locator('tr[data-item]').filter({ hasText: VAR_PUB })).toBeVisible();
+  await expect(page.locator('tr[data-item] [data-env-unbound]')).toHaveCount(0);
+  await expect(page.locator('tr[data-item]').filter({ hasText: VAR_PUB }).locator('[data-env-app-chip="fornecedores"]')).toBeVisible();
+  // Rotate the suppliers' internal token (API; the per-application cards left this page) → restart pending → Apply (blue/green).
+  const rot = await page.request.post('/api/ops/rotate/fornecedores/token', { data: {}, headers: { origin: HUB } });
+  expect(rot.status(), await rot.text()).toBe(200);
+  await page.goto('/admin/env');
   const apply = page.locator('[data-ops-apply="fornecedores"]').first();
   await expect(apply).toBeVisible();
   await apply.click();
