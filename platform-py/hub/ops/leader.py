@@ -60,18 +60,21 @@ class Leader:
         ]
 
     async def _watch(self, takeover: Hook) -> None:
-        while True:  # noqa: PLR1702
+        while True:
             now = self.leading()
             if now != self.was:
                 self.was = now
-                if now:
-                    self.say("INFO", f"réplica {self.replica} assumiu a liderança (fence {self.lease and self.lease.fence}): "
-                             "coleta do outbox, agendador de backups, varreduras e alertas")  # fmt: skip
-                    with contextlib.suppress(Exception):
-                        await takeover()
-                else:
-                    self.say("INFO", f"réplica {self.replica} deixou a liderança")
+                await self._changed(now, takeover)
             await asyncio.sleep(0.5)
+
+    async def _changed(self, now: bool, takeover: Hook) -> None:
+        if not now:
+            self.say("INFO", f"réplica {self.replica} deixou a liderança")
+            return
+        self.say("INFO", f"réplica {self.replica} assumiu a liderança (fence {self.lease and self.lease.fence}): "
+                 "coleta do outbox, agendador de backups, varreduras e alertas")  # fmt: skip
+        with contextlib.suppress(Exception):
+            await takeover()
 
     async def _heartbeat(self) -> None:
         while True:

@@ -9,7 +9,7 @@ import re
 import time
 from collections import deque
 from collections.abc import AsyncGenerator, AsyncIterator
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager, nullcontext, suppress
 from pathlib import Path
 from typing import Any, cast
 
@@ -62,18 +62,12 @@ class AdminStore:
 
     @asynccontextmanager
     async def locked(self, write: bool = False) -> AsyncIterator[dict[str, Any]]:
-        async with self.lock:  # noqa: PLR1702
-            if self.db:
-                async with self.db.file_lock("admin.json", write=write):
-                    data = self._read()
-                    yield data
-                    if write:
-                        self._write(data)
-            else:
-                data = self._read()
-                yield data
-                if write:
-                    self._write(data)
+        # The write stays inside the cross-replica lock, or another replica can overwrite it.
+        async with self.lock, self.db.file_lock("admin.json", write=write) if self.db else nullcontext():
+            data = self._read()
+            yield data
+            if write:
+                self._write(data)
 
     def _read(self) -> dict[str, Any]:
         if not self.path.exists():

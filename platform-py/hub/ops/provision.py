@@ -77,13 +77,14 @@ def _ddl(name: str, mark: str, pw: str, role_c: str | None, owner: str | None) -
 
 async def _unbind_other_staging_dbs(cfg: Any, app: str, var: str) -> None:
     """Staging never stores a production database credential."""
-    async with cfg.s.locked(True) as d:  # noqa: PLR1702
+    async with cfg.s.locked(True) as d:
         for v in list(d["env"]):
             mine = [x for x in v["bindings"] if x["app"] == app and x["env"] == "staging"]
-            if v["name"] != var and v.get("inject_as") == "HUB_DB_URL" and mine:
-                v["bindings"] = [x for x in v["bindings"] if x not in mine]
-                if not v["bindings"]:
-                    d["env"].remove(v)
+            if v["name"] == var or v.get("inject_as") != "HUB_DB_URL" or not mine:
+                continue
+            v["bindings"] = [x for x in v["bindings"] if x not in mine]
+            if not v["bindings"]:
+                d["env"].remove(v)
 
 
 async def provision(b: Backups, cfg: Any, actor: str, app: str, env: str) -> dict[str, Any]:

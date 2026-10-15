@@ -99,24 +99,28 @@ class AuditChain:
             return "checkpoint mismatch"
         return None
 
+    def _step(
+        self, line: dict[str, Any], seq: int, previous: str, event_id: int
+    ) -> tuple[str | None, tuple[int, str, int]]:
+        """(problem, state after the record); the state only advances on a valid record."""
+        if line["t"] == "e":
+            problem, state = _check_event(line, seq, previous, event_id)
+            return problem, (seq, previous, event_id) if problem else state
+        if line["t"] == "c":
+            problem = self._check_checkpoint(line, seq, previous)
+            if not problem:
+                self.last_checkpoint = seq
+            return problem, (seq, previous, event_id)
+        return "unknown record", (seq, previous, event_id)
+
     def _scan(self, problems: list[str]) -> tuple[int, str, int]:
         """Walks chain.jsonl; returns (seq, hash, event id) of the last valid event."""
         seq, previous, event_id = 0, GENESIS, 0
-        try:  # noqa: PLR1702
+        try:
             for n, line in enumerate(self._lines(), 1):
-                if line["t"] == "e":
-                    problem, state = _check_event(line, seq, previous, event_id)
-                    if problem:
-                        problems.append(f"line {n}: {problem}")
-                        break
-                    seq, previous, event_id = state
-                elif line["t"] == "c":
-                    if problem := self._check_checkpoint(line, seq, previous):
-                        problems.append(f"line {n}: {problem}")
-                        break
-                    self.last_checkpoint = seq
-                else:
-                    problems.append(f"line {n}: unknown record")
+                problem, (seq, previous, event_id) = self._step(line, seq, previous, event_id)
+                if problem:
+                    problems.append(f"line {n}: {problem}")
                     break
         except (OSError, ValueError, KeyError, TypeError) as e:
             problems.append(f"invalid chain: {e}")

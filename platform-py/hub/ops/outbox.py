@@ -175,23 +175,25 @@ class Outbox:
 
     async def tick(self) -> None:
         """One round: each app with an internal token, several pages if there is a backlog."""
-        for e in self.app.state.gateway.registry.entries():  # noqa: PLR1702
-            if not (token := self.app.state.admin.tokens.get(e.id)):
-                continue
-            after = 0
-            for _ in range(20):
-                try:
-                    p = await self.pull_app(e.id, e.upstream, token, after)
-                    self.last_err.pop(e.id, None)
-                    if p["fetched"] < PAGE or p["last_seq"] <= after:
-                        break
-                    after = p["last_seq"]
-                except (httpx.HTTPError, OSError, ValueError, KeyError) as ex:
-                    msg = f"sem resposta ({ex})" if isinstance(ex, httpx.HTTPError) else str(ex)
-                    if self.last_err.get(e.id) != msg:  # one warning per state change
-                        self._warn(e.id, f"[auditoria] outbox indisponível: {msg}")
-                        self.last_err[e.id] = msg
+        for e in self.app.state.gateway.registry.entries():
+            if token := self.app.state.admin.tokens.get(e.id):
+                await self._drain(e.id, e.upstream, token)
+
+    async def _drain(self, app_id: str, upstream: str, token: str) -> None:
+        after = 0
+        for _ in range(20):
+            try:
+                p = await self.pull_app(app_id, upstream, token, after)
+                self.last_err.pop(app_id, None)
+                if p["fetched"] < PAGE or p["last_seq"] <= after:
                     break
+                after = p["last_seq"]
+            except (httpx.HTTPError, OSError, ValueError, KeyError) as ex:
+                msg = f"sem resposta ({ex})" if isinstance(ex, httpx.HTTPError) else str(ex)
+                if self.last_err.get(app_id) != msg:  # one warning per state change
+                    self._warn(app_id, f"[auditoria] outbox indisponível: {msg}")
+                    self.last_err[app_id] = msg
+                break
 
     def start(self, every: float) -> None:
         async def loop() -> None:

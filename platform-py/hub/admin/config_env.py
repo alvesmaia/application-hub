@@ -325,22 +325,28 @@ class ConfigOps(RoleOps):
             created.append(app)
         return created
 
+    def _bootstrap_item(self, env: list[dict[str, Any]], raw: dict[str, Any]) -> dict[str, Any] | None:
+        """The checked variable to add, or None when it already exists or has no app left to bind."""
+        if any(e["name"] == raw["name"] for e in env):
+            return None
+        # The load is an installation file, not user input: a binding to an app outside the catalog
+        # (e.g. installing without the sample apps) drops the binding; it never brings the hub down at boot.
+        if binds := raw.get("bindings"):
+            kept = [b for b in binds if str(b.get("app", "")) in self.apps]
+            if not kept:
+                return None
+            raw = dict(raw) | {"bindings": kept}
+        v = self._check_env(str(raw["name"]), raw, True)
+        _conflicts(env, v)
+        return v
+
     async def import_bootstrap(self, actor: str, items: list[dict[str, Any]]) -> int:
         """Initial load (`HUB_APP_ENV_FILE`): only what does not exist yet, without marking a restart."""
-        async with self.s.locked(True) as d:  # noqa: PLR1702
+        async with self.s.locked(True) as d:
             n = 0
             for raw in items:
-                if any(e["name"] == raw["name"] for e in d["env"]):
+                if (v := self._bootstrap_item(d["env"], raw)) is None:
                     continue
-                # The load is an installation file, not user input: a binding to an app outside the catalog
-                # (e.g. installing without the sample apps) drops the binding; it never brings the hub down at boot.
-                if binds := raw.get("bindings"):
-                    kept = [b for b in binds if str(b.get("app", "")) in self.apps]
-                    if not kept:
-                        continue
-                    raw = dict(raw) | {"bindings": kept}
-                v = self._check_env(str(raw["name"]), raw, True)
-                _conflicts(d["env"], v)
                 d["env"].append(v)
                 n += 1
             event = (

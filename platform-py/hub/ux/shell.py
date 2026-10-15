@@ -114,13 +114,19 @@ def tabs_for(path: str, tab: str, perms: list[str]) -> list[tuple[str, str, bool
 def eyebrow_for(path: str, lang: str) -> str:
     """Line above a page's title: the route's menu group (`/admin/users` → "Access")."""
     path = path.split("?")[0]
-    if path == "/admin" or path.startswith("/admin/"):  # noqa: PLR1702
-        best: tuple[int, str] | None = None
-        for g in nav_for(lang)["groups"]:
-            for it in g["items"]:
-                for r in [str(it["href"]), *it.get("also", [])]:
-                    if (path == r or path.startswith(r + "/")) and (best is None or len(r) > best[0]):
-                        best = (len(r), str(g["name"]))
+    if path == "/admin" or path.startswith("/admin/"):
+        routes = (
+            (r, str(g["name"]))
+            for g in nav_for(lang)["groups"]
+            for it in g["items"]
+            for r in [str(it["href"]), *it.get("also", [])]
+        )
+        # The longest matching route wins; max() keeps the first one on ties, in menu order.
+        best = max(
+            ((len(r), name) for r, name in routes if path == r or path.startswith(r + "/")),
+            key=lambda m: m[0],
+            default=None,
+        )
         return best[1] if best else t("shell.admin", lang)
     for prefix, key in (("/applications", "shell.apps"), ("/status", "shell.status"), ("/inbox", "shell.inbox"),
                         ("/search", "search.title"), ("/account", "acct.eyebrow")):  # fmt: skip

@@ -172,20 +172,25 @@ class Backups(BackupOffsite):
 
     async def rotate_all(self, apps: list[str]) -> list[str]:
         lines: list[str] = []
-        for app in apps:  # noqa: PLR1702
+        for app in apps:
             for env in ("producao", "staging"):
-                db, bucket = parse_targets(await self.app_env(app, env))
-                for what, fn, tgt in (
-                    ("banco", self.ensure_pg_role, db),
-                    ("bucket", self.ensure_s3_user, bucket),
-                ):
-                    if not tgt:
-                        continue
-                    try:
-                        user, _ = await fn(tgt, True)
-                        lines.append(f"{app} ({env}) · {what} {tgt}: {user} rotacionada")
-                    except OpsError as e:
-                        lines.append(f"{app} ({env}) · {what} {tgt}: falhou — {e.message}")
+                lines += await self._rotate_env(app, env)
+        return lines
+
+    async def _rotate_env(self, app: str, env: str) -> list[str]:
+        lines: list[str] = []
+        db, bucket = parse_targets(await self.app_env(app, env))
+        for what, fn, tgt in (
+            ("banco", self.ensure_pg_role, db),
+            ("bucket", self.ensure_s3_user, bucket),
+        ):
+            if not tgt:
+                continue
+            try:
+                user, _ = await fn(tgt, True)
+                lines.append(f"{app} ({env}) · {what} {tgt}: {user} rotacionada")
+            except OpsError as e:
+                lines.append(f"{app} ({env}) · {what} {tgt}: falhou — {e.message}")
         return lines
 
     # ---- pacote ---------------------------------------------------------------------------------------
