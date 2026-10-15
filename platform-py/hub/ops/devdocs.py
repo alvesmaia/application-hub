@@ -232,10 +232,25 @@ _LEXERS = {"bash": "bash", "sh": "bash", "shell": "bash", "console": "bash", "py
            "typescript": "typescript"}  # fmt: skip
 
 
-def _bash_pass(tokens: Any) -> Any:  # noqa: PLR0915
+def _bash_word(tok: Any, val: str, cmd: bool) -> tuple[Any, bool]:
+    """(token to emit, whether the next word starts a command) for a token that is not a keyword."""
+    from pygments.token import Comment, Name, Operator, Punctuation, Text
+
+    if tok in (Text.Whitespace, Text) and not val.strip():
+        return tok, cmd or "\n" in val
+    if tok in (Text, Name.Builtin) and cmd:
+        return Name.Function, False
+    if tok is Text and val.startswith("-"):
+        return Name.Attribute, cmd
+    if (tok in (Operator, Punctuation) and val.strip() in ("&&", "||", "|", ";", "(")) or tok in Comment:
+        return tok, True
+    return tok, False
+
+
+def _bash_pass(tokens: Any) -> Any:
     """Pygments marks few tokens in Bash: the 1st word of each command = function, `-f`/`--flag` = option,
     `\\` at the end of the line = operator."""
-    from pygments.token import Comment, Keyword, Name, Operator, Punctuation, String, Text
+    from pygments.token import Keyword, Operator, Punctuation, String
 
     cmd = True
     for tok, val in tokens:
@@ -247,19 +262,8 @@ def _bash_pass(tokens: Any) -> Any:  # noqa: PLR0915
             cmd = val.strip() in ("if", "then", "else", "elif", "do", "while", "until", "$(", "!")
             yield tok, val
             continue
-        if tok in (Text.Whitespace, Text) and not val.strip():
-            cmd = cmd or "\n" in val
-        elif tok in (Text, Name.Builtin) and cmd:
-            tok, cmd = Name.Function, False
-        elif tok is Text and val.startswith("-"):
-            tok = Name.Attribute
-        elif (
-            tok in (Operator, Punctuation) and val.strip() in ("&&", "||", "|", ";", "(")
-        ) or tok in Comment:
-            cmd = True
-        else:
-            cmd = False
-        yield tok, val
+        out, cmd = _bash_word(tok, val, cmd)
+        yield out, val
 
 
 def _guess(code: str) -> str:
@@ -310,41 +314,48 @@ def _md() -> Any:
     return md
 
 
-def render_md(  # noqa: PLR0915
+def _anchor_headings(tokens: list[Any]) -> list[tuple[int, str, str]]:
+    """Gives each heading a unique `id` (slug, `-n` on repeats); returns the h2/h3 summary."""
+    seen: dict[str, int] = {}
+    toc: list[tuple[int, str, str]] = []
+    for i, tok in enumerate(tokens):
+        if tok.type != "heading_open":
+            continue
+        title = tokens[i + 1].content
+        base = _slugify(re.sub(r"`", "", title))
+        n = seen.get(base, 0)
+        seen[base] = n + 1
+        hid = base if n == 0 else f"{base}-{n}"
+        tok.attrSet("id", hid)
+        if tok.tag in ("h2", "h3"):  # the Markdown h1 is the page title
+            toc.append((int(tok.tag[1]), re.sub(r"`", "", title), hid))
+    return toc
+
+
+def _signature_heading(m: re.Match[str]) -> str:
+    code = highlight(unescape((m[2] or "") + m[3]), "python")
+    if m[2] != "class ":  # the function name gets the function color
+        code = code.replace('class="hl-n"', 'class="hl-nf"', 1)
+    return f'{m[1]}<code class="dev-sig">{code}</code>{m[4]}'
+
+
+def render_md(
     text: str, labels: tuple[str, str] = ("Copiar", "Copiado")
 ) -> tuple[str, list[tuple[int, str, str]]]:
     """Markdown → HTML (anchors on headings, copy button on blocks, scrollable tables) + summary."""
     md = _md()
     tokens = md.parse(re.sub(r"(?m)^<!--.*-->\n", "", text))  # the generation comment does not appear
-    seen: dict[str, int] = {}
-    toc: list[tuple[int, str, str]] = []
-    for i, tok in enumerate(tokens):
-        if tok.type == "heading_open":
-            title = tokens[i + 1].content
-            base = _slugify(re.sub(r"`", "", title))
-            n = seen.get(base, 0)
-            seen[base] = n + 1
-            hid = base if n == 0 else f"{base}-{n}"
-            tok.attrSet("id", hid)
-            if tok.tag in ("h2", "h3"):  # the Markdown h1 is the page title
-                toc.append((int(tok.tag[1]), re.sub(r"`", "", title), hid))
+    toc = _anchor_headings(tokens)
     html = str(
         md.renderer.render(tokens, md.options, {"copy": escape(labels[0]), "copied": escape(labels[1])})
     )
     html = html.replace("<table>", '<div class="dev-table"><table class="data-table">').replace(
         "</table>", "</table></div>"
     )
-
     # heading that is only a signature (`f(x: int) -> str`, `class X`): colored as Python
-    def sig(m: re.Match[str]) -> str:
-        code = highlight(unescape((m[2] or "") + m[3]), "python")
-        if m[2] != "class ":  # the function name gets the function color
-            code = code.replace('class="hl-n"', 'class="hl-nf"', 1)
-        return f'{m[1]}<code class="dev-sig">{code}</code>{m[4]}'
-
     html = re.sub(
         r'(<h[2-4] id="[^"]*">)(class |async )?<code>((?:async |class )?[\w.]+(?:\(.*?)?)</code>(</h[2-4]>)',
-        sig,
+        _signature_heading,
         html,
     )
     return html, toc

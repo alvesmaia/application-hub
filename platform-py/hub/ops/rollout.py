@@ -121,22 +121,19 @@ class Rollout:
         async with lock:
             return await self._apply(app, k, limits, version, image, progress or (lambda *_: None))
 
-    async def _apply(self, app: str, k: str, limits: dict[str, Any], version: str, image: str | None,  # noqa: PLR0915
-                     say: Progress) -> dict[str, Any]:  # fmt: skip
-        staging = k == "staging"
-        name, prod = rt.container_name(app, k), rt.container_name(app, "producao")
-        old = await self.engine.raw(name)
-        base = old or (await self.engine.raw(prod) if staging else None) or self.fresh(app)
+    async def _base(self, app: str, k: str, old: dict[str, Any] | None) -> dict[str, Any]:
+        """Container the candidate copies its settings from: the current one, else production's (staging), else a fresh spec."""
+        prod = rt.container_name(app, "producao")
+        base = old or (await self.engine.raw(prod) if k == "staging" else None) or self.fresh(app)
         if base is None:
             raise OpsError("Não há container de base para este app: suba-o uma vez pelo compose.", 409)
-        say(5, "Conferindo a imagem")
-        ref = image or str(base.get("Image", ""))
-        img_id, _ = await self.engine.image_ref(ref)
-        if staging:
-            staging_env_check(await self.env_vars(), app)
+        return base
+
+    async def _launch(self, app: str, k: str, cand: str, base: dict[str, Any], img_id: str,
+                      limits: dict[str, Any], version: str, say: Progress) -> None:  # fmt: skip
+        staging = k == "staging"
         carried = {} if staging or not base.get("Image") else await self._carried(base)
         env = {**carried, "HUB_APP_ID": app, "PORT": "8080", **await self.app_env(app, k)}
-        cand = f"{name}__new"
         await self.engine.remove(cand, 1)
         host = host_for(base.get("HostConfig") or {}, limits, staging)
         nets = list(
@@ -144,6 +141,19 @@ class Rollout:
         )
         say(15, f"Criando o candidato {cand}")
         await self.engine.launch(cand, img_id, env, _labels(base, app, k, version), host, nets)
+
+    async def _apply(self, app: str, k: str, limits: dict[str, Any], version: str, image: str | None,
+                     say: Progress) -> dict[str, Any]:  # fmt: skip
+        name = rt.container_name(app, k)
+        old = await self.engine.raw(name)
+        base = await self._base(app, k, old)
+        say(5, "Conferindo a imagem")
+        ref = image or str(base.get("Image", ""))
+        img_id, _ = await self.engine.image_ref(ref)
+        if k == "staging":
+            staging_env_check(await self.env_vars(), app)
+        cand = f"{name}__new"
+        await self._launch(app, k, cand, base, img_id, limits, version, say)
         await self._switch(app, k, cand, version, say)
         if old is not None:
             await self._pin(old, app, k)

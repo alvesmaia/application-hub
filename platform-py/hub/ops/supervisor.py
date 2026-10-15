@@ -106,20 +106,24 @@ class Supervisor:
         await st.admin.audit(ACTOR, "Staging recriado", msg, icon="box", scope=e.id)
         return msg
 
-    async def revive(self, app: str, env: str, name: str, why: str) -> str | None:  # noqa: PLR0915
+    async def _in_crash_loop(self, s: dict[str, Any], app: str, name: str, now: float) -> bool:
+        """Too many restarts in the window: stop reviving (alerting once) and look again in a minute."""
+        s["times"] = [t for t in s["times"] if now - t < WINDOW_S]
+        if len(s["times"]) < MAX_RESTARTS:
+            return False
+        if not s["loop"]:
+            s["loop"] = True
+            msg = f"{name} caiu {MAX_RESTARTS} vezes em {WINDOW_S // 60} min: a supervisão parou de religar."
+            self.app.state.admin.logs.add("ERROR", app, ACTOR, msg, "ops")
+            await self.app.state.platform_alert("error", f"{name} em laço de quedas", msg, "/admin/runtime")
+        s["next"] = now + 60
+        return True
+
+    async def revive(self, app: str, env: str, name: str, why: str) -> str | None:
         st, now = self.app.state, time.time()
         s = self.state.setdefault(f"{app}|{env}", {"restarts": 0, "last": 0.0, "next": 0.0, "loop": False,
                                                     "times": []})  # fmt: skip
-        if now < s["next"]:
-            return None
-        s["times"] = [t for t in s["times"] if now - t < WINDOW_S]
-        if len(s["times"]) >= MAX_RESTARTS:
-            if not s["loop"]:
-                s["loop"] = True
-                msg = f"{name} caiu {MAX_RESTARTS} vezes em {WINDOW_S // 60} min: a supervisão parou de religar."
-                st.admin.logs.add("ERROR", app, ACTOR, msg, "ops")
-                await st.platform_alert("error", f"{name} em laço de quedas", msg, "/admin/runtime")
-            s["next"] = now + 60
+        if now < s["next"] or await self._in_crash_loop(s, app, name, now):
             return None
         try:
             await st.ops_engine.action(name, "restart" if why == "running" else "start")

@@ -41,7 +41,23 @@ def step(i: int) -> dict[str, Any]:
     return {"name": STEPS[i][0], "description": STEPS[i][1], "state": "pending", "detail": ""}
 
 
-def read_zip(data: bytes) -> dict[str, bytes]:  # noqa: C901, PLR0915
+def _file_entry(i: zipfile.ZipInfo) -> str | None:
+    """Name of a safe file entry, None for a directory; ValueError for an unsafe path, a link or a likely bomb."""
+    n = i.filename.removesuffix("/")
+    parts = n.split("/")
+    if (not n or len(n) > 512 or i.filename.startswith("/") or "\\" in n or ":" in n
+            or any(ord(c) < 32 for c in n) or any(p in ("", ".", "..") for p in parts)):  # fmt: skip
+        raise ValueError(f"entrada com caminho inseguro: {i.filename!r}")
+    if (i.external_attr >> 16) & 0o170000 == 0o120000:
+        raise ValueError(f"link simbólico não permitido: {n}")
+    if i.is_dir():
+        return None
+    if i.file_size > 1 << 20 and i.file_size // max(i.compress_size, 1) > MAX_RATIO:
+        raise ValueError(f"taxa de compressão suspeita em {n} (possível zip bomb)")
+    return n
+
+
+def read_zip(data: bytes) -> dict[str, bytes]:
     """In-memory entries; refuses zip-slip, links, duplicates and zip bombs."""
     try:
         z = zipfile.ZipFile(io.BytesIO(data))
@@ -53,17 +69,9 @@ def read_zip(data: bytes) -> dict[str, bytes]:  # noqa: C901, PLR0915
     out: dict[str, bytes] = {}
     total = 0
     for i in infos:
-        n = i.filename.removesuffix("/")
-        parts = n.split("/")
-        if (not n or len(n) > 512 or i.filename.startswith("/") or "\\" in n or ":" in n
-                or any(ord(c) < 32 for c in n) or any(p in ("", ".", "..") for p in parts)):  # fmt: skip
-            raise ValueError(f"entrada com caminho inseguro: {i.filename!r}")
-        if (i.external_attr >> 16) & 0o170000 == 0o120000:
-            raise ValueError(f"link simbólico não permitido: {n}")
-        if i.is_dir():
+        n = _file_entry(i)
+        if n is None:
             continue
-        if i.file_size > 1 << 20 and i.file_size // max(i.compress_size, 1) > MAX_RATIO:
-            raise ValueError(f"taxa de compressão suspeita em {n} (possível zip bomb)")
         total += i.file_size
         if total > MAX_TOTAL:
             raise ValueError("conteúdo descompactado excede o limite permitido")
@@ -169,7 +177,23 @@ async def _run_step(i: int, r: _Run) -> tuple[str, str]:
     return (_step_contract if i == 3 else _step_frontend)(r, m)
 
 
-async def run_all(  # noqa: PLR0915
+async def _run_steps(steps: list[dict[str, Any]], r: _Run, emit: Callable[[], None]) -> str:
+    """Runs the steps in order up to the first failure (the rest become skipped); returns the failure reason or ""."""
+    for i in range(len(STEPS)):
+        steps[i]["state"] = "running"
+        emit()
+        st, det = await _run_step(i, r)
+        steps[i]["state"], steps[i]["detail"] = st, det
+        if st == "failed":
+            for s in steps[i + 1 :]:
+                s["state"], s["detail"] = "skipped", "não executado"
+            emit()
+            return f"{STEPS[i][0]}: {det}"
+        emit()
+    return ""
+
+
+async def run_all(
     data: bytes, env: str, registered: list[Any], probe: Probe | None = None, allow_without_api: bool = False,
     on_step: Callable[[list[dict[str, Any]]], None] | None = None,
 ) -> dict[str, Any]:  # fmt: skip
@@ -180,24 +204,12 @@ async def run_all(  # noqa: PLR0915
         r.files = read_zip(data)
     except ValueError as e:
         r.open_err = str(e)
-    reason = ""
 
     def emit() -> None:
         if on_step:
             on_step(steps)
 
-    for i in range(len(STEPS)):
-        steps[i]["state"] = "running"
-        emit()
-        st, det = await _run_step(i, r)
-        steps[i]["state"], steps[i]["detail"] = st, det
-        if st == "failed":
-            reason = f"{STEPS[i][0]}: {det}"
-            for s in steps[i + 1 :]:
-                s["state"], s["detail"] = "skipped", "não executado"
-            emit()
-            break
-        emit()
+    reason = await _run_steps(steps, r, emit)
     manifest = r.manifest
     return {
         "steps": steps, "passed": not reason, "reason": reason, "app": (manifest or {}).get("id", ""),
