@@ -52,5 +52,8 @@
   - ✅ PLR1702 enforced via explicit preview; 12 nested-block cases refactored (agent K)
   - ✅ bug fixed: auth.json written outside the cross-replica lock (lost update with several replicas)
   - ✅ zero size noqa in the repo; hub-check --all 30/30
-  - ▶️ heavy validation: full E2E, DR, chaos, SDK DB tests
-  - ⬜ CHANGELOG + PENDENCIAS; deploy to the owner instance (hub_update)
+  - ✅ heavy validation: E2E 148 passed, ui-sweep full 0 findings, DR/ZD/chaos OK
+  - ✅ chaos found: rollout dropped network aliases (502 after hub restart) — fixed + test
+  - ✅ DB tests with Postgres: hub 506, SDK 137, apps 42/43/31/29 passed (2 stale tests fixed)
+  - ✅ CHANGELOG
+  - ⬜ deploy to the owner instance (hub_update)

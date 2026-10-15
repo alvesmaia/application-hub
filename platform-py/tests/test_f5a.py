@@ -516,6 +516,10 @@ async def test_two_replicas_one_leader(states: Any, monkeypatch: pytest.MonkeyPa
     info = await first.info()
     assert info["leader"] and info["holder"] == first.replica and len(info["replicas"]) == 2
     assert not (await second.info())["leader"]
+    for _ in range(40):  # the watcher sees the new leadership on its next 0.5 s tick
+        if took:
+            break
+        await asyncio.sleep(0.1)
     assert len(took) == 1 and any("assumiu a liderança" in m for m in msgs)
     # the leader falls (without releasing the lease): the other takes over after the TTL
     assert first.lease

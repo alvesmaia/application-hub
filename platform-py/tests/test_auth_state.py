@@ -29,7 +29,7 @@ async def test_sessions_and_rate_limits_share_state_db(tmp_path) -> None:
         cookie = await store.session_new(user)
         assert await store.session(cookie) is not None
         assert (await db.session_get(hashlib.sha256(cookie.encode()).hexdigest())) is not None
-        assert await store.logout(cookie) is None
+        assert await store.logout(cookie) == "password"  # how the session was opened (single logout)
         assert await store.session(cookie) is None
         assert (await db.rate_hit("login", "203.0.113.10:a@example.test", 900_000, 5, now_ms()))[0] == 1
     finally:
