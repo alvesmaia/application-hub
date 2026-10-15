@@ -49,6 +49,14 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   are split by responsibility (e.g. `hub-device-camera.js`, `hub-kit-mount.js`, `hub-nav.js`).
 
 ### Fixed
+- Scheduled backups: the apps are backed up at the same time and every run copied its SQL to the same
+  `/tmp/hub-role.sql` in the apps database container, so most apps failed each night (`HUB-WRONG-DB` or
+  `No such file`). Each `psql -f` file (role, admin, restore) now has its own name.
+- SDK: `openapi_of` missed routes added with `include_router` (FastAPI wraps them in one route); the apps no
+  longer copy routes one by one.
+- Sample apps (ativos, fornecedores, servicos): links and forms follow the public base from `x-hub-base`
+  (`hub_sdk.render.public_base`; `Renderer.page` passes it as `base`) instead of a fixed `/apps/<id>`.
+- `dash-iso-proof.py`: the usage named `bind` (the command is `link`), and an unknown command silently ran `check`.
 - Containers page showed "Em execução" right after Stop: a container read already in flight when an action landed
   was served and cached (`rt.Engine` now drops it).
 - Several replicas: `auth.json` was written after the cross-replica lock was released, so a concurrent update

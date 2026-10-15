@@ -25,10 +25,13 @@
 - ⬜ 17 · Clone p/ staging do contratos: permission denied to change default privileges (backup #9)
 
 ## Instância do dono
-- ⬜ 13 · Deploy dos 4 apps na :8090 (build + up --no-deps, pin keep-20261015)
+- ✅ 13 · Deploy dos 4 apps na :8090 (build + up --no-deps, pin keep-20261015)
+  - ✅ hub_update (correção do backup) sem parada; 4 apps healthy, readyz 200, status ok
 - ▶️ 14 · App de teste do Entra: verificar que nada usa; você apaga no portal
   - ✅ :8090 sem conexões cadastradas (nada depende dele)
   - ⬜ dono apaga no portal do Entra
 
 ## Fechamento
-- ⬜ 15 · E2E dos apps, ui-sweep --quick, CHANGELOG, limpeza
+- ✅ 15 · E2E dos apps, ui-sweep --quick, CHANGELOG, limpeza
+  - ✅ conformidade 4/4; E2E apps 35 passed (07 exige o 06 antes); ui-sweep --quick 0 achados
+  - ✅ CHANGELOG; worktrees e instância isolada removidas
