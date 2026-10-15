@@ -129,7 +129,7 @@ test.describe('documentação pública (sem sessão)', () => {
 
   test('tema público: segue o SO e o seletor grava só no navegador', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'dark' });
-    await page.goto('/developers/contrato/14-manifesto');
+    await page.goto('/developers/contrato/14-manifest');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'auto');
     const bg = () => page.locator('.dev-code').first().evaluate((el) => getComputedStyle(el).backgroundColor);
     const darkBg = await bg();
@@ -144,7 +144,7 @@ test.describe('documentação pública (sem sessão)', () => {
     for (const theme of ['light', 'dark'] as const) {
       if ((await page.locator('html').getAttribute('data-theme')) !== theme) await page.locator('[data-dev-theme]').click();
       for (const [kind, sel, url] of [['bash', '.dev-code:has(.hl-nf)', '/developers/cli/hub-deploy'],
-        ['json', '.dev-code:has(.hl-nt)', '/developers/contrato/14-manifesto']] as const) {
+        ['json', '.dev-code:has(.hl-nt)', '/developers/contrato/14-manifest']] as const) {
         await page.goto(url);
         await page.locator(sel).first().evaluate((el) => el.scrollIntoView({ block: 'center' }));
         await page.locator(sel).first().hover();

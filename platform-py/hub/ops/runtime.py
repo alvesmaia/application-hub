@@ -44,6 +44,9 @@ from hub.ops.docker_guard import OWNED as OWNED
 from hub.ops.docker_guard import Guarded as Guarded
 from hub.ops.docker_guard import own as own
 from hub.ops.model import OpsError
+from hub.ops.runtime_text import human_duration as human_duration
+from hub.ops.runtime_text import level_of as level_of
+from hub.ops.runtime_text import uptime_of as uptime_of
 
 SEP = "__"
 
@@ -329,13 +332,18 @@ class Engine:
 
     async def launch(
         self, name: str, image: str, env: dict[str, str], labels: dict[str, str], host: dict[str, Any],
-        networks: list[str], start: bool = True,
+        networks: list[str], start: bool = True, aliases: dict[str, list[str]] | None = None,
     ) -> None:  # fmt: skip
+        al = aliases or {}
+        first = (
+            {"EndpointsConfig": {networks[0]: {"Aliases": al[networks[0]]}}} if al.get(networks[0]) else None
+        )
+
         def go(cl: Any) -> None:
             c = cl.create(image, name, environment=[f"{k}={v}" for k, v in env.items()], labels=labels,
-                          host_config={**host, "NetworkMode": networks[0]})  # fmt: skip
+                          host_config={**host, "NetworkMode": networks[0]}, networking_config=first)  # fmt: skip
             for n in networks[1:]:
-                cl.connect(n, name)
+                cl.connect(n, name, aliases=al.get(n) or None)
             if start:
                 c.start()
 
@@ -393,35 +401,6 @@ class Engine:
             raise OpsError(f"Inspect indisponível: {e}"[:300], 503) from e
 
 
-def human_duration(sec: float) -> str:
-    """Like `docker ps` (HumanDuration)."""
-    s = int(sec)
-    if s < 1:
-        return "Less than a second"
-    if s < 60:
-        return f"{s} seconds"
-    mi = s // 60
-    if mi == 1:
-        return "About a minute"
-    if mi < 60:
-        return f"{mi} minutes"
-    return _human_hours(s)
-
-
-def _human_hours(s: int) -> str:
-    h = round(s / 3600)
-    if h == 1:
-        return "About an hour"
-    if h < 48:
-        return f"{h} hours"
-    d = h // 24
-    if d < 14:
-        return f"{d} days"
-    if d < 60:
-        return f"{d // 7} weeks"
-    return f"{d // 30} months"
-
-
 def _status_text(c: Any) -> str:
     """`Up 3 hours (healthy)` (`docker ps` text), rebuilt from the inspect."""
     st = c.attrs.get("State", {})
@@ -441,23 +420,6 @@ def _redact(attrs: dict[str, Any]) -> dict[str, Any]:
     if isinstance(cfg, dict) and isinstance(cfg.get("Env"), list):
         cfg["Env"] = [f"{e.split('=', 1)[0]}=••••" for e in cfg["Env"]]
     return attrs
-
-
-def level_of(kind: str, text: str) -> str:
-    t = text.lower()
-    return "ERROR" if kind == "stderr" or "error" in t else "WARN" if "warn" in t else "INFO"
-
-
-def uptime_of(status: str) -> str:
-    if not status.startswith("Up "):
-        return "—"
-    s = status[3:].split(" (")[0]
-    for a, b in (("Less than a second", "< 1 s"), ("About a minute", "~1 min"), ("About an hour", "~1 h"),
-                 (" seconds", " s"), (" second", " s"), (" minutes", " min"), (" minute", " min"),
-                 (" hours", " h"), (" hour", " h"), (" days", " dias"), (" day", " dia"), (" weeks", " semanas"),
-                 (" week", " semana"), (" months", " meses"), (" month", " mês")):  # fmt: skip
-        s = s.replace(a, b)
-    return s
 
 
 def _tar(files: dict[str, bytes]) -> bytes:

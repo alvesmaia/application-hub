@@ -665,3 +665,16 @@ def test_rollback_goes_to_previous_deployment_not_to_compose_baseline(hub: TestC
     fake.images.get = lambda ref: SimpleNamespace(id="sha256:" + "cc" * 32, attrs={"Config": {"Env": []}})  # type: ignore[method-assign]
     rb = hub.post(f"/api/ops/deployments/{ids[1]}/rollback?wait=true", headers=JSON)
     assert rb.status_code == 200 and rb.json()["version"] == "9.0.0", rb.text
+
+
+def test_rollout_carries_the_network_aliases_of_the_replaced_container() -> None:
+    # a recreated container lost aliases set by compose/the installer (e.g. app-hub-app-ativos): after a hub
+    # restart, apps.json pointed at the alias and the gateway answered 502 until someone recreated it by hand
+    from hub.ops.rollout import network_aliases
+
+    base = {"Name": "/app-hub-iso-app-ativos", "Id": "0123456789abcdef0123",
+            "NetworkSettings": {"Networks": {
+                "app-hub-iso-net": {"Aliases": ["app-hub-app-ativos", "app-hub-iso-app-ativos", "0123456789ab"]},
+                "hub-app-ativos": {"Aliases": None}}}}  # fmt: skip
+    assert network_aliases(base) == {"app-hub-iso-net": ["app-hub-app-ativos"], "hub-app-ativos": []}
+    assert network_aliases({}) == {}

@@ -140,7 +140,9 @@ class Rollout:
             (base.get("NetworkSettings", {}).get("Networks") or {}) or [host.get("NetworkMode", "default")]
         )
         say(15, f"Criando o candidato {cand}")
-        await self.engine.launch(cand, img_id, env, _labels(base, app, k, version), host, nets)
+        await self.engine.launch(
+            cand, img_id, env, _labels(base, app, k, version), host, nets, aliases=network_aliases(base)
+        )
 
     async def _apply(self, app: str, k: str, limits: dict[str, Any], version: str, image: str | None,
                      say: Progress) -> dict[str, Any]:  # fmt: skip
@@ -197,6 +199,15 @@ class Rollout:
             self.registry.staging[app] = url
         else:
             self.registry.set_upstream(app, url, version)
+
+
+def network_aliases(base: dict[str, Any]) -> dict[str, list[str]]:
+    """Aliases the replaced container had on each network (set by compose/the installer, e.g. the upstream name
+    in apps.json), without the ones Docker derives from its own name and id: the candidate must answer to them too."""
+    name, cid = str(base.get("Name", "")).lstrip("/"), str(base.get("Id", ""))
+    nets = (base.get("NetworkSettings") or {}).get("Networks") or {}
+    own = {name, cid[:12]}
+    return {n: [a for a in (v or {}).get("Aliases") or [] if a not in own] for n, v in nets.items()}
 
 
 def _labels(base: dict[str, Any], app: str, k: str, version: str) -> dict[str, str]:

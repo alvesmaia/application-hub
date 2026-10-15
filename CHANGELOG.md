@@ -40,8 +40,26 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 - SDK: `hub_sdk.realtime` renamed to `Channel`/`channel` with `start()`, `close()`, `notify()`, `messages()`. The
   Portuguese names (`Canal`, `canal`, `iniciar`, `fechar`, `avisar`, `mensagens`) still work as deprecated aliases
   (`DeprecationWarning`) and will be removed in the next minor release.
+- Code size rules (AGENTS.md "Code size and clean code"), enforced by `hub-check` in every project: ruff `C901`
+  (complexity > 8), `PLR0912` (> 12 branches), `PLR0915` (> 20 statements), `PLR1702` (> 3 nested blocks, via
+  explicit preview) and a file-size ratchet (no code file over 500 lines, `platform-py/size-baseline.json`). The
+  whole codebase was refactored to fit, without behavior changes (page HTML, OpenAPI, MCP tools and SDK public
+  API checked identical): routes are module-level routers with the shared state as a FastAPI dependency (no more
+  routes as closures inside `mount_*`), long work in `*_jobs.py`, page rows in pure `*_view.py`; the shell JS files
+  are split by responsibility (e.g. `hub-device-camera.js`, `hub-kit-mount.js`, `hub-nav.js`).
+
+### Fixed
+- Containers page showed "Em execução" right after Stop: a container read already in flight when an action landed
+  was served and cached (`rt.Engine` now drops it).
+- Several replicas: `auth.json` was written after the cross-replica lock was released, so a concurrent update
+  could be lost; the write now happens inside the lock.
+- `install.sh`: a `#` or `&` in the SharePoint folder broke the `sed` that writes `HUB_BACKUP_OFFSITE_URL`.
+- Blue/green rollout kept the replaced container's network aliases off the candidate: with upstreams that point to
+  an alias (installer/compose names), the app answered 502 after the next hub restart.
 
 ### Validated
+- Heavy validation after the refactor (15/10/2026, isolated instance): full E2E 148 passed; full ui-sweep (1,918
+  visits) with no finding; DR, zero downtime and chaos OK (state database restart: hub back in 1.2 s).
 - Load (13/10/2026): 1 hub container = 200 simultaneous users; 2 containers behind the edge = 300
   (`docs/IMPLANTACAO.md`). `uvicorn --workers` is not supported (internal broker port).
 - MCP login via real Entra ID (13/10/2026): owner's tenant, Claude Code and GitHub Copilot CLI authenticated through
