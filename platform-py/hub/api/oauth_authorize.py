@@ -40,8 +40,42 @@ class OAuthAuthorize(OAuthClients):
             q.append(("state", state))
         return self.redirect(with_query(redirect_uri, q))
 
-    async def authorize_get(self, request: Request) -> Response:  # noqa: C901
+    async def authorize_get(self, request: Request) -> Response:
         q = form(request.url.query)
+        target = await self.authorize_target(request, q)
+        if isinstance(target, Response):
+            return target
+        iss, client, redirect_uri = target
+        ours = self.authorize_params(request, q, iss, redirect_uri)
+        if isinstance(ours, Response):
+            return ours
+        p = principal(request)
+        if p is None or not p.session:
+            return self.error_page(request, "Entre no hub com a sua conta para autorizar um aplicativo.")
+        if not await self.hit(request.app, f"oauth-consent:{p.uid}", CONSENT_PER_USER):
+            return self.error_page(
+                request, "Pedidos de autorização demais em pouco tempo; tente de novo mais tarde."
+            )
+        req = {"client_id": client["id"], "client_name": client["name"], "client_kind": client["kind"],
+               "redirect_uri": redirect_uri, "challenge": q.get("code_challenge", ""),
+               "scopes": self.scopes_of(q.get("scope", "")), "resource": ours, "state": q.get("state"),
+               "user": p.uid}  # fmt: skip
+        nonce = secrets.token_hex(24)
+        await self.mark_consent_pending(client["id"], now_ms() + CONSENT_TTL_MS)
+        await self.rec.put(K_CONSENT, sha(nonce), req, now_ms() + CONSENT_TTL_MS)
+        who = p.user.get("email") or p.name
+        inner = self.consent_inner(request.app.title, who, req, nonce)
+        return self.page_res(
+            request,
+            200,
+            self.card(request, "Conectar um aplicativo ao hub", inner),
+            origin_of_url(redirect_uri),
+        )
+
+    async def authorize_target(
+        self, request: Request, q: dict[str, str]
+    ) -> tuple[str, dict[str, Any], str] | Response:
+        """`(issuer, client, redirect_uri)`; until the redirect is trusted, errors stay on the hub's own page."""
         if any(k.endswith("\0dup") for k in q):
             return self.error_page(request, "Parâmetro repetido no pedido de autorização.")
         if not (iss := self.issuer(request)):
@@ -56,6 +90,12 @@ class OAuthAuthorize(OAuthClients):
             return self.error_page(request, "redirect_uri obrigatória.")
         if not any(redirect_matches(r, redirect_uri) for r in uris):
             return self.error_page(request, "redirect_uri não registrada para este cliente.")
+        return iss, client, redirect_uri
+
+    def authorize_params(
+        self, request: Request, q: dict[str, str], iss: str, redirect_uri: str
+    ) -> str | Response:
+        """This hub's `/mcp` resource once response_type, PKCE and resource are valid (errors go back to the client)."""
         state = q.get("state")
 
         def back(code: str, desc: str) -> Response:
@@ -72,27 +112,7 @@ class OAuthAuthorize(OAuthClients):
             return self.error_page(request, NO_ISSUER)
         if (r := q.get("resource")) is not None and canon(r) != canon(ours):
             return back("invalid_target", f"resource deve ser {ours} (o servidor MCP deste hub).")
-        p = principal(request)
-        if p is None or not p.session:
-            return self.error_page(request, "Entre no hub com a sua conta para autorizar um aplicativo.")
-        if not await self.hit(request.app, f"oauth-consent:{p.uid}", CONSENT_PER_USER):
-            return self.error_page(
-                request, "Pedidos de autorização demais em pouco tempo; tente de novo mais tarde."
-            )
-        req = {"client_id": client["id"], "client_name": client["name"], "client_kind": client["kind"],
-               "redirect_uri": redirect_uri, "challenge": challenge, "scopes": self.scopes_of(q.get("scope", "")),
-               "resource": ours, "state": state, "user": p.uid}  # fmt: skip
-        nonce = secrets.token_hex(24)
-        await self.mark_consent_pending(client["id"], now_ms() + CONSENT_TTL_MS)
-        await self.rec.put(K_CONSENT, sha(nonce), req, now_ms() + CONSENT_TTL_MS)
-        who = p.user.get("email") or p.name
-        inner = self.consent_inner(request.app.title, who, req, nonce)
-        return self.page_res(
-            request,
-            200,
-            self.card(request, "Conectar um aplicativo ao hub", inner),
-            origin_of_url(redirect_uri),
-        )
+        return ours
 
     def consent_inner(self, brand: str, who: str, r: dict[str, Any], nonce: str) -> str:
         kind = (f"Identificado pelo documento em <code>{esc(host_of(r['client_id']))}</code>" if r["client_kind"] == "cimd"

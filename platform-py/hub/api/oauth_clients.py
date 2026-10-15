@@ -10,7 +10,7 @@ import socket
 from typing import Any
 
 import httpx
-from fastapi import Request
+from fastapi import FastAPI, Request
 from fastapi.responses import Response
 
 from hub.api.oauth_base import OAuthBase
@@ -46,10 +46,19 @@ class OAuthClients(OAuthBase):
                 "kind": v.get("kind", "dcr"), "auth_method": v.get("token_endpoint_auth_method", "none"),
                 "secret_hash": v.get("secret_hash"), "disabled": bool(v.get("disabled"))}  # fmt: skip
 
-    async def fetch_cimd(self, url: str) -> dict[str, Any]:  # noqa: C901, PLR0912, PLR0915
+    async def fetch_cimd(self, url: str) -> dict[str, Any]:
         now = now_ms()
         if (c := self.cimd_cache.get(url)) and c[1] > now:
             return c[0]
+        target, host = await self.cimd_target(url)
+        c = self.cimd_client(url, await self.cimd_download(target, host))
+        if len(self.cimd_cache) > 500:
+            self.cimd_cache = {k: x for k, x in self.cimd_cache.items() if x[1] > now}
+        self.cimd_cache[url] = (c, now + 5 * 60_000)
+        return c
+
+    async def cimd_target(self, url: str) -> tuple[str, str]:
+        """SSRF guard: the URL to fetch with the host pinned to an already-vetted IP (no second DNS lookup)."""
         import os
 
         private_ok = os.getenv("HUB_OAUTH_CIMD_ALLOW_PRIVATE", "").strip().lower() in (
@@ -68,21 +77,24 @@ class OAuthClients(OAuthBase):
             raise OAuthError("client_id (URL) precisa ter caminho")
         host = p[1].strip("[]")
         port = int(p[2]) if p[2] else (443 if p[0] == "https" else 80)
-        try:
-            if self.resolver:
-                addrs = await self.resolver(host, port)
-            else:
-                infos = await asyncio.get_running_loop().getaddrinfo(host, port, type=socket.SOCK_STREAM)
-                addrs = [str(i[4][0]) for i in infos]
-        except OSError as e:
-            raise OAuthError(f"host do client_id não resolve: {e}") from e
-        ips = [ipaddress.ip_address(a) for a in addrs]
+        ips = [ipaddress.ip_address(a) for a in await self.cimd_resolve(host, port)]
         if not ips:
             raise OAuthError("host do client_id não resolve")
         if not private_ok and any(not ip_public(ip) for ip in ips):
             raise OAuthError("client_id aponta para endereço interno (recusado)")
         pin = f"[{ips[0]}]" if ips[0].version == 6 else str(ips[0])
-        target = url.replace(p[1] + (f":{p[2]}" if p[2] else ""), f"{pin}:{port}", 1)
+        return url.replace(p[1] + (f":{p[2]}" if p[2] else ""), f"{pin}:{port}", 1), host
+
+    async def cimd_resolve(self, host: str, port: int) -> list[str]:
+        try:
+            if self.resolver:
+                return await self.resolver(host, port)
+            infos = await asyncio.get_running_loop().getaddrinfo(host, port, type=socket.SOCK_STREAM)
+            return [str(i[4][0]) for i in infos]
+        except OSError as e:
+            raise OAuthError(f"host do client_id não resolve: {e}") from e
+
+    async def cimd_download(self, target: str, host: str) -> bytes:
         body = b""
         try:
             async with httpx.AsyncClient(
@@ -97,6 +109,9 @@ class OAuthClients(OAuthBase):
                         raise OAuthError("documento do cliente grande demais")
         except httpx.HTTPError as e:
             raise OAuthError(f"documento do cliente inacessível: {e}") from e
+        return body
+
+    def cimd_client(self, url: str, body: bytes) -> dict[str, Any]:
         try:
             v = json.loads(body)
         except ValueError as e:
@@ -114,12 +129,8 @@ class OAuthClients(OAuthBase):
             raise OAuthError("redirect_uris do documento inválidas ou não permitidas")
         if v.get("token_endpoint_auth_method", "none") != "none":
             raise OAuthError("documento do cliente: só token_endpoint_auth_method = none")
-        c = {"id": url, "name": clean_name(v["client_name"]), "redirect_uris": uris, "kind": "cimd",
-             "auth_method": "none", "secret_hash": None, "disabled": False}  # fmt: skip
-        if len(self.cimd_cache) > 500:
-            self.cimd_cache = {k: x for k, x in self.cimd_cache.items() if x[1] > now}
-        self.cimd_cache[url] = (c, now + 5 * 60_000)
-        return c
+        return {"id": url, "name": clean_name(v["client_name"]), "redirect_uris": uris, "kind": "cimd",
+                "auth_method": "none", "secret_hash": None, "disabled": False}  # fmt: skip
 
     async def load_client(self, cid: str) -> dict[str, Any]:
         raw = await self.rec.get(K_CLIENT, sha(cid))
@@ -200,8 +211,8 @@ class OAuthClients(OAuthBase):
         await self.rec.update(K_CLIENT, sha(cid), f)
 
     # ---- registro (RFC 7591) -----------------------------------------------------------------------
-    async def register(self, request: Request, body: bytes) -> Response:  # noqa: C901, PLR0912, PLR0915
-        c, app = self.cfg, request.app
+    async def register(self, request: Request, body: bytes) -> Response:
+        c = self.cfg
         if not c.dynamic_registration:
             return self.oerr(
                 404,
@@ -209,29 +220,43 @@ class OAuthClients(OAuthBase):
                 "Registro dinâmico de clientes desligado ([mcp.oauth].dynamic_registration = false).",
             )
         peer = client_ip(request)
+        if await self.register_limited(request.app, peer):
+            return self.oerr(429, "slow_down", "Registros demais deste endereço; tente mais tarde.")
+        try:
+            v = json.loads(body)
+        except ValueError:
+            return self.bad_metadata("Corpo JSON inválido.")
+        if not isinstance(v, dict):
+            return self.bad_metadata("Corpo JSON inválido.")
+        meta = self.register_metadata(v)
+        if isinstance(meta, Response):
+            return meta
+        uris, method = meta
+        name = clean_name(str(v.get("client_name") or "")) or "Cliente sem nome"
+        unused = await self.rec.count(K_CLIENT, ("used", "false"))
+        if unused >= MAX_UNUSED_CLIENTS:
+            await self.evict_unused(unused - MAX_UNUSED_CLIENTS + 1)
+        return await self.register_client(name, uris, method, peer)
+
+    async def register_limited(self, app: FastAPI, peer: str) -> bool:
         over = not await self.hit(app, f"oauth-reg:{peer}", REGISTER_PER_IP)
         if not over:
             reserved = await self.hit(app, f"oauth-reg-g:{peer}", REGISTER_GLOBAL_WEIGHT)
             glob = await self.hit(app, "oauth-reg:*", REGISTER_GLOBAL)
             over = not (glob or reserved)
-        if over:
-            return self.oerr(429, "slow_down", "Registros demais deste endereço; tente mais tarde.")
+        return over
 
-        def bad(d: str) -> Response:
-            return self.oerr(400, "invalid_client_metadata", d)
+    def bad_metadata(self, d: str) -> Response:
+        return self.oerr(400, "invalid_client_metadata", d)
 
-        try:
-            v = json.loads(body)
-        except ValueError:
-            return bad("Corpo JSON inválido.")
-        if not isinstance(v, dict):
-            return bad("Corpo JSON inválido.")
+    def register_metadata(self, v: dict[str, Any]) -> tuple[list[str], str] | Response:
+        """Validated `(redirect_uris, token_endpoint_auth_method)` of a registration request, or the error."""
         raw = v.get("redirect_uris")
         if not isinstance(raw, list) or not 1 <= len(raw) <= 10:
             return self.oerr(400, "invalid_redirect_uri", "redirect_uris obrigatório (1 a 10).")
-        uris = [u for u in raw if isinstance(u, str)]
+        uris: list[str] = [u for u in raw if isinstance(u, str)]
         for u in uris:
-            if not redirect_ok(u, c.allowed_redirect_hosts):
+            if not redirect_ok(u, self.cfg.allowed_redirect_hosts):
                 return self.oerr(
                     400,
                     "invalid_redirect_uri",
@@ -239,17 +264,18 @@ class OAuthClients(OAuthBase):
                 )
         method = v.get("token_endpoint_auth_method", "client_secret_basic")
         if method not in ("none", "client_secret_post", "client_secret_basic"):
-            return bad("token_endpoint_auth_method: none, client_secret_post ou client_secret_basic.")
+            return self.bad_metadata(
+                "token_endpoint_auth_method: none, client_secret_post ou client_secret_basic."
+            )
         if isinstance(gt := v.get("grant_types"), list) and any(
             g not in ("authorization_code", "refresh_token") for g in gt
         ):
-            return bad("grant_types: authorization_code e refresh_token.")
+            return self.bad_metadata("grant_types: authorization_code e refresh_token.")
         if isinstance(rt := v.get("response_types"), list) and any(g != "code" for g in rt):
-            return bad("response_types: code.")
-        name = clean_name(str(v.get("client_name") or "")) or "Cliente sem nome"
-        unused = await self.rec.count(K_CLIENT, ("used", "false"))
-        if unused >= MAX_UNUSED_CLIENTS:
-            await self.evict_unused(unused - MAX_UNUSED_CLIENTS + 1)
+            return self.bad_metadata("response_types: code.")
+        return uris, str(method)  # already one of the three allowed names; str() only narrows the type
+
+    async def register_client(self, name: str, uris: list[str], method: str, peer: str) -> Response:
         now, cid = now_ms(), f"hubc_{secrets.token_hex(16)}"
         secret = f"hubcs_{secrets.token_hex(24)}" if method != "none" else None
         rec = {"client_id": cid, "client_name": name, "redirect_uris": uris, "kind": "dcr",

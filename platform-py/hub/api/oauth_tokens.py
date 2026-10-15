@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import secrets
 from collections.abc import Callable
+from functools import partial
 from typing import Any
 from urllib.parse import unquote_plus
 
@@ -123,7 +124,7 @@ class OAuthTokens(OAuthAuthorize):
             )
         return self.oerr(400, "invalid_request", "grant_type obrigatório.")
 
-    async def code_grant(  # noqa: C901, PLR0915
+    async def code_grant(
         self,
         f: dict[str, str],
         client: dict[str, Any],
@@ -134,26 +135,16 @@ class OAuthTokens(OAuthAuthorize):
         code = f.get("code", "")
         key, redirect_uri, verifier = sha(code), f.get("redirect_uri"), f.get("code_verifier", "")
         gid = f"g{secrets.token_hex(12)}"
-
-        def consume(cur: Any) -> tuple[Change, tuple[str, Any]]:
-            if cur is None:
-                return Change.keep(), ("missing", None)
-            if g := cur.get("used_grant"):
-                return Change.set(cur | {"replayed": True}, now + 10 * 60_000), ("replay", g)
-            bad = None
-            if cur["client_id"] != client["id"]:
-                bad = "Código emitido para outro cliente."
-            elif redirect_uri != cur["redirect_uri"]:
-                bad = "redirect_uri diferente da usada na autorização."
-            elif not pkce_ok(verifier, cur["challenge"]):
-                bad = "code_verifier inválido (PKCE)."
-            elif canon(cur["resource"]) != canon(ours):
-                bad = "resource diferente do autorizado."
-            if bad:
-                return Change.keep(), ("rejected", (bad, cur))
-            return Change.set(cur | {"used_grant": gid}, now + 10 * 60_000), ("fresh", cur)
-
+        consume = partial(_consume_code, client_id=client["id"], redirect_uri=redirect_uri, verifier=verifier,
+                          ours=ours, gid=gid, now=now)  # fmt: skip
         kind, info = await self.rec.update(K_CODE, key, consume)
+        if kind != "fresh":
+            return await self.code_refused(kind, info, client, grant_err)
+        return await self.code_issue(key, gid, info, client, now, grant_err)
+
+    async def code_refused(
+        self, kind: str, info: Any, client: dict[str, Any], grant_err: Callable[[str], Response]
+    ) -> Response:
         if kind == "missing":
             return grant_err("Código inválido, vencido ou já usado.")
         if kind == "replay":
@@ -165,18 +156,28 @@ class OAuthTokens(OAuthAuthorize):
                     "OAuth", "OAuth: código de autorização reutilizado", f"{client['name']} · {client['id']}"
                 )
             return grant_err("Código inválido, vencido ou já usado.")
-        if kind == "rejected":
-            why, c = info
-            await self.audit(await self.user_label(c.get("user", "")), "OAuth: troca de código recusada",
-                             f"{client['name']} · {client['id']} · {why}")  # fmt: skip
-            return grant_err(why)
-        c, user = info, info["user"]
+        why, c = info  # kind == "rejected"
+        await self.audit(await self.user_label(c.get("user", "")), "OAuth: troca de código recusada",
+                         f"{client['name']} · {client['id']} · {why}")  # fmt: skip
+        return grant_err(why)
+
+    async def code_issue(
+        self,
+        key: str,
+        gid: str,
+        c: dict[str, Any],
+        client: dict[str, Any],
+        now: int,
+        grant_err: Callable[[str], Response],
+    ) -> Response:
+        user = c["user"]
         if not await self.user_ok(user):
             return grant_err("Conta desativada.")
         grant = {"grant_id": gid, "client_id": client["id"], "client_name": c["client_name"], "client_kind": client["kind"],
                  "user": user, "scopes": c["scopes"], "resource": c["resource"], "redirect_uri": c["redirect_uri"],
                  "created_at": now, "last_used": now}  # fmt: skip
         await self.rec.put(K_GRANT, gid, grant, now + self.cfg.refresh_token_ttl_days * DAY_MS)
+        # A replay that raced this exchange marked the code after we consumed it: drop the grant we just made.
         cur = await self.rec.get(K_CODE, key)
         if cur and cur.get("replayed") is True:
             await self.revoke_grant(gid)
@@ -185,38 +186,18 @@ class OAuthTokens(OAuthAuthorize):
                          f"{client['name']} · {client['id']} · escopos: {' '.join(grant['scopes'])}")  # fmt: skip
         return self.json_res(200, await self.issue(grant))
 
-    async def refresh_grant(  # noqa: C901
+    async def refresh_grant(
         self, f: dict[str, str], client: dict[str, Any], now: int, grant_err: Callable[[str], Response]
     ) -> Response:
         key = sha(f.get("refresh_token", ""))
         ttl = now + self.cfg.refresh_token_ttl_days * DAY_MS
-
-        def rotate(cur: Any) -> tuple[Change, tuple[str, bool] | None]:
-            if cur is None:
-                return Change.keep(), None
-            if cur.get("used") is True:
-                return Change.keep(), (str(cur["grant_id"]), True)
-            return Change.set(cur | {"used": True}, ttl), (str(cur["grant_id"]), False)
-
-        r = await self.rec.update(K_REFRESH, key, rotate)
+        r = await self.rec.update(K_REFRESH, key, partial(_rotate_refresh, ttl=ttl))
         if r is None:
             return grant_err("Refresh token inválido, vencido ou revogado.")
         gid, reused = r
         if reused:
-            if g := await self.revoke_grant(gid):
-                await self.audit("OAuth", "OAuth: refresh token reutilizado — concessão revogada",
-                                 f"{g.get('client_name', '')} · usuário {await self.user_label(g.get('user', ''))} (possível roubo de token)")  # fmt: skip
-                self.notify_reuse(g)
-            return grant_err("Refresh token já usado: a concessão foi revogada por segurança.")
-
-        def touch(cur: Any) -> tuple[Change, Any]:
-            if cur is None:
-                return Change.keep(), "Concessão revogada."
-            if cur["client_id"] != client["id"]:
-                return Change.keep(), "Refresh token de outro cliente."
-            cur = cur | {"last_used": now}
-            return Change.set(cur, ttl), cur
-
+            return await self.refresh_reused(gid, grant_err)
+        touch = partial(_touch_grant, client_id=client["id"], now=now, ttl=ttl)
         grant = await self.rec.update(K_GRANT, gid, touch)
         if isinstance(grant, str):
             return grant_err(grant)
@@ -229,6 +210,13 @@ class OAuthTokens(OAuthAuthorize):
                 return self.oerr(400, "invalid_scope", "Escopo maior que o concedido.")
             grant = grant | {"scopes": want}
         return self.json_res(200, await self.issue(grant))
+
+    async def refresh_reused(self, gid: str, grant_err: Callable[[str], Response]) -> Response:
+        if g := await self.revoke_grant(gid):
+            await self.audit("OAuth", "OAuth: refresh token reutilizado — concessão revogada",
+                             f"{g.get('client_name', '')} · usuário {await self.user_label(g.get('user', ''))} (possível roubo de token)")  # fmt: skip
+            self.notify_reuse(g)
+        return grant_err("Refresh token já usado: a concessão foi revogada por segurança.")
 
     def notify_reuse(self, g: dict[str, Any]) -> None:
         from hub.ux.inbox import item_of
@@ -282,3 +270,42 @@ class OAuthTokens(OAuthAuthorize):
                 "prefix": "hubo_", "apps": [], "envs": [], "actions": list(a["scopes"]), "created_by": a["client_id"],
                 "created_at": a.get("created_at", now), "expires_at": a["exp"], "revoked_at": None,
                 "last_used": now, "owner": a["user"]}  # fmt: skip
+
+
+# ---- atomic record updates (run inside `rec.update`, so they only compute the change) ------------------
+def _consume_code(
+    cur: Any, *, client_id: str, redirect_uri: str | None, verifier: str, ours: str, gid: str, now: int
+) -> tuple[Change, tuple[str, Any]]:
+    if cur is None:
+        return Change.keep(), ("missing", None)
+    if g := cur.get("used_grant"):
+        return Change.set(cur | {"replayed": True}, now + 10 * 60_000), ("replay", g)
+    bad = None
+    if cur["client_id"] != client_id:
+        bad = "Código emitido para outro cliente."
+    elif redirect_uri != cur["redirect_uri"]:
+        bad = "redirect_uri diferente da usada na autorização."
+    elif not pkce_ok(verifier, cur["challenge"]):
+        bad = "code_verifier inválido (PKCE)."
+    elif canon(cur["resource"]) != canon(ours):
+        bad = "resource diferente do autorizado."
+    if bad:
+        return Change.keep(), ("rejected", (bad, cur))
+    return Change.set(cur | {"used_grant": gid}, now + 10 * 60_000), ("fresh", cur)
+
+
+def _rotate_refresh(cur: Any, *, ttl: int) -> tuple[Change, tuple[str, bool] | None]:
+    if cur is None:
+        return Change.keep(), None
+    if cur.get("used") is True:
+        return Change.keep(), (str(cur["grant_id"]), True)
+    return Change.set(cur | {"used": True}, ttl), (str(cur["grant_id"]), False)
+
+
+def _touch_grant(cur: Any, *, client_id: str, now: int, ttl: int) -> tuple[Change, Any]:
+    if cur is None:
+        return Change.keep(), "Concessão revogada."
+    if cur["client_id"] != client_id:
+        return Change.keep(), "Refresh token de outro cliente."
+    cur = cur | {"last_used": now}
+    return Change.set(cur, ttl), cur

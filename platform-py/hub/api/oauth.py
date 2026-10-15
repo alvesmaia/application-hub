@@ -7,11 +7,10 @@ scopes only restrict (`mcp` = read; `api:write` = tools that change something)."
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from typing import Any, cast
-from urllib.parse import urlsplit
 
-from fastapi import FastAPI, Request
+from fastapi import APIRouter, Depends, FastAPI, Request
 from fastapi.responses import Response
 from fastapi.templating import Jinja2Templates
 
@@ -65,119 +64,140 @@ class OAuth(OAuthTokens):
                              f"{g.get('client_name', '')} · {g.get('client_id', '')}")  # fmt: skip
         return True
 
-    async def admin_action(self, path: str, body: bytes, actor: str) -> Response:  # noqa: C901
+    async def admin_action(self, path: str, body: bytes, actor: str) -> Response:
         f = form(body.decode("utf-8", "replace"))
         match path:
             case "/admin/oauth/revoke-grant":
-                if g := await self.revoke_grant(f.get("grant", "")):
-                    await self.audit(actor, "OAuth: concessão revogada pela administração",
-                                     f"{g.get('client_name', '')} · usuário {await self.user_label(g.get('user', ''))}")  # fmt: skip
+                await self.admin_revoke_grant(f.get("grant", ""), actor)
             case "/admin/oauth/block-client" | "/admin/oauth/unblock-client":
-                cid, block = f.get("client", ""), path.endswith("/block-client")
-
-                def upd(cur: Any) -> tuple[Change, None]:
-                    v = cur or {
-                        "client_id": cid,
-                        "client_name": cid,
-                        "redirect_uris": [],
-                        "kind": "cimd",
-                        "created_at": now_ms(),
-                    }
-                    return Change.set(v | {"disabled": block}, now_ms() + KEPT_CLIENT_MS), None
-
-                await self.rec.update(K_CLIENT, sha(cid), upd)
-                if block:
-                    for g in await self.grants():
-                        if g.get("client_id") == cid:
-                            await self.revoke_grant(g["grant_id"])
-                    self.cimd_cache.pop(cid, None)
-                await self.audit(
-                    actor,
-                    "OAuth: cliente bloqueado (concessões revogadas)"
-                    if block
-                    else "OAuth: cliente desbloqueado",
-                    cid,
-                )
+                await self.admin_block_client(f.get("client", ""), path.endswith("/block-client"), actor)
             case "/admin/oauth/remove-client":
                 cid = f.get("client", "")
-                for g in await self.grants():
-                    if g.get("client_id") == cid:
-                        await self.revoke_grant(g["grant_id"])
+                await self.revoke_client_grants(cid)
                 await self.rec.delete(K_CLIENT, sha(cid))
                 await self.audit(actor, "OAuth: cliente removido", cid)
             case _:
                 return self.oerr(404, "not_found", "Ação desconhecida.")
         return self.redirect("/admin/tokens#oauth")
 
+    async def admin_revoke_grant(self, gid: str, actor: str) -> None:
+        if g := await self.revoke_grant(gid):
+            await self.audit(actor, "OAuth: concessão revogada pela administração",
+                             f"{g.get('client_name', '')} · usuário {await self.user_label(g.get('user', ''))}")  # fmt: skip
 
-def mount_oauth(app: FastAPI, templates: Jinja2Templates) -> None:  # noqa: C901
+    async def admin_block_client(self, cid: str, block: bool, actor: str) -> None:
+        def upd(cur: Any) -> tuple[Change, None]:
+            v = cur or {
+                "client_id": cid,
+                "client_name": cid,
+                "redirect_uris": [],
+                "kind": "cimd",
+                "created_at": now_ms(),
+            }
+            return Change.set(v | {"disabled": block}, now_ms() + KEPT_CLIENT_MS), None
+
+        await self.rec.update(K_CLIENT, sha(cid), upd)
+        if block:
+            await self.revoke_client_grants(cid)
+            self.cimd_cache.pop(cid, None)
+        await self.audit(
+            actor,
+            "OAuth: cliente bloqueado (concessões revogadas)" if block else "OAuth: cliente desbloqueado",
+            cid,
+        )
+
+    async def revoke_client_grants(self, cid: str) -> None:
+        for g in await self.grants():
+            if g.get("client_id") == cid:
+                await self.revoke_grant(g["grant_id"])
+
+
+# ---- routes ------------------------------------------------------------------------------------------
+router = APIRouter()
+_WK = "/.well-known/oauth-protected-resource"
+_META_METHODS = ["GET", "HEAD", "POST", "PUT", "DELETE"]
+
+
+def oauth_of(request: Request) -> OAuth:
+    """FastAPI dependency: the server `create_app` stored on the app."""
+    return cast(OAuth, request.app.state.oauth)
+
+
+async def _small(oa: OAuth, request: Request) -> bytes | Response:
+    body = b""
+    async for chunk in request.stream():
+        body += chunk
+        if len(body) > 64 * 1024:
+            return oa.oerr(413, "invalid_request", "Corpo grande demais.")
+    return body
+
+
+async def _machine(
+    oa: OAuth, request: Request, fn: Callable[[Request, bytes], Awaitable[Response]]
+) -> Response:
+    """Machine-to-machine endpoint: 404 while OAuth is off, body capped before `fn` sees it."""
+    if not oa.on:
+        return oa.not_found()
+    body = await _small(oa, request)
+    return body if isinstance(body, Response) else await fn(request, body)
+
+
+@router.api_route("/.well-known/oauth-authorization-server", methods=_META_METHODS, include_in_schema=False)
+async def as_meta(request: Request, oa: OAuth = Depends(oauth_of)) -> Response:
+    if not oa.on:
+        return oa.not_found()
+    if request.method not in ("GET", "HEAD"):
+        return oa.oerr(405, "invalid_request", "Use GET.")
+    return oa.metadata_as(request)
+
+
+@router.api_route(_WK, methods=_META_METHODS, include_in_schema=False)
+@router.api_route(_WK + "/{rest:path}", methods=_META_METHODS, include_in_schema=False)
+async def prm_meta(request: Request, rest: str = "", oa: OAuth = Depends(oauth_of)) -> Response:
+    if not oa.on:
+        return oa.not_found()
+    if request.method not in ("GET", "HEAD"):
+        return oa.oerr(405, "invalid_request", "Use GET.")
+    if rest and "/" + rest != oa.hub.mcp.path:
+        return oa.oerr(404, "not_found", "Recurso desconhecido.")
+    return oa.metadata_prm(request)
+
+
+@router.post("/oauth/register", include_in_schema=False)
+async def register(request: Request, oa: OAuth = Depends(oauth_of)) -> Response:
+    return await _machine(oa, request, oa.register)
+
+
+@router.post("/oauth/token", include_in_schema=False)
+async def token(request: Request, oa: OAuth = Depends(oauth_of)) -> Response:
+    return await _machine(oa, request, oa.token)
+
+
+@router.post("/oauth/revoke", include_in_schema=False)
+async def revoke(request: Request, oa: OAuth = Depends(oauth_of)) -> Response:
+    return await _machine(oa, request, oa.revoke)
+
+
+@router.get("/oauth/authorize", include_in_schema=False)
+async def authorize_get(request: Request, oa: OAuth = Depends(oauth_of)) -> Response:
+    return await oa.authorize_get(request) if oa.on else oa.not_found()
+
+
+@router.post("/oauth/authorize", include_in_schema=False)
+async def authorize_post(request: Request, oa: OAuth = Depends(oauth_of)) -> Response:
+    return await _machine(oa, request, oa.authorize_post)
+
+
+@router.post("/admin/oauth/{action}", include_in_schema=False)
+async def admin_action(request: Request, action: str, oa: OAuth = Depends(oauth_of)) -> Response:
+    p = principal(request)
+    body = await _small(oa, request)
+    if p is None or isinstance(body, Response):
+        return oa.oerr(401, "unauthorized", "Entre no hub.")
+    return await oa.admin_action(f"/admin/oauth/{action}", body, p.name)
+
+
+def mount_oauth(app: FastAPI, templates: Jinja2Templates) -> None:
     oa = cast(OAuth, app.state.oauth)
     oa.templates, oa.inbox = templates, app.state.inbox
-    wk = "/.well-known/oauth-protected-resource"
-
-    @app.api_route(
-        "/.well-known/oauth-authorization-server",
-        methods=["GET", "HEAD", "POST", "PUT", "DELETE"],
-        include_in_schema=False,
-    )
-    async def as_meta(request: Request) -> Response:
-        if not oa.on:
-            return oa.not_found()
-        if request.method not in ("GET", "HEAD"):
-            return oa.oerr(405, "invalid_request", "Use GET.")
-        return oa.metadata_as(request)
-
-    @app.api_route(wk, methods=["GET", "HEAD", "POST", "PUT", "DELETE"], include_in_schema=False)
-    @app.api_route(
-        wk + "/{rest:path}", methods=["GET", "HEAD", "POST", "PUT", "DELETE"], include_in_schema=False
-    )
-    async def prm_meta(request: Request, rest: str = "") -> Response:
-        if not oa.on:
-            return oa.not_found()
-        if request.method not in ("GET", "HEAD"):
-            return oa.oerr(405, "invalid_request", "Use GET.")
-        if rest and "/" + rest != oa.hub.mcp.path:
-            return oa.oerr(404, "not_found", "Recurso desconhecido.")
-        return oa.metadata_prm(request)
-
-    async def small(request: Request) -> bytes | Response:
-        body = b""
-        async for chunk in request.stream():
-            body += chunk
-            if len(body) > 64 * 1024:
-                return oa.oerr(413, "invalid_request", "Corpo grande demais.")
-        return body
-
-    def machine(fn: Callable[[Request, bytes], Any]) -> Callable[[Request], Any]:
-        async def h(request: Request) -> Response:
-            if not oa.on:
-                return oa.not_found()
-            body = await small(request)
-            return body if isinstance(body, Response) else cast(Response, await fn(request, body))
-
-        return h
-
-    app.add_api_route("/oauth/register", machine(oa.register), methods=["POST"], include_in_schema=False)
-    app.add_api_route("/oauth/token", machine(oa.token), methods=["POST"], include_in_schema=False)
-    app.add_api_route("/oauth/revoke", machine(oa.revoke), methods=["POST"], include_in_schema=False)
-
-    @app.get("/oauth/authorize", include_in_schema=False)
-    async def authorize_get(request: Request) -> Response:
-        return await oa.authorize_get(request) if oa.on else oa.not_found()
-
-    @app.post("/oauth/authorize", include_in_schema=False)
-    async def authorize_post(request: Request) -> Response:
-        if not oa.on:
-            return oa.not_found()
-        body = await small(request)
-        return body if isinstance(body, Response) else await oa.authorize_post(request, body)
-
-    @app.post("/admin/oauth/{action}", include_in_schema=False)
-    async def admin_action(request: Request, action: str) -> Response:
-        p = principal(request)
-        body = await small(request)
-        if p is None or isinstance(body, Response):
-            return oa.oerr(401, "unauthorized", "Entre no hub.")
-        return await oa.admin_action(f"/admin/oauth/{action}", body, p.name)
-
-    _ = urlsplit
+    app.include_router(router)
