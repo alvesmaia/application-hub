@@ -36,6 +36,18 @@ from hub.auth import client_ip
 from hub.state import Change
 
 
+async def _capped_body(res: httpx.Response) -> bytes:
+    """The client document, refused past 16 KiB while streaming (never buffers a huge answer)."""
+    if res.status_code >= 300:
+        raise OAuthError(f"documento do cliente respondeu {res.status_code}")
+    body = b""
+    async for chunk in res.aiter_bytes():
+        body += chunk
+        if len(body) > 16 * 1024:
+            raise OAuthError("documento do cliente grande demais")
+    return body
+
+
 class OAuthClients(OAuthBase):
     # ---- clientes ----------------------------------------------------------------------------------
     @staticmethod
@@ -95,21 +107,14 @@ class OAuthClients(OAuthBase):
             raise OAuthError(f"host do client_id não resolve: {e}") from e
 
     async def cimd_download(self, target: str, host: str) -> bytes:
-        body = b""
         try:
             async with httpx.AsyncClient(
                 timeout=5, follow_redirects=False, transport=self.cimd_transport
             ) as cli, cli.stream("GET", target, headers={"host": host, "accept": "application/json"},
                                   extensions={"sni_hostname": host}) as res:  # fmt: skip
-                if res.status_code >= 300:
-                    raise OAuthError(f"documento do cliente respondeu {res.status_code}")
-                async for chunk in res.aiter_bytes():
-                    body += chunk
-                    if len(body) > 16 * 1024:
-                        raise OAuthError("documento do cliente grande demais")
+                return await _capped_body(res)
         except httpx.HTTPError as e:
             raise OAuthError(f"documento do cliente inacessível: {e}") from e
-        return body
 
     def cimd_client(self, url: str, body: bytes) -> dict[str, Any]:
         try:
