@@ -66,13 +66,17 @@ class ConnStore:
         raw = doc.get("connections", [])
         self.storage = doc.get("storage", [])
         for c in raw:
-            for field in ("secret", "certificate"):
-                if c.get(field) and is_sealed(c[field]):
-                    if not self.vault:
-                        raise ValueError(f"{self.path}: credenciais cifradas, mas o cofre não foi aberto")
-                    c[field] = self.vault.open_value(c[field], self._aad(c, field))
+            self._open_credentials(c)
             c.update({**blank(c.get("created_at", 0)), **c})
         self.items = list(raw)
+
+    def _open_credentials(self, c: dict[str, Any]) -> None:
+        for field in ("secret", "certificate"):
+            if not (c.get(field) and is_sealed(c[field])):
+                continue
+            if not self.vault:
+                raise ValueError(f"{self.path}: credenciais cifradas, mas o cofre não foi aberto")
+            c[field] = self.vault.open_value(c[field], self._aad(c, field))
 
     def _persist(self) -> None:
         disk = json.loads(json.dumps(self.items))

@@ -42,19 +42,20 @@ class Lease:
             started = time.monotonic()
             if self._fence is not None and started >= self._valid_until:
                 self._fence = None
-            try:
-                if self._fence is None:
-                    fence = await self.db.lease_acquire(self.name, self.holder, self.ttl_ms)
-                    if fence is not None:
-                        self._fence = fence
-                        self._valid_until = started + self.ttl_ms / 1000 * 0.8
-                elif await self.db.lease_renew(self.name, self.holder, self._fence, self.ttl_ms):
-                    self._valid_until = started + self.ttl_ms / 1000 * 0.8
-                else:
-                    self._fence = None
-            except asyncpg.PostgresError:
-                pass
+            with suppress(asyncpg.PostgresError):
+                await self._acquire_or_renew(started)
             await asyncio.sleep(every)
+
+    async def _acquire_or_renew(self, started: float) -> None:
+        if self._fence is None:
+            fence = await self.db.lease_acquire(self.name, self.holder, self.ttl_ms)
+            if fence is not None:
+                self._fence = fence
+                self._valid_until = started + self.ttl_ms / 1000 * 0.8
+        elif await self.db.lease_renew(self.name, self.holder, self._fence, self.ttl_ms):
+            self._valid_until = started + self.ttl_ms / 1000 * 0.8
+        else:
+            self._fence = None
 
     async def release(self) -> None:
         self._stopped = True
