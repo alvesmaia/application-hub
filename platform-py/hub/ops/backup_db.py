@@ -6,14 +6,20 @@ from __future__ import annotations
 
 import contextlib
 import re
+import secrets
 import time
 from typing import Any
 
 from hub.ops.model import OpsError, human, now_ms
 from hub.ops.runtime import Engine, exec_in
 
-RESTORE_FILE = "/tmp/hub-restore.sql"  # noqa: S108
-ADMIN_FILE = "/tmp/hub-admin.sql"  # noqa: S108
+
+def tmp_sql(kind: str) -> str:
+    """A `psql -f` file of its own in the shared app-db container: the scheduler backs up the apps at the same time,
+    and a fixed name let one app run (or remove) another app's SQL."""
+    return f"/tmp/hub-{kind}-{secrets.token_hex(8)}.sql"  # noqa: S108 - inside the Postgres container
+
+
 SYSTEM_DBS = {"postgres", "template0", "template1"}
 _DB = re.compile(r"^[A-Za-z0-9_]{1,63}$")
 _BUCKET = re.compile(r"^[a-z0-9][a-z0-9.-]{2,62}$")
@@ -64,10 +70,11 @@ class BackupDb:
     async def _psql(self, db: str, *stmts: str) -> str:
         """Administration commands (each in autocommit, as `DROP DATABASE` requires); returns the output."""
         sql = ";\n".join(stmts) + ";\n"
+        path = tmp_sql("admin")
         rc, out = await exec_in(
             self.engine, self.db_container,
-            ["psql", "-U", self.db_admin, "-d", db, "-v", "ON_ERROR_STOP=1", "-q", "-t", "-A", "-f", ADMIN_FILE],
-            files={ADMIN_FILE: sql.encode()},
+            ["psql", "-U", self.db_admin, "-d", db, "-v", "ON_ERROR_STOP=1", "-q", "-t", "-A", "-f", path],
+            files={path: sql.encode()},
         )  # fmt: skip
         text = out.decode(errors="replace")
         if rc != 0:
@@ -75,6 +82,7 @@ class BackupDb:
         return text
 
     async def _load(self, db: str, sql: bytes, single: bool) -> tuple[int, bytes]:
+        path = tmp_sql("restore")
         cmd = [
             "psql",
             "-U",
@@ -86,9 +94,9 @@ class BackupDb:
             *(["-1"] if single else []),
             "-q",
             "-f",
-            RESTORE_FILE,
+            path,
         ]
-        return await exec_in(self.engine, self.db_container, cmd, files={RESTORE_FILE: sql})
+        return await exec_in(self.engine, self.db_container, cmd, files={path: sql})
 
     async def _restore_db(self, db: str, sql: bytes, scratch: bool) -> str:
         if not scratch:

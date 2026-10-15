@@ -10,15 +10,25 @@
   - ✅ ajuda = setup|link|check; comando desconhecido → uso + exit 2 (antes rodava check); teste
 
 ## Apps
-- ▶️ 11 · Links dos apps pela base pública (x-hub-base)
+- ✅ 11 · Links dos apps pela base pública (x-hub-base)
   - ✅ hub_sdk.render.public_base (Renderer.page usa a base do request) + coletor usa o helper
-  - ⬜ ativos
-  - ⬜ fornecedores
-  - ⬜ servicos (inclui _opened)
+  - ✅ ativos
+  - ✅ fornecedores
+  - ✅ servicos (inclui _opened)
+  - ✅ testes dos 4 apps com Postgres: 43/43/33/33
+
+## Backups
+- ✅ 16 · Backups agendados falhavam toda noite desde 07/10 (HUB-WRONG-DB / No such file)
+  - ✅ causa: apps em paralelo usavam o mesmo /tmp/hub-role.sql no app-db
+  - ✅ tmp_sql(kind): arquivo único por execução (role, admin, restore); teste da corrida
+  - ⬜ conferir o próximo backup agendado na :8090
+- ⬜ 17 · Clone p/ staging do contratos: permission denied to change default privileges (backup #9)
 
 ## Instância do dono
 - ⬜ 13 · Deploy dos 4 apps na :8090 (build + up --no-deps, pin keep-20261015)
-- ⬜ 14 · App de teste do Entra: verificar que nada usa; você apaga no portal
+- ▶️ 14 · App de teste do Entra: verificar que nada usa; você apaga no portal
+  - ✅ :8090 sem conexões cadastradas (nada depende dele)
+  - ⬜ dono apaga no portal do Entra
 
 ## Fechamento
 - ⬜ 15 · E2E dos apps, ui-sweep --quick, CHANGELOG, limpeza

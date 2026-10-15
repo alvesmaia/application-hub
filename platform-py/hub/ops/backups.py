@@ -20,7 +20,7 @@ from typing import Any
 from urllib.parse import quote, urlsplit
 
 from hub.connections.provision import ObjectStore
-from hub.ops.backup_db import _BUCKET, _DB, SYSTEM_DBS
+from hub.ops.backup_db import _BUCKET, _DB, SYSTEM_DBS, tmp_sql
 from hub.ops.backup_db import _lit as _lit
 from hub.ops.backup_db import _qi as _qi
 from hub.ops.backup_db import redact as redact
@@ -28,7 +28,6 @@ from hub.ops.backup_offsite import BackupOffsite
 from hub.ops.model import OpsError, OpsStore, now_ms
 from hub.ops.runtime import Engine, exec_in
 
-ROLE_FILE = "/tmp/hub-role.sql"  # noqa: S108 - inside the Postgres container
 PG_ROLE_PREFIX, S3_BACKUP_PREFIX = "hub_bkp_", "bkp-"
 Progress = Callable[[int, str], None]
 
@@ -136,11 +135,11 @@ class Backups(BackupOffsite):
     # ---- credenciais ------------------------------------------------------------------------------------
     async def ensure_pg_role(self, db: str, rotate: bool = False) -> tuple[str, str]:
         pw = self.store.secret(f"backup.pg:{db}", rotate)
-        sql = backup_role_sql(db, pw)
+        sql, path = backup_role_sql(db, pw), tmp_sql("role")
         rc, out = await exec_in(
             self.engine, self.db_container,
-            ["psql", "-U", self.db_admin, "-d", db, "-v", "ON_ERROR_STOP=1", "-q", "-f", ROLE_FILE],
-            files={ROLE_FILE: sql.encode()},
+            ["psql", "-U", self.db_admin, "-d", db, "-v", "ON_ERROR_STOP=1", "-q", "-f", path],
+            files={path: sql.encode()},
         )  # fmt: skip
         text = out.decode(errors="replace")
         if rc != 0:
