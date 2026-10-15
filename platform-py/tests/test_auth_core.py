@@ -1,5 +1,7 @@
 import json
 import time
+from pathlib import Path
+from typing import Any, cast
 
 import pytest
 from fastapi import Request
@@ -126,3 +128,35 @@ async def test_auth_store_lifecycle(tmp_path, monkeypatch):
     data["tokens"][0]["revoked_at"] = time.time_ns() // 1_000_000
     store.path.write_text(json.dumps(data), encoding="utf-8")
     assert await store.bearer(secret) is None
+
+
+async def test_auth_file_is_written_while_the_cross_replica_lock_is_held(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # writing after file_lock was released let another replica read the old file and overwrite it (lost update)
+    import contextlib
+
+    import hub.auth as auth_mod
+
+    held = {"now": False, "at_write": None}
+
+    class FakeDb:
+        @contextlib.asynccontextmanager
+        async def file_lock(self, name: str, write: bool = False):  # type: ignore[no-untyped-def]
+            held["now"] = True
+            try:
+                yield
+            finally:
+                held["now"] = False
+
+    real = auth_mod.write_auth_file
+
+    def spy(path: Path, data: dict[str, object], db: bool) -> None:
+        held["at_write"] = held["now"]
+        real(path, data, db)
+
+    monkeypatch.setattr(auth_mod, "write_auth_file", spy)
+    store = auth_mod.AuthStore(tmp_path / "auth.json", cast(Any, FakeDb()))
+    async with store.locked(True) as d:
+        d["next_id"] = 7
+    assert held["at_write"] is True

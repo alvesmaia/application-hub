@@ -125,15 +125,17 @@ class AuthStore:
     @asynccontextmanager
     async def locked(self, write: bool = False) -> AsyncIterator[dict[str, Any]]:
         async with self._lock:
-            if self.db:
+            if self.db:  # the write stays inside the cross-replica lock, or another replica can overwrite it
                 async with self.db.file_lock("auth.json", write=write):
                     data = self._read()
                     yield data
+                    if write:
+                        write_auth_file(self.path, data, True)
             else:
                 data = self._read()
                 yield data
-            if write:
-                write_auth_file(self.path, data, bool(self.db))
+                if write:
+                    write_auth_file(self.path, data, False)
 
     def _read(self) -> dict[str, Any]:
         try:
