@@ -177,7 +177,7 @@ class AuditChain:
                 return self._append(event, migrated)
         return self._append(event, migrated)
 
-    def _append(self, event: dict[str, Any], migrated: bool) -> int:  # noqa: PLR0915
+    def _append(self, event: dict[str, Any], migrated: bool) -> int:
         AuditEntry.model_validate(event)
         if self.blocked:
             raise RuntimeError(f"audit chain blocked: {self.blocked}")
@@ -188,36 +188,47 @@ class AuditChain:
         line: dict[str, Any] = {"t": "e", "seq": seq, "prev": prev, "event": encoded, "hash": digest}
         if migrated:
             line["migrated"] = True
-        with self.path.open("a", encoding="utf-8", newline="\n") as f:
-            f.write(_json(line) + "\n")
-            f.flush()
-            os.fsync(f.fileno())
-        head: dict[str, Any] = {"seq": seq, "hash": digest, "event_id": event["id"], "sig": "", "pk": ""}
-        if self.vault:
-            head["pk"] = self.vault.signing_public_key
-            head["sig"] = self.vault.sign(_head_msg(seq, digest, event["id"]))
-        tmp = self.head_path.with_suffix(".json.tmp")
-        tmp.write_text(_json(head), encoding="utf-8")
-        os.replace(tmp, self.head_path)
-        if self.vault:
-            self.vault.set_protected(
-                ANCHOR,
-                _json(
-                    {
-                        "initialized": True,
-                        "seq": seq,
-                        "hash": digest,
-                        "event_id": event["id"],
-                        "floor_seq": 0,
-                        "archived": 0,
-                        "at": time.time_ns() // 1_000_000,
-                    }
-                ),
-            )
+        self._write_line(line)
+        head = self._write_head(seq, digest, event["id"])
+        self._write_anchor(seq, digest, event["id"])
         self.blocked = None
         self._publish_head(head)
         self._checkpoint_if_due(seq, digest)
         return seq
+
+    def _write_line(self, line: dict[str, Any]) -> None:
+        with self.path.open("a", encoding="utf-8", newline="\n") as f:
+            f.write(_json(line) + "\n")
+            f.flush()
+            os.fsync(f.fileno())
+
+    def _write_head(self, seq: int, digest: str, event_id: int) -> dict[str, Any]:
+        head: dict[str, Any] = {"seq": seq, "hash": digest, "event_id": event_id, "sig": "", "pk": ""}
+        if self.vault:
+            head["pk"] = self.vault.signing_public_key
+            head["sig"] = self.vault.sign(_head_msg(seq, digest, event_id))
+        tmp = self.head_path.with_suffix(".json.tmp")
+        tmp.write_text(_json(head), encoding="utf-8")
+        os.replace(tmp, self.head_path)
+        return head
+
+    def _write_anchor(self, seq: int, digest: str, event_id: int) -> None:
+        if not self.vault:
+            return
+        self.vault.set_protected(
+            ANCHOR,
+            _json(
+                {
+                    "initialized": True,
+                    "seq": seq,
+                    "hash": digest,
+                    "event_id": event_id,
+                    "floor_seq": 0,
+                    "archived": 0,
+                    "at": time.time_ns() // 1_000_000,
+                }
+            ),
+        )
 
     @staticmethod
     def head_file() -> Path | None:

@@ -79,7 +79,7 @@ def add_sharepoint(name: str, tenant: str, client_id: str, site: str) -> int:
     return 0
 
 
-def main(argv: list[str] | None = None) -> int:  # noqa: PLR0915
+def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="python -m hub.admin")
     sub = p.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("create-admin", help="cria (ou reinicia) um administrador com senha temporária")
@@ -99,19 +99,25 @@ def main(argv: list[str] | None = None) -> int:  # noqa: PLR0915
     sp.add_argument("--tenant", required=True)
     sp.add_argument("--client-id", required=True)
     sp.add_argument("--site", required=True)
-    a = p.parse_args(argv)
+    return p
+
+
+def set_entra_secret() -> int:
+    secret = (getpass.getpass("Segredo do cliente: ") if sys.stdin.isatty() else sys.stdin.readline()).strip()
+    if not secret:
+        print("segredo vazio; nada foi gravado", file=sys.stderr)
+        return 1
+    Vault.open(Path(os.getenv("HUB_DATA_DIR", "/data"))).set_protected(entra.VAULT_SECRET, secret)
+    print("segredo do Entra ID guardado no cofre; reinicie o hub")
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    a = _parser().parse_args(argv)
     if a.cmd == "add-sharepoint":
         return add_sharepoint(a.name, a.tenant, a.client_id, a.site)
     if a.cmd == "set-entra-secret":
-        secret = (
-            getpass.getpass("Segredo do cliente: ") if sys.stdin.isatty() else sys.stdin.readline()
-        ).strip()
-        if not secret:
-            print("segredo vazio; nada foi gravado", file=sys.stderr)
-            return 1
-        Vault.open(Path(os.getenv("HUB_DATA_DIR", "/data"))).set_protected(entra.VAULT_SECRET, secret)
-        print("segredo do Entra ID guardado no cofre; reinicie o hub")
-        return 0
+        return set_entra_secret()
     store = AuthStore(Path(os.getenv("HUB_DATA_DIR", "/data")) / "auth.json")
     if a.cmd == "create-admin":
         text = asyncio.run(create_admin(store, a.email, a.name))

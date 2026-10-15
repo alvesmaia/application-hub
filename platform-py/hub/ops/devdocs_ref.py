@@ -104,7 +104,34 @@ def _sig(fn: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
     return f"{pre}{fn.name}({ast.unparse(a)}){ret}"
 
 
-def sdk_reference() -> str:  # noqa: C901, PLR0915
+def _public_fn(node: ast.stmt) -> ast.FunctionDef | ast.AsyncFunctionDef | None:
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and not node.name.startswith("_"):
+        return node
+    return None
+
+
+def _class_items(node: ast.ClassDef) -> list[str]:
+    items = [f"### class `{node.name}`", "", _first(ast.get_docstring(node)), ""]
+    for m in filter(None, map(_public_fn, node.body)):
+        d = _first(ast.get_docstring(m))
+        items.append(f"- `{_sig(m)}`" + (f" — {' '.join(d.split())}" if d else ""))
+    if items[-1].startswith("- "):
+        items.append("")
+    return items
+
+
+def _module_items(tree: ast.Module) -> list[str]:
+    """Public functions and classes (with their public methods) of one module, as Markdown lines."""
+    items: list[str] = []
+    for node in tree.body:
+        if fn := _public_fn(node):
+            items += [f"### `{_sig(fn)}`", "", _first(ast.get_docstring(fn)), ""]
+        elif isinstance(node, ast.ClassDef) and not node.name.startswith("_"):
+            items += _class_items(node)
+    return items
+
+
+def sdk_reference() -> str:
     src = _REPO / "platform" / "sdk-python" / "src" / "hub_sdk"
     lines = [_GEN, "# SDK reference (`hub_sdk`)", "",
              "Generated from the signatures and docstrings of the `hub_sdk` package. Public names only (no `_`).", ""]  # fmt: skip
@@ -114,18 +141,7 @@ def sdk_reference() -> str:  # noqa: C901, PLR0915
             continue
         tree = ast.parse(f.read_text(encoding="utf-8"))
         name = "hub_sdk" if mod == "__init__" else f"hub_sdk.{mod}"
-        items: list[str] = []
-        for node in tree.body:
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and not node.name.startswith("_"):
-                items += [f"### `{_sig(node)}`", "", _first(ast.get_docstring(node)), ""]
-            elif isinstance(node, ast.ClassDef) and not node.name.startswith("_"):
-                items += [f"### class `{node.name}`", "", _first(ast.get_docstring(node)), ""]
-                for m in node.body:
-                    if isinstance(m, (ast.FunctionDef, ast.AsyncFunctionDef)) and not m.name.startswith("_"):
-                        d = _first(ast.get_docstring(m))
-                        items.append(f"- `{_sig(m)}`" + (f" — {' '.join(d.split())}" if d else ""))
-                if items[-1].startswith("- "):
-                    items.append("")
+        items = _module_items(tree)
         doc = _first(ast.get_docstring(tree))
         if not items and not doc:
             continue

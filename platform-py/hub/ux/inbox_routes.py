@@ -103,7 +103,19 @@ def bell_of(request: Request) -> tuple[int, list[dict[str, Any]]]:
     return InboxStore.unread(entries), [e for e in entries if not e["archived"] and e["in_app"]][:8]
 
 
-async def stream_events(  # noqa: PLR0915
+async def _woken(wake: asyncio.Queue[None], debounce: float, keepalive: float) -> bool:
+    """False on keepalive timeout; True once woken, after a burst of wake-ups is drained."""
+    try:
+        await asyncio.wait_for(wake.get(), keepalive)
+    except TimeoutError:
+        return False
+    await asyncio.sleep(debounce)  # junta rajadas
+    while not wake.empty():
+        wake.get_nowait()
+    return True
+
+
+async def stream_events(
     inbox: InboxStore,
     count: Callable[[], int],
     *,
@@ -118,14 +130,9 @@ async def stream_events(  # noqa: PLR0915
         yield "event: ready\ndata: {}\n\n"
         yield f"event: inbox\ndata: {json.dumps({'unread': last})}\n\n"
         while True:
-            try:
-                await asyncio.wait_for(wake.get(), keepalive)
-            except TimeoutError:
+            if not await _woken(wake, debounce, keepalive):
                 yield ": keepalive\n\n"
                 continue
-            await asyncio.sleep(debounce)  # junta rajadas
-            while not wake.empty():
-                wake.get_nowait()
             if (n := count()) != last:
                 last = n
                 yield f"event: inbox\ndata: {json.dumps({'unread': n})}\n\n"

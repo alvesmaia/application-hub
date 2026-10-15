@@ -107,7 +107,50 @@ class BackupDb:
             )
         return f"banco {db} verificado em banco temporário ({human(len(sql))})"
 
-    async def _restore_db_aside(self, db: str, sql: bytes) -> str:  # noqa: C901, PLR0915
+    async def _rename_aside(self, d: str, a: str) -> tuple[bool, str]:
+        """Renames the current database (literal `d`) to the aside name (literal `a`); returns (it existed, its owner)."""
+        out = await self._psql(
+            "postgres",
+            f"DO $$DECLARE i int := 0; BEGIN IF EXISTS (SELECT 1 FROM pg_database WHERE datname = {d}) THEN LOOP "
+            f"PERFORM pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = {d} AND pid <> pg_backend_pid(); "
+            f"PERFORM pg_stat_clear_snapshot(); EXIT WHEN i > 100 OR NOT EXISTS (SELECT 1 FROM pg_stat_activity "
+            f"WHERE datname = {d} AND pid <> pg_backend_pid()); PERFORM pg_sleep(0.1); i := i + 1; END LOOP; "
+            f"EXECUTE format('ALTER DATABASE %I RENAME TO %I', {d}, {a}); END IF; END$$",
+            f"SELECT 'hub:aside=' || EXISTS (SELECT 1 FROM pg_database WHERE datname = {a})",
+            f"SELECT 'hub:owner=' || coalesce((SELECT pg_get_userbyid(datdba) FROM pg_database WHERE datname = {a}), '')",
+        )
+        owner = next(
+            (ln[10:] for ln in out.splitlines() if ln.startswith("hub:owner=") and ln[10:]), self.db_admin
+        )
+        return "hub:aside=true" in out, owner
+
+    async def _load_fresh(self, db: str, d: str, a: str, owner: str, sql: bytes) -> None:
+        """New database with the original name, same owner/grants/comment as the aside copy, loaded with the dump."""
+        await self._psql(
+            "postgres",
+            f"CREATE DATABASE {_qi(db)} OWNER {_qi(owner)}",
+            f"REVOKE ALL ON DATABASE {_qi(db)} FROM PUBLIC",
+            f"GRANT CONNECT, TEMPORARY ON DATABASE {_qi(db)} TO {_qi(owner)}",
+            f"DO $$DECLARE c text; BEGIN SELECT shobj_description(oid, 'pg_database') INTO c FROM pg_database "
+            f"WHERE datname = {a}; IF c IS NOT NULL THEN EXECUTE format('COMMENT ON DATABASE %I IS %L', {d}, c); END IF; END$$",
+        )
+        rc, out2 = await self._load(db, sql, single=False)
+        if rc != 0:
+            raise OpsError(_errtail(out2))
+        if (
+            owner != self.db_admin
+        ):  # dump without owners, loaded by the administrator: the objects go back to the app's role
+            await self._psql(db, chown_sql(owner))
+
+    async def _undo_aside(self, db: str, aside: str, had: bool | None) -> None:
+        undo = [f"DROP DATABASE IF EXISTS {_qi(db)} WITH (FORCE)"]
+        if had:
+            undo.append(f"ALTER DATABASE {_qi(aside)} RENAME TO {_qi(db)}")
+        if had is not None:
+            with contextlib.suppress(OpsError):
+                await self._psql("postgres", *undo)
+
+    async def _restore_db_aside(self, db: str, sql: bytes) -> str:
         """Non-transactional mode: the current database is renamed "aside" (`<db>_pre<n>`, intact), the dump goes into a new
         database with the original name, and only at the end is the aside copy deleted; any failure gives the original its name back."""
         if db in SYSTEM_DBS or db.startswith("pg_") or not _DB.match(db):
@@ -116,42 +159,10 @@ class BackupDb:
         d, a = _lit(db), _lit(aside)
         had: bool | None = None  # None until the rename answers: a failure still restores the original
         try:
-            out = await self._psql(
-                "postgres",
-                f"DO $$DECLARE i int := 0; BEGIN IF EXISTS (SELECT 1 FROM pg_database WHERE datname = {d}) THEN LOOP "
-                f"PERFORM pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = {d} AND pid <> pg_backend_pid(); "
-                f"PERFORM pg_stat_clear_snapshot(); EXIT WHEN i > 100 OR NOT EXISTS (SELECT 1 FROM pg_stat_activity "
-                f"WHERE datname = {d} AND pid <> pg_backend_pid()); PERFORM pg_sleep(0.1); i := i + 1; END LOOP; "
-                f"EXECUTE format('ALTER DATABASE %I RENAME TO %I', {d}, {a}); END IF; END$$",
-                f"SELECT 'hub:aside=' || EXISTS (SELECT 1 FROM pg_database WHERE datname = {a})",
-                f"SELECT 'hub:owner=' || coalesce((SELECT pg_get_userbyid(datdba) FROM pg_database WHERE datname = {a}), '')",
-            )
-            had = "hub:aside=true" in out
-            owner = next(
-                (ln[10:] for ln in out.splitlines() if ln.startswith("hub:owner=") and ln[10:]), self.db_admin
-            )
-            await self._psql(
-                "postgres",
-                f"CREATE DATABASE {_qi(db)} OWNER {_qi(owner)}",
-                f"REVOKE ALL ON DATABASE {_qi(db)} FROM PUBLIC",
-                f"GRANT CONNECT, TEMPORARY ON DATABASE {_qi(db)} TO {_qi(owner)}",
-                f"DO $$DECLARE c text; BEGIN SELECT shobj_description(oid, 'pg_database') INTO c FROM pg_database "
-                f"WHERE datname = {a}; IF c IS NOT NULL THEN EXECUTE format('COMMENT ON DATABASE %I IS %L', {d}, c); END IF; END$$",
-            )
-            rc, out2 = await self._load(db, sql, single=False)
-            if rc != 0:
-                raise OpsError(_errtail(out2))
-            if (
-                owner != self.db_admin
-            ):  # dump without owners, loaded by the administrator: the objects go back to the app's role
-                await self._psql(db, chown_sql(owner))
+            had, owner = await self._rename_aside(d, a)
+            await self._load_fresh(db, d, a, owner, sql)
         except OpsError as e:
-            undo = [f"DROP DATABASE IF EXISTS {_qi(db)} WITH (FORCE)"]
-            if had:
-                undo.append(f"ALTER DATABASE {_qi(aside)} RENAME TO {_qi(db)}")
-            if had is not None:
-                with contextlib.suppress(OpsError):
-                    await self._psql("postgres", *undo)
+            await self._undo_aside(db, aside, had)
             raise OpsError(
                 f"restauração de {db} falhou ({'banco original devolvido' if had else 'sem banco anterior'}): {e.message}"
             ) from e

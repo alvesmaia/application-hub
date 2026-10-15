@@ -136,14 +136,10 @@ def _unavailable(app: AppEntry, status: int) -> Response:
     )
 
 
-def build_upstream_headers(  # noqa: C901, PLR0915
-    req_headers: list[tuple[str, str]],
-    app: AppEntry,
-    identity: Identity,
-    env: str,
-    key: bytes | None,
-    now: int | None = None,
-) -> list[tuple[str, str]]:
+def _forwarded_request_headers(
+    req_headers: list[tuple[str, str]], app: AppEntry
+) -> tuple[list[tuple[str, str]], list[str]]:
+    """Client headers the upstream may see, plus the surviving cookies (sent joined, after them)."""
     out: list[tuple[str, str]] = []
     cookies: list[str] = []
     for k, v in req_headers:
@@ -152,11 +148,20 @@ def build_upstream_headers(  # noqa: C901, PLR0915
             continue
         if lk == "cookie":
             cookies += filter_request_cookies(v)
-        elif lk == "authorization":
-            if authorization_allowed(v, app.forward_auth_schemes):
-                out.append((k, v))
-        else:
+        elif lk != "authorization" or authorization_allowed(v, app.forward_auth_schemes):
             out.append((k, v))
+    return out, cookies
+
+
+def build_upstream_headers(
+    req_headers: list[tuple[str, str]],
+    app: AppEntry,
+    identity: Identity,
+    env: str,
+    key: bytes | None,
+    now: int | None = None,
+) -> list[tuple[str, str]]:
+    out, cookies = _forwarded_request_headers(req_headers, app)
     if cookies:
         out.append(("cookie", "; ".join(cookies)))
     ident = identity.header_value()
@@ -172,7 +177,19 @@ def build_upstream_headers(  # noqa: C901, PLR0915
     return out
 
 
-def filter_response_headers(raw: list[tuple[str, str]], app_id: str) -> list[tuple[bytes, bytes]]:  # noqa: C901
+def _response_header(lk: str, v: str, app_id: str) -> tuple[bytes, bytes] | None:
+    """One upstream header as the browser receives it, or None to drop it."""
+    if lk == "set-cookie":
+        c = sanitize_set_cookie(v)
+        return None if c is None else (b"set-cookie", c.encode("latin-1", "replace"))
+    if lk == "location":
+        pub = public_location(app_id, v)
+        if pub is not None:
+            v = pub
+    return (lk.encode("latin-1"), v.encode("latin-1", "replace"))
+
+
+def filter_response_headers(raw: list[tuple[str, str]], app_id: str) -> list[tuple[bytes, bytes]]:
     listed: set[str] = set()
     for k, v in raw:
         if k.lower() == "connection":
@@ -182,16 +199,9 @@ def filter_response_headers(raw: list[tuple[str, str]], app_id: str) -> list[tup
         lk = k.lower()
         if lk in HOP_BY_HOP or lk in listed or lk in ("date", "server") or lk.startswith("x-hub-"):
             continue
-        if lk == "set-cookie":
-            c = sanitize_set_cookie(v)
-            if c is not None:
-                out.append((b"set-cookie", c.encode("latin-1", "replace")))
-            continue
-        if lk == "location":
-            pub = public_location(app_id, v)
-            if pub is not None:
-                v = pub
-        out.append((lk.encode("latin-1"), v.encode("latin-1", "replace")))
+        h = _response_header(lk, v, app_id)
+        if h is not None:
+            out.append(h)
     return out
 
 

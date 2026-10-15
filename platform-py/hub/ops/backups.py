@@ -100,6 +100,19 @@ def _collect(tmp: str) -> dict[str, bytes]:
     }
 
 
+def _write_volume_files(files: dict[str, bytes], vol_dir: Callable[[str], Path]) -> None:
+    """Writes the `files/<vol>/<rel>` parts under `vol_dir(vol)`, refusing any path that escapes it."""
+    for n, data in files.items():
+        if not n.startswith("files/"):
+            continue
+        vol, rel = n[6:].split("/", 1)
+        dest = (vol_dir(vol) / rel).resolve()
+        if not str(dest).startswith(str(vol_dir(vol).resolve())):
+            raise OpsError(f"caminho inseguro no backup: {n}")
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(data)
+
+
 def parse_targets(env_vars: dict[str, str]) -> tuple[str | None, str | None]:
     """(database, bucket) of the app from the injected variables (`HUB_DB_URL`, `HUB_S3_BUCKET`)."""
     url = env_vars.get("HUB_DB_URL", "")
@@ -234,22 +247,33 @@ class Backups(BackupOffsite):
         (d / name).write_bytes(buf.getvalue())
         return buf.getvalue()
 
-    async def create_bundle(  # noqa: PLR0915
-        self, app: str, env: str, volumes: list[str], hooks: bool, progress: Progress
-    ) -> tuple[str, str, dict[str, Any]]:  # fmt: skip
-        """Writes `<data>/backups/<app>/<app>-<ms>.zip`; returns (name, sha256, manifest)."""
-        started = now_ms()
-        targets = parse_targets(await self.app_env(app, env))
+    async def _collect_paused(
+        self,
+        app: str,
+        targets: tuple[str | None, str | None],
+        volumes: list[str],
+        hooks: bool,
+        progress: Progress,
+    ) -> tuple[list[dict[str, Any]], dict[str, bytes], list[str]]:
+        """`_collect_parts` between the app's `pre`/`post` hooks (when asked for and configured)."""
         paused = False
         if hooks and self.hook:
             progress(10, "Pausando gravações do app (hook pre)")
             await self.hook(app, "pre")
             paused = True
         try:
-            parts, blobs, notes = await self._collect_parts(app, targets, volumes, progress)
+            return await self._collect_parts(app, targets, volumes, progress)
         finally:
             if paused and self.hook:
                 await self.hook(app, "post")
+
+    async def create_bundle(
+        self, app: str, env: str, volumes: list[str], hooks: bool, progress: Progress
+    ) -> tuple[str, str, dict[str, Any]]:  # fmt: skip
+        """Writes `<data>/backups/<app>/<app>-<ms>.zip`; returns (name, sha256, manifest)."""
+        started = now_ms()
+        targets = parse_targets(await self.app_env(app, env))
+        parts, blobs, notes = await self._collect_paused(app, targets, volumes, hooks, progress)
         if not parts:
             raise OpsError("Nada a copiar: o app não tem banco, bucket nem volumes com dados.")
         progress(80, "Empacotando e calculando sha256")
@@ -300,7 +324,7 @@ class Backups(BackupOffsite):
                 raise OpsError(f"Conferência sha256 falhou em {n}.")
         return man, files
 
-    async def restore_bundle(  # noqa: C901
+    async def restore_bundle(
         self, app: str, env: str, name: str, sha: str, action: str, progress: Progress
     ) -> tuple[int, str]:
         if action == "clone":
@@ -314,14 +338,7 @@ class Backups(BackupOffsite):
                 progress(50, f"{'Testando' if action == 'test' else 'Restaurando'} o banco {db}")
                 done.append(await self._restore_db(db, data, scratch=action == "test"))
         if action == "restore":
-            for n, data in files.items():
-                if n.startswith("files/"):
-                    vol, rel = n[6:].split("/", 1)
-                    dest = (self._volume_dir(app, vol) / rel).resolve()
-                    if not str(dest).startswith(str(self._volume_dir(app, vol).resolve())):
-                        raise OpsError(f"caminho inseguro no backup: {n}")
-                    dest.parent.mkdir(parents=True, exist_ok=True)
-                    dest.write_bytes(data)
+            _write_volume_files(files, lambda vol: self._volume_dir(app, vol))
             if any(n.startswith("bucket/") for n in files):
                 done.append(
                     await self._restore_bucket(
@@ -330,13 +347,8 @@ class Backups(BackupOffsite):
                 )
         return len(files), " · ".join(done) or f"{len(files)} arquivos conferidos (sha256)"
 
-    async def clone_to_staging(  # noqa: C901, PLR0915
-        self, app: str, env: str, name: str, sha: str, progress: Progress
-    ) -> tuple[int, str]:
-        """Clones the backup to staging: the dump goes into staging's own database (objects owned by its role) and the volumes
-        into the `<app>__staging` folder; the production database/bucket are not touched."""
-        progress(20, "Conferindo sha256 de cada parte")
-        _, files = self.read_bundle(app, env, name, sha)
+    async def _staging_db(self, app: str) -> str:
+        """Staging's own database, refused when missing, not created yet or shared with production."""
         sdb, _b = parse_targets(await self.app_env(app, "staging"))
         if not sdb:
             raise OpsError("Staging sem banco próprio: provisione o banco de staging (Variáveis › Banco próprio de staging) antes de clonar.")  # fmt: skip
@@ -349,20 +361,23 @@ class Backups(BackupOffsite):
         ).strip()
         if not owner:
             raise OpsError(f"O banco de staging {sdb} não existe: provisione-o antes de clonar.")
+        return sdb
+
+    async def clone_to_staging(
+        self, app: str, env: str, name: str, sha: str, progress: Progress
+    ) -> tuple[int, str]:
+        """Clones the backup to staging: the dump goes into staging's own database (objects owned by its role) and the volumes
+        into the `<app>__staging` folder; the production database/bucket are not touched."""
+        progress(20, "Conferindo sha256 de cada parte")
+        _, files = self.read_bundle(app, env, name, sha)
+        sdb = await self._staging_db(app)
         done: list[str] = []
         for n, data in files.items():
             if n.startswith("db/"):
                 progress(55, f"Clonando {n[3:-4]} para o banco de staging {sdb}")
                 done.append(await self._restore_db_aside(sdb, data))
         stg = self.data_dir / "apps" / f"{app}__staging"
-        for n, data in files.items():
-            if n.startswith("files/"):
-                vol, rel = n[6:].split("/", 1)
-                dest = (stg / vol / rel).resolve()
-                if not str(dest).startswith(str((stg / vol).resolve())):
-                    raise OpsError(f"caminho inseguro no backup: {n}")
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                dest.write_bytes(data)
+        _write_volume_files(files, lambda vol: stg / vol)
         return len(files), " · ".join(done) or f"{len(files)} arquivos clonados para staging"
 
     async def _restore_bucket(self, bucket: str, files: dict[str, bytes]) -> str:
