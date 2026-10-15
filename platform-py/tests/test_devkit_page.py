@@ -205,3 +205,10 @@ def test_developers_menu_entry_follows_the_old_rail_rule() -> None:
 
     assert can_open("/developers", ["editar_configuracoes"])
     assert not can_open("/developers", ["ver_auditoria"]) and not can_open("/developers", [])
+
+
+def test_signed_in_docs_keep_the_account_theme(hub: TestClient) -> None:
+    """Standalone layout, but a signed-in reader keeps the theme of their account (default light);
+    visitors follow the system (`auto`)."""
+    assert '<html lang="pt-BR" data-theme="light"' in hub.get("/developers").text
+    assert 'data-theme="auto"' in TestClient(hub.app).get("/developers").text

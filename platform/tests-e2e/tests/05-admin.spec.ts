@@ -50,7 +50,10 @@ test('variáveis: criar, segredo nunca revelável, rotacionar e aplicar', async 
   await page.click('tr[data-ops-row="fornecedores|producao"]');
   await page.locator('[data-ops-detail="fornecedores|producao"] [data-ops-rotate="fornecedores|token"]').click();
   await expect(toast(page)).toContainText('rotacionada');
-  const apply = page.locator('[data-ops-apply="fornecedores"]').first();
+  // After the reload, Apply lives in the row's ⋯ menu.
+  const ctRow = page.locator('tr[data-ops-row="fornecedores|producao"]');
+  await ctRow.locator('.hub-row-menu summary').click();
+  const apply = ctRow.locator('[data-ops-apply="fornecedores"]');
   await expect(apply).toBeVisible();
   await apply.click();
   // Waits for the final result (not the "Recreating…" warning from when it starts).

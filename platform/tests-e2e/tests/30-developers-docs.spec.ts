@@ -76,7 +76,7 @@ test('developers: Copiar prompt e copiar bloco de código @core', async ({ page 
   await expect(box.getByRole('button', { name: 'Prompt copiado' })).toBeVisible();
   await expect(box.locator('[data-hub-copy-prompt-status]')).toHaveText('Prompt copiado');
   const full = (await copied(page))[0];
-  expect(full).toMatch(/^Siga as instruções em http\S*\/dev\/docs\/agente\.md para criar e publicar um app neste Application Hub\.$/);
+  expect(full).toMatch(/^Siga as instruções em http\S*\/dev\/docs\/AGENTS.md para criar e publicar um app neste Application Hub\.$/);
   await page.screenshot({ path: path.join(SHOTS, 'docs-comecar-copiado.png') });
   await expect(box.getByRole('button', { name: 'Copiar prompt' })).toBeVisible({ timeout: 4000 });
   await page.locator('.dev-code').first().getByRole('button', { name: 'Copiar' }).click();
@@ -127,7 +127,7 @@ test.describe('documentação pública (sem sessão)', () => {
     await expect(page.locator('.dev-code .hl-nb, .dev-code [class^="hl-"]').first()).toBeVisible();
     await page.locator('[data-hub-copy-prompt-button]').click();
     await expect(page.locator('[data-hub-copy-prompt-button]')).toContainText('Prompt copiado');
-    expect((await copied(page))[0]).toMatch(/\/dev\/docs\/agente\.md/);
+    expect((await copied(page))[0]).toMatch(/\/dev\/docs\/AGENTS.md/);
     const md = await page.request.get('/dev/docs/AGENTS.md');
     expect(md.status()).toBe(200);
     expect(md.headers()['content-type']).toContain('text/markdown');
