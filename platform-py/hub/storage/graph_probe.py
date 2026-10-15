@@ -50,7 +50,7 @@ async def _locate(g: GraphClient, s: Steps) -> str:
     return cast(str, await s.run("drive", drive) or "")
 
 
-async def _write_read_delete(g: GraphClient, s: Steps) -> None:  # noqa: PLR0915
+async def _write_read_delete(g: GraphClient, s: Steps) -> None:
     probe_name = f".hub-sonda-{random.randrange(16**8):08x}.txt"  # noqa: S311
     data = bytes(random.choices(b"abcdefghijklmnopqrstuvwxyz0123456789", k=64))  # noqa: S311
 
@@ -72,6 +72,10 @@ async def _write_read_delete(g: GraphClient, s: Steps) -> None:  # noqa: PLR0915
     if not wrote:
         s.steps.append({"key": "delete", "ok": None, "detail": "", "ms": 0})
         return
+    await _delete_probe(g, s, probe_name)
+
+
+async def _delete_probe(g: GraphClient, s: Steps, probe_name: str) -> None:
     t0 = time.monotonic()
     try:
         await g.delete(probe_name)

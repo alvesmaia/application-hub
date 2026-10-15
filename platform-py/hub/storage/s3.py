@@ -298,7 +298,7 @@ class S3Client:
         sig = hmac.new(_signing_key(self.cfg.secret_key, date, self.cfg.region), sts.encode(), hashlib.sha256)
         return f"{base}{path_enc}?{cq}&X-Amz-Signature={sig.hexdigest()}"
 
-    async def test(self) -> list[dict[str, Any]]:  # noqa: PLR0915
+    async def test(self) -> list[dict[str, Any]]:
         s = Steps()
 
         async def bucket() -> tuple[None, str]:
@@ -325,12 +325,15 @@ class S3Client:
 
         wrote = await s.run("write", write)
         await s.run("read", read)
-        if wrote:
-            try:
-                await self.delete(probe)
-                s.steps.append({"key": "delete", "ok": True, "detail": "Arquivo de sonda apagado.", "ms": 0})
-            except StorageError as e:
-                s.steps.append({"key": "delete", "ok": False, "detail": e.message, "ms": 0})
-        else:
-            s.steps.append({"key": "delete", "ok": None, "detail": "", "ms": 0})
+        await self._delete_probe(s, probe, bool(wrote))
         return s.steps
+
+    async def _delete_probe(self, s: Steps, probe: str, wrote: bool) -> None:
+        if not wrote:
+            s.steps.append({"key": "delete", "ok": None, "detail": "", "ms": 0})
+            return
+        try:
+            await self.delete(probe)
+            s.steps.append({"key": "delete", "ok": True, "detail": "Arquivo de sonda apagado.", "ms": 0})
+        except StorageError as e:
+            s.steps.append({"key": "delete", "ok": False, "detail": e.message, "ms": 0})
