@@ -13,7 +13,9 @@
   - ✅ /developers* sempre sem a barra lateral; logado vê "Voltar ao início"
 
 ## Configuração das apps
-- ▶️ 20 · /admin/env: remover a seção "por aplicação"; tabela de variáveis ganha coluna Aplicação com filtro dropdown de múltipla seleção
+- ✅ 20 · /admin/env: remover a seção "por aplicação"; tabela de variáveis ganha coluna Aplicação com filtro dropdown de múltipla seleção
+  - ✅ coluna Aplicação + filtro ?app= (checkboxes, GET); sem vínculo só aparece sem filtro
+  - ✅ botões de banco/token (provisionar, staging, rotacionar) foram para Containers › detalhes do app; mensagens apontam para lá
 
 ## Inbox
 - ✅ 22 · Filtros em dropdown e paginação
@@ -21,7 +23,14 @@
   - ✅ lista paginada (pager mantém o filtro; limite de 200 removido)
 
 ## Header
-- ▶️ 23 · Ícone do GitHub no header (HUB_SOURCE_URL; padrão = repositório oficial; vazio esconde)
+- ✅ 23 · Ícone do GitHub no header (HUB_SOURCE_URL; padrão = repositório oficial; vazio esconde)
+
+## Docs
+- ✅ 24 · Prompt de copiar aponta para /dev/docs/AGENTS.md (regras do app em AGENTS-app.md; nomes antigos → 308)
+
+## MCP / OAuth
+- ⬜ 25 · Avisos "Duplicate Operation ID" nos apps desde o openapi_of da tarefa 10
+- ⛔ 26 · Login OAuth do MCP falha externamente (cliente registrou às 18:21 e parou) — aguardando cliente usado e erro visto
 
 ## Fechamento
 - ⬜ 21 · Integração, E2E das telas, ui-sweep, deploy na :8090, limpeza
