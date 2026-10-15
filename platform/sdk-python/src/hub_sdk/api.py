@@ -18,6 +18,7 @@ Each operation becomes an MCP tool (``hub_sdk.mcp``); ``openapi_extra=DESTRUCTIV
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -53,13 +54,30 @@ def require_user(request: Request) -> Identity | JSONResponse:
     return ident
 
 
+def _check_unique_operation_ids(doc: dict[str, Any]) -> None:
+    ids = [
+        op.get("operationId")
+        for item in doc["paths"].values()
+        for op in item.values()
+        if isinstance(op, dict)
+    ]
+    dup = sorted({i for i in ids if i and ids.count(i) > 1})
+    if dup:
+        raise ValueError(f"duplicate operation_id in the API routes: {dup}; each /api/ route needs its own")
+
+
 def openapi_of(app: FastAPI, app_id: str, title: str, version: str) -> dict[str, Any]:
     """OpenAPI document with only the ``/{app_id}/api/`` routes."""
     # All routes, then filter: an ``include_router`` router is one opaque route that only
     # ``get_openapi`` expands, so filtering ``app.routes`` by path would miss it.
-    doc = get_openapi(title=title, version=version, openapi_version="3.1.0", routes=app.routes)
+    with (
+        warnings.catch_warnings()
+    ):  # duplicates among page routes are dropped below; the API ones are checked
+        warnings.filterwarnings("ignore", message="Duplicate Operation ID", category=UserWarning)
+        doc = get_openapi(title=title, version=version, openapi_version="3.1.0", routes=app.routes)
     prefix = f"/{app_id}/api/"
     doc["paths"] = {p: v for p, v in doc.get("paths", {}).items() if p.startswith(prefix)}
+    _check_unique_operation_ids(doc)
     _drop_unused_schemas(doc)
     # Wave 12 (2.4): relative server, hub
     # security schemes and typed RFC 9457 errors (``Problem``) on every operation.

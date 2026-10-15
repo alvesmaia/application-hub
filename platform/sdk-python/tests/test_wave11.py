@@ -245,3 +245,40 @@ def test_mcp_inline_refs_keeps_deep_nullable_types() -> None:
     # $ref cycle stays bounded
     cyc = {"components": {"schemas": {"C": {"properties": {"c": {"$ref": "#/components/schemas/C"}}}}}}
     assert mcp._inline_refs({"$ref": "#/components/schemas/C"}, cyc)
+
+
+def test_openapi_of_is_silent_about_page_routes_with_several_methods() -> None:
+    """Page routes (outside ``/{app}/api/``) often answer GET and POST with one function; FastAPI's
+    duplicate operation id warning about them is noise, since they never reach the document."""
+    import warnings
+
+    from hub_sdk.api import openapi_of
+
+    app = FastAPI(openapi_url=None)
+
+    @app.api_route("/demo/items/{iid}/delete", methods=["GET", "POST"])
+    async def delete_page(iid: int) -> Response:
+        return Response()
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        openapi_of(app, "demo", "Demo", "1.0.0")
+
+
+def test_openapi_of_refuses_duplicate_api_operation_ids() -> None:
+    import pytest
+
+    from hub_sdk.api import openapi_of
+
+    app = FastAPI(openapi_url=None)
+
+    @app.get("/demo/api/v1/a", operation_id="same")
+    async def a() -> Response:
+        return Response()
+
+    @app.get("/demo/api/v1/b", operation_id="same")
+    async def b() -> Response:
+        return Response()
+
+    with pytest.raises(ValueError, match="same"):
+        openapi_of(app, "demo", "Demo", "1.0.0")

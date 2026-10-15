@@ -55,6 +55,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   are split by responsibility (e.g. `hub-device-camera.js`, `hub-kit-mount.js`, `hub-nav.js`).
 
 ### Fixed
+- SDK `openapi_of`: no more "Duplicate Operation ID" warnings in the app logs for page routes that answer
+  several methods; duplicate operation ids among `/api/` routes now fail with the ids listed.
 - Backups: the database dump no longer carries privileges (`pg_dump --no-privileges`). It held production's grants
   (`ALTER DEFAULT PRIVILEGES FOR ROLE <app role>`), so a clone to staging (or a restore) failed with "permission denied
   to change default privileges" when the database admin is not a superuser. The backup role's grants are applied

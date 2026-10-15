@@ -29,7 +29,7 @@
 - ✅ 24 · Prompt de copiar aponta para /dev/docs/AGENTS.md (regras do app em AGENTS-app.md; nomes antigos → 308)
 
 ## MCP / OAuth
-- ⬜ 25 · Avisos "Duplicate Operation ID" nos apps desde o openapi_of da tarefa 10
+- ✅ 25 · Avisos "Duplicate Operation ID" nos apps desde o openapi_of da tarefa 10
 - ⛔ 26 · Login OAuth do MCP falha externamente (cliente registrou às 18:21 e parou) — aguardando cliente usado e erro visto
 
 ## Fechamento
