@@ -119,7 +119,7 @@ def platform_view(x: Row) -> Row:
     status = "Em execução" if running else ("Parado" if x["state"] in ("exited", "created") else f"Com problema ({x['state']})")  # fmt: skip
     up = rt.uptime_of(x["status"])
     return {
-        "id": x["name"], "name": "Plataforma", "env": "platform", "container": x["name"], "image": x["image"],
+        "id": x["name"], "name": "Plataforma", "env": "platform", "plat": True, "container": x["name"], "image": x["image"],
         "state": "ok" if running else "off", "status": status, "cpu": cpu, "mem": mem,
         "mem_style": f"width:{min(max((used or 0) / mem_l * 100, 0), 100) if mem_l else 0:.0f}%",
         "uptime": up, "port": "—", "vars_json": "{}",

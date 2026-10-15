@@ -146,9 +146,10 @@ async def runtime_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response
     platform_view = [rv.platform_view(x) for x in sorted(info.get("platform", []), key=lambda z: z["name"])]
     default_sock = info["socket"] if os.getenv("HUB_CONTAINER_SOCKET") else "/var/run/docker.sock"
     sock = "/run/podman/podman.sock" if podman else default_sock
+    page_rows, pager = paginate(request, view + platform_view)
     return render(ops,
         request, "ops_runtime.html", "Aplicações", "Containers", "Cada aplicação roda isolada, com limites próprios de CPU e memória.",
-        rows=view, platform_rows=platform_view, banner=None if info["reachable"] else f"Runtime indisponível — exibindo especificação. ({info['error']})",
+        rows=page_rows, pager=pager, banner=None if info["reachable"] else f"Runtime indisponível — exibindo especificação. ({info['error']})",
         docker_class="filter-chip" if podman else "filter-chip active", podman_class="filter-chip active" if podman else "filter-chip",
         shown_socket=sock, rollout=ROLLOUT, host_source=f"Medido em: {host.source}",
         in_use=f"Conectado a {info['socket']} · {info['version']}" if info["reachable"] else f"Sem conexão com {info['socket']}",
@@ -213,7 +214,7 @@ async def backups_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response
         for p in d["policies"]
         if ops.registry.get(p["app"])
     ]
-    hist = [bv.history_row(b, ops.name_of, now) for b in d["backups"]]
+    hist, pager = paginate(request, [bv.history_row(b, ops.name_of, now) for b in d["backups"]])
     tv, tc, tcls = bv.restore_test_metric(d["backups"], ops.name_of, now)
     kept = [b for b in d["backups"] if b.get("file") and b["status"] == "Concluído"]
     fails = [b for b in d["backups"] if b["status"] == "Falhou" and now - b["at"] < 86_400_000]
@@ -221,7 +222,7 @@ async def backups_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response
     return render(ops,
         request, "ops_backups.html", "Operação", "Backups e snapshots",
         "Cópias de segurança dos dados e arquivos de cada aplicação, com restauração e teste de restauração.", tab="Backups",
-        policies=policies, history=hist, maint=maint, test_value=tv, test_change=tc, test_class=tcls,
+        policies=policies, history=hist, pager=pager, maint=maint, test_value=tv, test_change=tc, test_class=tcls,
         stored_value=m.human(sum(b["size"] for b in kept)),
         stored_change={0: "Nenhum arquivo retido", 1: "1 arquivo retido"}.get(len(kept), f"{len(kept)} arquivos retidos"),
         fail_count=str(len(fails)), fail_class="metric-change down" if fails else "metric-change",
