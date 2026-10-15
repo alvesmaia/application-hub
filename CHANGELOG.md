@@ -49,6 +49,10 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   are split by responsibility (e.g. `hub-device-camera.js`, `hub-kit-mount.js`, `hub-nav.js`).
 
 ### Fixed
+- Backups: the database dump no longer carries privileges (`pg_dump --no-privileges`). It held production's grants
+  (`ALTER DEFAULT PRIVILEGES FOR ROLE <app role>`), so a clone to staging (or a restore) failed with "permission denied
+  to change default privileges" when the database admin is not a superuser. The backup role's grants are applied
+  again on every backup.
 - Scheduled backups: the apps are backed up at the same time and every run copied its SQL to the same
   `/tmp/hub-role.sql` in the apps database container, so most apps failed each night (`HUB-WRONG-DB` or
   `No such file`). Each `psql -f` file (role, admin, restore) now has its own name.

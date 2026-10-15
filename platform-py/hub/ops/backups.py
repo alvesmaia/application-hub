@@ -202,7 +202,7 @@ class Backups(BackupOffsite):
         progress(40, f"Copiando o banco {db} (pg_dump)")
         rc, out = await exec_in(
             self.engine, self.db_container,
-            ["pg_dump", "-h", "127.0.0.1", "-U", user, "-d", db, "--no-owner", "--clean", "--if-exists"],
+            ["pg_dump", "-h", "127.0.0.1", "-U", user, "-d", db, "--no-owner", "--no-privileges", "--clean", "--if-exists"],
             env={"PGPASSWORD": pw},
         )  # fmt: skip
         if rc != 0:

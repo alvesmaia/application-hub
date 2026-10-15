@@ -22,7 +22,10 @@
   - ✅ causa: apps em paralelo usavam o mesmo /tmp/hub-role.sql no app-db
   - ✅ tmp_sql(kind): arquivo único por execução (role, admin, restore); teste da corrida
   - ⬜ conferir o próximo backup agendado na :8090
-- ⬜ 17 · Clone p/ staging do contratos: permission denied to change default privileges (backup #9)
+- ✅ 17 · Clone p/ staging do contratos: permission denied to change default privileges (backup #9)
+  - ✅ causa: o dump levava os grants da produção (ALTER DEFAULT PRIVILEGES FOR ROLE <papel de prod>); carregar exige ser membro desse papel — falha com admin sem superusuário (ex.: Postgres gerenciado)
+  - ✅ pg_dump --no-privileges (o ensure_pg_role refaz os grants do backup a cada execução); teste
+  - ✅ reproduzido e corrigido em Postgres descartável; DR na instância isolada OK; backup após restauração OK
 
 ## Instância do dono
 - ✅ 13 · Deploy dos 4 apps na :8090 (build + up --no-deps, pin keep-20261015)
