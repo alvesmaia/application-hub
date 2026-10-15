@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from graphsim.sim import Sim
 
 
-def token(sim: Sim, path: str, body: bytes) -> Response:  # noqa: PLR0915
+def token(sim: Sim, path: str, body: bytes) -> Response:
     sim.stats["token_requests"] += 1
     cfg = sim.cfg
     tenant = path.lstrip("/").split("/")[0]
@@ -33,21 +33,7 @@ def token(sim: Sim, path: str, body: bytes) -> Response:  # noqa: PLR0915
             "unauthorized_client",
             f"AADSTS700016: Application with identifier '{cid}' was not found in the directory.",
         )
-    ok = False
-    if "client_secret" in f:
-        ok = bool(cfg.client_secret) and secrets.compare_digest(f["client_secret"], cfg.client_secret)
-    elif "client_assertion" in f:
-        sim.stats["assertions"] += 1
-        cl = verify_assertion(f["client_assertion"], cfg.cert_pem)
-        now = time.time()
-        ok = bool(
-            cl
-            and cl.get("iss") == cid
-            and cl.get("sub") == cid
-            and str(cl.get("aud", "")).endswith(f"/{tenant}/oauth2/v2.0/token")
-            and cl.get("exp", 0) > now
-            and cl.get("nbf", 0) <= now + 60
-        )
+    ok = _client_ok(sim, f, cid, tenant)
     if not ok:
         return aad(401, "invalid_client", "AADSTS7000215: Invalid client secret or assertion provided.")
     tok = "simtok-" + secrets.token_hex(16)
@@ -55,3 +41,22 @@ def token(sim: Sim, path: str, body: bytes) -> Response:  # noqa: PLR0915
     sim.stats["tokens_issued"] += 1
     t = cfg.token_ttl_s
     return JSONResponse({"token_type": "Bearer", "expires_in": t, "ext_expires_in": t, "access_token": tok})
+
+
+def _client_ok(sim: Sim, f: dict[str, str], cid: str, tenant: str) -> bool:
+    cfg = sim.cfg
+    if "client_secret" in f:
+        return bool(cfg.client_secret) and secrets.compare_digest(f["client_secret"], cfg.client_secret)
+    if "client_assertion" not in f:
+        return False
+    sim.stats["assertions"] += 1
+    cl = verify_assertion(f["client_assertion"], cfg.cert_pem)
+    now = time.time()
+    return bool(
+        cl
+        and cl.get("iss") == cid
+        and cl.get("sub") == cid
+        and str(cl.get("aud", "")).endswith(f"/{tenant}/oauth2/v2.0/token")
+        and cl.get("exp", 0) > now
+        and cl.get("nbf", 0) <= now + 60
+    )

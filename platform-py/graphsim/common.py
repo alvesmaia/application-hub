@@ -8,6 +8,7 @@ import json
 import os
 import re
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
@@ -21,6 +22,29 @@ from starlette.responses import JSONResponse
 
 CHUNK_UNIT = 320 * 1024
 SIMPLE_MAX = 4 * 1024 * 1024
+
+
+_STR_KEYS = (
+    ("tenant", "TENANT"),
+    ("client_id", "CLIENT_ID"),
+    ("client_secret", "CLIENT_SECRET"),
+    ("hostname", "HOSTNAME"),
+    ("site_path", "SITE_PATH"),
+)
+_INT_KEYS = (
+    ("token_ttl_s", "TOKEN_TTL_S"),
+    ("throttle_every", "THROTTLE_EVERY"),
+    ("throttle_retry_after", "THROTTLE_RETRY_AFTER"),
+    ("latency_ms", "LATENCY_MS"),
+)
+
+
+def _read_pem(path: str) -> str:
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return fh.read()
+    except OSError:
+        return ""
 
 
 @dataclass
@@ -45,41 +69,30 @@ class SimConfig:
     link_expiry: str = ""
 
     @classmethod
-    def from_env(cls, env: dict[str, str] | None = None) -> SimConfig:  # noqa: C901
+    def from_env(cls, env: dict[str, str] | None = None) -> SimConfig:
         e = os.environ if env is None else env
         c = cls()
         s = lambda k: e.get(k) or None  # noqa: E731
-        for attr, key in (
-            ("tenant", "TENANT"),
-            ("client_id", "CLIENT_ID"),
-            ("client_secret", "CLIENT_SECRET"),
-            ("hostname", "HOSTNAME"),
-            ("site_path", "SITE_PATH"),
-        ):
+        for attr, key in _STR_KEYS:
             if v := s(f"GRAPHSIM_{key}"):
                 setattr(c, attr, v)
         if v := s("GRAPHSIM_CERT_PEM_FILE"):
-            try:
-                with open(v, encoding="utf-8") as fh:
-                    c.cert_pem = fh.read()
-            except OSError:
-                c.cert_pem = ""
+            c.cert_pem = _read_pem(v)
         if v := s("GRAPHSIM_DRIVES"):
             c.drives = [d.strip() for d in v.split(",")]
-        for attr, key in (
-            ("token_ttl_s", "TOKEN_TTL_S"),
-            ("throttle_every", "THROTTLE_EVERY"),
-            ("throttle_retry_after", "THROTTLE_RETRY_AFTER"),
-            ("latency_ms", "LATENCY_MS"),
-        ):
+        c._apply_numbers(s)
+        c.control = s("GRAPHSIM_CONTROL") != "0"
+        return c
+
+    def _apply_numbers(self, s: Callable[[str], str | None]) -> None:
+        c = self
+        for attr, key in _INT_KEYS:
             if (v := s(f"GRAPHSIM_{key}")) and v.isdigit():
                 setattr(c, attr, int(v))
         if (v := s("GRAPHSIM_MAX_MB")) and v.isdigit():
             c.max_bytes = int(v) << 20
         if v := s("GRAPHSIM_FAIL_RATE"):
             c.fail_rate = float(v)
-        c.control = s("GRAPHSIM_CONTROL") != "0"
-        return c
 
     def site_id(self) -> str:
         return f"{self.hostname},6f0d1e2a-0000-4000-8000-000000000001,6f0d1e2a-0000-4000-8000-000000000002"
@@ -132,3 +145,27 @@ NOT_FOUND = ("itemNotFound", "The resource could not be found.")
 
 def base_url(req: Request) -> str:
     return f"http://{req.headers.get('host', 'localhost')}"
+
+
+def json_dict(body: bytes) -> dict[str, Any] | None:
+    try:
+        v = json.loads(body)
+    except ValueError:
+        return None
+    return v if isinstance(v, dict) else None
+
+
+def move_parent(m: dict[str, dict[str, Any]], v: dict[str, Any], path: str) -> str | None:
+    """Destination folder of a PATCH: the referenced folder (None if missing) or the current one."""
+    pid = (v.get("parentReference") or {}).get("id")
+    if not pid:
+        return path.rsplit("/", 1)[0] if "/" in path else ""
+    return next((p for p, n in m.items() if n["id"] == pid and n["folder"]), None)
+
+
+def move_tree(m: dict[str, dict[str, Any]], path: str, dest: str, name: str) -> None:
+    for k in [k for k in m if k == path or k.startswith(path + "/")]:
+        n = m.pop(k)
+        if k == path:
+            n.update(name=name, modified=rfc3339(), version=n["version"] + 1)
+        m[dest + k[len(path) :]] = n
