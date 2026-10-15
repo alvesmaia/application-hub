@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import unicodedata
 
+from hub_sdk import base
 from hub_sdk.search import SearchHit, SearchQuery, score
 
 from fornecedores.suppliers import SUPPLIERS, Supplier
@@ -44,7 +45,7 @@ def search_hits(q: SearchQuery) -> list[SearchHit]:
                 SearchHit(
                     title=s.name,
                     subtitle=f"{s.code} · {s.category} · {s.city}",
-                    url=f"/apps/fornecedores/indicators?id={s.code}",
+                    url=f"{base('fornecedores')}/indicators?id={s.code}",
                     kind=kind,
                     score=sc,
                 )

@@ -12,6 +12,7 @@ from hub_sdk import storage
 from hub_sdk.app import HubSdk
 from hub_sdk.identity import identity_of
 from hub_sdk.locale import from_headers
+from hub_sdk.render import public_base
 
 from fornecedores.i18n import personalize
 from fornecedores.lookup import Lookup
@@ -29,7 +30,7 @@ class State:
         self.tasks: set[asyncio.Task[Any]] = set()
 
     def fragment(self, name: str, req: Request) -> str | None:
-        """Mockup fragment with the hub context (user, language, date, app name)."""
+        """Mockup fragment with the hub context (user, language, date, app name) and the public base."""
         body = self.templates.get(name)
         if body is None:
             try:
@@ -37,7 +38,8 @@ class State:
             except OSError:
                 return None
             self.templates[name] = body
-        return personalize(body, user_of(req), from_headers(req.headers))
+        page = personalize(body, user_of(req), from_headers(req.headers))
+        return page.replace("{{ base }}", base_of(req))
 
     def audit(self, req: Request, action: str, target: str, detail: str) -> None:
         """Outbox audit without delaying the response (there is no transaction to share)."""
@@ -49,6 +51,11 @@ class State:
         if self.store is None:
             return None
         return self.store.for_user(req.headers.get("x-hub-user"), req.headers.get("x-hub-user-sig"))
+
+
+def base_of(req: Request) -> str:
+    """Public base of this request's links/forms (``x-hub-base``, validated by the SDK)."""
+    return public_base(req, "fornecedores")
 
 
 def user_of(req: Request) -> str:

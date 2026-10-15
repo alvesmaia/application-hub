@@ -9,7 +9,7 @@ from hub_sdk.render import busy, download_headers, html
 
 from fornecedores import uploads
 from fornecedores.ficha import ficha_pdf
-from fornecedores.state import State, StateDep, user_of
+from fornecedores.state import State, StateDep, base_of, user_of
 from fornecedores.suppliers import Supplier, supplier, valid_object_name
 from fornecedores.ui import notice
 from fornecedores.views import (
@@ -29,15 +29,15 @@ router = APIRouter()
 @router.get("/fornecedores/suppliers/{code}/lookup")
 @router.get("/fornecedores/suppliers/{code}/attachments")
 @router.get("/fornecedores/suppliers/{code}/attachments/{name}/delete")
-async def only_post(code: str) -> Response:
-    return not_found()
+async def only_post(code: str, req: Request) -> Response:
+    return not_found(base_of(req))
 
 
 @router.post("/fornecedores/suppliers/{code}/lookup")
 async def do_lookup(code: str, req: Request, st: StateDep) -> Response:
     sup = supplier(code)
     if sup is None:
-        return not_found()
+        return not_found(base_of(req))
     o = await st.lookup.lookup(sup.cnpj)
     det = (
         f"score {o.info.score} ({o.info.risco}) · {o.attempts} tentativa(s) · {o.ms} ms"
@@ -45,22 +45,22 @@ async def do_lookup(code: str, req: Request, st: StateDep) -> Response:
         else f"contingência: {o.reason}"
     )
     st.audit(req, "Consulta cadastral de fornecedor", sup.code, det)
-    return html(lookup_box(sup, outcome_html(o)))
+    return html(lookup_box(sup, outcome_html(o), base_of(req)))
 
 
 @router.post("/fornecedores/suppliers/{code}/attachments")
 async def upload(code: str, req: Request, st: StateDep) -> Response:
     sup = supplier(code)
     if sup is None:
-        return not_found()
+        return not_found(base_of(req))
     try:
         name, ct, size = await uploads.receive(st, sup, req)
     except uploads.UploadRefused as e:
-        body = await attachments_html(st, sup, notice("error", e.title, e.text))
+        body = await attachments_html(st, sup, base_of(req), notice("error", e.title, e.text))
         return with_retry(html(body, e.status), e.retry)
     st.audit(req, "Anexo de fornecedor enviado", sup.code, f"{name} · {ct} · {size} bytes")
     msg = notice("ok", "Anexo enviado", f"{name} ({kb(size)} KB)")
-    return html(await attachments_html(st, sup, msg), 201)
+    return html(await attachments_html(st, sup, base_of(req), msg), 201)
 
 
 @router.get("/fornecedores/suppliers/{code}/attachments/{name}")
@@ -68,7 +68,7 @@ async def download(code: str, name: str, req: Request, st: StateDep) -> Response
     sup = supplier(code)
     store = st.user_store(req)
     if sup is None or not valid_object_name(name) or store is None:
-        return not_found()
+        return not_found(base_of(req))
     try:
         d = await store.download(f"{sup.code}/{name}")
     except storage.StorageError as e:
@@ -85,15 +85,17 @@ async def remove(code: str, name: str, req: Request, st: StateDep) -> Response:
     sup = supplier(code)
     store = st.user_store(req)
     if sup is None or not valid_object_name(name) or store is None:
-        return not_found()
+        return not_found(base_of(req))
     try:
         await store.delete(f"{sup.code}/{name}")
     except storage.StorageError as e:
         status, retry = storage_status(e)
-        body = await attachments_html(st, sup, notice("error", "Não foi possível excluir", e.message))
+        body = await attachments_html(
+            st, sup, base_of(req), notice("error", "Não foi possível excluir", e.message)
+        )
         return with_retry(html(body, status), retry)
     st.audit(req, "Anexo de fornecedor excluído", sup.code, name)
-    return html(await attachments_html(st, sup, notice("ok", "Anexo excluído", name)))
+    return html(await attachments_html(st, sup, base_of(req), notice("ok", "Anexo excluído", name)))
 
 
 async def _pdf_attachments(st: State, sup: Supplier, req: Request) -> tuple[list[storage.Item], str | None]:
@@ -111,7 +113,7 @@ async def _pdf_attachments(st: State, sup: Supplier, req: Request) -> tuple[list
 async def ficha(code: str, req: Request, st: StateDep) -> Response:
     sup = supplier(code)
     if sup is None:
-        return not_found()
+        return not_found(base_of(req))
     permit = st.sdk.heavy.try_acquire()
     if permit is None:
         return busy("A geração do PDF", "PDF em fila…")

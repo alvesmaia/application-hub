@@ -9,7 +9,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import Response
 from hub_sdk.render import html
 
-from fornecedores.state import HERE, State, StateDep
+from fornecedores.state import HERE, State, StateDep, base_of
 from fornecedores.suppliers import SUPPLIERS, supplier
 from fornecedores.ui import esc, param
 from fornecedores.views import detail, not_found
@@ -30,10 +30,10 @@ def shared_assets_dir() -> Path:
 
 def static(st: State, name: str, req: Request) -> Response:
     body = st.fragment(name, req) if name in SECTIONS or name == "_skeleton" else None
-    return html(body) if body is not None else not_found()
+    return html(body) if body is not None else not_found(base_of(req))
 
 
-def linked_rows(page: str) -> str:
+def linked_rows(page: str, base: str) -> str:
     """Turns the "···" of each row into a link to the supplier record."""
     for s in SUPPLIERS:
         old = (
@@ -42,7 +42,7 @@ def linked_rows(page: str) -> str:
         )
         new = (
             f'<a class="app2-more" aria-label="Abrir ficha de {esc(s.name)}" '
-            f'href="/apps/fornecedores/indicators?id={esc(s.code)}">···</a>'
+            f'href="{base}/indicators?id={esc(s.code)}">···</a>'
         )
         page = page.replace(old, new)
     return page
@@ -73,13 +73,13 @@ async def asset(name: str) -> Response:
 
 @router.get("/fornecedores/indicators")
 async def directory(req: Request, st: StateDep) -> Response:
-    page = st.fragment("indicators", req)
+    page, base = st.fragment("indicators", req), base_of(req)
     if page is None:
-        return not_found()
-    page = linked_rows(page)
+        return not_found(base)
+    page = linked_rows(page, base)
     if sup := supplier(param(dict(req.query_params), "id")):
         marker = '<div class="app2-directory-summary">'
-        page = page.replace(marker, f"{await detail(st, sup)}{marker}", 1)
+        page = page.replace(marker, f"{await detail(st, sup, base)}{marker}", 1)
     return html(page)
 
 

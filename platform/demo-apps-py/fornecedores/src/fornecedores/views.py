@@ -15,10 +15,10 @@ FRAG = "/_frag"
 NO_ATTACHMENTS = '<p class="hub-muted">Nenhum anexo ainda.</p>'
 
 
-def not_found() -> Response:
+def not_found(base: str) -> Response:
     return html(
         '<section class="empty-state"><h1>Página não encontrada</h1><p>Esta seção não existe. '
-        '<a href="/apps/fornecedores">Voltar ao início do app</a>.</p></section>',
+        f'<a href="{base}">Voltar ao início do app</a>.</p></section>',
         404,
     )
 
@@ -71,11 +71,11 @@ def outcome_html(o: Outcome) -> str:
     return out
 
 
-def lookup_box(sup: Supplier, body: str) -> str:
+def lookup_box(sup: Supplier, body: str, base: str) -> str:
     return (
         '<section class="app2-panel hub-panel" id="lookup-box"><div class="app2-panel-head"><div>'
         f'<span class="app2-kicker">CONSULTA CADASTRAL</span><h2>CNPJ {esc(sup.cnpj)}</h2></div>'
-        f'<form method="post" action="/apps/fornecedores/suppliers/{esc(sup.code)}/lookup" data-hub-target="#lookup-box">'
+        f'<form method="post" action="{base}/suppliers/{esc(sup.code)}/lookup" data-hub-target="#lookup-box">'
         f'<button class="app2-outline" type="submit">Consultar agora</button></form></div>{body}</section>'
     )
 
@@ -88,19 +88,19 @@ def storage_label(st: storage.Connection | None) -> str:
     return "Guardados no object store do app." if st is not None else ""
 
 
-def attachment_row(sup: Supplier, o: storage.Item) -> str:
+def attachment_row(sup: Supplier, o: storage.Item, base: str) -> str:
     return (
         f"<tr><td><b>{esc(shown_name(o.name))}</b></td><td>{thousands(kb(o.size))} KB</td>"
         f"<td>{esc(o.modified[:16].replace('T', ' '))}</td>"
         f'<td class="hub-row-actions"><a class="app2-inline-link" download '
         f'href="{FRAG}/fornecedores/suppliers/{esc(sup.code)}/attachments/{esc(o.name)}">Baixar</a>'
         f'<form class="hub-inline" method="post" '
-        f'action="/apps/fornecedores/suppliers/{esc(sup.code)}/attachments/{esc(o.name)}/delete" '
+        f'action="{base}/suppliers/{esc(sup.code)}/attachments/{esc(o.name)}/delete" '
         f'data-hub-target="#attachments"><button type="submit" class="app2-inline-link hub-danger">Excluir</button></form></td></tr>'
     )
 
 
-async def attachments_listing(conn: storage.Connection | None, sup: Supplier) -> str:
+async def attachments_listing(conn: storage.Connection | None, sup: Supplier, base: str) -> str:
     if conn is None:
         return notice(
             "info",
@@ -115,7 +115,7 @@ async def attachments_listing(conn: storage.Connection | None, sup: Supplier) ->
         return notice("error", "Não foi possível listar os anexos", e.message)
     if not objs:
         return NO_ATTACHMENTS
-    rows = "".join(attachment_row(sup, o) for o in objs)
+    rows = "".join(attachment_row(sup, o, base) for o in objs)
     return (
         '<div class="app2-table-wrap"><table class="app2-table"><thead><tr><th>ARQUIVO</th>'
         "<th>TAMANHO</th><th>ENVIADO EM</th><th></th></tr></thead><tbody>"
@@ -123,14 +123,14 @@ async def attachments_listing(conn: storage.Connection | None, sup: Supplier) ->
     )
 
 
-async def attachments_html(st: State, sup: Supplier, msg: str = "") -> str:
-    listing = await attachments_listing(st.store, sup)
+async def attachments_html(st: State, sup: Supplier, base: str, msg: str = "") -> str:
+    listing = await attachments_listing(st.store, sup, base)
     where_kind = "" if st.store is None else (st.store.kind if st.store.via_broker else "s3-app")
     return (
         '<section class="app2-panel hub-panel" id="attachments"><div class="app2-panel-head"><div>'
         f'<span class="app2-kicker">DOCUMENTOS</span><h2>Anexos</h2><p class="hub-muted" data-storage="{where_kind}">'
         f"{storage_label(st.store)}</p></div></div>{msg}{listing}"
-        f'<form class="hub-form hub-upload" method="post" action="/apps/fornecedores/suppliers/{esc(sup.code)}/attachments" '
+        f'<form class="hub-form hub-upload" method="post" action="{base}/suppliers/{esc(sup.code)}/attachments" '
         'enctype="multipart/form-data" data-hub-target="#attachments"><div class="form-field">'
         f'<label for="f-anexo">Novo anexo (PDF ou imagem, até {attach_max_bytes() // 1024 // 1024} MB)</label>'
         '<input id="f-anexo" type="file" name="file" accept=".pdf,.png,.jpg,.jpeg,.webp" required></div>'
@@ -139,7 +139,7 @@ async def attachments_html(st: State, sup: Supplier, msg: str = "") -> str:
     )
 
 
-async def detail(st: State, sup: Supplier) -> str:
+async def detail(st: State, sup: Supplier, base: str) -> str:
     last = st.lookup.last_good(sup.cnpj)
     body = (
         info_html(last[0], f"consultado há {last[1]} s")
@@ -151,6 +151,6 @@ async def detail(st: State, sup: Supplier) -> str:
         f'<span class="app2-kicker">FICHA DO FORNECEDOR · {esc(sup.code)}</span><h2>{esc(sup.name)}</h2>'
         f'<p class="hub-muted">{esc(sup.category)} · {esc(sup.city)} · CNPJ {esc(sup.cnpj)} · situação: {esc(sup.status)}</p></div>'
         f'<div class="hub-actions"><a class="app2-outline" download href="{FRAG}/fornecedores/suppliers/{esc(sup.code)}/ficha.pdf">Gerar ficha PDF</a>'
-        '<a class="app2-outline" href="/apps/fornecedores/indicators">Fechar</a></div></div></section>'
-        f"{lookup_box(sup, body)}{await attachments_html(st, sup)}"
+        f'<a class="app2-outline" href="{base}/indicators">Fechar</a></div></div></section>'
+        f"{lookup_box(sup, body, base)}{await attachments_html(st, sup, base)}"
     )
