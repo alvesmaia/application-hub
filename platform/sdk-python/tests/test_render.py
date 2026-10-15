@@ -12,6 +12,7 @@ from hub_sdk.render import (
     csv_line,
     download_headers,
     money_cents,
+    public_base,
     thousands,
 )
 
@@ -67,3 +68,27 @@ def test_formats_and_csv() -> None:
     h = download_headers("text/csv", "contratos 2026.csv")
     assert h["content-disposition"] == 'attachment; filename="contratos_2026.csv"'
     assert h["x-content-type-options"] == "nosniff"
+
+
+def with_base(value: str | None) -> Request:
+    headers = [] if value is None else [(b"x-hub-base", value.encode())]
+    return Request(
+        {"type": "http", "method": "GET", "path": "/demo", "headers": headers, "query_string": b""}
+    )
+
+
+def test_public_base_follows_the_hub_header_and_refuses_odd_values() -> None:
+    assert public_base(with_base("/apps/demo-alt"), "demo") == "/apps/demo-alt"
+    assert public_base(with_base(None), "demo") == "/apps/demo"
+    for odd in ("/elsewhere", '/apps/x"><script>', "/apps/a b", "//evil.example/apps"):
+        assert public_base(with_base(odd), "demo") == "/apps/demo", odd
+
+
+def test_page_links_use_the_request_base(tmp_path: Path) -> None:
+    (tmp_path / "page.html").write_text('<a href="{{ base }}/x">x</a>', encoding="utf-8")
+    r = Renderer(APP, tmp_path)
+    assert (
+        'href="/apps/demo-alt/x"'
+        in bytes(r.page(with_base("/apps/demo-alt"), "page.html", "d").body).decode()
+    )
+    assert 'href="/apps/demo/x"' in bytes(r.page(with_base(None), "page.html", "d").body).decode()

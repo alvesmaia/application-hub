@@ -59,10 +59,3 @@ def user_name(req: HTTPConnection) -> str:
 def public_url() -> str:
     """Public address of the hub (the "open on the phone" QR of the test sheet)."""
     return os.environ.get("COLETOR_PUBLIC_URL", "").strip().rstrip("/")
-
-
-def public_base(req: HTTPConnection) -> str:
-    """Public base of the app (``/apps/coletor``) — ``x-hub-base`` header from the hub."""
-    b = req.headers.get("x-hub-base", "").strip()
-    ok = b.startswith("/apps/") and all(c.isalnum() or c in "/-" for c in b)
-    return b if ok else "/apps/coletor"

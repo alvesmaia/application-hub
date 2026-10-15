@@ -10,8 +10,8 @@
   - ✅ ajuda = setup|link|check; comando desconhecido → uso + exit 2 (antes rodava check); teste
 
 ## Apps
-- ⬜ 11 · Links dos apps pela base pública (x-hub-base)
-  - ⬜ hub_sdk.schema.public_base + coletor usa o helper
+- ▶️ 11 · Links dos apps pela base pública (x-hub-base)
+  - ✅ hub_sdk.render.public_base (Renderer.page usa a base do request) + coletor usa o helper
   - ⬜ ativos
   - ⬜ fornecedores
   - ⬜ servicos (inclui _opened)

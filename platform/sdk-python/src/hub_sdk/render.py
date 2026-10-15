@@ -77,6 +77,14 @@ def html(body: str, status: int = 200, headers: dict[str, str] | None = None) ->
     return HTMLResponse(body, status_code=status, headers=h)
 
 
+def public_base(conn: HTTPConnection, app_id: str) -> str:
+    """App's public base for links/forms: the hub's ``x-hub-base`` (``/apps/{id}``), or that
+    default when the header is missing or has anything besides letters, digits, ``/`` and ``-``."""
+    b = conn.headers.get("x-hub-base", "").strip()
+    ok = b.startswith("/apps/") and all(c.isalnum() or c in "/-" for c in b)
+    return b if ok else f"/apps/{app_id}"
+
+
 class Renderer:
     """The app's Jinja2 environment: the app's templates (``templates_dir``) + the SDK's
     (``workspace.html``, ``skeleton.html``, ``notice.html``)."""
@@ -120,6 +128,7 @@ class Renderer:
     ) -> HTMLResponse:
         """App page (full workspace)."""
         user = identity_of(conn).display_name
+        ctx.setdefault("base", public_base(conn, self.app.id))
         return html(self.render(template, active=active, user=user, **ctx), status)
 
     def fragment(self, template: str, status: int = 200, **ctx: Any) -> HTMLResponse:

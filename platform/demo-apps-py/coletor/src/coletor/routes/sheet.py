@@ -12,7 +12,7 @@ from fastapi.responses import Response
 from hub_sdk import outbox
 from hub_sdk.idempotency import idem_ctx
 from hub_sdk.locale import t
-from hub_sdk.render import html
+from hub_sdk.render import html, public_base
 from starlette.requests import HTTPConnection
 
 from coletor import fila
@@ -32,7 +32,6 @@ from coletor.state import (
     State,
     StateDep,
     db_notice,
-    public_base,
     public_url,
     user_login,
     user_name,
@@ -68,7 +67,7 @@ def sheet_ctx(req: HTTPConnection) -> dict[str, Any]:
         "items": items,
         "order": ords[0],
         "locs": locs,
-        "app_url": (public_url() + public_base(req)) if public_url() else "",
+        "app_url": (public_url() + public_base(req, "coletor")) if public_url() else "",
         "today": dt.date.today(),
         "n_codes": N_SESSION_CODES,
     }
