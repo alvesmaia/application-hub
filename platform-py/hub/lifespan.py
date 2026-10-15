@@ -79,8 +79,20 @@ async def _attach_db(app: FastAPI) -> StateDb | None:
     return db
 
 
+async def _start_broker(app: FastAPI) -> Any:
+    """Storage broker for the apps (only when enabled); `None` when off."""
+    if not app.state.broker_enabled:
+        return None
+    return await broker_mod.serve(
+        broker_mod.build_broker(
+            app.state.conns, app.state.admin, app.state.gateway.opts.user_sig_key or user_sig_key()
+        ),
+        app.state.broker_addr,
+    )
+
+
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: PLR0915
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     db = await _attach_db(app)
     await app.state.auth.bootstrap()
     await startup_admin(app)
@@ -89,14 +101,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: PLR0915
     app.state.start_dev_watch()
     bg = Background(app, gateway.client, app.state.data_dir)
     await bg.start(db, float(os.getenv("HUB_OUTBOX_POLL_S", "5") or 5))
-    broker: Any = None
-    if app.state.broker_enabled:
-        broker = await broker_mod.serve(
-            broker_mod.build_broker(
-                app.state.conns, app.state.admin, gateway.opts.user_sig_key or user_sig_key()
-            ),
-            app.state.broker_addr,
-        )
+    broker = await _start_broker(app)
     yield
     if (w := getattr(app.state, "dev_watch", None)) is not None:
         w.cancel()

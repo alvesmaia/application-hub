@@ -52,6 +52,24 @@ def seed_health(data: dict[str, Any], apps: list[str], now: int) -> None:
     data["health_seeded"] = True
 
 
+def _put_flag(flags: list[dict[str, Any]], flag: Flag, create: bool) -> str:
+    """Creates or replaces the flag in place; returns the audit title."""
+    pos = next((i for i, x in enumerate(flags) if x["key"] == flag.key and x["app"] == flag.app), None)
+    if pos is not None and create:
+        raise _bad("Já existe uma flag com essa chave neste app.")
+    if pos is None and not create:
+        raise _missing("Flag não encontrada.")
+    if pos is not None:
+        flags[pos] = flag.dump()
+        return "Feature flag alterada"
+    if sum(1 for x in flags if x["app"] == flag.app) >= MAX_FLAGS_PER_APP:
+        raise _bad(f"Limite de {MAX_FLAGS_PER_APP} flags por aplicação.")
+    if len(flags) >= 500:
+        raise _bad("Limite de 500 flags.")
+    flags.append(flag.dump())
+    return "Feature flag criada"
+
+
 class InsightOps:
     def __init__(self, store: AdminStore) -> None:
         self.s = store
@@ -73,7 +91,7 @@ class InsightOps:
         return [Flag.model_validate(f) for f in (await self.flags())[0]]
 
     # ---- flags ---------------------------------------------------------------------------------------
-    async def upsert_flag(self, actor: str, raw: dict[str, Any], create: bool) -> dict[str, Any]:  # noqa: C901, PLR0915
+    def _checked_flag(self, raw: dict[str, Any]) -> Flag:
         try:
             flag = parse_flag(raw)
             if flag.app not in self.s.apps:
@@ -81,26 +99,13 @@ class InsightOps:
             flag.validate_rules()
         except ValueError as e:
             raise e if isinstance(e, AdminError) else _bad(str(e)) from e
+        return flag
+
+    async def upsert_flag(self, actor: str, raw: dict[str, Any], create: bool) -> dict[str, Any]:
+        flag = self._checked_flag(raw)
 
         def run(d: dict[str, Any]) -> tuple[Any, str, str, str, str]:
-            flags = d.setdefault("flags", [])
-            pos = next(
-                (i for i, x in enumerate(flags) if x["key"] == flag.key and x["app"] == flag.app), None
-            )
-            if pos is not None and create:
-                raise _bad("Já existe uma flag com essa chave neste app.")
-            if pos is None and not create:
-                raise _missing("Flag não encontrada.")
-            if pos is None:
-                if sum(1 for x in flags if x["app"] == flag.app) >= MAX_FLAGS_PER_APP:
-                    raise _bad(f"Limite de {MAX_FLAGS_PER_APP} flags por aplicação.")
-                if len(flags) >= 500:
-                    raise _bad("Limite de 500 flags.")
-                flags.append(flag.dump())
-                title = "Feature flag criada"
-            else:
-                flags[pos] = flag.dump()
-                title = "Feature flag alterada"
+            title = _put_flag(d.setdefault("flags", []), flag, create)
             d["flags_version"] = d.get("flags_version", 0) + 1
             return flag.dump(), title, flag_detail(flag), "settings", flag.app
 

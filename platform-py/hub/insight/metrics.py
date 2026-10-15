@@ -141,27 +141,36 @@ class Metrics:
     def _pend(self, key: str, t: int) -> Bucket:
         return self._pending.setdefault((key, t), Bucket(t))
 
-    def save(self) -> None:  # noqa: C901, PLR0915
+    def _other_wrote(self, path: Path) -> bool:
+        try:
+            return path.stat().st_mtime_ns != self._mtime  # another replica wrote after us
+        except OSError:
+            return False
+
+    def _add_pending(self, k: str, t: int, add: Bucket) -> None:
+        q = self._s(*k.split("|", 1)).coarse
+        b = next((x for x in reversed(q) if x.t == t), None)
+        if b is None:
+            q.append(b := Bucket(t))
+            if len(q) > 1 and q[-2].t > t:
+                q = self.series[k].coarse = deque(sorted(q, key=lambda x: x.t))
+        b.merge(add)
+        while len(q) > COARSE_KEEP:
+            q.popleft()
+
+    def _adopt_file(self) -> None:
+        """Adopts the file and adds on top only what this replica counted since the last write."""
+        for k, rows in self._read().items():
+            self._s(*k.split("|", 1)).coarse = rows
+        for (k, t), add in self._pending.items():
+            self._add_pending(k, t, add)
+
+    def save(self) -> None:
         if not self.path:
             return
         with file_lock(self.path):
-            try:
-                other = self.path.stat().st_mtime_ns != self._mtime  # another replica wrote after us
-            except OSError:
-                other = False
-            if other:  # adopts the file and adds on top only what this replica counted since the last write
-                for k, rows in self._read().items():
-                    self._s(*k.split("|", 1)).coarse = rows
-                for (k, t), add in self._pending.items():
-                    q = self._s(*k.split("|", 1)).coarse
-                    b = next((x for x in reversed(q) if x.t == t), None)
-                    if b is None:
-                        q.append(b := Bucket(t))
-                        if len(q) > 1 and q[-2].t > t:
-                            q = self.series[k].coarse = deque(sorted(q, key=lambda x: x.t))
-                    b.merge(add)
-                    while len(q) > COARSE_KEEP:
-                        q.popleft()
+            if self._other_wrote(self.path):
+                self._adopt_file()
             data = {k: [b.__dict__ for b in s.coarse] for k, s in self.series.items()}
             tmp = self.path.with_suffix(f".json.{os.getpid()}.tmp")
             tmp.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")

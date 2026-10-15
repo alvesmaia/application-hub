@@ -95,7 +95,7 @@ class OAuthTokens(OAuthAuthorize):
         await self.rec.del_where(K_REFRESH, "grant_id", gid)
         return g  # type: ignore[no-any-return]
 
-    async def token(self, request: Request, body: bytes) -> Response:  # noqa: C901
+    async def token(self, request: Request, body: bytes) -> Response:
         app, now = request.app, now_ms()
         if not await self.hit(app, f"oauth-token:{client_ip(request)}", TOKEN_PER_IP):
             return self.oerr(429, "slow_down", "Pedidos demais; tente mais tarde.")
@@ -109,6 +109,10 @@ class OAuthTokens(OAuthAuthorize):
             return self.no_issuer()
         if (r := f.get("resource")) is not None and canon(r) != canon(ours):
             return self.oerr(400, "invalid_target", f"resource deve ser {ours}.")
+        return await self.run_grant(f, client, ours, now)
+
+    async def run_grant(self, f: dict[str, str], client: dict[str, Any], ours: str, now: int) -> Response:
+        """Runs the requested grant once the client and the resource were accepted."""
 
         def grant_err(d: str) -> Response:
             return self.oerr(400, "invalid_grant", d)

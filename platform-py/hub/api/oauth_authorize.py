@@ -29,7 +29,7 @@ from hub.api.oauth_util import (
     sha,
     with_query,
 )
-from hub.api.v1 import principal
+from hub.api.v1 import P, principal
 
 
 class OAuthAuthorize(OAuthClients):
@@ -140,7 +140,7 @@ class OAuthAuthorize(OAuthClients):
             '<button type="submit" name="decision" value="deny" class="secondary-button" data-oauth-deny="">Recusar</button></div>\n</form>'
         )  # fmt: skip
 
-    async def authorize_post(self, request: Request, body: bytes) -> Response:  # noqa: PLR0915
+    async def authorize_post(self, request: Request, body: bytes) -> Response:
         text = body.decode("utf-8", "replace")
         f = form(text)
         if not (iss := self.issuer(request)):
@@ -166,6 +166,13 @@ class OAuthAuthorize(OAuthClients):
             return self.back_error(
                 req["redirect_uri"], iss, state, "access_denied", "O usuário recusou o acesso."
             )
+        return await self.approve_consent(p, req, client, text, iss)
+
+    async def approve_consent(
+        self, p: P, req: dict[str, Any], client: dict[str, Any], text: str, iss: str
+    ) -> Response:
+        """Consent approved: issue the one-time code (only the scopes still ticked) and send the user back."""
+        state = req.get("state")
         chosen = [v for k, v in parse_qsl(text, keep_blank_values=True) if k == "scope"]
         scopes = [s for s in req["scopes"] if s == "mcp" or s in chosen]
         code, now = secrets.token_hex(32), now_ms()

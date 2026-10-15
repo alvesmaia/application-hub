@@ -219,64 +219,83 @@ def route(method: str, rel: str) -> tuple[Op, dict[str, str]] | bool:
     return hit
 
 
-def openapi() -> dict[str, Any]:  # noqa: C901, PLR0915
-    paths: dict[str, Any] = {}
+def _list_params(op: Op) -> list[dict[str, Any]]:
+    params: list[dict[str, Any]] = [
+        {"name": "limit", "in": "query", "required": False, "description": "Itens por página",
+         "schema": {"type": "integer", "minimum": 1}},
+        {"name": "offset", "in": "query", "required": False, "description": "Deslocamento",
+         "schema": {"type": "integer", "minimum": 0}},
+    ]  # fmt: skip
+    if "q" not in op.passed:
+        params.append({"name": "q", "in": "query", "required": False,
+                       "description": "Texto em qualquer campo", "schema": {"type": "string"}})  # fmt: skip
+    params += [
+        {"name": f, "in": "query", "required": False, "description": f"Filtra por {f}",
+         "schema": {"type": "string"}}
+        for f in op.filters
+    ]  # fmt: skip
+    return params
+
+
+def _op_params(op: Op) -> list[dict[str, Any]]:
+    params: list[dict[str, Any]] = [
+        {"name": p.name, "in": p.loc, "required": p.required or p.loc == "path", "description": p.desc,
+         "schema": p.schema}
+        for p in op.params
+    ]  # fmt: skip
+    if op.list is not None:
+        params += _list_params(op)
+    return params
+
+
+def _op_success(op: Op) -> dict[str, Any]:
+    rref = {"$ref": f"#/components/schemas/{op.resp}"}
+    ex = sc.example(op.resp) or {}
+    if op.list is None:
+        return {"description": "Sucesso", "content": {"application/json": {"schema": rref, "example": ex}}}
+    return {
+        "description": "Página da lista",
+        "content": {"application/json": {
+            "schema": {"allOf": [{"$ref": "#/components/schemas/Page"},
+                                 {"type": "object",
+                                  "properties": {"items": {"type": "array", "items": rref}}}]},
+            "example": {"items": [ex], "total": 1, "limit": 50, "offset": 0, "next": None}}},
+    }  # fmt: skip
+
+
+def _op_responses(op: Op) -> dict[str, Any]:
     problem = {"$ref": "#/components/responses/Problem"}
+    responses: dict[str, Any] = {"2XX" if op.write else "200": _op_success(op)}
+    codes = ["400", "401", "403", "404", "429"]
+    if op.write:
+        codes += ["409", "503"]
+    if op.body:
+        codes += ["413", "415"]
+    for c in codes:
+        responses[c] = problem
+    return responses
+
+
+def _operation(op: Op) -> dict[str, Any]:
+    o: dict[str, Any] = {
+        "operationId": op.id, "summary": op.summary, "tags": [op.tag], "parameters": _op_params(op),
+        "responses": _op_responses(op), "x-hub-destructive": op.destructive, "x-hub-mcp": op.mcp,
+    }  # fmt: skip
+    if op.body == MULTIPART:
+        o["requestBody"] = {"required": True, "content": {"multipart/form-data": {"schema": {
+            "type": "object", "required": ["package"],
+            "properties": {"package": {"type": "string", "contentEncoding": "binary"},
+                           "env": {"type": "string", "enum": ["producao", "staging"]}}}}}}  # fmt: skip
+    elif op.body:
+        o["requestBody"] = {"required": True, "content": {"application/json": {
+            "schema": {"$ref": f"#/components/schemas/{op.body}"}, "example": sc.example(op.body) or {}}}}  # fmt: skip
+    return o
+
+
+def openapi() -> dict[str, Any]:
+    paths: dict[str, Any] = {}
     for op in OPS:
-        params: list[dict[str, Any]] = [
-            {"name": p.name, "in": p.loc, "required": p.required or p.loc == "path", "description": p.desc,
-             "schema": p.schema}
-            for p in op.params
-        ]  # fmt: skip
-        if op.list is not None:
-            params += [
-                {"name": "limit", "in": "query", "required": False, "description": "Itens por página",
-                 "schema": {"type": "integer", "minimum": 1}},
-                {"name": "offset", "in": "query", "required": False, "description": "Deslocamento",
-                 "schema": {"type": "integer", "minimum": 0}},
-            ]  # fmt: skip
-            if "q" not in op.passed:
-                params.append({"name": "q", "in": "query", "required": False,
-                               "description": "Texto em qualquer campo", "schema": {"type": "string"}})  # fmt: skip
-            params += [
-                {"name": f, "in": "query", "required": False, "description": f"Filtra por {f}",
-                 "schema": {"type": "string"}}
-                for f in op.filters
-            ]  # fmt: skip
-        rref = {"$ref": f"#/components/schemas/{op.resp}"}
-        ex = sc.example(op.resp) or {}
-        if op.list is not None:
-            ok: dict[str, Any] = {
-                "description": "Página da lista",
-                "content": {"application/json": {
-                    "schema": {"allOf": [{"$ref": "#/components/schemas/Page"},
-                                         {"type": "object",
-                                          "properties": {"items": {"type": "array", "items": rref}}}]},
-                    "example": {"items": [ex], "total": 1, "limit": 50, "offset": 0, "next": None}}},
-            }  # fmt: skip
-        else:
-            ok = {"description": "Sucesso", "content": {"application/json": {"schema": rref, "example": ex}}}
-        responses: dict[str, Any] = {"2XX" if op.write else "200": ok}
-        codes = ["400", "401", "403", "404", "429"]
-        if op.write:
-            codes += ["409", "503"]
-        if op.body:
-            codes += ["413", "415"]
-        for c in codes:
-            responses[c] = problem
-        o: dict[str, Any] = {
-            "operationId": op.id, "summary": op.summary, "tags": [op.tag], "parameters": params,
-            "responses": responses, "x-hub-destructive": op.destructive, "x-hub-mcp": op.mcp,
-        }  # fmt: skip
-        if op.body == MULTIPART:
-            o["requestBody"] = {"required": True, "content": {"multipart/form-data": {"schema": {
-                "type": "object", "required": ["package"],
-                "properties": {"package": {"type": "string", "contentEncoding": "binary"},
-                               "env": {"type": "string", "enum": ["producao", "staging"]}}}}}}  # fmt: skip
-        elif op.body:
-            o["requestBody"] = {"required": True, "content": {"application/json": {
-                "schema": {"$ref": f"#/components/schemas/{op.body}"}, "example": sc.example(op.body) or {}}}}  # fmt: skip
-        paths.setdefault(op.full_path, {})[op.method.lower()] = o
+        paths.setdefault(op.full_path, {})[op.method.lower()] = _operation(op)
     tags = list(dict.fromkeys(o.tag for o in OPS))
     return {
         "openapi": "3.1.0",

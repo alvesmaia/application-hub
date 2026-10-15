@@ -9,7 +9,7 @@ from __future__ import annotations
 import asyncio
 import json
 import time
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from fastapi import FastAPI, Request
@@ -145,7 +145,48 @@ async def ops_map(request: Request, p: P, e: Any, token: str) -> dict[str, dict[
     return await _cached(request.app, "ops", e, 300, fetch)  # type: ignore[no-any-return]
 
 
-async def app_tools(request: Request, p: P, mode: str, confirm_desc: str, note: Any) -> list[dict[str, Any]]:  # noqa: PLR0915
+def _tool_allowed(name: str, inc: list[str], exc: list[str]) -> bool:
+    return valid_tool_name(name) and not (inc and name not in inc) and name not in exc
+
+
+def _tool_schema(v: dict[str, Any], destructive: bool, mode: str, confirm_desc: str) -> dict[str, Any]:
+    schema: dict[str, Any] = (
+        v["inputSchema"] if isinstance(v.get("inputSchema"), dict) else {"type": "object"}
+    )
+    if len(json.dumps(schema)) > 16 * 1024:
+        schema = {"type": "object"}
+    if destructive and mode == "confirm":
+        props: dict[str, Any] = dict(schema.get("properties") or {})
+        props["confirm_token"] = {"type": "string", "description": confirm_desc}
+        schema = {**schema, "properties": props}
+    return schema
+
+
+def _tool_entry(
+    e: Any, name: str, v: dict[str, Any], op: dict[str, Any] | None, flags: tuple[bool, bool], schema: dict[str, Any],
+    note: str,
+) -> dict[str, Any]:  # fmt: skip
+    destructive, read_only = flags
+    title = "".join(c for c in str(v.get("title") or name) if c.isprintable())[:80]
+    desc = untrusted_text(e.id, str(v.get("description") or ""), 500)
+    operation = f"{op['method']} {op['path']}" if op else None
+    return {
+        "name": f"{e.id}.{name}",
+        "title": f"[{e.name}] {title}",
+        "description": f"[{e.name}] {desc}{note}",
+        "inputSchema": schema,
+        "annotations": {
+            "title": f"[{e.name}] {title}",
+            "readOnlyHint": read_only,
+            "destructiveHint": destructive,
+            "idempotentHint": read_only,
+            "openWorldHint": False,
+        },
+        "_app": {"app": e.id, "tool": name, "op": operation},
+    }
+
+
+async def app_tools(request: Request, p: P, mode: str, confirm_desc: str, note: Any) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     for e, token in app_targets(request, p):
         m = e.manifest.mcp
@@ -153,45 +194,16 @@ async def app_tools(request: Request, p: P, mode: str, confirm_desc: str, note: 
         ops = await ops_map(request, p, e, token)
         for v in (await tool_list(request, e, token))[:200]:
             name = v.get("name")
-            if (
-                not isinstance(name, str)
-                or not valid_tool_name(name)
-                or (inc and name not in inc)
-                or name in exc
-            ):
+            if not isinstance(name, str) or not _tool_allowed(name, inc, exc):
                 continue
             hint = (v.get("annotations") or {}).get("destructiveHint") is True
             destructive, read_only = tool_destructive(m, ops, name, hint)
             if destructive and mode == "deny":
                 continue
-            op = (ops or {}).get(name)
-            schema: dict[str, Any] = (
-                v["inputSchema"] if isinstance(v.get("inputSchema"), dict) else {"type": "object"}
-            )
-            if len(json.dumps(schema)) > 16 * 1024:
-                schema = {"type": "object"}
-            if destructive and mode == "confirm":
-                props: dict[str, Any] = dict(schema.get("properties") or {})
-                props["confirm_token"] = {"type": "string", "description": confirm_desc}
-                schema = {**schema, "properties": props}
-            title = "".join(c for c in str(v.get("title") or name) if c.isprintable())[:80]
-            desc = untrusted_text(e.id, str(v.get("description") or ""), 500)
-            operation = f"{op['method']} {op['path']}" if op else None
+            schema = _tool_schema(v, destructive, mode, confirm_desc)
+            suffix = note(mode) if destructive else ""
             out.append(
-                {
-                    "name": f"{e.id}.{name}",
-                    "title": f"[{e.name}] {title}",
-                    "description": f"[{e.name}] {desc}{note(mode) if destructive else ''}",
-                    "inputSchema": schema,
-                    "annotations": {
-                        "title": f"[{e.name}] {title}",
-                        "readOnlyHint": read_only,
-                        "destructiveHint": destructive,
-                        "idempotentHint": read_only,
-                        "openWorldHint": False,
-                    },
-                    "_app": {"app": e.id, "tool": name, "op": operation},
-                }
+                _tool_entry(e, name, v, (ops or {}).get(name), (destructive, read_only), schema, suffix)
             )
     return out
 
@@ -215,15 +227,11 @@ def wrap_result(app: FastAPI, app_id: str, r: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-async def run_app(  # noqa: PLR0915
-    request: Request, p: P, src: dict[str, Any], args: dict[str, Any], text_result: Any
-) -> dict[str, Any]:
-    """Calls the tool in the app on behalf of the user; the result comes back labeled as app data."""
+async def _post_tool_call(
+    request: Request, p: P, e: Any, token: str, src: dict[str, Any], args: dict[str, Any]
+) -> httpx.Response | str:
+    """The app's raw answer, or the error text when it did not answer in time."""
     app = request.app
-    target = next(((e, t) for e, t in app_targets(request, p) if e.id == src["app"]), None)
-    if target is None:
-        return text_result(app, {"error": "app indisponível"}, True)  # type: ignore[no-any-return]
-    e, token = target
     a = {k: v for k, v in args.items() if k != "confirm_token"}
     body = {
         "jsonrpc": "2.0",
@@ -246,9 +254,24 @@ async def run_app(  # noqa: PLR0915
             app.state.apicfg.mcp.tool_timeout_s,
         )
     except TimeoutError:
-        return text_result(app, {"error": "tempo esgotado"}, True)  # type: ignore[no-any-return]
+        return "tempo esgotado"
     except httpx.HTTPError as ex:
-        return text_result(app, {"error": f"app sem resposta ({type(ex).__name__})"}, True)  # type: ignore[no-any-return]
+        return f"app sem resposta ({type(ex).__name__})"
+    return cast(httpx.Response, r)
+
+
+async def run_app(
+    request: Request, p: P, src: dict[str, Any], args: dict[str, Any], text_result: Any
+) -> dict[str, Any]:
+    """Calls the tool in the app on behalf of the user; the result comes back labeled as app data."""
+    app = request.app
+    target = next(((e, t) for e, t in app_targets(request, p) if e.id == src["app"]), None)
+    if target is None:
+        return text_result(app, {"error": "app indisponível"}, True)  # type: ignore[no-any-return]
+    e, token = target
+    r = await _post_tool_call(request, p, e, token, src, args)
+    if isinstance(r, str):
+        return text_result(app, {"error": r}, True)  # type: ignore[no-any-return]
     if r.status_code >= 300:
         return text_result(app, {"error": f"app respondeu {r.status_code}"}, True)  # type: ignore[no-any-return]
     try:
