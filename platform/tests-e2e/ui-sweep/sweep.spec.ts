@@ -147,7 +147,7 @@ for (const u of UNITS) {
         text: (document.body?.innerText || '').trim().slice(0, 120),
       }));
       const credential = CREDENTIAL_PAGES.some((re) => re.test(finalPath));
-      const inShell = shell.header && (shell.rail || u.role === 'anon');
+      const inShell = shell.header && (shell.rail || u.role === 'anon' || DOCS.test(finalPath));  // docs: own layout, no rail
       if (status === 403) {
         if (u.role === 'admin') await push('página', { check: 'http-status', selector: '', message: `HTTP 403 para admin` }, status);
         else if (!inShell) await push('página', { check: 'sem-acesso-fora-do-shell', selector: 'body', message: `403 esperado para ${u.role}, mas a página "sem acesso" não está no shell (header ${shell.header ? 'sim' : 'não'}, rail ${shell.rail ? 'sim' : 'não'}): "${shell.text.replace(/\s+/g, ' ').slice(0, 70)}"` }, status);

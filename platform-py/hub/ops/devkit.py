@@ -149,8 +149,9 @@ async def _page(request: Request, slug: str) -> Response:
         "toc": toc,
         "sections": devdocs.SECTIONS,
         "docs": devdocs.all_docs(),
-        # visitor (public documentation): minimal shell, no menus
-        "base_tpl": "base.html" if getattr(request.state, "user", None) else "public_base.html",
+        # standalone layout for everyone (no hub sidebar); signed in = link back to the hub instead of "Sign in"
+        "base_tpl": "public_base.html",
+        "signed_in": bool(getattr(request.state, "user", None)),
         "raw_url": f"/dev/docs/{doc.raw}.md",
         "prompt": devdocs.prompt(lang, base) if doc.slug == "" else "",
         "agents": devdocs.AGENTS,

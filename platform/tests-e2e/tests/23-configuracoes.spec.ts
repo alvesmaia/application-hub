@@ -25,7 +25,10 @@ test('menu do usuário só com Minha conta, Desenvolvedores, tour e Sair @core',
   const pop = page.locator('.hub-user-popover');
   await expect(pop.locator('.hub-user-who')).toBeVisible();
   await expect(pop.getByRole('link', { name: 'Minha conta' })).toBeVisible();
-  await expect(pop.getByRole('link', { name: 'Desenvolvedores' })).toHaveAttribute('href', '/developers');
+  const dev = pop.getByRole('link', { name: /^Desenvolvedores/ });
+  await expect(dev).toHaveAttribute('href', '/developers');
+  await expect(dev).toHaveAttribute('target', '_blank');
+  await expect(dev).toHaveAttribute('rel', 'noopener');
   await expect(pop.getByRole('button', { name: 'Fazer o tour guiado' })).toBeVisible();
   await expect(pop.getByRole('button', { name: 'Sair' })).toBeVisible();
   await expect(pop.locator('[role="radiogroup"], select')).toHaveCount(0);

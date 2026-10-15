@@ -95,6 +95,13 @@ test('developers: fallback sem área de transferência (contexto não seguro)', 
   expect(await page.evaluate(() => (window as unknown as { __exec: number }).__exec)).toBe(1);
 });
 
+test('developers: com sessão, layout próprio sem a barra lateral do hub @core', async ({ page }) => {
+  await page.goto('/developers/cli');
+  await expect(page.locator('.platform-rail')).toHaveCount(0);
+  await expect(page.locator('.hub-user-menu')).toHaveCount(0);
+  await expect(page.locator('.platform-header').getByRole('link', { name: 'Voltar ao início' })).toHaveAttribute('href', '/');
+});
+
 test('developers: capturas claro/escuro', async ({ page }) => {
   for (const theme of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme: theme });

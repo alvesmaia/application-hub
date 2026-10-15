@@ -204,10 +204,9 @@ def _rail(request: Request, body_class: str) -> tuple[str, str, str]:
     """(rail context, body classes, mode): the rail mode is stored separately inside and outside apps
     (cookie `hub_rail_<ctx>`, written by hub-ux.js), so the server already renders the page in the right mode."""
     in_app = "in-app" in body_class
-    in_docs = request.url.path.startswith("/developers")  # docs: 3 columns, rail collapsed by default
-    rail_ctx = "app" if in_app else "docs" if in_docs else "hub"
+    rail_ctx = "app" if in_app else "hub"
     chosen = request.cookies.get(f"hub_rail_{rail_ctx}", "")
-    default = "hidden" if in_app else "collapsed" if in_docs else "expanded"
+    default = "hidden" if in_app else "expanded"
     mode = chosen if chosen in ("expanded", "collapsed", "hidden") else default
     body_class = " ".join([f"rail-{mode}", *[c for c in body_class.split() if not c.startswith("rail-")]])
     return rail_ctx, body_class, mode

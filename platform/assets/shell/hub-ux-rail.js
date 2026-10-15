@@ -46,10 +46,10 @@
   (function railToggle() {
     const btn = document.querySelector('[data-hub-rail-toggle]');
     if (!btn) return;
-    const ctx = ['app', 'docs'].includes(btn.dataset.railCtx) ? btn.dataset.railCtx : 'hub';
+    const ctx = btn.dataset.railCtx === 'app' ? 'app' : 'hub';
     const MODES = ['expanded', 'collapsed', 'hidden'];
     const key = `hub-rail-mode:${ctx}`;
-    const current = () => MODES.find((m) => body.classList.contains(`rail-${m}`)) || ({ app: 'hidden', docs: 'collapsed' }[ctx] || 'expanded');
+    const current = () => MODES.find((m) => body.classList.contains(`rail-${m}`)) || (ctx === 'app' ? 'hidden' : 'expanded');
     const nextOf = (m) => MODES[(MODES.indexOf(m) + 1) % MODES.length];
     function apply(m, persist) {
       MODES.forEach((x) => body.classList.toggle(`rail-${x}`, x === m));

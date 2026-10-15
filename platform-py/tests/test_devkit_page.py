@@ -53,8 +53,12 @@ def test_docs_are_public_without_shell(hub: TestClient) -> None:
     assert llms.status_code == 200 and "http://testserver/dev/docs/guia-tempo-real.md" in llms.text
     assert anon.get("/dev/llms.txt").text == llms.text  # same index under /dev/* (allowed in proxies/Access)
     assert anon.post("/developers", follow_redirects=False).status_code != 200
-    logged = hub.get("/developers").text
-    assert "hub-user-menu" in logged and 'type="text/markdown" href="/dev/docs/comecar.md"' in logged
+    logged = hub.get(
+        "/developers"
+    ).text  # signed in: same standalone layout, link back to the hub instead of "Sign in"
+    assert "platform-rail" not in logged and "hub-user-menu" not in logged and "/login?next=" not in logged
+    assert 'data-dev-back-hub="" href="/"' in logged
+    assert 'type="text/markdown" href="/dev/docs/comecar.md"' in logged
 
 
 def test_docs_private_when_disabled(hub: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -143,9 +147,12 @@ def test_dist_dir_default(monkeypatch: pytest.MonkeyPatch) -> None:
     assert devkit.dist_dir().name == "cli"
 
 
-def test_docs_rail_collapsed_by_default_and_bash_flow(hub: TestClient) -> None:
-    html = hub.get("/developers").text  # hub (admin): rail collapsed in the docs, own choice (`docs`)
-    assert 'class="rail-collapsed' in html and 'data-rail-ctx="docs"' in html
+def test_docs_never_show_the_rail_and_bash_flow(hub: TestClient) -> None:
+    for url in ("/developers", "/developers/guias", "/developers/cli"):  # admin signed in: no hub sidebar
+        html = hub.get(url).text
+        assert (
+            "platform-rail" not in html and "data-rail-ctx" not in html and "rail-hidden dev-public" in html
+        ), url
     out = devdocs.highlight("for a in x; do echo $a; done\nif hub check; then hub dev; fi\n", "bash")
     assert '<span class="hl-nf">echo</span>' in out and '<span class="hl-nf">hub</span>' in out
     assert '<span class="hl-nf">a</span>' not in out
@@ -178,7 +185,11 @@ def test_developers_lives_in_the_user_menu_not_the_rail(hub: TestClient) -> None
     rail = html.split('<aside class="platform-rail"', 1)[1].split('<div class="hub-drawer-account', 1)[0]
     popover = html.split('class="header-popover hub-user-popover"', 1)[1].split("</details>", 1)[0]
     assert 'href="/developers"' not in rail
-    assert 'href="/developers" data-hub-developers=""' in popover and "Desenvolvedores" in popover
+    link = popover.split('href="/developers"', 1)[1].split("</a>", 1)[0]
+    assert 'target="_blank" rel="noopener" data-hub-developers=""' in link and "Desenvolvedores" in link
+    assert '<span class="visually-hidden"> (abre em nova guia)</span>' in link
+    en = hub.get("/admin/users", headers={"accept-language": "en"}).text
+    assert "(opens in a new tab)" in en
 
 
 def test_developers_menu_entry_follows_the_old_rail_rule() -> None:
