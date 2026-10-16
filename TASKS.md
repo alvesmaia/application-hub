@@ -30,14 +30,19 @@
 
 ## MCP / OAuth
 - ✅ 25 · Avisos "Duplicate Operation ID" nos apps desde o openapi_of da tarefa 10
-- ▶️ 26 · Login OAuth do MCP falha externamente — cliente do registro dinâmico expirava em 1 h
+- ✅ 26 · Login OAuth do MCP falha externamente — cliente do registro dinâmico expirava em 1 h
   - ✅ público: /mcp 401 + resource_metadata; metadata 200; /oauth/register, token, revoke passam pelo Access
   - ✅ registro dinâmico com retorno https (claude.ai) aceito; /oauth/authorize → Access → /login com a URL inteira
   - ✅ login Entra guarda a URL de volta (cookie Secure/HttpOnly/Lax, 10 min); app do Entra do login intacto
   - ✅ reproduzido com mcp-remote em container pela internet: client_id em cache → "client_id desconhecido"
   - ✅ correção: registro não usado vale 30 dias (teste test_registered_client_survives_a_late_sign_in)
-  - ⬜ deploy na :8090 e novo login do container
-  - ⬜ dono remove os clientes diag-claude-ai e diag-copilot-cli em Credenciais › OAuth
+  - ✅ deploy na :8090; container pela internet: login, token, initialize, tools/list, status_get ok
+  - ⬜ dono remove os clientes de teste diag-claude-ai, diag-copilot-cli e "MCP CLI Proxy" em Credenciais › OAuth
+
+## Login
+- ⬜ 27 · Ícone do botão de login SSO igual ao da aplicação da sessão "Set Alvesmaia"
+  - ⬜ consultar a sessão "Set Alvesmaia": qual botão/ícone de login SSO ela usa
+  - ⬜ ajustar o ícone no login do application hub (+ ui-sweep)
 
 ## Fechamento
 - ✅ 21 · Integração, E2E das telas, ui-sweep, deploy na :8090, limpeza
