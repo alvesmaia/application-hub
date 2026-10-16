@@ -94,12 +94,12 @@ async def _body(request: Request) -> bytes:
     )
     if int(request.headers.get("content-length") or 0) > MAX_BODY:
         raise too_big
-    body = b""
+    body = bytearray()  # in place: `bytes +=` copies the whole package on every chunk
     async for chunk in request.stream():
         body += chunk
         if len(body) > MAX_BODY:
             raise too_big
-    return body
+    return bytes(body)
 
 
 async def _owner(request: Request, record: dict[str, Any]) -> P:
