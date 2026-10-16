@@ -14,7 +14,9 @@ K_CLIENT, K_CODE, K_GRANT, K_REFRESH, K_ACCESS, K_CONSENT = (
     "oauth.client", "oauth.code", "oauth.grant", "oauth.refresh", "oauth.access", "oauth.consent",
 )  # fmt: skip
 DAY_MS = 86_400_000
-UNUSED_CLIENT_MS, KEPT_CLIENT_MS = 3_600_000, 3650 * DAY_MS
+# Clients cache the client_id (RFC 7591 has no expiry) and retry the sign-in hours or days later; floods are
+# bounded by MAX_UNUSED_CLIENTS and the registration rate limits, not by a short lifetime.
+UNUSED_CLIENT_MS, KEPT_CLIENT_MS = 30 * DAY_MS, 3650 * DAY_MS
 MAX_UNUSED_CLIENTS, PENDING_CONSENT_RESERVE = 2000, 100
 REGISTER_GLOBAL, REGISTER_PER_IP, REGISTER_GLOBAL_WEIGHT = 600, 20, 5
 CONSENT_PER_USER, REVOKE_PER_IP, TOKEN_PER_IP = 60, 300, 300

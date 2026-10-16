@@ -361,6 +361,19 @@ def test_registration_rate_limit_per_ip(hub: TestClient) -> None:
     assert codes[:20] == [201] * 20 and set(codes[20:]) == {429}
 
 
+def test_registered_client_survives_a_late_sign_in(hub: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Clients (mcp-remote, Claude, Copilot) cache the client_id and retry later: a registration that is
+    not used within the hour must not turn into "client_id desconhecido" on the next attempt."""
+    from hub.api import records
+
+    cid = register(hub)["client_id"]
+    _, ch = pkce()
+    later = records._now() + 8 * 3_600_000
+    monkeypatch.setattr(records, "_now", lambda: later)
+    r, nonce = consent(hub, cid, ch)
+    assert "Cliente inválido" not in r.text and nonce, r.text
+
+
 def test_confidential_client_authentication(hub: TestClient) -> None:
     cl = register(hub, method="client_secret_basic")
     cid, secret = cl["client_id"], cl["client_secret"]

@@ -7,6 +7,11 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Fixed
+- MCP OAuth: a dynamically registered client that did not finish the sign-in within one hour was deleted, and every
+  later attempt with the cached `client_id` (mcp-remote, Claude, Copilot) failed with "client_id desconhecido";
+  unused registrations now last 30 days (still capped by the unused-client limit and the registration rate limits).
+
 ### Changed
 - Developer docs: the agent instructions (and the copy-prompt button) are served at `/dev/docs/AGENTS.md`, the app
   rules at `/dev/docs/AGENTS-app.md`; the old `agente.md`/`agents.md` answer 308.
