@@ -51,11 +51,23 @@ def _upload_target(request: Request, form: FormData) -> tuple[str, str | None]:
     return env, commit
 
 
+async def _config(form: FormData) -> dict[str, dict[str, str]]:
+    """`config` as text (`-F 'config=<values.json'`, the screen) or as a file part (`-F config=@values.json`)."""
+    raw = form.get("config")
+    text = (
+        (await raw.read(64 * 1024 + 1)).decode(errors="replace")
+        if isinstance(raw, UploadFile)
+        else str(raw or "")
+    )
+    return newapp.parse_config(text) or {}
+
+
 @router.post("/packages")
 async def upload(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:
     form = await request.form()
     up, data = await _package(form)
     env, commit = _upload_target(request, form)
+    config = await _config(form)
     file_name = "".join(c for c in (up.filename or "pacote.hubapp") if c.isprintable())[:120]
     ci = request.query_params.get("origin") == "ci"
     origin = "GitHub Actions" if ci else "Import manual"
@@ -65,7 +77,7 @@ async def upload(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:
     ops.log("INFO", "platform", actor, f"pacote {file_name} recebido ({-(-len(data) // 1024)} KB) · "
         f"{'Staging' if env == 'staging' else 'Produção'} · {origin}")  # fmt: skip
     coro = run_import(ops, Upload(job["id"], data, env, origin, (commit or "—")[:12].lower(), file_name, actor,
-                                  str(request.state.user["id"]), newapp.parse_config(str(form.get("config") or "")) or {}))  # fmt: skip
+                                  str(request.state.user["id"]), config))  # fmt: skip
     if request.query_params.get("wait") == "true":
         await coro
         return JSONResponse(job, status_code=201 if job["ok"] else 422)

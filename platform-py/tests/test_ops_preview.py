@@ -147,3 +147,13 @@ def test_import_tab_main_flow_and_validator_in_ci_tab(hub: TestClient) -> None:
     assert 'placeholder="{' in area.group(0) and "<details" in ci
     en = hub.get("/admin/deploys", headers={"accept-language": "en"}).text
     assert "Deploy to staging" in en and "Package preview" in en
+
+
+def test_upload_config_as_a_file_part_like_curl_at_sign(hub: TestClient) -> None:
+    """`curl -F config=@values.json` sends the file as a part (not text); the hub reads it the same way."""
+    req = {"variables": ["API_URL"], "secrets": ["API_KEY"]}
+    config = json.dumps({"variables": {"API_URL": "http://api.local"}, "secrets": {"API_KEY": SECRET}})
+    files = {"package": ("p.hubapp", manifest_pkg(requires=req)), "config": ("values.json", config.encode())}
+    r = hub.post("/api/ops/packages?wait=true", files=files, data={"env": "staging"}, headers=XH)
+    assert r.json()["provisioned"]["secrets"] == ["API_KEY"], r.text
+    assert SECRET not in r.text
