@@ -1,6 +1,7 @@
 import asyncio
 import json
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any
 
 import fake_entra
@@ -65,6 +66,9 @@ def test_sso_button_is_light_so_the_microsoft_logo_keeps_its_colors(sso: TestCli
     sso_link = page.split("data-sso-entra", 1)[0].rsplit("<a ", 1)[1]
     assert 'class="secondary-button auth-submit auth-sso"' in sso_link
     assert '<svg viewBox="0 0 21 21" width="18" height="18"' in page
+    # the generic `.secondary-button svg` line-icon rule (stroke: currentColor, 14px) outlines every square
+    css = (Path(__file__).parents[2] / "platform/assets/web/auth.css").read_text(encoding="utf-8")
+    assert ".auth-sso svg{flex:none;width:18px;height:18px;stroke:none}" in css
 
 
 def test_success_jit_provisioning_and_session(sso: TestClient) -> None:
