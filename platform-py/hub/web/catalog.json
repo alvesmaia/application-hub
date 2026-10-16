@@ -7838,5 +7838,105 @@
 [
 "Contrato de variáveis de staging: {} vale em produção e em staging. Staging nunca recebe credenciais de banco de produção: tire o vínculo de staging e provisione o banco de staging (Containers › detalhes do app › Banco próprio de staging).",
 "Staging variables contract: {} applies in production and in staging. Staging never receives production database credentials: remove the staging binding and provision the staging database (Containers › app details › Own staging database)."
+],
+[
+"A implantação usa o manifest.json que está dentro do pacote. Escolha o .hubapp, confira a prévia, preencha as variáveis e os segredos pedidos, escolha o ambiente e implante.",
+"The deployment uses the manifest.json inside the package. Choose the .hubapp, check the preview, fill in the variables and secrets it asks for, choose the environment and deploy."
+],
+[
+"Prévia do pacote",
+"Package preview"
+],
+[
+"O hub provisiona",
+"The hub provisions"
+],
+[
+"Variáveis e segredos",
+"Variables and secrets"
+],
+[
+"Deixe vazio para manter o valor atual no hub. Segredos não são exibidos de volta nem registrados.",
+"Leave empty to keep the current value in the hub. Secrets are never shown back or logged."
+],
+[
+"Implantar em staging",
+"Deploy to staging"
+],
+[
+"Enviar para aprovação (produção)",
+"Send for approval (production)"
+],
+[
+"Staging implanta na hora. Produção fica aguardando aprovação na aba Histórico.",
+"Staging deploys right away. Production waits for approval in the History tab."
+],
+[
+"Validar um manifest.json (opcional)",
+"Validate a manifest.json (optional)"
+],
+[
+"Confere só o texto colado aqui, sem implantar. A implantação usa sempre o manifest.json de dentro do pacote.",
+"Checks only the text pasted here, without deploying. The deployment always uses the manifest.json inside the package."
+],
+[
+"App novo: primeira implantação no hub",
+"New app: first deployment in the hub"
+],
+[
+"Atualiza de {from} para {to}",
+"Updates from {from} to {to}"
+],
+[
+"Primeira versão neste ambiente",
+"First version in this environment"
+],
+[
+"Segredo",
+"Secret"
+],
+[
+"Vazio = manter o valor atual",
+"Empty = keep the current value"
+],
+[
+"Banco de dados",
+"Database"
+],
+[
+"Armazenamento",
+"Storage"
+],
+[
+"Nada",
+"Nothing"
+],
+[
+"Pacote inválido: {error}",
+"Invalid package: {error}"
+],
+[
+"Selecione um arquivo .hubapp válido.",
+"Select a valid .hubapp file."
+],
+[
+"manifest.json inválido (JSON)",
+"invalid manifest.json (JSON)"
+],
+[
+"Empacota, pede os valores de requires.variables/secrets e envia (o mesmo que a aba Importar pacote)",
+"Packs, asks for the requires.variables/secrets values and sends (the same as the Import package tab)"
+],
+[
+"Publica pelo CI e roda o pipeline de validação; ?wait=true aguarda o resultado",
+"Publishes from CI and runs the validation pipeline; ?wait=true waits for the result"
+],
+[
+"Planejado: limites locais e execução em container",
+"Planned: local limits and running in a container"
+],
+[
+"Voltar para esta versão",
+"Go back to this version"
 ]
 ]

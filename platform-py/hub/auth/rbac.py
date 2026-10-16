@@ -97,7 +97,7 @@ def token_covers(token: dict[str, Any], scope: str) -> bool:
 
 
 def token_action(method: str, path: str) -> str | None:
-    if method == "POST" and path == "/api/ops/packages":
+    if method == "POST" and path in ("/api/ops/packages", "/api/ops/packages/preview"):
         return "upload"
     if method == "GET" and (
         path == "/api/ops/deployments"

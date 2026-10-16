@@ -104,7 +104,7 @@ def parse_config(raw: str) -> dict[str, dict[str, str]]:
         vals = data.get(kind) or {}
         if not isinstance(vals, dict) or len(vals) > 64:
             raise OpsError(f"config.{kind} inválido.")
-        out[kind] = {str(k): str(v) for k, v in vals.items()}
+        out[kind] = {str(k): str(v) for k, v in vals.items() if v not in ("", None)}  # empty = keep current
     return out
 
 

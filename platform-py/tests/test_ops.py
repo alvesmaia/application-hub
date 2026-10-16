@@ -716,7 +716,11 @@ def test_sdk_page_and_manifest_validate(hub: TestClient) -> None:
     """F7a: /admin/sdk existed only in the menu (404); manifest validation serves the screen."""
     assert hub.get("/admin/sdk").headers["location"] == "/admin/deploys"
     page = hub.get("/admin/deploys")
-    assert page.status_code == 200 and "data-ops-validate" in page.text and "Validar o manifest" in page.text
+    assert (
+        page.status_code == 200
+        and "data-ops-validate" in page.text
+        and "Validar um manifest.json" in page.text
+    )
     ok = hub.post(
         "/api/ops/manifest/validate",
         content=json.dumps({"id": "novoapp", "name": "N", "version": "1", "routes": ["/novoapp/*"]}),

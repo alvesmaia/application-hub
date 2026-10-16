@@ -28,7 +28,7 @@ async def guard(request: Request) -> None:
     if request.method in ("GET", "HEAD", "OPTIONS"):
         return
     ct = request.headers.get("content-type", "").split(";")[0].strip().lower()
-    if request.url.path == "/api/ops/packages":
+    if request.url.path in ("/api/ops/packages", "/api/ops/packages/preview"):
         if ct != "multipart/form-data":
             raise OpsError("Envie o pacote como multipart/form-data (campo package).", 415)
         if request.headers.get("x-hub-request") != "1":

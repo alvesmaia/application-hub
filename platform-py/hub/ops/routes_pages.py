@@ -48,11 +48,10 @@ MANIFEST_EXAMPLE = """{
   "id": "fornecedores",
   "name": "Rede de Fornecedores",
   "version": "1.8.0",
-  "mode": "fragment",
   "routes": ["/fornecedores/*"],
   "resources": { "cpu": 1.0, "memory": "1Gi", "pids": 100 },
-  "env": ["API_BASE_URL", "SMTP_PASSWORD"],
   "permissions": ["fornecedores.read"],
+  "requires": { "database": true, "variables": ["API_BASE_URL"], "secrets": ["SMTP_PASSWORD"] },
   "sdk": "1.0",
   "jobs": [{ "name": "fornecedores.reprocessar", "max_duration_s": 600, "max_attempts": 3 }]
 }"""
@@ -60,10 +59,11 @@ MANIFEST_EXAMPLE = """{
 SDK_CMDS = [
     ("hub dev --dir . --upstream http://127.0.0.1:3000", "Shell local (porta 4173) + proxy para o app nativo, identidade simulada (--role admin)"),
     ("hub pack --dir . --image registro/app@sha256:…", "Valida o manifest, exige digest e gera o .hubapp com checksums.txt"),
-    ('curl -H "Authorization: Bearer $HUB_TOKEN" -H "X-Hub-Request: 1" -F package=@app.hubapp …/api/ops/packages', "Publica (UI ou CI) e roda o pipeline de validação; ?wait=true aguarda o resultado"),
+    ("hub deploy --env staging", "Empacota, pede os valores de requires.variables/secrets e envia (o mesmo que a aba Importar pacote)"),
+    ('curl -H "Authorization: Bearer $HUB_TOKEN" -H "X-Hub-Request: 1" -F package=@app.hubapp …/api/ops/packages', "Publica pelo CI e roda o pipeline de validação; ?wait=true aguarda o resultado"),
     ("POST /api/ops/deployments/{id}/promote · /rollback", "Promove a mesma versão ou volta à anterior (pela tela de Implantações)"),
     ("POST /api/ops/backups/{app}/run", "Backup sob demanda; restore, clone e teste pelo histórico"),
-    ("hub dev --limits · --container · hub publish", "Planejado: limites locais, execução em container e publicação pela CLI"),
+    ("hub dev --limits · --container", "Planejado: limites locais e execução em container"),
 ]  # fmt: skip
 
 router = APIRouter()

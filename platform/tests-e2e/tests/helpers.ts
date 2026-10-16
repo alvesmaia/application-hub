@@ -114,14 +114,15 @@ export function appImage(app: string): string {
 }
 
 /** Packs `samples/src/<app>` with another version, pointing to the local image by Image ID. */
-export function packSample(app: string, version: string): string {
+/** `.hubapp` of a sample app at `version`; `extra` overrides manifest fields (e.g. `requires`). */
+export function packSample(app: string, version: string, extra: Record<string, unknown> = {}): string {
   const src = path.join(PLATFORM, 'samples', 'src', app);
   const dir = path.join(WORK_DIR, `pkg-${app}-${version}`);
   fs.rmSync(dir, { recursive: true, force: true });
   fs.cpSync(src, dir, { recursive: true });
   const mf = path.join(dir, 'manifest.json');
   const m = JSON.parse(fs.readFileSync(mf, 'utf8'));
-  m.version = version;
+  Object.assign(m, extra, { version });
   fs.writeFileSync(mf, JSON.stringify(m, null, 2));
   const image = appImage(app);
   const out = path.join(WORK_DIR, `${app}-${version}.hubapp`);

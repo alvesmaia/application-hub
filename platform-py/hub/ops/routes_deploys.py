@@ -15,6 +15,8 @@ from hub.ops import pipeline as pl
 from hub.ops.deploy_jobs import Upload, run_deploy, run_import
 from hub.ops.model import Data, OpsError, now_ms
 from hub.ops.opsctx import OpsCtx, ctx
+from hub.ops.package_preview import PackagePreview, preview
+from hub.ux.texts import tr
 
 router = APIRouter()
 
@@ -69,6 +71,15 @@ async def upload(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:
         return JSONResponse(job, status_code=201 if job["ok"] else 422)
     ops.spawn(coro)
     return JSONResponse(job, status_code=202)
+
+
+@router.post("/packages/preview")
+async def package_preview(request: Request, ops: OpsCtx = Depends(ctx)) -> PackagePreview:
+    """What the package would deploy (id, version, new or update, `requires`), without deploying anything."""
+    _, data = await _package(await request.form())
+    pv = preview(data, ops.registry.entries(), ops.store.read()["deployments"])
+    pv.error = pv.error and tr(pv.error, getattr(request.state, "lang", "pt-BR"))
+    return pv
 
 
 @router.post("/manifest/validate")

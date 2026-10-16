@@ -16,10 +16,19 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   loopback/HTTPS ones kept.
 
 ### Changed
+- Deployments › Import package: the main flow is choose the `.hubapp` → preview → variables/secrets → environment →
+  deploy. The button states its effect ("Implantar em staging" / "Enviar para aprovação (produção)"). The manifest
+  validator moved, collapsed and empty (the example is only a placeholder), to the "Pipeline e CI" tab: the
+  deployment always used the manifest inside the package. Empty `config` values are dropped (= keep the hub's value).
+  Step-by-step manual import in `platform/docs/dev/guias/publicar.md` (and pointers in the other docs).
 - Developer docs: the agent instructions (and the copy-prompt button) are served at `/dev/docs/AGENTS.md`, the app
   rules at `/dev/docs/AGENTS-app.md`; the old `agente.md`/`agents.md` answer 308.
 
 ### Added
+- `POST /api/ops/packages/preview` (multipart `package`, `X-Hub-Request: 1`, same permission and token action as the
+  upload): reads only `manifest.json` from the package and returns id, name, version, new app or the current version
+  per environment, and `requires` (names only). The Import tab shows it before deploying, with one field per
+  `requires.variables`/`requires.secrets` (secrets as password fields) sent as `config`, like `hub deploy`.
 - GitHub icon in the global header (new tab, pt-BR/en label) pointing to `HUB_SOURCE_URL` (default
   `https://github.com/alvesmaia/application-hub`; empty or non-`https://` hides it).
 - `install.sh`: "Revisar opções avançadas?" with every optional setting (MinIO folder, audit anchor folder and

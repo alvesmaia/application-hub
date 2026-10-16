@@ -288,3 +288,8 @@ body.ops-drawer-open{overflow:hidden}
 }
 @media (max-width:1439px){.policies-table th:nth-child(4),.policies-table td:nth-child(4),.policies-table th:nth-child(5),.policies-table td:nth-child(5){display:none}}
 @media (max-width:1100px){.policies-table th:nth-child(6),.policies-table td:nth-child(6){display:none}}
+/* Import tab: package preview (task 29) */
+.ops-preview,.ops-validate-result[data-ops-preview-error]{margin-top:var(--space-12)}
+.ops-subhead{font-size:var(--font-size-sm);margin:var(--space-12) 0 var(--space-6);color:var(--color-text-strong)}
+.ops-pv-tag{display:inline-block;margin-right:var(--space-10)}
+[data-ops-cfg-fields] .form-field label small{margin-left:var(--space-6)}

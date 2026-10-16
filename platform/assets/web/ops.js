@@ -108,6 +108,7 @@
 
   // ---- Deployments ----------------------------------------------------------
   let selectedFile = null;
+  let preview = null; // answer of /packages/preview for selectedFile (names only, never values)
   function pickFile(file) {
     selectedFile = file || null;
     const label = $('[data-ops-file-name]');
@@ -115,11 +116,99 @@
     label.textContent = file ? `${file.name} · ${(file.size / 1024).toFixed(1).replace('.', ',')} KB` : 'Arraste um .hubapp ou clique para selecionar';
     const drop = $('[data-ops-drop]');
     if (drop) drop.classList.toggle('has-file', !!file);
+    runPreview(file);
   }
   document.addEventListener('change', (e) => {
     const input = e.target.closest('[data-ops-file]');
     if (input) pickFile(input.files[0]);
+    if (e.target.closest('[data-ops-env]')) paintImport();
   });
+
+  // ---- Import: preview, variables/secrets and the button that states its effect ----------------
+  const IMPORT_LABEL = { staging: 'Implantar em staging', producao: 'Enviar para aprovação (produção)' };
+  function paintImport() {
+    const env = $('[data-ops-env]');
+    const button = $('[data-ops-import]');
+    if (!env || !button) return;
+    button.textContent = IMPORT_LABEL[env.value];
+    button.disabled = !(preview && preview.valid);
+    const state = $('[data-pv="state"]');
+    if (!state || button.disabled) return;
+    const cur = preview.current[env.value];
+    state.textContent = preview.new ? 'App novo: primeira implantação no hub'
+      : cur ? `Atualiza de ${cur} para ${preview.version}` : 'Primeira versão neste ambiente';
+  }
+
+  function cfgField(kind, name) {
+    const id = `ops-cfg-${kind}-${name}`;
+    const wrap = document.createElement('div');
+    wrap.className = 'form-field';
+    const label = document.createElement('label');
+    label.htmlFor = id;
+    const code = document.createElement('code');
+    code.textContent = name;
+    const small = document.createElement('small');
+    small.className = 'ops-muted';
+    small.textContent = kind === 'secrets' ? 'Segredo' : 'Variável';
+    label.append(code, small);
+    const input = document.createElement('input');
+    Object.assign(input, { id, type: kind === 'secrets' ? 'password' : 'text', placeholder: 'Vazio = manter o valor atual',
+      autocomplete: kind === 'secrets' ? 'new-password' : 'off', spellcheck: false });
+    Object.assign(input.dataset, { opsCfg: kind, name });
+    wrap.append(label, input);
+    return wrap;
+  }
+
+  function paintPreview(pv) {
+    $('[data-pv="app"]').textContent = `${pv.name} (${pv.id})`;
+    $('[data-pv="version"]').textContent = pv.version || '-';
+    const res = $('[data-pv="res"]');
+    res.textContent = '';
+    const tags = [pv.requires.database && 'Banco de dados', pv.requires.storage && 'Armazenamento'].filter(Boolean);
+    for (const t of tags.length ? tags : ['Nada']) {
+      const s = document.createElement('span');
+      s.className = 'ops-pv-tag';
+      s.textContent = t;
+      res.append(s);
+    }
+    const fields = $('[data-ops-cfg-fields]');
+    fields.textContent = '';
+    pv.requires.variables.forEach((n) => fields.append(cfgField('variables', n)));
+    pv.requires.secrets.forEach((n) => fields.append(cfgField('secrets', n)));
+    $('[data-ops-cfg-box]').hidden = !fields.children.length;
+  }
+
+  async function runPreview(file) {
+    preview = null;
+    const box = $('[data-ops-preview]');
+    const err = $('[data-ops-preview-error]');
+    if (!box || !err) return;
+    box.hidden = true;
+    err.hidden = true;
+    paintImport();
+    if (!file) return;
+    const form = new FormData();
+    form.append('package', file, file.name);
+    let pv;
+    try { pv = await call('POST', '/packages/preview', null, { form }); } catch (ex) { pv = { valid: false, error: ex.message }; }
+    if (selectedFile !== file) return; // another file was chosen meanwhile
+    preview = pv;
+    if (pv.valid) paintPreview(pv);
+    else err.textContent = `Pacote inválido: ${pv.error}`;
+    box.hidden = !pv.valid;
+    err.hidden = pv.valid;
+    paintImport();
+  }
+
+  /** Values typed for `requires` (empty = keep the hub's); the inputs are cleared once read. */
+  function takeConfig() {
+    const out = { variables: {}, secrets: {} };
+    for (const input of $$('[data-ops-cfg]')) {
+      if (input.value) out[input.dataset.opsCfg][input.dataset.name] = input.value;
+      input.value = '';
+    }
+    return out;
+  }
   const drop = $('[data-ops-drop]');
   if (drop) {
     ['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('has-file'); }));
@@ -139,12 +228,13 @@
   }
 
   async function runImport(button) {
-    if (!selectedFile) { toast('Selecione um arquivo .hubapp.'); return; }
+    if (!selectedFile || !(preview && preview.valid)) { toast('Selecione um arquivo .hubapp válido.'); return; }
     const status = $('[data-ops-pipeline-status]');
     const env = $('[data-ops-env]').value;
     const form = new FormData();
     form.append('package', selectedFile, selectedFile.name);
     form.append('env', env);
+    form.append('config', JSON.stringify(takeConfig()));
     button.disabled = true;
     status.textContent = 'Validando ' + selectedFile.name;
     paintSteps($$('[data-ops-steps] > li').map(() => ({ state: 'pending', detail: '' })));
