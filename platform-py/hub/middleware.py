@@ -55,13 +55,6 @@ async def translate_errors(request: Request, call_next: Callable[[Request], Awai
     return Response(raw, resp.status_code, headers)
 
 
-def _oauth_flow(request: Request) -> bool:
-    path = request.url.path
-    return path == "/oauth/authorize" or (
-        path == "/login" and request.query_params.get("next", "").startswith("/oauth/authorize")
-    )
-
-
 async def security_headers(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     resp = await call_next(request)
     path = request.url.path
@@ -69,12 +62,8 @@ async def security_headers(request: Request, call_next: Callable[[Request], Awai
         "content-type", ""
     ).startswith("text/html"):
         # Credential screens open in their own browsing group: `window.open` from an app script
-        # receives a window with no DOM access (it does not read the fields). The OAuth sign-in is the
-        # exception: clients like Microsoft 365 Copilot open it in a popup and their redirect page reports
-        # back through `window.opener`, which any COOP here would sever for the rest of the popup's life.
-        resp.headers["cross-origin-opener-policy"] = (
-            "unsafe-none" if _oauth_flow(request) else "noopener-allow-popups"
-        )
+        # receives a window with no DOM access (it does not read the fields).
+        resp.headers["cross-origin-opener-policy"] = "noopener-allow-popups"
     for k, v in _HEADERS.items():
         resp.headers.setdefault(k, v)
     return resp
