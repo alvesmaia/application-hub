@@ -31,10 +31,6 @@ from hub.api.oauth_util import (
 from hub.auth import client_ip
 from hub.state import Change
 
-# Microsoft 365 Copilot (Teams platform) redeems the same code twice within seconds; a confidential client that
-# proves the secret, the redirect_uri and the PKCE verifier again gets one retry instead of a revoked grant.
-CODE_RETRY_GRACE_MS = 30_000
-
 
 class OAuthTokens(OAuthAuthorize):
     # ---- token -------------------------------------------------------------------------------------
@@ -144,24 +140,11 @@ class OAuthTokens(OAuthAuthorize):
         key, redirect_uri, verifier = sha(code), f.get("redirect_uri"), f.get("code_verifier", "")
         gid = f"g{secrets.token_hex(12)}"
         consume = partial(_consume_code, client_id=client["id"], redirect_uri=redirect_uri, verifier=verifier,
-                          ours=ours, gid=gid, now=now, confidential=client["secret_hash"] is not None)  # fmt: skip
+                          ours=ours, gid=gid, now=now)  # fmt: skip
         kind, info = await self.rec.update(K_CODE, key, consume)
-        if kind == "retry":
-            return await self.code_retry(info, client, grant_err)
         if kind != "fresh":
             return await self.code_refused(kind, info, client, grant_err)
         return await self.code_issue(key, gid, info, client, now, grant_err)
-
-    async def code_retry(
-        self, gid: str, client: dict[str, Any], grant_err: Callable[[str], Response]
-    ) -> Response:
-        """A tolerated retry of the same code: a new token pair for the grant the first exchange created."""
-        grant = await self.rec.get(K_GRANT, gid)
-        if grant is None:
-            return grant_err("Código inválido, vencido ou já usado.")
-        await self.audit("OAuth", "OAuth: código reapresentado pelo cliente; novo token emitido",
-                         f"{client['name']} · {client['id']}")  # fmt: skip
-        return self.json_res(200, await self.issue(grant))
 
     async def code_refused(
         self, kind: str, info: Any, client: dict[str, Any], grant_err: Callable[[str], Response]
@@ -294,40 +277,25 @@ class OAuthTokens(OAuthAuthorize):
 
 
 # ---- atomic record updates (run inside `rec.update`, so they only compute the change) ------------------
-def _retry_ok(cur: Any, *, confidential: bool, now: int) -> bool:
-    """The tolerated retry: once, by a confidential client, within the grace window (the caller re-checks the rest)."""
-    fresh = bool(now - cur.get("used_at", 0) <= CODE_RETRY_GRACE_MS)
-    return confidential and fresh and not (cur.get("retried") or cur.get("replayed"))
-
-
-def _code_mismatch(
-    cur: Any, *, client_id: str, redirect_uri: str | None, verifier: str, ours: str
-) -> str | None:
-    if cur["client_id"] != client_id:
-        return "Código emitido para outro cliente."
-    if redirect_uri != cur["redirect_uri"]:
-        return "redirect_uri diferente da usada na autorização."
-    if not pkce_ok(verifier, cur["challenge"]):
-        return "code_verifier inválido (PKCE)."
-    if canon(cur["resource"]) != canon(ours):
-        return "resource diferente do autorizado."
-    return None
-
-
 def _consume_code(
-    cur: Any, *, client_id: str, redirect_uri: str | None, verifier: str, ours: str, gid: str, now: int,
-    confidential: bool,
-) -> tuple[Change, tuple[str, Any]]:  # fmt: skip
+    cur: Any, *, client_id: str, redirect_uri: str | None, verifier: str, ours: str, gid: str, now: int
+) -> tuple[Change, tuple[str, Any]]:
     if cur is None:
         return Change.keep(), ("missing", None)
-    bad = _code_mismatch(cur, client_id=client_id, redirect_uri=redirect_uri, verifier=verifier, ours=ours)
     if g := cur.get("used_grant"):
-        if bad is None and _retry_ok(cur, confidential=confidential, now=now):
-            return Change.set(cur | {"retried": True}, now + 10 * 60_000), ("retry", g)
         return Change.set(cur | {"replayed": True}, now + 10 * 60_000), ("replay", g)
+    bad = None
+    if cur["client_id"] != client_id:
+        bad = "Código emitido para outro cliente."
+    elif redirect_uri != cur["redirect_uri"]:
+        bad = "redirect_uri diferente da usada na autorização."
+    elif not pkce_ok(verifier, cur["challenge"]):
+        bad = "code_verifier inválido (PKCE)."
+    elif canon(cur["resource"]) != canon(ours):
+        bad = "resource diferente do autorizado."
     if bad:
         return Change.keep(), ("rejected", (bad, cur))
-    return Change.set(cur | {"used_grant": gid, "used_at": now}, now + 10 * 60_000), ("fresh", cur)
+    return Change.set(cur | {"used_grant": gid}, now + 10 * 60_000), ("fresh", cur)
 
 
 def _rotate_refresh(cur: Any, *, ttl: int) -> tuple[Change, tuple[str, bool] | None]:
