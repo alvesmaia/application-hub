@@ -11,6 +11,9 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 - MCP OAuth: a dynamically registered client that did not finish the sign-in within one hour was deleted, and every
   later attempt with the cached `client_id` (mcp-remote, Claude, Copilot) failed with "client_id desconhecido";
   unused registrations now last 30 days (still capped by the unused-client limit and the registration rate limits).
+- MCP OAuth: a client metadata document listing a private-use redirect scheme (GitHub Copilot desktop:
+  `github-app://oauth/callback`) was refused whole; unsupported redirect URIs are now dropped and the usable
+  loopback/HTTPS ones kept.
 
 ### Changed
 - Developer docs: the agent instructions (and the copy-prompt button) are served at `/dev/docs/AGENTS.md`, the app

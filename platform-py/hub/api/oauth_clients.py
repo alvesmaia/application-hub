@@ -128,9 +128,10 @@ class OAuthClients(OAuthBase):
         uris = v.get("redirect_uris")
         if not isinstance(uris, list):
             raise OAuthError("documento do cliente sem redirect_uris")
-        if not uris or any(
-            not isinstance(u, str) or not redirect_ok(u, self.cfg.allowed_redirect_hosts) for u in uris
-        ):
+        # native apps list private-use schemes (GitHub Copilot: github-app://) next to loopback; keep only the
+        # usable ones, so the unsupported URI can never be presented
+        uris = [u for u in uris if isinstance(u, str) and redirect_ok(u, self.cfg.allowed_redirect_hosts)]
+        if not uris:
             raise OAuthError("redirect_uris do documento inválidas ou não permitidas")
         if v.get("token_endpoint_auth_method", "none") != "none":
             raise OAuthError("documento do cliente: só token_endpoint_auth_method = none")

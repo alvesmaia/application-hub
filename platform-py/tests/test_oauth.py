@@ -452,6 +452,35 @@ def test_client_metadata_document(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     assert "client_id do documento" in hub.get("/oauth/authorize?" + q).text
 
 
+def serve_cimd(hub: TestClient, doc: dict[str, Any]) -> None:
+    """Fake document host: always answers `doc`, resolved to a public IP."""
+    o = cast(oa.OAuth, hub.app.state.oauth)
+    o.cimd_transport = httpx.MockTransport(lambda _req: httpx.Response(200, json=doc))
+
+    async def resolve(_host: str, _port: int) -> list[str]:
+        return ["93.184.216.34"]
+
+    o.resolver = resolve
+    o.cimd_cache.clear()
+
+
+def test_client_metadata_document_ignores_unsupported_redirect_uris(hub: TestClient) -> None:
+    """GitHub Copilot desktop lists `github-app://oauth/callback` next to loopback URIs and signs in on loopback;
+    the custom scheme is dropped instead of refusing the whole document, and can never be used."""
+    url = "https://github.com/copilot/desktop/client-metadata.json"
+    doc = {"client_id": url, "client_name": "GitHub Copilot", "token_endpoint_auth_method": "none",
+           "redirect_uris": ["github-app://oauth/callback", "http://127.0.0.1/", "http://127.0.0.1/callback"]}  # fmt: skip
+    serve_cimd(hub, doc)
+    _, ch = pkce()
+    ok = hub.get("/oauth/authorize?" + authz_query(url, ch, redirect_uri="http://127.0.0.1:58657/callback"))
+    assert ok.status_code == 200 and 'name="consent"' in ok.text
+    bad = hub.get("/oauth/authorize?" + authz_query(url, ch, redirect_uri="github-app://oauth/callback"))
+    assert bad.status_code == 400 and 'name="consent"' not in bad.text
+    doc["redirect_uris"] = ["github-app://oauth/callback"]
+    serve_cimd(hub, doc)
+    assert "redirect_uris do documento" in hub.get("/oauth/authorize?" + authz_query(url, ch)).text
+
+
 def test_client_metadata_document_never_reaches_internal_addresses(hub: TestClient) -> None:
     _, ch = pkce()
     for url in ("https://localhost/meta.json", "https://127.0.0.1/meta.json", "http://client.example/meta.json",
