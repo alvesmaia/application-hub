@@ -120,3 +120,25 @@ The upload errors come as `{"error": "..."}`; with `-f` curl hides that body, so
 
 The full tool list comes from `tools/list` (it already respects your role and token). Destructive tools carry
 "AÇÃO DESTRUTIVA" in the description and need the confirmation above.
+
+Tools by area (`*` = destructive, needs `confirm_token`):
+
+| Area | Tools |
+|---|---|
+| Apps | `apps_list`, `apps_get`, `apps_status`, `status_get`, `search` |
+| Observability | `observability_summary`, `logs_tail`, `logs_stats` |
+| Deployments | `deployments_list`, `deployments_upload`, `deployments_approve*`, `deployments_promote*`, `deployments_rollback*`, `jobs_get` |
+| Containers | `containers_list`, `containers_start`, `containers_stop*`, `containers_restart*`, `containers_set_limits`, `containers_apply*`, `containers_logs`, `containers_inspect`, `database_provision`, `replicas_get` |
+| Backups | `backups_list`, `backups_run`, `backups_restore*`, `backups_rotate_credentials*`, `backups_set_policy*`, `backups_clone*`, `backups_test`, `backups_aside_list`, `backups_aside_restore*`, `backups_aside_drop*`, `maintenance_clear*` |
+| Tasks | `tasks_list`, `tasks_retry`, `tasks_cancel*` |
+| Variables | `variables_list`, `variables_create`, `variables_update`, `variables_delete*`, `variables_rotate*` |
+| Connections and storage | `connections_list`, `connections_test`, `connections_create`, `connections_update`, `connections_delete*`, `connections_set_bindings*`, `connections_rotate*`, `connections_rotate_storage_token*`, `storage_list`, `storage_provision`, `storage_deprovision*` |
+| Users and roles | `users_list`, `users_create`, `users_update*`, `users_delete*`, `users_unlock`, `roles_list`, `roles_create`, `roles_update`, `roles_delete*`, `roles_set_permission*`, `roles_set_apps*`, `grants_revoke*` |
+| Audit and usage | `audit_query`, `audit_verify`, `usage_query`, `analytics_get`, `analytics_set_retention*`, `analytics_set_terms`, `analytics_rotate_key*` |
+| Inbox | `inbox_list`, `inbox_decide*`, `inbox_mark_read`, `inbox_archive`, `access_request` |
+| Settings and tokens | `settings_get`, `settings_update`, `tokens_list`, `tokens_revoke*`, `tokens_delete*` |
+| Health | `health_list`, `health_create`, `health_check`, `health_update`, `health_delete*`, `slos_list`, `slos_set`, `slos_delete*`, `incidents_list`, `incidents_create`, `incidents_update` |
+| Flags | `flags_list`, `flags_create`, `flags_update`, `flags_delete*`, `flags_set_enabled` |
+
+Secrets are write-only: tools accept them and never return them. On purpose, MCP does not create API tokens, set
+passwords, rotate the vault key or approve an app's own JavaScript: those stay on the hub screens.

@@ -212,3 +212,14 @@ def test_signed_in_docs_keep_the_account_theme(hub: TestClient) -> None:
     visitors follow the system (`auto`)."""
     assert '<html lang="pt-BR" data-theme="light"' in hub.get("/developers").text
     assert 'data-theme="auto"' in TestClient(hub.app).get("/developers").text
+
+
+def test_mcp_guide_lists_every_hub_tool() -> None:
+    """The agent guide's tool table follows the OPS table: a new MCP tool without docs fails here."""
+    from pathlib import Path
+
+    from hub.api import ops
+
+    guide = (Path(__file__).parents[2] / "platform/docs/dev/guias/mcp-api.md").read_text(encoding="utf-8")
+    missing = [o.id for o in ops.OPS if o.mcp and f"`{o.id}`" not in guide and f"`{o.id}*`" not in guide]
+    assert not missing, f"tools missing from mcp-api.md: {missing}"
