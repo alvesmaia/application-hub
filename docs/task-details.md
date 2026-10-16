@@ -112,3 +112,7 @@ Concluídas em 2026-10-15 (`1d189a8`). Lista final como estava no TASKS.md (pend
 ✅ **Task 14 — App de teste do Entra**
 
 2026-10-15: registro "Application Hub - backup SharePoint (teste)" apagado via `az ad app delete` (sem conexões na :8090; restaurável por 30 dias em Aplicativos excluídos). IDs reais de tenant/app nos testes trocados por GUIDs fictícios.
+
+✅ **Melhorias de UX/Design (tarefas 18–28)**
+
+2026-10-16: paginação em /admin/users, /admin/runtime e /admin/backups (18); Desenvolvedores no menu do usuário, abre em nova guia (19); /admin/env com coluna Aplicação e filtro ?app=, botões de banco/token em Containers › detalhes (20); Inbox com select "Mostrar" e paginação (22); ícone do GitHub no header via HUB_SOURCE_URL (23); prompt de copiar aponta para /dev/docs/AGENTS.md (24); sem avisos "Duplicate Operation ID" (25); OAuth do MCP: cliente do registro dinâmico não usado vale 30 dias, validado com mcp-remote em container pela internet (26); botão "Entrar com Microsoft" claro, logo 18px sem contorno (27); travessões removidos dos textos da interface, com guarda test_no_em_dash.py (28); integração, E2E, ui-sweep 0 achados e deploy sem parada na :8090 (21). Pendente do dono: remover os clientes OAuth de teste diag-claude-ai, diag-copilot-cli e "MCP CLI Proxy" em Credenciais › OAuth.
