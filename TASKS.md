@@ -17,7 +17,7 @@
 - ✅ 32 · Guia do agente: publicar e operar pelo MCP (mcp-api.md, AGENTS.md); teste exige toda ferramenta no guia
 
 ## Fechamento
-- ▶️ 33 · hub-check, E2E e ui-sweep na instância isolada, deploy na :8090, limpeza
+- ✅ 33 · hub-check, E2E e ui-sweep na instância isolada, deploy na :8090, limpeza
   - ✅ hub-check --all verde (30/30) na main combinada
-  - ⬜ E2E das telas de Implantações + ui-sweep --quick na instância isolada
-  - ⬜ push, deploy sem parada na :8090, limpeza das worktrees
+  - ✅ E2E 06-ops + 31-import-preview 6/6; ui-sweep --quick 0 achados (instância isolada)
+  - ✅ push, deploy sem parada na :8090 (readyz 200; /mcp/uploads responde pela internet), worktrees e instância isolada removidas
