@@ -18,8 +18,8 @@ from hub.ops.model import Data, OpsError, now_ms
 from hub.ops.opsctx import OpsCtx, rollout_env
 
 IMPORT_TITLES = {m.REJEITADO: "Pacote rejeitado pelo pipeline de validação",
-                 m.AGUARDANDO: "Pacote validado — aguardando aprovação",
-                 m.IMPLANTANDO: "Pacote validado — implantando em staging"}  # fmt: skip
+                 m.AGUARDANDO: "Pacote validado, aguardando aprovação",
+                 m.IMPLANTANDO: "Pacote validado, implantando em staging"}  # fmt: skip
 
 
 @dataclass
@@ -143,9 +143,9 @@ async def run_import(ops: OpsCtx, up: Upload) -> None:
     await _audit_import(ops, up, report, saved, status)
     good = bool(report["passed"])
     msg = (
-        "Pacote validado — aguardando aprovação para produção."
+        "Pacote validado, aguardando aprovação para produção."
         if good
-        else f"Pacote rejeitado — {report['reason']}"
+        else f"Pacote rejeitado: {report['reason']}"
     )
     if status == m.IMPLANTANDO:
         good, msg, saved = await run_deploy(ops, saved["id"], up.job_id, up.actor)
@@ -284,5 +284,5 @@ async def run_deploy(ops: OpsCtx, dep_id: int, job_id: int, actor: str) -> tuple
     )
     if not err and k == "producao":
         await ops.admin.cfg.clear_pending(app_id)
-    msg = f"Implantação falhou — {err}" if err else f"{what} implantada (blue/green, sem indisponibilidade)."
+    msg = f"Implantação falhou: {err}" if err else f"{what} implantada (blue/green, sem indisponibilidade)."
     return not err, msg, saved

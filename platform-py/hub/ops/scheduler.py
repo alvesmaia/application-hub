@@ -55,7 +55,7 @@ class Scheduler:
         )
         if decision == "skip":
             when = local_label(slot, tz)
-            self.app.state.admin.logs.add("WARN", p["app"], ACTOR, f"backup agendado de {when} perdido (hub fora do ar) — política: pular", "ops")  # fmt: skip
+            self.app.state.admin.logs.add("WARN", p["app"], ACTOR, f"backup agendado de {when} perdido (hub fora do ar); política: pular", "ops")  # fmt: skip
             out.append(f"{key}: pulado {when}")
         elif decision == "run":
             nxt = await self._run(p["app"], env, key, prev, nxt, missed, local_label(slot, tz), now, out)

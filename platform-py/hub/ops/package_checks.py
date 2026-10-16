@@ -272,7 +272,7 @@ def _contract_api(
         except ValueError as e:
             return str(e), False, ""
         api_txt = (
-            f" · API {api.get('base', '/api/v1')} ({n} operações, {d} mutações — no MCP exigem aprovação)"
+            f" · API {api.get('base', '/api/v1')} ({n} operações, {d} mutações, que no MCP exigem aprovação)"
         )
     elif allow_without_api:
         warn, api_txt = True, " · SEM API (exceção permitida pela plataforma)"
@@ -316,7 +316,7 @@ def _html_error(n: str, b: bytes) -> str:
     if _inline_script(t):
         return f"script inline em {n} (incompatível com a CSP)"
     if _inline_handler(t):
-        return (f"atributo de evento inline (on…=) em {n}: incompatível com a CSP — "
+        return (f"atributo de evento inline (on…=) em {n}: incompatível com a CSP; "
                 "use os atributos data-hub-* do hub")  # fmt: skip
     if "javascript:" in t.lower():
         return f"URL javascript: em {n}"
@@ -347,7 +347,7 @@ def _scan_files(files: dict[str, bytes]) -> tuple[str, int, int]:
 def _script_reviews(files: dict[str, bytes], declared: dict[str, Any]) -> tuple[str, list[dict[str, str]]]:
     for n in files:
         if n.lower().endswith((".js", ".mjs")) and n not in declared and not n.startswith("build/"):
-            return (f"JavaScript não declarado: {n} — apps não trazem JavaScript (use os atributos "
+            return (f"JavaScript não declarado: {n}. Apps não trazem JavaScript (use os atributos "
                     "data-hub-*); exceções vão em manifest.scripts com o motivo e passam por revisão"), []  # fmt: skip
     reviews: list[dict[str, str]] = []
     for p, s in declared.items():
@@ -368,6 +368,6 @@ def _frontend(m: dict[str, Any], files: dict[str, bytes]) -> tuple[str, str, lis
     base = f"{sum(n.startswith('ui/') for n in files)} arquivo(s) em ui/ · {html} HTML · {css} CSS"
     if not reviews:
         return "ok", f"{base} · sem JavaScript próprio", []
-    lst = "; ".join(f"{r['path']} ({r['sha384']}) — motivo: {r['reason']}" for r in reviews)
-    return "warn", (f"{base} · REVISE: {SCRIPTS_CHECK} — exige aprovação explícita da administração (revisão de "
+    lst = "; ".join(f"{r['path']} ({r['sha384']}), motivo: {r['reason']}" for r in reviews)
+    return "warn", (f"{base} · REVISE: {SCRIPTS_CHECK}, que exige aprovação explícita da administração (revisão de "
                     f"segurança, separada da aprovação da implantação; hash novo = nova aprovação): {lst}"), reviews  # fmt: skip

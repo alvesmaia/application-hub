@@ -149,7 +149,7 @@ async def runtime_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response
     page_rows, pager = paginate(request, view + platform_view)
     return render(ops,
         request, "ops_runtime.html", "Aplicações", "Containers", "Cada aplicação roda isolada, com limites próprios de CPU e memória.",
-        rows=page_rows, pager=pager, banner=None if info["reachable"] else f"Runtime indisponível — exibindo especificação. ({info['error']})",
+        rows=page_rows, pager=pager, banner=None if info["reachable"] else f"Runtime indisponível: exibindo especificação. ({info['error']})",
         docker_class="filter-chip" if podman else "filter-chip active", podman_class="filter-chip active" if podman else "filter-chip",
         shown_socket=sock, rollout=ROLLOUT, host_source=f"Medido em: {host.source}",
         in_use=f"Conectado a {info['socket']} · {info['version']}" if info["reachable"] else f"Sem conexão com {info['socket']}",

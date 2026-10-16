@@ -196,7 +196,7 @@ def test_upload_pipeline_and_audit(hub: TestClient) -> None:
         "Administrador",
     )
     assert (Path(hub.app.state.data_dir) / "packages" / dep["package"]).is_file()  # type: ignore[attr-defined]
-    assert "Pacote validado — aguardando aprovação" in audit_titles(hub)
+    assert "Pacote validado, aguardando aprovação" in audit_titles(hub)
     assert hub.get(f"/api/ops/jobs/{job['id']}").json()["done"] is True
     assert hub.get("/api/ops/jobs/9999").status_code == 404
     page = hub.get("/admin/deploys").text

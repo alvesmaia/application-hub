@@ -2016,7 +2016,7 @@
   },
   "info": {
     "description": "API versionada do hub. Mesmo RBAC da interface; erros no formato RFC 9457 (application/problem+json). Listas paginadas com limit/offset.",
-    "title": "Application Hub — API pública",
+    "title": "Application Hub · API pública",
     "version": "1.0.0"
   },
   "openapi": "3.1.0",
@@ -3719,7 +3719,7 @@
             "$ref": "#/components/responses/Problem"
           }
         },
-        "summary": "Importa um pacote .hubapp (multipart: package, env) — roda o pipeline de 7 passos",
+        "summary": "Importa um pacote .hubapp (multipart: package, env) e roda o pipeline de 7 passos",
         "tags": [
           "Implantações"
         ],

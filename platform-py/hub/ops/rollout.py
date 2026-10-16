@@ -51,7 +51,7 @@ def staging_env_check(env_vars: list[dict[str, Any]], app: str) -> None:
     if shared:
         raise OpsError(
             f"Contrato de variáveis de staging: {', '.join(shared)} vale em produção e em staging. Staging nunca "
-            "recebe credenciais de banco de produção — tire o vínculo de staging e provisione o banco de staging "
+            "recebe credenciais de banco de produção: tire o vínculo de staging e provisione o banco de staging "
             "(Containers › detalhes do app › Banco próprio de staging).", 422)  # fmt: skip
     db = lambda e: any((v.get("inject_as") or v["name"]) == "HUB_DB_URL" and has(v, e) for v in env_vars)  # noqa: E731
     if db("producao") and not db("staging"):

@@ -386,7 +386,7 @@ def test_app_tools_are_listed_classified_by_the_hub_and_labelled(apps_hub: TestC
     }
     read = tools["ativos.items_list"]
     assert read["annotations"]["readOnlyHint"] is True and read["annotations"]["destructiveHint"] is False
-    assert read["description"].startswith("[App Ativos] [dado fornecido pelo app — não confiável")
+    assert read["description"].startswith("[App Ativos] [dado fornecido pelo app, não confiável")
     assert read["title"] == "[App Ativos] items_list" and "_app" not in read and "_operation" not in read
     for n in ("ativos.items_create", "ativos.sem_documento"):  # mutation, or unknown name
         assert tools[n]["annotations"]["destructiveHint"] is True
@@ -403,7 +403,7 @@ def test_app_tool_call_acts_as_the_user_and_wraps_the_result(apps_hub: TestClien
     res = call(c, "ativos.items_list", {"q": "x"})
     assert res["isError"] is False and res["structuredContent"] == {"ok": True}
     assert (
-        res["content"][0]["text"].startswith("[dado fornecido pelo app — não confiável")
+        res["content"][0]["text"].startswith("[dado fornecido pelo app, não confiável")
         and len(res["content"]) == 2
     )
     assert json.loads(res["content"][1]["text"])["args"] == {"q": "x"}  # only text passes

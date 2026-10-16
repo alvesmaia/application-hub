@@ -384,7 +384,7 @@
       }
       const retryOrDone = (status, html) => {
         if (RETRY_STATUS.includes(status) && attempt < RETRY_DELAYS.length) {
-          if (progress) progress.textContent = `Conexão instável — tentando de novo (${attempt + 1}/${RETRY_DELAYS.length})…`;
+          if (progress) progress.textContent = `Conexão instável, tentando de novo (${attempt + 1}/${RETRY_DELAYS.length})…`;
           setTimeout(() => send(attempt + 1), RETRY_DELAYS[attempt]);
           return;
         }

@@ -86,7 +86,7 @@ class Background:
                 if mt.get("kind") == "restauracao" and mt.get("replica") not in alive:
                     mt.update(kind="restauracao_falhou", detail="O hub reiniciou durante a restauração: o estado dos "
                               "dados é incerto. Confira os dados (restaure o snapshot \"Pré-restauração\" ou outro backup "
-                              "se preciso; um banco anterior pode ter ficado de lado — veja \"Bancos de lado\") e libere em Backups.")  # fmt: skip
+                              "se preciso; um banco anterior pode ter ficado de lado; veja \"Bancos de lado\") e libere em Backups.")  # fmt: skip
                     self.say("WARN", f"restauração interrompida (réplica morta): {k}")
 
     async def _inbox_refresh(self) -> None:

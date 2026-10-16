@@ -88,7 +88,7 @@ OPS: tuple[Op, ...] = (
     Op("deployments_list", "/deployments", "Implantações", "Implantações (histórico e pendentes de aprovação)",
        "Deployment", **_tgt("GET", "/api/ops/deployments"), list="", filters=("app", "env", "status")),
     Op("deployments_import", "/deployments", "Implantações",
-       "Importa um pacote .hubapp (multipart: package, env) — roda o pipeline de 7 passos", "Job", method="POST",
+       "Importa um pacote .hubapp (multipart: package, env) e roda o pipeline de 7 passos", "Job", method="POST",
        params=(P_ENV, Param("commit", "query", S_STR, "SHA do commit (CI)")), body=MULTIPART,
        **_tgt("POST", "/api/ops/packages"), passed=("env", "commit"), mcp=False),
     Op("deployments_approve", "/deployments/{id}/approve", "Implantações",
@@ -300,7 +300,7 @@ def openapi() -> dict[str, Any]:
     return {
         "openapi": "3.1.0",
         "info": {
-            "title": "Application Hub — API pública",
+            "title": "Application Hub · API pública",
             "version": "1.0.0",
             "description": "API versionada do hub. Mesmo RBAC da interface; erros no formato RFC 9457 (application/problem+json). Listas paginadas com limit/offset.",
         },

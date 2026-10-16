@@ -128,7 +128,7 @@ class Caller:
     async def storage_fail(self, op: str, detail: str, e: StorageError) -> JSONResponse:
         self.release()
         await self.deny(
-            op, detail, e.status, f"{e.message} — provedor: {e.detail}" if e.detail else e.message
+            op, detail, e.status, f"{e.message} (provedor: {e.detail})" if e.detail else e.message
         )
         return storage_fail(e)
 

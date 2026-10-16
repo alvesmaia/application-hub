@@ -26,7 +26,7 @@ def _run_label(p: Row, env: str, st: Row | None, manual: bool, now: int) -> str:
     if manual:
         return f"{lbl}: manual"
     if st and st.get("error"):
-        return f"{lbl}: agenda inválida — {st['error']}"
+        return f"{lbl}: agenda inválida ({st['error']})"
     if st and st.get("next_due"):
         return f"{lbl}: próximo {local_label(st['next_due'], timezone_of(p.get('tz', '')))}{last}"
     return f"{lbl}: aguardando o agendador"
@@ -68,5 +68,5 @@ def maintenance_rows(maintenance: Row, name_of: NameOf, busy: set[str]) -> list[
         failed = mt["kind"] == "restauracao_falhou"
         lbl = "Em manutenção (restauração falhou)" if failed else "Em manutenção (restauração)"
         rows.append({"app": a, "env": env, "name": name_of(a) + (" (staging)" if env == "staging" else ""),
-                     "detail": f"{lbl} — {mt.get('detail', '')}", "failed": failed or a not in busy})  # fmt: skip
+                     "detail": f"{lbl}: {mt.get('detail', '')}", "failed": failed or a not in busy})  # fmt: skip
     return rows

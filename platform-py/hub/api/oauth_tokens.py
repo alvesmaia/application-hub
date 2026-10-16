@@ -153,7 +153,7 @@ class OAuthTokens(OAuthAuthorize):
             return grant_err("Código inválido, vencido ou já usado.")
         if kind == "replay":
             if g := await self.revoke_grant(info):
-                await self.audit("OAuth", "OAuth: código de autorização reutilizado — concessão revogada",
+                await self.audit("OAuth", "OAuth: código de autorização reutilizado; concessão revogada",
                                  f"{g.get('client_name', '')} · usuário {await self.user_label(g.get('user', ''))}")  # fmt: skip
             else:
                 await self.audit(
@@ -217,7 +217,7 @@ class OAuthTokens(OAuthAuthorize):
 
     async def refresh_reused(self, gid: str, grant_err: Callable[[str], Response]) -> Response:
         if g := await self.revoke_grant(gid):
-            await self.audit("OAuth", "OAuth: refresh token reutilizado — concessão revogada",
+            await self.audit("OAuth", "OAuth: refresh token reutilizado; concessão revogada",
                              f"{g.get('client_name', '')} · usuário {await self.user_label(g.get('user', ''))} (possível roubo de token)")  # fmt: skip
             self.notify_reuse(g)
         return grant_err("Refresh token já usado: a concessão foi revogada por segurança.")

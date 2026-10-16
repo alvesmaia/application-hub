@@ -419,7 +419,7 @@ class GraphClient:
                     "upstream",
                     "Link de compartilhamento: o SharePoint não aplicou a validade pedida; o link foi apagado."
                     if removed
-                    else "Link de compartilhamento: o SharePoint não aplicou a validade pedida e o link não pôde ser apagado — revise as permissões do item.",
+                    else "Link de compartilhamento: o SharePoint não aplicou a validade pedida e o link não pôde ser apagado. Revise as permissões do item.",
                     detail=f"validade devolvida: {got or 'nenhuma'}",
                 )
         return {"url": (v.get("link") or {}).get("webUrl", ""), "kind": kind, "expires": got or expires}

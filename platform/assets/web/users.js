@@ -226,7 +226,7 @@
       openModal(
         'Novo token de API',
         'Sem aplicações marcadas = todas. O token aparece uma única vez.',
-        field('Nome', 'name', 'text', '', 'required maxlength="60" placeholder="CI — Gestão de Ativos"') +
+        field('Nome', 'name', 'text', '', 'required maxlength="60" placeholder="CI · Gestão de Ativos"') +
           checks('Aplicações', 'apps', appItems, () => false) +
           checks('Ambientes', 'envs', [{ value: 'staging', label: 'Staging' }, { value: 'producao', label: 'Produção' }], (v) => v === 'staging') +
           checks('Ações', 'actions', [

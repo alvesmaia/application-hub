@@ -139,7 +139,7 @@
     },
     /** Text of the diagnostics report. */
     report(rows, info, meta) {
-      const lines = [`Diagnóstico do aparelho — ${meta && meta.when ? meta.when : ''}`.trim()];
+      const lines = [`Diagnóstico do aparelho${meta && meta.when ? ` · ${meta.when}` : ''}`];
       for (const r of rows) lines.push(`- ${r.label}: ${r.result}${r.detail ? ` (${r.detail})` : ''}`);
       if (info && info.length) { lines.push(''); for (const [k, v] of info) lines.push(`${k}: ${v}`); }
       if (meta && meta.ua) { lines.push(''); lines.push(`Navegador: ${meta.ua}`); }

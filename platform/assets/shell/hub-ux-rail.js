@@ -54,7 +54,7 @@
     function apply(m, persist) {
       MODES.forEach((x) => body.classList.toggle(`rail-${x}`, x === m));
       btn.setAttribute('aria-expanded', String(m !== 'hidden'));
-      const label = `${t('js.rail_menu')}: ${t(`js.rail_${m}`)} — ${t('js.rail_next', { next: t(`js.rail_${nextOf(m)}`) })}`;
+      const label = `${t('js.rail_menu')}: ${t(`js.rail_${m}`)}; ${t('js.rail_next', { next: t(`js.rail_${nextOf(m)}`) })}`;
       btn.setAttribute('aria-label', label);
       btn.title = label;
       if (!persist) return;

@@ -153,7 +153,7 @@ def pkce_ok(verifier: str, challenge: str) -> bool:
 def scope_label(s: str) -> tuple[str, str]:
     return {
         "mcp": ("Usar as ferramentas do hub como você",
-                "Ler catálogo, status, implantações, logs e as ferramentas de leitura dos apps que você acessa — com as suas permissões, nunca mais."),
+                "Ler catálogo, status, implantações, logs e as ferramentas de leitura dos apps que você acessa, com as suas permissões, nunca mais."),
         "api:write": ("Executar ações que alteram algo",
                       "Implantar, reverter, fazer backup, cancelar tarefas e as ações dos apps. Ações destrutivas continuam exigindo a sua aprovação na Inbox, com senha ou login novo."),
     }.get(s, ("", ""))  # fmt: skip

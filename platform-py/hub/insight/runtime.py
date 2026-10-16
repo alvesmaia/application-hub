@@ -300,7 +300,7 @@ class Insight:
         title = f"{self._short(slo['app'])}: orçamento de erro queimando rápido"
         if now_firing and not self.firing.get(k):
             detail = (
-                f"Taxa de queima {burn[0]:.1f}× (1 h) e {burn[1]:.1f}× (5 min) no ambiente {slo['env']} — "
+                f"Taxa de queima {burn[0]:.1f}× (1 h) e {burn[1]:.1f}× (5 min) no ambiente {slo['env']}; "
                 f"no ritmo atual o orçamento de {slo['window_days']} dias acaba em {exhaust_label(burn[0], slo['window_days'])}."
             ).replace(".", ",", 2)
             await self.ops.open_auto_incident(slo["app"], slo["env"], title, "minor", detail)

@@ -116,8 +116,8 @@
     const state = errors.length ? 'error' : pending ? 'pending' : online ? 'online' : 'offline';
     let text;
     if (syncing && pending) text = fmt(t('js.dev_q_sending', 'Enviando {n} pendente(s)…'), { n: pending });
-    else if (pending) text = fmt(online ? t('js.dev_q_pending_on', '{n} pendente(s) — enviando em seguida') : t('js.dev_q_pending', 'Sem conexão — {n} pendente(s), enviados quando a conexão voltar'), { n: pending });
-    else if (!online) text = t('js.dev_q_offline', 'Sem conexão — as leituras ficam guardadas neste aparelho');
+    else if (pending) text = fmt(online ? t('js.dev_q_pending_on', '{n} pendente(s), enviando em seguida') : t('js.dev_q_pending', 'Sem conexão: {n} pendente(s), enviados quando a conexão voltar'), { n: pending });
+    else if (!online) text = t('js.dev_q_offline', 'Sem conexão: as leituras ficam guardadas neste aparelho');
     else text = t('js.dev_q_online', 'Conectado');
     if (errors.length) text += ` · ${fmt(t('js.dev_q_errors', '{n} com erro'), { n: errors.length })}`;
     if (extra) text = extra;

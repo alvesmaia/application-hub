@@ -189,7 +189,7 @@ class Backups(BackupOffsite):
                 user, _ = await fn(tgt, True)
                 lines.append(f"{app} ({env}) · {what} {tgt}: {user} rotacionada")
             except OpsError as e:
-                lines.append(f"{app} ({env}) · {what} {tgt}: falhou — {e.message}")
+                lines.append(f"{app} ({env}) · {what} {tgt}: falhou ({e.message})")
         return lines
 
     # ---- pacote ---------------------------------------------------------------------------------------

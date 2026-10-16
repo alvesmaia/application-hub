@@ -123,7 +123,7 @@ def hub_input_schema(op: Op, confirm: bool) -> dict[str, Any]:
 
 
 def destructive_note(mode: str) -> str:
-    return " — AÇÃO DESTRUTIVA: exige confirmação do usuário (confirm_token)."
+    return ". AÇÃO DESTRUTIVA: exige confirmação do usuário (confirm_token)."
 
 
 def hub_tools(app: FastAPI, p: P) -> list[dict[str, Any]]:

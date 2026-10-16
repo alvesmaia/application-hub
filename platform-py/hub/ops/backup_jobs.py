@@ -256,7 +256,7 @@ async def _report_restore(
     )
     ops.log("INFO" if ok else "ERROR", run.app_id, run.actor, f"{verb.lower()}: {detail}")
     ops.jobs.busy.discard(run.app_id)
-    msg = f"{verb} de {run.label} {done_word} — {res[1]}." if res else f"{verb} de {run.label} falhou: {err}"
+    msg = f"{verb} de {run.label} {done_word}: {res[1]}." if res else f"{verb} de {run.label} falhou: {err}"
     ops.jobs.update(run.job_id, lambda j: j.update(done=True, ok=ok, progress=100, message=msg,
                                                    result={"duration_ms": elapsed}))  # fmt: skip
 

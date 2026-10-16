@@ -53,7 +53,7 @@ def startup_check() -> None:
         return
     if m := production_markers():
         raise SystemExit(
-            f"hub: RECUSADO — HUB_DEV_MODE=1 com configuração de produção ({', '.join(m)}). "
+            f"hub: RECUSADO: HUB_DEV_MODE=1 com configuração de produção ({', '.join(m)}). "
             "O modo de desenvolvimento serve assets sem cache e expõe /_dev/reload; nunca em produção."
         )
     print(f"hub: MODO DE DESENVOLVIMENTO (recarga ao vivo: {'ligada' if reload_enabled() else 'desligada'})")

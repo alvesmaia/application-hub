@@ -58,7 +58,7 @@ def test_messages_point_to_the_app_details() -> None:
         "o papel app_x não existe (ou não é do hub): use Provisionar banco em Containers › detalhes do app",
         "Staging sem banco próprio: provisione o banco de staging (Containers › detalhes do app › Banco próprio de staging) antes de clonar.",
         "Staging sem banco próprio: provisione o banco de staging (Containers › detalhes do app › Banco próprio de staging) antes de implantar em staging.",
-        "Contrato de variáveis de staging: DB vale em produção e em staging. Staging nunca recebe credenciais de banco de produção — tire o vínculo de staging e provisione o banco de staging (Containers › detalhes do app › Banco próprio de staging).",
+        "Contrato de variáveis de staging: DB vale em produção e em staging. Staging nunca recebe credenciais de banco de produção: tire o vínculo de staging e provisione o banco de staging (Containers › detalhes do app › Banco próprio de staging).",
     ):
         assert where in tr(pt, "en"), pt
 

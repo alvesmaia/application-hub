@@ -193,7 +193,7 @@ async def _create(
         {
             "name": name,
             "kind": "s3",
-            "description": f"Provisionado pelo hub para {app} ({env}) — bucket e usuário próprios",
+            "description": f"Provisionado pelo hub para {app} ({env}), com bucket e usuário próprios",
             "endpoint": store.endpoint,
             "bucket": name,
             "region": "us-east-1",

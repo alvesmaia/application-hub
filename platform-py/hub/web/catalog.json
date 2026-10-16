@@ -8,8 +8,8 @@
 "(completed)"
 ],
 [
-"(nome declarado pelo aplicativo — confira o endereço abaixo)",
-"(name declared by the application — check the address below)"
+"(nome declarado pelo aplicativo; confira o endereço abaixo)",
+"(name declared by the application; check the address below)"
 ],
 [
 "(ou por {days} dias sem uso). Só autorize aplicativos em que você confia.",
@@ -136,8 +136,8 @@
 "ADMINISTRATION · OPERATIONS"
 ],
 [
-"APAGAR o banco de lado {x}? Os dados dele serão perdidos — confira antes que o banco {x} atual está correto.",
-"DELETE the set-aside database {x}? Its data will be lost — first check that the current database {x} is correct."
+"APAGAR o banco de lado {x}? Os dados dele serão perdidos. Confira antes que o banco {x} atual está correto.",
+"DELETE the set-aside database {x}? Its data will be lost. First check that the current database {x} is correct."
 ],
 [
 "API dos apps (/{app}/api)",
@@ -148,8 +148,8 @@
 "API required: the manifest declares api.enabled = false and the platform does not allow apps without an API ([apps].allow_without_api = false)"
 ],
 [
-"API obrigatória: o pacote não traz openapi.json (gere o documento do app — ex.: `{}` — e rode o hub pack de novo) ou declare api.enabled = false (só aceito se a plataforma permitir)",
-"API required: the package does not ship openapi.json (generate the app document — e.g.: `{}` — and run hub pack again) or declare api.enabled = false (only accepted if the platform allows it)"
+"API obrigatória: o pacote não traz openapi.json (gere o documento do app, por exemplo `{}`, e rode o hub pack de novo) ou declare api.enabled = false (só aceito se a plataforma permitir)",
+"API required: the package does not ship openapi.json (generate the app document, e.g. `{}`, and run hub pack again) or declare api.enabled = false (only accepted if the platform allows it)"
 ],
 [
 "API v1: alterações (age como você)",
@@ -260,8 +260,8 @@
 "Access › API tokens"
 ],
 [
-"Adoção das aplicações, navegação, busca e primeiros passos — com privacidade por padrão.",
-"Application adoption, navigation, search and first steps — private by default."
+"Adoção das aplicações, navegação, busca e primeiros passos, com privacidade por padrão.",
+"Application adoption, navigation, search and first steps, private by default."
 ],
 [
 "Adoção por aplicação",
@@ -396,24 +396,24 @@
 "Deleting a bucket with objects requires re-authentication with password in a browser session (tokens and agents cannot confirm)."
 ],
 [
-"Apenas registrada — app sem manifesto conhecido.",
-"Recorded only — app without a known manifest."
+"Apenas registrada: app sem manifesto conhecido.",
+"Recorded only: app without a known manifest."
 ],
 [
-"Apenas registrada — implantação automática de containers desligada.",
-"Recorded only — automatic container deployment off."
+"Apenas registrada: implantação automática de containers desligada.",
+"Recorded only: automatic container deployment off."
 ],
 [
-"Apenas registrada — implantação sem imagem por digest.",
-"Recorded only — deployment without an image by digest."
+"Apenas registrada: implantação sem imagem por digest.",
+"Recorded only: deployment without an image by digest."
 ],
 [
-"Apenas registrada — runtime indisponível (cliente não configurado).",
-"Recorded only — runtime unavailable (client not configured)."
+"Apenas registrada: runtime indisponível (cliente não configurado).",
+"Recorded only: runtime unavailable (client not configured)."
 ],
 [
-"Apenas registrada — runtime indisponível ({e}).",
-"Recorded only — runtime unavailable ({e})."
+"Apenas registrada: runtime indisponível ({e}).",
+"Recorded only: runtime unavailable ({e})."
 ],
 [
 "Aplicando a transição…",
@@ -860,8 +860,8 @@
 "CSS/JS outside ui/: {name}"
 ],
 [
-"Cada aplicação roda em container exclusivo com recursos definidos — compatível com Docker e Podman.",
-"Each application runs in a dedicated container with defined resources — compatible with Docker and Podman."
+"Cada aplicação roda em container exclusivo com recursos definidos, compatível com Docker e Podman.",
+"Each application runs in a dedicated container with defined resources, compatible with Docker and Podman."
 ],
 [
 "Cada aplicação roda isolada, com limites próprios de CPU e memória.",
@@ -1276,8 +1276,8 @@
 "Copy"
 ],
 [
-"Copie o token agora — ele não será mostrado de novo.",
-"Copy the token now — it will not be shown again."
+"Copie o token agora. Ele não será mostrado de novo.",
+"Copy the token now. It will not be shown again."
 ],
 [
 "Cor da marca (white label)",
@@ -1840,8 +1840,8 @@
 "Failed"
 ],
 [
-"Falhou — {}",
-"Failed — {}"
+"Falhou: {}",
+"Failed: {}"
 ],
 [
 "Falhou: desfazendo (estado anterior)",
@@ -2220,8 +2220,8 @@
 "Manual import of .hubapp packages and deploys through CI/CD go through the same validation pipeline."
 ],
 [
-"Import manual em produção exige aprovação — o CI continua a fonte da verdade.",
-"Manual import to production requires approval — CI remains the source of truth."
+"Import manual em produção exige aprovação; o CI continua a fonte da verdade.",
+"Manual import to production requires approval; CI remains the source of truth."
 ],
 [
 "Importar pacote",
@@ -2372,8 +2372,8 @@
 "Window of 7 or 30 days."
 ],
 [
-"JavaScript não declarado: {name} — apps não trazem JavaScript (use os atributos data-hub-*); exceções vão em manifest.scripts com o motivo e passam por revisão",
-"Undeclared JavaScript: {name} — apps do not ship JavaScript (use the data-hub-* attributes); exceptions go in manifest.scripts with the reason and go through review"
+"JavaScript não declarado: {name}. Apps não trazem JavaScript (use os atributos data-hub-*); exceções vão em manifest.scripts com o motivo e passam por revisão",
+"Undeclared JavaScript: {name}. Apps do not ship JavaScript (use the data-hub-* attributes); exceptions go in manifest.scripts with the reason and go through review"
 ],
 [
 "JavaScript próprio aprovado (registrado na auditoria).",
@@ -2444,8 +2444,8 @@
 "Latency on target"
 ],
 [
-"Ler catálogo, status, implantações, logs e as ferramentas de leitura dos apps que você acessa — com as suas permissões, nunca mais.",
-"Read catalog, status, deployments, logs and the read tools of the apps you access — with your permissions, never more."
+"Ler catálogo, status, implantações, logs e as ferramentas de leitura dos apps que você acessa, com as suas permissões, nunca mais.",
+"Read catalog, status, deployments, logs and the read tools of the apps you access, with your permissions, never more."
 ],
 [
 "Letras minúsculas, números, \".\", \"_\" ou \"-\" (ex.: novo-resumo).",
@@ -2464,8 +2464,8 @@
 "Allow at least one operation."
 ],
 [
-"Liga e desliga recursos dos apps por ambiente, função, usuário ou percentual — sem nova implantação. O hub avalia a flag para cada usuário e envia o resultado ao app.",
-"Turns app features on and off per environment, role, user or percentage — without a new deployment. The hub evaluates the flag for each user and sends the result to the app."
+"Liga e desliga recursos dos apps por ambiente, função, usuário ou percentual, sem nova implantação. O hub avalia a flag para cada usuário e envia o resultado ao app.",
+"Turns app features on and off per environment, role, user or percentage, without a new deployment. The hub evaluates the flag for each user and sends the result to the app."
 ],
 [
 "Ligada neste ambiente (desmarcar = kill switch)",
@@ -2508,8 +2508,8 @@
 "Invalid limit: {e}."
 ],
 [
-"Limites de {x} salvos — {x}.",
-"Limits for {x} saved — {x}."
+"Limites de {x} salvos: {x}.",
+"Limits for {x} saved: {x}."
 ],
 [
 "Limites · {x}",
@@ -2728,8 +2728,8 @@
 "No files retained"
 ],
 [
-"Nenhum backup ainda — use \"Backup agora\" em uma política.",
-"No backups yet — use \"Back up now\" in a policy."
+"Nenhum backup ainda. Use \"Backup agora\" em uma política.",
+"No backups yet. Use \"Back up now\" in a policy."
 ],
 [
 "Nenhum banco de lado encontrado.",
@@ -2756,8 +2756,8 @@
 "No API tokens yet. Use \"New token\" to create one for your pipeline."
 ],
 [
-"Nenhum trace ainda — abra o app para gerar tráfego.",
-"No traces yet — open the app to generate traffic."
+"Nenhum trace ainda. Abra o app para gerar tráfego.",
+"No traces yet. Open the app to generate traffic."
 ],
 [
 "Nenhuma",
@@ -2992,8 +2992,8 @@
 "The hub does not verify who this application is: check the return address before authorizing."
 ],
 [
-"O hub reiniciou durante a restauração ({}): o estado dos dados é incerto. O app ficou em manutenção; confira os dados (restaure o snapshot \"Pré-restauração\" ou outro backup se preciso; um banco anterior pode ter ficado de lado com o sufixo _pre… — veja \"Bancos de lado\" em Backups) e libere em Backups.",
-"The hub restarted during the restore ({}): the data state is uncertain. The app was left in maintenance; check the data (restore the \"Pre-restore\" snapshot or another backup if needed; a previous database may have been set aside with the _pre… suffix — see \"Set-aside databases\" in Backups) and release it in Backups."
+"O hub reiniciou durante a restauração ({}): o estado dos dados é incerto. O app ficou em manutenção; confira os dados (restaure o snapshot \"Pré-restauração\" ou outro backup se preciso; um banco anterior pode ter ficado de lado com o sufixo _pre…; veja \"Bancos de lado\" em Backups) e libere em Backups.",
+"The hub restarted during the restore ({}): the data state is uncertain. The app was left in maintenance; check the data (restore the \"Pre-restore\" snapshot or another backup if needed; a previous database may have been set aside with the _pre… suffix; see \"Set-aside databases\" in Backups) and release it in Backups."
 ],
 [
 "O hub religa automaticamente.",
@@ -3024,8 +3024,8 @@
 "The control plane ("
 ],
 [
-"O plano de controle (/api/*) continua restrito por origem (HUB_ADMIN_ALLOWED_CIDRS). Runners hospedados do GitHub Actions saem por IPs públicos variáveis: use runner próprio (self-hosted) na rede permitida, VPN/túnel até a rede do hub, ou libere as faixas publicadas pelo GitHub (api.github.com/meta) — ver README.",
-"The control plane (/api/*) stays restricted by origin (HUB_ADMIN_ALLOWED_CIDRS). GitHub Actions hosted runners leave through variable public IPs: use a self-hosted runner in the allowed network, a VPN/tunnel to the hub network, or allow the ranges published by GitHub (api.github.com/meta) — see README."
+"O plano de controle (/api/*) continua restrito por origem (HUB_ADMIN_ALLOWED_CIDRS). Runners hospedados do GitHub Actions saem por IPs públicos variáveis: use runner próprio (self-hosted) na rede permitida, VPN/túnel até a rede do hub, ou libere as faixas publicadas pelo GitHub (api.github.com/meta); veja o README.",
+"The control plane (/api/*) stays restricted by origin (HUB_ADMIN_ALLOWED_CIDRS). GitHub Actions hosted runners leave through variable public IPs: use a self-hosted runner in the allowed network, a VPN/tunnel to the hub network, or allow the ranges published by GitHub (api.github.com/meta); see the README."
 ],
 [
 "O provedor de identidade (SSO) não respondeu. Tente de novo ou use e-mail e senha.",
@@ -3156,8 +3156,8 @@
 "Package rejected by the validation pipeline"
 ],
 [
-"Pacote rejeitado — {}",
-"Package rejected — {}"
+"Pacote rejeitado: {}",
+"Package rejected: {}"
 ],
 [
 "Pacote sem manifest.json legível (campo package).",
@@ -3176,16 +3176,16 @@
 "Package validated and deployed to staging. {}"
 ],
 [
-"Pacote validado — aguardando aprovação",
-"Package validated — awaiting approval"
+"Pacote validado, aguardando aprovação",
+"Package validated, awaiting approval"
 ],
 [
-"Pacote validado — aguardando aprovação para produção.",
-"Package validated — awaiting approval for production."
+"Pacote validado, aguardando aprovação para produção.",
+"Package validated, awaiting approval for production."
 ],
 [
-"Pacote validado, mas o deploy falhou — {}",
-"Package validated, but the deploy failed — {}"
+"Pacote validado, mas o deploy falhou: {}",
+"Package validated, but the deploy failed: {}"
 ],
 [
 "Padrão",
@@ -3408,8 +3408,8 @@
 "Rollback protection: local only"
 ],
 [
-"Provisionado pelo hub para {app} ({env}) — bucket e usuário próprios",
-"Provisioned by the hub for {app} ({env}) — own bucket and user"
+"Provisionado pelo hub para {app} ({env}), com bucket e usuário próprios",
+"Provisioned by the hub for {app} ({env}), with its own bucket and user"
 ],
 [
 "Provisionamento indisponível: configure HUB_BACKUP_DATA_MOUNT (tarefas mc admin).",
@@ -3548,8 +3548,8 @@
 "Registered"
 ],
 [
-"Registrado automaticamente (registro dinâmico) — o nome é declarado pelo próprio aplicativo",
-"Registered automatically (dynamic registration) — the name is declared by the application itself"
+"Registrado automaticamente (registro dinâmico). O nome é declarado pelo próprio aplicativo",
+"Registered automatically (dynamic registration). The name is declared by the application itself"
 ],
 [
 "Registrar incidente",
@@ -3580,8 +3580,8 @@
 "Rules"
 ],
 [
-"Regras de {x} — {x}",
-"Rules for {x} — {x}"
+"Regras de {x} · {x}",
+"Rules for {x} · {x}"
 ],
 [
 "Regras salvas.",
@@ -3800,8 +3800,8 @@
 "Container runtime unavailable."
 ],
 [
-"Runtime indisponível — exibindo especificação. ({})",
-"Runtime unavailable — showing the specification. ({})"
+"Runtime indisponível: exibindo especificação. ({})",
+"Runtime unavailable: showing the specification. ({})"
 ],
 [
 "Runtime indisponível: {e}",
@@ -4852,16 +4852,16 @@
 "the chain ends at {seq}, but the signed head records {} (events cut from the end?)"
 ],
 [
-"a cadeia termina em {seq}, mas a âncora protegida (keyring) registra {} — cadeia apagada ou substituída por cópia antiga",
-"the chain ends at {seq}, but the protected anchor (keyring) records {} — chain deleted or replaced by an old copy"
+"a cadeia termina em {seq}, mas a âncora protegida (keyring) registra {}: cadeia apagada ou substituída por cópia antiga",
+"the chain ends at {seq}, but the protected anchor (keyring) records {}: chain deleted or replaced by an old copy"
 ],
 [
 "a variável {variable} já existe e não é gerenciada pela plataforma; renomeie ou exclua-a antes",
 "variable {variable} already exists and is not managed by the platform; rename or delete it first"
 ],
 [
-"agenda inválida: {t} — use cron de 5 campos (ex.: \"0 2 * * *\"), \"Diário 02:00\", \"A cada 6 h\" ou \"Manual\"",
-"invalid schedule: {t} — use a 5-field cron (e.g.: \"0 2 * * *\"), \"Diário 02:00\", \"A cada 6 h\" or \"Manual\""
+"agenda inválida: {t}. Use cron de 5 campos (ex.: \"0 2 * * *\"), \"Diário 02:00\", \"A cada 6 h\" ou \"Manual\"",
+"invalid schedule: {t}. Use a 5-field cron (e.g.: \"0 2 * * *\"), \"Diário 02:00\", \"A cada 6 h\" or \"Manual\""
 ],
 [
 "agora mesmo",
@@ -4932,8 +4932,8 @@
 "signature present, cosign verification not configured"
 ],
 [
-"atributo de evento inline (on…=) em {name}: incompatível com a CSP — use os atributos data-hub-* do hub",
-"inline event attribute (on…=) in {name}: incompatible with the CSP — use the hub's data-hub-* attributes"
+"atributo de evento inline (on…=) em {name}: incompatível com a CSP; use os atributos data-hub-* do hub",
+"inline event attribute (on…=) in {name}: incompatible with the CSP; use the hub's data-hub-* attributes"
 ],
 [
 "atualização de app registrado",
@@ -4952,8 +4952,8 @@
 "invalid action"
 ],
 [
-"backup agendado de {when} perdido (hub fora do ar) — política: pular",
-"scheduled backup of {when} missed (hub down) — policy: skip"
+"backup agendado de {when} perdido (hub fora do ar); política: pular",
+"scheduled backup of {when} missed (hub down); policy: skip"
 ],
 [
 "banco de lado não encontrado (ou restauração em curso)",
@@ -5828,12 +5828,12 @@
 "openapi.json: {} {p} without responses"
 ],
 [
-"openapi: deriva não conferida — {e}",
-"openapi: drift not checked — {e}"
+"openapi: deriva não conferida ({e})",
+"openapi: drift not checked ({e})"
 ],
 [
-"openapi: o documento do app no ar difere do openapi.json do pacote (o MCP do hub classifica pelo do pacote) — {d}",
-"openapi: the running app document differs from the package openapi.json (the hub MCP classifies by the package one) — {d}"
+"openapi: o documento do app no ar difere do openapi.json do pacote (o MCP do hub classifica pelo do pacote): {d}",
+"openapi: the running app document differs from the package openapi.json (the hub MCP classifies by the package one): {d}"
 ],
 [
 "os apps recebem as mudanças em até 2 s.",
@@ -6092,8 +6092,8 @@
 "runtime.json without the image field"
 ],
 [
-"runtime: implantando {} {} em {name} ({}) com {} variáveis vinculadas — blue/green{}",
-"runtime: deploying {} {} to {name} ({}) with {} bound variables — blue/green{}"
+"runtime: implantando {} {} em {name} ({}) com {} variáveis vinculadas (blue/green{})",
+"runtime: deploying {} {} to {name} ({}) with {} bound variables (blue/green{})"
 ],
 [
 "runtime: reiniciando {name} (blue/green) com {} variáveis vinculadas ({})",
@@ -6208,12 +6208,12 @@
 "invalid or expired sign-in session (state)"
 ],
 [
-"sha256 do arquivo de backup não confere — restauração bloqueada",
-"backup file sha256 does not match — restore blocked"
+"sha256 do arquivo de backup não confere; restauração bloqueada",
+"backup file sha256 does not match; restore blocked"
 ],
 [
-"sha256 do manifesto não confere — restauração bloqueada",
-"manifest sha256 does not match — restore blocked"
+"sha256 do manifesto não confere; restauração bloqueada",
+"manifest sha256 does not match; restore blocked"
 ],
 [
 "snapshot de segurança antes de restaurar · {}",
@@ -6224,8 +6224,8 @@
 "safety snapshot off (HUB_RESTORE_SAFETY_SNAPSHOT=0)"
 ],
 [
-"snapshot de segurança falhou — restauração cancelada, nada foi alterado: {e}{}",
-"safety snapshot failed — restore cancelled, nothing was changed: {e}{}"
+"snapshot de segurança falhou; restauração cancelada, nada foi alterado: {e}{}",
+"safety snapshot failed; restore cancelled, nothing was changed: {e}{}"
 ],
 [
 "snapshot de segurança {sname} ({})",
@@ -6400,8 +6400,8 @@
 "{app}: {} no longer applies in staging (production credential)"
 ],
 [
-"{at}: a cadeia começa no checkpoint {cs}, mas deveria continuar do seq {seq} (gênese ou último arquivamento assinado) — início removido?",
-"{at}: the chain starts at checkpoint {cs}, but it should continue from seq {seq} (genesis or last signed archive) — beginning removed?"
+"{at}: a cadeia começa no checkpoint {cs}, mas deveria continuar do seq {seq} (gênese ou último arquivamento assinado). Início removido?",
+"{at}: the chain starts at checkpoint {cs}, but it should continue from seq {seq} (genesis or last signed archive). Beginning removed?"
 ],
 [
 "{at}: checkpoint {cs} com assinatura inválida",
@@ -6432,8 +6432,8 @@
 "{at}: seq {es} does not point to the previous hash (event removed or reordered)"
 ],
 [
-"{base} · REVISE: {SCRIPTS_CHECK} — exige aprovação explícita da administração (revisão de segurança, separada da aprovação da implantação; hash novo = nova aprovação): {list}",
-"{base} · REVIEW: {SCRIPTS_CHECK} — requires explicit approval from the administration (security review, separate from the deployment approval; new hash = new approval): {list}"
+"{base} · REVISE: {SCRIPTS_CHECK}, que exige aprovação explícita da administração (revisão de segurança, separada da aprovação da implantação; hash novo = nova aprovação): {list}",
+"{base} · REVIEW: {SCRIPTS_CHECK}, which requires explicit approval from the administration (security review, separate from the deployment approval; new hash = new approval): {list}"
 ],
 [
 "{base} · imagem sem digest em runtime.json: scan não executado",
@@ -6476,12 +6476,12 @@
 "{down} of {} applications unavailable"
 ],
 [
-"{e} — NÃO foi possível voltar ao estado anterior: {why}. O app ficou parado em manutenção; restaure o snapshot de segurança (registro \"Pré-restauração\") ou outro backup e libere em Backups.",
-"{e} — it was NOT possible to go back to the previous state: {why}. The app was left stopped in maintenance; restore the safety snapshot (\"Pre-restore\" record) or another backup and release it in Backups."
+"{e}. NÃO foi possível voltar ao estado anterior: {why}. O app ficou parado em manutenção; restaure o snapshot de segurança (registro \"Pré-restauração\") ou outro backup e libere em Backups.",
+"{e}. It was NOT possible to go back to the previous state: {why}. The app was left stopped in maintenance; restore the safety snapshot (\"Pre-restore\" record) or another backup and release it in Backups."
 ],
 [
-"{e} — restauração desfeita, estado anterior de volta ({}){back}",
-"{e} — restore undone, previous state back ({}){back}"
+"{e}. Restauração desfeita, estado anterior de volta ({}){back}",
+"{e}. Restore undone, previous state back ({}){back}"
 ],
 [
 "{injected} é definida pela plataforma.",
@@ -6508,8 +6508,8 @@
 "{label} · {outcome} · {} recreated with the same image, zero downtime · variables: {}{}"
 ],
 [
-"{label}: agenda inválida — {}",
-"{label}: invalid schedule — {}"
+"{label}: agenda inválida ({})",
+"{label}: invalid schedule ({})"
 ],
 [
 "{label}: próximo {}{}",
@@ -6644,8 +6644,8 @@
 "{verb} of {app_name} failed: {}"
 ],
 [
-"{verb} de {app_name} {done_word} — {}.",
-"{verb} of {app_name} {done_word} — {}."
+"{verb} de {app_name} {done_word}: {}.",
+"{verb} of {app_name} {done_word}: {}."
 ],
 [
 "{what} não encontrado(a).",
@@ -6748,8 +6748,8 @@
 "{} Last success: {ok}. {detail}"
 ],
 [
-"{} — {} queda(s) na janela{next}",
-"{} — {} crash(es) in the window{next}"
+"{}: {} queda(s) na janela{next}",
+"{}: {} crash(es) in the window{next}"
 ],
 [
 "{}% · {} de {}",
@@ -6780,12 +6780,12 @@
 "{}Deployment of {} {} failed"
 ],
 [
-"· API {} ({n} operações, {d} mutações — no MCP exigem aprovação)",
-"· API {} ({n} operations, {d} mutations — they require approval in MCP)"
+"· API {} ({n} operações, {d} mutações, que no MCP exigem aprovação)",
+"· API {} ({n} operations, {d} mutations, which require approval in MCP)"
 ],
 [
-"· Contrato: o candidato não implementa GET /{app}/_hub/ready (prontidão obrigatória — docs/CONTRATO-APP.md §2; o SDK Python traz a rota): implantação recusada",
-"· Contract: the candidate does not implement GET /{app}/_hub/ready (readiness required — docs/CONTRATO-APP.md §2; the Python SDK ships the route): deployment refused"
+"· Contrato: o candidato não implementa GET /{app}/_hub/ready (prontidão obrigatória, docs/CONTRATO-APP.md §2; o SDK Python traz a rota): implantação recusada",
+"· Contract: the candidate does not implement GET /{app}/_hub/ready (readiness required, docs/CONTRATO-APP.md §2; the Python SDK ships the route): deployment refused"
 ],
 [
 "· IGNORADO em mcp.confirm_exempt (não é mutação do openapi.json do pacote): {}",
@@ -6944,12 +6944,12 @@
 "unreadable anchor: {e}"
 ],
 [
-"âncora protegida da auditoria ausente num keyring que já registrou metadados protegidos — o estado atual NÃO foi adotado (restaure de um backup ou rode hub-web --audit-reinit-chain)",
-"protected audit anchor missing in a keyring that already recorded protected metadata — the current state was NOT adopted (restore from a backup or run hub-web --audit-reinit-chain)"
+"âncora protegida da auditoria ausente num keyring que já registrou metadados protegidos; o estado atual NÃO foi adotado (restaure de um backup ou rode hub-web --audit-reinit-chain)",
+"protected audit anchor missing in a keyring that already recorded protected metadata; the current state was NOT adopted (restore from a backup or run hub-web --audit-reinit-chain)"
 ],
 [
-"âncora protegida da auditoria ausente ou adulterada no keyring ({e}) — o estado atual NÃO foi adotado (restaure o keyring/audit de um backup ou rode hub-web --audit-reinit-chain)",
-"protected audit anchor missing or tampered in the keyring ({e}) — the current state was NOT adopted (restore the keyring/audit from a backup or run hub-web --audit-reinit-chain)"
+"âncora protegida da auditoria ausente ou adulterada no keyring ({e}); o estado atual NÃO foi adotado (restaure o keyring/audit de um backup ou rode hub-web --audit-reinit-chain)",
+"protected audit anchor missing or tampered in the keyring ({e}); the current state was NOT adopted (restore the keyring/audit from a backup or run hub-web --audit-reinit-chain)"
 ],
 [
 "âncora protegida da auditoria: {e}",
@@ -6970,30 +6970,6 @@
 [
 "últimos {}",
 "last {}"
-],
-[
-"— cópias",
-"— copies"
-],
-[
-"— cópias temporárias que uma restauração interrompida pode ter deixado. Nunca são apagadas sozinhas: confira e devolva ou apague.",
-"— temporary copies an interrupted restore may have left. They are never deleted automatically: check, then return or delete them."
-],
-[
-"— limite de memória atual {limit}",
-"— current memory limit {limit}"
-],
-[
-"— o ambiente que deu certo segue com as variáveis novas; continua pendente",
-"— the environment that succeeded keeps the new variables; still pending"
-],
-[
-"— os apps recebem as mudanças em até 2 s.",
-"— the apps receive the changes within 2 s."
-],
-[
-"— os backups usam credenciais só de leitura, guardadas no cofre da plataforma.",
-"— backups use read-only credentials kept in the platform vault."
 ],
 [
 "Arquivos somente leitura",
@@ -7372,8 +7348,8 @@
 "Prerequisite"
 ],
 [
-"Somente uv e Python 3.12 — sem Docker, sem Postgres, sem acesso ao repositório.",
-"Only uv and Python 3.12 — no Docker, no Postgres, no repository access."
+"Somente uv e Python 3.12: sem Docker, sem Postgres, sem acesso ao repositório.",
+"Only uv and Python 3.12: no Docker, no Postgres, no repository access."
 ],
 [
 "Comando",
@@ -7860,7 +7836,7 @@
 "Staging without its own database: provision the staging database (Containers › app details › Own staging database) before deploying to staging."
 ],
 [
-"Contrato de variáveis de staging: {} vale em produção e em staging. Staging nunca recebe credenciais de banco de produção — tire o vínculo de staging e provisione o banco de staging (Containers › detalhes do app › Banco próprio de staging).",
-"Staging variables contract: {} applies in production and in staging. Staging never receives production database credentials — remove the staging binding and provision the staging database (Containers › app details › Own staging database)."
+"Contrato de variáveis de staging: {} vale em produção e em staging. Staging nunca recebe credenciais de banco de produção: tire o vínculo de staging e provisione o banco de staging (Containers › detalhes do app › Banco próprio de staging).",
+"Staging variables contract: {} applies in production and in staging. Staging never receives production database credentials: remove the staging binding and provision the staging database (Containers › app details › Own staging database)."
 ]
 ]

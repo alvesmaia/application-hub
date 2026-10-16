@@ -291,7 +291,7 @@
     const r = (f.envs && f.envs[env]) || { enabled: false, default: valuesOf(f)[0], rules: [] };
     const first = r.rules[0] || { roles: [], users: [], serve: valuesOf(f)[valuesOf(f).length - 1] };
     const vals = valuesOf(f);
-    modal(`Regras de ${f.key} — ${env === 'producao' ? 'Produção' : 'Staging'}`, [
+    modal(`Regras de ${f.key} · ${env === 'producao' ? 'Produção' : 'Staging'}`, [
       { name: 'enabled', label: 'Ligada neste ambiente (desmarcar = kill switch)', type: 'checkbox', value: r.enabled },
       { name: 'default', label: 'Valor padrão', type: 'select', options: vals, value: r.default },
       { name: 'roles', label: 'Funções que recebem o valor abaixo', type: 'checks', options: fm.roles || [], value: first.roles },

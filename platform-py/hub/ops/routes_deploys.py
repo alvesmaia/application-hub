@@ -123,7 +123,7 @@ async def approve_scripts(dep_id: int, request: Request, ops: OpsCtx = Depends(c
             raise
         dep = m._find(d, dep_id)
     detail = f"{ops.name_of(dep['app'])} {dep['version']} · {dep['env']} · " + "; ".join(
-        f"{r['path']} {r['sha384']} — {r['reason']}" for r in lst
+        f"{r['path']} {r['sha384']}: {r['reason']}" for r in lst
     )
     await ops.admin.audit(
         actor,
@@ -173,7 +173,7 @@ async def deployment_action(
                           f"{ops.name_of(dep['app'])} {dep['version']} · aguardando aprovação (de #{src['id']})",
                           icon="check", scope=dep["app"])  # fmt: skip
         job.update(done=True, ok=True, progress=100, result={"deployment": dep},
-                   message=f"{title} registrada — aguardando aprovação para produção.")  # fmt: skip
+                   message=f"{title} registrada, aguardando aprovação para produção.")  # fmt: skip
         return (
             JSONResponse(dep)
             if request.query_params.get("wait") == "true"

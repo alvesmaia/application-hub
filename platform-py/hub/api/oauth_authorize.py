@@ -116,7 +116,7 @@ class OAuthAuthorize(OAuthClients):
 
     def consent_inner(self, brand: str, who: str, r: dict[str, Any], nonce: str) -> str:
         kind = (f"Identificado pelo documento em <code>{esc(host_of(r['client_id']))}</code>" if r["client_kind"] == "cimd"
-                else "Registrado automaticamente (registro dinâmico) — o nome é declarado pelo próprio aplicativo")  # fmt: skip
+                else "Registrado automaticamente (registro dinâmico). O nome é declarado pelo próprio aplicativo")  # fmt: skip
         scopes = ""
         for s in r["scopes"]:
             ttl, desc = scope_label(s)
@@ -131,7 +131,7 @@ class OAuthAuthorize(OAuthClients):
         return (
             f'<p class="auth-copy"><span class="status-pill status-maintenance" data-oauth-unverified="">Não verificado</span> {warn}</p>'
             f'<p class="auth-copy">O aplicativo em <strong>{host}</strong> (que se apresenta como <strong data-oauth-client="">{name}</strong>) quer acessar o <strong>{esc(brand)}</strong> em seu nome (<strong>{esc(who)}</strong>).</p>\n'
-            f'<dl class="oauth-facts">\n<dt>Aplicativo</dt><dd>{name} <small class="ops-muted">(nome declarado pelo aplicativo — confira o endereço abaixo)</small><br/><small class="ops-muted">{kind}</small></dd>\n'
+            f'<dl class="oauth-facts">\n<dt>Aplicativo</dt><dd>{name} <small class="ops-muted">(nome declarado pelo aplicativo; confira o endereço abaixo)</small><br/><small class="ops-muted">{kind}</small></dd>\n'
             f'<dt>Volta para</dt><dd><code data-oauth-redirect-host="">{host}</code></dd>\n<dt>Acesso a</dt><dd><code>{esc(r["resource"])}</code></dd>\n</dl>\n'
             f'<form method="post" action="/oauth/authorize">\n<input type="hidden" name="consent" value="{nonce}"/>\n'
             f'<p class="auth-copy"><strong>Permissões pedidas</strong></p>\n<ul class="oauth-scopes" style="list-style:none;padding:0">{scopes}</ul>\n'

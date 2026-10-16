@@ -248,7 +248,7 @@
         const rename = d.action === 'rename-back';
         const q = rename
           ? `Devolver o banco ${d.opsAside} ao nome ${d.db}? Use só se o banco ${d.db} não existe mais (os dados voltam como estavam antes da restauração).`
-          : `APAGAR o banco de lado ${d.opsAside}? Os dados dele serão perdidos — confira antes que o banco ${d.db} atual está correto.`;
+          : `APAGAR o banco de lado ${d.opsAside}? Os dados dele serão perdidos. Confira antes que o banco ${d.db} atual está correto.`;
         if (!await window.HubConfirm(q)) return;
         t.disabled = true;
         const r = await call('POST', `/backups/aside/${encodeURIComponent(d.opsAside)}/${d.action}`);
@@ -315,7 +315,7 @@
           async (form) => {
             const body = { cpu: parseFloat(form.cpu.value), memory: form.memory.value.trim(), pids: parseInt(form.pids.value, 10) };
             const r = await call('PUT', `/runtime/${encodeURIComponent(it.app)}/limits`, body);
-            reloadWithToast(`Limites de ${it.name} salvos — ${r.applied}.`);
+            reloadWithToast(`Limites de ${it.name} salvos: ${r.applied}.`);
           });
       }
       if (d.opsPolicy !== undefined) {

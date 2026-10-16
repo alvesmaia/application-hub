@@ -10,6 +10,6 @@
 <button type="button" class="secondary-button" data-log-query="">{{ icon('search')|safe }} Buscar</button><div class="log-toolbar-spacer"></div>
 <button type="button" class="log-live-btn" data-log-live="" aria-pressed="false">{{ icon('play')|safe }}<span>Tempo real</span></button>
 <button type="button" class="secondary-button" data-log-clear="">{{ icon('trash')|safe }} Limpar</button></div>
-<div class="log-window"><div class="log-window-bar"><span class="log-window-title">log-stream — app-platform</span><span class="log-status" data-log-status=""><i class="log-status-dot"></i>Parado</span></div>
+<div class="log-window"><div class="log-window-bar"><span class="log-window-title">log-stream · app-platform</span><span class="log-status" data-log-status=""><i class="log-status-dot"></i>Parado</span></div>
 <div class="log-terminal" data-log-terminal="" role="log" aria-live="polite">{% for l in lines %}<div class="log-line"><span class="log-time">{{ l.time }}</span><span class="{{ l.css }}">{{ l.level }}</span><span class="log-app">{{ l.app }}</span><span class="log-user">{{ l.user }}</span><code class="log-msg">{{ l.message }}</code></div>{% endfor %}{% if not lines %}<div class="log-empty">Ainda não há registros reais para estes filtros. Eles aparecem quando alguém usa os apps, entra na plataforma ou quando os contêineres escrevem na saída.</div>{% endif %}</div></div></div>
 {% endblock %}

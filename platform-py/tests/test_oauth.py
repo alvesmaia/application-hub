@@ -209,7 +209,7 @@ def test_full_dance_pkce_refresh_rotation_and_audience(hub: TestClient) -> None:
         "OAuth: acesso autorizado a aplicativo" in titles
         and "OAuth: token emitido (código de autorização)" in titles
     )
-    assert "OAuth: refresh token reutilizado — concessão revogada" in titles
+    assert "OAuth: refresh token reutilizado; concessão revogada" in titles
     inbox = [i["title"] for i in hub.app.state.inbox.items.values()]
     assert any("revogado por segurança" in x for x in inbox)
 

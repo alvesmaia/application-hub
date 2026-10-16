@@ -130,7 +130,7 @@ def _unavailable(app: AppEntry, status: int) -> Response:
     return friendly(
         status,
         "Aplicação indisponível",
-        f"{app.name} não respondeu — pode estar reiniciando. Tente novamente em instantes.",
+        f"{app.name} não respondeu; pode estar reiniciando. Tente novamente em instantes.",
         extra=' data-hub-unavailable=""',
         headers={"retry-after": "5"},
     )

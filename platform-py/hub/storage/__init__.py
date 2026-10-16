@@ -40,7 +40,7 @@ class StorageError(Exception):
         return _STATUS[self.kind]
 
     def admin_text(self) -> str:
-        return f"{self.message} — {self.detail}" if self.detail else self.message
+        return f"{self.message} ({self.detail})" if self.detail else self.message
 
 
 @dataclass
