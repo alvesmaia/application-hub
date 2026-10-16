@@ -61,6 +61,14 @@ Whoever imports it uses Operations › Deployments › Import package in the hub
 (id, version, what it updates), fill in the `requires.variables`/`requires.secrets` fields (empty = keep the hub's
 value), choose the environment and deploy. Step by step in the [Publishing guide](/developers/guias/publicar).
 
+### Through the hub MCP (no CLI token)
+
+If you are connected to `@HUB@/mcp` (OAuth or a personal token with the scopes `mcp` and `api:write`) but have no
+CLI token: run `hub pack --build-dir .`, call the MCP tool `deployments_upload` (`env` = `staging` or `producao`) and
+run the `curl` it returns with the `.hubapp` (one-time link, 10 minutes). Follow with `jobs_get` and
+`deployments_list`; production waits for `deployments_approve`, which asks for a `confirm_token`: confirm with the
+user before calling again. Step by step in [Publish and operate through MCP](/developers/guias/mcp-api).
+
 ## Rules
 
 - Never commit secrets (`.env`, tokens, keys); never write the token to project files.
