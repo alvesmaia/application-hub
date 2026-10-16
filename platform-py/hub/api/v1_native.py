@@ -119,6 +119,10 @@ async def native(request: Request, op: Op, p: P, args: Args) -> Any:
             return await _app(request, op, p, args)
         case "status":
             return await _status(request, p)
+        case "upload_link":
+            from hub.api.mcp_uploads import issue_link  # late: it dispatches through `hub.api.v1`
+
+            return await issue_link(request, p, args)
         case _:  # observability
             return _observability(request, p, args)
 

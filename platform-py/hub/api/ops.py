@@ -15,6 +15,7 @@ S_STR: dict[str, Any] = {"type": "string"}
 S_ID: dict[str, Any] = {"type": "string", "pattern": "^[A-Za-z0-9._:-]{1,80}$"}
 S_INT: dict[str, Any] = {"type": "integer", "minimum": 0}
 S_ENV: dict[str, Any] = {"type": "string", "enum": ["producao", "staging"]}
+S_COMMIT: dict[str, Any] = {"type": "string", "pattern": "^[0-9a-fA-F]{7,40}$"}
 HEALTH_VIEW = ("editar_configuracoes", "ver_auditoria")
 
 
@@ -89,8 +90,15 @@ OPS: tuple[Op, ...] = (
        "Deployment", **_tgt("GET", "/api/ops/deployments"), list="", filters=("app", "env", "status")),
     Op("deployments_import", "/deployments", "Implantações",
        "Importa um pacote .hubapp (multipart: package, env) e roda o pipeline de 7 passos", "Job", method="POST",
-       params=(P_ENV, Param("commit", "query", S_STR, "SHA do commit (CI)")), body=MULTIPART,
-       **_tgt("POST", "/api/ops/packages"), passed=("env", "commit"), mcp=False),
+       params=(P_ENV, Param("commit", "query", S_STR, "SHA do commit (CI)"),
+               Param("wait", "query", {"type": "string", "enum": ["true"]}, "Aguarda o pipeline (201/422)")),
+       body=MULTIPART, **_tgt("POST", "/api/ops/packages"), passed=("env", "commit", "wait"), mcp=False),
+    Op("deployments_upload", "/deployments/upload-link", "Implantações",
+       "Gera um link de envio de uso único (10 min) para publicar um pacote .hubapp com curl; produção ainda espera aprovação",
+       "UploadLink", method="POST",
+       params=(Param("env", "query", S_ENV, "Ambiente de destino", True),
+               Param("commit", "query", S_COMMIT, "SHA do commit (7 a 40 hex)")),
+       native="upload_link", need=("editar_configuracoes",)),
     Op("deployments_approve", "/deployments/{id}/approve", "Implantações",
        "Aprova uma implantação de produção (troca o tráfego)", "Job", method="POST", params=(P_ID,),
        **_tgt("POST", "/api/ops/deployments/{id}/approve"), destructive=True),

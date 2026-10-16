@@ -96,6 +96,12 @@ def _decoded(status: int, raw: bytes) -> Any:
 
 async def internal(request: Request, p: P, op: Op, args: Args) -> tuple[int, Any]:
     """Calls the internal route (same handlers as the UI) with `p`'s identity, without going through the network."""
+    status, raw = await internal_raw(request, p, op, args)
+    return status, _decoded(status, raw)
+
+
+async def internal_raw(request: Request, p: P, op: Op, args: Args) -> tuple[int, bytes]:
+    """`internal` without decoding: the internal route's status and body as they came (errors included)."""
     method, uri = _target_uri(op, args)
     qs = [f"{k}={quote(v, safe='')}" for k in op.passed if (v := args.q(k)) is not None]
     if op.id == "audit_query":
@@ -107,8 +113,7 @@ async def internal(request: Request, p: P, op: Op, args: Args) -> tuple[int, Any
         "headers": headers, "server": ("hub", 80), "client": request.client and (request.client.host, 0),
         "app": request.app, "state": {}, "hub_facade": (p.user, p.token),
     }  # fmt: skip
-    status, raw = await _asgi_call(request, scope, body)
-    return status, _decoded(status, raw)
+    return await _asgi_call(request, scope, body)
 
 
 def _safe_seg(v: str) -> bool:

@@ -29,6 +29,13 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   upload): reads only `manifest.json` from the package and returns id, name, version, new app or the current version
   per environment, and `requires` (names only). The Import tab shows it before deploying, with one field per
   `requires.variables`/`requires.secrets` (secrets as password fields) sent as `config`, like `hub deploy`.
+- MCP tool and API op `deployments_upload` (`POST /api/v1/deployments/upload-link?env=staging|producao[&commit=]`):
+  returns a one-time upload link (`<public base>{mcp.path}/uploads/<ticket>`, 10 minutes, bound to who asked) and a
+  ready `curl -F package=@…` command, so an agent behind Cloudflare Access can publish a `.hubapp`. The upload needs
+  no session or bearer (the ticket is the credential, stored hashed, spent atomically), re-checks that the owner is
+  active and still may upload packages (and the token's app scope), keeps the admin-network rule, is rate limited
+  per IP and runs the same import as `POST /api/ops/packages` (`?wait=true` waits; production still waits for
+  approval). `POST /api/v1/deployments` also accepts `?wait=true`.
 - GitHub icon in the global header (new tab, pt-BR/en label) pointing to `HUB_SOURCE_URL` (default
   `https://github.com/alvesmaia/application-hub`; empty or non-`https://` hides it).
 - `install.sh`: "Revisar opções avançadas?" with every optional setting (MinIO folder, audit anchor folder and

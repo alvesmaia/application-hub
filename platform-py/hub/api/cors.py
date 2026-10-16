@@ -27,10 +27,17 @@ def methods_for(path: str, mcp_path: str) -> str | None:
     return None
 
 
+def upload_path(path: str, mcp_path: str) -> bool:
+    """One-time package upload (`{mcp_path}/uploads/<ticket>`, the ticket is the credential; curl, no CORS)."""
+    rest = path.removeprefix(mcp_path + "/uploads/")
+    return rest != path and bool(rest) and "/" not in rest
+
+
 def machine_public(path: str, mcp_path: str) -> bool:
-    """Session-less machine endpoints (discovery, token, registration, revocation): `/mcp` authenticates by bearer."""
+    """Session-less machine endpoints (discovery, token, registration, revocation, upload links): `/mcp` itself
+    authenticates by bearer."""
     m = methods_for(path, mcp_path)
-    return m is not None and path != mcp_path
+    return (m is not None and path != mcp_path) or upload_path(path, mcp_path)
 
 
 def _diag_line(scope: Scope, path: str, mcp_path: str) -> str | None:

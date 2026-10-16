@@ -1634,6 +1634,70 @@
         ],
         "type": "string"
       },
+      "UploadLink": {
+        "additionalProperties": true,
+        "description": "One-time upload link for a `.hubapp` package (valid for 10 minutes, bound to who asked for it).",
+        "examples": [
+          {
+            "curl": "curl -fsS -F package=@app.hubapp 'https://hub.exemplo.com/mcp/uploads/3q2-exemplo'",
+            "env": "staging",
+            "expires_at": 1760000600000,
+            "field": "package",
+            "max_mb": 20,
+            "method": "POST",
+            "next": "Acompanhe com jobs_get (id do job na resposta) ou deployments_list.",
+            "upload_url": "https://hub.exemplo.com/mcp/uploads/3q2-exemplo"
+          }
+        ],
+        "properties": {
+          "commit": {
+            "pattern": "^[0-9a-fA-F]{7,40}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "curl": {
+            "type": "string"
+          },
+          "env": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expires_at": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "field": {
+            "type": "string"
+          },
+          "max_mb": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "method": {
+            "type": "string"
+          },
+          "next": {
+            "type": "string"
+          },
+          "upload_url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload_url",
+          "expires_at",
+          "method",
+          "field",
+          "max_mb",
+          "curl",
+          "next"
+        ],
+        "type": "object"
+      },
       "UsageRow": {
         "additionalProperties": true,
         "examples": [
@@ -3639,6 +3703,18 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "Aguarda o pipeline (201/422)",
+            "in": "query",
+            "name": "wait",
+            "required": false,
+            "schema": {
+              "enum": [
+                "true"
+              ],
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -3719,12 +3795,91 @@
             "$ref": "#/components/responses/Problem"
           }
         },
-        "summary": "Importa um pacote .hubapp (multipart: package, env) — roda o pipeline de 7 passos",
+        "summary": "Importa um pacote .hubapp (multipart: package, env) e roda o pipeline de 7 passos",
         "tags": [
           "Implantações"
         ],
         "x-hub-destructive": false,
         "x-hub-mcp": false
+      }
+    },
+    "/api/v1/deployments/upload-link": {
+      "post": {
+        "operationId": "deployments_upload",
+        "parameters": [
+          {
+            "description": "Ambiente de destino",
+            "in": "query",
+            "name": "env",
+            "required": true,
+            "schema": {
+              "enum": [
+                "producao",
+                "staging"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "SHA do commit (7 a 40 hex)",
+            "in": "query",
+            "name": "commit",
+            "required": false,
+            "schema": {
+              "pattern": "^[0-9a-fA-F]{7,40}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "curl": "curl -fsS -F package=@app.hubapp 'https://hub.exemplo.com/mcp/uploads/3q2-exemplo'",
+                  "env": "staging",
+                  "expires_at": 1760000600000,
+                  "field": "package",
+                  "max_mb": 20,
+                  "method": "POST",
+                  "next": "Acompanhe com jobs_get (id do job na resposta) ou deployments_list.",
+                  "upload_url": "https://hub.exemplo.com/mcp/uploads/3q2-exemplo"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/UploadLink"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Gera um link de envio de uso único (10 min) para publicar um pacote .hubapp com curl; produção ainda espera aprovação",
+        "tags": [
+          "Implantações"
+        ],
+        "x-hub-destructive": false,
+        "x-hub-mcp": true
       }
     },
     "/api/v1/deployments/{id}/approve": {

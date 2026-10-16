@@ -38,7 +38,9 @@ def _cidrs(raw: str) -> list[ipaddress.IPv4Network | ipaddress.IPv6Network]:
 
 def control_allowed(request: Request, mcp_public: bool = False, mcp_path: str = "/mcp") -> bool:
     path = request.url.path
-    if mcp_public and (path == mcp_path or path.startswith(("/.well-known/", "/oauth/"))):
+    if mcp_public and (
+        path == mcp_path or path.startswith(("/.well-known/", "/oauth/", mcp_path + "/uploads/"))
+    ):
         return True
     segs = path.strip("/").split("/")
     # /oauth/authorize is a person-facing screen (like /account); the rest of /oauth follows the control plane.

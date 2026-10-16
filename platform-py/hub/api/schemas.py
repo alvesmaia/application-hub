@@ -440,10 +440,19 @@ def _clean(v: Any) -> Any:
     return out
 
 
+def _admin() -> tuple[tuple[type, ...], dict[str, Any]]:
+    """Components of the Administration/operations writes (`schemas_admin`, imported late: it builds on `In`/`Out`)."""
+    from hub.api import schemas_admin as sa
+
+    return sa.MODELS, sa.EXAMPLES
+
+
 def schemas() -> dict[str, Any]:
     """All components (`#/components/schemas/<Name>`), with `examples` when present."""
     out: dict[str, Any] = {}
-    for m in MODELS:
+    more, extra = _admin()
+    examples = EXAMPLES | extra
+    for m in (*MODELS, *more):
         if issubclass(m, StrEnum):
             s: dict[str, Any] = {"type": "string", "enum": [e.value for e in m]}
         else:
@@ -453,8 +462,8 @@ def schemas() -> dict[str, Any]:
             s["additionalProperties"] = cast(Any, m).model_config.get("extra") != "forbid"
             if m.__doc__:
                 s["description"] = m.__doc__.strip()
-        if m.__name__ in EXAMPLES:
-            s["examples"] = [EXAMPLES[m.__name__]]
+        if m.__name__ in examples:
+            s["examples"] = [examples[m.__name__]]
         out[m.__name__] = s
     return out
 
@@ -476,4 +485,4 @@ def inline(name: str) -> dict[str, Any]:
 
 
 def example(name: str) -> Any:
-    return EXAMPLES.get(name)
+    return EXAMPLES.get(name, _admin()[1].get(name))

@@ -101,6 +101,8 @@ async def target_apps(request: Request, op: Op, args: Args) -> list[str] | None:
         return [app]
     if op.id == "deployments_import":
         return await _imported_app(args)
+    if op.id == "deployments_upload":
+        return []  # the app is only known when the package arrives: the upload link checks it then
     ident = args.path.get("id", "")
     resolve = _RESOLVERS.get(op.id)
     return resolve(request.app.state, args, int(ident) if ident.isdigit() else None) if resolve else None

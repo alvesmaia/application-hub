@@ -15,6 +15,7 @@ from hub.admin.store import AdminStore
 from hub.api.config import HubCfg, load_cfg
 from hub.api.cors import Cors
 from hub.api.mcp import mount_mcp
+from hub.api.mcp_uploads import mount_uploads
 from hub.api.oauth import OAuth, mount_oauth
 from hub.api.records import Records
 from hub.api.v1 import mount_v1
@@ -146,5 +147,6 @@ def _mount_sections(app: FastAPI, w: WebCtx, conns: ConnStore, admin: AdminStore
     app.state.ops_backups.conns = conns  # off-site backup copy to a SharePoint connection
     mount_v1(app)
     mount_mcp(app)
+    mount_uploads(app)
     mount_oauth(app, templates)
     mount_gateway(app, gateway, templates, w.app_page_ctx, insight.observed)
