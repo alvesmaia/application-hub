@@ -44,6 +44,11 @@
   - ⬜ consultar a sessão "Set Alvesmaia": qual botão/ícone de login SSO ela usa
   - ⬜ ajustar o ícone no login do application hub (+ ui-sweep)
 
+## Textos
+- ⬜ 28 · Revisar travessões (—) nos textos da interface, a começar pela tela de consentimento OAuth
+  - ⬜ levantar textos com "—" no catálogo e templates (pt-BR e en)
+  - ⬜ trocar por pontuação comum (vírgula, parênteses, dois-pontos, frase separada) + ui-sweep
+
 ## Fechamento
 - ✅ 21 · Integração, E2E das telas, ui-sweep, deploy na :8090, limpeza
   - ✅ hub-check --all verde; E2E completo na instância isolada (141 + specs corrigidos 16/16)
