@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from enum import StrEnum
 from pathlib import Path
-from typing import Annotated, Any, cast
+from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -416,73 +416,3 @@ MODELS: tuple[type, ...] = (
     UserUpdate, Role, AuditEntry, AuditVerify, UsageRow, InboxItem, Decision, DecideRequest, DecideResult,
     SearchHit, SearchGroup, SearchResult,
 )  # fmt: skip
-
-_NULL = {"type": "null"}
-
-
-def _clean(v: Any) -> Any:
-    """Pydantic JSON Schema for the utoipa shape (no `title`; `anyOf` with null becomes nullable)."""
-    if isinstance(v, list):
-        return [_clean(x) for x in v]
-    if not isinstance(v, dict):
-        return v
-    out = {k: _clean(x) for k, x in v.items() if k not in ("title", "default")}
-    if out.get("additionalProperties") is True:
-        del out["additionalProperties"]
-    alts = out.get("anyOf")
-    if alts and _NULL in alts:
-        rest = [a for a in alts if a != _NULL]
-        del out["anyOf"]
-        if len(rest) == 1 and "$ref" not in rest[0] and isinstance(rest[0].get("type"), str):
-            out |= rest[0] | {"type": [rest[0]["type"], "null"]}
-        else:
-            out["oneOf"] = [*rest, _NULL]
-    return out
-
-
-def _admin() -> tuple[tuple[type, ...], dict[str, Any]]:
-    """Components of the Administration/operations writes (`schemas_admin`, imported late: it builds on `In`/`Out`)."""
-    from hub.api import schemas_admin as sa
-
-    return sa.MODELS, sa.EXAMPLES
-
-
-def schemas() -> dict[str, Any]:
-    """All components (`#/components/schemas/<Name>`), with `examples` when present."""
-    out: dict[str, Any] = {}
-    more, extra = _admin()
-    examples = EXAMPLES | extra
-    for m in (*MODELS, *more):
-        if issubclass(m, StrEnum):
-            s: dict[str, Any] = {"type": "string", "enum": [e.value for e in m]}
-        else:
-            raw = cast(Any, m).model_json_schema(by_alias=True, ref_template="#/components/schemas/{model}")
-            raw.pop("$defs", None)
-            s = _clean(raw)
-            s["additionalProperties"] = cast(Any, m).model_config.get("extra") != "forbid"
-            if m.__doc__:
-                s["description"] = m.__doc__.strip()
-        if m.__name__ in examples:
-            s["examples"] = [examples[m.__name__]]
-        out[m.__name__] = s
-    return out
-
-
-def inline(name: str) -> dict[str, Any]:
-    """Schema without `$ref` (the `inputSchema` of the MCP tools)."""
-    all_ = schemas()
-
-    def walk(v: Any, depth: int = 0) -> Any:
-        if isinstance(v, dict):
-            if isinstance(r := v.get("$ref"), str):
-                return walk(all_[r.rsplit("/", 1)[-1]], depth + 1) if depth < 8 else {}
-            return {k: walk(x, depth) for k, x in v.items() if k != "examples"}
-        if isinstance(v, list):
-            return [walk(x, depth) for x in v]
-        return v
-
-    return walk(all_[name]) if name in all_ else {}
-
-
-def example(name: str) -> Any:
-    return EXAMPLES.get(name, _admin()[1].get(name))

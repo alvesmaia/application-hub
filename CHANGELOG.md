@@ -29,6 +29,15 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   upload): reads only `manifest.json` from the package and returns id, name, version, new app or the current version
   per environment, and `requires` (names only). The Import tab shows it before deploying, with one field per
   `requires.variables`/`requires.secrets` (secrets as password fields) sent as `config`, like `hub deploy`.
+- MCP and `/api/v1`: every remaining write action of the API (and the reads that go with them) as tools, with the
+  same RBAC as the screens and a `confirm_token` round-trip for the destructive ones: users (delete, unlock; create
+  and update now exposed, update counts as destructive), roles (create, update, delete, permissions, apps), access
+  grants, variables (create, update, delete, rotate token/database password), settings, API tokens (list, revoke,
+  delete), health services, SLOs, incidents, feature flags, analytics (retention, terms, key rotation), log stats,
+  connections (create, update, delete, bindings, credential and storage-token rotation), container limits/apply/
+  logs/inspect, database provisioning, replicas, backup policy, clone/test, set-aside databases, maintenance
+  release, and the personal Inbox read/archive and access requests. JSON bodies are validated against their
+  Pydantic schema at the edge (400 naming the field); secrets are write-only and never come back.
 - MCP tool and API op `deployments_upload` (`POST /api/v1/deployments/upload-link?env=staging|producao[&commit=]`):
   returns a one-time upload link (`<public base>{mcp.path}/uploads/<ticket>`, 10 minutes, bound to who asked) and a
   ready `curl -F package=@…` command, so an agent behind Cloudflare Access can publish a `.hubapp`. The upload needs

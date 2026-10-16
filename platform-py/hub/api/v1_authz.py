@@ -78,8 +78,19 @@ _RESOLVERS = {
     "deployments_rollback": _deployment,
     "backups_restore": _backup,
     "jobs_get": _job,
-    "connections_test": _connection,
     "inbox_decide": _inbox_item,
+    "backups_clone": _backup,
+    "backups_test": _backup,
+    **dict.fromkeys(
+        (
+            "connections_test",
+            "connections_update",
+            "connections_delete",
+            "connections_set_bindings",
+            "connections_rotate",
+        ),
+        _connection,
+    ),
 }
 
 

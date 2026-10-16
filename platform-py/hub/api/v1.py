@@ -10,9 +10,12 @@ from urllib.parse import parse_qsl, quote
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
+from pydantic import ValidationError
 
 from hub.api import ops as opsmod
+from hub.api import schemas_build as sc
 from hub.api.ops import MULTIPART, Op
+from hub.api.ops_model import S_NAME
 from hub.api.v1_authz import authorize as authorize
 from hub.api.v1_authz import authorize_scope as authorize_scope
 from hub.api.v1_base import _SLUGS, Args, P, Problem, audit, take_rate
@@ -27,9 +30,10 @@ def _target_uri(op: Op, args: Args) -> tuple[str, str]:
         raise Problem(500, "error", "operação sem rota interna")
     method, tmpl = op.target
     uri = tmpl
+    loose = {p.name for p in op.params if p.schema is S_NAME}
     for k in {s.strip("{}") for s in tmpl.split("/") if s.startswith("{")}:
         v = args.path.get(k, "")
-        if not _safe_seg(v):
+        if not (_safe_name(v) if k in loose else _safe_seg(v)):
             raise Problem(400, "bad-request", f"Parâmetro {k} inválido.")
         uri = uri.replace("{" + k + "}", v)
     return method, uri
@@ -109,11 +113,16 @@ async def internal_raw(request: Request, p: P, op: Op, args: Args) -> tuple[int,
     headers, body = _request_payload(request, op, method, args)
     scope = {
         "type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1", "method": method, "scheme": "http",
-        "path": uri, "raw_path": uri.encode(), "root_path": "", "query_string": "&".join(qs).encode(),
+        "path": uri, "raw_path": quote(uri).encode(), "root_path": "", "query_string": "&".join(qs).encode(),
         "headers": headers, "server": ("hub", 80), "client": request.client and (request.client.host, 0),
         "app": request.app, "state": {}, "hub_facade": (p.user, p.token),
     }  # fmt: skip
     return await _asgi_call(request, scope, body)
+
+
+def _safe_name(v: str) -> bool:
+    """A free-text name as one path segment (spaces and accents allowed, never a separator nor `.`/`..`)."""
+    return 0 < len(v) <= 80 and v.isprintable() and not set(v) & set("/\\?#%") and v not in (".", "..")
 
 
 def _safe_seg(v: str) -> bool:
@@ -186,6 +195,21 @@ def paginate(op: Op, p: P, args: Args, value: Any, cfg: Any) -> Any:
 # ---------------------------------------------------------------- chamada
 
 
+def _check_body(op: Op, args: Args) -> None:
+    """Pydantic at the edge: the JSON body must match the operation's (closed) schema before any route runs."""
+    model = sc.model(op.body) if op.body and op.body != MULTIPART else None
+    if model is None:
+        return
+    try:
+        model.model_validate_json(args.body or b"{}")
+    except ValidationError as e:
+        err = e.errors()[0]
+        where = ".".join(str(x) for x in err["loc"]) or "corpo"
+        raise Problem(
+            400, "bad-request", f"Corpo inválido em {where}: {err['msg']} (esquema {op.body})."
+        ) from None
+
+
 async def call(request: Request, op: Op, p: P, args: Args) -> tuple[int, Any]:
     if e := authorize(op, p, args):
         raise e
@@ -196,6 +220,7 @@ async def call(request: Request, op: Op, p: P, args: Args) -> tuple[int, Any]:
             ok = prm.name in args.path if prm.loc == "path" else bool(args.q(prm.name))
             if not ok:
                 raise Problem(400, "bad-request", f"Parâmetro obrigatório ausente: {prm.name}.")
+    _check_body(op, args)
     if op.native:
         status, value = 200, await native(request, op, p, args)
     else:

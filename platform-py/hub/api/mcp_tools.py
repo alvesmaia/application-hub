@@ -14,7 +14,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import Response
 
 from hub.api import ops as opsmod
-from hub.api import schemas as sc
+from hub.api import schemas_build as sc
 from hub.api.mcp_apps import app_tools, run_app
 from hub.api.ops import MULTIPART, Op
 from hub.api.v1 import call

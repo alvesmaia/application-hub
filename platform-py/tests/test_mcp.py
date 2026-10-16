@@ -195,9 +195,7 @@ def test_modern_tools_call_answers_as_sse_when_client_accepts_it(agent: TestClie
 def test_tools_list_follows_rbac_and_mcp_flag(hub: TestClient, agent: TestClient) -> None:
     names = {t["name"] for t in result(rpc(agent, "tools/list"))["tools"]}
     assert names == {o.id for o in ops.OPS if o.mcp}
-    assert (
-        "variables_reveal" not in names and "users_create" not in names and "deployments_import" not in names
-    )
+    assert "variables_reveal" not in names and "users_create" in names and "deployments_import" not in names
     colab = add_user(hub, "colab", ["Colaborador"])
     mine = bearer(hub, make_token(colab, ["mcp", "api:write"]))
     only = {t["name"] for t in result(rpc(mine, "tools/list"))["tools"]}
@@ -218,8 +216,8 @@ def test_read_tool_result_audit_and_resources(hub: TestClient, agent: TestClient
     err = call(agent, "apps_get", {"app": "nada"})
     assert err["isError"] is True and payload(err)["status"] == 404 and "structuredContent" not in err
     with pytest.raises(AssertionError):
-        result(rpc(agent, "tools/call", {"name": "users_create", "arguments": {}}))
-    assert rpc(agent, "tools/call", {"name": "users_create"}).json()["error"]["code"] == -32602
+        result(rpc(agent, "tools/call", {"name": "deployments_import", "arguments": {}}))
+    assert rpc(agent, "tools/call", {"name": "deployments_import"}).json()["error"]["code"] == -32602
     assert rpc(agent, "tools/call", {"arguments": {}}).json()["error"]["code"] == -32602
     assert rpc(agent, "tools/call", {"name": "apps_list", "arguments": 3}).json()["error"]["code"] == -32602
     titles = [e["title"] for e in hub.get("/api/v1/audit?limit=20").json()["items"]]

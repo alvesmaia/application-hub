@@ -5,69 +5,28 @@ process with the same identity) or a small native read (`native`)."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any
 
-from hub.api import schemas as sc
+from hub.api import schemas_build as sc
+from hub.api.ops_admin import ADMIN_OPS, ADMIN_TAGS
+from hub.api.ops_model import (
+    HEALTH_VIEW,
+    MULTIPART,
+    P_APP,
+    P_ENV,
+    P_ID,
+    S_COMMIT,
+    S_ENV,
+    S_ID,
+    S_INT,
+    S_STR,
+    Op,
+    Param,
+    _named,
+    _tgt,
+)
 
-MULTIPART = "multipart"
-S_STR: dict[str, Any] = {"type": "string"}
-S_ID: dict[str, Any] = {"type": "string", "pattern": "^[A-Za-z0-9._:-]{1,80}$"}
-S_INT: dict[str, Any] = {"type": "integer", "minimum": 0}
-S_ENV: dict[str, Any] = {"type": "string", "enum": ["producao", "staging"]}
-S_COMMIT: dict[str, Any] = {"type": "string", "pattern": "^[0-9a-fA-F]{7,40}$"}
-HEALTH_VIEW = ("editar_configuracoes", "ver_auditoria")
-
-
-@dataclass(frozen=True)
-class Param:
-    name: str
-    loc: str  # "path" | "query"
-    schema: dict[str, Any]
-    desc: str
-    required: bool = False
-
-
-@dataclass(frozen=True)
-class Op:
-    id: str
-    path: str  # relativo a /api/v1
-    tag: str
-    summary: str
-    resp: str
-    method: str = "GET"
-    params: tuple[Param, ...] = ()
-    body: str | None = None
-    target: tuple[str, str] | None = None  # (internal method, internal path with {param})
-    native: str | None = None
-    list: str | None = None  # key of the array in the internal response ("" = root); None = not a list
-    filters: tuple[str, ...] = ()
-    passed: tuple[str, ...] = ()  # query parameters passed through to the internal route
-    destructive: bool = False
-    mcp: bool = True
-    need: tuple[str, ...] = ()  # native only: any one of these permissions (empty = authenticated)
-
-    @property
-    def write(self) -> bool:
-        return self.method != "GET"
-
-    @property
-    def full_path(self) -> str:
-        return "/api/v1" + self.path
-
-
-P_APP = Param("app", "path", S_ID, "Id do app (ex.: ativos)", True)
-P_ID = Param("id", "path", S_ID, "Identificador", True)
-P_ENV = Param("env", "query", S_ENV, "Ambiente (padrão: producao)")
-
-
-def _named(name: str, desc: str) -> Param:
-    return Param(name, "path", S_ID, desc, True)
-
-
-def _tgt(method: str, path: str) -> dict[str, Any]:
-    return {"target": (method, path)}
-
+__all__ = ["MULTIPART", "OPS", "Op", "Param"]
 
 OPS: tuple[Op, ...] = (
     Op("apps_list", "/apps", "Apps", "Lista os apps que você alcança (catálogo)", "App", native="apps",
@@ -160,10 +119,11 @@ OPS: tuple[Op, ...] = (
        **_tgt("POST", "/api/admin/connections/storage/{app}/deprovision"), destructive=True),
     Op("users_list", "/users", "Usuários", "Usuários", "User", **_tgt("GET", "/api/admin/users"), list="",
        filters=("email", "active")),
-    Op("users_create", "/users", "Usuários", "Cria um usuário (senha provisória devolvida uma vez)", "User",
-       method="POST", body="UserCreate", **_tgt("POST", "/api/admin/users"), mcp=False),
+    Op("users_create", "/users", "Usuários", "Cria um usuário com a senha provisória informada (troca no 1º acesso; a senha nunca volta)", "User",
+       method="POST", body="UserCreate", **_tgt("POST", "/api/admin/users")),
     Op("users_update", "/users/{id}", "Usuários", "Altera nome, funções ou situação de um usuário", "User",
-       method="PUT", params=(P_ID,), body="UserUpdate", **_tgt("PUT", "/api/admin/users/{id}"), mcp=False),
+       method="PUT", params=(P_ID,), body="UserUpdate", **_tgt("PUT", "/api/admin/users/{id}"),
+       destructive=True),  # it can deactivate someone
     Op("roles_list", "/roles", "Usuários", "Funções e permissões", "Role", **_tgt("GET", "/api/admin/roles"),
        list=""),
     Op("audit_query", "/audit", "Auditoria", "Consulta a trilha de auditoria (mais recentes primeiro)",
@@ -184,6 +144,7 @@ OPS: tuple[Op, ...] = (
     Op("search", "/search", "Busca", "Busca federada (plataforma + apps que você alcança)", "SearchResult",
        params=(Param("q", "query", {"type": "string", "minLength": 1, "maxLength": 100}, "Termo", True),),
        **_tgt("GET", "/api/me/search"), passed=("q",)),
+    *ADMIN_OPS,
 )  # fmt: skip
 
 BY_ID = {o.id: o for o in OPS}
@@ -201,6 +162,7 @@ TAGS = {
     "Auditoria": "Trilha de auditoria em cadeia",
     "Inbox": "Notificações e pedidos de aprovação",
     "Busca": "Busca federada",
+    **ADMIN_TAGS,
 }
 
 
