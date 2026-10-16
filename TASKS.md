@@ -40,12 +40,13 @@
   - ⬜ dono remove os clientes de teste diag-claude-ai, diag-copilot-cli e "MCP CLI Proxy" em Credenciais › OAuth
 
 ## Login
-- ⬜ 27 · Ícone do botão de login SSO igual ao da aplicação da sessão "Set Alvesmaia"
-  - ⬜ consultar a sessão "Set Alvesmaia": qual botão/ícone de login SSO ela usa
-  - ⬜ ajustar o ícone no login do application hub (+ ui-sweep)
+- ▶️ 27 · Ícone do botão de login SSO igual ao da aplicação da sessão "Set Alvesmaia"
+  - ✅ sessão offline (pergunta enviada); botão lido no código: alvesmaia-gateway e automation-portal (logo 4 quadrados, botão claro)
+  - ✅ hub: botão secundário claro, logo 18px (teste test_sso_button_is_light_so_the_microsoft_logo_keeps_its_colors)
+  - ⬜ ui-sweep e deploy na :8090
 
 ## Textos
-- ⬜ 28 · Revisar travessões (—) nos textos da interface, a começar pela tela de consentimento OAuth
+- ▶️ 28 · Revisar travessões (—) nos textos da interface, a começar pela tela de consentimento OAuth
   - ⬜ levantar textos com "—" no catálogo e templates (pt-BR e en)
   - ⬜ trocar por pontuação comum (vírgula, parênteses, dois-pontos, frase separada) + ui-sweep
 

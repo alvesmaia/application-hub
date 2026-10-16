@@ -58,6 +58,15 @@ def test_login_page_without_sso_hides_button() -> None:
     assert "data-sso-entra" not in page and 'action="/login"' in page
 
 
+def test_sso_button_is_light_so_the_microsoft_logo_keeps_its_colors(sso: TestClient) -> None:
+    """Same button as the Alvesmaia apps: light surface (the four colors vanish on the accent fill) and an
+    18px logo; the password form keeps the only primary button."""
+    page = anon(client_for(create_app())).get("/login").text
+    sso_link = page.split("data-sso-entra", 1)[0].rsplit("<a ", 1)[1]
+    assert 'class="secondary-button auth-submit auth-sso"' in sso_link
+    assert '<svg viewBox="0 0 21 21" width="18" height="18"' in page
+
+
 def test_success_jit_provisioning_and_session(sso: TestClient) -> None:
     client = anon(client_for(create_app()))
     page = client.get("/login").text
