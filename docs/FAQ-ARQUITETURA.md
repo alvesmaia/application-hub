@@ -235,8 +235,12 @@ Limits:
 **Yes.** Both use the same API and the same validation pipeline (item 3).
 
 **Import into the hub (UI)**
-- Applications → Import (Aplicações → Importar): upload of the `.hubapp` or URL of the package/image.
-- Validation report, environment choice, manual approval if configured.
+- Operations › Deployments › Import package (Operações › Implantações › Importar pacote): choose the `.hubapp` →
+  read-only preview (id, version, new app or "updates from X to Y", what `requires` provisions) → one field per
+  `requires.variables`/`requires.secrets` (empty = keep the hub's value; secrets never shown back) → environment →
+  "Deploy to staging" or "Send for approval (production)". The deployment uses the manifest inside the package.
+- Validation report (the 7 pipeline steps), staging right away, production waits for manual approval in History.
+  Step by step: `platform/docs/dev/guias/publicar.md`.
 
 **CI/CD**
 ```yaml

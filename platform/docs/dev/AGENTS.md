@@ -57,6 +57,10 @@ Without access to the hub, generate the package and deliver the `.hubapp` file:
 hub pack --build-dir .
 ```
 
+Whoever imports it uses Operations › Deployments › Import package in the hub: choose the `.hubapp`, check the preview
+(id, version, what it updates), fill in the `requires.variables`/`requires.secrets` fields (empty = keep the hub's
+value), choose the environment and deploy. Step by step in the [Publishing guide](/developers/guias/publicar).
+
 ## Rules
 
 - Never commit secrets (`.env`, tokens, keys); never write the token to project files.

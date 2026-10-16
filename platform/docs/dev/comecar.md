@@ -31,7 +31,8 @@ hub deploy --env staging --yes
 2. `uv sync` installs the dependencies (the SDK comes in `vendor/`).
 3. `hub check` runs lint, types, tests with coverage, manifest, `openapi.json` and local conformance.
 4. `hub dev` starts a local hub with the app inside the shell at `http://localhost:4173/apps/estoque`.
-5. `hub deploy` packages and sends it; production (`--env production`) stays pending approval.
+5. `hub deploy` packages and sends it; production (`--env production`) stays pending approval. No token? `hub pack --build-dir .`
+   and import the `.hubapp` on the Deployments screen ([Publishing](/developers/guias/publicar)).
 
 ## Token (only to publish)
 

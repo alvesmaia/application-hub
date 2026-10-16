@@ -378,7 +378,8 @@ When no `data-hub-*` resolves (e.g. a rich editor), the app declares the file in
 `requires` (F22): `database` → database and role of its own per app × environment (`DATABASE_URL`/`HUB_DB_URL`);
 `storage` → the app's storage connection; `variables`/`secrets` → names `MAIÚSCULAS_COM_SUBLINHADO` (uppercase with underscores)
 (without `HUB_*` or `DATABASE_URL`, without repetition, a name cannot be both a variable and a secret) whose values
-`hub deploy` (or Administration) sets. An unknown field is refused at the Manifest step. In `hub dev`:
+`hub deploy`, the Import package tab of the Deployments screen (one field per name; empty = keep the current
+value) or Administration sets. An unknown field is refused at the Manifest step. In `hub dev`:
 SQLite in `.hub/dev.db` (`hub_sdk.db.engine()`/`upgrade()`, SQLAlchemy Core + Alembic) and storage in
 `.hub/storage/` through the same API `hub_sdk.storage.connection()` (`HUB_STORAGE_LOCAL_DIR`).
 

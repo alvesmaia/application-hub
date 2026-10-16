@@ -64,7 +64,7 @@ hub check [-h] [--dir DIR] [--only ONLY] [--full] [--json]
 
 ## `hub pack`
 
-Build the .hubapp package from the app folder.
+Build the .hubapp package from the app folder (CI, or the manual import on the Deployments screen).
 
 ```
 hub pack [-h] [--dir DIR] [--image IMAGE] [--build-dir BUILD_DIR] [--dockerfile DOCKERFILE] [--out OUT]

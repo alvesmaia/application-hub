@@ -98,7 +98,10 @@ def add_check(sub: Subparsers) -> None:
 
 
 def add_pack(sub: Subparsers) -> None:
-    k = sub.add_parser("pack", help="Build the .hubapp package from the app folder")
+    k = sub.add_parser(
+        "pack",
+        help="Build the .hubapp package from the app folder (CI, or the manual import on the Deployments screen)",
+    )
     k.add_argument("--dir", type=Path, default=Path())
     k.add_argument("--image", help="image by digest (name@sha256:…); alternative: --build-dir")
     k.add_argument("--build-dir", type=Path, help="build context: the hub builds the package image")

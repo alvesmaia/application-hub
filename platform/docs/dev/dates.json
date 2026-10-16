@@ -1,14 +1,14 @@
 {
- "CONTRATO-APP.md": "2026-10-09",
- "dev/AGENTS.md": "2026-10-09",
- "dev/cli.md": "2026-10-08",
- "dev/comecar.md": "2026-10-09",
+ "CONTRATO-APP.md": "2026-10-16",
+ "dev/AGENTS.md": "2026-10-16",
+ "dev/cli.md": "2026-10-16",
+ "dev/comecar.md": "2026-10-16",
  "dev/guias/armazenamento.md": "2026-10-08",
  "dev/guias/banco.md": "2026-10-08",
  "dev/guias/dashboards.md": "2026-10-08",
  "dev/guias/mcp-api.md": "2026-10-08",
  "dev/guias/primeiro-app.md": "2026-10-08",
- "dev/guias/publicar.md": "2026-10-08",
+ "dev/guias/publicar.md": "2026-10-16",
  "dev/guias/telas.md": "2026-10-08",
  "dev/sdk.md": "2026-10-08"
 }

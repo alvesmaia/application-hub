@@ -15,7 +15,7 @@ Quality: ruff (includes the `S` rules), ty, pytest + pytest-cov (80% floor).
 | `hub dev` | Lightweight local hub (shell, gateway, simulated identity) + app with reload at `http://localhost:4173/apps/__APP_ID__` — no Docker, no Postgres |
 | `hub check` | ruff, formatting, ty, pytest + coverage, manifest, local conformance and `openapi.json` |
 | `hub deploy --env staging` | Packs and sends to the hub (production: `--env production`, stays pending approval) |
-| `hub pack` | Builds the `.hubapp` for manual upload on the Deployments screen |
+| `hub pack` | Builds the `.hubapp` for the manual import on the Deployments screen (Import package: preview, variables/secrets, environment) |
 
 First time: `uv sync`. Run `hub check` before every commit.
 
