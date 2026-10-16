@@ -8,6 +8,9 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 ## [Unreleased]
 
 ### Fixed
+- MCP OAuth: Microsoft 365 Copilot connectors failed with "Connection didn't complete" after a successful sign-in,
+  because the login and consent screens sent a Cross-Origin-Opener-Policy that cut the sign-in popup off from the
+  admin page that opened it; the screens of the OAuth flow now keep the opener.
 - MCP OAuth: a dynamically registered client that did not finish the sign-in within one hour was deleted, and every
   later attempt with the cached `client_id` (mcp-remote, Claude, Copilot) failed with "client_id desconhecido";
   unused registrations now last 30 days (still capped by the unused-client limit and the registration rate limits).

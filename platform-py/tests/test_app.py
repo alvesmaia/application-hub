@@ -106,3 +106,13 @@ def test_credential_screens_use_noopener_allow_popups(client: TestClient) -> Non
     anon = TestClient(client.app)  # no session: /login does not redirect
     assert anon.get("/login").headers["cross-origin-opener-policy"] == "noopener-allow-popups"
     assert client.get("/healthz").headers["cross-origin-opener-policy"] == "same-origin"
+
+
+def test_oauth_popup_screens_keep_the_opener(client: TestClient) -> None:
+    """Microsoft 365 Copilot opens the OAuth sign-in in a popup and its redirect page reports back through
+    `window.opener`: COOP on the login/consent screens of that flow would sever it ("Connection didn't complete")."""
+    anon = TestClient(client.app)
+    login = anon.get("/login", params={"next": "/oauth/authorize?client_id=x"})
+    assert login.headers["cross-origin-opener-policy"] == "unsafe-none"
+    other = anon.get("/login", params={"next": "/admin/oauth/authorize-like"})
+    assert other.headers["cross-origin-opener-policy"] == "noopener-allow-popups"
