@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from install_helper import BASH, RECORDING_DOCKER, prod_env, run_install
+from install_helper import BASH, RECORDING_DOCKER, prod_env, run_install, sh_path
 
 pytestmark = pytest.mark.skipif(BASH is None, reason="bash not available")
 
@@ -142,3 +142,20 @@ def test_the_install_runs_the_doctor_first_and_stops_on_a_failure(tmp_path: Path
     assert r.returncode == 1 and "diagnóstico" in out and "--skip-doctor" in out
     assert "1/5" not in out  # nothing was built
     assert prod_env(tmp_path)  # .prod.env is written before (it holds the answers), the build never started
+
+
+def test_disk_space_of_the_engine_store_and_of_the_data_folder(tmp_path: Path) -> None:
+    store, data = tmp_path / "opt-store", tmp_path / "data"
+    store.mkdir()
+    data.mkdir()
+    df = (
+        'echo "Filesystem Type 1024-blocks Used Available Capacity Mounted on"; '
+        'case "$*" in *opt-store*) echo "/dev/sda2 xfs 52428800 50000000 2428800 95% /opt" ;; '
+        '*) echo "/dev/sdb1 xfs 1073741824 1048576 1072693248 1% /data" ;; esac'
+    )
+    engine = f'case "$1" in info) echo "{sh_path(store)}" ;; *) exit 1 ;; esac'
+    rc, out, _ = doctor(
+        tmp_path, "direct", "--data-dir", f"{sh_path(data)}/app-hub", fakes={"df": df, "docker": engine}
+    )
+    assert rc == 1 and "2 GB livres" in out and "--engine-store" in out
+    assert "dados: 1023 GB livres" in out

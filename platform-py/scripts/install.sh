@@ -45,6 +45,12 @@
 # $XDG_RUNTIME_DIR/bus) stops before anything with the commands to ask the administrator.
 #   --no-systemd         forces the mode without systemd       --autostart cron|systemd|none   start after a reboot
 #
+# Disk (interactive: lists the writable disks with their free space; the one with more space is recommended when
+# the engine's disk is tight):
+#   --data-dir PATH      databases, hub data and MinIO files in host folders under PATH (default: engine volumes)
+#   --engine-store PATH  rootless Podman: also the images, in a store of the hub's own (own socket; manual commands
+#                        need  source platform-py/.secrets/hub-env.sh)
+#
 # Advanced options (interactive install, "Revisar opções avançadas?"): each one shows the RECOMMENDED value in
 # [brackets] and Enter keeps it — MinIO data folder, audit anchor folder and webhook, off-site backup copy
 # (none / SharePoint / S3), sign-in with Microsoft Entra ID, admin network restriction, proxy/tunnel in front,
@@ -76,6 +82,8 @@ if [ -f "$LIB/net.sh" ]; then
   . "$LIB/doctor.sh"
   # shellcheck source=install/podman.sh
   . "$LIB/podman.sh"
+  # shellcheck source=install/disk.sh
+  . "$LIB/disk.sh"
 fi
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -102,6 +110,8 @@ while [ $# -gt 0 ]; do
     --doctor) DOCTOR_ONLY=1; ASKED=1 ;;
     --skip-doctor) SKIP_DOCTOR=1 ;;
     --no-systemd) NOSYSTEMD=1 ;;
+    --data-dir) DATA_DIR=$2; shift; ASKED=1 ;;
+    --engine-store) ENGINE_STORE=$2; shift; ASKED=1 ;;
     --autostart) AUTOSTART=$2; shift
       case "$AUTOSTART" in cron | systemd | none) ;; *) echo "--autostart: '$AUTOSTART' inválido (cron, systemd ou none)" >&2; exit 2 ;; esac ;;
     -y | --yes) YES=1 ;;
@@ -155,6 +165,7 @@ if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0
   ask DEMO_IN "Subir os 4 apps de exemplo? (s/n)" '^[snSN]$'
   case "$DEMO_IN" in s | S) DEMO=1 ;; *) DEMO=0 ;; esac
   net_questions
+  disk_questions
   echo
   ask ADV "Revisar opções avançadas? Enter mantém todas no recomendado (s/n)" '^[snSN]$'
   if yes_no "$ADV"; then
@@ -218,6 +229,7 @@ fi
 case "$PROJECT" in app-hub | app-hub-*) ;; *) echo "--project deve começar com app-hub (trava do hub)" >&2; exit 2 ;; esac
 net_validate
 [ "$CONFIG_ONLY" = 1 ] || rootless_detect
+disk_validate
 if [ "$DOCTOR_ONLY" = 1 ]; then # read-only: no consent, nothing written
   cd "$LIB/../.."
   if [ -f .prod.env ]; then
@@ -236,6 +248,7 @@ Application Hub — instalação. Isto vai:
   • baixar imagens e pacotes (registry de imagens, PyPI, GitHub)
 $(net_summary)
 $(rootless_summary)
+$(disk_summary)
   • publicar a porta $PORT em $BIND
   • gravar segredos em platform-py/.secrets e platform-py/.prod.env (0600)
 Não usa sudo, não altera configurações do sistema nem contêineres de outros projetos.
@@ -336,7 +349,8 @@ if [ ! -f "$ENVF" ]; then
   } >> "$ENVF"
   if [ -n "$ROOTLESS_SOCK" ]; then # socket owner = the user = root inside the namespace
     { echo "HUB_CONTAINER_SOCKET_HOST=$ROOTLESS_SOCK"; echo "DOCKER_GID=0"; } >> "$ENVF"
-    if [ "$NOSYSTEMD" = 1 ]; then echo "HUB_NO_SYSTEMD=1" >> "$ENVF"; fi
+    if [ "$OWN_SOCKET" = 1 ]; then echo "HUB_NO_SYSTEMD=1" >> "$ENVF"; fi
+    if [ -n "$ENGINE_STORE" ]; then echo "HUB_ENGINE_STORE=$ENGINE_STORE" >> "$ENVF"; fi
     echo "HUB_IMAGE_PREFIX=docker.io/library/" >> "$ENVF" # Podman: no short names (a mirror replaces it below)
   elif [ -n "${DOCKER_GID:-}" ]; then
     echo "DOCKER_GID=$DOCKER_GID" >> "$ENVF"
@@ -356,6 +370,7 @@ setv() { # setv KEY VALUE: replaces or appends in .prod.env (VALUE may contain a
   rm -f "$tmp"
 }
 net_write
+disk_write
 if yes_no "$ADV"; then
   [ -n "$OBJ_DIR" ] && { mkdir -p "$OBJ_DIR" 2>/dev/null || true; setv HUB_OBJSTORE_DIR "$OBJ_DIR"; }
   [ -n "$HEAD_DIR" ] && { mkdir -p "$HEAD_DIR" 2>/dev/null || true; setv HUB_AUDIT_HEAD_DIR "$HEAD_DIR"; }

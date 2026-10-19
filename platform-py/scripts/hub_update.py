@@ -130,8 +130,9 @@ def backup(proj: str, image: str, dest: Path) -> None:
             if p.returncode != 0:
                 raise SystemExit(f"hub-update: backup de {db} falhou; nada foi trocado")
     # The hub keeps writing to /data: tar exits with 1 if a file changed while being read (warning); 2 = error.
-    p = run("docker", "run", "--rm", "--entrypoint", "tar", "-v", f"{proj}-data:/d:ro", "-v", f"{dest.resolve()}:/b",
-        image, "czf", "/b/hub-data.tgz", "--warning=no-file-changed", "-C", "/d", ".", check=False, quiet=True)  # fmt: skip
+    # --volumes-from: /data may be a volume or a host folder (install.sh --data-dir)
+    p = run("docker", "run", "--rm", "--entrypoint", "tar", "--volumes-from", f"{proj}-web:ro", "-v", f"{dest.resolve()}:/b",
+        image, "czf", "/b/hub-data.tgz", "--warning=no-file-changed", "-C", "/data", ".", check=False, quiet=True)  # fmt: skip
     if p.returncode > 1:
         raise SystemExit(
             f"hub-update: backup de {proj}-data falhou; nada foi trocado: {p.stderr.strip()[-300:]}"

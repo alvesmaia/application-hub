@@ -61,7 +61,7 @@ services:
       - path: ./.dev.env
         required: false
     volumes:
-      - app-hub-data:/data
+      - ${HUB_DATA_HOST_DIR:-app-hub-data}:/data${HUB_BIND_OPTS:-} # install.sh --data-dir: host folder
       - ./app-env.json:/config/app-env.json:ro
       # Daemon socket (approved by the owner): the hub only operates `app-hub-*` containers
       # (guard in hub/ops/runtime.py); never hub-*, apphub-devtunnel or containers from outside the project.
@@ -89,7 +89,7 @@ services:
       POSTGRES_PASSWORD: ${APP_HUB_DB_PASSWORD:-hubpy-dev}
       POSTGRES_DB: hub
     volumes:
-      - app-hub-db-data:/var/lib/postgresql/data
+      - ${HUB_DB_DIR:-app-hub-db-data}:/var/lib/postgresql/data${HUB_BIND_OPTS:-}
 
   # Lightweight MinIO (AGPL-3.0, built from the official source in infra/minio/Dockerfile; see NOTICE).
   app-hub-objstore:
@@ -120,7 +120,7 @@ services:
       MINIO_ROOT_PASSWORD: ${APP_HUB_OBJSTORE_PASSWORD:-hubpy-objstore-dev}
       MINIO_BROWSER: "off"
     volumes:
-      - ${HUB_OBJSTORE_DIR:-app-hub-objstore-data}:/data   # HUB_OBJSTORE_DIR = host folder (e.g. a 1 TB disk); default: Docker volume
+      - ${HUB_OBJSTORE_DIR:-app-hub-objstore-data}:/data${HUB_BIND_OPTS:-} # HUB_OBJSTORE_DIR = host folder (e.g. a 1 TB disk); default: Docker volume
     security_opt: [no-new-privileges]
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]

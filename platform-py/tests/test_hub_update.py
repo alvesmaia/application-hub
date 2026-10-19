@@ -89,3 +89,19 @@ def test_build_gets_the_network_settings_of_prod_env(tmp_path):
     assert env["IMAGE_PREFIX"] == "docker.repo.empresa.local/library/"
     assert "APP_HUB_DB_PASSWORD" not in env  # only the build args, never the secrets
     assert hu.build_env([str(tmp_path / "missing.env")]) == {}
+
+
+def test_backup_reads_the_hub_data_from_the_container_mounts_not_a_volume_name(monkeypatch, tmp_path):
+    # install.sh --data-dir puts /data in a host folder: `-v <proj>-data:/d` would back up a new, empty volume
+    calls: list[tuple[str, ...]] = []
+
+    def run(*args, check=True, quiet=False):
+        calls.append(args)
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    monkeypatch.setattr(hu, "run", run)
+    monkeypatch.setattr(hu, "inspect", lambda n: None)
+    hu.backup("app-hub", "app-hub-web:pre-update", tmp_path)
+    tar = next(c for c in calls if "tar" in c)
+    assert "--volumes-from" in tar and "app-hub-web:ro" in tar and "/data" in tar
+    assert not any(a.startswith("app-hub-data:") for a in tar)

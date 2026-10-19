@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from install_helper import BASH, ROOT, prod_env, run_install
+from install_helper import BASH, ROOT, prod_env, run_install, sh_path
 
 pytestmark = pytest.mark.skipif(BASH is None, reason="bash not available")
 
@@ -24,7 +24,9 @@ FAKE_PODMAN = r"""
 case "$*" in
   *"{{.Host.Security.Rootless}}"*) echo true ;;
   "--url "*" info") [ -f "$FAKE_DIR/sock-up" ] || exit 1 ;;
-  *"system service"*) echo "PODMAN $* HC=${DISABLE_HC_SYSTEMD:-}" >> "$FAKE_LOG"; touch "$FAKE_DIR/sock-up" ;;
+  *"system service"*)
+    echo "PODMAN $* HC=${DISABLE_HC_SYSTEMD:-} STORE=${CONTAINERS_STORAGE_CONF:-} XDG=${XDG_RUNTIME_DIR:-}" >> "$FAKE_LOG"
+    touch "$FAKE_DIR/sock-up" ;;
 esac
 exit 0
 """
@@ -126,3 +128,32 @@ def test_hub_start_script_brings_up_the_socket_and_the_stack(tmp_path: Path) -> 
     subprocess.run([str(BASH), "scripts/hub-start.sh"], cwd=pp, env=env, check=False, capture_output=True)  # noqa: S603
     text = log.read_text(encoding="utf-8")
     assert text.count("system service") == 2 and "DOCKER compose" in text and " up -d" in text
+
+
+def test_the_cron_line_points_to_the_install_folder_even_when_run_from_elsewhere(tmp_path: Path) -> None:
+    rootless(tmp_path, systemd=False, bus=False)
+    line = crontab(tmp_path)  # absolute paths of this platform-py (Git Bash may show the temp folder as /tmp)
+    assert line.startswith("@reboot bash /") and "/platform-py/scripts/hub-start.sh >> /" in line
+    assert line.rstrip().endswith("/platform-py/.secrets/hub-start.log 2>&1")
+
+
+def test_engine_store_keeps_the_images_in_the_hub_own_store(tmp_path: Path) -> None:
+    store = tmp_path / "imagens"
+    _rc, out, log = rootless(tmp_path, "--engine-store", sh_path(store), systemd=True, bus=True)
+    conf = store / "storage.conf"
+    assert f'graphroot = "{sh_path(store)}/storage"' in conf.read_text(encoding="utf-8")
+    assert f"STORE={sh_path(conf)}" in log and f"XDG={sh_path(store)}/run" in log
+    assert f"unix://{sh_path(store)}/run/podman/podman.sock" in log and "SYSTEMCTL" not in log
+    env = prod_env(tmp_path)
+    assert env["HUB_ENGINE_STORE"] == sh_path(store)
+    assert env["HUB_CONTAINER_SOCKET_HOST"] == f"{sh_path(store)}/run/podman/podman.sock"
+    hub_env = (tmp_path / "platform-py" / ".secrets" / "hub-env.sh").read_text(encoding="utf-8")
+    assert f"CONTAINERS_STORAGE_CONF={sh_path(conf)}" in hub_env and "DOCKER_HOST=unix://" in hub_env
+    assert "source" in out and "hub-env.sh" in out
+
+
+def test_own_socket_mode_also_writes_hub_env(tmp_path: Path) -> None:
+    rootless(tmp_path, systemd=False, bus=False)
+    hub_env = (tmp_path / "platform-py" / ".secrets" / "hub-env.sh").read_text(encoding="utf-8")
+    assert "DOCKER_HOST=unix://" in hub_env and "DISABLE_HC_SYSTEMD=true" in hub_env
+    assert "CONTAINERS_STORAGE_CONF" not in hub_env

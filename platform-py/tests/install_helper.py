@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -13,11 +14,16 @@ COPIED = (
     "scripts/install/net.sh",
     "scripts/install/doctor.sh",
     "scripts/install/podman.sh",
+    "scripts/install/disk.sh",
     "prod.env.example",
     "docker-compose.yml",
 )
-# no engine on the PATH: a fake docker answers nothing, so a run without --config-only stops at the compose check
-NO_ENGINE = {"docker": "exit 1"}
+# no engine on the PATH: a fake docker answers nothing, so a run without --config-only stops at the compose check;
+# df lists no disk, so the disk question only shows up in the tests that fake one
+NO_ENGINE = {
+    "docker": "exit 1",
+    "df": "echo 'Filesystem Type 1024-blocks Used Available Capacity Mounted on'",
+}
 
 # Fake engine that gets through the compose check and records every build (arguments + network variables) in
 # $FAKE_LOG; `compose ... build` fails afterwards so the run stops right after the build steps.
@@ -76,3 +82,9 @@ def run_install(
 def prod_env(tmp_path: Path) -> dict[str, str]:
     text = (tmp_path / "platform-py" / ".prod.env").read_text(encoding="utf-8")
     return dict(l.split("=", 1) for l in text.splitlines() if l and not l.startswith("#") and "=" in l)  # noqa: E741
+
+
+def sh_path(p: Path) -> str:
+    """The path as the install's bash sees it (Git Bash on Windows: C:/x -> /c/x)."""
+    s = p.as_posix()
+    return f"/{s[0].lower()}{s[2:]}" if re.match(r"^[A-Za-z]:/", s) else s

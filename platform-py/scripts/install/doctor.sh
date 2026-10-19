@@ -88,15 +88,22 @@ check_container() { # a tiny build with the same build args: proves the proxy an
   d_fail "build em contêiner não alcança $url" "$(printf '%s' "$out" | tail -3 | tr '\n' ' ')"
 }
 
-check_disk() {
-  local root free
-  root=$(docker info --format '{{.DockerRootDir}}' 2>/dev/null || true)
-  [ -n "$root" ] && [ -d "$root" ] || return 0
-  free=$(df -Pk "$root" 2>/dev/null | awk 'NR == 2 { print int($4 / 1048576) }')
-  [ -n "$free" ] || return 0
-  if [ "$free" -lt 4 ]; then d_fail "store do engine ($root) com ${free} GB livres; as imagens do hub ocupam ~3 GB" "libere espaço ou use outro disco"
-  elif [ "$free" -lt 10 ]; then d_warn "store do engine ($root) com ${free} GB livres (cabe; recomendado 10 GB)"
-  else d_ok "disco do engine: ${free} GB livres em $root"; fi
+free_gb() { df -PTk "$1" 2>/dev/null | awk 'NR == 2 { print int($5 / 1048576) }'; }
+
+check_disk() { # engine store (images) and, with --data-dir, the data folder
+  local root free data=${DATA_DIR:-${HUB_DB_DIR:-}}
+  data=${data%/db}
+  root=$(engine_root)
+  if [ -n "$root" ] && [ -d "$root" ] && free=$(free_gb "$root") && [ -n "$free" ]; then
+    if [ "$free" -lt 4 ]; then d_fail "store do engine ($root) com ${free} GB livres; as imagens do hub ocupam ~3 GB" "libere espaço, ou --engine-store <pasta em outro disco> (Podman rootless)"
+    elif [ "$free" -lt 10 ]; then d_warn "store do engine ($root) com ${free} GB livres (cabe; recomendado 10 GB)"
+    else d_ok "disco do engine: ${free} GB livres em $root"; fi
+  fi
+  if [ -n "$data" ] && free=$(free_gb "$(dirname "$data")") && [ -n "$free" ]; then
+    if [ "$free" -lt 10 ]; then d_warn "dados em $data com ${free} GB livres (bancos e backups crescem)"
+    else d_ok "dados: ${free} GB livres em $data"; fi
+  fi
+  return 0
 }
 
 port_in_use() { ss -ltn 2>/dev/null | awk '{ print $4 }' | grep -Eq "[:.]$1\$"; }
