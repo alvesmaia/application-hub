@@ -50,7 +50,7 @@ rootless_summary() { # lines for the consent screen
 autostart_cron() { # idempotent: one @reboot line per install folder
   local start="$PWD/scripts/hub-start.sh"
   crontab -l 2>/dev/null | grep -qF "$start" && return 0
-  { crontab -l 2>/dev/null || true; echo "@reboot $start >> $PWD/.secrets/hub-start.log 2>&1"; } | crontab -
+  { crontab -l 2>/dev/null || true; echo "@reboot bash $start >> $PWD/.secrets/hub-start.log 2>&1"; } | crontab -
 }
 
 rootless_setup() { # after the consent: socket up, start at boot; exports what the install's commands need
