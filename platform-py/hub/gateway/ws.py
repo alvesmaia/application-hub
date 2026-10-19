@@ -59,7 +59,8 @@ async def _tunnel(
     max_msg, idle, max_life = limits
     try:
         upstream = await asyncio.wait_for(
-            websockets.connect(url, additional_headers=hdrs, max_size=max_msg, open_timeout=None),
+            # proxy=None: websockets follows HTTPS_PROXY by default, and the apps are internal
+            websockets.connect(url, additional_headers=hdrs, max_size=max_msg, open_timeout=None, proxy=None),
             gw.opts.connect_timeout * 2,
         )
     except Exception:

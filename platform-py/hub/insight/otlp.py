@@ -17,6 +17,7 @@ from typing import Any
 
 import httpx
 
+from hub.httpclients import external_client
 from hub.insight.metrics import BOUNDS, NB
 
 log = logging.getLogger("hub.otlp")
@@ -144,7 +145,7 @@ class Exporter:
             await self._post(client, "/v1/metrics", self.metrics_body())
 
     async def run(self, client: httpx.AsyncClient | None = None) -> None:
-        own = client or httpx.AsyncClient()
+        own = client or external_client()
         n = 0
         try:
             while True:

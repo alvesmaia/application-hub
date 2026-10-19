@@ -17,6 +17,7 @@ from starlette.responses import HTMLResponse, Response, StreamingResponse
 from hub.gateway.csp import app_url
 from hub.gateway.identity import USER_SIG_HEADER, Identity, sign_user
 from hub.gateway.registry import AppEntry, Registry
+from hub.httpclients import internal_client
 
 BASE_HEADER = "x-hub-base"
 HOP_BY_HOP = frozenset(
@@ -251,7 +252,7 @@ class Gateway:
         self.registry = registry
         self.opts = opts or GwOptions()
         self.extra_headers: Callable[[Request, str, Identity], list[tuple[str, str]]] | None = None
-        self.client = httpx.AsyncClient(
+        self.client = internal_client(
             transport=transport,
             follow_redirects=False,
             timeout=httpx.Timeout(self.opts.idle_timeout, connect=self.opts.connect_timeout),

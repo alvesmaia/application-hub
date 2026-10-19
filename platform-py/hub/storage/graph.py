@@ -13,6 +13,7 @@ from urllib.parse import urlsplit
 
 import httpx
 
+from hub.httpclients import external_client
 from hub.storage import (
     Body,
     Item,
@@ -97,7 +98,7 @@ class GraphClient:
         self, ep: Endpoints, cfg: SharePointConfig, transport: httpx.AsyncBaseTransport | None = None
     ) -> None:
         self.ep, self.cfg = ep, cfg
-        self.http = httpx.AsyncClient(transport=transport, timeout=60.0, follow_redirects=False)
+        self.http = external_client(transport=transport, timeout=60.0, follow_redirects=False)
         self.chunk, self.simple_max = CHUNK, SIMPLE_MAX
         self._token: tuple[str, float] | None = None
         self._target: tuple[str, str, str] | None = None

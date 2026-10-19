@@ -62,6 +62,7 @@ services:
         required: false
     volumes:
       - ${HUB_DATA_HOST_DIR:-app-hub-data}:/data${HUB_BIND_OPTS:-} # install.sh --data-dir: host folder
+      - ${HUB_CA_DIR:-./infra/ca-none}:/config/ca:ro # install.sh --ca-file: ca.pem, trusted by hub.httpclients
       - ./app-env.json:/config/app-env.json:ro
       # Daemon socket (approved by the owner): the hub only operates `app-hub-*` containers
       # (guard in hub/ops/runtime.py); never hub-*, apphub-devtunnel or containers from outside the project.

@@ -13,6 +13,7 @@ from typing import Any
 import httpx
 
 from hub import __version__
+from hub.httpclients import external_client
 
 REPO = "alvesmaia/application-hub"
 EVERY = 24 * 3600
@@ -37,7 +38,7 @@ class UpdateCheck:
 
     async def check(self, client: httpx.AsyncClient | None = None) -> None:
         own = client is None
-        c = client or httpx.AsyncClient(timeout=10)
+        c = client or external_client(timeout=10)
         try:
             r = await c.get(f"https://api.github.com/repos/{self.repo}/releases/latest",
                             headers={"Accept": "application/vnd.github+json"})  # fmt: skip

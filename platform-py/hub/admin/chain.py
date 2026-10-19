@@ -14,6 +14,7 @@ from typing import Any, cast
 
 import httpx
 
+from hub.httpclients import external_sync_client
 from hub.models import AuditEntry
 from hub.state import StateDb
 from hub.vault import Vault, verify_signature
@@ -282,7 +283,7 @@ class AuditChain:
             token = os.getenv("HUB_AUDIT_HEAD_TOKEN", "").strip()
             headers = {"authorization": f"Bearer {token}"} if token else {}
             try:
-                with httpx.Client(transport=HEAD_TRANSPORT, timeout=5) as c:
+                with external_sync_client(transport=HEAD_TRANSPORT, timeout=5) as c:
                     r = c.post(self.head_url(), json=head, headers=headers)
                 self.hook_error = "" if r.status_code < 300 else f"webhook respondeu HTTP {r.status_code}"
             except httpx.HTTPError as e:

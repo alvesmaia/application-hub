@@ -45,7 +45,11 @@ net_summary() { # one line for the consent screen (proxy password hidden)
 net_write() { # .prod.env (setv); the CA is copied next to the secrets so the install does not depend on the source path
   if [ -n "$NET_PROXY" ]; then setv HUB_PROXY "$NET_PROXY"; fi
   if [ -n "$NET_NOPROXY" ]; then setv HUB_NO_PROXY "$NET_NOPROXY"; fi
-  if [ -n "$CA_FILE" ]; then mkdir -p .secrets && cp "$CA_FILE" .secrets/ca.pem && setv HUB_CA_FILE ./.secrets/ca.pem; fi
+  if [ -n "$CA_FILE" ]; then
+    mkdir -p .secrets/ca && cp "$CA_FILE" .secrets/ca/ca.pem
+    setv HUB_CA_FILE ./.secrets/ca/ca.pem
+    setv HUB_CA_DIR ./.secrets/ca # mounted at /config/ca in the hub (external calls trust it)
+  fi
   if [ -n "$PYPI" ]; then setv HUB_PYPI_INDEX "$PYPI"; fi
   if [ -n "$REG_MIRROR" ]; then setv HUB_IMAGE_PREFIX "${REG_MIRROR%/}/library/"; fi
   if [ -n "$APK" ]; then setv HUB_APK_MIRROR "$APK"; fi

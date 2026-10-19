@@ -35,8 +35,8 @@ def test_network_options_reach_prod_env_and_the_ca_is_copied(tmp_path: Path) -> 
     assert env["HUB_PYPI_INDEX"] == PYPI and env["HUB_IMAGE_PREFIX"] == "docker.repo.empresa.local/library/"
     assert env["HUB_APK_MIRROR"] == "https://repo.empresa.local/alpine"
     assert env["HUB_GOPROXY"] == "https://repo.empresa.local/go"
-    assert env["HUB_CA_FILE"] == "./.secrets/ca.pem"
-    assert (tmp_path / "platform-py" / ".secrets" / "ca.pem").read_text(encoding="utf-8") == PEM
+    assert env["HUB_CA_FILE"] == "./.secrets/ca/ca.pem" and env["HUB_CA_DIR"] == "./.secrets/ca"
+    assert (tmp_path / "platform-py" / ".secrets" / "ca" / "ca.pem").read_text(encoding="utf-8") == PEM
 
 
 def test_without_network_options_nothing_is_written(tmp_path: Path) -> None:

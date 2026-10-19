@@ -19,6 +19,7 @@ from urllib.parse import quote, urlsplit
 
 import httpx
 
+from hub.httpclients import external_client
 from hub.storage import Body, Item, Steps, StorageError, clean, clean_file, join, rfc3339
 
 _FAIL = {
@@ -110,7 +111,7 @@ class S3Client:
             except ValueError:
                 pass
         self.cfg, self.host = cfg, urlsplit(cfg.endpoint).netloc
-        self.http = httpx.AsyncClient(transport=transport, timeout=60.0)
+        self.http = external_client(transport=transport, timeout=60.0)
 
     def _key(self, rel: str) -> str:
         return join(self.cfg.base_folder, rel)

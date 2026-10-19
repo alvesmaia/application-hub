@@ -33,6 +33,7 @@ from hub.api.oauth_util import (
     sha,
 )
 from hub.auth import client_ip
+from hub.httpclients import external_client
 from hub.state import Change
 
 
@@ -108,7 +109,7 @@ class OAuthClients(OAuthBase):
 
     async def cimd_download(self, target: str, host: str) -> bytes:
         try:
-            async with httpx.AsyncClient(
+            async with external_client(
                 timeout=5, follow_redirects=False, transport=self.cimd_transport
             ) as cli, cli.stream("GET", target, headers={"host": host, "accept": "application/json"},
                                   extensions={"sni_hostname": host}) as res:  # fmt: skip

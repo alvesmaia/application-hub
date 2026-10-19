@@ -17,6 +17,8 @@ from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicNumbers
 from cryptography.hazmat.primitives.hashes import SHA256
 
+from hub.httpclients import external_client
+
 DEFAULT_AUTHORITY = "https://login.microsoftonline.com"
 JWKS_TTL = 3600.0
 SKEW = 120
@@ -109,7 +111,7 @@ class EntraConfig:
         return list(dict.fromkeys(self.role_map[i] for i in ids if i in self.role_map))
 
     async def _http(self) -> httpx.AsyncClient:
-        return httpx.AsyncClient(transport=TRANSPORT, timeout=10.0)
+        return external_client(transport=TRANSPORT, timeout=10.0)
 
     async def _keys(self, refresh: bool) -> dict[str, Any]:
         if refresh or not self._jwks or time.monotonic() - self._jwks_at > JWKS_TTL:
