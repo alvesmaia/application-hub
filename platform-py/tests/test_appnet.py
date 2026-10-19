@@ -110,3 +110,5 @@ def test_template_dockerfile_takes_the_mirror_and_the_ca_in_both_stages() -> Non
     assert len(froms) == 2 and all(f.startswith("FROM ${IMAGE_PREFIX}python:") for f in froms)
     assert src.count("ARG EXTRA_CA_PEM") == 2  # builder (pip/uv) and final image (runtime trust)
     assert "ARG UV_DEFAULT_INDEX" in src and "ARG PIP_INDEX_URL" in src
+    ca = r"""RUN if [ -n "$EXTRA_CA_PEM" ]; then printf '%s\n' "$EXTRA_CA_PEM" >> /etc/ssl/certs/ca-certificates.crt; fi"""
+    assert src.count(ca) == 2, "the CA line must be whole (one line per stage)"

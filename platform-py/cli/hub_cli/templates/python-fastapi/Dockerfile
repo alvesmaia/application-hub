@@ -7,8 +7,7 @@ FROM ${IMAGE_PREFIX}python:3.12-slim-bookworm AS builder
 ARG EXTRA_CA_PEM=""
 ARG PIP_INDEX_URL
 ARG UV_DEFAULT_INDEX
-RUN if [ -n "$EXTRA_CA_PEM" ]; then printf '%s
-' "$EXTRA_CA_PEM" >> /etc/ssl/certs/ca-certificates.crt; fi
+RUN if [ -n "$EXTRA_CA_PEM" ]; then printf '%s\n' "$EXTRA_CA_PEM" >> /etc/ssl/certs/ca-certificates.crt; fi
 RUN env ${EXTRA_CA_PEM:+SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt PIP_CERT=/etc/ssl/certs/ca-certificates.crt} pip install --no-cache-dir uv==0.12.23
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT=/opt/venv
 WORKDIR /src
@@ -19,8 +18,7 @@ RUN env ${EXTRA_CA_PEM:+SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt PIP_CER
 
 FROM ${IMAGE_PREFIX}python:3.12-slim-bookworm
 ARG EXTRA_CA_PEM=""
-RUN if [ -n "$EXTRA_CA_PEM" ]; then printf '%s
-' "$EXTRA_CA_PEM" >> /etc/ssl/certs/ca-certificates.crt; fi
+RUN if [ -n "$EXTRA_CA_PEM" ]; then printf '%s\n' "$EXTRA_CA_PEM" >> /etc/ssl/certs/ca-certificates.crt; fi
 RUN useradd --system --uid 10001 --home-dir /nonexistent --shell /usr/sbin/nologin hub \
     && mkdir -p /scratch && chown 10001:10001 /scratch
 COPY --from=builder /opt/venv /opt/venv
