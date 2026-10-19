@@ -159,3 +159,10 @@ def test_disk_space_of_the_engine_store_and_of_the_data_folder(tmp_path: Path) -
     )
     assert rc == 1 and "2 GB livres" in out and "--engine-store" in out
     assert "dados: 1023 GB livres" in out
+
+
+def test_containers_of_other_projects_on_the_same_engine_are_pointed_out(tmp_path: Path) -> None:
+    engine = 'case "$1" in ps) printf "nginx-proxy\nportal-prod\napp-hub-web\n" ;; esac; exit 0'
+    rc, out, _ = doctor(tmp_path, "direct", fakes={"docker": engine})
+    assert "2 contêiner(es) de outros projetos" in out and "nginx-proxy" in out and "usuário dedicado" in out
+    assert rc == 0  # a warning: the hub never touches them (app-hub-* guard)

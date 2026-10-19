@@ -16,6 +16,7 @@ COPIED = (
     "scripts/install/podman.sh",
     "scripts/install/disk.sh",
     "scripts/install/tls.sh",
+    "scripts/install/post.sh",
     "prod.env.example",
     "docker-compose.yml",
 )

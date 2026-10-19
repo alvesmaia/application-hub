@@ -106,6 +106,15 @@ check_disk() { # engine store (images) and, with --data-dir, the data folder
   return 0
 }
 
+check_neighbors() { # other projects on the same engine: the hub never touches them, but its socket could
+  local others
+  others=$(docker ps -a --format '{{.Names}}' 2>/dev/null | grep -v "^$PROJECT-" || true)
+  [ -n "$others" ] || return 0
+  d_warn "$(printf '%s
+' "$others" | wc -l | tr -d ' ') contêiner(es) de outros projetos neste engine ($(printf '%s' "$others" | head -3 | tr '
+' ' ')): o hub não os toca (trava $PROJECT-*), mas o acesso ao socket permitiria; prefira um usuário dedicado ao hub"
+}
+
 port_in_use() { ss -ltn 2>/dev/null | awk '{ print $4 }' | grep -Eq "[:.]$1\$"; }
 
 check_port() {
@@ -123,6 +132,7 @@ doctor() { # returns 1 when something failed (each failure already says what to 
   check_network
   check_container
   check_disk
+  check_neighbors
   check_port
   if [ -n "$D_BUNDLE" ]; then rm -f "$D_BUNDLE"; fi
   [ "$DOCTOR_FAILS" = 0 ] && { echo "  diagnóstico ok" >&4; return 0; }

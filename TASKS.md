@@ -8,7 +8,7 @@
 - ✅ 38 · Podman sem sessão systemd: detecção, --no-systemd, socket próprio, --autostart cron
 - ✅ 39 · Escolha do disco: lista montagens graváveis, --data-dir (:Z, dono via podman unshare), --engine-store
 - ✅ 40 · HTTPS no edge: --tls-cert/--tls-key
-- ⬜ 41 · Mensagens: caminhos absolutos, erro do bucket visível, reexecução sem perguntas, outros containers, install-cmd.txt, verificação final
+- ✅ 41 · Mensagens: caminhos absolutos, erro do bucket visível, reexecução sem perguntas, outros containers, install-cmd.txt, verificação final
 
 ## Hub
 - ⬜ 42 · Chamadas internas sem proxy (internal_client/external_client, HUB_PROXY/HUB_NO_PROXY, guarda contra httpx direto)

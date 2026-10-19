@@ -90,6 +90,8 @@ if [ -f "$LIB/net.sh" ]; then
   . "$LIB/disk.sh"
   # shellcheck source=install/tls.sh
   . "$LIB/tls.sh"
+  # shellcheck source=install/post.sh
+  . "$LIB/post.sh"
 fi
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -158,6 +160,8 @@ yes_no() { case "$1" in s | S | y | Y) return 0 ;; *) return 1 ;; esac; }
 ADV=n OBJ_DIR="" HEAD_DIR="" HEAD_URL="" HEAD_TOKEN="" OFF_KIND=nenhuma OFF_S3="" ENTRA=n
 ENTRA_TENANT="" ENTRA_CLIENT="" ENTRA_DOMAINS="" ENTRA_ROLE=Colaborador ENTRA_LOCAL=admins ENTRA_SECRET=""
 ADMIN_CIDRS="" PROXY="" PROXIES=172.16.0.0/12 TELEMETRY=s OTLP="" UPDATES=s PUBDOCS=s BUILD_CPUS=2
+# a rerun keeps the answers already in .prod.env (it only starts what is missing): no questions again
+if [ "$CONFIG_ONLY" = 0 ] && [ -f "$LIB/../../.prod.env" ]; then echo "usando platform-py/.prod.env existente: sem perguntas" >&2; ASKED=1; fi
 if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0 ] && [ -r /dev/tty ]; }; }; then
   exec 3< "$TTY"; TTY_OPEN=1
   [ -n "${INSTALL_TTY:-}" ] || exec 4> /dev/tty
@@ -369,6 +373,7 @@ if [ ! -f "$ENVF" ]; then
     echo "DOCKER_GID=$(stat -c %g /var/run/docker.sock 2>/dev/null || echo 0)" >> "$ENVF"
   fi
   echo "segredos novos em platform-py/$ENVF (0600)"
+  save_install_cmd
 else
   echo "usando platform-py/$ENVF existente (segredos mantidos)"
 fi
@@ -463,19 +468,10 @@ fi
 
 echo "5/5 subindo a pilha ($P)"
 dc up -d
-# bucket for the attachments of the sample app fornecedores
-if [ "${COMPOSE_PROFILES:-}" = demo-apps ]; then
-  for _ in $(seq 60); do
-    docker run --rm --network "${P}_default" -e "PW=$APP_HUB_OBJSTORE_PASSWORD" --entrypoint sh "$HUB_MC_IMAGE" -c \
-      'mc alias set r http://app-hub-objstore:9000 hubadmin "$PW" >/dev/null && mc mb -p r/fornecedores >/dev/null' && break
-    sleep 2
-  done
-fi
+if [ "${COMPOSE_PROFILES:-}" = demo-apps ]; then make_bucket; fi
 HEALTH=http://127.0.0.1:$HUB_PORT/healthz
 if [ "${HUB_EDGE_TLS:-}" = tls.caddy ]; then HEALTH=https://127.0.0.1:$HUB_PORT/healthz; fi # own certificate: -k
 for _ in $(seq 120); do curl --noproxy '*' -ksf "$HEALTH" >/dev/null && break; sleep 2; done
 curl --noproxy '*' -ksf "$HEALTH" || { docker logs --tail 40 "$P-web"; exit 1; }
-echo
-echo "Application Hub no ar: $HUB_PUBLIC_URL  (projeto $P, porta $HUB_PORT)"
-echo "Senha temporária do primeiro acesso: platform-py/.secrets/primeiro-acesso.txt (apague depois de entrar)"
-echo "Chave mestra do cofre: platform-py/.secrets/master.key — copie para fora do servidor."
+final_checks
+final_message
