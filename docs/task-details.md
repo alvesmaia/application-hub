@@ -116,3 +116,29 @@ Concluídas em 2026-10-15 (`1d189a8`). Lista final como estava no TASKS.md (pend
 ✅ **Melhorias de UX/Design (tarefas 18–28)**
 
 2026-10-16: paginação em /admin/users, /admin/runtime e /admin/backups (18); Desenvolvedores no menu do usuário, abre em nova guia (19); /admin/env com coluna Aplicação e filtro ?app=, botões de banco/token em Containers › detalhes (20); Inbox com select "Mostrar" e paginação (22); ícone do GitHub no header via HUB_SOURCE_URL (23); prompt de copiar aponta para /dev/docs/AGENTS.md (24); sem avisos "Duplicate Operation ID" (25); OAuth do MCP: cliente do registro dinâmico não usado vale 30 dias, validado com mcp-remote em container pela internet (26); botão "Entrar com Microsoft" claro, logo 18px sem contorno (27); travessões removidos dos textos da interface, com guarda test_no_em_dash.py (28); integração, E2E, ui-sweep 0 achados e deploy sem parada na :8090 (21). Pendente do dono: remover os clientes OAuth de teste diag-claude-ai, diag-copilot-cli e "MCP CLI Proxy" em Credenciais › OAuth.
+
+✅ **MCP and manual import (tasks 29–33)**
+
+Finished 2026-10-15 (`b7f845c`). Final list as it stood in TASKS.md:
+
+## Docs
+- ✅ 29 · Importação manual mais clara + passo a passo nas docs, testado de ponta a ponta
+  - ✅ aba Importar: arquivo → prévia → variáveis/segredos → ambiente → implantar; validador de manifest na aba Pipeline e CI, vazio
+  - ✅ prévia do pacote (POST /api/ops/packages/preview): id, nome, versão, novo/atualização, requires (sem implantar)
+  - ✅ campos para requires.variables/secrets (vazio = manter; segredo sem eco, nunca devolvido); config também como arquivo
+  - ✅ botão diz o efeito: "Implantar em staging" / "Enviar para aprovação (produção)"
+  - ✅ guia Publicar + AGENTS, comecar, CONTRATO-APP, FAQ; E2E 31-import-preview e 06-ops; ui-sweep 0 achados
+
+## MCP
+- ✅ 30 · Publicar pacote pelo MCP: deployments_upload devolve link de envio de uso único (curl -F package=@…)
+  - ✅ /mcp/uploads/<ticket>: 10 min, uso único atômico, dono e permissão conferidos no envio; passa pelo Access
+  - ✅ corpo montado sem cópia por pedaço (pacote de 20 MB)
+- ✅ 31 · Inventário da API: ~75 ferramentas novas no MCP (destrutivas com confirm_token)
+  - ✅ fora de propósito: criar token, trocar senha, chave do cofre, aprovar JavaScript, estado de tela, SSE/CSV
+- ✅ 32 · Guia do agente: publicar e operar pelo MCP (mcp-api.md, AGENTS.md); teste exige toda ferramenta no guia
+
+## Fechamento
+- ✅ 33 · hub-check, E2E e ui-sweep na instância isolada, deploy na :8090, limpeza
+  - ✅ hub-check --all verde (30/30) na main combinada
+  - ✅ E2E 06-ops + 31-import-preview 6/6; ui-sweep --quick 0 achados (instância isolada)
+  - ✅ push, deploy sem parada na :8090 (readyz 200; /mcp/uploads responde pela internet), worktrees e instância isolada removidas

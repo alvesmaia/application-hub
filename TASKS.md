@@ -1,23 +1,21 @@
-# Tarefas
+# Instalação em rede corporativa
+
+## Instalação
+- ⬜ 34 · Cookie Secure segue a URL (http → auto + aviso; compose prod lê o .prod.env)
+- ⬜ 35 · Aviso e consentimento no início (padrão N; --yes = consentimento dado)
+- ⬜ 36 · Rede corporativa: --proxy, --no-proxy, --ca-file e espelhos (PyPI, imagens, Alpine, Go) + perguntas
+- ⬜ 37 · Diagnóstico: --doctor e etapa 0 (proxy, TLS interceptado, CA, espelhos, container, systemd, disco, porta, URL)
+- ⬜ 38 · Podman sem sessão systemd: detecção, --no-systemd, socket próprio, --autostart cron
+- ⬜ 39 · Escolha do disco: lista montagens graváveis, --data-dir (:Z, dono via podman unshare), --engine-store
+- ⬜ 40 · HTTPS no edge: --tls-cert/--tls-key
+- ⬜ 41 · Mensagens: caminhos absolutos, erro do bucket visível, reexecução sem perguntas, outros containers, install-cmd.txt, verificação final
+
+## Hub
+- ⬜ 42 · Chamadas internas sem proxy (internal_client/external_client, HUB_PROXY/HUB_NO_PROXY, guarda contra httpx direto)
+- ⬜ 43 · Build e containers dos apps com proxy, CA e espelhos (buildargs, env, credencial mascarada)
 
 ## Docs
-- ✅ 29 · Importação manual mais clara + passo a passo nas docs, testado de ponta a ponta
-  - ✅ aba Importar: arquivo → prévia → variáveis/segredos → ambiente → implantar; validador de manifest na aba Pipeline e CI, vazio
-  - ✅ prévia do pacote (POST /api/ops/packages/preview): id, nome, versão, novo/atualização, requires (sem implantar)
-  - ✅ campos para requires.variables/secrets (vazio = manter; segredo sem eco, nunca devolvido); config também como arquivo
-  - ✅ botão diz o efeito: "Implantar em staging" / "Enviar para aprovação (produção)"
-  - ✅ guia Publicar + AGENTS, comecar, CONTRATO-APP, FAQ; E2E 31-import-preview e 06-ops; ui-sweep 0 achados
-
-## MCP
-- ✅ 30 · Publicar pacote pelo MCP: deployments_upload devolve link de envio de uso único (curl -F package=@…)
-  - ✅ /mcp/uploads/<ticket>: 10 min, uso único atômico, dono e permissão conferidos no envio; passa pelo Access
-  - ✅ corpo montado sem cópia por pedaço (pacote de 20 MB)
-- ✅ 31 · Inventário da API: ~75 ferramentas novas no MCP (destrutivas com confirm_token)
-  - ✅ fora de propósito: criar token, trocar senha, chave do cofre, aprovar JavaScript, estado de tela, SSE/CSV
-- ✅ 32 · Guia do agente: publicar e operar pelo MCP (mcp-api.md, AGENTS.md); teste exige toda ferramenta no guia
+- ⬜ 44 · Guia "Instalação em rede corporativa", --help e CHANGELOG
 
 ## Fechamento
-- ✅ 33 · hub-check, E2E e ui-sweep na instância isolada, deploy na :8090, limpeza
-  - ✅ hub-check --all verde (30/30) na main combinada
-  - ✅ E2E 06-ops + 31-import-preview 6/6; ui-sweep --quick 0 achados (instância isolada)
-  - ✅ push, deploy sem parada na :8090 (readyz 200; /mcp/uploads responde pela internet), worktrees e instância isolada removidas
+- ⬜ 45 · hub-check --all, teste em RHEL simulado (rootless sem systemd + proxy com CA própria), limpeza
