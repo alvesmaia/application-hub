@@ -2,44 +2,18 @@
 
 from __future__ import annotations
 
-import shutil
-import subprocess
 from pathlib import Path
 
 import pytest
+from install_helper import BASH, ROOT, prod_env, run_install
 
-ROOT = Path(__file__).resolve().parents[1]
-BASH = shutil.which("bash")
 pytestmark = pytest.mark.skipif(BASH is None, reason="bash not available")
 
 
 def install(tmp_path: Path, answers: list[str], args: tuple[str, ...] = ()) -> tuple[dict[str, str], str]:
-    pp = tmp_path / "platform-py"
-    (pp / "scripts").mkdir(parents=True)
-    for f in ("scripts/install.sh", "prod.env.example", "docker-compose.yml"):
-        shutil.copy(ROOT / f, pp / f)
-    tty = tmp_path / "answers.txt"
-    tty.write_text("\n".join(answers) + "\n", encoding="utf-8", newline="\n")
-    r = subprocess.run(  # noqa: S603
-        [str(BASH), "scripts/install.sh", "--config-only", *args],
-        cwd=pp,
-        env={
-            "PATH": str(Path(str(BASH)).parent) + ":/usr/bin:/bin",
-            "INSTALL_TTY": str(tty),
-            "HOME": str(tmp_path),
-        },
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        check=False,
-        timeout=60,
-    )
+    r = run_install(tmp_path, ("--config-only", *args), answers)
     assert r.returncode == 0, r.stderr[-2000:]
-    text = (pp / ".prod.env").read_text(encoding="utf-8")
-    env = dict(
-        line.split("=", 1) for line in text.splitlines() if line and not line.startswith("#") and "=" in line
-    )
-    return env, r.stderr
+    return prod_env(tmp_path), r.stderr
 
 
 BASE = ["", "", "", "", "", "", "n"]  # e-mail, port, bind, public URL, project, subnet, sample apps (no)

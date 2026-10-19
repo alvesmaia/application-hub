@@ -33,14 +33,17 @@
 # vault or to .prod.env (0600), never to the command line. Without a terminal, SharePoint can still be set with
 # SP_TENANT, SP_CLIENT_ID, SP_SITE, SP_FOLDER (default Backups/hub) and SP_SECRET_FILE; everything else: edit .prod.env.
 # INSTALL_TTY=<file> reads the answers from a file instead of the terminal (tests).
-#   --yes                asks nothing (defaults + command-line options); in a terminal without instance options
-#                        of the instance the script asks for each one, with the default in [brackets]
+#   --yes                asks nothing (defaults + command-line options) and counts as consent to the notice below;
+#                        in a terminal without instance options the script asks for each one, default in [brackets]
+#
+# Before acting, the install shows what it will do (containers, engine socket, downloads, port, secrets) and asks
+# "Continuar? (s/N)": Enter or no cancels with nothing changed. Without a terminal it requires --yes.
 set -euo pipefail
 export MSYS_NO_PATHCONV=1
 
 EMAIL=admin@example.com PUBLIC_URL="" PORT=8090 BIND=127.0.0.1 PROJECT=app-hub SUBNET=10.231 DEMO=1
 CLONE=0 REPO=https://github.com/alvesmaia/application-hub.git REF=main DIR=./application-hub
-GET_COMPOSE=0 YES=0 ASKED=0 PUBLIC_URL_IN='' CONFIG_ONLY=0
+GET_COMPOSE=0 YES=0 ASKED=0 PUBLIC_URL_IN='' CONFIG_ONLY=0 TTY_OPEN=0
 TTY=${INSTALL_TTY:-/dev/tty}
 exec 4>&2  # questions: the terminal (opened below) or, with INSTALL_TTY, stderr
 COMPOSE_VER=v2.29.7
@@ -61,7 +64,7 @@ while [ $# -gt 0 ]; do
     --get-compose) GET_COMPOSE=1 ;;
     --config-only) CONFIG_ONLY=1 ;;
     -y | --yes) YES=1 ;;
-    -h | --help) sed -n '2,41p' "$0"; exit 0 ;;
+    -h | --help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;;
     *) echo "opção desconhecida: $1" >&2; exit 2 ;;
   esac
   shift
@@ -92,7 +95,7 @@ ADV=n OBJ_DIR="" HEAD_DIR="" HEAD_URL="" HEAD_TOKEN="" OFF_KIND=nenhuma OFF_S3="
 ENTRA_TENANT="" ENTRA_CLIENT="" ENTRA_DOMAINS="" ENTRA_ROLE=Colaborador ENTRA_LOCAL=admins ENTRA_SECRET=""
 ADMIN_CIDRS="" PROXY="" PROXIES=172.16.0.0/12 TELEMETRY=s OTLP="" UPDATES=s PUBDOCS=s BUILD_CPUS=2
 if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0 ] && [ -r /dev/tty ]; }; }; then
-  exec 3< "$TTY"
+  exec 3< "$TTY"; TTY_OPEN=1
   [ -n "${INSTALL_TTY:-}" ] || exec 4> /dev/tty
   echo "Instalação do Application Hub — o valor entre [colchetes] é o recomendado; Enter o mantém."
   ask EMAIL "E-mail do primeiro administrador" '^[^@ ]+@[^@ ]+\.[^@ ]+$'
@@ -159,11 +162,35 @@ if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0
     echo "        cópia externa=$OFF_KIND${SP_TENANT:+ ($SP_SITE/$SP_FOLDER)}  login Microsoft=$(yes_no "$ENTRA" && echo sim || echo não)"
     echo "        Administração=${ADMIN_CIDRS:-sem restrição}  proxy=$PROXY  telemetria=$TELEMETRY  avisos=$UPDATES  docs públicas=$PUBDOCS"
   fi
-  printf 'Instalar com estas opções? (s/n) [s]: ' >&4
-  IFS= read -r a <&3 || a=s
-  case "${a:-s}" in s | S) ;; *) echo "cancelado"; exit 1 ;; esac
+  if [ "$CONFIG_ONLY" = 1 ]; then # the real install ends in the consent below
+    printf 'Gravar .prod.env com estas opções? (s/n) [s]: ' >&4
+    IFS= read -r a <&3 || a=s
+    case "${a:-s}" in s | S) ;; *) echo "cancelado" >&2; exit 1 ;; esac
+  fi
 fi
 case "$PROJECT" in app-hub | app-hub-*) ;; *) echo "--project deve começar com app-hub (trava do hub)" >&2; exit 2 ;; esac
+consent() { # what the install does, before doing anything; default no. --yes = consent given (kept in the log)
+  cat >&4 <<EOT
+
+Application Hub — instalação. Isto vai:
+  • criar contêineres, volumes e redes com o prefixo $PROJECT-* no Docker/Podman do usuário $(id -un)
+  • dar ao contêiner do hub acesso ao socket do engine: ele cria e para os contêineres dos apps (só $PROJECT-*)
+  • baixar imagens e pacotes (registry de imagens, PyPI, GitHub)
+  • publicar a porta $PORT em $BIND
+  • gravar segredos em platform-py/.secrets e platform-py/.prod.env (0600)
+Não usa sudo, não altera configurações do sistema nem contêineres de outros projetos.
+EOT
+  if [ "$YES" = 1 ]; then echo "consentimento dado por --yes" >&4; return 0; fi
+  if [ "$TTY_OPEN" = 0 ]; then
+    { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0 ] && [ -r /dev/tty ]; }; } ||
+      { echo "sem terminal para confirmar: leia o aviso acima e rode de novo com --yes" >&2; exit 1; }
+    exec 3< "$TTY"
+  fi
+  printf 'Continuar? (s/N): ' >&4
+  IFS= read -r a <&3 || a=n
+  case "$a" in s | S | sim) ;; *) echo "cancelado: nada foi alterado" >&2; exit 1 ;; esac
+}
+[ "$CONFIG_ONLY" = 1 ] || consent
 [ "$CONFIG_ONLY" = 1 ] || command -v docker >/dev/null || { echo "Docker não encontrado (Podman: instale podman-docker)" >&2; exit 1; }
 get_compose() { # official binary in ~/.local/bin (no root); pinned version and sha256 checked
   local url=https://github.com/docker/compose/releases/download/$COMPOSE_VER/docker-compose-linux-x86_64

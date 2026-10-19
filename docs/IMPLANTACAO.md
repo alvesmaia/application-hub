@@ -3,8 +3,9 @@
 Short checklist. From `platform-py/`, Docker Compose >= 2.24.
 
 **Shortcut:** `bash scripts/install.sh` in a terminal asks for each option (admin, port, bind, public URL, project,
-network range, sample apps), shows a summary and asks for confirmation. With options or `--yes` it asks nothing:
-`bash scripts/install.sh --admin-email voce@empresa.com --public-url https://hub.empresa.com` does the
+network range, sample apps), shows a summary and asks for confirmation. With options it skips the questions but
+still shows what it will do and asks `Continuar? (s/N)` (default no); `--yes` counts as that consent (required
+without a terminal): `bash scripts/install.sh --yes --admin-email voce@empresa.com --public-url https://hub.empresa.com` does the
 steps below (new secrets, images built from source, master key, first administrator, start-up). Then follow from the
 item "Tunnel/TLS proxy" onwards. Updates: [`ATUALIZACAO.md`](ATUALIZACAO.md).
 
