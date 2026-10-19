@@ -8,6 +8,15 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 ## [Unreleased]
 
 ### Fixed
+- Login looped back to `/login` on an `http://` install other than localhost: `docker-compose.prod.yml` fixed the
+  session cookie as Secure. It now reads `HUB_COOKIE_SECURE` from `.prod.env`, and `install.sh` writes `auto` for an
+  `http://` URL (with a warning that it is for tests only).
+- Behind a corporate proxy, the hub's internal calls (apps, MinIO) followed the `HTTP_PROXY` docker injects into
+  containers and failed at the proxy ("Access Denied"). See *Added* (hub.httpclients).
+- `hub_update.py`: the `/data` backup now uses `--volumes-from`, so a host-folder `/data` is backed up too; the
+  edge health probe also works over HTTPS (an update no longer rolls back on a TLS edge).
+- `install.sh`: the sample bucket loop no longer retries 60 times in silence (it shows the error and the likely
+  cause once); the final message gives absolute paths; a rerun with an existing `.prod.env` asks nothing again.
 - MCP OAuth: a dynamically registered client that did not finish the sign-in within one hour was deleted, and every
   later attempt with the cached `client_id` (mcp-remote, Claude, Copilot) failed with "client_id desconhecido";
   unused registrations now last 30 days (still capped by the unused-client limit and the registration rate limits).
@@ -16,6 +25,9 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   loopback/HTTPS ones kept.
 
 ### Changed
+- `install.sh` with options but no `--yes` now asks for consent; without a terminal it requires `--yes`.
+- The edge mounts `infra/edge` (Caddyfile + `plain.caddy`/`tls.caddy`) and `/certs`: the next full `up -d` recreates
+  `app-hub-edge` once (a few seconds).
 - Deployments › Import package: the main flow is choose the `.hubapp` → preview → variables/secrets → environment →
   deploy. The button states its effect ("Implantar em staging" / "Enviar para aprovação (produção)"). The manifest
   validator moved, collapsed and empty (the example is only a placeholder), to the "Pipeline e CI" tab: the
@@ -25,6 +37,20 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   rules at `/dev/docs/AGENTS-app.md`; the old `agente.md`/`agents.md` answer 308.
 
 ### Added
+- Install on corporate networks (`docs/REDE-CORPORATIVA.md`): `install.sh --proxy`, `--no-proxy`, `--ca-file`,
+  `--pypi-index`, `--registry-mirror`, `--apk-mirror`, `--goproxy` (also asked interactively), passed to every build
+  (Dockerfiles of the hub, MinIO, sample apps and the `hub-cli` template take `IMAGE_PREFIX` and `EXTRA_CA_PEM`).
+- `install.sh --doctor`: read-only diagnosis (network through the configured path only, TLS inspection with the
+  certificate issuer, CA, mirrors, a build inside a container, disks, port, other projects on the engine); it is also
+  step 0 of the install (`--skip-doctor`).
+- `install.sh`: notice and consent before acting (`Continuar? (s/N)`; `--yes` = consent, required without a terminal).
+- `install.sh`: disk choice (writable disks with free space; `--data-dir` for databases, hub data and MinIO files;
+  `--engine-store` for the images on rootless Podman), HTTPS at the edge (`--tls-cert`/`--tls-key`, `tls.caddy`),
+  rootless Podman with or without a systemd user session (`--no-systemd`, `--autostart cron|systemd|none`,
+  `scripts/hub-start.sh`), and `.secrets/install-cmd.txt` with this install as one command.
+- `hub.httpclients`: internal calls are always direct; external ones use `HUB_PROXY` (or `*_PROXY`) except for
+  `HUB_NO_PROXY`, hosts without a dot and private addresses, and trust the corporate CA mounted at `/config/ca`.
+  Apps built and run by the hub get the proxy, the CA and the mirrors (build args and container environment).
 - `POST /api/ops/packages/preview` (multipart `package`, `X-Hub-Request: 1`, same permission and token action as the
   upload): reads only `manifest.json` from the package and returns id, name, version, new app or the current version
   per environment, and `requires` (names only). The Import tab shows it before deploying, with one field per

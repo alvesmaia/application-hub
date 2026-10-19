@@ -20,6 +20,9 @@ native task list.
   `platform-py/scripts/install.sh`, optional sample apps (`demo-apps` profile), configurable names/port/networks
   (`HUB_PROJECT`, `HUB_PORT`, `HUB_SUBNET`), version in `/healthz`, `CHANGELOG.md`, `docs/ATUALIZACAO.md`,
   `scripts/release.sh`, manual GHCR image workflow.
+- **Corporate networks** (tasks 34–45, 19/10/2026): proxy, inspecting CA and internal mirrors for every build and
+  for the apps, `install.sh --doctor`, consent, disk choice, edge HTTPS, rootless Podman without systemd
+  (`docs/REDE-CORPORATIVA.md`).
 
 ## Open
 

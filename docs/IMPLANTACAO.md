@@ -7,7 +7,9 @@ network range, sample apps), shows a summary and asks for confirmation. With opt
 still shows what it will do and asks `Continuar? (s/N)` (default no); `--yes` counts as that consent (required
 without a terminal): `bash scripts/install.sh --yes --admin-email voce@empresa.com --public-url https://hub.empresa.com` does the
 steps below (new secrets, images built from source, master key, first administrator, start-up). Then follow from the
-item "Tunnel/TLS proxy" onwards. Updates: [`ATUALIZACAO.md`](ATUALIZACAO.md).
+item "Tunnel/TLS proxy" onwards. Updates: [`ATUALIZACAO.md`](ATUALIZACAO.md). Behind a corporate proxy, with an
+inspecting CA, internal mirrors or without a systemd user session: [`REDE-CORPORATIVA.md`](REDE-CORPORATIVA.md)
+(start with `install.sh --doctor`).
 
 **Stack options** (in `.prod.env`; defaults = original installation): `HUB_PROJECT` (project prefix, containers,
 volumes, networks and images; `app-hub`), `HUB_PORT` (8090), `HUB_BIND` (127.0.0.1), `HUB_SUBNET` (10.231 → networks

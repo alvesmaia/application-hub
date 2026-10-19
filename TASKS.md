@@ -15,7 +15,7 @@
 - ✅ 43 · Build e containers dos apps com proxy, CA e espelhos (buildargs, env, credencial mascarada)
 
 ## Docs
-- ⬜ 44 · Guia "Instalação em rede corporativa", --help e CHANGELOG
+- ✅ 44 · Guia "Instalação em rede corporativa", --help e CHANGELOG
 
 ## Fechamento
 - ⬜ 45 · hub-check --all, teste em RHEL simulado (rootless sem systemd + proxy com CA própria), limpeza
