@@ -33,6 +33,12 @@
 #   --pypi-index URL     PyPI mirror (…/simple)        --registry-mirror HOST   Docker Hub mirror (images HOST/library/…)
 #   --apk-mirror URL     Alpine mirror (MinIO build)   --goproxy URL            Go module mirror (MinIO build)
 #
+# Diagnosis (read-only; also step 0 of the install): network through the configured path (never around the proxy),
+# TLS inspection (shows the certificate issuer), corporate CA, mirrors, a build inside a container, disk and port.
+# Each failure names the cause and the option that fixes it.
+#   --doctor             only the diagnosis (uses .prod.env when it exists); exit 1 when something failed
+#   --skip-doctor        installs even with diagnosis failures
+#
 # Advanced options (interactive install, "Revisar opções avançadas?"): each one shows the RECOMMENDED value in
 # [brackets] and Enter keeps it — MinIO data folder, audit anchor folder and webhook, off-site backup copy
 # (none / SharePoint / S3), sign-in with Microsoft Entra ID, admin network restriction, proxy/tunnel in front,
@@ -50,7 +56,7 @@ export MSYS_NO_PATHCONV=1
 
 EMAIL=admin@example.com PUBLIC_URL="" PORT=8090 BIND=127.0.0.1 PROJECT=app-hub SUBNET=10.231 DEMO=1
 CLONE=0 REPO=https://github.com/alvesmaia/application-hub.git REF=main DIR=./application-hub
-GET_COMPOSE=0 YES=0 ASKED=0 PUBLIC_URL_IN='' CONFIG_ONLY=0 TTY_OPEN=0
+GET_COMPOSE=0 YES=0 ASKED=0 PUBLIC_URL_IN='' CONFIG_ONLY=0 TTY_OPEN=0 DOCTOR_ONLY=0 SKIP_DOCTOR=0
 TTY=${INSTALL_TTY:-/dev/tty}
 exec 4>&2  # questions: the terminal (opened below) or, with INSTALL_TTY, stderr
 COMPOSE_VER=v2.29.7
@@ -60,6 +66,8 @@ ORIG_ARGS=("$@")
 if [ -f "$LIB/net.sh" ]; then
   # shellcheck source=install/net.sh
   . "$LIB/net.sh"
+  # shellcheck source=install/doctor.sh
+  . "$LIB/doctor.sh"
 fi
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -83,6 +91,8 @@ while [ $# -gt 0 ]; do
     --registry-mirror) REG_MIRROR=$2; shift; ASKED=1 ;;
     --apk-mirror) APK=$2; shift; ASKED=1 ;;
     --goproxy) GOPX=$2; shift; ASKED=1 ;;
+    --doctor) DOCTOR_ONLY=1; ASKED=1 ;;
+    --skip-doctor) SKIP_DOCTOR=1 ;;
     -y | --yes) YES=1 ;;
     -h | --help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;;
     *) echo "opção desconhecida: $1" >&2; exit 2 ;;
@@ -196,6 +206,15 @@ if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0
 fi
 case "$PROJECT" in app-hub | app-hub-*) ;; *) echo "--project deve começar com app-hub (trava do hub)" >&2; exit 2 ;; esac
 net_validate
+if [ "$DOCTOR_ONLY" = 1 ]; then # read-only: no consent, nothing written
+  cd "$LIB/../.."
+  if [ -f .prod.env ]; then
+    # shellcheck disable=SC1091
+    set -a; . ./.prod.env; set +a
+    PORT=${HUB_PORT:-$PORT} PROJECT=${HUB_PROJECT:-$PROJECT}
+  fi
+  if doctor; then exit 0; else exit 1; fi
+fi
 consent() { # what the install does, before doing anything; default no. --yes = consent given (kept in the log)
   cat >&4 <<EOT
 
@@ -207,6 +226,7 @@ $(net_summary)
   • publicar a porta $PORT em $BIND
   • gravar segredos em platform-py/.secrets e platform-py/.prod.env (0600)
 Não usa sudo, não altera configurações do sistema nem contêineres de outros projetos.
+Antes de construir, um diagnóstico só de leitura testa rede, proxy, CA, espelhos, disco e porta.
 EOT
   if [ "$YES" = 1 ]; then echo "consentimento dado por --yes" >&4; return 0; fi
   if [ "$TTY_OPEN" = 0 ]; then
@@ -362,6 +382,10 @@ mkdir -p .secrets/audit-head
 set -a; . "./$ENVF"; set +a
 P=$HUB_PROJECT
 dc() { docker compose --env-file "$ENVF" -f docker-compose.yml -f docker-compose.apps.yml -f docker-compose.prod.yml "$@"; }
+if [ "$SKIP_DOCTOR" = 0 ]; then
+  echo "0/5 diagnóstico"
+  doctor || { echo "diagnóstico com problemas: corrija com as opções sugeridas e rode de novo (ou --skip-doctor para seguir assim mesmo)" >&2; exit 1; }
+fi
 
 echo "1/5 imagens MinIO/mc (do código-fonte; a primeira vez leva alguns minutos)"
 # shellcheck disable=SC2046 # build_args: only names (no spaces), the values stay in the environment

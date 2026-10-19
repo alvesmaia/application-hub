@@ -8,7 +8,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BASH = shutil.which("bash")
-COPIED = ("scripts/install.sh", "scripts/install/net.sh", "prod.env.example", "docker-compose.yml")
+COPIED = (
+    "scripts/install.sh",
+    "scripts/install/net.sh",
+    "scripts/install/doctor.sh",
+    "prod.env.example",
+    "docker-compose.yml",
+)
 # no engine on the PATH: a fake docker answers nothing, so a run without --config-only stops at the compose check
 NO_ENGINE = {"docker": "exit 1"}
 

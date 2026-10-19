@@ -91,7 +91,7 @@ def test_every_build_gets_the_proxy_ca_and_mirrors(tmp_path: Path) -> None:
     log = tmp_path / "builds.log"
     r = run_install(
         tmp_path,
-        ("--yes", *net_flags(tmp_path)),
+        ("--yes", "--skip-doctor", *net_flags(tmp_path)),  # the diagnosis has its own tests
         fakes={"docker": RECORDING_DOCKER},
         env_extra={"FAKE_LOG": str(log)},
     )
