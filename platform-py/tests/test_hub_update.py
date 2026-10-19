@@ -105,3 +105,16 @@ def test_backup_reads_the_hub_data_from_the_container_mounts_not_a_volume_name(m
     tar = next(c for c in calls if "tar" in c)
     assert "--volumes-from" in tar and "app-hub-web:ro" in tar and "/data" in tar
     assert not any(a.startswith("app-hub-data:") for a in tar)
+
+
+def test_watch_probes_an_edge_that_serves_https(monkeypatch):
+    # install.sh --tls-cert: the edge port speaks TLS, a plain http probe would fail and roll the update back
+    def run(*args, check=True, quiet=False):
+        probe = " ".join(args)
+        ok = "https://127.0.0.1:8090/healthz" in probe and "--no-check-certificate" in probe
+        return subprocess.CompletedProcess(args, 0 if ok else 1, "", "")
+
+    monkeypatch.setattr(hu, "run", run)
+    monkeypatch.setattr(hu, "ready", lambda name: {"status": "ready"})
+    monkeypatch.setattr(hu.time, "sleep", lambda s: None)
+    assert hu.watch("app-hub-web", "app-hub-edge", 1) is True

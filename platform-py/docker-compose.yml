@@ -139,8 +139,11 @@ services:
       - "${HUB_BIND:-127.0.0.1}:${HUB_PORT:-8090}:8090"
       # localhost on IPv6; with HUB_BIND outside loopback, HUB_BIND6=$HUB_BIND (Podman already takes IPv6 on 0.0.0.0)
       - "${HUB_BIND6:-[::1]}:${HUB_PORT:-8090}:8090"
+    environment:
+      HUB_EDGE_TLS: ${HUB_EDGE_TLS:-plain.caddy} # tls.caddy = HTTPS on HUB_PORT (install.sh --tls-cert/--tls-key)
     volumes:
-      - ./infra/edge/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./infra/edge:/etc/caddy:ro
+      - ${HUB_TLS_DIR:-./infra/edge}:/certs:ro
     networks: [edge]
 
 volumes:

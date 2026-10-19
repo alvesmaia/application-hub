@@ -51,6 +51,10 @@
 #   --engine-store PATH  rootless Podman: also the images, in a store of the hub's own (own socket; manual commands
 #                        need  source platform-py/.secrets/hub-env.sh)
 #
+# HTTPS at the edge (interactive: asked for an https:// URL; required by the Entra sign-in):
+#   --tls-cert PEM --tls-key PEM   the company certificate and key, copied to .secrets/tls (0600); without
+#                        --public-url the URL becomes https://localhost:<port>
+#
 # Advanced options (interactive install, "Revisar opções avançadas?"): each one shows the RECOMMENDED value in
 # [brackets] and Enter keeps it — MinIO data folder, audit anchor folder and webhook, off-site backup copy
 # (none / SharePoint / S3), sign-in with Microsoft Entra ID, admin network restriction, proxy/tunnel in front,
@@ -84,6 +88,8 @@ if [ -f "$LIB/net.sh" ]; then
   . "$LIB/podman.sh"
   # shellcheck source=install/disk.sh
   . "$LIB/disk.sh"
+  # shellcheck source=install/tls.sh
+  . "$LIB/tls.sh"
 fi
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -112,6 +118,8 @@ while [ $# -gt 0 ]; do
     --no-systemd) NOSYSTEMD=1 ;;
     --data-dir) DATA_DIR=$2; shift; ASKED=1 ;;
     --engine-store) ENGINE_STORE=$2; shift; ASKED=1 ;;
+    --tls-cert) TLS_CERT=$2; shift; ASKED=1 ;;
+    --tls-key) TLS_KEY=$2; shift; ASKED=1 ;;
     --autostart) AUTOSTART=$2; shift
       case "$AUTOSTART" in cron | systemd | none) ;; *) echo "--autostart: '$AUTOSTART' inválido (cron, systemd ou none)" >&2; exit 2 ;; esac ;;
     -y | --yes) YES=1 ;;
@@ -159,6 +167,7 @@ if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0
   ask BIND "Endereço de escuta (127.0.0.1 = só esta máquina)" '^[0-9.]+$|^::$'
   ask PUBLIC_URL_IN "URL vista pelo navegador (vazio = http://localhost:<porta>)" '^$|^https?://'
   [ -n "${PUBLIC_URL_IN:-}" ] && PUBLIC_URL=$PUBLIC_URL_IN
+  tls_questions
   ask PROJECT "Projeto/prefixo dos contêineres" '^app-hub(-[a-z0-9-]+)?$'
   ask SUBNET "Faixa das redes dos apps (A.B em A.B.<n>.0/24)" '^[0-9]+\.[0-9]+$'
   DEMO_IN=$([ "$DEMO" = 1 ] && echo s || echo n)
@@ -228,6 +237,7 @@ if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0
 fi
 case "$PROJECT" in app-hub | app-hub-*) ;; *) echo "--project deve começar com app-hub (trava do hub)" >&2; exit 2 ;; esac
 net_validate
+tls_validate
 [ "$CONFIG_ONLY" = 1 ] || rootless_detect
 disk_validate
 if [ "$DOCTOR_ONLY" = 1 ]; then # read-only: no consent, nothing written
@@ -249,6 +259,7 @@ Application Hub — instalação. Isto vai:
 $(net_summary)
 $(rootless_summary)
 $(disk_summary)
+$(tls_summary)
   • publicar a porta $PORT em $BIND
   • gravar segredos em platform-py/.secrets e platform-py/.prod.env (0600)
 Não usa sudo, não altera configurações do sistema nem contêineres de outros projetos.
@@ -371,6 +382,7 @@ setv() { # setv KEY VALUE: replaces or appends in .prod.env (VALUE may contain a
 }
 net_write
 disk_write
+tls_write
 if yes_no "$ADV"; then
   [ -n "$OBJ_DIR" ] && { mkdir -p "$OBJ_DIR" 2>/dev/null || true; setv HUB_OBJSTORE_DIR "$OBJ_DIR"; }
   [ -n "$HEAD_DIR" ] && { mkdir -p "$HEAD_DIR" 2>/dev/null || true; setv HUB_AUDIT_HEAD_DIR "$HEAD_DIR"; }
@@ -459,8 +471,10 @@ if [ "${COMPOSE_PROFILES:-}" = demo-apps ]; then
     sleep 2
   done
 fi
-for _ in $(seq 120); do curl --noproxy '*' -sf "http://127.0.0.1:$HUB_PORT/healthz" >/dev/null && break; sleep 2; done
-curl --noproxy '*' -sf "http://127.0.0.1:$HUB_PORT/healthz" || { docker logs --tail 40 "$P-web"; exit 1; }
+HEALTH=http://127.0.0.1:$HUB_PORT/healthz
+if [ "${HUB_EDGE_TLS:-}" = tls.caddy ]; then HEALTH=https://127.0.0.1:$HUB_PORT/healthz; fi # own certificate: -k
+for _ in $(seq 120); do curl --noproxy '*' -ksf "$HEALTH" >/dev/null && break; sleep 2; done
+curl --noproxy '*' -ksf "$HEALTH" || { docker logs --tail 40 "$P-web"; exit 1; }
 echo
 echo "Application Hub no ar: $HUB_PUBLIC_URL  (projeto $P, porta $HUB_PORT)"
 echo "Senha temporária do primeiro acesso: platform-py/.secrets/primeiro-acesso.txt (apague depois de entrar)"

@@ -26,6 +26,8 @@ import time
 from pathlib import Path
 from typing import Any
 
+# the edge port speaks http or, with install.sh --tls-cert, https (own certificate: not checked from inside)
+EDGE_PROBE = "wget -qO- http://127.0.0.1:8090/healthz || wget -qO- --no-check-certificate https://127.0.0.1:8090/healthz"
 READY = "import urllib.request as u,sys; sys.stdout.write(u.urlopen('http://127.0.0.1:8090/readyz', timeout=3).read().decode())"
 
 
@@ -203,17 +205,7 @@ def watch(main_name: str, edge: str, secs: int) -> bool:
     while time.monotonic() < end:
         ok = (
             ready(main_name) is not None
-            and run(
-                "docker",
-                "exec",
-                edge,
-                "wget",
-                "-qO-",
-                "http://127.0.0.1:8090/healthz",
-                check=False,
-                quiet=True,
-            ).returncode
-            == 0
+            and run("docker", "exec", edge, "sh", "-c", EDGE_PROBE, check=False, quiet=True).returncode == 0
         )
         fails = 0 if ok else fails + 1
         if fails >= 3:

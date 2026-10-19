@@ -3,6 +3,7 @@
 # receives traffic, and a refused connection is retried on the other copy (no request is lost in the switch).
 {
 	admin off
+	auto_https disable_redirects # HTTPS only with install.sh --tls-cert (tls.caddy); no port 80
 	log {
 		level WARN # the app-hub-web-next probe (absent outside updates) does not pollute the log
 	}
@@ -13,6 +14,8 @@
 }
 
 :8090 {
+	# plain.caddy (http) or tls.caddy (install.sh --tls-cert: the company certificate in /certs)
+	import {$HUB_EDGE_TLS:plain.caddy}
 	reverse_proxy app-hub-web:8090 app-hub-web-next:8090 {
 		lb_policy first
 		lb_try_duration 20s

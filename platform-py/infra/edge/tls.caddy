@@ -1,0 +1,2 @@
+# Edge with the company certificate (install.sh --tls-cert/--tls-key copies them to .secrets/tls, mounted in /certs).
+tls /certs/cert.pem /certs/key.pem
