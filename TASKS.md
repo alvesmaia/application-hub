@@ -18,11 +18,11 @@
 - ✅ 44 · Guia "Instalação em rede corporativa", --help e CHANGELOG
 
 ## Fechamento
-- ▶️ 45 · hub-check --all, teste em RHEL simulado (rootless sem systemd + proxy com CA própria), limpeza
+- ✅ 45 · hub-check --all, teste em RHEL simulado (rootless sem systemd + proxy com CA própria), limpeza
   - ✅ hub-check --all verde (30/30)
   - ✅ laboratório: Rocky 9 + Podman 5.8.2 rootless sem systemd, só saída por proxy que inspeciona TLS (mitmproxy)
   - ✅ --doctor no laboratório: aponta proxy, emissor do certificado e --ca-file; com as opções, tudo ✔
-  - ✅ falhas reais corrigidas: download do compose sem proxy/CA, pulls do engine sem CA, .prod.env com CR, socket sem setsid
-  - ▶️ instalação completa no laboratório (etapas 1–2 ok; refazendo após a correção do socket)
-  - ⬜ publicar um app pelo hub-cli no laboratório (build pelo proxy) e conferir o contêiner
-  - ⬜ limpeza do laboratório (rhel-corp-*), git status, docker ps
+  - ✅ 6 falhas reais corrigidas com teste: download do compose, pulls do engine sem CA, .prod.env com CR, socket sem setsid, linha da CA no template, senha do proxy no histórico (Podman)
+  - ✅ instalação completa no laboratório (0–5/5, MinIO e /readyz alcançados de dentro do hub)
+  - ✅ app novo do template publicado em staging pelo hub (build pelo proxy com a CA, blue/green, prontidão ok)
+  - ✅ limpeza: rhel-corp-* (contêineres, rede, volume anônimo), imagens Rocky/mitmproxy, sdk-python/build

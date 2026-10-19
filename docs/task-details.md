@@ -142,3 +142,20 @@ Finished 2026-10-15 (`b7f845c`). Final list as it stood in TASKS.md:
   - ✅ hub-check --all verde (30/30) na main combinada
   - ✅ E2E 06-ops + 31-import-preview 6/6; ui-sweep --quick 0 achados (instância isolada)
   - ✅ push, deploy sem parada na :8090 (readyz 200; /mcp/uploads responde pela internet), worktrees e instância isolada removidas
+
+✅ **Task 45 — lab validation of the corporate-network install**
+
+Lab on 2026-10-19: Rocky Linux 9.4 container with Podman 5.8.2, rootless user `hubsvc`, no systemd, on an internal
+network whose only way out is a mitmproxy that inspects TLS with its own CA (the same shape as the corporate server:
+curl exit 60 without the CA). `install.sh --doctor` named the proxy, the certificate issuer and `--ca-file`; with
+`--proxy`, `--no-proxy`, `--ca-file` and `--data-dir` the full install passed (MinIO built from source, hub and the 4
+sample apps, master key, admin, stack up, MinIO and /readyz reached from inside the hub). A new app from the hub-cli
+template, imported through the Deployments API, was built by the hub through the proxy with the CA and deployed to
+staging (blue/green, readiness ok); its container got the proxy, the hub names in NO_PROXY and SSL_CERT_FILE.
+
+Real failures found and fixed (each with a test): the docker-compose download ignored the proxy and the CA; the
+engine's own image pulls did not trust the CA; a template copied from a Windows checkout put CR in .prod.env; the
+hub's own Podman socket needed a session of its own (setsid), otherwise conmon failed to attach (the step where the
+corporate server stopped); the CA line of the template Dockerfile was split in two; buildah records build args in
+the image history, so an authenticated proxy is left out of the build args on Podman. Lab detail only: the build
+containers could not resolve the proxy's Docker-only DNS name, so the lab used its IP (a corporate DNS resolves it).
