@@ -13,7 +13,7 @@ BASH = shutil.which("bash")
 pytestmark = pytest.mark.skipif(BASH is None, reason="bash not available")
 
 
-def install(tmp_path: Path, answers: list[str]) -> tuple[dict[str, str], str]:
+def install(tmp_path: Path, answers: list[str], args: tuple[str, ...] = ()) -> tuple[dict[str, str], str]:
     pp = tmp_path / "platform-py"
     (pp / "scripts").mkdir(parents=True)
     for f in ("scripts/install.sh", "prod.env.example", "docker-compose.yml"):
@@ -21,7 +21,7 @@ def install(tmp_path: Path, answers: list[str]) -> tuple[dict[str, str], str]:
     tty = tmp_path / "answers.txt"
     tty.write_text("\n".join(answers) + "\n", encoding="utf-8", newline="\n")
     r = subprocess.run(  # noqa: S603
-        [str(BASH), "scripts/install.sh", "--config-only"],
+        [str(BASH), "scripts/install.sh", "--config-only", *args],
         cwd=pp,
         env={
             "PATH": str(Path(str(BASH)).parent) + ":/usr/bin:/bin",
@@ -119,3 +119,22 @@ def test_offsite_url_is_written_without_sed_so_any_folder_name_is_safe() -> None
     src = (ROOT / "scripts/install.sh").read_text(encoding="utf-8")
     assert "sed -i" not in src
     assert 'setv HUB_BACKUP_OFFSITE_URL "sharepoint://backups-sharepoint/' in src
+
+
+def test_http_public_url_relaxes_the_secure_cookie_and_warns(tmp_path: Path) -> None:
+    # a fixed Secure cookie over http:// is dropped by the browser: the login loops back to /login
+    env, err = install(tmp_path, [], ("--yes", "--public-url", "http://hub.interno:8090"))
+    assert env["HUB_COOKIE_SECURE"] == "auto"
+    assert "HTTPS" in err and "http://hub.interno:8090" in err
+
+
+def test_https_and_localhost_urls_need_no_warning(tmp_path: Path) -> None:
+    env, err = install(tmp_path / "a", [], ("--yes", "--public-url", "https://hub.exemplo.com"))
+    assert env["HUB_COOKIE_SECURE"] == "1" and "HTTPS" not in err
+    env, err = install(tmp_path / "b", [], ("--yes",))  # http://localhost: browsers keep Secure cookies there
+    assert env["HUB_COOKIE_SECURE"] == "auto" and "HTTPS" not in err
+
+
+def test_prod_compose_takes_the_cookie_setting_from_prod_env() -> None:
+    src = (ROOT / "docker-compose.prod.yml").read_text(encoding="utf-8")
+    assert "HUB_COOKIE_SECURE: ${HUB_COOKIE_SECURE:-1}" in src

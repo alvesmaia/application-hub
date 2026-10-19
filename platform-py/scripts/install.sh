@@ -216,11 +216,19 @@ fi
 [ -f docker-compose.yml ] && [ -f prod.env.example ] || { echo "rode a partir de um clone do repositório" >&2; exit 1; }
 
 : "${PUBLIC_URL:=http://localhost:$PORT}"
+# Secure cookie only over HTTPS: over http:// (other than localhost) the browser drops it and the login loops
+case "$PUBLIC_URL" in
+  https://*) COOKIE=1 ;;
+  http://localhost | http://localhost:* | http://127.0.0.1 | http://127.0.0.1:*) COOKIE=auto ;;
+  *) COOKIE=auto
+    echo "aviso: $PUBLIC_URL sem HTTPS — senha e sessão trafegam sem criptografia e o login Microsoft (Entra) exige HTTPS; use só para teste" >&2 ;;
+esac
 ENVF=.prod.env
 rnd() { od -An -tx1 -N24 /dev/urandom | tr -d ' \n'; }
 if [ ! -f "$ENVF" ]; then
   umask 077
   sed -e "s#^HUB_PUBLIC_URL=.*#HUB_PUBLIC_URL=$PUBLIC_URL#" -e "s#^HUB_AUDIT_HEAD_DIR=.*#HUB_AUDIT_HEAD_DIR=./.secrets/audit-head#" \
+    -e "s#^HUB_COOKIE_SECURE=.*#HUB_COOKIE_SECURE=$COOKIE#" \
     prod.env.example | while IFS= read -r line; do
       case "$line" in
         *'=<openssl rand -hex 24>'*) printf '%s=%s\n' "${line%%=*}" "$(rnd)" ;;
