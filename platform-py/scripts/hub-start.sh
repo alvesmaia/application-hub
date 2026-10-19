@@ -5,6 +5,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 # shellcheck disable=SC1091
 set -a; . ./.prod.env; set +a
+# shellcheck source=install/net.sh
+. scripts/install/net.sh
 # shellcheck source=install/podman.sh
 . scripts/install/podman.sh
 if [ -n "${HUB_ENGINE_STORE:-}" ]; then ENGINE_STORE=$HUB_ENGINE_STORE; engine_env "$ENGINE_STORE"; fi

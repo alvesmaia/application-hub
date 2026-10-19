@@ -16,12 +16,13 @@ PROXY = "http://proxy.empresa.local:8080"
 # (proxy that inspects TLS: without the corporate CA every https certificate fails, exit 60). Mirrors on
 # repo.empresa.local always answer; $FAKE_404 makes the URLs containing it answer 404. Each call goes to $FAKE_LOG.
 FAKE_CURL = r"""
-url="" proxy="" cacert="" verbose=0
+url="" proxy="" cacert="" verbose=0 insecure=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --proxy) proxy=$2; shift ;;
     --cacert) cacert=$2; shift ;;
     -sv | -v) verbose=1 ;;
+    -k | -ksv) insecure=1; verbose=1 ;;
     -o | -w | --max-time | --noproxy) shift ;;
     http*) url=$1 ;;
   esac
@@ -34,7 +35,9 @@ case "$FAKE_NET" in
   proxy-only) [ -n "$proxy" ] || exit 7; printf 200 ;;
   intercept)
     [ -n "$proxy" ] || exit 7
-    if [ -z "$cacert" ]; then [ "$verbose" = 1 ] && echo "*  issuer: CN=Corp Web Gateway" >&2; exit 60; fi
+    # like curl 7.x: the issuer only shows when the handshake goes on (-k); a failed verification hides it
+    if [ "$insecure" = 1 ] && [ "$verbose" = 1 ]; then echo "*  issuer: CN=Corp Web Gateway" >&2; printf 200; exit 0; fi
+    if [ -z "$cacert" ]; then exit 60; fi
     printf 200 ;;
 esac
 """
@@ -166,3 +169,8 @@ def test_containers_of_other_projects_on_the_same_engine_are_pointed_out(tmp_pat
     rc, out, _ = doctor(tmp_path, "direct", fakes={"docker": engine})
     assert "2 contêiner(es) de outros projetos" in out and "nginx-proxy" in out and "usuário dedicado" in out
     assert rc == 0  # a warning: the hub never touches them (app-hub-* guard)
+
+
+def test_a_proxy_only_in_the_shell_is_used_but_must_be_passed_on(tmp_path: Path) -> None:
+    _rc, out, _ = doctor(tmp_path, "proxy-only", env={"HTTPS_PROXY": PROXY})
+    assert f"--proxy {PROXY}" in out and "builds" in out

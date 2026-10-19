@@ -18,6 +18,10 @@ doctor_conf() { # the values in effect: options of this run, else .prod.env; exp
   HUB_APK_MIRROR=${APK:-${HUB_APK_MIRROR:-}} HUB_GOPROXY=${GOPX:-${HUB_GOPROXY:-}}
   if [ -n "$REG_MIRROR" ]; then HUB_IMAGE_PREFIX=${REG_MIRROR%/}/library/; fi
   HUB_IMAGE_PREFIX=${HUB_IMAGE_PREFIX:-}
+  local envproxy=${HTTPS_PROXY:-${https_proxy:-${HTTP_PROXY:-${http_proxy:-}}}}
+  if [ -z "$HUB_PROXY" ] && [ -n "$envproxy" ]; then
+    d_warn "o proxy do seu shell vale só para este teste; para os builds e o hub: --proxy $(mask_url "$envproxy")"
+  fi
   D_BUNDLE=""
   [ -n "$HUB_CA_FILE" ] || return 0
   D_BUNDLE=$(mktemp)
@@ -40,7 +44,8 @@ explain_failure() { # explain_failure <name> <url>: cause + option, from the cur
   local envproxy=${HTTPS_PROXY:-${https_proxy:-${HTTP_PROXY:-${http_proxy:-}}}} issuer
   case "$PROBE_RC" in
     35 | 51 | 58 | 60)
-      issuer=$(curl -sv -o /dev/null "${D_ARGS[@]}" "$2" 2>&1 | sed -n 's/.*issuer: //p' | head -1)
+      # -k only to read who signed the certificate (curl hides it when the verification fails); nothing is sent
+      issuer=$(curl -k -sv -o /dev/null "${D_ARGS[@]}" "$2" 2>&1 | sed -n 's/.*issuer: //p' | head -1)
       if [ -n "$HUB_CA_FILE" ]; then
         d_fail "$1: certificado não confiável (emissor: ${issuer:-?})" "a CA de --ca-file ($HUB_CA_FILE) não valida este certificado: confira o arquivo com a TI"
       else

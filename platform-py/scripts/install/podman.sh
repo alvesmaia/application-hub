@@ -9,10 +9,25 @@ ROOTLESS=0 NOSYSTEMD=${NOSYSTEMD:-0} AUTOSTART=${AUTOSTART:-} ROOTLESS_SOCK="" O
 
 socket_up() { podman --url "unix://$1" info >/dev/null 2>&1; }
 
+engine_net_env() { # ENGINE_ENV: proxy and CA for the engine's own pulls (install options, else .prod.env)
+  local proxy=${NET_PROXY:-${HUB_PROXY:-}} ca=${CA_FILE:-${HUB_CA_FILE:-}} extra=${NET_NOPROXY:-${HUB_NO_PROXY:-}} np
+  ENGINE_ENV=()
+  if [ -n "$proxy" ]; then
+    np="localhost,127.0.0.1${extra:+,$extra}"
+    ENGINE_ENV+=("HTTP_PROXY=$proxy" "HTTPS_PROXY=$proxy" "http_proxy=$proxy" "https_proxy=$proxy" "NO_PROXY=$np" "no_proxy=$np")
+  fi
+  if [ -n "$ca" ]; then
+    mkdir -p "$PP_DIR/.secrets/ca"
+    ca_bundle "$PP_DIR/.secrets/ca/bundle.pem" "$ca"
+    ENGINE_ENV+=("SSL_CERT_FILE=$PP_DIR/.secrets/ca/bundle.pem")
+  fi
+}
+
 start_own_socket() { # start_own_socket <path>: the hub keeps its own `podman system service`
   socket_up "$1" && return 0
   mkdir -p "$(dirname "$1")" "$HOME/.local/state"
-  DISABLE_HC_SYSTEMD=true nohup podman --cgroup-manager=cgroupfs --events-backend=file system service --time=0 \
+  engine_net_env
+  env "${ENGINE_ENV[@]}" DISABLE_HC_SYSTEMD=true nohup podman --cgroup-manager=cgroupfs --events-backend=file system service --time=0 \
     "unix://$1" >> "$HOME/.local/state/app-hub-podman.log" 2>&1 &
   local _
   for _ in $(seq 20); do socket_up "$1" && return 0; sleep 1; done
@@ -56,10 +71,29 @@ rootless_detect() { # read-only, before the consent: ROOTLESS, OWN_SOCKET and AU
 rootless_summary() { # lines for the consent screen
   [ "$ROOTLESS" = 1 ] || return 0
   if [ "$OWN_SOCKET" = 1 ]; then echo "  • Podman: o hub roda o próprio socket ($ROOTLESS_SOCK), com cgroupfs"; fi
+  if [ "$OWN_SOCKET" = 0 ] && [ -n "${NET_PROXY:-}${CA_FILE:-}" ]; then
+    echo "  • proxy e CA para o podman.service do usuário: podman.service.d/app-hub-network.conf"
+  fi
   case "$AUTOSTART" in
     cron) echo "  • iniciar no boot: uma linha @reboot no crontab do usuário (scripts/hub-start.sh)" ;;
     systemd) echo "  • iniciar no boot: systemctl --user enable podman.socket podman-restart.service" ;;
   esac
+}
+
+DROPIN="$HOME/.config/systemd/user/podman.service.d/app-hub-network.conf"
+
+systemd_net_dropin() { # the user's podman.service (API socket) gets the proxy and the CA for its pulls
+  engine_net_env
+  [ "${#ENGINE_ENV[@]}" -gt 0 ] || return 0
+  mkdir -p "$(dirname "$DROPIN")"
+  local e
+  {
+    echo "# install.sh of $PP_DIR: proxy and corporate CA for the image pulls"
+    echo "[Service]"
+    for e in "${ENGINE_ENV[@]}"; do echo "Environment=\"$e\""; done
+  } > "$DROPIN"
+  systemctl --user daemon-reload >/dev/null 2>&1 || true
+  systemctl --user try-restart podman.service >/dev/null 2>&1 || true
 }
 
 autostart_cron() { # idempotent: one @reboot line per install folder
@@ -87,8 +121,11 @@ rootless_setup() { # after the consent: socket up, start at boot; exports what t
   if [ "$OWN_SOCKET" = 1 ]; then
     start_own_socket "$ROOTLESS_SOCK"
     export DISABLE_HC_SYSTEMD=true
-  elif [ "$AUTOSTART" = systemd ]; then
-    systemctl --user enable --now podman.socket podman-restart.service >/dev/null 2>&1 || true
+  else
+    systemd_net_dropin
+    if [ "$AUTOSTART" = systemd ]; then
+      systemctl --user enable --now podman.socket podman-restart.service >/dev/null 2>&1 || true
+    fi
   fi
   socket_up "$ROOTLESS_SOCK" ||
     { echo "Podman rootless sem socket em $ROOTLESS_SOCK: rode  systemctl --user enable --now podman.socket" >&2; exit 1; }

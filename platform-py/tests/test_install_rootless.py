@@ -25,7 +25,7 @@ case "$*" in
   *"{{.Host.Security.Rootless}}"*) echo true ;;
   "--url "*" info") [ -f "$FAKE_DIR/sock-up" ] || exit 1 ;;
   *"system service"*)
-    echo "PODMAN $* HC=${DISABLE_HC_SYSTEMD:-} STORE=${CONTAINERS_STORAGE_CONF:-} XDG=${XDG_RUNTIME_DIR:-}" >> "$FAKE_LOG"
+    echo "PODMAN $* HC=${DISABLE_HC_SYSTEMD:-} STORE=${CONTAINERS_STORAGE_CONF:-} XDG=${XDG_RUNTIME_DIR:-} PX=${HTTPS_PROXY:-} NP=${NO_PROXY:-} CERT=${SSL_CERT_FILE:-}" >> "$FAKE_LOG"
     touch "$FAKE_DIR/sock-up" ;;
 esac
 exit 0
@@ -157,3 +157,27 @@ def test_own_socket_mode_also_writes_hub_env(tmp_path: Path) -> None:
     hub_env = (tmp_path / "platform-py" / ".secrets" / "hub-env.sh").read_text(encoding="utf-8")
     assert "DOCKER_HOST=unix://" in hub_env and "DISABLE_HC_SYSTEMD=true" in hub_env
     assert "CONTAINERS_STORAGE_CONF" not in hub_env
+
+
+PEM = "-----BEGIN CERTIFICATE-----\nMIIBfakeCA\n-----END CERTIFICATE-----\n"
+
+
+def test_the_own_socket_pulls_images_through_the_proxy_trusting_the_ca(tmp_path: Path) -> None:
+    (tmp_path / "ca.pem").write_text(PEM, encoding="utf-8")
+    flags = ("--proxy", "http://proxy.empresa.local:8080", "--ca-file", sh_path(tmp_path / "ca.pem"))
+    _rc, _out, log = rootless(tmp_path, *flags, systemd=False, bus=False)
+    line = next(ln for ln in log.splitlines() if "system service" in ln)
+    assert "PX=http://proxy.empresa.local:8080" in line and "NP=localhost,127.0.0.1" in line
+    bundle = line.split("CERT=", 1)[1].strip()
+    written = (tmp_path / "platform-py" / ".secrets" / "ca" / "bundle.pem").read_text(encoding="utf-8")
+    assert bundle.endswith("/.secrets/ca/bundle.pem") and PEM in written
+
+
+def test_with_systemd_the_podman_service_gets_the_proxy_and_the_ca_in_a_drop_in(tmp_path: Path) -> None:
+    (tmp_path / "ca.pem").write_text(PEM, encoding="utf-8")
+    flags = ("--proxy", "http://proxy.empresa.local:8080", "--ca-file", sh_path(tmp_path / "ca.pem"))
+    _rc, out, log = rootless(tmp_path, *flags, systemd=True, bus=True)
+    drop = tmp_path / ".config" / "systemd" / "user" / "podman.service.d" / "app-hub-network.conf"
+    text = drop.read_text(encoding="utf-8")
+    assert 'Environment="HTTPS_PROXY=http://proxy.empresa.local:8080"' in text and "SSL_CERT_FILE=" in text
+    assert "SYSTEMCTL --user daemon-reload" in log and "podman.service.d" in out  # listed in the consent

@@ -77,7 +77,11 @@ build_env() { # exports the build args from .prod.env; call it in a subshell so 
     export HTTP_PROXY=$HUB_PROXY HTTPS_PROXY=$HUB_PROXY http_proxy=$HUB_PROXY https_proxy=$HUB_PROXY
     export NO_PROXY=$np no_proxy=$np
   fi
-  if [ -n "${HUB_CA_FILE:-}" ]; then EXTRA_CA_PEM=$(cat "$HUB_CA_FILE"); export EXTRA_CA_PEM; fi
+  if [ -n "${HUB_CA_FILE:-}" ]; then
+    EXTRA_CA_PEM=$(cat "$HUB_CA_FILE"); export EXTRA_CA_PEM
+    # the engine's own pulls (podman is Go: SSL_CERT_FILE) trust the corporate CA too
+    mkdir -p .secrets/ca && ca_bundle .secrets/ca/bundle.pem "$HUB_CA_FILE" && export SSL_CERT_FILE=$PWD/.secrets/ca/bundle.pem
+  fi
   if [ -n "${HUB_PYPI_INDEX:-}" ]; then export PIP_INDEX_URL=$HUB_PYPI_INDEX UV_DEFAULT_INDEX=$HUB_PYPI_INDEX; fi
   if [ -n "${HUB_IMAGE_PREFIX:-}" ]; then export IMAGE_PREFIX=$HUB_IMAGE_PREFIX; fi
   if [ -n "${HUB_APK_MIRROR:-}" ]; then export APK_MIRROR=$HUB_APK_MIRROR; fi
