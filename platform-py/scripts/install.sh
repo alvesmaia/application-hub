@@ -39,6 +39,12 @@
 #   --doctor             only the diagnosis (uses .prod.env when it exists); exit 1 when something failed
 #   --skip-doctor        installs even with diagnosis failures
 #
+# Rootless Podman: with a systemd user session the install enables podman.socket and podman-restart.service (start
+# after a reboot). On a host without systemd the hub runs its own API socket (cgroupfs, no systemd healthchecks) and
+# an @reboot line in the user's crontab runs scripts/hub-start.sh. A systemd host whose user session is missing (no
+# $XDG_RUNTIME_DIR/bus) stops before anything with the commands to ask the administrator.
+#   --no-systemd         forces the mode without systemd       --autostart cron|systemd|none   start after a reboot
+#
 # Advanced options (interactive install, "Revisar opções avançadas?"): each one shows the RECOMMENDED value in
 # [brackets] and Enter keeps it — MinIO data folder, audit anchor folder and webhook, off-site backup copy
 # (none / SharePoint / S3), sign-in with Microsoft Entra ID, admin network restriction, proxy/tunnel in front,
@@ -68,6 +74,8 @@ if [ -f "$LIB/net.sh" ]; then
   . "$LIB/net.sh"
   # shellcheck source=install/doctor.sh
   . "$LIB/doctor.sh"
+  # shellcheck source=install/podman.sh
+  . "$LIB/podman.sh"
 fi
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -93,6 +101,9 @@ while [ $# -gt 0 ]; do
     --goproxy) GOPX=$2; shift; ASKED=1 ;;
     --doctor) DOCTOR_ONLY=1; ASKED=1 ;;
     --skip-doctor) SKIP_DOCTOR=1 ;;
+    --no-systemd) NOSYSTEMD=1 ;;
+    --autostart) AUTOSTART=$2; shift
+      case "$AUTOSTART" in cron | systemd | none) ;; *) echo "--autostart: '$AUTOSTART' inválido (cron, systemd ou none)" >&2; exit 2 ;; esac ;;
     -y | --yes) YES=1 ;;
     -h | --help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;;
     *) echo "opção desconhecida: $1" >&2; exit 2 ;;
@@ -206,6 +217,7 @@ if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0
 fi
 case "$PROJECT" in app-hub | app-hub-*) ;; *) echo "--project deve começar com app-hub (trava do hub)" >&2; exit 2 ;; esac
 net_validate
+[ "$CONFIG_ONLY" = 1 ] || rootless_detect
 if [ "$DOCTOR_ONLY" = 1 ]; then # read-only: no consent, nothing written
   cd "$LIB/../.."
   if [ -f .prod.env ]; then
@@ -223,6 +235,7 @@ Application Hub — instalação. Isto vai:
   • dar ao contêiner do hub acesso ao socket do engine: ele cria e para os contêineres dos apps (só $PROJECT-*)
   • baixar imagens e pacotes (registry de imagens, PyPI, GitHub)
 $(net_summary)
+$(rootless_summary)
   • publicar a porta $PORT em $BIND
   • gravar segredos em platform-py/.secrets e platform-py/.prod.env (0600)
 Não usa sudo, não altera configurações do sistema nem contêineres de outros projetos.
@@ -272,15 +285,7 @@ if [ "$CONFIG_ONLY" = 0 ] && ! docker compose version >/dev/null 2>&1; then
   docker compose version >/dev/null 2>&1 || { echo "o docker ainda não encontra o provedor de compose" >&2; exit 1; }
 fi
 # Podman rootless (RHEL/Rocky/Fedora): the socket belongs to the user, not /var/run/docker.sock
-ROOTLESS_SOCK=""
-if [ "$CONFIG_ONLY" = 0 ] && docker --version 2>/dev/null | grep -qi podman && [ "$(podman info --format '{{.Host.Security.Rootless}}' 2>/dev/null)" = true ]; then
-  ROOTLESS_SOCK="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/podman/podman.sock"
-  [ -S "$ROOTLESS_SOCK" ] || { echo "Podman rootless sem socket: rode  systemctl --user enable --now podman.socket" >&2; exit 1; }
-  loginctl show-user "$(id -un)" -p Linger 2>/dev/null | grep -q yes ||
-    echo "aviso: sem linger o hub cai no logout — peça à TI: loginctl enable-linger $(id -un)" >&2
-  grep -qw cpu "/sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/cgroup.controllers" 2>/dev/null ||
-    echo "aviso: controlador cpu não delegado ao usuário; os limites de CPU dos apps não serão aplicados (TI: Delegate=cpu cpuset io memory pids em user@.service, docs/IMPLANTACAO.md)" >&2
-fi
+[ "$CONFIG_ONLY" = 1 ] || rootless_setup
 
 if [ "$CLONE" = 1 ]; then
   [ -d "$DIR/.git" ] || git clone --depth 1 --branch "$REF" "$REPO" "$DIR"
@@ -331,6 +336,8 @@ if [ ! -f "$ENVF" ]; then
   } >> "$ENVF"
   if [ -n "$ROOTLESS_SOCK" ]; then # socket owner = the user = root inside the namespace
     { echo "HUB_CONTAINER_SOCKET_HOST=$ROOTLESS_SOCK"; echo "DOCKER_GID=0"; } >> "$ENVF"
+    if [ "$NOSYSTEMD" = 1 ]; then echo "HUB_NO_SYSTEMD=1" >> "$ENVF"; fi
+    echo "HUB_IMAGE_PREFIX=docker.io/library/" >> "$ENVF" # Podman: no short names (a mirror replaces it below)
   elif [ -n "${DOCKER_GID:-}" ]; then
     echo "DOCKER_GID=$DOCKER_GID" >> "$ENVF"
   elif [ "$(uname -s)" = Linux ]; then
