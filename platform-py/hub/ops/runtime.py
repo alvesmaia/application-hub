@@ -312,7 +312,7 @@ class Engine:
         deadline = time.monotonic() + timeout_s if timeout_s > 0 else 0.0
 
         def go(cl: Any) -> str:
-            stream = cl.build_stream(path, tag, dockerfile, memory, cpus, appnet.build_args())
+            stream = cl.build_stream(path, tag, dockerfile, memory, cpus, appnet.build_args(cl.podman()[0]))
             return _consume_build(
                 stream, deadline, timeout_s, lambda ln: loop.call_soon_threadsafe(on_line, ln)
             )

@@ -73,7 +73,10 @@ host_curl_args() { # the install's own downloads (compose binary): the same prox
 
 build_env() { # exports the build args from .prod.env; call it in a subshell so the runtime commands do not inherit them
   local np="localhost,127.0.0.1${HUB_NO_PROXY:+,$HUB_NO_PROXY}"
-  if [ -n "${HUB_PROXY:-}" ]; then
+  # Podman (buildah) records build args in the image history: an authenticated proxy stays out of them
+  if [ -n "${HUB_PROXY:-}" ] && docker --version 2>/dev/null | grep -qi podman && [ "$HUB_PROXY" != "$(mask_url "$HUB_PROXY")" ]; then
+    echo "aviso: proxy com senha + Podman: os builds não recebem o proxy (a senha ficaria no histórico da imagem); use espelhos internos (--pypi-index, --registry-mirror) ou um proxy sem senha liberado para este servidor" >&2
+  elif [ -n "${HUB_PROXY:-}" ]; then
     export HTTP_PROXY=$HUB_PROXY HTTPS_PROXY=$HUB_PROXY http_proxy=$HUB_PROXY https_proxy=$HUB_PROXY
     export NO_PROXY=$np no_proxy=$np
   fi

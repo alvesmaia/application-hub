@@ -50,6 +50,9 @@ How the hub uses them, with no step per app:
   Dockerfile declares them); their containers get the proxy, with the hub's service names in `NO_PROXY`, and the CA
   bundle (`SSL_CERT_FILE`, `REQUESTS_CA_BUNDLE`). An app's own values win.
 - **Updates**: `hub_update.py --build` reads the same settings from `.prod.env`.
+- **Proxy with a password on Podman**: buildah records build args in the image history (Docker does not), so on
+  Podman an authenticated proxy is left out of the builds and the install warns. Use internal mirrors for the builds
+  (`--pypi-index`, `--registry-mirror`) or a proxy without a password allowed for the server.
 
 ## 3. Rootless Podman
 

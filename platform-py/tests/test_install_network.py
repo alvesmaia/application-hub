@@ -173,3 +173,18 @@ def test_the_compose_download_uses_the_proxy_and_the_ca(tmp_path: Path) -> None:
     call = log.read_text(encoding="utf-8")
     assert "github.com/docker/compose" in call and f"--proxy {PROXY}" in call and "--cacert" in call
     assert r.returncode == 1 and "download falhou" in r.stderr
+
+
+def test_podman_builds_leave_out_an_authenticated_proxy_and_say_why(tmp_path: Path) -> None:
+    log = tmp_path / "builds.log"
+    docker = RECORDING_DOCKER.replace('echo "Docker version 27.0"', 'echo "podman version 5.8.2"')
+    flags = net_flags(tmp_path, "http://svc:s3nh4@proxy.empresa.local:8080")
+    r = run_install(
+        tmp_path,
+        ("--yes", "--skip-doctor", *flags),
+        fakes={"docker": docker, "podman": "exit 1"},  # podman info fails: not rootless, plain podman-docker
+        env_extra={"FAKE_LOG": str(log)},
+    )
+    text = log.read_text(encoding="utf-8")
+    assert "s3nh4" not in text and "HTTPS_PROXY=" not in text and "EXTRA_CA_PEM=" in text
+    assert "histórico da imagem" in r.stderr and "s3nh4" not in r.stderr

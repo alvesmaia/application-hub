@@ -43,9 +43,11 @@ def _proxy_env() -> dict[str, str]:
     }
 
 
-def build_args() -> dict[str, str]:
-    """Build args of a package build (the template Dockerfile declares them; unused ones are only a warning)."""
-    out = _proxy_env()
+def build_args(podman: bool = False) -> dict[str, str]:
+    """Build args of a package build (the template Dockerfile declares them; unused ones are only a warning).
+    Podman (buildah) records build args in the image history, so an authenticated proxy is left out there."""
+    proxy = httpclients.proxy_url() or ""
+    out = {} if podman and _USERINFO.search(proxy) else _proxy_env()
     if pem := _ca_pem():
         out["EXTRA_CA_PEM"] = pem
     if index := os.getenv("HUB_PYPI_INDEX", "").strip():

@@ -112,3 +112,16 @@ def test_template_dockerfile_takes_the_mirror_and_the_ca_in_both_stages() -> Non
     assert "ARG UV_DEFAULT_INDEX" in src and "ARG PIP_INDEX_URL" in src
     ca = r"""RUN if [ -n "$EXTRA_CA_PEM" ]; then printf '%s\n' "$EXTRA_CA_PEM" >> /etc/ssl/certs/ca-certificates.crt; fi"""
     assert src.count(ca) == 2, "the CA line must be whole (one line per stage)"
+
+
+def test_podman_never_gets_a_proxy_password_as_build_arg(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    # buildah records build args in the image history (Docker does not): a password there is readable by anyone
+    # with access to the engine, so on Podman an authenticated proxy is left out of the build args
+    corporate(monkeypatch, tmp_path)
+    assert "HTTPS_PROXY" in appnet.build_args(podman=False)
+    podman = appnet.build_args(podman=True)
+    assert not any("PROXY" in k.upper() for k in podman) and podman["EXTRA_CA_PEM"] == PEM
+    monkeypatch.setenv("HUB_PROXY", "http://proxy.empresa.local:8080")  # no password: nothing to hide
+    assert appnet.build_args(podman=True)["HTTPS_PROXY"] == "http://proxy.empresa.local:8080"
