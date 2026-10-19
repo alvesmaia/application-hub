@@ -287,7 +287,8 @@ get_compose() { # official binary in ~/.local/bin (no root); pinned version and 
   mkdir -p "$HOME/.local/bin"
   tmp=$(mktemp)
   echo "baixando docker-compose $COMPOSE_VER para $dest"
-  curl -fsSL -o "$tmp" "$url" || { rm -f "$tmp"; echo "download falhou: $url" >&2; return 1; }
+  host_curl_args
+  curl -fsSL "${HOST_CURL[@]}" -o "$tmp" "$url" || { rm -f "$tmp"; echo "download falhou: $url" >&2; return 1; }
   if command -v sha256sum >/dev/null; then
     local got
     got=$(sha256sum "$tmp" | cut -d' ' -f1)

@@ -56,6 +56,21 @@ net_write() { # .prod.env (setv); the CA is copied next to the secrets so the in
   if [ -n "$GOPX" ]; then setv HUB_GOPROXY "$GOPX"; fi
 }
 
+ca_bundle() { # ca_bundle <out>: system bundle + the corporate CA (curl --cacert replaces the system one)
+  cat /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-certificates.crt /etc/ssl/cert.pem > "$1" 2>/dev/null || true
+  cat "$2" >> "$1"
+}
+
+host_curl_args() { # the install's own downloads (compose binary): the same proxy and CA as the builds
+  HOST_CURL=()
+  if [ -n "$NET_PROXY" ]; then HOST_CURL+=(--proxy "$NET_PROXY"); fi
+  if [ -n "$CA_FILE" ]; then
+    HOST_BUNDLE=$(mktemp)
+    ca_bundle "$HOST_BUNDLE" "$CA_FILE"
+    HOST_CURL+=(--cacert "$HOST_BUNDLE")
+  fi
+}
+
 build_env() { # exports the build args from .prod.env; call it in a subshell so the runtime commands do not inherit them
   local np="localhost,127.0.0.1${HUB_NO_PROXY:+,$HUB_NO_PROXY}"
   if [ -n "${HUB_PROXY:-}" ]; then

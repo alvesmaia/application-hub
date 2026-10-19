@@ -158,3 +158,18 @@ def test_compose_passes_the_network_build_args_and_prefixes_the_pulled_images() 
                 assert f"        - {arg}\n" in block, (name, arg)
         assert "image: postgres" not in src and "image: ${HUB_EDGE_IMAGE:-caddy" not in src
     assert built == blocks  # every built service has the args block
+
+
+def test_the_compose_download_uses_the_proxy_and_the_ca(tmp_path: Path) -> None:
+    log = tmp_path / "curl.log"
+    curl = 'echo "curl $*" >> "$FAKE_LOG"; exit 22'  # records the call, then "fails" (nothing is downloaded)
+    docker = 'case "$1 ${2:-}" in "--version "*) echo "Docker version 27.0" ;; esac; exit 1'
+    r = run_install(
+        tmp_path,
+        ("--yes", "--get-compose", *net_flags(tmp_path)),
+        fakes={"curl": curl, "docker": docker},
+        env_extra={"FAKE_LOG": str(log)},
+    )
+    call = log.read_text(encoding="utf-8")
+    assert "github.com/docker/compose" in call and f"--proxy {PROXY}" in call and "--cacert" in call
+    assert r.returncode == 1 and "download falhou" in r.stderr

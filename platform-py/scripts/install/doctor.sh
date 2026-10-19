@@ -20,9 +20,8 @@ doctor_conf() { # the values in effect: options of this run, else .prod.env; exp
   HUB_IMAGE_PREFIX=${HUB_IMAGE_PREFIX:-}
   D_BUNDLE=""
   [ -n "$HUB_CA_FILE" ] || return 0
-  D_BUNDLE=$(mktemp) # curl --cacert replaces the system bundle: system + corporate CA
-  cat /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-certificates.crt /etc/ssl/cert.pem > "$D_BUNDLE" 2>/dev/null || true
-  cat "$HUB_CA_FILE" >> "$D_BUNDLE"
+  D_BUNDLE=$(mktemp)
+  ca_bundle "$D_BUNDLE" "$HUB_CA_FILE"
 }
 
 curl_args() { # the path the build will use: the proxy (except --no-proxy destinations) and the corporate CA
