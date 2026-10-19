@@ -27,8 +27,10 @@ start_own_socket() { # start_own_socket <path>: the hub keeps its own `podman sy
   socket_up "$1" && return 0
   mkdir -p "$(dirname "$1")" "$HOME/.local/state"
   engine_net_env
-  env "${ENGINE_ENV[@]}" DISABLE_HC_SYSTEMD=true nohup podman --cgroup-manager=cgroupfs --events-backend=file system service --time=0 \
-    "unix://$1" >> "$HOME/.local/state/app-hub-podman.log" 2>&1 &
+  # setsid + stdin from /dev/null: a session of its own; inside the install's (or an SSH) session, conmon failed to
+  # attach the containers once that session ended
+  env "${ENGINE_ENV[@]}" DISABLE_HC_SYSTEMD=true setsid nohup podman --cgroup-manager=cgroupfs --events-backend=file \
+    system service --time=0 "unix://$1" < /dev/null >> "$HOME/.local/state/app-hub-podman.log" 2>&1 &
   local _
   for _ in $(seq 20); do socket_up "$1" && return 0; sleep 1; done
   echo "o socket do Podman ($1) não respondeu; veja $HOME/.local/state/app-hub-podman.log" >&2

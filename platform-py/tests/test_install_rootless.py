@@ -37,7 +37,15 @@ FAKE_SYSTEMCTL = r"""
 echo "SYSTEMCTL $*" >> "$FAKE_LOG"
 case "$*" in *"podman.socket"*) touch "$FAKE_DIR/sock-up" ;; esac
 """
-FAKES = {"docker": FAKE_DOCKER, "podman": FAKE_PODMAN, "crontab": FAKE_CRONTAB, "systemctl": FAKE_SYSTEMCTL}
+# setsid: records that the socket gets a session of its own, then runs the command
+FAKE_SETSID = 'echo "SETSID $*" >> "$FAKE_LOG"; exec "$@"'
+FAKES = {
+    "docker": FAKE_DOCKER,
+    "podman": FAKE_PODMAN,
+    "crontab": FAKE_CRONTAB,
+    "systemctl": FAKE_SYSTEMCTL,
+    "setsid": FAKE_SETSID,
+}
 FLAGS = ("--yes", "--skip-doctor", "--admin-email", "ops@exemplo.com")
 
 
@@ -181,3 +189,9 @@ def test_with_systemd_the_podman_service_gets_the_proxy_and_the_ca_in_a_drop_in(
     text = drop.read_text(encoding="utf-8")
     assert 'Environment="HTTPS_PROXY=http://proxy.empresa.local:8080"' in text and "SSL_CERT_FILE=" in text
     assert "SYSTEMCTL --user daemon-reload" in log and "podman.service.d" in out  # listed in the consent
+
+
+def test_the_own_socket_runs_in_a_session_of_its_own(tmp_path: Path) -> None:
+    # started inside the install's session, conmon failed to attach once that session ended ("conmon failed")
+    _rc, _out, log = rootless(tmp_path, systemd=False, bus=False)
+    assert any(ln.startswith("SETSID ") and "system service" in ln for ln in log.splitlines())
