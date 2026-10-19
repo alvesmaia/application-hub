@@ -259,11 +259,7 @@ consent() { # what the install does, before doing anything; default no. --yes = 
 Application Hub — instalação. Isto vai:
   • criar contêineres, volumes e redes com o prefixo $PROJECT-* no Docker/Podman do usuário $(id -un)
   • dar ao contêiner do hub acesso ao socket do engine: ele cria e para os contêineres dos apps (só $PROJECT-*)
-  • baixar imagens e pacotes (registry de imagens, PyPI, GitHub)
-$(net_summary)
-$(rootless_summary)
-$(disk_summary)
-$(tls_summary)
+  • baixar imagens e pacotes (registry de imagens, PyPI, GitHub)$({ net_summary; rootless_summary; disk_summary; tls_summary; } | awk 'NF { printf "\n%s", $0 }')
   • publicar a porta $PORT em $BIND
   • gravar segredos em platform-py/.secrets e platform-py/.prod.env (0600)
 Não usa sudo, não altera configurações do sistema nem contêineres de outros projetos.
@@ -338,7 +334,7 @@ if [ ! -f "$ENVF" ]; then
   umask 077
   sed -e "s#^HUB_PUBLIC_URL=.*#HUB_PUBLIC_URL=$PUBLIC_URL#" -e "s#^HUB_AUDIT_HEAD_DIR=.*#HUB_AUDIT_HEAD_DIR=./.secrets/audit-head#" \
     -e "s#^HUB_COOKIE_SECURE=.*#HUB_COOKIE_SECURE=$COOKIE#" \
-    prod.env.example | while IFS= read -r line; do
+    <(tr -d '\r' < prod.env.example) | while IFS= read -r line; do # a Windows copy has CRLF
       case "$line" in
         *'=<openssl rand -hex 24>'*) printf '%s=%s\n' "${line%%=*}" "$(rnd)" ;;
         *) printf '%s\n' "$line" ;;

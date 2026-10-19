@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -121,3 +122,20 @@ def test_https_and_localhost_urls_need_no_warning(tmp_path: Path) -> None:
 def test_prod_compose_takes_the_cookie_setting_from_prod_env() -> None:
     src = (ROOT / "docker-compose.prod.yml").read_text(encoding="utf-8")
     assert "HUB_COOKIE_SECURE: ${HUB_COOKIE_SECURE:-1}" in src
+
+
+def test_a_template_with_windows_line_endings_still_gives_a_clean_prod_env(tmp_path: Path) -> None:
+    # copied from a Windows checkout (core.autocrlf): a CR in .prod.env breaks `. ./.prod.env` on Linux
+    r = run_install(tmp_path, ("--config-only", "--yes"))
+    assert r.returncode == 0
+    example = tmp_path / "platform-py" / "prod.env.example"
+    example.write_bytes(example.read_bytes().replace(b"\n", b"\r\n"))
+    (tmp_path / "platform-py" / ".prod.env").unlink()
+    r = subprocess.run(  # noqa: S603
+        [str(BASH), "scripts/install.sh", "--config-only", "--yes"],
+        cwd=tmp_path / "platform-py",
+        capture_output=True,
+        check=False,
+        env={"PATH": f"{tmp_path / 'fakebin'}:/usr/bin:/bin", "HOME": str(tmp_path)},
+    )
+    assert r.returncode == 0 and b"\r" not in (tmp_path / "platform-py" / ".prod.env").read_bytes()
