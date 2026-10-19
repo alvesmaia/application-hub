@@ -135,7 +135,7 @@ def test_hub_start_script_brings_up_the_socket_and_the_stack(tmp_path: Path) -> 
     }
     subprocess.run([str(BASH), "scripts/hub-start.sh"], cwd=pp, env=env, check=False, capture_output=True)  # noqa: S603
     text = log.read_text(encoding="utf-8")
-    assert text.count("system service") == 2 and "DOCKER compose" in text and " up -d" in text
+    assert text.count("PODMAN --cgroup-manager") == 2 and "DOCKER compose" in text and " up -d" in text
 
 
 def test_the_cron_line_points_to_the_install_folder_even_when_run_from_elsewhere(tmp_path: Path) -> None:
@@ -174,7 +174,7 @@ def test_the_own_socket_pulls_images_through_the_proxy_trusting_the_ca(tmp_path:
     (tmp_path / "ca.pem").write_text(PEM, encoding="utf-8")
     flags = ("--proxy", "http://proxy.empresa.local:8080", "--ca-file", sh_path(tmp_path / "ca.pem"))
     _rc, _out, log = rootless(tmp_path, *flags, systemd=False, bus=False)
-    line = next(ln for ln in log.splitlines() if "system service" in ln)
+    line = next(ln for ln in log.splitlines() if ln.startswith("PODMAN ") and "system service" in ln)
     assert "PX=http://proxy.empresa.local:8080" in line and "NP=localhost,127.0.0.1" in line
     bundle = line.split("CERT=", 1)[1].strip()
     written = (tmp_path / "platform-py" / ".secrets" / "ca" / "bundle.pem").read_text(encoding="utf-8")
