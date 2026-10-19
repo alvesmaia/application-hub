@@ -2,11 +2,17 @@
 # Build (context = repository root): docker build -f platform-py/Dockerfile -t app-hub-web .
 # mc (MinIO Client) only for «Provisionar armazenamento» (storage provisioning); local image `app-hub-mc` (source: infra/minio/Dockerfile, mc target).
 ARG MC_IMAGE=app-hub-mc:0.10.0
+# Corporate network (scripts/install.sh): image mirror prefix and an extra CA appended to the system bundle.
+ARG IMAGE_PREFIX=
 FROM ${MC_IMAGE} AS mc
 
 # Developer kit (F22): hub-cli and hub-sdk wheels served at /dev/cli/simple/.
-FROM python:3.12-slim AS cli
-RUN pip install --no-cache-dir uv==0.12.23
+FROM ${IMAGE_PREFIX}python:3.12-slim AS cli
+ARG EXTRA_CA_PEM=""
+ARG PIP_INDEX_URL
+ARG UV_DEFAULT_INDEX
+RUN if [ -n "$EXTRA_CA_PEM" ]; then printf '%s\n' "$EXTRA_CA_PEM" >> /etc/ssl/certs/ca-certificates.crt; fi
+RUN env ${EXTRA_CA_PEM:+PIP_CERT=/etc/ssl/certs/ca-certificates.crt} pip install --no-cache-dir uv==0.12.23
 WORKDIR /src
 COPY platform-py/pyproject.toml platform-py/pyproject.toml
 COPY platform-py/hub platform-py/hub
@@ -17,16 +23,20 @@ COPY platform/assets/shell platform/assets/shell
 COPY platform/assets/web platform/assets/web
 COPY platform/demo-apps/assets/demo.css platform/demo-apps/assets/demo.css
 COPY platform/conformance/conftest.py platform/conformance/test_contract.py platform/conformance/pytest.ini platform/conformance/
-RUN sed -i 's/\r$//' platform-py/scripts/build-cli.sh && bash platform-py/scripts/build-cli.sh
+RUN sed -i 's/\r$//' platform-py/scripts/build-cli.sh && env ${EXTRA_CA_PEM:+SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt PIP_CERT=/etc/ssl/certs/ca-certificates.crt} bash platform-py/scripts/build-cli.sh
 
-FROM python:3.12-slim
+FROM ${IMAGE_PREFIX}python:3.12-slim
+ARG EXTRA_CA_PEM=""
+ARG PIP_INDEX_URL
+ARG UV_DEFAULT_INDEX
+RUN if [ -n "$EXTRA_CA_PEM" ]; then printf '%s\n' "$EXTRA_CA_PEM" >> /etc/ssl/certs/ca-certificates.crt; fi
 COPY --from=mc /usr/bin/mc /usr/local/bin/mc
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 UV_PROJECT_ENVIRONMENT=/opt/venv PATH="/opt/venv/bin:$PATH" \
     HUB_PLATFORM_DIR=/platform HUB_ASSET_DIRS=/platform/assets/shell:/platform/assets/web HUB_APPS_FILE=/platform/config/apps.json
-RUN pip install --no-cache-dir uv==0.12.23
+RUN env ${EXTRA_CA_PEM:+PIP_CERT=/etc/ssl/certs/ca-certificates.crt} pip install --no-cache-dir uv==0.12.23
 WORKDIR /app
 COPY platform-py/pyproject.toml ./
-RUN uv sync --no-install-project --no-dev
+RUN env ${EXTRA_CA_PEM:+SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt PIP_CERT=/etc/ssl/certs/ca-certificates.crt} uv sync --no-install-project --no-dev
 COPY platform-py/hub /app/hub
 COPY platform/assets/shell /platform/assets/shell
 COPY platform/assets/i18n /platform/assets/i18n

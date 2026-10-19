@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import subprocess
 import sys
 import time
@@ -32,8 +33,10 @@ def say(msg: str) -> None:
     print(f"hub-update: {msg}", flush=True)
 
 
-def run(*args: str, check: bool = True, quiet: bool = False) -> subprocess.CompletedProcess[str]:
-    p = subprocess.run(list(args), capture_output=True, text=True, encoding="utf-8", errors="replace", check=False)  # noqa: S603  # fmt: skip
+def run(
+    *args: str, check: bool = True, quiet: bool = False, env: dict[str, str] | None = None
+) -> subprocess.CompletedProcess[str]:
+    p = subprocess.run(list(args), capture_output=True, text=True, encoding="utf-8", errors="replace", check=False, env=env)  # noqa: S603  # fmt: skip
     if check and p.returncode != 0:
         raise SystemExit(
             f"hub-update: falhou: {' '.join(args[:4])}…\n{(p.stderr or p.stdout).strip()[-800:]}"
@@ -65,6 +68,36 @@ def compose_cmd(main: dict[str, Any], root: Path | None = None) -> list[str]:
         for f in env.split(","):
             cmd += ["--env-file", at(f)]
     return cmd
+
+
+def _env_file_values(path: Path) -> dict[str, str]:
+    lines = path.read_text(encoding="utf-8").splitlines() if path.is_file() else []
+    return dict(ln.split("=", 1) for ln in lines if "=" in ln and not ln.lstrip().startswith("#"))
+
+
+def build_env(env_files: list[str]) -> dict[str, str]:
+    """Build args of the corporate network written by install.sh (proxy, CA, mirrors); never the other values."""
+    conf: dict[str, str] = {}
+    for f in env_files:
+        conf |= _env_file_values(Path(f))
+    out: dict[str, str] = {}
+    if proxy := conf.get("HUB_PROXY"):
+        np = ",".join(["localhost", "127.0.0.1", *filter(None, [conf.get("HUB_NO_PROXY")])])
+        for k in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
+            out[k] = proxy
+        out |= {"NO_PROXY": np, "no_proxy": np}
+    if ca := conf.get("HUB_CA_FILE"):
+        out["EXTRA_CA_PEM"] = (Path(env_files[-1]).parent / ca).read_text(encoding="utf-8")
+    if index := conf.get("HUB_PYPI_INDEX"):
+        out |= {"PIP_INDEX_URL": index, "UV_DEFAULT_INDEX": index}
+    for key, arg in (
+        ("HUB_IMAGE_PREFIX", "IMAGE_PREFIX"),
+        ("HUB_APK_MIRROR", "APK_MIRROR"),
+        ("HUB_GOPROXY", "GOPROXY"),
+    ):
+        if conf.get(key):
+            out[arg] = conf[key]
+    return out
 
 
 def ready(name: str) -> dict[str, Any] | None:
@@ -246,10 +279,14 @@ def _new_image(
     """Builds or fetches the new image and backs up; None when it is already the one running."""
     if a.build:
         say("construindo a imagem nova")
+        cmd = compose_cmd(main_c, Path(__file__).resolve().parents[1])
+        env_files = [cmd[i + 1] for i, x in enumerate(cmd) if x == "--env-file"]
+        net = build_env(env_files)
         run(
-            *compose_cmd(main_c, Path(__file__).resolve().parents[1]),
+            *cmd,
             "build",
             main_c["Config"]["Labels"]["com.docker.compose.service"],
+            env=os.environ | net if net else None,
         )
     else:
         if inspect(a.image) is None:  # only pulls what does not exist here

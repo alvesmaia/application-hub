@@ -26,6 +26,13 @@
 #                        RHEL/Rocky without root, where the distribution does not ship a compose provider
 #   --config-only        only writes platform-py/.prod.env (no Docker): to review the answers before installing
 #
+# Corporate network (interactive: "Rede corporativa com proxy, CA própria ou espelhos internos?"):
+#   --proxy URL          HTTP(S) proxy for downloads (builds) and the hub's external calls (http://[user:pass@]host:port)
+#   --no-proxy LIST      destinations without proxy, comma separated (e.g. .empresa.local,10.0.0.0/8)
+#   --ca-file PEM        corporate CA (e.g. the proxy that inspects TLS): trusted in the builds and containers
+#   --pypi-index URL     PyPI mirror (…/simple)        --registry-mirror HOST   Docker Hub mirror (images HOST/library/…)
+#   --apk-mirror URL     Alpine mirror (MinIO build)   --goproxy URL            Go module mirror (MinIO build)
+#
 # Advanced options (interactive install, "Revisar opções avançadas?"): each one shows the RECOMMENDED value in
 # [brackets] and Enter keeps it — MinIO data folder, audit anchor folder and webhook, off-site backup copy
 # (none / SharePoint / S3), sign-in with Microsoft Entra ID, admin network restriction, proxy/tunnel in front,
@@ -48,6 +55,12 @@ TTY=${INSTALL_TTY:-/dev/tty}
 exec 4>&2  # questions: the terminal (opened below) or, with INSTALL_TTY, stderr
 COMPOSE_VER=v2.29.7
 COMPOSE_SHA=383ce6698cd5d5bbf958d2c8489ed75094e34a77d340404d9f32c4ae9e12baf0
+LIB=$(cd "$(dirname "$0")" && pwd)/install
+ORIG_ARGS=("$@")
+if [ -f "$LIB/net.sh" ]; then
+  # shellcheck source=install/net.sh
+  . "$LIB/net.sh"
+fi
 while [ $# -gt 0 ]; do
   case "$1" in
     --admin-email) EMAIL=$2; shift; ASKED=1 ;;
@@ -63,18 +76,30 @@ while [ $# -gt 0 ]; do
     --dir) DIR=$2; shift ;;
     --get-compose) GET_COMPOSE=1 ;;
     --config-only) CONFIG_ONLY=1 ;;
+    --proxy) NET_PROXY=$2; shift; ASKED=1 ;;
+    --no-proxy) NET_NOPROXY=$2; shift; ASKED=1 ;;
+    --ca-file) CA_FILE=$2; shift; ASKED=1 ;;
+    --pypi-index) PYPI=$2; shift; ASKED=1 ;;
+    --registry-mirror) REG_MIRROR=$2; shift; ASKED=1 ;;
+    --apk-mirror) APK=$2; shift; ASKED=1 ;;
+    --goproxy) GOPX=$2; shift; ASKED=1 ;;
     -y | --yes) YES=1 ;;
     -h | --help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;;
     *) echo "opção desconhecida: $1" >&2; exit 2 ;;
   esac
   shift
 done
+if [ ! -f "$LIB/net.sh" ]; then # install.sh alone (--clone): clone, then run the cloned one with the same options
+  [ "$CLONE" = 1 ] || { echo "rode a partir de um clone do repositório (ou use --clone)" >&2; exit 1; }
+  [ -d "$DIR/.git" ] || git clone --depth 1 --branch "$REF" "$REPO" "$DIR"
+  exec bash "$DIR/platform-py/scripts/install.sh" "${ORIG_ARGS[@]}"
+fi
 ask() { # ask <variable> <question> [validator]; EOF or 3 errors = keeps the default
   local cur ans i=0
   eval "cur=\$$1"
   while [ "$i" -lt 3 ]; do
     i=$((i + 1))
-    printf '%s [%s]: ' "$2" "$cur" >&4
+    printf '%s [%s]: ' "$2" "$(mask_url "$cur")" >&4
     IFS= read -r ans <&3 || { eval "$1=\$cur"; echo >&4; return 0; }
     [ -z "$ans" ] && ans=$cur
     if [ -z "${3:-}" ] || echo "$ans" | grep -Eq "$3"; then eval "$1=\$ans"; return 0; fi
@@ -108,6 +133,7 @@ if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0
   DEMO_IN=$([ "$DEMO" = 1 ] && echo s || echo n)
   ask DEMO_IN "Subir os 4 apps de exemplo? (s/n)" '^[snSN]$'
   case "$DEMO_IN" in s | S) DEMO=1 ;; *) DEMO=0 ;; esac
+  net_questions
   echo
   ask ADV "Revisar opções avançadas? Enter mantém todas no recomendado (s/n)" '^[snSN]$'
   if yes_no "$ADV"; then
@@ -169,6 +195,7 @@ if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0
   fi
 fi
 case "$PROJECT" in app-hub | app-hub-*) ;; *) echo "--project deve começar com app-hub (trava do hub)" >&2; exit 2 ;; esac
+net_validate
 consent() { # what the install does, before doing anything; default no. --yes = consent given (kept in the log)
   cat >&4 <<EOT
 
@@ -176,6 +203,7 @@ Application Hub — instalação. Isto vai:
   • criar contêineres, volumes e redes com o prefixo $PROJECT-* no Docker/Podman do usuário $(id -un)
   • dar ao contêiner do hub acesso ao socket do engine: ele cria e para os contêineres dos apps (só $PROJECT-*)
   • baixar imagens e pacotes (registry de imagens, PyPI, GitHub)
+$(net_summary)
   • publicar a porta $PORT em $BIND
   • gravar segredos em platform-py/.secrets e platform-py/.prod.env (0600)
 Não usa sudo, não altera configurações do sistema nem contêineres de outros projetos.
@@ -300,6 +328,7 @@ setv() { # setv KEY VALUE: replaces or appends in .prod.env (VALUE may contain a
   cat "$tmp" > "$ENVF"
   rm -f "$tmp"
 }
+net_write
 if yes_no "$ADV"; then
   [ -n "$OBJ_DIR" ] && { mkdir -p "$OBJ_DIR" 2>/dev/null || true; setv HUB_OBJSTORE_DIR "$OBJ_DIR"; }
   [ -n "$HEAD_DIR" ] && { mkdir -p "$HEAD_DIR" 2>/dev/null || true; setv HUB_AUDIT_HEAD_DIR "$HEAD_DIR"; }
@@ -335,9 +364,11 @@ P=$HUB_PROJECT
 dc() { docker compose --env-file "$ENVF" -f docker-compose.yml -f docker-compose.apps.yml -f docker-compose.prod.yml "$@"; }
 
 echo "1/5 imagens MinIO/mc (do código-fonte; a primeira vez leva alguns minutos)"
-docker image inspect "$HUB_MC_IMAGE" >/dev/null 2>&1 || docker build -q --target mc -t "$HUB_MC_IMAGE" infra/minio >/dev/null
+# shellcheck disable=SC2046 # build_args: only names (no spaces), the values stay in the environment
+docker image inspect "$HUB_MC_IMAGE" >/dev/null 2>&1 ||
+  (build_env && docker build -q --target mc -t "$HUB_MC_IMAGE" $(build_args) infra/minio >/dev/null)
 echo "2/5 imagens do hub e dos apps"
-dc build
+(build_env && dc build)
 
 echo "3/5 chave mestra do cofre"
 if [ ! -s .secrets/master.key ]; then
@@ -382,8 +413,8 @@ if [ "${COMPOSE_PROFILES:-}" = demo-apps ]; then
     sleep 2
   done
 fi
-for _ in $(seq 120); do curl -sf "http://127.0.0.1:$HUB_PORT/healthz" >/dev/null && break; sleep 2; done
-curl -sf "http://127.0.0.1:$HUB_PORT/healthz" || { docker logs --tail 40 "$P-web"; exit 1; }
+for _ in $(seq 120); do curl --noproxy '*' -sf "http://127.0.0.1:$HUB_PORT/healthz" >/dev/null && break; sleep 2; done
+curl --noproxy '*' -sf "http://127.0.0.1:$HUB_PORT/healthz" || { docker logs --tail 40 "$P-web"; exit 1; }
 echo
 echo "Application Hub no ar: $HUB_PUBLIC_URL  (projeto $P, porta $HUB_PORT)"
 echo "Senha temporária do primeiro acesso: platform-py/.secrets/primeiro-acesso.txt (apague depois de entrar)"

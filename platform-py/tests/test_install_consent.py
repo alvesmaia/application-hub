@@ -40,7 +40,17 @@ def test_without_a_terminal_it_asks_for_yes_instead_of_assuming(tmp_path: Path) 
 
 
 def test_interactive_mode_ends_in_the_same_consent(tmp_path: Path) -> None:
-    base = ["", "", "", "", "", "", "n", ""]  # instance questions + advanced options: Enter (= no)
+    base = [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "n",
+        "",
+        "",
+    ]  # instance questions, network and advanced options: Enter (= no)
     r = run_install(tmp_path, (), answers=[*base, ""])  # consent: Enter (= no)
     assert r.returncode == 1 and "cancelado" in r.stderr and "Não usa sudo" in r.stderr
 

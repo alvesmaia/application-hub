@@ -15,12 +15,17 @@
 #   installed with --require-hashes; the two local packages are installed with --no-deps
 #   --no-build-isolation --no-index (nothing is resolved or downloaded outside the lock).
 #   To update: uv pip compile --generate-hashes requirements.in -o requirements.lock
-ARG PY_IMAGE=python:3.12-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e
+# Corporate network (scripts/install.sh): image mirror prefix and an extra CA appended to the system bundle.
+ARG IMAGE_PREFIX=
+ARG PY_IMAGE=${IMAGE_PREFIX}python:3.12-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e
 FROM ${PY_IMAGE} AS builder
 ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
+ARG EXTRA_CA_PEM=""
+ARG PIP_INDEX_URL
+RUN if [ -n "$EXTRA_CA_PEM" ]; then printf '%s\n' "$EXTRA_CA_PEM" >> /etc/ssl/certs/ca-certificates.crt; fi
 RUN python -m venv /opt/venv
 COPY demo-apps-py/ativos/requirements.lock /src/requirements.lock
-RUN /opt/venv/bin/pip install --require-hashes --no-deps --only-binary=:all: -r /src/requirements.lock
+RUN env ${EXTRA_CA_PEM:+PIP_CERT=/etc/ssl/certs/ca-certificates.crt} /opt/venv/bin/pip install --require-hashes --no-deps --only-binary=:all: -r /src/requirements.lock
 COPY sdk-python /src/sdk-python
 COPY demo-apps-py/ativos /src/ativos
 RUN /opt/venv/bin/pip install --no-deps --no-build-isolation --no-index /src/sdk-python /src/ativos \

@@ -15,7 +15,7 @@ services:
       app-hub-app-coletor: { condition: service_started, required: false }
 
   app-hub-app-db:
-    image: postgres:16-alpine
+    image: ${HUB_IMAGE_PREFIX:-}postgres:16-alpine
     container_name: ${HUB_PROJECT:-app-hub}-app-db
     mem_limit: 1g # = resources.memory in the manifests and the `app` service of the previous compose version; 256m caused OOM on the 200k-row import
     restart: unless-stopped
@@ -36,6 +36,17 @@ services:
     build:
       context: ../platform
       dockerfile: demo-apps-py/ativos/Dockerfile
+      # network settings for the build, from the environment (scripts/install.sh); an unset one is not passed
+      args:
+        - HTTP_PROXY
+        - HTTPS_PROXY
+        - NO_PROXY
+        - http_proxy
+        - https_proxy
+        - no_proxy
+        - EXTRA_CA_PEM
+        - IMAGE_PREFIX
+        - PIP_INDEX_URL
     container_name: ${HUB_PROJECT:-app-hub}-app-ativos
     mem_limit: 1g # = resources.memory in the manifests and the `app` service of the previous compose version; 256m caused OOM on the 200k-row import
     restart: unless-stopped
@@ -54,6 +65,17 @@ services:
     build:
       context: ../platform
       dockerfile: demo-apps-py/fornecedores/Dockerfile
+      # network settings for the build, from the environment (scripts/install.sh); an unset one is not passed
+      args:
+        - HTTP_PROXY
+        - HTTPS_PROXY
+        - NO_PROXY
+        - http_proxy
+        - https_proxy
+        - no_proxy
+        - EXTRA_CA_PEM
+        - IMAGE_PREFIX
+        - PIP_INDEX_URL
     container_name: ${HUB_PROJECT:-app-hub}-app-fornecedores
     mem_limit: 1g # = resources.memory in the manifests and the `app` service of the previous compose version; 256m caused OOM on the 200k-row import
     restart: unless-stopped
@@ -76,6 +98,17 @@ services:
     build:
       context: ../platform
       dockerfile: demo-apps-py/servicos/Dockerfile
+      # network settings for the build, from the environment (scripts/install.sh); an unset one is not passed
+      args:
+        - HTTP_PROXY
+        - HTTPS_PROXY
+        - NO_PROXY
+        - http_proxy
+        - https_proxy
+        - no_proxy
+        - EXTRA_CA_PEM
+        - IMAGE_PREFIX
+        - PIP_INDEX_URL
     container_name: ${HUB_PROJECT:-app-hub}-app-servicos
     mem_limit: 1g # = resources.memory in the manifests and the `app` service of the previous compose version; 256m caused OOM on the 200k-row import
     restart: unless-stopped
@@ -94,6 +127,17 @@ services:
     build:
       context: ../platform
       dockerfile: Dockerfile.coletor
+      # network settings for the build, from the environment (scripts/install.sh); an unset one is not passed
+      args:
+        - HTTP_PROXY
+        - HTTPS_PROXY
+        - NO_PROXY
+        - http_proxy
+        - https_proxy
+        - no_proxy
+        - EXTRA_CA_PEM
+        - IMAGE_PREFIX
+        - PIP_INDEX_URL
     container_name: ${HUB_PROJECT:-app-hub}-app-coletor
     mem_limit: 1g # = resources.memory in the manifests and the `app` service of the previous compose version; 256m caused OOM on the 200k-row import
     restart: unless-stopped

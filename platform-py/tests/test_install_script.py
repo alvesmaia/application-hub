@@ -16,7 +16,16 @@ def install(tmp_path: Path, answers: list[str], args: tuple[str, ...] = ()) -> t
     return prod_env(tmp_path), r.stderr
 
 
-BASE = ["", "", "", "", "", "", "n"]  # e-mail, port, bind, public URL, project, subnet, sample apps (no)
+BASE = [
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "n",
+    "",
+]  # e-mail, port, bind, URL, project, subnet, sample apps (no), network (no)
 
 
 def test_enter_everywhere_keeps_the_recommended_options(tmp_path: Path) -> None:

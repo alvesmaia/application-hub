@@ -8,8 +8,15 @@
 #   export HUB_MINIO_IMAGE=hub-minio:RELEASE.2025-09-07T16-13-09Z
 #   export HUB_MC_IMAGE=hub-mc:RELEASE.2025-08-13T08-35-41Z
 #   docker compose up -d
-FROM golang:1.24-alpine AS build
-RUN apk add --no-cache git
+# Corporate network (scripts/install.sh): image mirror prefix and an extra CA appended to the system bundle.
+ARG IMAGE_PREFIX=
+FROM ${IMAGE_PREFIX}golang:1.24-alpine AS build
+ARG EXTRA_CA_PEM=""
+ARG APK_MIRROR
+ARG GOPROXY
+RUN if [ -n "$EXTRA_CA_PEM" ]; then printf '%s\n' "$EXTRA_CA_PEM" >> /etc/ssl/certs/ca-certificates.crt; fi
+RUN if [ -n "$APK_MIRROR" ]; then sed -i "s#https\?://dl-cdn.alpinelinux.org/alpine#${APK_MIRROR%/}#" /etc/apk/repositories; fi \
+    && apk add --no-cache git
 ARG MINIO_VERSION=RELEASE.2025-09-07T16-13-09Z
 ARG MC_VERSION=RELEASE.2025-08-13T08-35-41Z
 RUN --mount=type=cache,id=hub-go-mod,target=/go/pkg/mod \
@@ -23,12 +30,12 @@ RUN --mount=type=cache,id=hub-go-mod,target=/go/pkg/mod \
 
 # Client: `mc` entrypoint (hub-objstore-init uses /bin/sh; backup jobs pass only
 # the mc arguments).
-FROM alpine:3.20 AS mc
+FROM ${IMAGE_PREFIX}alpine:3.20 AS mc
 COPY --from=build /out/mc /usr/bin/mc
 ENTRYPOINT ["mc"]
 
 # Server: `minio server /data`; brings mc in for the healthcheck (`mc ready local`).
-FROM alpine:3.20 AS minio
+FROM ${IMAGE_PREFIX}alpine:3.20 AS minio
 COPY --from=build /out/minio /usr/bin/minio
 COPY --from=build /out/mc /usr/bin/mc
 EXPOSE 9000

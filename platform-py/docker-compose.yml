@@ -10,8 +10,20 @@ services:
     build:
       context: ..
       dockerfile: platform-py/Dockerfile
+      # MC_IMAGE: build it first with scripts/install.sh (or infra/minio/Dockerfile, mc target)
+      # network settings for the build, from the environment (scripts/install.sh); an unset one is not passed
       args:
-        MC_IMAGE: ${HUB_MC_IMAGE:-app-hub-mc:0.10.0} # build first: scripts/install.sh (or infra/minio/Dockerfile, mc target)
+        - MC_IMAGE=${HUB_MC_IMAGE:-app-hub-mc:0.10.0}
+        - UV_DEFAULT_INDEX
+        - HTTP_PROXY
+        - HTTPS_PROXY
+        - NO_PROXY
+        - http_proxy
+        - https_proxy
+        - no_proxy
+        - EXTRA_CA_PEM
+        - IMAGE_PREFIX
+        - PIP_INDEX_URL
     container_name: ${HUB_PROJECT:-app-hub}-web
     labels: { hub.py: "1" }
     mem_limit: 1g # backups and restores load the package into memory (1 GiB)
@@ -67,7 +79,7 @@ services:
       - hub-app-servicos
 
   app-hub-db:
-    image: postgres:16-alpine
+    image: ${HUB_IMAGE_PREFIX:-}postgres:16-alpine
     container_name: ${HUB_PROJECT:-app-hub}-db
     labels: { hub.py: "1" }
     mem_limit: 256m
@@ -85,6 +97,19 @@ services:
     build:
       context: ./infra/minio
       target: minio
+      # network settings for the build, from the environment (scripts/install.sh); an unset one is not passed
+      args:
+        - APK_MIRROR
+        - GOPROXY
+        - HTTP_PROXY
+        - HTTPS_PROXY
+        - NO_PROXY
+        - http_proxy
+        - https_proxy
+        - no_proxy
+        - EXTRA_CA_PEM
+        - IMAGE_PREFIX
+        - PIP_INDEX_URL
     container_name: ${HUB_PROJECT:-app-hub}-objstore
     labels: { hub.py: "1" }
     command: ["server", "/data"]
@@ -106,7 +131,7 @@ services:
 
   # Edge: owns HUB_PORT. Forwards to the hub and, during an update (scripts/hub-update.sh), also to the new copy.
   app-hub-edge:
-    image: ${HUB_EDGE_IMAGE:-caddy:2.10.0-alpine}
+    image: ${HUB_EDGE_IMAGE:-${HUB_IMAGE_PREFIX:-}caddy:2.10.0-alpine}
     container_name: ${HUB_PROJECT:-app-hub}-edge
     restart: unless-stopped
     mem_limit: 128m
