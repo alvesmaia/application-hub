@@ -12,7 +12,7 @@
 
 ## Hub
 - ✅ 42 · Chamadas internas sem proxy (internal_client/external_client, HUB_PROXY/HUB_NO_PROXY, guarda contra httpx direto)
-- ⬜ 43 · Build e containers dos apps com proxy, CA e espelhos (buildargs, env, credencial mascarada)
+- ✅ 43 · Build e containers dos apps com proxy, CA e espelhos (buildargs, env, credencial mascarada)
 
 ## Docs
 - ⬜ 44 · Guia "Instalação em rede corporativa", --help e CHANGELOG

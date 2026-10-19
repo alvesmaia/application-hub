@@ -9,8 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from hub.ops import appnet, newapp
 from hub.ops import model as m
-from hub.ops import newapp
 from hub.ops import pipeline as pl
 from hub.ops import provision as pv
 from hub.ops import runtime as rt
@@ -188,7 +188,8 @@ def _build_logger(ops: OpsCtx, dep: Data, job_id: int, actor: str, lines: list[s
     """Each build line goes to the job (last 200), to the logs console and to the deploy step detail."""
     tag, app_id = dep["image"], dep["app"]
 
-    def on_line(ln: str) -> None:
+    def on_line(raw: str) -> None:
+        ln = appnet.mask(raw)  # a proxy password must not reach the job, the logs or the deploy record
         lines.append(ln[:300])
         ops.log("INFO", app_id, actor, f"build · {ln[:300]}")
 

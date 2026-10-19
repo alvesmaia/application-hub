@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from typing import Any
 
+from hub.ops import appnet
 from hub.ops.capacity import (  # re-exported: callers use rt.Host, rt.admit, …
     GIB as GIB,
 )
@@ -311,7 +312,7 @@ class Engine:
         deadline = time.monotonic() + timeout_s if timeout_s > 0 else 0.0
 
         def go(cl: Any) -> str:
-            stream = cl.build_stream(path, tag, dockerfile, memory, cpus)
+            stream = cl.build_stream(path, tag, dockerfile, memory, cpus, appnet.build_args())
             return _consume_build(
                 stream, deadline, timeout_s, lambda ln: loop.call_soon_threadsafe(on_line, ln)
             )
@@ -340,7 +341,8 @@ class Engine:
         )
 
         def go(cl: Any) -> None:
-            c = cl.create(image, name, environment=[f"{k}={v}" for k, v in env.items()], labels=labels,
+            full = appnet.container_env() | env  # corporate proxy/CA (install.sh); the app's values win
+            c = cl.create(image, name, environment=[f"{k}={v}" for k, v in full.items()], labels=labels,
                           host_config={**host, "NetworkMode": networks[0]}, networking_config=first)  # fmt: skip
             for n in networks[1:]:
                 cl.connect(n, name, aliases=al.get(n) or None)

@@ -71,7 +71,15 @@ class Guarded:
             own(tag)
         return self._cl.images.build(path=path, tag=tag, rm=True, **kw)
 
-    def build_stream(self, path: str, tag: str, dockerfile: str, memory: int, cpus: int = 0) -> Any:
+    def build_stream(
+        self,
+        path: str,
+        tag: str,
+        dockerfile: str,
+        memory: int,
+        cpus: int = 0,
+        buildargs: dict[str, str] | None = None,
+    ) -> Any:
         """Builds `tag` (only `app-hub-*`) with a memory/swap cap (and CPUs) and returns the daemon's stream."""
         own(tag.split(":", 1)[0])
         limits: dict[str, Any] = {"memory": memory, "memswap": memory}
@@ -81,6 +89,7 @@ class Guarded:
             limits["cpusetcpus"] = f"0-{cpus - 1}" if cpus > 1 else "0"
         return self._cl.api.build(
             path=path, tag=tag, dockerfile=dockerfile, rm=True, forcerm=True, decode=True, container_limits=limits,
+            buildargs=buildargs or None,
         )  # fmt: skip
 
     def pinned(self, repo: str) -> builtins.list[tuple[str, str]]:
