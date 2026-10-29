@@ -516,7 +516,8 @@ def test_provision_is_idempotent_and_rotate_changes_password(hub: TestClient, fa
     ps.role, ps.owner, ps.dbc = "hub-managed:app=ativos", "app_ativos", "hub-managed:app=ativos"
     ps.sql.clear()
     r = hub.post("/api/ops/provision/ativos/database", headers=JSON)  # already works (fake psql rc 0)
-    assert r.json()["provisioned"]["changed"] is False and not ps.sql
+    # already provisioned: only the per-app limits are brought up to date (no password, role or database change)
+    assert r.json()["provisioned"]["changed"] is False and ps.sql == pv.limits_sql("app_ativos")
     r = hub.post("/api/ops/rotate/ativos/database", headers=JSON)
     assert (
         r.status_code == 200

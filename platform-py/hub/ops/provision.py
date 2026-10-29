@@ -17,6 +17,14 @@ from hub.ops.runtime import exec_in
 
 DB_PREFIX = "app_"
 _ID = re.compile(r"^[a-z][a-z0-9_]{0,47}$")
+# Per-role limits in the (shared) apps' Postgres: a runaway query or a forgotten transaction fails in its own app instead of
+# holding the server. CPU and I/O have no per-database quota in Postgres: total isolation = the two-server mode.
+LIMITS = (
+    ("statement_timeout", "HUB_APP_DB_STATEMENT_TIMEOUT", "5min"),
+    ("idle_in_transaction_session_timeout", "HUB_APP_DB_IDLE_TX_TIMEOUT", "5min"),
+    ("temp_file_limit", "HUB_APP_DB_TEMP_FILE_LIMIT", "5GB"),
+)
+_LIMIT = re.compile(r"^-?[0-9]{1,9}(ms|s|min|h|d|kB|MB|GB|TB)?$")
 
 
 def db_name(app: str, env: str) -> str:
@@ -63,6 +71,18 @@ async def works(b: Backups, name: str, url: str) -> bool:
     return rc == 0
 
 
+def limits_sql(role: str) -> list[str]:
+    out = []
+    for param, env, default in LIMITS:
+        value = os.getenv(env, default)
+        if not _LIMIT.match(value):
+            raise OpsError(
+                f"{env}={value!r} inválido: use um número com unidade opcional (ex.: {default}, 30s, -1)"
+            )
+        out.append(f"ALTER ROLE {_qi(role)} SET {param} = {_lit(value)}")
+    return out
+
+
 def _ddl(name: str, mark: str, pw: str, role_c: str | None, owner: str | None) -> list[str]:
     q = _qi(name)
     stmts = [f"ALTER ROLE {q} WITH LOGIN PASSWORD {_lit(pw)}" if role_c is not None else
@@ -72,7 +92,7 @@ def _ddl(name: str, mark: str, pw: str, role_c: str | None, owner: str | None) -
         stmts += [f"CREATE DATABASE {q} OWNER {q}", f"COMMENT ON DATABASE {q} IS {_lit(mark)}"]
     stmts.append(f"REVOKE ALL ON DATABASE {q} FROM PUBLIC")
     stmts.append(f"GRANT CONNECT, TEMPORARY ON DATABASE {q} TO {q}")
-    return stmts
+    return stmts + limits_sql(name)
 
 
 async def _unbind_other_staging_dbs(cfg: Any, app: str, var: str) -> None:
@@ -98,6 +118,7 @@ async def provision(b: Backups, cfg: Any, actor: str, app: str, env: str) -> dic
             f"a variável {var} já existe e não é gerenciada pela plataforma; renomeie ou exclua-a antes"
         )
     if cur is not None and await works(b, name, str(cur["value"])):
+        await b._psql("postgres", *limits_sql(name))
         return {
             "variable": var,
             "database": name,
