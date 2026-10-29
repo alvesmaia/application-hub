@@ -69,7 +69,12 @@ Only the hub changed? `dc build app-hub-web && dc up -d --no-deps app-hub-web` (
 
 ## 4. Migrations
 
-- **Hub state database** (`app-hub-db`): the hub creates/updates its own tables at boot (no manual step).
+- **Hub state database** (`hub`, in `app-hub-db`, or in `app-hub-app-db` with one server): the hub creates/updates its
+  own tables at boot (no manual step).
+- **Updating to the version with per-app database roles:** run `bash platform-py/scripts/install.sh` again (with the
+  existing `.prod.env` it asks nothing and generates only the new `APP_HUB_APP_DB_PASSWORD_<APP>` secrets), or add them by
+  hand; the `app-hub-db-roles` job then gives each sample app its own role and its tables, and at boot the hub moves the
+  seeded `DATABASE_URL_<APP>` variables off the superuser. The install keeps the existing two servers.
 - **File data** (`/data`: users, vault, administration): the format is migrated at boot; old versions are
   read and rewritten in the new format.
 - **App databases** (`app-hub-app-db`): each app applies its own migrations when it starts (`hub_sdk`).

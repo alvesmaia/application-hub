@@ -9,7 +9,7 @@
 - ✅ 49 · --db-mode single|split e pergunta interativa (padrão single), resumo e consentimento, segredos novos completados num .prod.env existente
 
 ## Docs
-- ▶️ 50 · Guias, prod.env.example e CHANGELOG (inclui trocar de modo depois: dump e restore)
+- ✅ 50 · Guias, prod.env.example e CHANGELOG (inclui trocar de modo depois: dump e restore)
 
 ## Fechamento
-- ⬜ 51 · hub-check --all, instalação isolada nos dois modos, limpeza
+- ▶️ 51 · hub-check --all, instalação isolada nos dois modos, limpeza

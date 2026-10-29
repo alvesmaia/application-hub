@@ -7,6 +7,24 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Added
+- One Postgres by default: `install.sh --db-mode single` (default, also asked in the interactive install's advanced
+  options) puts the hub's database in the apps' server; `--db-mode split` keeps one server each. Without the new
+  `.prod.env` variables an existing install keeps two servers. `docs/IMPLANTACAO.md` explains what is isolated and
+  how to switch an installed hub (dump and restore).
+- Per-app limits on the database role: `statement_timeout`, `idle_in_transaction_session_timeout` and
+  `temp_file_limit` (`HUB_APP_DB_*`), applied when provisioning and refreshed on an already provisioned app. The apps'
+  server keeps 30 connections for the hub (`superuser_reserved_connections`).
+- `install.sh` rerun: secrets added to `prod.env.example` in later versions are generated into the existing
+  `.prod.env` (names shown, values never).
+
+### Security
+- The sample apps no longer connect as the superuser `hub`: each has its own role, owner of its database
+  (`app-hub-db-roles` job, `python -m hub.admin demo-db-roles`; an existing install's tables are handed over), and the
+  hub moves the seeded superuser `DATABASE_URL_<APP>` variables to the role at boot.
+- The hub revokes `PUBLIC` access to its own database at boot, and app backups, restores and staging clones refuse the
+  `hub` database.
+
 ### Fixed
 - Login looped back to `/login` on an `http://` install other than localhost: `docker-compose.prod.yml` fixed the
   session cookie as Secure. It now reads `HUB_COOKIE_SECURE` from `.prod.env`, and `install.sh` writes `auto` for an
