@@ -159,3 +159,9 @@ hub's own Podman socket needed a session of its own (setsid), otherwise conmon f
 corporate server stopped); the CA line of the template Dockerfile was split in two; buildah records build args in
 the image history, so an authenticated proxy is left out of the build args on Podman. Lab detail only: the build
 containers could not resolve the proxy's Docker-only DNS name, so the lab used its IP (a corporate DNS resolves it).
+
+✅ **Corporate-network install (tasks 34–45)**
+Cookie Secure following the URL, consent notice, proxy/CA/mirror options, `--doctor`, rootless Podman without systemd
+(own socket, cron start), disk choice (`--data-dir`, `--engine-store`), HTTPS at the edge, clearer messages, internal
+calls without proxy, app builds/containers with proxy and CA, the corporate-network guide, and the lab validation
+(Rocky 9 + Podman rootless behind a TLS-inspecting proxy: 6 real failures fixed with tests).
