@@ -92,6 +92,9 @@ def _parser() -> argparse.ArgumentParser:
     sub.add_parser(
         "set-entra-secret", help="guarda no cofre o segredo do cliente do Entra ID (entrada padrão)"
     )
+    sub.add_parser(
+        "demo-db-roles", help="papel próprio de cada app de exemplo no Postgres dos apps (idempotente)"
+    )
     sp = sub.add_parser(
         "add-sharepoint", help="cria ou atualiza uma conexão SharePoint (segredo pela entrada padrão)"
     )
@@ -118,6 +121,10 @@ def main(argv: list[str] | None = None) -> int:
         return add_sharepoint(a.name, a.tenant, a.client_id, a.site)
     if a.cmd == "set-entra-secret":
         return set_entra_secret()
+    if a.cmd == "demo-db-roles":
+        from hub.admin import demo_db
+
+        return demo_db.main()
     store = AuthStore(Path(os.getenv("HUB_DATA_DIR", "/data")) / "auth.json")
     if a.cmd == "create-admin":
         text = asyncio.run(create_admin(store, a.email, a.name))

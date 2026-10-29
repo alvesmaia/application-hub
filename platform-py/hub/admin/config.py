@@ -63,6 +63,11 @@ DEV_INFRA_PASSWORDS = {
     "APP_HUB_DB_PASSWORD": "hubpy-dev",
     "APP_HUB_APP_DB_PASSWORD": "hubpy-app-dev",
     "APP_HUB_OBJSTORE_PASSWORD": "hubpy-objstore-dev",
+    # sample apps' own roles (hub/admin/demo_db.py); no dev password may contain another (plain substring replacement)
+    "APP_HUB_APP_DB_PASSWORD_ATIVOS": "hubpy-ativos-dev",
+    "APP_HUB_APP_DB_PASSWORD_FORNECEDORES": "hubpy-fornecedores-dev",
+    "APP_HUB_APP_DB_PASSWORD_SERVICOS": "hubpy-servicos-dev",
+    "APP_HUB_APP_DB_PASSWORD_COLETOR": "hubpy-coletor-dev",
 }
 
 

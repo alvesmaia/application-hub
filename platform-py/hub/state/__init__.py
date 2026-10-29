@@ -6,7 +6,7 @@ import asyncio
 import json
 import time
 from collections.abc import AsyncIterator, Callable
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from typing import Any, cast
 
 import asyncpg
@@ -46,6 +46,16 @@ CREATE TABLE IF NOT EXISTS kv (k text PRIMARY KEY, v text NOT NULL);
 """
 
 
+async def _close_to_public(conn: asyncpg.Connection) -> None:
+    """The hub's database may share the server with the apps' roles: only its owner and the superusers connect to it."""
+    with suppress(
+        asyncpg.InsufficientPrivilegeError
+    ):  # an external database not owned by the hub: left as it is
+        await conn.execute(
+            "DO $$BEGIN EXECUTE format('REVOKE ALL ON DATABASE %I FROM PUBLIC', current_database()); END$$"
+        )
+
+
 class StateDb(RecordOps):
     def __init__(self, pool: asyncpg.Pool, config: Config) -> None:
         self.pool, self.config = pool, config
@@ -57,6 +67,7 @@ class StateDb(RecordOps):
         conn = await asyncpg.connect(config.url)
         try:
             await conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{config.schema}"')
+            await _close_to_public(conn)
         finally:
             await conn.close()
         pool = await asyncpg.create_pool(

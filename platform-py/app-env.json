@@ -3,7 +3,7 @@
     "name": "DATABASE_URL_ATIVOS",
     "kind": "connection_string",
     "inject_as": "HUB_DB_URL",
-    "value": "postgresql://hub:hubpy-app-dev@app-hub-app-db:5432/ativos",
+    "value": "postgresql://ativos:hubpy-ativos-dev@app-hub-app-db:5432/ativos",
     "bindings": [
       {
         "app": "ativos",
@@ -15,7 +15,7 @@
     "name": "DATABASE_URL_SERVICOS",
     "kind": "connection_string",
     "inject_as": "HUB_DB_URL",
-    "value": "postgresql://hub:hubpy-app-dev@app-hub-app-db:5432/servicos",
+    "value": "postgresql://servicos:hubpy-servicos-dev@app-hub-app-db:5432/servicos",
     "bindings": [
       {
         "app": "servicos",
@@ -204,7 +204,7 @@
     "kind": "connection_string",
     "inject_as": "HUB_DB_URL",
     "managed": true,
-    "value": "postgresql://hub:hubpy-app-dev@app-hub-app-db:5432/coletor",
+    "value": "postgresql://coletor:hubpy-coletor-dev@app-hub-app-db:5432/coletor",
     "bindings": [
       {
         "app": "coletor",

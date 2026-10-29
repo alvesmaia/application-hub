@@ -38,27 +38,35 @@ services:
     environment:
       POSTGRES_PASSWORD: ${APP_HUB_APP_DB_PASSWORD:?}
 
+  app-hub-db-roles:
+    environment:
+      HUB_APPDB_ADMIN_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:?}@app-hub-app-db:5432/postgres
+      APP_HUB_APP_DB_PASSWORD_ATIVOS: ${APP_HUB_APP_DB_PASSWORD_ATIVOS:?}
+      APP_HUB_APP_DB_PASSWORD_FORNECEDORES: ${APP_HUB_APP_DB_PASSWORD_FORNECEDORES:?}
+      APP_HUB_APP_DB_PASSWORD_SERVICOS: ${APP_HUB_APP_DB_PASSWORD_SERVICOS:?}
+      APP_HUB_APP_DB_PASSWORD_COLETOR: ${APP_HUB_APP_DB_PASSWORD_COLETOR:?}
+
   app-hub-app-ativos:
     environment: &prod-app
       HUB_DEMO_E2E_HOSTILE: "0"
-      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:?}@app-hub-app-db:5432/ativos
+      HUB_DB_URL: postgresql://ativos:${APP_HUB_APP_DB_PASSWORD_ATIVOS:?}@app-hub-app-db:5432/ativos
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_ATIVOS:?}
 
   app-hub-app-fornecedores:
     environment:
       <<: *prod-app
-      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:?}@app-hub-app-db:5432/fornecedores
+      HUB_DB_URL: postgresql://fornecedores:${APP_HUB_APP_DB_PASSWORD_FORNECEDORES:?}@app-hub-app-db:5432/fornecedores
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_FORNECEDORES:?}
       HUB_S3_SECRET_KEY_FORNECEDORES: ${APP_HUB_OBJSTORE_PASSWORD:?}
 
   app-hub-app-servicos:
     environment:
       <<: *prod-app
-      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:?}@app-hub-app-db:5432/servicos
+      HUB_DB_URL: postgresql://servicos:${APP_HUB_APP_DB_PASSWORD_SERVICOS:?}@app-hub-app-db:5432/servicos
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_SERVICOS:?}
 
   app-hub-app-coletor:
     environment:
       <<: *prod-app
-      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:?}@app-hub-app-db:5432/coletor
+      HUB_DB_URL: postgresql://coletor:${APP_HUB_APP_DB_PASSWORD_COLETOR:?}@app-hub-app-db:5432/coletor
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_COLETOR:?}

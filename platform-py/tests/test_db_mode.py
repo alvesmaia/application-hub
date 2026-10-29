@@ -78,3 +78,26 @@ def test_an_app_backup_never_reaches_the_hub_database() -> None:
     # in the shared server the hub's own database sits next to the apps': an app pointed at it must not dump it
     with pytest.raises(OpsError, match="hub"):
         backup_role_sql("hub", "a" * 24)
+
+
+DB_URL = os.getenv("HUB_DB_TEST_URL")
+
+
+@pytest.mark.skipif(not DB_URL, reason="HUB_DB_TEST_URL not set")
+async def test_the_hub_closes_its_own_database_to_the_apps_roles() -> None:
+    # on the shared server the `hub` database is born with CONNECT for PUBLIC (POSTGRES_DB): the hub takes it away
+    import asyncpg
+
+    from hub.state import Config, StateDb
+
+    assert DB_URL
+    name = f"t_{os.urandom(4).hex()}"
+    su = await asyncpg.connect(DB_URL)
+    try:
+        await su.execute(f'CREATE DATABASE "{name}"')
+        db = await StateDb.connect(Config(DB_URL.rsplit("/", 1)[0] + f"/{name}", "hub_state", 2, "r"))
+        await db.close()
+        assert await su.fetchval(f"SELECT has_database_privilege('public', '{name}', 'CONNECT')") is False
+    finally:
+        await su.execute(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
+        await su.close()

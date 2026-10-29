@@ -33,6 +33,23 @@ services:
       - ./infra/app-db-init.sh:/docker-entrypoint-initdb.d/10-app-dbs.sh:ro
     labels: { hub.py: "1" }
 
+  # One-shot job on every `up` (sample apps): each app's own role, owner of its database, no superuser (hub/admin/demo_db.py)
+  app-hub-db-roles:
+    image: ${HUB_PROJECT:-app-hub}-web
+    profiles: [demo-apps]
+    container_name: ${HUB_PROJECT:-app-hub}-db-roles
+    command: ["python", "-m", "hub.admin", "demo-db-roles"]
+    restart: "no"
+    mem_limit: 256m
+    environment:
+      HUB_APPDB_ADMIN_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/postgres
+      APP_HUB_APP_DB_PASSWORD_ATIVOS: ${APP_HUB_APP_DB_PASSWORD_ATIVOS:-hubpy-ativos-dev}
+      APP_HUB_APP_DB_PASSWORD_FORNECEDORES: ${APP_HUB_APP_DB_PASSWORD_FORNECEDORES:-hubpy-fornecedores-dev}
+      APP_HUB_APP_DB_PASSWORD_SERVICOS: ${APP_HUB_APP_DB_PASSWORD_SERVICOS:-hubpy-servicos-dev}
+      APP_HUB_APP_DB_PASSWORD_COLETOR: ${APP_HUB_APP_DB_PASSWORD_COLETOR:-hubpy-coletor-dev}
+    depends_on: [app-hub-app-db]
+    labels: { hub.py: "1" }
+
   app-hub-app-ativos:
     image: ${HUB_PROJECT:-app-hub}-ativos
     profiles: [demo-apps]
@@ -54,10 +71,11 @@ services:
     mem_limit: 1g # = resources.memory in the manifests and the `app` service of the previous compose version; 256m caused OOM on the 200k-row import
     restart: unless-stopped
     environment: &app-hub-app-env
-      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/ativos # one database per app (ativos); the others override it
+      HUB_DB_URL: postgresql://ativos:${APP_HUB_APP_DB_PASSWORD_ATIVOS:-hubpy-ativos-dev}@app-hub-app-db:5432/ativos # one database per app (ativos); the others override it
       HUB_DEMO_E2E_HOSTILE: "1" # tests only: routes for the anti-phishing E2E (ativos/servicos); the production compose never enables it
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_ATIVOS:-hubpy-${APP_HUB_APP_TOKEN:-local}-ativos}
-    depends_on: [app-hub-app-db]
+    depends_on: &app-hub-app-deps
+      app-hub-db-roles: { condition: service_completed_successfully }
     ports: ["127.0.0.1:${HUB_APP_PORT_ATIVOS:-9101}:8080"]
     networks: [default, hub-app-ativos]
     labels: { hub.py: "1" }
@@ -85,12 +103,14 @@ services:
     environment:
       <<: *app-hub-app-env
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_FORNECEDORES:-hubpy-${APP_HUB_APP_TOKEN:-local}-fornecedores}
-      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/fornecedores # one database per app
+      HUB_DB_URL: postgresql://fornecedores:${APP_HUB_APP_DB_PASSWORD_FORNECEDORES:-hubpy-fornecedores-dev}@app-hub-app-db:5432/fornecedores # one database per app
       HUB_S3_ENDPOINT_FORNECEDORES: http://app-hub-objstore:9000
       HUB_S3_BUCKET_FORNECEDORES: fornecedores
       HUB_S3_ACCESS_KEY_FORNECEDORES: hubadmin
       HUB_S3_SECRET_KEY_FORNECEDORES: ${APP_HUB_OBJSTORE_PASSWORD:-hubpy-objstore-dev}
-    depends_on: [app-hub-app-db, app-hub-objstore]
+    depends_on:
+      <<: *app-hub-app-deps
+      app-hub-objstore: { condition: service_started }
     ports: ["127.0.0.1:${HUB_APP_PORT_FORNECEDORES:-9102}:8080"]
     networks: [default, hub-app-fornecedores]
     labels: { hub.py: "1" }
@@ -118,8 +138,8 @@ services:
     environment:
       <<: *app-hub-app-env
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_SERVICOS:-hubpy-${APP_HUB_APP_TOKEN:-local}-servicos}
-      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/servicos # one database per app
-    depends_on: [app-hub-app-db]
+      HUB_DB_URL: postgresql://servicos:${APP_HUB_APP_DB_PASSWORD_SERVICOS:-hubpy-servicos-dev}@app-hub-app-db:5432/servicos # one database per app
+    depends_on: *app-hub-app-deps
     ports: ["127.0.0.1:${HUB_APP_PORT_SERVICOS:-9103}:8080"]
     networks: [default, hub-app-servicos]
     labels: { hub.py: "1" }
@@ -147,8 +167,8 @@ services:
     environment:
       <<: *app-hub-app-env
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_COLETOR:-hubpy-${APP_HUB_APP_TOKEN:-local}-coletor}
-      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/coletor # one database per app
-    depends_on: [app-hub-app-db]
+      HUB_DB_URL: postgresql://coletor:${APP_HUB_APP_DB_PASSWORD_COLETOR:-hubpy-coletor-dev}@app-hub-app-db:5432/coletor # one database per app
+    depends_on: *app-hub-app-deps
     ports: ["127.0.0.1:${HUB_APP_PORT_COLETOR:-9105}:8080"]
     networks: [default, hub-app-coletor]
     labels: { hub.py: "1" }

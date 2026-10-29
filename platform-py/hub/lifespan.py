@@ -12,6 +12,7 @@ from typing import Any, cast
 
 from fastapi import FastAPI
 
+from hub.admin import demo_db
 from hub.admin.config import DEV_INFRA_PASSWORDS
 from hub.admin.store import AdminStore
 from hub.auth import ABSOLUTE_MS, IDLE_MS, MAX_SESSIONS, AuthStore, roles_for
@@ -51,6 +52,8 @@ async def startup_admin(app: FastAPI) -> None:
     )
     if rotated:
         print(f"hub: senhas de infraestrutura atualizadas em {len(rotated)} variável(is)")
+    if moved := await admin.cfg.replace_secret_values(actor, demo_db.migration_pairs(os.environ)):
+        print(f"hub: apps de exemplo com papel próprio no banco em {len(moved)} variável(is)")
     await admin.cfg.ensure_internal_tokens(actor, seed_of)
     await app.state.conns.sync_env(actor, broker_url())
     app.state.roles = roles_for(app.state.data_dir)
