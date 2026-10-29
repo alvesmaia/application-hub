@@ -39,8 +39,8 @@ services:
       HUB_PLATFORM_DIR: /platform
       HUB_EDGE_CIDR: ${HUB_SUBNET:-10.231}.250.0/24 # the edge: the hub trusts the X-Forwarded-For headers it forwards
       HUB_APPS_FILE: /platform/config/apps.compose.json
-      HUB_DB_URL: postgresql://hub:${APP_HUB_DB_PASSWORD:-hubpy-dev}@${HUB_CORE_DB_HOST:-app-hub-db}:5432/hub
-      HUB_STATE_DB_URL: postgresql://hub:${APP_HUB_DB_PASSWORD:-hubpy-dev}@${HUB_CORE_DB_HOST:-app-hub-db}:5432/hub
+      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/hub
+      HUB_STATE_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/hub
       HUB_DATA_DIR: /data
       HUB_CONTAINER_SOCKET: /var/run/docker.sock
       # Containers of this instance (the hub only operates those with its prefix; default app-hub-app-*).
@@ -70,7 +70,7 @@ services:
       - ${HUB_CONTAINER_SOCKET_HOST:-/var/run/docker.sock}:/var/run/docker.sock
     # Linux: the socket is usually root:docker; export DOCKER_GID=$(stat -c %g /var/run/docker.sock).
     group_add: ["${DOCKER_GID:-0}"]
-    depends_on: [app-hub-db, app-hub-objstore]
+    depends_on: [app-hub-objstore] # and app-hub-app-db (docker-compose.apps.yml): the one Postgres
     networks:
       - default
       - edge
@@ -78,22 +78,6 @@ services:
       - hub-app-coletor
       - hub-app-fornecedores
       - hub-app-servicos
-
-  # The hub's own Postgres in the two-server mode (install.sh --db-mode split). The default of new installs is one server:
-  # HUB_CORE_DB_SCALE=0 (no container) and HUB_CORE_DB_HOST=app-hub-app-db, with the `hub` database next to the apps'.
-  app-hub-db:
-    image: ${HUB_IMAGE_PREFIX:-}postgres:16-alpine
-    container_name: ${HUB_PROJECT:-app-hub}-db
-    scale: ${HUB_CORE_DB_SCALE:-1}
-    labels: { hub.py: "1" }
-    mem_limit: 256m
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: hub
-      POSTGRES_PASSWORD: ${APP_HUB_DB_PASSWORD:-hubpy-dev}
-      POSTGRES_DB: hub
-    volumes:
-      - ${HUB_DB_DIR:-app-hub-db-data}:/var/lib/postgresql/data${HUB_BIND_OPTS:-}
 
   # Lightweight MinIO (AGPL-3.0, built from the official source in infra/minio/Dockerfile; see NOTICE).
   app-hub-objstore:
@@ -151,9 +135,6 @@ services:
     networks: [edge]
 
 volumes:
-  app-hub-db-data:
-    name: ${HUB_PROJECT:-app-hub}-db-data
-    labels: { hub.py: "1" }
   app-hub-data:
     name: ${HUB_PROJECT:-app-hub}-data
     labels: { hub.py: "1" }

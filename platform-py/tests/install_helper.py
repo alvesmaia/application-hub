@@ -35,6 +35,7 @@ case "$1 ${2:-}" in
   "compose version") exit 0 ;;
   "--version "*) echo "Docker version 27.0"; exit 0 ;;
   "image inspect") exit 1 ;;
+  "inspect "*) exit 1 ;;  # no container of an older install
 esac
 case " $* " in
   *" build "*)

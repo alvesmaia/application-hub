@@ -1,4 +1,4 @@
-"""One Postgres for the hub and the apps (default of new installs) or one each (`split`): the compose renders both."""
+"""One Postgres for the hub and the apps: the `hub` database next to the apps' ones in app-hub-app-db."""
 
 from __future__ import annotations
 
@@ -15,7 +15,6 @@ from hub.ops.backups import backup_role_sql
 from hub.ops.model import OpsError
 
 ROOT = Path(__file__).resolve().parents[1]
-SINGLE = {"HUB_CORE_DB_HOST": "app-hub-app-db", "HUB_CORE_DB_SCALE": "0"}
 DOCKER = shutil.which("docker") or "docker"
 needs_compose = pytest.mark.skipif(
     shutil.which("docker") is None
@@ -42,36 +41,27 @@ def _base_env() -> dict[str, str]:
 
 
 @needs_compose
-def test_without_the_new_settings_an_existing_install_keeps_two_servers(tmp_path: Path) -> None:
+def test_the_hub_database_lives_in_the_single_server(tmp_path: Path) -> None:
     s = rendered(tmp_path, {})
-    assert s["app-hub-db"].get("scale", 1) == 1
-    assert "@app-hub-db:5432/hub" in s["app-hub-web"]["environment"]["HUB_DB_URL"]
-
-
-@needs_compose
-def test_single_mode_puts_the_hub_database_in_the_apps_server(tmp_path: Path) -> None:
-    s = rendered(tmp_path, SINGLE)
-    assert s["app-hub-db"]["scale"] == 0  # no container: one Postgres only
+    assert "app-hub-db" not in s  # one Postgres only: app-hub-app-db
     web = s["app-hub-web"]
     for var in ("HUB_DB_URL", "HUB_STATE_DB_URL"):
-        assert web["environment"][var].endswith("@app-hub-app-db:5432/hub"), var
+        assert web["environment"][var] == "postgresql://hub:hubpy-app-dev@app-hub-app-db:5432/hub", var
     assert "app-hub-app-db" in web["depends_on"]
 
 
 @needs_compose
 def test_the_shared_server_keeps_connections_for_the_hub(tmp_path: Path) -> None:
     # the apps' roles are not superusers: when they use every normal slot, the hub (superuser `hub`) still connects
-    cmd = " ".join(rendered(tmp_path, SINGLE)["app-hub-app-db"]["command"])
+    cmd = " ".join(rendered(tmp_path, {})["app-hub-app-db"]["command"])
     assert "max_connections=200" in cmd and "superuser_reserved_connections=30" in cmd
 
 
-def test_the_production_overlay_follows_the_same_host() -> None:
+def test_the_production_overlay_uses_the_single_server() -> None:
     prod = (ROOT / "docker-compose.prod.yml").read_text(encoding="utf-8")
     for var in ("HUB_DB_URL", "HUB_STATE_DB_URL"):
-        assert (
-            f"{var}: postgresql://hub:${{APP_HUB_DB_PASSWORD:?}}@${{HUB_CORE_DB_HOST:-app-hub-db}}:5432/hub"
-            in prod
-        )
+        assert f"{var}: postgresql://hub:${{APP_HUB_APP_DB_PASSWORD:?}}@app-hub-app-db:5432/hub" in prod
+    assert "app-hub-db:" not in prod and "APP_HUB_DB_PASSWORD" not in prod
 
 
 def test_an_app_backup_never_reaches_the_hub_database() -> None:

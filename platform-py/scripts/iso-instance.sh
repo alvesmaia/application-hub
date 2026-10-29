@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ISOLATED hub instance for the full validation (E2E with restore/import, blue/green, OAuth): empty state,
-# state database, apps database, object store and the 4 OWN apps on their own network. The containers use
-# the `app-hub-iso-*` prefix and join the network with the stack's aliases (`app-hub-db`, `app-hub-app-db`,
+# the one Postgres (hub + apps databases), object store and the 4 OWN apps on their own network. The containers use
+# the `app-hub-iso-*` prefix and join the network with the stack's aliases (`app-hub-app-db`,
 # `app-hub-objstore`, `app-hub-app-<id>`, `app-hub-web`), so `apps.json`/`app-env.json` apply unchanged — nothing
 # talks to production. Dev passwords (hubpy-*), demo users, the E2E hostile route enabled, HUB_PUBLIC_URL = this port.
 #   bash scripts/iso-instance.sh up      # http://127.0.0.1:8093 (demo password in .iso-instance.env)
@@ -28,18 +28,16 @@ up)
     docker build -q -f "../platform/$df" -t "$P-$a" ../platform >/dev/null
   done
   docker network create --label hub.py=1 "$NET" >/dev/null
-  for v in data db appdb obj; do docker volume create --label hub.py=1 "$P-$v" >/dev/null; done
+  for v in data appdb obj; do docker volume create --label hub.py=1 "$P-$v" >/dev/null; done
   PW=$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 20)A1
   (umask 077; printf 'HUB_DEMO_PASSWORD=%s\nHUB=http://127.0.0.1:%s\nHUB_PUBLIC_URL=http://127.0.0.1:%s\n' "$PW" "$PORT" "$PORT" > "$ENVF")
   run() { docker run -d --label hub.py=1 --network "$NET" "$@" >/dev/null; }
-  run --name $P-db --network-alias app-hub-db -v $P-db:/var/lib/postgresql/data \
-    -e POSTGRES_USER=hub -e POSTGRES_PASSWORD=hubpy-dev -e POSTGRES_DB=hub postgres:16-alpine
   run --name $P-appdb --network-alias app-hub-app-db -v $P-appdb:/var/lib/postgresql/data -m 1g \
     -e POSTGRES_USER=hub -e POSTGRES_PASSWORD=hubpy-app-dev -e POSTGRES_DB=hub postgres:16-alpine
   run --name $P-objstore --network-alias app-hub-objstore -v $P-obj:/data -e MINIO_ROOT_USER=hubadmin \
     -e MINIO_ROOT_PASSWORD=hubpy-objstore-dev -e MINIO_BROWSER=off app-hub-minio:0.10.0 server /data
   # one database per app (= infra/app-db-init.sh, without mounting the file: CRLF in a Windows checkout breaks the shebang)
-  until docker exec $P-db pg_isready -U hub >/dev/null 2>&1 && docker exec $P-appdb psql -U hub -c 'select 1' >/dev/null 2>&1; do sleep 1; done
+  until docker exec $P-appdb psql -U hub -c 'select 1' >/dev/null 2>&1; do sleep 1; done
   for a in "${APPS[@]}"; do docker exec $P-appdb createdb -U hub "$a"; done
   # bucket for the attachments of fornecedores (in production it already exists in the objstore volume)
   for _ in $(seq 30); do
@@ -65,7 +63,7 @@ up)
     -v /var/run/docker.sock:/var/run/docker.sock --group-add 0 \
     -e HUB_PLATFORM_DIR=/platform -e HUB_APPS_FILE=/config/apps.json -e HUB_DATA_DIR=/data \
     -e HUB_APP_ENV_FILE=/config/app-env.json \
-    -e HUB_DB_URL=postgresql://hub:hubpy-dev@app-hub-db:5432/hub -e HUB_STATE_DB_URL=postgresql://hub:hubpy-dev@app-hub-db:5432/hub \
+    -e HUB_DB_URL=postgresql://hub:hubpy-app-dev@app-hub-app-db:5432/hub -e HUB_STATE_DB_URL=postgresql://hub:hubpy-app-dev@app-hub-app-db:5432/hub \
     -e HUB_CONTAINER_SOCKET=/var/run/docker.sock -e HUB_CONTAINER_PREFIX=$P-app- -e HUB_APP_NETWORK="$NET" \
     -e HUB_BACKUP_DB_CONTAINER=$P-appdb -e HUB_DB_HOST=app-hub-app-db:5432 -e HUB_BACKUP_SCHEDULER=0 \
     -e HUB_S3_ADMIN_URL=http://hubadmin:hubpy-objstore-dev@app-hub-objstore:9000 \

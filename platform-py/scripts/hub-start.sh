@@ -9,7 +9,10 @@ set -a; . ./.prod.env; set +a
 . scripts/install/net.sh
 # shellcheck source=install/podman.sh
 . scripts/install/podman.sh
+# shellcheck source=install/db.sh
+. scripts/install/db.sh
 if [ -n "${HUB_ENGINE_STORE:-}" ]; then ENGINE_STORE=$HUB_ENGINE_STORE; engine_env "$ENGINE_STORE"; fi
 start_own_socket "${HUB_CONTAINER_SOCKET_HOST:?HUB_CONTAINER_SOCKET_HOST ausente no .prod.env}"
 export DOCKER_HOST="unix://$HUB_CONTAINER_SOCKET_HOST" DISABLE_HC_SYSTEMD=true
+old_db_guard "${HUB_PROJECT:-app-hub}"
 docker compose --env-file .prod.env -f docker-compose.yml -f docker-compose.apps.yml -f docker-compose.prod.yml up -d

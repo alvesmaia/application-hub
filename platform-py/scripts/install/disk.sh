@@ -71,9 +71,8 @@ disk_summary() {
 
 disk_write() { # host folders in .prod.env (setv); an existing HUB_OBJSTORE_DIR (advanced option) wins
   [ -n "$DATA_DIR" ] || return 0
-  mkdir -p "$DATA_DIR"/db "$DATA_DIR"/app-db "$DATA_DIR"/data "$DATA_DIR"/objstore ||
+  mkdir -p "$DATA_DIR"/app-db "$DATA_DIR"/data "$DATA_DIR"/objstore ||
     { echo "--data-dir: não consegui criar pastas em $DATA_DIR" >&2; exit 2; }
-  setv HUB_DB_DIR "$DATA_DIR/db"
   setv HUB_APPDB_DIR "$DATA_DIR/app-db"
   setv HUB_DATA_HOST_DIR "$DATA_DIR/data"
   grep -q '^HUB_OBJSTORE_DIR=' "$ENVF" || setv HUB_OBJSTORE_DIR "$DATA_DIR/objstore"

@@ -95,7 +95,7 @@ check_container() { # a tiny build with the same build args: proves the proxy an
 free_gb() { df -PTk "$1" 2>/dev/null | awk 'NR == 2 { print int($5 / 1048576) }'; }
 
 check_disk() { # engine store (images) and, with --data-dir, the data folder
-  local root free data=${DATA_DIR:-${HUB_DB_DIR:-}}
+  local root free data=${DATA_DIR:-${HUB_APPDB_DIR:-}}
   data=${data%/db}
   root=$(engine_root)
   if [ -n "$root" ] && [ -d "$root" ] && free=$(free_gb "$root") && [ -n "$free" ]; then

@@ -125,7 +125,7 @@ def wait_ready(name: str, timeout: float) -> dict[str, Any]:
 
 def backup(proj: str, image: str, dest: Path) -> None:
     dest.mkdir(parents=True, exist_ok=True)
-    for db, out in ((f"{proj}-db", "hub-db.sql"), (f"{proj}-app-db", "app-db.sql")):
+    for db, out in ((f"{proj}-app-db", "app-db.sql"),):  # the one Postgres: the hub's database and the apps'
         if inspect(db):
             with (dest / out).open("w", encoding="utf-8") as fh:
                 p = subprocess.run(["docker", "exec", db, "pg_dumpall", "-U", "hub"], stdout=fh, check=False)  # noqa: S603, S607
@@ -239,6 +239,15 @@ def _parse_args() -> argparse.Namespace:
     return ap.parse_args()
 
 
+def _no_old_db(proj: str) -> None:
+    """The copy keeps the hub's environment: a hub still on its own old server must move to the single Postgres first."""
+    if inspect(f"{proj}-db") is not None:
+        raise SystemExit(
+            f"hub-update: o banco do hub ainda está em {proj}-db (dois servidores); mova-o antes com "
+            f"bash platform-py/scripts/db-merge.sh --project {proj}"
+        )
+
+
 def _preflight(main_name: str, edge: str) -> dict[str, Any]:
     main_c, edge_c = inspect(main_name), inspect(edge)
     if main_c is None:
@@ -339,6 +348,7 @@ def main() -> int:
         getattr(stream, "reconfigure", lambda **_: None)(encoding="utf-8", errors="replace")
     a = _parse_args()
     repo = f"{a.project}-web"
+    _no_old_db(a.project)
     main_c = _preflight(f"{a.project}-web", f"{a.project}-edge")
     current = main_c["Image"]
     # Tag now: under containerd, an image that loses `latest` disappears by ID (backup, rollback and return would fail).

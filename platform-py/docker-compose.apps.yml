@@ -1,4 +1,5 @@
-# Apps database + the 4 sample apps (ativos, fornecedores, servicos, coletor).
+# The one Postgres (the hub's `hub` database and one database per app) + the 4 sample apps (ativos, fornecedores,
+# servicos, coletor).
 # The apps only start with the `demo-apps` profile (COMPOSE_PROFILES=demo-apps or --profile demo-apps); without it the hub and the
 # apps database start on their own (use HUB_APPS_JSON=./apps.empty.json for an empty catalog).
 # Host debug ports (HUB_APPDB_PORT, HUB_APP_PORT_<APP>) bound to 127.0.0.1 only.

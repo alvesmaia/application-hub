@@ -33,7 +33,7 @@ def test_build_tags_running_image_before_building(monkeypatch, tmp_path):
         "Config": {"Labels": {"com.docker.compose.service": "app-hub-web"}},
     }
     monkeypatch.setattr(hu, "run", run)
-    monkeypatch.setattr(hu, "inspect", lambda n: main_c)
+    monkeypatch.setattr(hu, "inspect", lambda n: None if n == "app-hub-db" else main_c)
     monkeypatch.setattr(hu, "compose_cmd", lambda c, *_: ("docker", "compose"))
     backups: list[str] = []
     monkeypatch.setattr(hu, "backup", lambda proj, image, dest: backups.append(image))
@@ -118,3 +118,29 @@ def test_watch_probes_an_edge_that_serves_https(monkeypatch):
     monkeypatch.setattr(hu, "ready", lambda name: {"status": "ready"})
     monkeypatch.setattr(hu.time, "sleep", lambda s: None)
     assert hu.watch("app-hub-web", "app-hub-edge", 1) is True
+
+
+def test_an_update_waits_for_the_old_hub_server_to_be_merged(monkeypatch, capsys):
+    # the hub keeps its environment on an update: a hub still on <project>-db must move to the single Postgres first
+    monkeypatch.setattr(hu, "inspect", lambda n: {"State": {"Status": "running"}, "Image": "x"})
+    monkeypatch.setattr(sys, "argv", ["hub_update", "--build"])
+    try:
+        hu.main()
+    except SystemExit as e:
+        assert "scripts/db-merge.sh --project app-hub" in str(e.code)
+    else:
+        raise AssertionError("atualizou um hub que ainda usa app-hub-db")
+
+
+def test_the_backup_dumps_the_single_server(monkeypatch, tmp_path):
+    dumped: list[str] = []
+    monkeypatch.setattr(hu, "inspect", lambda n: {"State": {}})
+    monkeypatch.setattr(hu, "run", lambda *a, **k: subprocess.CompletedProcess(a, 0, "", ""))
+
+    def fake_run(cmd, stdout=None, check=False):
+        dumped.append(cmd[2])
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(hu.subprocess, "run", fake_run)
+    hu.backup("app-hub", "app-hub-web:pre-update", tmp_path)
+    assert dumped == ["app-hub-app-db"]

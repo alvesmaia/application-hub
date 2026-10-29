@@ -60,7 +60,6 @@ _ORIGINAL_APPS = ("ativos", "fornecedores", "servicos")
 
 # Dev password of the stack (compose) -> environment variable with the rotated password (`.prod.env`).
 DEV_INFRA_PASSWORDS = {
-    "APP_HUB_DB_PASSWORD": "hubpy-dev",
     "APP_HUB_APP_DB_PASSWORD": "hubpy-app-dev",
     "APP_HUB_OBJSTORE_PASSWORD": "hubpy-objstore-dev",
     # sample apps' own roles (hub/admin/demo_db.py); no dev password may contain another (plain substring replacement)

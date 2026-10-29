@@ -13,8 +13,8 @@ services:
       HUB_PUBLIC_DOCS: ${HUB_PUBLIC_DOCS:-1}
       HUB_COOKIE_SECURE: ${HUB_COOKIE_SECURE:-1} # install.sh writes auto for an http:// URL (tests only)
       HUB_MASTER_KEY_FILE: ${HUB_MASTER_KEY_FILE:-/data/master.key} # fails to start if the file is missing (never silently generates a new key)
-      HUB_DB_URL: postgresql://hub:${APP_HUB_DB_PASSWORD:?}@${HUB_CORE_DB_HOST:-app-hub-db}:5432/hub
-      HUB_STATE_DB_URL: postgresql://hub:${APP_HUB_DB_PASSWORD:?}@${HUB_CORE_DB_HOST:-app-hub-db}:5432/hub
+      HUB_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:?}@app-hub-app-db:5432/hub
+      HUB_STATE_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:?}@app-hub-app-db:5432/hub
       HUB_S3_ADMIN_URL: http://hubadmin:${APP_HUB_OBJSTORE_PASSWORD:?}@app-hub-objstore:9000
       HUB_APP_ENV_FILE: /config/app-env.prod.json
       # External audit anchor (F19): signed head kept outside the data volume (another disk/NFS in production).
@@ -25,10 +25,6 @@ services:
     volumes:
       - ./app-env.prod.json:/config/app-env.prod.json:ro
       - ${HUB_AUDIT_HEAD_DIR:?defina HUB_AUDIT_HEAD_DIR (pasta fora do volume de dados)}:/audit-head
-
-  app-hub-db:
-    environment:
-      POSTGRES_PASSWORD: ${APP_HUB_DB_PASSWORD:?}
 
   app-hub-objstore:
     environment:

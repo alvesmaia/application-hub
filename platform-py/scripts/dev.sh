@@ -26,6 +26,9 @@ setup_store() {
   docker exec app-hub-web mc alias set app-hub http://app-hub-objstore:9000 hubadmin "${APP_HUB_OBJSTORE_PASSWORD:-app-hub-objstore-dev}" >/dev/null
   docker exec app-hub-web mc mb --ignore-existing app-hub/fornecedores >/dev/null
 }
+# shellcheck source=install/db.sh
+. scripts/install/db.sh
+case "${1:-}" in up | down | obs-up) old_db_guard app-hub ;; esac
 case "${1:-}" in
   up) mkdir -p dist; [ -f "$STATE" ] || echo HUB_DEV_RELOAD=0 > "$STATE"
     dev up -d --build --force-recreate app-hub-web; setup_store; wait_healthy

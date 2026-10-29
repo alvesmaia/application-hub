@@ -5,7 +5,7 @@
 // zd    constant load (GET /_frag/ativos/{dashboard,assets?q=…} through the hub) while: Aplicar (blue/green) ×2,
 //       deployment of a new version to production (import → approve) and Rollback; counts non-2xx responses.
 // chaos constant load on servicos + ativos while: `docker kill app-hub-app-servicos` ×2, `docker restart
-//       app-hub-web` ×1 and `docker restart app-hub-db` ×1; measures the time until it answers 200 again and checks that the database
+//       app-hub-web` ×1 and `docker restart app-hub-app-db` ×1; measures the time until it answers 200 again and checks that the database
 //       of servicos lost no rows.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -150,8 +150,8 @@ if (MODE === 'zd') {
     log(`  hub voltou em ${((Date.now() - a) / 1000).toFixed(1)} s`);
   });
   await wait(8000);
-  await phase('docker restart app-hub-db (estado da plataforma)', async () => {
-    const a = Date.now(); docker('restart', own(`${CP}db`));
+  await phase('docker restart app-hub-app-db (estado da plataforma e dos apps)', async () => {
+    const a = Date.now(); docker('restart', own(APPDB));
     for (let i = 0; i < 240; i++) { try { if ((await fetch(`${HUB}/_frag/ativos/dashboard`, { headers: { cookie }, signal: AbortSignal.timeout(3000) })).status === 200) break; } catch { /* still */ } await wait(500); }
     log(`  hub respondendo de novo ${((Date.now() - a) / 1000).toFixed(1)} s depois do restart do banco de estado`);
   });
