@@ -647,7 +647,7 @@ def test_restore_gives_objects_back_to_the_app_role(hub: TestClient, fake: FD) -
         return "hub:aside=true\nhub:owner=hub\n"
 
     b._psql = psql_admin  # owner = administrator: nothing to hand back
-    asyncio.run(b._restore_db_aside("hub", b"x"))
+    asyncio.run(b._restore_db_aside("ativos", b"x"))
     assert not any("OWNER TO" in q for q in stmts)
 
 

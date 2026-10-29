@@ -20,7 +20,8 @@ def tmp_sql(kind: str) -> str:
     return f"/tmp/hub-{kind}-{secrets.token_hex(8)}.sql"  # noqa: S108 - inside the Postgres container
 
 
-SYSTEM_DBS = {"postgres", "template0", "template1"}
+# `hub` = the hub's own database: in the one-server mode it sits next to the apps' (never backed up or restored as an app's)
+SYSTEM_DBS = {"postgres", "template0", "template1", "hub"}
 _DB = re.compile(r"^[A-Za-z0-9_]{1,63}$")
 _BUCKET = re.compile(r"^[a-z0-9][a-z0-9.-]{2,62}$")
 

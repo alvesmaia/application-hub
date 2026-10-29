@@ -39,8 +39,8 @@ services:
       HUB_PLATFORM_DIR: /platform
       HUB_EDGE_CIDR: ${HUB_SUBNET:-10.231}.250.0/24 # the edge: the hub trusts the X-Forwarded-For headers it forwards
       HUB_APPS_FILE: /platform/config/apps.compose.json
-      HUB_DB_URL: postgresql://hub:${APP_HUB_DB_PASSWORD:-hubpy-dev}@app-hub-db:5432/hub
-      HUB_STATE_DB_URL: postgresql://hub:${APP_HUB_DB_PASSWORD:-hubpy-dev}@app-hub-db:5432/hub
+      HUB_DB_URL: postgresql://hub:${APP_HUB_DB_PASSWORD:-hubpy-dev}@${HUB_CORE_DB_HOST:-app-hub-db}:5432/hub
+      HUB_STATE_DB_URL: postgresql://hub:${APP_HUB_DB_PASSWORD:-hubpy-dev}@${HUB_CORE_DB_HOST:-app-hub-db}:5432/hub
       HUB_DATA_DIR: /data
       HUB_CONTAINER_SOCKET: /var/run/docker.sock
       # Containers of this instance (the hub only operates those with its prefix; default app-hub-app-*).
@@ -79,9 +79,12 @@ services:
       - hub-app-fornecedores
       - hub-app-servicos
 
+  # The hub's own Postgres in the two-server mode (install.sh --db-mode split). The default of new installs is one server:
+  # HUB_CORE_DB_SCALE=0 (no container) and HUB_CORE_DB_HOST=app-hub-app-db, with the `hub` database next to the apps'.
   app-hub-db:
     image: ${HUB_IMAGE_PREFIX:-}postgres:16-alpine
     container_name: ${HUB_PROJECT:-app-hub}-db
+    scale: ${HUB_CORE_DB_SCALE:-1}
     labels: { hub.py: "1" }
     mem_limit: 256m
     restart: unless-stopped

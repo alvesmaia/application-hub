@@ -9,6 +9,7 @@ services:
     volumes:
       - ${HUB_APPS_JSON:-./apps.json}:/config/apps.json:ro
     depends_on:
+      app-hub-app-db: { condition: service_started }
       app-hub-app-ativos: { condition: service_started, required: false }
       app-hub-app-fornecedores: { condition: service_started, required: false }
       app-hub-app-servicos: { condition: service_started, required: false }
@@ -19,6 +20,8 @@ services:
     container_name: ${HUB_PROJECT:-app-hub}-app-db
     mem_limit: 1g # = resources.memory in the manifests and the `app` service of the previous compose version; 256m caused OOM on the 200k-row import
     restart: unless-stopped
+    # the apps' roles are not superusers: when they take every normal slot, the hub (superuser `hub`) still connects
+    command: ["postgres", "-c", "max_connections=200", "-c", "superuser_reserved_connections=30"]
     environment:
       POSTGRES_USER: hub
       POSTGRES_PASSWORD: ${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}
