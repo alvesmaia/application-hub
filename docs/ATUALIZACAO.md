@@ -18,6 +18,7 @@ with a short stop of the hub:
 ```bash
 git pull                                              # this version
 bash scripts/install.sh --config-only --yes           # nothing changes but the new secrets (see below); or add them by hand
+dc build                                              # images of this version (the roles job runs the new hub image)
 dc up -d --no-deps app-hub-app-db                     # the apps' server with the new settings (reserved connections)
 bash scripts/db-merge.sh --project "$P"               # stops the hub, moves `hub` over, compares the rows
 dc up -d                                              # the hub on the single server + the app-hub-db-roles job

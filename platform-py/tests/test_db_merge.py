@@ -91,7 +91,7 @@ def test_the_hub_database_moves_and_the_old_server_is_kept_for_rollback(
     assert psql(f"{P}-app-db", "SELECT count(*) FROM hub_state.sessions") == "25"
     kept = sh("ps", "-a", "--filter", f"name={P}-db-merged", "--format", "{{.Names}} {{.State}}")
     assert kept.startswith(f"{P}-db-merged-") and kept.endswith("exited")
-    assert "up -d --no-deps app-hub-web" in r.stdout and len(list(tmp_path.glob("hub-*.dump"))) == 1
+    assert "docker-compose.prod.yml up -d" in r.stdout and len(list(tmp_path.glob("hub-*.dump"))) == 1
     again = merge("--project", P, "--yes", dumps=tmp_path)  # the old name is gone: nothing more to do
     assert again.returncode == 0 and "nada a fundir" in again.stdout
 

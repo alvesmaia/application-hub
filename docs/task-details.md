@@ -172,3 +172,12 @@ healthy and ready through their own roles (no superuser, the three limits set, o
 and `servicos` closed to PUBLIC; the vault DSNs use each app's role with the production password. `hub-check --all`
 30/30 after updating certifi, filelock, opentelemetry-api and virtualenv (new advisories found by `uv audit`).
 Removed: the `app-hub-dbt` stack, its volumes and images, the disposable test Postgres, the build cache.
+
+✅ **Tasks 52–55 — one Postgres only (MVP)**
+The two-server option was removed: the hub's `hub` database lives in `app-hub-app-db`. `scripts/db-merge.sh` moves an
+older install's hub database (tested with real Postgres containers and on an isolated install of the previous version,
+`app-hub-mig`: two servers → `config-only` (new secrets) → `build` → `db-merge.sh` → `up -d`; hub ready on the single
+server, row counts compared at the merge, the 4 sample apps ready with their own roles, vault DSNs moved off the
+superuser). That run found two bugs, fixed with tests: the install guard took the default project instead of the one in
+`.prod.env`, and the update steps lacked `dc build`; the merge hint now brings up the whole stack. `hub-check --all` 30/30.
+Removed: the `app-hub-mig` stack, its old server, volumes and images, the build cache.

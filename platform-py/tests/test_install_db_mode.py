@@ -71,3 +71,14 @@ def test_config_only_on_an_existing_prod_env_only_adds_the_missing_secrets(tmp_p
     assert run_install(tmp_path, ("--config-only", "--yes")).returncode == 0
     after = f.read_text(encoding="utf-8").splitlines()
     assert after[: len(lines)] == lines and len(after) == len(lines) + len(DEMO_PWS)
+
+
+def test_a_rerun_checks_the_old_server_of_its_own_project(tmp_path: Path) -> None:
+    # the rerun takes the project from .prod.env (no --project): another instance's old server is not this one's
+    assert run_install(tmp_path, ("--config-only", "--yes", "--project", "app-hub-x")).returncode == 0
+    old = RECORDING_DOCKER.replace('  "inspect "*)', '  "inspect app-hub-x-db") exit 0 ;;\n  "inspect "*)')
+    log = tmp_path / "log"
+    r = run_install(
+        tmp_path, ("--yes", "--skip-doctor"), fakes={"docker": old}, env_extra={"FAKE_LOG": str(log)}
+    )
+    assert r.returncode == 1 and "db-merge.sh --project app-hub-x" in r.stderr and not log.exists()

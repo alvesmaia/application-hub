@@ -53,5 +53,5 @@ fi
 MERGED=$OLD-merged-$(date +%Y%m%d)
 docker stop "$OLD" >/dev/null && docker rename "$OLD" "$MERGED"
 echo "banco hub movido para $NEW (contagem de linhas conferida); $OLD parado como $MERGED (rollback)"
-echo "suba o hub no servidor único:"
-echo "  cd platform-py && docker compose --env-file .prod.env -f docker-compose.yml -f docker-compose.apps.yml -f docker-compose.prod.yml up -d --no-deps app-hub-web"
+echo "suba a pilha no servidor único (o hub, o job dos papéis dos apps e os apps):"
+echo "  cd platform-py && docker compose --env-file .prod.env -f docker-compose.yml -f docker-compose.apps.yml -f docker-compose.prod.yml up -d"

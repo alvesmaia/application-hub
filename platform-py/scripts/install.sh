@@ -313,7 +313,6 @@ if [ "$CONFIG_ONLY" = 0 ] && ! docker compose version >/dev/null 2>&1; then
 fi
 # Podman rootless (RHEL/Rocky/Fedora): the socket belongs to the user, not /var/run/docker.sock
 [ "$CONFIG_ONLY" = 1 ] || rootless_setup
-[ "$CONFIG_ONLY" = 1 ] || old_db_guard "$PROJECT"
 
 if [ "$CLONE" = 1 ]; then
   [ -d "$DIR/.git" ] || git clone --depth 1 --branch "$REF" "$REPO" "$DIR"
@@ -421,6 +420,7 @@ mkdir -p .secrets/audit-head
 # shellcheck disable=SC1090
 set -a; . "./$ENVF"; set +a
 P=$HUB_PROJECT
+old_db_guard "$P" # the project of this .prod.env (a rerun takes no --project)
 dc() { docker compose --env-file "$ENVF" -f docker-compose.yml -f docker-compose.apps.yml -f docker-compose.prod.yml "$@"; }
 if [ "$SKIP_DOCTOR" = 0 ]; then
   echo "0/5 diagnóstico"
