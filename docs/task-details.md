@@ -165,3 +165,10 @@ Cookie Secure following the URL, consent notice, proxy/CA/mirror options, `--doc
 (own socket, cron start), disk choice (`--data-dir`, `--engine-store`), HTTPS at the edge, clearer messages, internal
 calls without proxy, app builds/containers with proxy and CA, the corporate-network guide, and the lab validation
 (Rocky 9 + Podman rootless behind a TLS-inspecting proxy: 6 real failures fixed with tests).
+
+✅ **Task 51 — validation of the single-Postgres default**
+Isolated install (`app-hub-dbt`, port 8097, default `--db-mode single`, sample apps): no `-db` container; the 4 apps
+healthy and ready through their own roles (no superuser, the three limits set, owners of their tables); `hub`, `ativos`
+and `servicos` closed to PUBLIC; the vault DSNs use each app's role with the production password. `hub-check --all`
+30/30 after updating certifi, filelock, opentelemetry-api and virtualenv (new advisories found by `uv audit`).
+Removed: the `app-hub-dbt` stack, its volumes and images, the disposable test Postgres, the build cache.
