@@ -46,6 +46,7 @@ save_install_cmd() { # the options of this install as one command (proxy passwor
   local c="bash platform-py/scripts/install.sh --yes --admin-email $EMAIL --port $PORT --bind $BIND"
   c+=" --project $PROJECT --subnet $SUBNET${PUBLIC_URL:+ --public-url $PUBLIC_URL}"
   [ "$DEMO" = 1 ] || c+=" --no-demo-apps"
+  [ "${DB_MODE:-single}" = single ] || c+=" --db-mode $DB_MODE"
   [ -z "$NET_PROXY" ] || c+=" --proxy '$(mask_url "$NET_PROXY")'"
   [ -z "$NET_NOPROXY" ] || c+=" --no-proxy $NET_NOPROXY"
   [ -z "$CA_FILE" ] || c+=" --ca-file $CA_FILE"

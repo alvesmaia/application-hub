@@ -21,6 +21,8 @@
 #   --project NAME       compose project / container prefix (default app-hub; must start with app-hub)
 #   --subnet A.B         app network range A.B.<n>.0/24 (default 10.231)
 #   --no-demo-apps       does not start the 4 sample apps (default: they start, for the first evaluation)
+#   --db-mode MODE       single = one Postgres for the hub and the apps (default; own role and limits per app) |
+#                        split = one each (CPU and disk isolated too); also an advanced option of the interactive install
 #   --clone              clones the repository first (--repo URL, --ref REF, --dir FOLDER)
 #   --get-compose        downloads the official docker-compose (pinned version, sha256 checked) to ~/.local/bin — for
 #                        RHEL/Rocky without root, where the distribution does not ship a compose provider
@@ -92,6 +94,8 @@ if [ -f "$LIB/net.sh" ]; then
   . "$LIB/tls.sh"
   # shellcheck source=install/post.sh
   . "$LIB/post.sh"
+  # shellcheck source=install/db.sh
+  . "$LIB/db.sh"
 fi
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -102,6 +106,7 @@ while [ $# -gt 0 ]; do
     --project) PROJECT=$2; shift; ASKED=1 ;;
     --subnet) SUBNET=$2; shift; ASKED=1 ;;
     --no-demo-apps) DEMO=0; ASKED=1 ;;
+    --db-mode) DB_MODE=$2; DB_MODE_SET=1; shift; ASKED=1 ;;
     --clone) CLONE=1 ;;
     --repo) REPO=$2; shift ;;
     --ref) REF=$2; shift ;;
@@ -224,10 +229,11 @@ if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0
     ask UPDATES "Avisar quando houver versão nova (s/n)" '^[snSN]$'
     ask PUBDOCS "Documentação de desenvolvedor aberta sem login (s/n)" '^[snSN]$'
     ask BUILD_CPUS "CPUs para construir apps enviados ao hub" '^[1-9][0-9]?$'
+    db_question
   fi
   echo
   echo "Resumo: admin=$EMAIL  porta=$PORT  bind=$BIND  url=${PUBLIC_URL:-http://localhost:$PORT}"
-  echo "        projeto=$PROJECT  subnet=$SUBNET.<n>.0/24  apps de exemplo=$([ "$DEMO" = 1 ] && echo sim || echo não)"
+  echo "        projeto=$PROJECT  subnet=$SUBNET.<n>.0/24  apps de exemplo=$([ "$DEMO" = 1 ] && echo sim || echo não)  postgres=$DB_MODE"
   if yes_no "$ADV"; then
     echo "        arquivos=${OBJ_DIR:-volume Docker}  âncora=${HEAD_DIR:-./.secrets/audit-head}${HEAD_URL:+ + webhook}"
     echo "        cópia externa=$OFF_KIND${SP_TENANT:+ ($SP_SITE/$SP_FOLDER)}  login Microsoft=$(yes_no "$ENTRA" && echo sim || echo não)"
@@ -242,6 +248,7 @@ fi
 case "$PROJECT" in app-hub | app-hub-*) ;; *) echo "--project deve começar com app-hub (trava do hub)" >&2; exit 2 ;; esac
 net_validate
 tls_validate
+db_validate
 [ "$CONFIG_ONLY" = 1 ] || rootless_detect
 disk_validate
 if [ "$DOCTOR_ONLY" = 1 ]; then # read-only: no consent, nothing written
@@ -259,7 +266,7 @@ consent() { # what the install does, before doing anything; default no. --yes = 
 Application Hub — instalação. Isto vai:
   • criar contêineres, volumes e redes com o prefixo $PROJECT-* no Docker/Podman do usuário $(id -un)
   • dar ao contêiner do hub acesso ao socket do engine: ele cria e para os contêineres dos apps (só $PROJECT-*)
-  • baixar imagens e pacotes (registry de imagens, PyPI, GitHub)$({ net_summary; rootless_summary; disk_summary; tls_summary; } | awk 'NF { printf "\n%s", $0 }')
+  • baixar imagens e pacotes (registry de imagens, PyPI, GitHub)$({ db_summary; net_summary; rootless_summary; disk_summary; tls_summary; } | awk 'NF { printf "\n%s", $0 }')
   • publicar a porta $PORT em $BIND
   • gravar segredos em platform-py/.secrets e platform-py/.prod.env (0600)
 Não usa sudo, não altera configurações do sistema nem contêineres de outros projetos.
@@ -358,6 +365,7 @@ if [ ! -f "$ENVF" ]; then
       echo "HUB_APP_PORT_COLETOR=$((PORT + 1015))"
     fi
     if [ "$DEMO" = 1 ]; then echo "COMPOSE_PROFILES=demo-apps"; else echo "HUB_APPS_JSON=./apps.empty.json"; fi
+    db_write_new
   } >> "$ENVF"
   if [ -n "$ROOTLESS_SOCK" ]; then # socket owner = the user = root inside the namespace
     { echo "HUB_CONTAINER_SOCKET_HOST=$ROOTLESS_SOCK"; echo "DOCKER_GID=0"; } >> "$ENVF"
@@ -370,9 +378,11 @@ if [ ! -f "$ENVF" ]; then
     echo "DOCKER_GID=$(stat -c %g /var/run/docker.sock 2>/dev/null || echo 0)" >> "$ENVF"
   fi
   echo "segredos novos em platform-py/$ENVF (0600)"
+  NEW_ENV=1
   save_install_cmd
 else
   echo "usando platform-py/$ENVF existente (segredos mantidos)"
+  secrets_topup
 fi
 setv() { # setv KEY VALUE: replaces or appends in .prod.env (VALUE may contain any character)
   local tmp
@@ -382,6 +392,7 @@ setv() { # setv KEY VALUE: replaces or appends in .prod.env (VALUE may contain a
   cat "$tmp" > "$ENVF"
   rm -f "$tmp"
 }
+[ "${NEW_ENV:-0}" = 0 ] || db_share_password
 net_write
 disk_write
 tls_write

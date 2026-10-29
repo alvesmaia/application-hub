@@ -17,6 +17,7 @@ COPIED = (
     "scripts/install/disk.sh",
     "scripts/install/tls.sh",
     "scripts/install/post.sh",
+    "scripts/install/db.sh",
     "prod.env.example",
     "docker-compose.yml",
 )
