@@ -17,5 +17,5 @@
 ## MVP: só um Postgres
 - ✅ 52 · scripts/db-merge.sh: move o banco `hub` do servidor antigo para o único (dump/restore, conferência, contêiner antigo parado e renomeado para rollback)
 - ✅ 53 · Compose só com um servidor; sem --db-mode, pergunta e variáveis do split; trava (install, hub-start, dev.sh, hub_update) quando há `<projeto>-db` antigo
-- ▶️ 54 · Docs, prod.env.example e CHANGELOG (atualização de quem tinha dois servidores)
-- ⬜ 55 · hub-check --all, fusão testada em instância isolada no formato antigo, limpeza
+- ✅ 54 · Docs, prod.env.example e CHANGELOG (atualização de quem tinha dois servidores)
+- ▶️ 55 · hub-check --all, fusão testada em instância isolada no formato antigo, limpeza

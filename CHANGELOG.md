@@ -7,16 +7,21 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Attention
+- **One Postgres only:** the hub's `hub` database now lives in the apps' server (`app-hub-app-db`); the compose no
+  longer has `app-hub-db` and `APP_HUB_DB_PASSWORD` is no longer used. An existing install must move its hub database
+  once with `scripts/db-merge.sh` (dump, restore into an empty target, row counts compared, old server kept stopped
+  for rollback): see «Moving to the single Postgres» in `docs/ATUALIZACAO.md`. Until then `install.sh`, `hub-start.sh`,
+  `dev.sh` and `hub_update.py` stop with that instruction instead of starting an empty hub.
+- New secrets `APP_HUB_APP_DB_PASSWORD_<APP>` (the sample apps' own roles): `install.sh --config-only --yes` on an
+  existing `.prod.env` generates only what is missing.
+
 ### Added
-- One Postgres by default: `install.sh --db-mode single` (default, also asked in the interactive install's advanced
-  options) puts the hub's database in the apps' server; `--db-mode split` keeps one server each. Without the new
-  `.prod.env` variables an existing install keeps two servers. `docs/IMPLANTACAO.md` explains what is isolated and
-  how to switch an installed hub (dump and restore).
 - Per-app limits on the database role: `statement_timeout`, `idle_in_transaction_session_timeout` and
-  `temp_file_limit` (`HUB_APP_DB_*`), applied when provisioning and refreshed on an already provisioned app. The apps'
-  server keeps 30 connections for the hub (`superuser_reserved_connections`).
+  `temp_file_limit` (`HUB_APP_DB_*`), applied when provisioning and refreshed on an already provisioned app. The
+  Postgres keeps 30 connections for the hub (`superuser_reserved_connections`, `max_connections=200`).
 - `install.sh` rerun: secrets added to `prod.env.example` in later versions are generated into the existing
-  `.prod.env` (names shown, values never).
+  `.prod.env` (names shown, values never). The install notice says there is one Postgres.
 
 ### Security
 - The sample apps no longer connect as the superuser `hub`: each has its own role, owner of its database

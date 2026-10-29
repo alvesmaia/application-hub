@@ -56,3 +56,18 @@ def test_an_install_that_still_has_the_old_hub_server_stops_before_building(tmp_
     )
     assert r.returncode == 1 and "scripts/db-merge.sh" in r.stderr
     assert not log.exists()  # nothing built
+
+
+def test_config_only_on_an_existing_prod_env_only_adds_the_missing_secrets(tmp_path: Path) -> None:
+    # the update path of docs/ATUALIZACAO.md: no engine needed, nothing else in .prod.env changes
+    assert run_install(tmp_path, ("--config-only", "--yes")).returncode == 0
+    f = tmp_path / "platform-py" / ".prod.env"
+    lines = [
+        ln
+        for ln in f.read_text(encoding="utf-8").splitlines()
+        if not ln.startswith("APP_HUB_APP_DB_PASSWORD_")
+    ]
+    f.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    assert run_install(tmp_path, ("--config-only", "--yes")).returncode == 0
+    after = f.read_text(encoding="utf-8").splitlines()
+    assert after[: len(lines)] == lines and len(after) == len(lines) + len(DEMO_PWS)

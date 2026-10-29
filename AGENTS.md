@@ -14,7 +14,7 @@ Python 3.12 managed by `uv`; FastAPI + Jinja2 (SSR), asyncpg, httpx, Pydantic v2
 ## Commands (in `platform-py/`)
 
 - Full check: `uv run hub-check` (ruff, ruff format, ty, `uv audit`, pytest with coverage; `--fast` = ruff/format/ty only; `--all` = + cli, SDK and each app). Database tests use a disposable Postgres.
-- Stack: compose project `app-hub` (sealed image `app-hub-web`; `dev.sh up` mounts the code) — `app-hub-web` at `127.0.0.1:8090`, `app-hub-db`, `app-hub-objstore` (MinIO), apps `app-hub-app-<id>` (`docker-compose.apps.yml`), dev secrets in `.dev.env` (gitignored; never commit or print).
+- Stack: compose project `app-hub` (sealed image `app-hub-web`; `dev.sh up` mounts the code) — `app-hub-web` at `127.0.0.1:8090`, `app-hub-app-db` (the one Postgres: the hub's `hub` database and one per app), `app-hub-objstore` (MinIO), apps `app-hub-app-<id>` (`docker-compose.apps.yml`), dev secrets in `.dev.env` (gitignored; never commit or print).
 - Fresh install / another instance on the same host: `bash scripts/install.sh [--project app-hub-x --port 8095 --subnet 10.241] [--no-demo-apps]` (compose parameterized by `HUB_PROJECT`/`HUB_PORT`/`HUB_SUBNET`; sample apps in the `demo-apps` profile). Version: `hub/__init__.py` (`/healthz`), `CHANGELOG.md`, `scripts/release.sh <version>`; license Apache-2.0 (`NOTICE`, `TRADEMARKS.md`).
 - `bash scripts/dev.sh up|down|stop|status|logs|reload-on|reload-off|obs-up|obs-down` — dev mode (uvicorn `--reload`, SSE reload `/_dev/reload`), observability profile (OTel Collector + Jaeger).
 - SharePoint simulator: `docker-compose.graphsim.yml` (profile `sharepoint-sim`, `app-hub-graphsim`).

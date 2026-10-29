@@ -9,6 +9,27 @@ dc() { docker compose --env-file .prod.env -f docker-compose.yml -f docker-compo
 curl -s http://127.0.0.1:${HUB_PORT:-8090}/healthz     # {"status":"ok","version":"<current>"}
 ```
 
+## Moving to the single Postgres (installs from before it)
+
+Before, the hub's database had its own server (`<project>-db`). `install.sh`, `hub-start.sh`, `dev.sh` and
+`hub_update.py` stop while that container exists, because the new compose would open an empty `hub` database. Once,
+with a short stop of the hub:
+
+```bash
+git pull                                              # this version
+bash scripts/install.sh --config-only --yes           # nothing changes but the new secrets (see below); or add them by hand
+dc up -d --no-deps app-hub-app-db                     # the apps' server with the new settings (reserved connections)
+bash scripts/db-merge.sh --project "$P"               # stops the hub, moves `hub` over, compares the rows
+dc up -d                                              # the hub on the single server + the app-hub-db-roles job
+```
+
+- `db-merge.sh` keeps a dump in `.secrets/db-merge/`, never overwrites a `hub` database that already has tables, and
+  leaves the old server stopped as `<project>-db-merged-<date>` (rollback: `docker rename` it back, `docker start` it and
+  go back to the previous version). Remove it, and its volume `<project>-db-data`, once the hub runs well.
+- New secrets: `APP_HUB_APP_DB_PASSWORD_<APP>` (the sample apps' own roles). A rerun of `install.sh` with the existing
+  `.prod.env` generates only what is missing; `APP_HUB_DB_PASSWORD` is no longer used.
+- At boot the hub moves the seeded `DATABASE_URL_<APP>` variables off the superuser to each sample app's role.
+
 ## Zero downtime (recommended)
 
 The hub's port belongs to the edge (`<project>-edge`, Caddy), which only sends traffic to whoever answers `/healthz`. The
@@ -39,8 +60,7 @@ The steps below are the manual path (with a short stop).
 ```bash
 P=$(grep -E '^HUB_PROJECT=' .prod.env | cut -d= -f2); P=${P:-app-hub}
 mkdir -p ~/backup-hub && cd ~/backup-hub
-docker exec "$P-db"     pg_dumpall -U hub > hub-db.sql
-docker exec "$P-app-db" pg_dumpall -U hub > app-db.sql
+docker exec "$P-app-db" pg_dumpall -U hub > app-db.sql   # the one Postgres: the hub's database and the apps'
 docker run --rm -v "$P-data:/d:ro" -v "$PWD:/b" alpine tar czf /b/hub-data.tgz -C /d .
 docker run --rm -v "$P-objstore-data:/d:ro" -v "$PWD:/b" alpine tar czf /b/objstore.tgz -C /d .
 cd -
@@ -69,12 +89,7 @@ Only the hub changed? `dc build app-hub-web && dc up -d --no-deps app-hub-web` (
 
 ## 4. Migrations
 
-- **Hub state database** (`hub`, in `app-hub-db`, or in `app-hub-app-db` with one server): the hub creates/updates its
-  own tables at boot (no manual step).
-- **Updating to the version with per-app database roles:** run `bash platform-py/scripts/install.sh` again (with the
-  existing `.prod.env` it asks nothing and generates only the new `APP_HUB_APP_DB_PASSWORD_<APP>` secrets), or add them by
-  hand; the `app-hub-db-roles` job then gives each sample app its own role and its tables, and at boot the hub moves the
-  seeded `DATABASE_URL_<APP>` variables off the superuser. The install keeps the existing two servers.
+- **Hub state database** (`hub`, in `app-hub-app-db`): the hub creates/updates its own tables at boot (no manual step).
 - **File data** (`/data`: users, vault, administration): the format is migrated at boot; old versions are
   read and rewritten in the new format.
 - **App databases** (`app-hub-app-db`): each app applies its own migrations when it starts (`hub_sdk`).

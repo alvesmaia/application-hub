@@ -17,15 +17,10 @@ volumes, networks and images; `app-hub`), `HUB_PORT` (8090), `HUB_BIND` (127.0.0
 **Sample apps** (ativos, fornecedores, servicos, coletor) only start with `COMPOSE_PROFILES=demo-apps`; without them use
 `HUB_APPS_JSON=./apps.empty.json` (empty catalog). The apps' database (`app-hub-app-db`) always starts.
 
-## Postgres: one server or two
+## Postgres: one server
 
-`install.sh --db-mode single` (default; also the last advanced question of the interactive install) puts the hub's `hub`
-database in the apps' server (`app-hub-app-db`): one Postgres, one superuser password. `--db-mode split` keeps the hub
-in its own server (`app-hub-db`), as installs before this option did. In `.prod.env`: `HUB_DB_MODE`, and in single mode
-`HUB_CORE_DB_SCALE=0` (no `app-hub-db` container) and `HUB_CORE_DB_HOST=app-hub-app-db`. Without these variables the
-compose keeps two servers, so existing installs are unchanged.
-
-What isolates the apps on the shared server:
+The hub and the apps share one Postgres (`app-hub-app-db`): the hub's `hub` database next to one database per app, one
+superuser password (`APP_HUB_APP_DB_PASSWORD`). What isolates the apps there:
 - **Data:** each app has its own role and database (`app_<id>`, created by «Provisionar banco»; the sample apps get
   theirs from the `app-hub-db-roles` job on every `up`): no superuser, `REVOKE ALL … FROM PUBLIC`, `CONNECTION LIMIT 40`.
   The hub closes its own database to `PUBLIC` at boot, and backups/restores never touch the `hub` database.
@@ -34,23 +29,13 @@ What isolates the apps on the shared server:
   `HUB_APP_DB_TEMP_FILE_LIMIT` (5GB; `-1` = none).
 - **Connections:** `max_connections=200` with 30 reserved for superusers, so the hub still connects when the apps use
   every normal slot.
-- **Not isolated:** total CPU, I/O and disk space (Postgres has no per-database quota). When one app's load must never
-  slow the hub down, use `--db-mode split`.
+- **Not isolated:** total CPU, I/O and disk space (Postgres has no per-database quota); watch them in Administração › Saúde.
 
-An app can still use any other Postgres: point its `DATABASE_URL_<APP>` variable (Administração › Variáveis) at it. The
-hub's backup, restore, staging clone and password rotation only act on the platform's server.
+An app can still use another Postgres by hand: point its `DATABASE_URL_<APP>` variable (Administração › Variáveis) at
+it. The hub's backup, restore, staging clone and password rotation only act on the platform's server.
 
-**Switching an installed hub** (the install refuses a different `--db-mode` on an existing `.prod.env`), single → split
-for example, with a backup first and a maintenance window:
-1. `docker exec <project>-app-db pg_dump -U hub -Fc hub > hub.dump`
-2. stop the hub (`docker stop <project>-web`); in `.prod.env` set `HUB_DB_MODE=split`, remove `HUB_CORE_DB_SCALE` and
-   `HUB_CORE_DB_HOST`, and give `APP_HUB_DB_PASSWORD` a new value (`openssl rand -hex 24`)
-3. `docker compose … up -d app-hub-db`, then
-   `docker exec -i <project>-db pg_restore -U hub -d hub --clean --if-exists < hub.dump`
-4. `docker compose … up -d`; check `/readyz`; only then `DROP DATABASE hub` in the apps' server.
-
-Split → single is the reverse: dump from `<project>-db`, set the three single-mode variables and
-`APP_HUB_DB_PASSWORD` = `APP_HUB_APP_DB_PASSWORD`, restore into the `hub` database of `<project>-app-db`.
+**Installs from before the single Postgres** had the hub's database in its own server (`<project>-db`); see
+[`ATUALIZACAO.md`](ATUALIZACAO.md) («Moving to the single Postgres»).
 
 **MinIO/mc:** there is no usable public image; `infra/minio/Dockerfile` builds from the official source code (pinned tags;
 AGPL-3.0, a separate program used only over the network — see `NOTICE`). `install.sh` generates `<project>-mc` and `<project>-minio`;
@@ -62,9 +47,9 @@ input `version`) and publishes `ghcr.io/<owner>/app-hub-{web,minio,mc,ativos,for
 -f docker-compose.apps.yml -f docker-compose.prod.yml -f docker-compose.ghcr.yml pull` and then `… up -d`
 (`HUB_REGISTRY` changes the registry). GHCR packages start private: make them public in the package settings.
 
-- [ ] `cp prod.env.example .prod.env && chmod 600 .prod.env`; fill in **all** required variables with new values per server (`openssl rand -hex 24`): `HUB_PUBLIC_URL` (https), `APP_HUB_DB_PASSWORD`,
+- [ ] `cp prod.env.example .prod.env && chmod 600 .prod.env`; fill in **all** required variables with new values per server (`openssl rand -hex 24`): `HUB_PUBLIC_URL` (https),
       `APP_HUB_APP_DB_PASSWORD`, `APP_HUB_OBJSTORE_PASSWORD`, `APP_HUB_APP_DB_PASSWORD_<APP>` and `HUB_INTERNAL_TOKEN_<APP>`
-      (4 each; one server: also the single-mode variables above). Optional: CIDRs
+      (4 each). Optional: CIDRs
       (`HUB_ADMIN_ALLOWED_CIDRS`, `HUB_TRUSTED_PROXIES`, `HUB_BROKER_APP_CIDRS`), `HUB_USER_SIG_KEY`, telemetry,
       `HUB_SOURCE_URL` (GitHub link in the header; default the project repo, empty = hidden, only `https://`).
       **Do not** set `HUB_DEMO_USERS`/`HUB_DEMO_PASSWORD`.
@@ -74,7 +59,7 @@ input `version`) and publishes `ghcr.io/<owner>/app-hub-{web,minio,mc,ativos,for
 - [ ] First administrator (nothing secret in the log): `docker compose ... run --rm --no-deps app-hub-web python -m hub.admin create-admin --email voce@empresa.com --out /data/primeiro-acesso.txt`;
       read the temporary password from the file (`docker cp`), delete it from the volume; changing the password is mandatory on the first login.
 - [ ] Tunnel/TLS proxy to `127.0.0.1:8090`; check `/healthz`, login, `/apps/<id>` and `/.well-known/oauth-authorization-server`.
-- [ ] Backup before any change: volume `app-hub-data` + `pg_dumpall` of `app-hub-app-db` (and of `app-hub-db` with two servers).
+- [ ] Backup before any change: volume `app-hub-data` + `pg_dumpall` of `app-hub-app-db`.
 - [ ] E2E/ui-sweep only on a temporary instance (`scripts/tmp-instance.sh`), never with demo accounts in production.
 
 ## Sizing (simultaneous users)
