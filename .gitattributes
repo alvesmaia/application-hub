@@ -2,3 +2,5 @@
 platform-py/scripts/build-cli.sh text eol=lf
 # Scripts run in Linux containers: always LF.
 *.sh text eol=lf
+# Runs on the server through PATH (no .sh): always LF.
+platform-py/scripts/install/nosystemd/* text eol=lf
