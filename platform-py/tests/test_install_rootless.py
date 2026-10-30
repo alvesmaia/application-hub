@@ -16,7 +16,7 @@ case "$1 ${2:-}" in
   "compose version") exit 0 ;;
   "--version "*) echo "podman version 5.8.2"; exit 0 ;;
 esac
-echo "DOCKER $* DH=${DOCKER_HOST:-}" >> "$FAKE_LOG"
+echo "DOCKER $* DH=${DOCKER_HOST:-} CH=${CONTAINER_HOST:-}" >> "$FAKE_LOG"
 exit 1
 """
 # rootless podman whose API socket answers once `system service` (or the systemd unit) started it
@@ -25,7 +25,7 @@ case "$*" in
   *"{{.Host.Security.Rootless}}"*) echo true ;;
   "--url "*" info") [ -f "$FAKE_DIR/sock-up" ] || exit 1 ;;
   *"system service"*)
-    echo "PODMAN $* HC=${DISABLE_HC_SYSTEMD:-} STORE=${CONTAINERS_STORAGE_CONF:-} XDG=${XDG_RUNTIME_DIR:-} PX=${HTTPS_PROXY:-} NP=${NO_PROXY:-} CERT=${SSL_CERT_FILE:-}" >> "$FAKE_LOG"
+    echo "PODMAN $* HC=${DISABLE_HC_SYSTEMD:-} STORE=${CONTAINERS_STORAGE_CONF:-} XDG=${XDG_RUNTIME_DIR:-} PX=${HTTPS_PROXY:-} NP=${NO_PROXY:-} CERT=${SSL_CERT_FILE:-} P1=${PATH%%:*}" >> "$FAKE_LOG"
     touch "$FAKE_DIR/sock-up" ;;
 esac
 exit 0
@@ -99,6 +99,7 @@ def test_cron_line_is_added_only_once(tmp_path: Path) -> None:
 def test_systemd_without_the_user_session_stops_early_with_the_admin_commands(tmp_path: Path) -> None:
     rc, out, _ = rootless(tmp_path, systemd=True, bus=False)
     assert rc == 1 and "loginctl enable-linger" in out and "systemctl restart user@" in out
+    assert "--no-systemd" in out  # the way out when the administrator says no
     assert not (tmp_path / "platform-py" / ".prod.env").exists()  # nothing written, nothing started
 
 
@@ -138,6 +139,26 @@ def test_hub_start_script_brings_up_the_socket_and_the_stack(tmp_path: Path) -> 
     assert text.count("PODMAN --cgroup-manager") == 2 and "DOCKER compose" in text and " up -d" in text
 
 
+def test_hub_start_from_cron_finds_the_compose_downloaded_to_local_bin(tmp_path: Path) -> None:
+    # cron runs with PATH=/usr/bin:/bin; --get-compose put docker-compose in ~/.local/bin (found in a lab reboot)
+    rootless(tmp_path, systemd=False, bus=False)
+    pp = tmp_path / "platform-py"
+    (pp / "scripts" / "hub-start.sh").write_bytes((ROOT / "scripts" / "hub-start.sh").read_bytes())
+    docker = tmp_path / "fakebin" / "docker"
+    fake = '#!/bin/sh\n[ "$1" = inspect ] && exit 1\necho "DOCKER $* PATH=$PATH" >> "$FAKE_LOG"\n'  # no old <project>-db
+    docker.write_text(fake, encoding="utf-8", newline="\n")
+    log = tmp_path / "fake" / "log"
+    env = {
+        "PATH": f"{tmp_path / 'fakebin'}:{Path(str(BASH)).parent}:/usr/bin:/bin",
+        "HOME": str(tmp_path),
+        "FAKE_DIR": str(tmp_path / "fake"),
+        "FAKE_LOG": str(log),
+    }
+    subprocess.run([str(BASH), "scripts/hub-start.sh"], cwd=pp, env=env, check=False, capture_output=True)  # noqa: S603
+    compose = [ln for ln in log.read_text(encoding="utf-8").splitlines() if ln.startswith("DOCKER compose")]
+    assert compose and "/.local/bin:" in compose[-1].split("PATH=", 1)[1]  # Git Bash may show HOME as /tmp/…
+
+
 def test_the_cron_line_points_to_the_install_folder_even_when_run_from_elsewhere(tmp_path: Path) -> None:
     rootless(tmp_path, systemd=False, bus=False)
     line = crontab(tmp_path)  # absolute paths of this platform-py (Git Bash may show the temp folder as /tmp)
@@ -160,6 +181,35 @@ def test_engine_store_keeps_the_images_in_the_hub_own_store(tmp_path: Path) -> N
     assert "source" in out and "hub-env.sh" in out
 
 
+def test_without_the_user_bus_the_own_socket_runs_aardvark_without_systemd_run(tmp_path: Path) -> None:
+    # systemd host whose user session lost its bus, --no-systemd: netavark starts aardvark-dns through systemd-run,
+    # which needs that bus; the hub's socket gets a systemd-run that runs the command directly (lab, 2026-10-30)
+    _rc, _out, log = rootless(tmp_path, "--no-systemd", systemd=True, bus=False)
+    line = next(ln for ln in log.splitlines() if ln.startswith("PODMAN ") and "system service" in ln)
+    shim = line.split("P1=", 1)[1].split()[0]
+    assert shim.endswith("/platform-py/scripts/install/nosystemd")
+    run = (tmp_path / "platform-py" / "scripts" / "install" / "nosystemd" / "systemd-run").read_text(
+        encoding="utf-8"
+    )
+    assert run.startswith("#!/bin/sh") and 'exec "$@"' in run
+
+
+def test_with_the_user_bus_the_own_socket_keeps_the_real_systemd_run(tmp_path: Path) -> None:
+    _rc, _out, log = rootless(tmp_path, "--no-systemd", systemd=True, bus=True)
+    line = next(ln for ln in log.splitlines() if ln.startswith("PODMAN ") and "system service" in ln)
+    assert "nosystemd" not in line
+
+
+def test_own_socket_mode_sends_the_install_podman_cli_through_the_socket(tmp_path: Path) -> None:
+    # podman-docker's `docker` ignores DOCKER_HOST: without CONTAINER_HOST its builds ran locally with the systemd
+    # cgroup manager and, without the user bus, failed with "did not get container create message from subprocess: EOF"
+    rootless(tmp_path, systemd=False, bus=False)
+    sock = f"{tmp_path / 'xdg'}/podman/podman.sock"
+    assert f"CH=unix://{sock}" in (tmp_path / "fake" / "log").read_text(encoding="utf-8")
+    hub_env = (tmp_path / "platform-py" / ".secrets" / "hub-env.sh").read_text(encoding="utf-8")
+    assert f"CONTAINER_HOST=unix://{sock}" in hub_env and "alias podman" not in hub_env
+
+
 def test_own_socket_mode_also_writes_hub_env(tmp_path: Path) -> None:
     rootless(tmp_path, systemd=False, bus=False)
     hub_env = (tmp_path / "platform-py" / ".secrets" / "hub-env.sh").read_text(encoding="utf-8")
@@ -176,7 +226,7 @@ def test_the_own_socket_pulls_images_through_the_proxy_trusting_the_ca(tmp_path:
     _rc, _out, log = rootless(tmp_path, *flags, systemd=False, bus=False)
     line = next(ln for ln in log.splitlines() if ln.startswith("PODMAN ") and "system service" in ln)
     assert "PX=http://proxy.empresa.local:8080" in line and "NP=localhost,127.0.0.1" in line
-    bundle = line.split("CERT=", 1)[1].strip()
+    bundle = line.split("CERT=", 1)[1].split()[0]
     written = (tmp_path / "platform-py" / ".secrets" / "ca" / "bundle.pem").read_text(encoding="utf-8")
     assert bundle.endswith("/.secrets/ca/bundle.pem") and PEM in written
 

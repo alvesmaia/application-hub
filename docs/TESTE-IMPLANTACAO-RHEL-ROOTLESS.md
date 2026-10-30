@@ -114,3 +114,20 @@ apps already on such a server), `bash platform-py/scripts/install.sh --yes --get
 Note for the admin: restarting `user@<uid>.service` stops what runs inside the user manager (the hub, once installed,
 comes back by itself through `podman-restart.service`); containers started outside it, by cron, are not affected. Do it
 before the install, or in a short window afterwards.
+
+## Round 5 — the administrator says no (2026-10-30)
+
+Same lab and starting state as round 4 (manager active, bus gone, `net=host` neighbour from cron), one scenario per
+clean server, `install.sh --yes --get-compose --no-systemd --autostart cron`.
+
+| Scenario | Before the fix | After the fix |
+|---|---|---|
+| S2 — bus restored, user units forbidden (`podman.socket`, `podman-restart.service` masked) | install green, new app published; **reboot: hub down** (`hub-start.sh` from cron found no compose: `~/.local/bin` not on cron's PATH) | reboot: hub back in ~10 s, the new app ~40 s later (hub supervisor) |
+| S3 — no restart at all (bus missing, cron only) | doctor/build: `did not get container create message from subprocess: EOF`; named network: `aardvark-dns failed to start: Failed to connect to bus` | install green on the first run, new app published (200 through the gateway), back after a reboot |
+
+Causes found: podman-docker's `docker` ignores `DOCKER_HOST`, so the install's builds ran locally with the systemd
+cgroup manager (the EOF); netavark starts aardvark-dns through `systemd-run`, which needs the bus. Fixes: `CONTAINER_HOST`
+for the install's commands and a `systemd-run` that runs the command directly on the hub's socket PATH. The neighbour
+was never touched. Not covered: after a lab reboot the user manager recreates the bus, so S3's post-reboot run had a
+bus; a server that loses the bus again after each boot was not reproduced. In this mode healthchecks stay `starting`
+(no systemd timer) — the hub's deploys check `/_hub/ready` themselves.

@@ -1,0 +1,11 @@
+#!/bin/sh
+# systemd-run for the hub's own Podman socket when the user session has no bus (systemd host, --no-systemd):
+# netavark starts aardvark-dns (the DNS of the hub's networks) through systemd-run, which needs that bus. The options
+# are dropped and the command runs directly, as on a host without systemd. Only the hub's socket has this on its PATH.
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -*) shift ;;
+    *) break ;;
+  esac
+done
+exec "$@"

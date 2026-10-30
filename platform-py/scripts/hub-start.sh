@@ -3,6 +3,8 @@
 # @reboot): the hub's own Podman API socket, then the stack. Idempotent: running it again changes nothing.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# cron runs with PATH=/usr/bin:/bin; install.sh --get-compose puts docker-compose in ~/.local/bin
+export PATH="$HOME/.local/bin:$PATH"
 # shellcheck disable=SC1091
 set -a; . ./.prod.env; set +a
 # shellcheck source=install/net.sh
@@ -13,6 +15,6 @@ set -a; . ./.prod.env; set +a
 . scripts/install/db.sh
 if [ -n "${HUB_ENGINE_STORE:-}" ]; then ENGINE_STORE=$HUB_ENGINE_STORE; engine_env "$ENGINE_STORE"; fi
 start_own_socket "${HUB_CONTAINER_SOCKET_HOST:?HUB_CONTAINER_SOCKET_HOST ausente no .prod.env}"
-export DOCKER_HOST="unix://$HUB_CONTAINER_SOCKET_HOST" DISABLE_HC_SYSTEMD=true
+export DOCKER_HOST="unix://$HUB_CONTAINER_SOCKET_HOST" CONTAINER_HOST="unix://$HUB_CONTAINER_SOCKET_HOST" DISABLE_HC_SYSTEMD=true
 old_db_guard "${HUB_PROJECT:-app-hub}"
 docker compose --env-file .prod.env -f docker-compose.yml -f docker-compose.apps.yml -f docker-compose.prod.yml up -d

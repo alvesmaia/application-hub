@@ -27,3 +27,7 @@
   - ✅ "TI": systemctl restart user@<uid>.service; bus volta; vizinho sobrevive?
   - ✅ depois: install.sh padrão, /readyz, publicação de app novo sem comando no servidor, reboot
   - ✅ limpeza e registro em docs/task-details.md
+- ✅ 57 · Laboratório: alternativas se a TI negar caminhos
+  - ✅ S2: bus restaurado, units do usuário proibidas (só cron): --no-systemd --autostart cron, app novo, reboot (corrigido: hub-start.sh sem ~/.local/bin no PATH do cron)
+  - ✅ S3: restart negado (sem bus, só cron): corrigido (systemd-run próprio do socket do hub, CONTAINER_HOST)
+  - ✅ registro em docs, limpeza

@@ -18,6 +18,7 @@ COPIED = (
     "scripts/install/tls.sh",
     "scripts/install/post.sh",
     "scripts/install/db.sh",
+    "scripts/install/nosystemd/systemd-run",
     "prod.env.example",
     "docker-compose.yml",
 )
@@ -58,6 +59,7 @@ def run_install(
     pp = tmp_path / "platform-py"
     (pp / "scripts" / "install").mkdir(parents=True, exist_ok=True)
     for f in COPIED:
+        (pp / f).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(ROOT / f, pp / f)
     fakebin = tmp_path / "fakebin"
     fakebin.mkdir(exist_ok=True)

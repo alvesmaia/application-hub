@@ -23,6 +23,14 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 - `install.sh` rerun: secrets added to `prod.env.example` in later versions are generated into the existing
   `.prod.env` (names shown, values never). The install notice says there is one Postgres.
 
+### Fixed
+- Rootless Podman with `--no-systemd` on a systemd host whose user session has no bus (the administrator would not
+  restart `user@<uid>.service`): the hub's own socket gets a `systemd-run` that starts aardvark-dns directly
+  (`scripts/install/nosystemd/`), and the install's `docker`/`podman` commands go through that socket
+  (`CONTAINER_HOST`), so builds no longer fail with `did not get container create message from subprocess: EOF`.
+  The install's stop message offers `--no-systemd` when the administrator says no.
+- `hub-start.sh` (cron `@reboot`) found no compose: cron's `PATH` lacks `~/.local/bin`, where `--get-compose` puts it.
+
 ### Security
 - The sample apps no longer connect as the superuser `hub`: each has its own role, owner of its database
   (`app-hub-db-roles` job, `python -m hub.admin demo-db-roles`; an existing install's tables are handed over), and the

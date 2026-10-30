@@ -187,3 +187,9 @@ Rocky 9 lab reproduced the server state (manager active, bus and `systemd/` gone
 stops with the admin hint. After `systemctl restart user@<uid>.service` the install went green on the first run, a new app
 was published from another machine with no server command, the hub survived a reboot, and a `net=host` neighbour started
 by cron survived the restart. CPU delegation applied the app CPU limit. Details: docs/TESTE-IMPLANTACAO-RHEL-ROOTLESS.md, round 4.
+
+✅ **Task 57 — Lab: alternatives when the administrator says no**
+S2 (bus restored, user units forbidden) and S3 (no restart, bus missing) with `--no-systemd --autostart cron`. Found and
+fixed with tests: `hub-start.sh` from cron lacked `~/.local/bin` (no compose after reboot); install builds ran outside the
+hub's socket (podman-docker ignores `DOCKER_HOST`) and failed with EOF; aardvark-dns needed the bus through systemd-run.
+Both scenarios green after the fix: install, new app published, reboot. Details: TESTE-IMPLANTACAO-RHEL-ROOTLESS.md, round 5.

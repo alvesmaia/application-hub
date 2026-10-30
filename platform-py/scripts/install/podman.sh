@@ -9,6 +9,11 @@ ROOTLESS=0 NOSYSTEMD=${NOSYSTEMD:-0} AUTOSTART=${AUTOSTART:-} ROOTLESS_SOCK="" O
 
 socket_up() { podman --url "unix://$1" info >/dev/null 2>&1; }
 
+user_bus_up() { # the user session bus: engine_env's DBUS_SESSION_BUS_ADDRESS (own store), else $XDG_RUNTIME_DIR/bus
+  local bus=${DBUS_SESSION_BUS_ADDRESS:-}; bus=${bus#unix:path=}
+  [ -e "${bus:-${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/bus}" ]
+}
+
 engine_net_env() { # ENGINE_ENV: proxy and CA for the engine's own pulls (install options, else .prod.env)
   local proxy=${NET_PROXY:-${HUB_PROXY:-}} ca=${CA_FILE:-${HUB_CA_FILE:-}} extra=${NET_NOPROXY:-${HUB_NO_PROXY:-}} np
   ENGINE_ENV=()
@@ -27,6 +32,8 @@ start_own_socket() { # start_own_socket <path>: the hub keeps its own `podman sy
   socket_up "$1" && return 0
   mkdir -p "$(dirname "$1")" "$HOME/.local/state"
   engine_net_env
+  # no user bus (systemd host, --no-systemd): aardvark-dns runs without systemd-run (scripts/install/nosystemd)
+  user_bus_up || ENGINE_ENV+=("PATH=$PP_DIR/scripts/install/nosystemd:$PATH")
   # setsid + stdin from /dev/null: a session of its own; inside the install's (or an SSH) session, conmon failed to
   # attach the containers once that session ended
   env "${ENGINE_ENV[@]}" DISABLE_HC_SYSTEMD=true setsid nohup podman --cgroup-manager=cgroupfs --events-backend=file \
@@ -54,7 +61,8 @@ Este servidor usa systemd, mas a sessão do usuário $(id -un) não está ativa 
 Sem ela o Podman não sobe as redes do hub (DNS aardvark) nem os healthchecks. Peça ao administrador, uma vez:
   sudo loginctl enable-linger $(id -un)
   sudo systemctl restart user@$(id -u).service
-ou um usuário dedicado ao hub, com linger. (--no-systemd só serve para servidores sem systemd.)
+ou um usuário dedicado ao hub, com linger.
+Sem acesso à TI: rode de novo com --no-systemd (o hub mantém o próprio socket, sem units do usuário, e volta no boot pelo cron).
 EOT
 }
 
@@ -108,12 +116,11 @@ write_hub_env() { # .secrets/hub-env.sh: the same engine for manual docker/podma
   mkdir -p "$PP_DIR/.secrets"
   {
     echo "# Engine of this hub for manual commands:  source $PP_DIR/.secrets/hub-env.sh"
-    echo "export DOCKER_HOST=$DOCKER_HOST DISABLE_HC_SYSTEMD=true"
+    echo "export DOCKER_HOST=$DOCKER_HOST CONTAINER_HOST=$DOCKER_HOST DISABLE_HC_SYSTEMD=true"
     if [ -n "${ENGINE_STORE:-}" ]; then
       echo "export XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR CONTAINERS_STORAGE_CONF=$CONTAINERS_STORAGE_CONF"
       if [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then echo "export DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS"; fi
     fi
-    echo "alias podman='podman --cgroup-manager=cgroupfs --events-backend=file'"
   } > "$PP_DIR/.secrets/hub-env.sh"
 }
 
@@ -132,7 +139,8 @@ rootless_setup() { # after the consent: socket up, start at boot; exports what t
   socket_up "$ROOTLESS_SOCK" ||
     { echo "Podman rootless sem socket em $ROOTLESS_SOCK: rode  systemctl --user enable --now podman.socket" >&2; exit 1; }
   export DOCKER_HOST="unix://$ROOTLESS_SOCK"
-  if [ "$OWN_SOCKET" = 1 ]; then write_hub_env; fi
+  # podman-docker's `docker` ignores DOCKER_HOST; CONTAINER_HOST sends the install's builds through the hub's socket
+  if [ "$OWN_SOCKET" = 1 ]; then export CONTAINER_HOST=$DOCKER_HOST; write_hub_env; fi
   if [ "$AUTOSTART" = cron ]; then autostart_cron; fi
   loginctl show-user "$(id -un)" -p Linger 2>/dev/null | grep -q yes || [ "$NOSYSTEMD" = 1 ] ||
     echo "aviso: sem linger o hub cai no logout — peça à TI: loginctl enable-linger $(id -un)" >&2
