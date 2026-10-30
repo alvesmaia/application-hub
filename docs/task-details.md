@@ -181,3 +181,9 @@ server, row counts compared at the merge, the 4 sample apps ready with their own
 superuser). That run found two bugs, fixed with tests: the install guard took the default project instead of the one in
 `.prod.env`, and the update steps lacked `dc build`; the merge hint now brings up the whole stack. `hub-check --all` 30/30.
 Removed: the `app-hub-mig` stack, its old server, volumes and images, the build cache.
+
+✅ **Task 56 — Lab: user session without its bus**
+Rocky 9 lab reproduced the server state (manager active, bus and `systemd/` gone): same aardvark-dns error, `install.sh`
+stops with the admin hint. After `systemctl restart user@<uid>.service` the install went green on the first run, a new app
+was published from another machine with no server command, the hub survived a reboot, and a `net=host` neighbour started
+by cron survived the restart. CPU delegation applied the app CPU limit. Details: docs/TESTE-IMPLANTACAO-RHEL-ROOTLESS.md, round 4.

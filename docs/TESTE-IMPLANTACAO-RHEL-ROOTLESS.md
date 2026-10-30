@@ -92,3 +92,25 @@ instance option keeps the silent mode for CI.
 Outside the repository (session scratchpad): logs `rhel/a-install*.log`, `rhel/b-install.log`, Haiku reports
 `haiku-rhel-a/RELATORIO.md` and `haiku-rhel-b/RELATORIO.md`. Scenario A was removed; B (`rhel-b`, port
 127.0.0.1:28090) was left running for review.
+
+## Round 4 — user session without its bus, then the admin's fix (2026-10-30)
+
+Goal: reproduce a server where the user's systemd manager is active and lingering but `/run/user/<uid>/bus` and
+`/run/user/<uid>/systemd/` are gone, and check the fix the IT admin applies. Same Rocky 9 / Podman 5.8.2 image, user
+`hubsvc` with linger, a neighbour container with `--network host` started by cron (outside the user manager, like other
+apps already on such a server), `bash platform-py/scripts/install.sh --yes --get-compose` from `main` (`0fe8f11`).
+
+| Step | Result |
+|---|---|
+| Bus removed | `systemctl --user` → `Failed to connect to bus`; `podman` falls back to cgroupfs; the `net=host` neighbour runs |
+| Named network | fails as on the real server: `aardvark-dns failed to start: Failed to connect to bus` |
+| `install.sh` | stops before changing anything, asking for `loginctl enable-linger` + `systemctl restart user@<uid>.service` |
+| Admin: `systemctl restart user@<uid>.service` | bus back; named network ok; **the neighbour keeps running** (its conmon is in the cron session scope) |
+| `install.sh` again | green on the first run, systemd path (`podman.socket`, `podman-restart.service` enabled), healthchecks running |
+| New app by a developer | `hub project create` + `hub deploy --env staging` from another machine: built and started by the hub, `healthy`, page 200 through the gateway; no command on the server |
+| Reboot | hub and the new app back on their own in ~25 s |
+| Admin: `Delegate=cpu cpuset io memory pids` + restart of `user@` | `cpu` delegated; the hub came back in ~15 s; the next deploy got its CPU limit (`cpu.max 50000 100000`) |
+
+Note for the admin: restarting `user@<uid>.service` stops what runs inside the user manager (the hub, once installed,
+comes back by itself through `podman-restart.service`); containers started outside it, by cron, are not affected. Do it
+before the install, or in a short window afterwards.

@@ -19,3 +19,11 @@
 - ✅ 53 · Compose só com um servidor; sem --db-mode, pergunta e variáveis do split; trava (install, hub-start, dev.sh, hub_update) quando há `<projeto>-db` antigo
 - ✅ 54 · Docs, prod.env.example e CHANGELOG (atualização de quem tinha dois servidores)
 - ✅ 55 · hub-check --all, fusão testada em instância isolada no formato antigo, limpeza
+
+## Laboratório: sessão do usuário sem bus
+- ✅ 56 · Reproduzir em laboratório RHEL o servidor sem bus do usuário e validar a correção da TI (restart de user@)
+  - ✅ imagem Rocky 9 + usuário rootless com linger, "app vizinho" net=host iniciado fora da sessão
+  - ✅ antes: bus removido, rede nomeada falha como no servidor, install.sh para com a orientação
+  - ✅ "TI": systemctl restart user@<uid>.service; bus volta; vizinho sobrevive?
+  - ✅ depois: install.sh padrão, /readyz, publicação de app novo sem comando no servidor, reboot
+  - ✅ limpeza e registro em docs/task-details.md
