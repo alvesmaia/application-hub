@@ -34,6 +34,7 @@ FAKE_CRONTAB = r"""
 if [ "$1" = -l ]; then cat "$FAKE_DIR/crontab" 2>/dev/null || exit 1; else cat > "$FAKE_DIR/crontab"; fi
 """
 FAKE_SYSTEMCTL = r"""
+if [ "$1" = show ]; then echo "${FAKE_USER_EXEC:-argv[]=/usr/lib/systemd/systemd --user}"; exit 0; fi
 echo "SYSTEMCTL $*" >> "$FAKE_LOG"
 case "$*" in *"podman.socket"*) touch "$FAKE_DIR/sock-up" ;; esac
 """
@@ -49,7 +50,9 @@ FAKES = {
 FLAGS = ("--yes", "--skip-doctor", "--admin-email", "ops@exemplo.com")
 
 
-def rootless(tmp_path: Path, *args: str, systemd: bool, bus: bool) -> tuple[int, str, str]:
+def rootless(
+    tmp_path: Path, *args: str, systemd: bool, bus: bool, user_exec: str = ""
+) -> tuple[int, str, str]:
     xdg, sysd, fake = tmp_path / "xdg", tmp_path / "run-systemd-system", tmp_path / "fake"
     xdg.mkdir(exist_ok=True)
     fake.mkdir(exist_ok=True)
@@ -68,6 +71,7 @@ def rootless(tmp_path: Path, *args: str, systemd: bool, bus: bool) -> tuple[int,
             "INSTALL_SYSTEMD_DIR": str(sysd),
             "FAKE_DIR": str(fake),
             "FAKE_LOG": str(log),
+            **({"FAKE_USER_EXEC": user_exec} if user_exec else {}),
         },
     )
     return r.returncode, r.stdout + r.stderr, log.read_text(encoding="utf-8")
@@ -101,6 +105,15 @@ def test_systemd_without_the_user_session_stops_early_with_the_admin_commands(tm
     assert rc == 1 and "loginctl enable-linger" in out and "systemctl restart user@" in out
     assert "--no-systemd" in out  # the way out when the administrator says no
     assert not (tmp_path / "platform-py" / ".prod.env").exists()  # nothing written, nothing started
+
+
+def test_user_manager_disabled_by_the_admin_goes_on_without_systemd(tmp_path: Path) -> None:
+    # the administrator replaced user@.service (ExecStart=/bin/true): no systemd --user, a restart cannot help
+    disabled = "{ path=/bin/true ; argv[]=/bin/true ; ignore_errors=yes ; }"
+    _rc, out, log = rootless(tmp_path, systemd=True, bus=False, user_exec=disabled)
+    assert "restart user@" not in out and "desativado" in out
+    assert "--cgroup-manager=cgroupfs" in log and prod_env(tmp_path)["HUB_NO_SYSTEMD"] == "1"
+    assert "@reboot" in crontab(tmp_path)
 
 
 def test_with_the_user_session_systemd_starts_the_socket_and_the_containers_after_a_reboot(

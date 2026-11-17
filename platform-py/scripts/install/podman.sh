@@ -66,11 +66,20 @@ Sem acesso à TI: rode de novo com --no-systemd (o hub mantém o próprio socket
 EOT
 }
 
+user_manager_disabled() { # the administrator replaced user@.service (e.g. ExecStart=/bin/true): no systemd --user
+  local exec; exec=$(systemctl show "user@$(id -u).service" -p ExecStart --value 2>/dev/null)
+  [ -n "$exec" ] && ! printf '%s' "$exec" | grep -q 'systemd --user'
+}
+
 rootless_detect() { # read-only, before the consent: ROOTLESS, OWN_SOCKET and AUTOSTART; stops on a broken user session
   docker --version 2>/dev/null | grep -qi podman || return 0
   [ "$(podman info --format '{{.Host.Security.Rootless}}' 2>/dev/null)" = true ] || return 0
   ROOTLESS=1
   [ -d "$SYSTEMD_DIR" ] || NOSYSTEMD=1
+  if [ "$NOSYSTEMD" = 0 ] && user_manager_disabled; then
+    echo "systemd do usuário desativado pelo administrador (user@.service sem systemd --user): modo sem systemd, início pelo cron" >&2
+    NOSYSTEMD=1
+  fi
   if [ "$NOSYSTEMD" = 0 ] && [ ! -e "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/bus" ]; then systemd_session_hint; exit 1; fi
   if [ "$NOSYSTEMD" = 1 ] || [ -n "${ENGINE_STORE:-}" ]; then OWN_SOCKET=1; fi
   if [ -z "$AUTOSTART" ]; then AUTOSTART=$([ "$OWN_SOCKET" = 1 ] && echo cron || echo systemd); fi

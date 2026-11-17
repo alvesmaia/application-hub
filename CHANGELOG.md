@@ -24,6 +24,9 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   `.prod.env` (names shown, values never). The install notice says there is one Postgres.
 
 ### Fixed
+- Rootless Podman on a server whose administrator disabled the user manager (`user@.service` replaced, e.g.
+  `ExecStart=/bin/true`): the install detects it and goes on without systemd (own socket, cron start) instead of
+  asking for a `systemctl restart user@<uid>.service` that cannot help.
 - Rootless Podman with `--no-systemd` on a systemd host whose user session has no bus (the administrator would not
   restart `user@<uid>.service`): the hub's own socket gets a `systemd-run` that starts aardvark-dns directly
   (`scripts/install/nosystemd/`), and the install's `docker`/`podman` commands go through that socket

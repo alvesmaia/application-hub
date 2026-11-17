@@ -31,3 +31,8 @@
   - ✅ S2: bus restaurado, units do usuário proibidas (só cron): --no-systemd --autostart cron, app novo, reboot (corrigido: hub-start.sh sem ~/.local/bin no PATH do cron)
   - ✅ S3: restart negado (sem bus, só cron): corrigido (systemd-run próprio do socket do hub, CONTAINER_HOST)
   - ✅ registro em docs, limpeza
+- ✅ 58 · Laboratório: user@.service desativado pela TI (ExecStart=/bin/true, sem systemd --user)
+  - ✅ servidor simulado com o mesmo user@.service do servidor real, vizinho pelo cron
+  - ✅ install.sh padrão para com a orientação; --no-systemd --autostart cron verde (corrigido: install detecta o user@ desativado e segue sem systemd)
+  - ✅ app novo publicado, rede nomeada, reboot
+  - ✅ registro em docs, limpeza

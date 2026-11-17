@@ -131,3 +131,23 @@ for the install's commands and a `systemd-run` that runs the command directly on
 was never touched. Not covered: after a lab reboot the user manager recreates the bus, so S3's post-reboot run had a
 bus; a server that loses the bus again after each boot was not reproduced. In this mode healthchecks stay `starting`
 (no systemd timer) — the hub's deploys check `/_hub/ready` themselves.
+
+## Round 6 — user manager disabled by the administrator (2026-10-30)
+
+What the real server showed: `user@.service` replaced in `/etc/systemd/system` (`Description=… (DISABLED)`,
+`ExecStart=-/bin/true`, `RemainAfterExit=yes`). The unit is `active (exited)`, `/run/user/<uid>` exists (from
+`user-runtime-dir@`), but there is no `systemd --user` and no bus for any user, and a restart only runs `/bin/true`
+again. Lab: the same unit file in the Rocky 9 image, user `hubsvc` with linger, a `net=host` neighbour started by cron
+(its conmon in a `session-*.scope`, as on the server).
+
+| Step | Result |
+|---|---|
+| Named network (CLI) | fails as on the server: `aardvark-dns failed to start: Failed to connect to bus` |
+| `install.sh` from `582a5b1` (no flag) | stops before changing anything, asking for a `restart user@` that cannot help |
+| `install.sh --yes --get-compose --no-systemd --autostart cron` | green on the first run (14 min, MinIO built from source); neighbour untouched |
+| New app by a developer | `hub project create` + `hub deploy --env staging` from another machine: 200 through the gateway |
+| Named network through the hub's socket | ok |
+| Reboot (still no bus, no `systemd --user`) | hub `ready` in ~15 s; the new app and the 4 sample apps back; app page 200 |
+| Fix: `install.sh` (no flag) | detects the disabled manager (`systemctl show user@<uid> -p ExecStart` without `systemd --user`) and goes on without systemd by itself |
+
+This also closes round 5's open point: here the reboot really had no bus.

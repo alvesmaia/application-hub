@@ -193,3 +193,10 @@ S2 (bus restored, user units forbidden) and S3 (no restart, bus missing) with `-
 fixed with tests: `hub-start.sh` from cron lacked `~/.local/bin` (no compose after reboot); install builds ran outside the
 hub's socket (podman-docker ignores `DOCKER_HOST`) and failed with EOF; aardvark-dns needed the bus through systemd-run.
 Both scenarios green after the fix: install, new app published, reboot. Details: TESTE-IMPLANTACAO-RHEL-ROOTLESS.md, round 5.
+
+✅ **Task 58 — user manager disabled by the administrator**
+The real server's `user@.service` was replaced by the IT team (`ExecStart=-/bin/true`): no `systemd --user` at all, so
+the restart asked for in rounds 4–5 cannot help. Reproduced in the lab with the same unit file: `--no-systemd
+--autostart cron` green, new app published, back after a reboot without a bus. The install now detects that unit and
+switches to the mode without systemd by itself (test in `tests/test_install_rootless.py`). Record: round 6 of
+`docs/TESTE-IMPLANTACAO-RHEL-ROOTLESS.md`.

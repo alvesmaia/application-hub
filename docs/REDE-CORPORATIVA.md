@@ -67,7 +67,10 @@ How the hub uses them, with no step per app:
   When the administrator says no, `--no-systemd` still works there: the hub's own socket gets a `systemd-run` that runs
   aardvark-dns directly (`scripts/install/nosystemd/`, only on that socket's PATH) and the install's `docker`/`podman`
   commands go through that socket (`CONTAINER_HOST`; podman-docker ignores `DOCKER_HOST`). It also covers a server
-  whose administrator restores the bus but forbids user units (cron only). Limits of this mode: healthchecks have no
+  whose administrator restores the bus but forbids user units (cron only).
+- **User manager disabled by the administrator** (`user@.service` replaced, e.g. `ExecStart=/bin/true`: no
+  `systemd --user` for anyone, only `/run/user/<uid>`): a restart cannot help, so the install detects it and goes on
+  without systemd by itself (same mode as `--no-systemd`). Limits of the modes without systemd: healthchecks have no
   systemd timer (`docker ps` shows `starting`; the hub checks `/_hub/ready` itself), and app containers come back after a
   reboot through the hub's supervisor (~1 min after the hub), not `podman-restart.service`.
 
