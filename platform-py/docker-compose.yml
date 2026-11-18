@@ -43,6 +43,7 @@ services:
       HUB_STATE_DB_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/hub
       HUB_DATA_DIR: /data
       HUB_CONTAINER_SOCKET: /var/run/docker.sock
+      HUB_CONTAINER_SOCKET_HOST: ${HUB_CONTAINER_SOCKET_HOST:-/var/run/docker.sock} # shown on the Containers page
       # Containers of this instance (the hub only operates those with its prefix; default app-hub-app-*).
       HUB_CONTAINER_PREFIX: ${HUB_PROJECT:-app-hub}-app-
       HUB_BACKUP_DB_CONTAINER: ${HUB_PROJECT:-app-hub}-app-db

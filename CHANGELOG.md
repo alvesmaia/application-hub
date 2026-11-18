@@ -28,6 +28,11 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   `.prod.env` (names shown, values never). The install notice says there is one Postgres.
 
 ### Fixed
+- Containers page on rootless Podman without cgroup delegation: the engine reported the user's whole cgroup for every
+  container (same ~2 GiB and ~200 processes everywhere, above each one's limit); usage now shows as unavailable with
+  the reason, and a warning says when the CPU limit is not enforced. The page shows the engine socket on the host
+  (`HUB_CONTAINER_SOCKET_HOST`) instead of the path mounted inside the hub, local images without `docker.io/library/`,
+  and limits above the host as overcommit instead of a negative free share.
 - Install behind a corporate proxy: the sample bucket is created again (the temporary `mc` container inherited the
   engine's proxy and sent the internal call to it); a failure now shows how to create it by hand.
 - `install.sh --doctor` without systemd: the proof build uses cgroupfs like the hub's own socket (it failed with

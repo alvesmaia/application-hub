@@ -82,7 +82,9 @@ The network options above are applied on a rerun.
   `systemd --user` for anyone, only `/run/user/<uid>`): a restart cannot help, so the install detects it and goes on
   without systemd by itself (same mode as `--no-systemd`). Limits of the modes without systemd: healthchecks have no
   systemd timer (`docker ps` shows `starting`; the hub checks `/_hub/ready` itself), and app containers come back after a
-  reboot through the hub's supervisor (~1 min after the hub), not `podman-restart.service`.
+  reboot through the hub's supervisor (~1 min after the hub), not `podman-restart.service`. Without cgroup delegation the engine cannot measure
+  each container: the Containers page shows usage as unavailable (and says when the CPU limit is not enforced)
+  instead of the user's whole cgroup.
 
 ## 4. Disk
 

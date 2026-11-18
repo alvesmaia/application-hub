@@ -7938,5 +7938,17 @@
 [
 "Voltar para esta versão",
 "Go back to this version"
+],
+[
+"Uso por contêiner indisponível: o engine não mede cada contêiner (Podman rootless sem delegação de cgroup). Os limites seguem configurados.",
+"Per-container usage unavailable: the engine does not measure each container (rootless Podman without cgroup delegation). The limits stay configured."
+],
+[
+"O limite de CPU não é aplicado: o controlador cpu não está delegado ao usuário do engine.",
+"The CPU limit is not enforced: the cpu controller is not delegated to the engine's user."
+],
+[
+"Limites dos apps acima da capacidade do host em {} vCPU · {} GiB: os apps disputam CPU e memória.",
+"App limits above the host capacity by {} vCPU · {} GiB: the apps compete for CPU and memory."
 ]
 ]

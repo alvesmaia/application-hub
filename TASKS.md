@@ -52,3 +52,9 @@
   - ⬜ login Entra: nome pelo claim `name` (fallback `preferred_username`, e-mail), sem sufixos "(Empresa)"/", external"
   - ⬜ conciliação no login: busca por `sub`, senão adota a conta pelo e-mail (sem duplicar); nome atualizado, contas locais mantêm o seu
   - ⬜ opcional: job LDAP diário (lote 50, reconsulta anual, status por usuário), inativo sem LDAP
+
+## Implantação real: relatório de testes no browser (2026-11-18)
+- ✅ 62 · Runtime em host sem delegação de cgroup: métricas "indisponível" (não o agregado do usuário), aviso de overcommit/CPU não aplicada, socket real no rótulo, imagens locais sem docker.io/
+- ⬜ 63 · Apps de demonstração: botões estáticos com aviso visível, lista recarrega após cadastrar, dados coerentes (totais e status por data), horário no fuso configurado
+- ⬜ 64 · Consistência do hub: idioma padrão respeitado e traduções completas, disponibilidade "desde a instalação", Coletor na Saúde, instalação sem "restart pendente" nem variáveis de exemplo soltas, nome de exibição do app em todas as telas
+- ⬜ 65 · Acessibilidade de menus ⋯ e modais; fetch a /apps/* com erro HTTP explícito (ou documentado)

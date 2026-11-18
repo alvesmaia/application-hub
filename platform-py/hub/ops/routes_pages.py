@@ -144,18 +144,20 @@ async def runtime_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response
     raw = (await ops.admin.cfg.read())["env"]
     view = [rv.container_view(r, live.get(r["container"]), raw, info["reachable"]) for r in rows]
     platform_view = [rv.platform_view(x) for x in sorted(info.get("platform", []), key=lambda z: z["name"])]
-    default_sock = info["socket"] if os.getenv("HUB_CONTAINER_SOCKET") else "/var/run/docker.sock"
-    sock = "/run/podman/podman.sock" if podman else default_sock
+    # the socket on the host (HUB_CONTAINER_SOCKET_HOST), not where it is mounted inside the hub
+    host_sock = os.getenv("HUB_CONTAINER_SOCKET_HOST") or info["socket"]
+    sock = os.getenv("HUB_CONTAINER_SOCKET_HOST") or ("/run/podman/podman.sock" if podman else host_sock)
     page_rows, pager = paginate(request, view + platform_view)
     return render(ops,
         request, "ops_runtime.html", "Aplicações", "Containers", "Cada aplicação roda isolada, com limites próprios de CPU e memória.",
         rows=page_rows, pager=pager, banner=None if info["reachable"] else f"Runtime indisponível: exibindo especificação. ({info['error']})",
         docker_class="filter-chip" if podman else "filter-chip active", podman_class="filter-chip active" if podman else "filter-chip",
         shown_socket=sock, rollout=ROLLOUT, host_source=f"Medido em: {host.source}",
-        in_use=f"Conectado a {info['socket']} · {info['version']}" if info["reachable"] else f"Sem conexão com {info['socket']}",
+        in_use=f"Conectado a {host_sock} · {info['version']}" if info["reachable"] else f"Sem conexão com {host_sock}",
+        engine_notes=rv.engine_notes(info), cap_notes=rv.capacity_notes(free_cpu, free_mem),
         cpu_title=f"CPU · {br(host.cpu, 1)} vCPU", mem_title=f"Memória · {br(host.mem_gib, 1)} GiB", cpu_segs=cpu_segs,
         mem_segs=mem_segs, plat_label=f"Plataforma (reservado {br(host.platform_cpu, 1)} vCPU · {br(host.platform_mem_gib, 1)} GiB)",
-        free_label=f"Livre {br(free_cpu, 1)} vCPU · {br(free_mem, 1)} GiB",
+        free_label=f"Livre {br(max(free_cpu, 0), 1)} vCPU · {br(max(free_mem, 0), 1)} GiB",
     )  # fmt: skip
 
 

@@ -133,7 +133,7 @@ class Engine:
             tags = c.image.tags if getattr(c, "image", None) else []
         except Exception:
             tags = []
-        return {"name": c.name, "state": c.status, "status": _status_text(c), "image": (tags[0] if tags else
+        return {"name": c.name, "state": c.status, "status": _status_text(c), "image": image_label(tags[0] if tags else
                 str(c.attrs.get("Config", {}).get("Image", ""))), "cpu_used": cpu, "mem_used": mem,
                 "mem_limit": limit, "pids": pids, "host": c.attrs.get("HostConfig", {}),
                 "networks": list(c.attrs.get("NetworkSettings", {}).get("Networks") or {})}  # fmt: skip
@@ -182,18 +182,24 @@ class Engine:
 
             with ThreadPoolExecutor(max_workers=min(16, len(cs) or 1)) as ex:
                 out = list(ex.map(one, cs))
+            note = UNMEASURED if unmeasured(out) else ""
+            if note:  # the engine reports another cgroup: no number is better than a wrong one
+                for x in out:
+                    x.update(cpu_used=None, mem_used=None, pids=None)
             plat = (v.get("Platform") or {}).get("Name", "Engine")
             return {"reachable": True, "socket": os.getenv("HUB_CONTAINER_SOCKET", "/var/run/docker.sock"),
                     "version": f"{plat} {v.get('Version', '')}", "error": "",
                     "live": [x for x in out if not is_platform(x["name"])],
                     "platform": [x for x in out if is_platform(x["name"])],
-                    "ncpu": info.get("NCPU"), "mem_total": info.get("MemTotal")}  # fmt: skip
+                    "ncpu": info.get("NCPU"), "mem_total": info.get("MemTotal"), "metrics_note": note,
+                    "cpu_quota": info.get("CpuCfsQuota")}  # fmt: skip
 
         try:
             return dict(await self._run(go))
         except Exception as e:
             return {"reachable": False, "socket": os.getenv("HUB_CONTAINER_SOCKET", "/var/run/docker.sock"),
-                    "version": "", "error": str(e)[:200], "live": [], "platform": [], "ncpu": None, "mem_total": None}  # fmt: skip
+                    "version": "", "error": str(e)[:200], "live": [], "platform": [], "ncpu": None, "mem_total": None,
+                    "metrics_note": "", "cpu_quota": None}  # fmt: skip
 
     async def action(self, name: str, action: str) -> None:
         if action not in ("start", "stop", "restart"):
@@ -459,3 +465,29 @@ async def exec_in(
         return int(rc), bytes(out)
     except Exception as e:
         raise OpsError(f"Falha no runtime: {e}"[:300], 503) from e
+
+
+UNMEASURED = ("Uso por contêiner indisponível: o engine não mede cada contêiner (Podman rootless sem delegação de cgroup). "
+              "Os limites seguem configurados.")  # fmt: skip
+
+
+def unmeasured(live: list[dict[str, Any]]) -> bool:
+    """A container's own cgroup enforces its limits: usage above them means the engine reports another cgroup (rootless
+    Podman with cgroupfs and no delegation reports the user's whole cgroup for every container)."""
+    for x in live:
+        hc = x.get("host") or {}
+        mem, pids = hc.get("Memory") or 0, hc.get("PidsLimit") or 0
+        over_mem = mem > 0 and (x.get("mem_used") or 0) > mem
+        over_pids = pids > 0 and (x.get("pids") or 0) > pids
+        if x.get("state") == "running" and (over_mem or over_pids):
+            return True
+    return False
+
+
+def image_label(ref: str) -> str:
+    """Local builds by their own name: Podman's compat API files them under docker.io/library/ (or localhost/), which
+    reads as if they came from Docker Hub."""
+    for prefix in ("docker.io/library/", "localhost/"):
+        if ref.startswith(prefix):
+            return ref[len(prefix) :]
+    return ref

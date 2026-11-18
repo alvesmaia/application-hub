@@ -4,6 +4,7 @@
 .ops-section{margin-top:var(--space-16)}
 .ops-muted{font-size:var(--font-size-xs);color:var(--muted)}
 .ops-note{font-size:var(--font-size-xs);color:var(--muted);margin:var(--space-10) 0 0;line-height:1.5}
+.ops-note.ops-warn{color:var(--am-warn)}
 .ops-caption{font-size:var(--font-size-2xs);font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--c-gray-59-2);margin:var(--space-12) 0 var(--space-6)}
 .ops-caption:first-child{margin-top:0}
 .ops-drop{display:grid;justify-items:center;gap:var(--space-6);border:1.5px dashed var(--c-blue-83-1);border-radius:var(--radius-3xl);padding:22px var(--space-14);text-align:center;cursor:pointer;color:var(--color-accent);background:var(--c-gray-98-3)}

@@ -69,7 +69,7 @@ async def runtime_state(ops: OpsCtx) -> tuple[Data, dict[str, Any], list[dict[st
 async def get_runtime(ops: OpsCtx = Depends(ctx)) -> Any:
     data, info, rows, host = await runtime_state(ops)
     cpu, mem = rt.allocated(ops.registry.entries(), data["limits"])
-    eng_out = {k: info[k] for k in ("reachable", "socket", "version", "error")}
+    eng_out = {k: info[k] for k in ("reachable", "socket", "version", "error", "metrics_note")}
     eng_out["live"] = [{k: v for k, v in x.items() if k not in ("host", "networks")} for x in info["live"]]
     apps = [{k: v for k, v in r.items() if k != "upstream"} for r in rows]
     return {

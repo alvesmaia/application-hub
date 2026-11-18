@@ -218,3 +218,12 @@ file path); `--local-login` other than `admins` without Entra is refused (nobody
 writes `HUB_TRUST_PROXY_HEADERS`/`HUB_TRUSTED_PROXIES`. The edge (Caddy) already trusts private ranges and the hub
 trusts the edge network, so behind a host Nginx the forwarded client address reaches the hub; the doc says how to
 check it in the audit trail.
+
+✅ **Task 62 — Containers page on an engine without per-container cgroups**
+From the browser test report of the first real install (rootless Podman, cgroupfs, only `memory pids` delegated):
+every container showed ~2035 MiB and ~198 processes, above its own limits. A container's cgroup enforces its limits,
+so usage above `HostConfig.Memory`/`PidsLimit` proves the engine is reporting another cgroup (`runtime.unmeasured`);
+then all usage is dropped (shown as "—") with the reason. `CpuCfsQuota: false` in the engine info adds the warning
+that the CPU limit is not enforced. Also: the socket on the host (`HUB_CONTAINER_SOCKET_HOST`, now passed to the hub
+by the compose file), image names without `docker.io/library/`/`localhost/` (`runtime.image_label`) and an overcommit
+note instead of a negative free share.
