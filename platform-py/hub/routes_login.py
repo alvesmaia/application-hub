@@ -23,6 +23,7 @@ from hub.auth import (
     entra,
     normalize_email,
     now_ms,
+    permissions,
     positive_env,
     verify,
 )
@@ -131,6 +132,12 @@ def _sso_email(sso: entra.EntraConfig, claims: dict[str, Any]) -> str:
     return email
 
 
+def _local_admin(request: Request, user: dict[str, Any]) -> bool:
+    """Local password and any permission beyond opening apps: SSO never takes it over (roles come from SSO)."""
+    perms, _ = permissions(user, request.app.state.roles)
+    return bool(user.get("password_hash")) and any(p != "acessar_aplicacoes" for p in perms)
+
+
 async def _sso_user(
     request: Request, w: WebCtx, sso: entra.EntraConfig, pending: dict[str, Any], admin_store: Any
 ) -> dict[str, Any]:
@@ -144,6 +151,7 @@ async def _sso_user(
         str(claims.get("name") or ""),
         sso.roles_for(claims),
         sso.default_role,
+        lambda u: _local_admin(request, u),
     )
     if user is None:
         raise entra.SsoError("Usuário desativado. Fale com o administrador.")

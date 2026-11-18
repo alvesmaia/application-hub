@@ -201,3 +201,27 @@ def test_logout_of_sso_session_ends_entra_session(sso: TestClient) -> None:
     assert r.status_code == 303 and loc.startswith(f"{ISS}/{fake_entra.TENANT}/oauth2/v2.0/logout?")
     assert "post_logout_redirect_uri=http%3A%2F%2Ftestserver%2Flogin" in loc
     assert client.get("/", headers={"cookie": f"hub_session={cookie}"}).status_code == 303
+
+
+def test_sso_never_adopts_a_local_admin_account(sso: TestClient) -> None:
+    """Roles come from SSO: the installer's admin (same e-mail) stays a local account; the SSO login gets its own
+    account with the default role and the person's name, even when the admin account was linked before."""
+    client = anon(client_for(create_app()))
+    store = client.app.state.auth  # type: ignore[attr-defined]
+    admin = asyncio.run(
+        store.create_user("ana@contoso.com", "Administrador", ["Administrador"], "Senha-Local-123!", False)
+    )
+    raw = json.loads(
+        store.path.read_text(encoding="utf-8")
+    )  # linked before this rule (an install already in use)
+    next(u for u in raw["users"] if u["id"] == admin["id"]).update(
+        sso_issuer=fake_entra.TENANT, sso_subject="oid-ana"
+    )
+    store.path.write_text(json.dumps(raw), encoding="utf-8")
+    for _ in range(2):
+        assert flow(anon(client), sso).status_code == 303
+    mine = [u for u in users(client) if u["email"] == "ana@contoso.com"]
+    sso_u = next(u for u in mine if u["id"] != admin["id"])
+    assert len(mine) == 2 and sso_u["roles"] == ["Colaborador"] and sso_u["name"] != "Administrador"
+    assert next(u for u in mine if u["id"] == admin["id"])["roles"] == ["Administrador"]
+    assert asyncio.run(store.authenticate("ana@contoso.com", "Senha-Local-123!"))["id"] == admin["id"]

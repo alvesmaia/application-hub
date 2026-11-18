@@ -17,6 +17,10 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   existing `.prod.env` generates only what is missing.
 
 ### Added
+- Apps hidden from the catalog (Settings, "Hidden from the catalog"): only users with access to the app still see
+  it; the others no longer find it under "Other applications".
+- Status page with a 12-month view (one bar per month). Daily availability is kept for 400 days in
+  `uptime-daily.json` (the detailed metrics last 30 days).
 - `install.sh` without questions for sign-in with Microsoft: `--entra-tenant`, `--entra-client-id`,
   `--entra-client-secret-file` (secret to the vault), `--entra-domains`, `--entra-role`, `--local-login`; the end of
   the install prints the Redirect URI to register. `--trusted-proxy <CIDR>` for a reverse proxy in front (e.g. an
@@ -28,6 +32,10 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   `.prod.env` (names shown, values never). The install notice says there is one Postgres.
 
 ### Fixed
+- Signing in with SSO never takes over a local account with admin permissions (e.g. the installer's admin with the
+  same e-mail, even if linked before): the SSO login gets its own account with the default role and the person's
+  name; admin only by assignment or by the Entra group mapping.
+- Status headline said "All systems operational" with an unstable app: it now follows the apps' states.
 - A new app deployed only to staging showed as `Unstable` in the catalog: the hub probed its production upstream,
   which does not exist yet. Production probes now start once the app has a production deployment.
 - The stack ("i") on the Applications cards is shown only to admins (`editar_configuracoes`); the version stays on
@@ -84,6 +92,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   loopback/HTTPS ones kept.
 
 ### Changed
+- Home without the Inbox and Shortcuts widgets (the bell and the menu already reach both); saved layouts that
+  had them still load.
 - `install.sh` with options but no `--yes` now asks for consent; without a terminal it requires `--yes`.
 - The edge mounts `infra/edge` (Caddyfile + `plain.caddy`/`tls.caddy`) and `/certs`: the next full `up -d` recreates
   `app-hub-edge` once (a few seconds).

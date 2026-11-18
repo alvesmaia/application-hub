@@ -8,7 +8,7 @@ import os
 import secrets
 import time
 import unicodedata
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager, nullcontext
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -67,6 +67,9 @@ def now_ms() -> int:
 def _user_login(users: list[dict[str, Any]], login: str) -> dict[str, Any] | None:
     key = login.strip().lower()
     found = [u for u in users if u["email"] == key]
+    found = [
+        u for u in found if u.get("password_hash")
+    ] or found  # the SSO twin of a local admin has no password
     if not found and "@" not in key:
         found = [u for u in users if u["email"].split("@", 1)[0] == key]
     demos = [u for u in found if u["email"].endswith("@demo.local")]
@@ -204,15 +207,24 @@ class AuthStore:
             return user.copy()
 
     async def sso_login(
-        self, issuer: str, subject: str, email: str, name: str, roles: list[str] | None, default_role: str
+        self,
+        issuer: str,
+        subject: str,
+        email: str,
+        name: str,
+        roles: list[str] | None,
+        default_role: str,
+        local_admin: Callable[[dict[str, Any]], bool] = lambda _u: False,
     ) -> tuple[dict[str, Any] | None, bool]:
         """SSO user: by link (issuer+subject), otherwise by email (links it), otherwise creates it (JIT).
-        `roles` (from the group mapping) replaces the roles when not empty. Disabled: (None, False)."""
+        `roles` (from the group mapping) replaces the roles when not empty. Disabled: (None, False).
+        Roles come from SSO: a `local_admin` account (local password + admin permission, e.g. the installer's) is
+        never adopted, not even when linked before; the SSO login gets its own account with the default role."""
         async with self.locked(True) as d:
+            pool = [u for u in d["users"] if not local_admin(u)]
             user = next(
-                (u for u in d["users"] if u.get("sso_issuer") == issuer and u.get("sso_subject") == subject),
-                None,
-            ) or next((u for u in d["users"] if u["email"] == email), None)
+                (u for u in pool if u.get("sso_issuer") == issuer and u.get("sso_subject") == subject), None
+            ) or next((u for u in pool if u["email"] == email), None)
             created = user is None
             if user is None:
                 n = now_ms()

@@ -41,6 +41,7 @@ class SettingsIn(BaseModel):
     brand_color: str = ""
     status_public: bool = False
     status_public_apps: list[str] = []
+    catalog_hidden_apps: list[str] = []
     language: str
     timezone: str
 
@@ -78,6 +79,7 @@ async def _settings(c: AdminCtx) -> dict[str, Any]:
         "brand_color": s.get("brand_color", ""),
         "status_public": bool(s.get("status_public", False)),
         "status_public_apps": list(s.get("status_public_apps", [])),
+        "catalog_hidden_apps": list(s.get("catalog_hidden_apps", [])),
         "language": s.get("language", "pt-BR"),
         "timezone": s.get("timezone", "America/Sao_Paulo"),
     }
@@ -97,7 +99,7 @@ def _check_settings(v: SettingsIn, name: str, color: str, known: set[str]) -> No
         raise AdminError("Fuso horário inválido.")
     if color and not _COLOR.match(color):
         raise AdminError("Cor da marca inválida (use #rrggbb).")
-    if bad := next((a for a in v.status_public_apps if a not in known), None):
+    if bad := next((a for a in [*v.status_public_apps, *v.catalog_hidden_apps] if a not in known), None):
         raise AdminError(f"Aplicação desconhecida: {bad}.")
 
 
@@ -114,6 +116,7 @@ async def put_settings(request: Request, c: AdminCtx = Depends(ctx)) -> dict[str
         "brand_color": color,
         "status_public": v.status_public,
         "status_public_apps": sorted(set(v.status_public_apps)),
+        "catalog_hidden_apps": sorted(set(v.catalog_hidden_apps)),
         "language": v.language,
         "timezone": v.timezone,
     }
@@ -176,7 +179,7 @@ def _usage(request: Request, c: AdminCtx) -> dict[str, Any]:
 async def settings_page(request: Request, c: AdminCtx = Depends(ctx)) -> Response:
     data = await c.store.cfg.read()
     s = await _settings(c)
-    on = set(s["status_public_apps"])
+    on, hidden = set(s["status_public_apps"]), set(s["catalog_hidden_apps"])
     vault = None
     if c.store.vault:
         vault = {
@@ -199,7 +202,10 @@ async def settings_page(request: Request, c: AdminCtx = Depends(ctx)) -> Respons
         langs=LANGUAGES,
         lang_cur=s["language"],
         status_public=s["status_public"],
-        apps=[{"id": a["id"], "short": a["short"], "on": a["id"] in on} for a in c.refs()],
+        apps=[
+            {"id": a["id"], "short": a["short"], "on": a["id"] in on, "hidden": a["id"] in hidden}
+            for a in c.refs()
+        ],
         vault=vault,
         sso=sso_status(request),
         usage=usage,

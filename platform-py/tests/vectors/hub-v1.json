@@ -3322,7 +3322,8 @@
             "platform_name": "Application Hub",
             "status_public": false,
             "status_public_apps": [],
-            "timezone": "America/Sao_Paulo"
+            "timezone": "America/Sao_Paulo",
+            "catalog_hidden_apps": []
           }
         ],
         "properties": {
@@ -3346,6 +3347,12 @@
           },
           "timezone": {
             "type": "string"
+          },
+          "catalog_hidden_apps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -3353,6 +3360,7 @@
           "brand_color",
           "status_public",
           "status_public_apps",
+          "catalog_hidden_apps",
           "language",
           "timezone"
         ],
@@ -3396,6 +3404,12 @@
           "timezone": {
             "const": "America/Sao_Paulo",
             "type": "string"
+          },
+          "catalog_hidden_apps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -10609,6 +10623,7 @@
                   "platform_name": "Application Hub",
                   "status_public": false,
                   "status_public_apps": [],
+                  "catalog_hidden_apps": [],
                   "timezone": "America/Sao_Paulo"
                 },
                 "schema": {
@@ -10670,6 +10685,7 @@
                   "platform_name": "Application Hub",
                   "status_public": false,
                   "status_public_apps": [],
+                  "catalog_hidden_apps": [],
                   "timezone": "America/Sao_Paulo"
                 },
                 "schema": {

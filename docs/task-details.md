@@ -248,3 +248,27 @@ App novo (dinâmico) implantado só em staging não tem contêiner de produção
 `targets()` deixa de fora app dinâmico sem implantação `Implantado` em Produção (`deployed_versions`). Teste em
 `tests/test_staging_only_probe.py`. Não mexido: o aviso "SBOM ausente" é correto (o pacote não traz
 `sbom.spdx.json`; `hub pack` não gera); o nome "Administrador" após SSO é a tarefa 61.
+
+✅ **Task 69 — SSO não herda admin local**
+Regra escolhida pelo dono: papéis vêm do SSO. `AuthStore.sso_login` recebe `local_admin` (conta com senha local e
+permissão além de `acessar_aplicacoes`, calculada em `routes_login._local_admin`); essas contas ficam fora da busca
+por vínculo e por e-mail, então o SSO cria uma conta própria (papel padrão, nome do Entra). Corrige também uma
+instalação já em uso, em que o admin local foi ligado ao SSO antes. O login local com e-mail repetido escolhe a conta
+com senha (`_user_login`). Teste em `tests/test_entra.py`.
+
+✅ **Task 70 — App oculto no catálogo**
+`settings.catalog_hidden_apps` (Configurações, "Ocultas no catálogo"): o app sai de "Outras aplicações" para quem
+não tem acesso; quem tem acesso continua vendo. A busca já mostrava só apps acessíveis. Teste em
+`tests/test_catalog_hidden.py`.
+
+✅ **Task 71/72 — Home sem Inbox e sem Atalhos**
+Widgets removidos de `WIDGETS`, do template e do CSS; layouts salvos com eles continuam carregando (`known`).
+E2E `10-onda9` passou a usar Recentes e Status.
+
+✅ **Task 73 — Mensagem geral do Status**
+`status_data` usa o estado dos apps (indisponível, instável, degradado) além dos incidentes abertos.
+
+✅ **Task 74 — Status de 12 meses**
+`hub/insight/uptime_daily.py`: a cada `Metrics.save` os buckets de 5 min viram uma linha por dia em
+`uptime-daily.json` (400 dias; um dia parcial nunca sobrescreve o completo). `daily_uptime` agrupa os buckets numa
+passada só e usa a linha diária quando o dia saiu da janela de 30 dias. `/status?periodo=12m` mostra uma barra por mês.

@@ -81,6 +81,14 @@ def path_label(reg: Registry, path: str) -> str | None:
     return f"{entry.name} · {section_label(sec)}" if sec and sec != "dashboard" else entry.name
 
 
+def catalog_hidden(data_dir: Path) -> set[str]:
+    """Apps hidden from the catalog (Settings): only users with access to them still see them."""
+    with suppress(OSError, ValueError, AttributeError):
+        raw = json.loads((data_dir / "admin.json").read_text(encoding="utf-8"))
+        return set(raw.get("settings", {}).get("catalog_hidden_apps", []))
+    return set()
+
+
 def deployed_versions(data_dir: Path) -> dict[str, str]:
     """Active release per app: `deployments.json` (legacy) and, on top, the `Implantado` (Deployed) deployment in Production from `ops.json`."""
     out: dict[str, str] = {}

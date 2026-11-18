@@ -103,7 +103,7 @@
 .obs-span-dur{text-align:right;color:var(--color-text-muted)}
 .status-banner{border-radius:var(--radius-5xl);padding:var(--space-16) var(--space-20);font-weight:600;margin-bottom:var(--space-18)}
 .status-banner-ok{background:var(--color-success-soft);color:var(--color-success)}
-.status-banner-bad{background:var(--color-danger-soft);color:var(--color-danger-strong)}
+.status-banner-bad{background:var(--color-danger-soft);color:var(--color-danger)}
 .status-apps{display:grid;gap:var(--space-18)}
 .status-app-head{display:flex;align-items:center;gap:var(--space-8);margin-bottom:var(--space-8)}
 .status-app-head .status-pill{margin-left:auto}

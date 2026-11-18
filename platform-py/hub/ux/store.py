@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 from hub.filelock import file_lock
 
-WIDGETS = ("onboarding", "favorites", "inbox", "recents", "status", "shortcuts")
+WIDGETS = ("onboarding", "favorites", "recents", "status")
 # (key, required permission, link): "Getting started".
 STEPS: tuple[tuple[str, str | None, str], ...] = (
     ("open_app", None, "/applications"),
@@ -136,11 +136,16 @@ class UxStore:
         self._reload()
         own = self.data.users.get(user)
         if own and own.layout is not None:
-            return list(own.layout), "user"
+            return known(own.layout), "user"
         for r in roles:
             if r in self.data.role_layouts:
-                return list(self.data.role_layouts[r]), "role"
+                return known(self.data.role_layouts[r]), "role"
         return list(WIDGETS), "default"
+
+
+def known(widgets: list[str]) -> list[str]:
+    """A layout saved before a widget was removed (inbox and shortcuts left the Home) still loads and saves."""
+    return [w for w in widgets if w in WIDGETS]
 
 
 def valid_layout(widgets: list[str]) -> list[str]:

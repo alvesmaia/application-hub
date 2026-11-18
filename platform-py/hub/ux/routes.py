@@ -17,7 +17,6 @@ from pydantic import BaseModel, ValidationError
 from hub.gateway.registry import Registry
 from hub.insight.analytics import FEATURES
 from hub.ux import catalog, status
-from hub.ux.inbox_routes import entries_of
 from hub.ux.store import KINDS, STEPS, WIDGETS, Channel, Prefs, UxStore, valid_layout
 from hub.ux.texts import ago, t, tn, tr
 
@@ -183,7 +182,6 @@ async def home(request: Request, c: UxCtx = Depends(ctx)) -> Response:
     vis = visible(request)
     mine = catalog.cards(c.reg, c.data_dir, prefs.favorites, vis, allowed=True, lang=lang)
     shown = [(w, False) for w in layout if w in WIDGETS] + [(w, True) for w in WIDGETS if w not in layout]
-    inbox_items = [e for e in entries_of(request) if not e["archived"] and e["in_app"]]
     page = {**c.page_ctx(request), **_HELPERS} | {
         "greeting": tn("home.greeting", (user["name"].split() or [""])[0], lang),
         "subtitle": tn("home.subtitle", len(mine), lang),
@@ -193,11 +191,8 @@ async def home(request: Request, c: UxCtx = Depends(ctx)) -> Response:
         "widget_options": [(w, t(f"widget.{w}", lang)) for w in WIDGETS],
         "favs": [card for f in prefs.favorites for card in mine if card.id == f],
         "recents": _recents(c, prefs, lang),
-        "inbox": inbox_items[:5],
-        "unread": sum(1 for e in inbox_items[:5] if not e["read"]),
         "states": [(i, n, *catalog.state_label(k, lang)) for i, n, k in await c.live_states(request, vis)],
         **_onboarding(prefs, perms, lang),
-        "analytics": "editar_configuracoes" in perms,
     }
     return c.templates.TemplateResponse(request, "home.html", page)
 
@@ -209,7 +204,9 @@ async def applications(request: Request, c: UxCtx = Depends(ctx)) -> Response:
     vis = visible(request)
     states = {i: catalog.state_label(k, lang) for i, _, k in await c.live_states(request, vis)}
     mine = catalog.cards(c.reg, c.data_dir, prefs.favorites, vis, allowed=True, lang=lang)
-    others = catalog.cards(c.reg, c.data_dir, prefs.favorites, vis, allowed=False, lang=lang)
+    hidden = catalog.catalog_hidden(c.data_dir)
+    others = [x for x in catalog.cards(c.reg, c.data_dir, prefs.favorites, vis, allowed=False, lang=lang)
+              if x.id not in hidden]  # fmt: skip
     page = {**c.page_ctx(request), **_HELPERS} | {
         "mine": [
             (card, catalog.card_texts(card, lang), states.get(card.id, catalog.state_label("ok", lang)))
@@ -228,7 +225,8 @@ async def status_page(request: Request, c: UxCtx = Depends(ctx)) -> Response:
     vis = visible(request) if signed_in else c.public_status()
     insight = request.app.state.insight
     admin_data = await insight.ops.read()
-    data = status.status_data(c.reg, vis, time.time(), insight.tel.metrics, admin_data)
+    months = 12 if request.query_params.get("periodo") == "12m" else 0
+    data = status.status_data(c.reg, vis, time.time(), insight.tel.metrics, admin_data, months)
     perms = getattr(request.state, "permissions", [])
     meta = json.dumps(
         {
@@ -256,6 +254,7 @@ async def status_page(request: Request, c: UxCtx = Depends(ctx)) -> Response:
         "incident_meta": meta,
         "can_edit": "editar_configuracoes" in perms,
         "ok": data.overall.startswith("Todos"),
+        "months": months,
     }
     return c.templates.TemplateResponse(request, "status.html" if signed_in else "status_public.html", page)
 

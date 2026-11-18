@@ -1,4 +1,4 @@
-"""Status page data: current situation, 30-day bars, SLO and incidents (the hub's own metrics)."""
+"""Status page data: current situation, 30-day or 12-month bars, SLO and incidents (the hub's own metrics)."""
 
 from __future__ import annotations
 
@@ -69,13 +69,27 @@ def app_states(
     ]
 
 
-def _uptime_bars(days: list[tuple[int, float | None]]) -> list[tuple[str, str]]:
+def _uptime_bars(periods: list[tuple[str, float | None]]) -> list[tuple[str, str]]:
     bars: list[tuple[str, str]] = []
-    for t, v in days:
-        date = _label(t * 1000)
+    for date, v in periods:
         cls = "none" if v is None else "ok" if v >= 0.999 else "warn" if v >= 0.98 else "bad"
         bars.append((f"uptime-bar uptime-{cls}", f"{date}: sem dados" if v is None else f"{date}: {pct(v)}"))
     return bars
+
+
+def _monthly(days: list[tuple[int, float | None]], months: int, now: float) -> list[tuple[str, float | None]]:
+    """Mean of the known days of each of the last `months` calendar months, oldest first (label `mm/aaaa`)."""
+    cur = datetime.fromtimestamp(now, _GMT3)
+    keys = [
+        ((cur.year * 12 + cur.month - 1 - i) // 12, (cur.month - 1 - i) % 12 + 1)
+        for i in range(months - 1, -1, -1)
+    ]
+    by: dict[tuple[int, int], list[float]] = {k: [] for k in keys}
+    for t, v in days:
+        d = datetime.fromtimestamp(t, UTC)
+        if v is not None and (d.year, d.month) in by:
+            by[(d.year, d.month)].append(v)
+    return [(f"{mo:02d}/{y}", sum(vs) / len(vs) if vs else None) for (y, mo), vs in by.items()]
 
 
 def _slo_line(m: Metrics | None, slos: list[dict[str, Any]], app_id: str) -> str | None:
@@ -90,16 +104,23 @@ def _slo_line(m: Metrics | None, slos: list[dict[str, Any]], app_id: str) -> str
 
 
 def _status_app(
-    m: Metrics | None, slos: list[dict[str, Any]], app_id: str, name: str, key: str, now: float
+    m: Metrics | None,
+    slos: list[dict[str, Any]],
+    app_id: str,
+    name: str,
+    key: str,
+    now: float,
+    months: int = 0,
 ) -> StatusApp:
+    """`months` = 0: one bar per day of the last 30; else one bar per calendar month."""
     label, css = state_label(key)
-    days = daily_uptime(m, app_id, "producao", 30, int(now)) if m else []
+    days = daily_uptime(m, app_id, "producao", months * 31 if months else 30, int(now)) if m else []
     known = [v for _, v in days if v is not None]
-    uptime = f"{pct(sum(known) / len(known))} em 30 dias" if known else "sem dados"
-    bars = _uptime_bars(days)
-    return StatusApp(
-        name, "Produção", label, css, uptime, bars or _empty_bars(now), _slo_line(m, slos, app_id)
-    )
+    span = f"{months} meses" if months else "30 dias"
+    uptime = f"{pct(sum(known) / len(known))} em {span}" if known else "sem dados"
+    periods = _monthly(days, months, now) if months else [(_label(t * 1000), v) for t, v in days]
+    bars = _uptime_bars(periods) or _empty_bars(now)
+    return StatusApp(name, "Produção", label, css, uptime, bars, _slo_line(m, slos, app_id))
 
 
 def _incident_row(i: dict[str, Any], names: dict[str, str], ms: int) -> dict[str, Any]:
@@ -127,6 +148,7 @@ def status_data(
     now: float,
     m: Metrics | None = None,
     admin_data: dict[str, Any] | None = None,
+    months: int = 0,
 ) -> StatusData:
     data, admin_data = StatusData(), admin_data or {}
     shown = lambda app: visible is None or app in visible  # noqa: E731
@@ -134,12 +156,14 @@ def status_data(
     open_ = [i for i in incidents if i["resolved"] is None]
     slos = admin_data.get("slos", [])
     names = {e.id: e.display.get("short") or e.name for e in reg.entries()}
-    data.apps = [_status_app(m, slos, a, n, k, now) for a, n, k in app_states(reg, visible, m, incidents)]
+    states = app_states(reg, visible, m, incidents)
+    data.apps = [_status_app(m, slos, a, n, k, now, months) for a, n, k in states]
     ms = int(now * 1000)
     data.incidents = [_incident_row(i, names, ms) for i in incidents[:30]]
-    if any(i["severity"] == "major" for i in open_):
+    keys = {k for _, _, k in states}  # the headline follows the apps' states (an unstable app included)
+    if "down" in keys or any(i["severity"] == "major" for i in open_):
         data.overall = "Há aplicações indisponíveis"
-    elif open_:
+    elif keys - {"ok"} or open_:
         data.overall = "Algumas aplicações com problemas"
     return data
 

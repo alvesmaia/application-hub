@@ -131,8 +131,6 @@ body.hub-modal-open{overflow:hidden}
 .hub-list a:hover{color:var(--color-accent)}
 .hub-list small{color:var(--color-text-secondary);text-align:right}
 .hub-list li.unread a::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--color-accent);margin-right:6px;vertical-align:middle}
-.hub-shortcuts a,.hub-shortcuts .linklike{display:inline-flex;gap:var(--space-8);align-items:center;color:var(--color-text);text-decoration:none;font-weight:600}
-.hub-shortcuts svg{width:18px;fill:none;stroke:currentColor;stroke-width:1.8}
 .hub-fav-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:var(--space-8)}
 .hub-fav{display:flex;flex-direction:column;align-items:flex-start;gap:var(--space-6);padding:var(--space-10);border:1px solid var(--color-border);border-radius:var(--radius-3xl);color:var(--color-text);font-weight:600;text-decoration:none}
 .hub-fav:hover{border-color:var(--color-accent)}
@@ -284,7 +282,7 @@ a.primary-button,a.secondary-button,a.filter-button,a.filter-chip{text-decoratio
 
 /* ===== Compact (−15%): no zoom on html (the 1.2 zoom was removed from styles.css); real sizes,
  * text ≥ 12px, targets ≥ 28px. Last on purpose. */
-.hub-checklist a:hover,.hub-checklist .linklike:hover,.hub-list a:hover,.hub-shortcuts a:hover,.hub-shortcuts .linklike:hover{color:var(--color-accent-hover);text-decoration:none}
+.hub-checklist a:hover,.hub-checklist .linklike:hover,.hub-list a:hover{color:var(--color-accent-hover);text-decoration:none}
 .hub-checklist li.done a,.hub-checklist li.done .linklike{text-decoration:line-through}
 .hub-checklist{gap:var(--space-6)}
 .hub-check{width:18px;height:18px}

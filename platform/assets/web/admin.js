@@ -346,6 +346,7 @@
         brand_color: settingsForm.brand_color_on.checked ? settingsForm.brand_color.value : '',
         status_public: settingsForm.status_public.checked,
         status_public_apps: $$('input[name="status_public_app"]:checked', settingsForm).map((i) => i.value),
+        catalog_hidden_apps: $$('input[name="catalog_hidden_app"]:checked', settingsForm).map((i) => i.value),
         language: settingsForm.language.value,
         timezone: settingsForm.timezone.value,
       };

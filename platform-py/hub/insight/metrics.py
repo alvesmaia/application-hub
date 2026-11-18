@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from hub.filelock import file_lock
+from hub.insight import uptime_daily
 
 BOUNDS = (5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 1000.0, 2500.0, 5000.0, 10000.0, 30000.0)
 NB = len(BOUNDS) + 1
@@ -120,6 +121,8 @@ def _slot(q: deque[Bucket], t: int, keep: int) -> Bucket:
 class Metrics:
     def __init__(self, directory: Path | None = None) -> None:
         self.path = directory / "metrics.json" if directory else None
+        self.days_path = directory / "uptime-daily.json" if directory else None
+        self.days: uptime_daily.Days = uptime_daily.read(self.days_path) if self.days_path else {}
         self.series: dict[str, Series] = {}
         self.listener: Callable[[str, str, int, float], None] | None = None
         # Replicas on the same volume: what this replica added since the last write (series, t) → increment.
@@ -177,6 +180,9 @@ class Metrics:
             os.replace(tmp, self.path)
             self._mtime = self.path.stat().st_mtime_ns
             self._pending.clear()
+        if self.days_path:
+            coarse = {k: list(s.coarse) for k, s in self.series.items()}
+            self.days = uptime_daily.save(self.days_path, coarse, now_s())
 
     def _s(self, app: str, env: str) -> Series:
         return self.series.setdefault(f"{app}|{env}", Series())
@@ -322,14 +328,15 @@ def slo_status(m: Metrics, slo: dict[str, Any], now: int | None = None) -> dict[
 
 
 def daily_uptime(m: Metrics, app: str, env: str, days: int, now: int) -> list[tuple[int, float | None]]:
-    """Uptime per day, oldest to today: OK probes; without probes, success rate; without anything, `None`."""
+    """Uptime per day, oldest to today: OK probes; without probes, success rate; without anything, `None`.
+    The detailed buckets are folded once per call (a year of days must not rescan them per day); a day they no
+    longer cover comes from the daily rows (`uptime_daily`)."""
     today = now - now % 86_400
-    out: list[tuple[int, float | None]] = []
-    for i in range(days - 1, -1, -1):
-        frm = today - i * 86_400
-        w = m.window(app, env, frm, frm + 86_400)
-        out.append((frm, w.probes_ok / w.probes if w.probes else (w.availability if w.requests else None)))
-    return out
+    s = m.series.get(f"{app}|{env}")
+    live = uptime_daily.fold(s.coarse if s else ())
+    stored = m.days.get(f"{app}|{env}", {})
+    frms = [today - i * 86_400 for i in range(days - 1, -1, -1)]
+    return [(f, uptime_daily.uptime(live.get(str(f)) or stored.get(str(f)))) for f in frms]
 
 
 # ---- traces --------------------------------------------------------------------------

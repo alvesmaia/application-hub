@@ -61,3 +61,13 @@
 - ✅ 66 · Deploy no Podman rootless: alias DNS do nome final no candidato, staging sem os aliases de produção, implantação só conclui se o hub alcança o app pelo nome (senão falha com a causa)
 - ✅ 67 · Botão "i" (stack) dos cards de Aplicações só para admin
 - ✅ 68 · App novo só em staging marcado "Unstable": sonda de produção só depois da primeira implantação em produção
+
+## Refinamentos pedidos pelo dono (2026-11-18)
+- ✅ 69 · Usuário SSO novo entra sem papel de admin (admin só por atribuição explícita)
+- ✅ 70 · App oculto no catálogo: visível só para quem tem acesso ao app (config por app)
+- ✅ 71 · Home sem a opção Inbox
+- ✅ 72 · Home sem o contêiner de atalhos (shortcuts)
+- ✅ 73 · Status: mensagem geral coerente com app instável
+- ✅ 74 · Status: histórico de disponibilidade de um ano
+- ⬜ 75 · URL própria de staging: /staging/apps/<id>/… (x-hub-base com o prefixo; produção sem mudança)
+- ⬜ 76 · Selo "STAGING" no header global quando o ambiente for staging

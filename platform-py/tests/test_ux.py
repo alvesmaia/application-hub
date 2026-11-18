@@ -31,16 +31,14 @@ def test_home_renders_widgets_and_checklist(client: TestClient) -> None:
     order = [
         'data-widget="onboarding"',
         'data-widget="favorites"',
-        'data-widget="inbox"',
         'data-widget="recents"',
         'data-widget="status"',
-        'data-widget="shortcuts"',
     ]
     assert [h.index(o) for o in order] == sorted(h.index(o) for o in order)
+    assert 'data-widget="inbox"' not in h and 'data-widget="shortcuts"' not in h  # the owner removed both
     assert 'data-layout-source="default"' in h
     assert h.count("data-step=") == 7
     assert "0/7 concluídos" in h
-    assert 'href="/admin#uso"' in h
     assert "Fixe aplicações com a estrela no catálogo." in h
 
 
@@ -55,7 +53,7 @@ def test_home_layout_prefs_roundtrip(client: TestClient) -> None:
     assert client.put("/api/me/home", json={}, headers=HDR).status_code == 400
     reset = client.delete("/api/me/home", headers=HDR).json()
     assert reset["source"] == "default"
-    assert len(reset["widgets"]) == 6
+    assert len(reset["widgets"]) == 4
 
 
 def test_favorites_and_catalog(client: TestClient) -> None:
@@ -190,3 +188,13 @@ def test_catalog_stack_button_only_for_admins(data_dir: Path) -> None:
     page = admin.get("/applications").text
     assert 'data-app="ativos"' in page and 'class="app-version"' in page
     assert "hub-stack-toggle" not in page and "hub-stack-chip" not in page
+
+
+def test_a_saved_layout_with_removed_widgets_still_loads_and_saves(tmp_path: Path) -> None:
+    store = UxStore(tmp_path / "ux.json")
+    store.set_role_layout("Colaborador", ["status"])
+    raw = json.loads((tmp_path / "ux.json").read_text(encoding="utf-8"))
+    raw["role_layouts"]["Colaborador"] = ["inbox", "status", "shortcuts"]  # saved before the removal
+    (tmp_path / "ux.json").write_text(json.dumps(raw), encoding="utf-8")
+    layout, _ = UxStore(tmp_path / "ux.json").layout_for("u", ["Colaborador"])
+    assert layout == ["status"] and valid_layout(layout) == ["status"]

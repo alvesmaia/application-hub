@@ -94,6 +94,7 @@ class Settings(Out):
     brand_color: str
     status_public: bool
     status_public_apps: list[str]
+    catalog_hidden_apps: list[str]
     language: str
     timezone: str
 
@@ -103,6 +104,7 @@ class SettingsUpdate(In):
     brand_color: str = Field(default="", pattern=r"^(#[0-9a-fA-F]{6})?$")
     status_public: bool = False
     status_public_apps: list[str] = Field(default_factory=list)
+    catalog_hidden_apps: list[str] = Field(default_factory=list)
     language: Literal["pt-BR", "en"]
     timezone: Literal["America/Sao_Paulo"]
 

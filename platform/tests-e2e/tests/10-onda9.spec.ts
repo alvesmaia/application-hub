@@ -217,28 +217,28 @@ test('início: personalizar (remover, reordenar pelo teclado, adicionar), favori
   await expect(page.locator('[data-widget="favorites"] a[href="/apps/servicos"]')).toBeVisible();
   await page.locator('[data-home-customize]').click();
   await expect(page.locator('[data-home-editor]')).toBeVisible();
-  // Remove "Atalhos".
-  await page.locator('[data-widget="shortcuts"] [data-widget-remove]').click();
-  await expect(page.locator('[data-widget="shortcuts"]')).toBeHidden();
-  // Moves "Inbox" up with the keyboard.
+  // Remove "Recentes".
+  await page.locator('[data-widget="recents"] [data-widget-remove]').click();
+  await expect(page.locator('[data-widget="recents"]')).toBeHidden();
+  // Moves "Status" up with the keyboard.
   const order = async () => page.locator('.hub-widget:not([hidden])').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.widget));
   const before = await order();
-  const up = page.locator('[data-widget="inbox"] [data-widget-up]');
+  const up = page.locator('[data-widget="status"] [data-widget-up]');
   await up.focus();
   await page.keyboard.press('Enter');
   const after = await order();
-  expect(after.indexOf('inbox')).toBe(before.indexOf('inbox') - 1);
+  expect(after.indexOf('status')).toBe(before.indexOf('status') - 1);
   await expect(page.locator('#hub-live')).toContainText('posição');
   await page.locator('[data-home-done]').click();
   await expect.poll(async () => (await json(await api.get('/api/me/prefs'))).layout).toEqual(after);
   await page.reload();
   expect(await order()).toEqual(after);
-  await expect(page.locator('[data-widget="shortcuts"]')).toBeHidden();
+  await expect(page.locator('[data-widget="recents"]')).toBeHidden();
   // Add back and restore the default.
   await page.locator('[data-home-customize]').click();
-  await page.locator('[data-home-add]').selectOption('shortcuts');
+  await page.locator('[data-home-add]').selectOption('recents');
   await page.locator('[data-home-add-btn]').click();
-  await expect(page.locator('[data-widget="shortcuts"]')).toBeVisible();
+  await expect(page.locator('[data-widget="recents"]')).toBeVisible();
   await page.locator('[data-home-reset]').click();
   await expect.poll(async () => (await json(await api.get('/api/me/prefs'))).layout_source).toBe('default');
 });
