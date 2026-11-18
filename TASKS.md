@@ -44,7 +44,11 @@
   - ✅ --ca-file grande (bundle do sistema) recusado com mensagem clara
   - ✅ reexecução: aviso quando opção diverge do .prod.env
   - ✅ doctor: espelho interno falhando pelo proxy sugere --no-proxy <host>
-- ⬜ 60 · Flags não interativas: login Microsoft (Entra) e proxy reverso na frente
-  - ⬜ --entra-tenant/--entra-client-id/--entra-client-secret-file/--entra-domains/--entra-role/--local-login
-  - ⬜ --trusted-proxy <CIDR>; doc do Nginx externo com TLS
-  - ⬜ docs, CHANGELOG, hub-check
+- ✅ 60 · Flags não interativas: login Microsoft (Entra) e proxy reverso na frente
+  - ✅ --entra-tenant/--entra-client-id/--entra-client-secret-file/--entra-domains/--entra-role/--local-login
+  - ✅ --trusted-proxy <CIDR>; doc do Nginx externo com TLS
+  - ✅ docs, CHANGELOG, hub-check
+- ⬜ 61 · Nome real da pessoa vindo do diretório (sugestão do agente implantador; analisar antes de implementar)
+  - ⬜ login Entra: nome pelo claim `name` (fallback `preferred_username`, e-mail), sem sufixos "(Empresa)"/", external"
+  - ⬜ conciliação no login: busca por `sub`, senão adota a conta pelo e-mail (sem duplicar); nome atualizado, contas locais mantêm o seu
+  - ⬜ opcional: job LDAP diário (lote 50, reconsulta anual, status por usuário), inativo sem LDAP

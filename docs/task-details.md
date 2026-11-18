@@ -209,3 +209,12 @@ not in its `NO_PROXY`); the doctor's proof build uses `podman --cgroup-manager=c
 socket and that socket does not exist yet; `--ca-file` over 64 KB is refused (it goes to the builds as one build
 arg, `EXTRA_CA_PEM`; Linux caps one argument at 128 KB); a mirror failing through the proxy gets the
 `--no-proxy <host>` hint; a rerun warns about instance options that differ from `.prod.env`.
+
+✅ **Task 60 — install flags for Entra sign-in and a reverse proxy in front**
+What the interactive "advanced options" already wrote to `.prod.env` now also comes from flags (`scripts/install/opts.sh`):
+the Entra trio is validated together (same patterns as the questions), the client secret is read from a file
+(CRLF-safe) and stored in the vault at step 4c, never in `.prod.env`, the output or `install-cmd.txt` (which keeps the
+file path); `--local-login` other than `admins` without Entra is refused (nobody could sign in). `--trusted-proxy`
+writes `HUB_TRUST_PROXY_HEADERS`/`HUB_TRUSTED_PROXIES`. The edge (Caddy) already trusts private ranges and the hub
+trusts the edge network, so behind a host Nginx the forwarded client address reaches the hub; the doc says how to
+check it in the audit trail.

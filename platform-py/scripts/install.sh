@@ -39,6 +39,13 @@
 #   --doctor             only the diagnosis (uses .prod.env when it exists); exit 1 when something failed
 #   --skip-doctor        installs even with diagnosis failures
 #
+# Sign-in with Microsoft and a reverse proxy in front, without questions (Redirect URI to register in the app
+# registration: <public URL>/auth/entra/callback; the secret goes to the vault, never to .prod.env):
+#   --entra-tenant ID --entra-client-id ID --entra-client-secret-file FILE   (the three together)
+#   --entra-domains LIST   accepted e-mail domains     --entra-role Leitor|Colaborador|Operador|Administrador
+#   --local-login admins|todos|nenhum   e-mail/password sign-in besides Microsoft (default admins)
+#   --trusted-proxy CIDR   reverse proxy in front (e.g. Nginx with TLS): its X-Forwarded-* headers are trusted
+#
 # Rootless Podman: with a systemd user session the install enables podman.socket and podman-restart.service (start
 # after a reboot). On a host without systemd the hub runs its own API socket (cgroupfs, no systemd healthchecks) and
 # an @reboot line in the user's crontab runs scripts/hub-start.sh. A systemd host whose user session is missing (no
@@ -79,6 +86,9 @@ COMPOSE_VER=v2.29.7
 COMPOSE_SHA=383ce6698cd5d5bbf958d2c8489ed75094e34a77d340404d9f32c4ae9e12baf0
 LIB=$(cd "$(dirname "$0")" && pwd)/install
 ORIG_ARGS=("$@")
+ADV=n OBJ_DIR="" HEAD_DIR="" HEAD_URL="" HEAD_TOKEN="" OFF_KIND=nenhuma OFF_S3="" ENTRA=n
+ENTRA_TENANT="" ENTRA_CLIENT="" ENTRA_DOMAINS="" ENTRA_ROLE=Colaborador ENTRA_LOCAL=admins ENTRA_SECRET="" ENTRA_SECRET_FILE=""
+ADMIN_CIDRS="" PROXY="" PROXIES=172.16.0.0/12 TELEMETRY=s OTLP="" UPDATES=s PUBDOCS=s BUILD_CPUS=2
 if [ -f "$LIB/net.sh" ]; then
   # shellcheck source=install/net.sh
   . "$LIB/net.sh"
@@ -126,6 +136,13 @@ while [ $# -gt 0 ]; do
     --engine-store) ENGINE_STORE=$2; shift; ASKED=1 ;;
     --tls-cert) TLS_CERT=$2; shift; ASKED=1 ;;
     --tls-key) TLS_KEY=$2; shift; ASKED=1 ;;
+    --entra-tenant) ENTRA_TENANT=$2; ENTRA=s; shift; ASKED=1 ;;
+    --entra-client-id) ENTRA_CLIENT=$2; ENTRA=s; shift; ASKED=1 ;;
+    --entra-client-secret-file) ENTRA_SECRET_FILE=$2; ENTRA=s; shift; ASKED=1 ;;
+    --entra-domains) ENTRA_DOMAINS=$2; shift; ASKED=1 ;;
+    --entra-role) ENTRA_ROLE=$2; shift; ASKED=1 ;;
+    --local-login) ENTRA_LOCAL=$2; shift; ASKED=1 ;;
+    --trusted-proxy) PROXIES=$2; PROXY=s; shift; ASKED=1 ;;
     --autostart) AUTOSTART=$2; shift
       case "$AUTOSTART" in cron | systemd | none) ;; *) echo "--autostart: '$AUTOSTART' inválido (cron, systemd ou none)" >&2; exit 2 ;; esac ;;
     -y | --yes) YES=1 ;;
@@ -161,9 +178,6 @@ secret() { # secret <variable> <question>: no echo (the answer never shows on th
   echo >&4
 }
 yes_no() { case "$1" in s | S | y | Y) return 0 ;; *) return 1 ;; esac; }
-ADV=n OBJ_DIR="" HEAD_DIR="" HEAD_URL="" HEAD_TOKEN="" OFF_KIND=nenhuma OFF_S3="" ENTRA=n
-ENTRA_TENANT="" ENTRA_CLIENT="" ENTRA_DOMAINS="" ENTRA_ROLE=Colaborador ENTRA_LOCAL=admins ENTRA_SECRET=""
-ADMIN_CIDRS="" PROXY="" PROXIES=172.16.0.0/12 TELEMETRY=s OTLP="" UPDATES=s PUBDOCS=s BUILD_CPUS=2
 # a rerun keeps the answers already in .prod.env (it only starts what is missing): no questions again
 if [ "$CONFIG_ONLY" = 0 ] && [ -f "$LIB/../../.prod.env" ]; then
   echo "usando platform-py/.prod.env existente: sem perguntas" >&2; ASKED=1
@@ -249,6 +263,7 @@ fi
 case "$PROJECT" in app-hub | app-hub-*) ;; *) echo "--project deve começar com app-hub (trava do hub)" >&2; exit 2 ;; esac
 net_validate
 tls_validate
+opts_validate
 [ "$CONFIG_ONLY" = 1 ] || rootless_detect
 disk_validate
 if [ "$DOCTOR_ONLY" = 1 ]; then # read-only: no consent, nothing written
@@ -393,22 +408,14 @@ setv() { # setv KEY VALUE: replaces or appends in .prod.env (VALUE may contain a
 net_write
 disk_write
 tls_write
+opts_write
 if yes_no "$ADV"; then
   [ -n "$OBJ_DIR" ] && { mkdir -p "$OBJ_DIR" 2>/dev/null || true; setv HUB_OBJSTORE_DIR "$OBJ_DIR"; }
   [ -n "$HEAD_DIR" ] && { mkdir -p "$HEAD_DIR" 2>/dev/null || true; setv HUB_AUDIT_HEAD_DIR "$HEAD_DIR"; }
   [ -n "$HEAD_URL" ] && setv HUB_AUDIT_HEAD_URL "$HEAD_URL"
   [ -n "$HEAD_TOKEN" ] && setv HUB_AUDIT_HEAD_TOKEN "$HEAD_TOKEN"
   [ -n "$OFF_S3" ] && setv HUB_BACKUP_OFFSITE_URL "$OFF_S3"
-  if yes_no "$ENTRA"; then
-    setv HUB_SSO_PROVIDER entra
-    setv HUB_ENTRA_TENANT_ID "$ENTRA_TENANT"
-    setv HUB_ENTRA_CLIENT_ID "$ENTRA_CLIENT"
-    [ -n "$ENTRA_DOMAINS" ] && setv HUB_ENTRA_ALLOWED_DOMAINS "$ENTRA_DOMAINS"
-    setv HUB_ENTRA_DEFAULT_ROLE "$ENTRA_ROLE"
-    setv HUB_LOCAL_LOGIN "$(case "$ENTRA_LOCAL" in todos) echo 1 ;; nenhum) echo 0 ;; *) echo admins ;; esac)"
-  fi
   [ -n "$ADMIN_CIDRS" ] && setv HUB_ADMIN_ALLOWED_CIDRS "$ADMIN_CIDRS"
-  if yes_no "$PROXY"; then setv HUB_TRUST_PROXY_HEADERS 1; setv HUB_TRUSTED_PROXIES "$PROXIES"; fi
   yes_no "$TELEMETRY" || setv HUB_TELEMETRY 0
   [ -n "$OTLP" ] && setv OTEL_EXPORTER_OTLP_ENDPOINT "$OTLP"
   yes_no "$UPDATES" || setv HUB_UPDATE_CHECK 0

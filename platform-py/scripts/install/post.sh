@@ -42,10 +42,13 @@ final_message() {
   echo "Senha temporária do primeiro acesso:  cat $dir/.secrets/primeiro-acesso.txt  (apague depois de entrar)"
   echo "Chave mestra do cofre: $dir/.secrets/master.key — copie para fora do servidor."
   if [ -f "$dir/.secrets/hub-env.sh" ]; then echo "Comandos manuais no engine do hub:  source $dir/.secrets/hub-env.sh"; fi
+  if [ "${HUB_SSO_PROVIDER:-}" = entra ]; then
+    echo "Login Microsoft: registre no app registration a Redirect URI $HUB_PUBLIC_URL/auth/entra/callback"
+  fi
   echo "Comando desta instalação (para outro servidor): $dir/.secrets/install-cmd.txt"
 }
 
-save_install_cmd() { # the options of this install as one command (proxy password hidden; no secret values)
+save_install_cmd() { # the options of this install as one command (proxy password hidden; no secret values, only files)
   local c="bash platform-py/scripts/install.sh --yes --admin-email $EMAIL --port $PORT --bind $BIND"
   c+=" --project $PROJECT --subnet $SUBNET${PUBLIC_URL:+ --public-url $PUBLIC_URL}"
   [ "$DEMO" = 1 ] || c+=" --no-demo-apps"
@@ -59,6 +62,10 @@ save_install_cmd() { # the options of this install as one command (proxy passwor
   [ -z "$DATA_DIR" ] || c+=" --data-dir $DATA_DIR"
   [ -z "$ENGINE_STORE" ] || c+=" --engine-store $ENGINE_STORE"
   [ -z "$TLS_CERT" ] || c+=" --tls-cert $TLS_CERT --tls-key $TLS_KEY"
+  case "${ENTRA:-n}" in s | S) c+=" --entra-tenant $ENTRA_TENANT --entra-client-id $ENTRA_CLIENT --entra-role $ENTRA_ROLE"
+    c+=" --local-login $ENTRA_LOCAL${ENTRA_DOMAINS:+ --entra-domains $ENTRA_DOMAINS}"
+    c+=" --entra-client-secret-file ${ENTRA_SECRET_FILE:-<arquivo com o segredo>}" ;; esac
+  case "${PROXY:-n}" in s | S) c+=" --trusted-proxy $PROXIES" ;; esac
   mkdir -p .secrets
   printf '%s\n' "# install.sh options of this instance; the proxy password, if any, was replaced by ***" "$c" > .secrets/install-cmd.txt
 }

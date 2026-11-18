@@ -17,6 +17,10 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   existing `.prod.env` generates only what is missing.
 
 ### Added
+- `install.sh` without questions for sign-in with Microsoft: `--entra-tenant`, `--entra-client-id`,
+  `--entra-client-secret-file` (secret to the vault), `--entra-domains`, `--entra-role`, `--local-login`; the end of
+  the install prints the Redirect URI to register. `--trusted-proxy <CIDR>` for a reverse proxy in front (e.g. an
+  existing Nginx with TLS, documented in `docs/REDE-CORPORATIVA.md`).
 - Per-app limits on the database role: `statement_timeout`, `idle_in_transaction_session_timeout` and
   `temp_file_limit` (`HUB_APP_DB_*`), applied when provisioning and refreshed on an already provisioned app. The
   Postgres keeps 30 connections for the hub (`superuser_reserved_connections`, `max_connections=200`).

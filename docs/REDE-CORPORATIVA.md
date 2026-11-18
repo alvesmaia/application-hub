@@ -106,7 +106,45 @@ bash platform-py/scripts/install.sh --tls-cert hub.crt --tls-key hub.key --publi
 ```
 
 The edge serves HTTPS on the hub port with the company certificate (copied to `.secrets/tls`, 0600). Register
-`<public URL>/auth/entra/callback` in the app registration. Over plain `http://` (tests only) the install sets the
+`<public URL>/auth/entra/callback` in the app registration.
+
+Sign-in with Microsoft without questions (the secret is read from a file and stored in the vault, never in `.prod.env`
+or on the command line; the end of the install prints the Redirect URI to register):
+
+```bash
+bash platform-py/scripts/install.sh … --public-url https://hub.empresa.local   --entra-tenant <tenant GUID> --entra-client-id <client GUID> --entra-client-secret-file ~/entra-secret.txt   [--entra-domains empresa.com] [--entra-role Colaborador] [--local-login admins|todos|nenhum]
+```
+
+`--local-login admins` (default) keeps e-mail/password sign-in for administrators only, the way in when Microsoft is
+unavailable.
+
+### Behind a reverse proxy that already exists (Nginx with TLS)
+
+When the server already has an Nginx (or another proxy) terminating TLS, the hub stays on loopback and the proxy
+forwards to it:
+
+```bash
+bash platform-py/scripts/install.sh … --bind 127.0.0.1 --port 8090   --public-url https://hub.empresa.local --trusted-proxy 127.0.0.1/32
+```
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:8090;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_http_version 1.1;                       # WebSocket and live updates
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;  # map $http_upgrade $connection_upgrade { default upgrade; '' close; }
+    proxy_buffering off;                          # server-sent events
+    client_max_body_size 25m;                     # app packages (hub deploy: up to 20 MB); Nginx default is 1 MB
+}
+```
+
+`--trusted-proxy` makes the hub trust the proxy's `X-Forwarded-*` headers (`HUB_TRUST_PROXY_HEADERS`,
+`HUB_TRUSTED_PROXIES`): the client address in the logs, the audit trail and the Administration network restriction
+is the real one. Check it after the install: Administration › Audit shows your own IP on your sign-in. If every
+entry shows the same private address instead, add that address to `HUB_TRUSTED_PROXIES` in `.prod.env` and rerun. Over plain `http://` (tests only) the install sets the
 session cookie to `auto` and warns that passwords and sessions travel unencrypted.
 
 ## 6. Consent and the saved command
