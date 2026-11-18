@@ -200,3 +200,12 @@ the restart asked for in rounds 4–5 cannot help. Reproduced in the lab with th
 --autostart cron` green, new app published, back after a reboot without a bus. The install now detects that unit and
 switches to the mode without systemd by itself (test in `tests/test_install_rootless.py`). Record: round 6 of
 `docs/TESTE-IMPLANTACAO-RHEL-ROOTLESS.md`.
+
+✅ **Task 59 — corporate network fixes from the first real install**
+Found by the agent that installed on a corporate server (rootless Podman, user manager disabled, TLS-inspecting proxy,
+internal mirrors). Fixed with tests: the `mc` container of `make_bucket` (and `iso-instance.sh`)
+runs with the proxy variables emptied (Podman passes the engine's proxy to every container and `app-hub-objstore` is
+not in its `NO_PROXY`); the doctor's proof build uses `podman --cgroup-manager=cgroupfs` when the hub will run its own
+socket and that socket does not exist yet; `--ca-file` over 64 KB is refused (it goes to the builds as one build
+arg, `EXTRA_CA_PEM`; Linux caps one argument at 128 KB); a mirror failing through the proxy gets the
+`--no-proxy <host>` hint; a rerun warns about instance options that differ from `.prod.env`.

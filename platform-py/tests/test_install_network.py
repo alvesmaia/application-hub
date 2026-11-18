@@ -188,3 +188,14 @@ def test_podman_builds_leave_out_an_authenticated_proxy_and_say_why(tmp_path: Pa
     text = log.read_text(encoding="utf-8")
     assert "s3nh4" not in text and "HTTPS_PROXY=" not in text and "EXTRA_CA_PEM=" in text
     assert "histórico da imagem" in r.stderr and "s3nh4" not in r.stderr
+
+
+def test_a_whole_system_bundle_as_ca_file_is_refused(tmp_path: Path) -> None:
+    # the CA goes to the builds as one build arg (EXTRA_CA_PEM); a ~200 KB system bundle broke them with
+    # "Argument list too long" (Linux limit per argument: 128 KB)
+    big = tmp_path / "ca-bundle.crt"
+    cert = "-----BEGIN CERTIFICATE-----\n" + "A" * 64 + "\n-----END CERTIFICATE-----\n"
+    big.write_text(cert * 1200, encoding="utf-8")
+    r = run_install(tmp_path, ("--config-only", "--yes", "--ca-file", str(big)))
+    assert r.returncode == 2 and "só a CA corporativa" in r.stderr and "KB" in r.stderr
+    assert not (tmp_path / "platform-py" / ".prod.env").exists()

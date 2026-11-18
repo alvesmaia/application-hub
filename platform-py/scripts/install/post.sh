@@ -4,14 +4,17 @@
 
 make_bucket() { # bucket of the sample app fornecedores; the hub works without it, so a failure only warns
   local err="" _
+  # an internal call: the engine's proxy (Podman passes HTTP(S)_PROXY to every container) must not apply
+  local mc=(docker run --rm --network "${P}_default" -e HTTP_PROXY= -e HTTPS_PROXY= -e http_proxy= -e https_proxy=)
   for _ in $(seq 60); do
-    err=$(docker run --rm --network "${P}_default" -e "PW=$APP_HUB_OBJSTORE_PASSWORD" --entrypoint sh "$HUB_MC_IMAGE" -c \
+    err=$("${mc[@]}" -e "PW=$APP_HUB_OBJSTORE_PASSWORD" --entrypoint sh "$HUB_MC_IMAGE" -c \
       'mc alias set r http://app-hub-objstore:9000 hubadmin "$PW" >/dev/null && mc mb -p r/fornecedores >/dev/null' 2>&1) &&
       return 0
     sleep 2
   done
   echo "aviso: o bucket do app de exemplo fornecedores não foi criado: $(printf '%s' "$err" | tail -1)" >&2
-  echo "  'Access Denied' de um proxy: os contêineres herdaram HTTP_PROXY sem app-hub-objstore em NO_PROXY (rode --doctor)" >&2
+  echo "  crie à mão: ${mc[*]} -it --entrypoint sh $HUB_MC_IMAGE" >&2
+  echo "    e nele: mc alias set r http://app-hub-objstore:9000 hubadmin <APP_HUB_OBJSTORE_PASSWORD do .prod.env> && mc mb -p r/fornecedores" >&2
   return 0
 }
 

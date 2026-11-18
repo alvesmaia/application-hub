@@ -18,6 +18,7 @@ COPIED = (
     "scripts/install/tls.sh",
     "scripts/install/post.sh",
     "scripts/install/db.sh",
+    "scripts/install/opts.sh",
     "scripts/install/nosystemd/systemd-run",
     "prod.env.example",
     "docker-compose.yml",

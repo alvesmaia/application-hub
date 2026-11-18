@@ -41,7 +41,8 @@ up)
   for a in "${APPS[@]}"; do docker exec $P-appdb createdb -U hub "$a"; done
   # bucket for the attachments of fornecedores (in production it already exists in the objstore volume)
   for _ in $(seq 30); do
-    docker run --rm --network "$NET" --entrypoint sh app-hub-mc:0.10.0 -c \
+    docker run --rm --network "$NET" -e HTTP_PROXY= -e HTTPS_PROXY= -e http_proxy= -e https_proxy= \
+      --entrypoint sh app-hub-mc:0.10.0 -c \
       'mc alias set r http://app-hub-objstore:9000 hubadmin hubpy-objstore-dev >/dev/null && mc mb -p r/fornecedores >/dev/null' && break
     sleep 1
   done

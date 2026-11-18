@@ -174,3 +174,37 @@ def test_containers_of_other_projects_on_the_same_engine_are_pointed_out(tmp_pat
 def test_a_proxy_only_in_the_shell_is_used_but_must_be_passed_on(tmp_path: Path) -> None:
     _rc, out, _ = doctor(tmp_path, "proxy-only", env={"HTTPS_PROXY": PROXY})
     assert f"--proxy {PROXY}" in out and "builds" in out
+
+
+def test_without_systemd_the_proof_build_uses_cgroupfs_like_the_install(tmp_path: Path) -> None:
+    # host without a systemd user manager: the default cgroup manager (systemd) fails the RUN step with
+    # "did not get container create message from subprocess: EOF"; the install's own socket uses cgroupfs
+    log = tmp_path / "engine.log"
+    docker = (
+        'case "$1" in --version) echo "podman version 5.8.2" ;; info) exit 0 ;; '
+        f'*) echo "DOCKER $*" >> {sh_path(log)} ;; esac; exit 0'
+    )
+    podman = (
+        'case "$*" in *Rootless*) echo true ;; '
+        f'*build*) echo "PODMAN $* HC=${{DISABLE_HC_SYSTEMD:-}}" >> {sh_path(log)} ;; esac; exit 0'
+    )
+    rc, out, _ = doctor(
+        tmp_path,
+        "direct",
+        "--no-systemd",
+        env={"INSTALL_SYSTEMD_DIR": str(tmp_path / "sem-systemd")},
+        fakes={"docker": docker, "podman": podman},
+    )
+    text = log.read_text(encoding="utf-8")
+    assert "PODMAN --cgroup-manager=cgroupfs build" in text and "HC=true" in text, text
+    assert "DOCKER build" not in text
+    assert rc == 0, out
+
+
+def test_an_internal_mirror_failing_through_the_proxy_suggests_no_proxy(tmp_path: Path) -> None:
+    mirror = ("--proxy", PROXY, "--registry-mirror", "mirror.interno.local")
+    rc, out, _ = doctor(tmp_path, "intercept", *mirror)
+    assert rc == 1 and "--no-proxy mirror.interno.local" in out
+    (tmp_path / "b").mkdir()
+    _rc, out, _ = doctor(tmp_path / "b", "intercept", *mirror, "--no-proxy", ".interno.local")
+    assert "--no-proxy mirror.interno.local" not in out  # already direct: the CA is what is missing

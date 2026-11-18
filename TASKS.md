@@ -36,3 +36,15 @@
   - ✅ install.sh padrão para com a orientação; --no-systemd --autostart cron verde (corrigido: install detecta o user@ desativado e segue sem systemd)
   - ✅ app novo publicado, rede nomeada, reboot
   - ✅ registro em docs, limpeza
+
+## Implantação real: melhorias apontadas pelo agente implantador
+- ✅ 59 · Correções da instalação em rede corporativa
+  - ✅ bucket de exemplo: contêiner do mc sem o proxy herdado (post.sh, iso-instance.sh)
+  - ✅ doctor: build de prova com cgroupfs no modo sem systemd
+  - ✅ --ca-file grande (bundle do sistema) recusado com mensagem clara
+  - ✅ reexecução: aviso quando opção diverge do .prod.env
+  - ✅ doctor: espelho interno falhando pelo proxy sugere --no-proxy <host>
+- ⬜ 60 · Flags não interativas: login Microsoft (Entra) e proxy reverso na frente
+  - ⬜ --entra-tenant/--entra-client-id/--entra-client-secret-file/--entra-domains/--entra-role/--local-login
+  - ⬜ --trusted-proxy <CIDR>; doc do Nginx externo com TLS
+  - ⬜ docs, CHANGELOG, hub-check

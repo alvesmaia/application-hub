@@ -94,16 +94,18 @@ if [ -f "$LIB/net.sh" ]; then
   . "$LIB/post.sh"
   # shellcheck source=install/db.sh
   . "$LIB/db.sh"
+  # shellcheck source=install/opts.sh
+  . "$LIB/opts.sh"
 fi
 while [ $# -gt 0 ]; do
   case "$1" in
     --admin-email) EMAIL=$2; shift; ASKED=1 ;;
-    --public-url) PUBLIC_URL=$2; shift; ASKED=1 ;;
-    --port) PORT=$2; shift; ASKED=1 ;;
-    --bind) BIND=$2; shift; ASKED=1 ;;
-    --project) PROJECT=$2; shift; ASKED=1 ;;
-    --subnet) SUBNET=$2; shift; ASKED=1 ;;
-    --no-demo-apps) DEMO=0; ASKED=1 ;;
+    --public-url) PUBLIC_URL=$2; GIVEN+=" $1"; shift; ASKED=1 ;;
+    --port) PORT=$2; GIVEN+=" $1"; shift; ASKED=1 ;;
+    --bind) BIND=$2; GIVEN+=" $1"; shift; ASKED=1 ;;
+    --project) PROJECT=$2; GIVEN+=" $1"; shift; ASKED=1 ;;
+    --subnet) SUBNET=$2; GIVEN+=" $1"; shift; ASKED=1 ;;
+    --no-demo-apps) DEMO=0; ASKED=1; GIVEN+=" $1" ;;
     --clone) CLONE=1 ;;
     --repo) REPO=$2; shift ;;
     --ref) REF=$2; shift ;;
@@ -163,7 +165,10 @@ ADV=n OBJ_DIR="" HEAD_DIR="" HEAD_URL="" HEAD_TOKEN="" OFF_KIND=nenhuma OFF_S3="
 ENTRA_TENANT="" ENTRA_CLIENT="" ENTRA_DOMAINS="" ENTRA_ROLE=Colaborador ENTRA_LOCAL=admins ENTRA_SECRET=""
 ADMIN_CIDRS="" PROXY="" PROXIES=172.16.0.0/12 TELEMETRY=s OTLP="" UPDATES=s PUBDOCS=s BUILD_CPUS=2
 # a rerun keeps the answers already in .prod.env (it only starts what is missing): no questions again
-if [ "$CONFIG_ONLY" = 0 ] && [ -f "$LIB/../../.prod.env" ]; then echo "usando platform-py/.prod.env existente: sem perguntas" >&2; ASKED=1; fi
+if [ "$CONFIG_ONLY" = 0 ] && [ -f "$LIB/../../.prod.env" ]; then
+  echo "usando platform-py/.prod.env existente: sem perguntas" >&2; ASKED=1
+  rerun_ignored "$LIB/../../.prod.env"
+fi
 if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0 ] && [ -r /dev/tty ]; }; }; then
   exec 3< "$TTY"; TTY_OPEN=1
   [ -n "${INSTALL_TTY:-}" ] || exec 4> /dev/tty

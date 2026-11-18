@@ -59,8 +59,23 @@ explain_failure() { # explain_failure <name> <url>: cause + option, from the cur
   esac
 }
 
-check_url() { # check_url <name> <url>: 2xx, 3xx and 401 (a registry asking for a token) mean it is reachable
+no_proxy_has() { # no_proxy_has <host>: a --no-proxy entry matches it (exact, or a domain and its subdomains)
+  local e
+  for e in ${HUB_NO_PROXY//,/ }; do
+    case "$1" in "${e#.}" | *".${e#.}") return 0 ;; esac
+  done
+  return 1
+}
+
+check_url() { # check_url <name> <url> [mirror]: 2xx, 3xx and 401 (a registry asking for a token) mean it is reachable
   probe "$2"
+  local host=${2#*://}
+  host=${host%%/*} host=${host%%:*}
+  if [ "$PROBE_RC" != 0 ] && [ -n "${3:-}" ] && [ -n "$HUB_PROXY" ] && ! no_proxy_has "$host"; then
+    # an internal mirror sent to the corporate proxy fails (x509 from the TLS inspection, or no route)
+    d_fail "$1: o espelho $2 foi pelo proxy e falhou (erro $PROBE_RC)" "espelho interno vai direto: --no-proxy $host"
+    return 0
+  fi
   if [ "$PROBE_RC" != 0 ]; then explain_failure "$1" "$2"; return 0; fi
   case "$PROBE_CODE" in
     2?? | 3?? | 401) d_ok "$1 ($2)" ;;
@@ -71,22 +86,28 @@ check_url() { # check_url <name> <url>: 2xx, 3xx and 401 (a registry asking for 
 
 check_network() {
   command -v curl >/dev/null || { d_fail "curl não encontrado" "instale o curl"; return 0; }
-  check_url "PyPI" "${HUB_PYPI_INDEX:-https://pypi.org/simple/}"
+  check_url "PyPI" "${HUB_PYPI_INDEX:-https://pypi.org/simple/}" "$HUB_PYPI_INDEX"
   local reg=${HUB_IMAGE_PREFIX%%/*}
-  check_url "imagens" "https://${reg:-registry-1.docker.io}/v2/"
+  [ "$reg" != docker.io ] || reg=""
+  check_url "imagens" "https://${reg:-registry-1.docker.io}/v2/" "$reg"
   check_url "GitHub (código do MinIO)" "https://github.com/minio/minio"
-  check_url "Alpine" "${HUB_APK_MIRROR:-https://dl-cdn.alpinelinux.org/alpine}"
-  check_url "Go" "${HUB_GOPROXY:-https://proxy.golang.org}"
+  check_url "Alpine" "${HUB_APK_MIRROR:-https://dl-cdn.alpinelinux.org/alpine}" "$HUB_APK_MIRROR"
+  check_url "Go" "${HUB_GOPROXY:-https://proxy.golang.org}" "$HUB_GOPROXY"
 }
 
 check_container() { # a tiny build with the same build args: proves the proxy and the CA reach inside the build
   if ! docker info >/dev/null 2>&1; then d_warn "engine indisponível: teste dentro de contêiner pulado"; return 0; fi
-  local tag="$PROJECT-doctor:tmp" url=${HUB_PYPI_INDEX:-https://pypi.org/simple/} out rc=0
+  local tag="$PROJECT-doctor:tmp" url=${HUB_PYPI_INDEX:-https://pypi.org/simple/} out rc=0 D_ENGINE=(docker)
+  # without systemd and before the hub's own socket exists (--doctor): the same cgroupfs that socket uses; the
+  # default (systemd) fails the RUN step with "did not get container create message from subprocess: EOF"
+  if [ "${OWN_SOCKET:-0}" = 1 ] && [ "${NOSYSTEMD:-0}" = 1 ] && [ -z "${CONTAINER_HOST:-}" ]; then
+    D_ENGINE=(env DISABLE_HC_SYSTEMD=true podman --cgroup-manager=cgroupfs)
+  fi
   # shellcheck disable=SC2046 # build_args: only names
   out=$( (build_env && printf '%s\n' "FROM ${HUB_IMAGE_PREFIX:-docker.io/library/}python:3.12-slim" 'ARG EXTRA_CA_PEM=""' \
     'RUN if [ -n "$EXTRA_CA_PEM" ]; then printf "%s\n" "$EXTRA_CA_PEM" >> /etc/ssl/certs/ca-certificates.crt; fi' \
     "RUN python -c \"import urllib.request as u; u.urlopen('$url', timeout=20)\"" |
-    docker build -q --rm -t "$tag" $(build_args) - 2>&1) ) || rc=$?
+    "${D_ENGINE[@]}" build -q --rm -t "$tag" $(build_args) - 2>&1) ) || rc=$?
   docker image rm -f "$tag" >/dev/null 2>&1 || true
   if [ "$rc" = 0 ]; then d_ok "build em contêiner alcança $url com o proxy e a CA"; return 0; fi
   d_fail "build em contêiner não alcança $url" "$(printf '%s' "$out" | tail -3 | tr '\n' ' ')"

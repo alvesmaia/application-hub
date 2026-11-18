@@ -93,3 +93,49 @@ def test_a_rerun_with_prod_env_asks_nothing_again(tmp_path: Path) -> None:
     r = run_install(tmp_path, (), answers=["n"])  # the only answer: the consent (no)
     assert "E-mail do primeiro administrador" not in r.stderr and "usando platform-py/.prod.env" in r.stderr
     assert "cancelado" in r.stderr
+
+
+def test_the_mc_container_does_not_inherit_the_engine_proxy(tmp_path: Path) -> None:
+    # Podman passes the engine's HTTP(S)_PROXY to every container; app-hub-objstore is not in its NO_PROXY, so the
+    # internal call went to the corporate proxy (Access Denied / x509) and the sample bucket was never created
+    log = tmp_path / "docker.log"
+    rc, out = post(
+        tmp_path,
+        "P=app-hub HUB_MC_IMAGE=mc APP_HUB_OBJSTORE_PASSWORD=x make_bucket",
+        f'echo "$*" >> {sh_path(log)}; exit 0',
+    )
+    args = log.read_text(encoding="utf-8")
+    assert rc == 0, out
+    for var in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
+        assert f"-e {var}= " in args, var
+
+
+def test_a_failed_bucket_says_how_to_create_it_by_hand(tmp_path: Path) -> None:
+    docker = 'echo "mc: <ERROR> Access Denied." >&2; exit 1'
+    _rc, out = post(tmp_path, "P=app-hub HUB_MC_IMAGE=mc APP_HUB_OBJSTORE_PASSWORD=x make_bucket", docker)
+    assert "rode --doctor" not in out  # the doctor does not check it
+    assert "mc mb" in out and "app-hub_default" in out
+
+
+def test_a_rerun_warns_about_options_that_differ_from_prod_env(tmp_path: Path) -> None:
+    (tmp_path / "platform-py").mkdir()
+    (tmp_path / "platform-py" / ".prod.env").write_text(
+        "HUB_PROJECT=app-hub\nHUB_PORT=8090\nHUB_BIND=127.0.0.1\nHUB_PUBLIC_URL=http://localhost:8090\n"
+        "COMPOSE_PROFILES=demo-apps\n",
+        encoding="utf-8",
+    )
+    args = (
+        "--port",
+        "8095",
+        "--bind",
+        "127.0.0.1",
+        "--public-url",
+        "https://hub.empresa.local",
+        "--no-demo-apps",
+    )
+    r = run_install(tmp_path, args, answers=["n"])
+    assert "--port 8095 ignorado" in r.stderr and "HUB_PORT=8090" in r.stderr
+    assert "--public-url https://hub.empresa.local ignorado" in r.stderr
+    assert "--no-demo-apps ignorado" in r.stderr
+    assert "--bind" not in r.stderr  # the same value: nothing to say
+    assert "edite platform-py/.prod.env" in r.stderr

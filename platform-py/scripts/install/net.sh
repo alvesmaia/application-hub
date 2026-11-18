@@ -31,6 +31,9 @@ net_validate() { # exit 2 with the offending value and the expected shape
   [ -r "$CA_FILE" ] || { echo "--ca-file: $CA_FILE não existe ou não pode ser lido" >&2; exit 2; }
   grep -q -- '-----BEGIN CERTIFICATE-----' "$CA_FILE" ||
     { echo "--ca-file: $CA_FILE não é um certificado PEM (esperado -----BEGIN CERTIFICATE-----)" >&2; exit 2; }
+  # the CA reaches the builds as one build arg (EXTRA_CA_PEM); Linux caps one argument at 128 KB
+  local kb=$(($(wc -c < "$CA_FILE") / 1024))
+  [ "$kb" -le 64 ] || { echo "--ca-file: $CA_FILE tem $kb KB (limite 64 KB); passe só a CA corporativa (1 a 3 certificados), não o bundle do sistema: o hub já confia nele" >&2; exit 2; }
   CA_FILE=$(cd "$(dirname "$CA_FILE")" && pwd)/$(basename "$CA_FILE")
 }
 

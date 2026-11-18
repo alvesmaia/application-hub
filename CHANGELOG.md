@@ -24,6 +24,14 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   `.prod.env` (names shown, values never). The install notice says there is one Postgres.
 
 ### Fixed
+- Install behind a corporate proxy: the sample bucket is created again (the temporary `mc` container inherited the
+  engine's proxy and sent the internal call to it); a failure now shows how to create it by hand.
+- `install.sh --doctor` without systemd: the proof build uses cgroupfs like the hub's own socket (it failed with
+  `did not get container create message from subprocess: EOF`, a false negative).
+- `--ca-file` with a whole system bundle (`Argument list too long` in the builds) is refused with a clear message.
+- The doctor names `--no-proxy <host>` when an internal mirror fails through the proxy.
+- An install rerun warns about `--port`/`--bind`/`--public-url`/`--project`/`--subnet`/`--no-demo-apps` that differ from
+  the existing `.prod.env` (they were ignored silently).
 - Rootless Podman on a server whose administrator disabled the user manager (`user@.service` replaced, e.g.
   `ExecStart=/bin/true`): the install detects it and goes on without systemd (own socket, cron start) instead of
   asking for a `systemctl restart user@<uid>.service` that cannot help.

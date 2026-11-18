@@ -24,13 +24,19 @@ engine. Each failure names the cause and the option that fixes it, for example:
 
 The install runs the same diagnosis as step 0 and stops on a failure (`--skip-doctor` to go on anyway).
 
+- **Internal mirror going through the proxy**: with `--proxy`, a mirror whose host is not in `--no-proxy` is reached
+  through the corporate proxy, which often cannot reach it or inspects it (x509). The doctor names the fix:
+  `--no-proxy <mirror host>`. The proxy in the shell (`https_proxy`) has the same effect on manual `podman pull`s.
+- **Without systemd** the doctor's proof build uses the same cgroupfs as the hub's own socket (the default cgroup
+  manager fails there with `did not get container create message from subprocess: EOF`).
+
 ## 2. Network options
 
 | Option | What it does |
 |---|---|
 | `--proxy http://[user:pass@]host:port` | downloads during the builds (hub, apps, MinIO) and the hub's external calls (Entra, SharePoint, S3, webhooks, update check) |
 | `--no-proxy .empresa.local,10.0.0.0/8` | destinations reached directly (mirrors, internal services) |
-| `--ca-file ca.pem` | corporate CA (the TLS-inspecting proxy): trusted in every build, in the hub and in the app containers |
+| `--ca-file ca.pem` | corporate CA (the TLS-inspecting proxy): trusted in every build, in the hub and in the app containers. Only that CA (1 to 3 certificates, up to 64 KB), never the system bundle: the hub already trusts it, and a whole bundle does not fit in a build argument |
 | `--pypi-index https://repo.empresa.local/api/pypi/pypi/simple` | PyPI mirror (pip and uv) |
 | `--registry-mirror docker.repo.empresa.local` | Docker Hub mirror: images become `HOST/library/…` |
 | `--apk-mirror https://repo.empresa.local/alpinelinux` | Alpine mirror (MinIO build) |
@@ -53,6 +59,10 @@ How the hub uses them, with no step per app:
 - **Proxy with a password on Podman**: buildah records build args in the image history (Docker does not), so on
   Podman an authenticated proxy is left out of the builds and the install warns. Use internal mirrors for the builds
   (`--pypi-index`, `--registry-mirror`) or a proxy without a password allowed for the server.
+
+Rerunning the install keeps `.prod.env` (secrets and answers): `--port`, `--bind`, `--public-url`, `--project`,
+`--subnet` and `--no-demo-apps` that differ from it are ignored with a warning; change them in `.prod.env` and rerun.
+The network options above are applied on a rerun.
 
 ## 3. Rootless Podman
 
