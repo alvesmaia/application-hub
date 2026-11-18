@@ -141,9 +141,8 @@ class Rollout:
             (base.get("NetworkSettings", {}).get("Networks") or {}) or [host.get("NetworkMode", "default")]
         )
         say(15, f"Criando o candidato {cand}")
-        await self.engine.launch(
-            cand, img_id, env, _labels(base, app, k, version), host, nets, aliases=network_aliases(base)
-        )
+        await self.engine.launch(cand, img_id, env, _labels(base, app, k, version), host, nets,
+                                 aliases=candidate_aliases(base, nets, cand.removesuffix("__new")))  # fmt: skip
 
     async def _apply(self, app: str, k: str, limits: dict[str, Any], version: str, image: str | None,
                      say: Progress) -> dict[str, Any]:  # fmt: skip
@@ -164,10 +163,23 @@ class Rollout:
         await asyncio.sleep(_num("HUB_ROLLOUT_DRAIN_S", 5))
         if old is not None:
             await self.engine.remove(name, 30)
-        await self.engine.rename(cand, name)
-        self.route(app, k, self.url_of(name), version)
+        await self._settle(app, k, cand, name, version)
         say(100, "Concluído")
         return {"container": name, "image": ref, "upstream": self.url_of(name)}
+
+    async def _settle(self, app: str, k: str, cand: str, name: str, version: str) -> None:
+        """Renames the candidate and routes to its final name only once the hub reaches it by that name; else the
+        route stays on the candidate's and the deploy fails with the cause, not done followed by 502."""
+        await self.engine.rename(cand, name)
+        try:
+            await self.probe(self.url_of(name), app, name, _num("HUB_ROLLOUT_NAME_TIMEOUT_S", 15))
+        except OpsError as e:
+            raise OpsError(
+                f"O contêiner {name} subiu, mas o hub não o alcança pelo nome ({e.message[:120]}): "
+                "o nome não resolve na rede do app (alias DNS). A rota segue no candidato.",
+                502,
+            ) from e
+        self.route(app, k, self.url_of(name), version)
 
     async def _carried(self, base: dict[str, Any]) -> dict[str, str]:
         """What compose/the operator injected into the current container (beyond the image)."""
@@ -209,6 +221,18 @@ def network_aliases(base: dict[str, Any]) -> dict[str, list[str]]:
     nets = (base.get("NetworkSettings") or {}).get("Networks") or {}
     own = {name, cid[:12]}
     return {n: [a for a in (v or {}).get("Aliases") or [] if a not in own] for n, v in nets.items()}
+
+
+NO_ALIAS = {"default", "bridge", "host", "none"}  # Docker refuses network-scoped aliases there
+
+
+def candidate_aliases(base: dict[str, Any], nets: list[str], name: str) -> dict[str, list[str]]:
+    """Aliases of the candidate: the replaced container's plus the final `name`, since Podman's DNS keeps the name
+    a container was created with (a rename does not update it). Staging's first candidate copies production's
+    container: production's aliases would split production traffic with staging."""
+    same = str(base.get("Name", "")).lstrip("/") == name
+    carried = network_aliases(base) if same else {}
+    return {n: [*(a for a in carried.get(n, []) if a != name), name] for n in nets if n not in NO_ALIAS}
 
 
 def _labels(base: dict[str, Any], app: str, k: str, version: str) -> dict[str, str]:

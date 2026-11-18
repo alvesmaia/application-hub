@@ -28,6 +28,10 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   `.prod.env` (names shown, values never). The install notice says there is one Postgres.
 
 ### Fixed
+- Deploy on rootless Podman answering 502 after reporting success: the candidate is created as `<name>__new` and
+  renamed, and Podman's DNS keeps the creation name. The candidate now gets its final name as a network alias; the
+  first staging candidate no longer takes production's aliases (they split production traffic); and the deploy only
+  routes to the final name once the hub reaches it by that name, else it fails with the cause (alias DNS).
 - Containers page on rootless Podman without cgroup delegation: the engine reported the user's whole cgroup for every
   container (same ~2 GiB and ~200 processes everywhere, above each one's limit); usage now shows as unavailable with
   the reason, and a warning says when the CPU limit is not enforced. The page shows the engine socket on the host

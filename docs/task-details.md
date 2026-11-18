@@ -227,3 +227,13 @@ then all usage is dropped (shown as "—") with the reason. `CpuCfsQuota: false`
 that the CPU limit is not enforced. Also: the socket on the host (`HUB_CONTAINER_SOCKET_HOST`, now passed to the hub
 by the compose file), image names without `docker.io/library/`/`localhost/` (`runtime.image_label`) and an overcommit
 note instead of a negative free share.
+
+✅ **Task 66 — Deploy no Podman rootless e alias DNS**
+Sugestão do agente implantador: staging implantada como sucesso e depois 502/`Unstable`. Causa: o candidato nasce
+`<nome>__new` e é renomeado; o DNS do Podman (aardvark) guarda o nome de criação, então `http://<nome>:8080` não
+resolve. Correção em `hub/ops/rollout.py`: `candidate_aliases` dá ao candidato o nome final como alias em cada rede
+(exceto default/bridge/host/none); o primeiro candidato de staging, que copia o contêiner de produção, não herda mais
+os aliases de produção (dividiriam o tráfego de produção com staging); `_settle` renomeia, testa a prontidão pelo
+nome final e só então troca a rota; se falhar, a rota fica no candidato e a implantação falha com a causa. Testes em
+`tests/test_rollout_dns.py`. Não feito: teste de integração real em Podman rootless (não há Podman no CI nem na
+máquina de dev); a validação real é reimplantar a staging no servidor.

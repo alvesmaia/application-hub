@@ -58,3 +58,4 @@
 - ⬜ 63 · Apps de demonstração: botões estáticos com aviso visível, lista recarrega após cadastrar, dados coerentes (totais e status por data), horário no fuso configurado
 - ⬜ 64 · Consistência do hub: idioma padrão respeitado e traduções completas, disponibilidade "desde a instalação", Coletor na Saúde, instalação sem "restart pendente" nem variáveis de exemplo soltas, nome de exibição do app em todas as telas
 - ⬜ 65 · Acessibilidade de menus ⋯ e modais; fetch a /apps/* com erro HTTP explícito (ou documentado)
+- ✅ 66 · Deploy no Podman rootless: alias DNS do nome final no candidato, staging sem os aliases de produção, implantação só conclui se o hub alcança o app pelo nome (senão falha com a causa)
