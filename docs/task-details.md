@@ -237,3 +237,14 @@ os aliases de produção (dividiriam o tráfego de produção com staging); `_se
 nome final e só então troca a rota; se falhar, a rota fica no candidato e a implantação falha com a causa. Testes em
 `tests/test_rollout_dns.py`. Não feito: teste de integração real em Podman rootless (não há Podman no CI nem na
 máquina de dev); a validação real é reimplantar a staging no servidor.
+
+✅ **Task 67 — Stack dos cards só para admin**
+O "i" e a ficha técnica (linguagem, SDK, banco, bibliotecas, API/MCP) aparecem só com `editar_configuracoes`
+(`show_stack` em `hub/ux/routes.py`); a versão segue visível em todo card. Teste em `tests/test_ux.py`.
+
+✅ **Task 68 — App só em staging marcado "Unstable"**
+O catálogo mostra o estado de produção, e `Insight.targets()` sondava o upstream de produção de todo app do registro.
+App novo (dinâmico) implantado só em staging não tem contêiner de produção: a sonda falhava a cada minuto. Agora
+`targets()` deixa de fora app dinâmico sem implantação `Implantado` em Produção (`deployed_versions`). Teste em
+`tests/test_staging_only_probe.py`. Não mexido: o aviso "SBOM ausente" é correto (o pacote não traz
+`sbom.spdx.json`; `hub pack` não gera); o nome "Administrador" após SSO é a tarefa 61.

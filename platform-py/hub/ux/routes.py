@@ -216,6 +216,8 @@ async def applications(request: Request, c: UxCtx = Depends(ctx)) -> Response:
             for card in mine
         ],
         "others": others,
+        "show_stack": "editar_configuracoes"
+        in getattr(request.state, "permissions", []),  # technical detail: admins
     }
     return c.templates.TemplateResponse(request, "applications.html", page)
 

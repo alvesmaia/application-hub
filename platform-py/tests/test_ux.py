@@ -176,3 +176,17 @@ def test_two_replicas_sharing_ux_json_do_not_lose_writes(tmp_path: Path) -> None
     assert UxStore(tmp_path / "ux.json").prefs("u1").theme == "dark"
     assert UxStore(tmp_path / "ux.json").prefs("u1").favorites == ["ativos"]
     assert a.prefs("u2").theme == "light" and a.prefs("u1").favorites == ["ativos"]
+
+
+def test_catalog_stack_button_only_for_admins(data_dir: Path) -> None:
+    # the stack (framework, database, libraries) is technical detail for admins; others keep the version on the card
+    app = create_app()
+    admin = client_for(app)
+    assert 'class="hub-stack-toggle"' in admin.get("/applications").text
+    auth = app.state.auth.path
+    auth.write_text(
+        auth.read_text(encoding="utf-8").replace('"Administrador"]', '"Colaborador"]'), encoding="utf-8"
+    )
+    page = admin.get("/applications").text
+    assert 'data-app="ativos"' in page and 'class="app-version"' in page
+    assert "hub-stack-toggle" not in page and "hub-stack-chip" not in page

@@ -31,6 +31,8 @@ from hub.insight.metrics import (
 from hub.insight.ops import InsightOps
 from hub.insight.otlp import Exporter, endpoint_from_env
 from hub.insight.usage import PLATFORM, Usage
+from hub.ops import newapp
+from hub.ux.catalog import deployed_versions
 from hub.vault import Vault
 
 _SENSITIVE = frozenset(
@@ -126,7 +128,7 @@ class Insight:
         self.analytics = Analytics(data_dir, vault, os.environ.get("HUB_ANALYTICS") != "0")
         self.analytics.ux = ux
         self.usage = Usage(data_dir, os.environ.get("HUB_USAGE") != "0")
-        self.admin, self.registry = admin, registry
+        self.admin, self.registry, self.data_dir = admin, registry, data_dir
         self.ops = InsightOps(admin)
         self.tasks: list[asyncio.Task[None]] = []
         self.firing: dict[str, bool] = {}
@@ -271,7 +273,10 @@ class Insight:
             self.tel.metrics.save()
 
     def targets(self) -> list[tuple[str, str]]:
-        return [(e.id, e.upstream.rstrip("/")) for e in self.registry.entries()]
+        """Production upstreams. A new app deployed only to staging has none yet: probing it marked it unstable."""
+        live = deployed_versions(self.data_dir)
+        return [(e.id, e.upstream.rstrip("/")) for e in self.registry.entries()
+                if e.id in live or not newapp.is_dynamic(self.data_dir, e.id)]  # fmt: skip
 
     async def _probes(self, client: httpx.AsyncClient) -> None:
         """Every minute: `GET {upstream}/{id}` (200 within 2 s) feeds the availability bars."""

@@ -59,3 +59,5 @@
 - ⬜ 64 · Consistência do hub: idioma padrão respeitado e traduções completas, disponibilidade "desde a instalação", Coletor na Saúde, instalação sem "restart pendente" nem variáveis de exemplo soltas, nome de exibição do app em todas as telas
 - ⬜ 65 · Acessibilidade de menus ⋯ e modais; fetch a /apps/* com erro HTTP explícito (ou documentado)
 - ✅ 66 · Deploy no Podman rootless: alias DNS do nome final no candidato, staging sem os aliases de produção, implantação só conclui se o hub alcança o app pelo nome (senão falha com a causa)
+- ✅ 67 · Botão "i" (stack) dos cards de Aplicações só para admin
+- ✅ 68 · App novo só em staging marcado "Unstable": sonda de produção só depois da primeira implantação em produção

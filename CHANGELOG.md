@@ -28,6 +28,10 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   `.prod.env` (names shown, values never). The install notice says there is one Postgres.
 
 ### Fixed
+- A new app deployed only to staging showed as `Unstable` in the catalog: the hub probed its production upstream,
+  which does not exist yet. Production probes now start once the app has a production deployment.
+- The stack ("i") on the Applications cards is shown only to admins (`editar_configuracoes`); the version stays on
+  every card.
 - Deploy on rootless Podman answering 502 after reporting success: the candidate is created as `<name>__new` and
   renamed, and Podman's DNS keeps the creation name. The candidate now gets its final name as a network alias; the
   first staging candidate no longer takes production's aliases (they split production traffic); and the deploy only
