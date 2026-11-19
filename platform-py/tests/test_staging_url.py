@@ -1,0 +1,86 @@
+"""Staging has its own URL: `/staging/apps/<id>/…` (and `/staging/_frag/…` for the shell). The path picks the
+environment, so a staging link opens staging in any tab and a production link never lands in staging because of a
+forgotten cookie; the cookie only sends `/apps/<id>` to the staging URL. A "STAGING" badge sits in the header."""
+
+from __future__ import annotations
+
+from collections.abc import Iterator
+from pathlib import Path
+
+import httpx
+import pytest
+from admin_helper import add_user, make_hub
+from fastapi.testclient import TestClient
+
+SEEN: list[dict[str, str]] = []
+
+
+def upstream(request: httpx.Request) -> httpx.Response:
+    SEEN.append({"host": request.url.host, "env": request.headers.get("x-hub-env", ""),
+                 "base": request.headers.get("x-hub-base", ""), "path": request.url.path})  # fmt: skip
+    if request.url.path.endswith("/redir"):
+        return httpx.Response(302, headers={"location": "/ativos/y"}, stream=httpx.ByteStream(b""))
+    return httpx.Response(200, stream=httpx.ByteStream(b"<p>ok</p>"))
+
+
+@pytest.fixture
+def hub(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
+    SEEN.clear()
+    with make_hub(tmp_path, monkeypatch, upstream) as c:
+        c.app.state.gateway.registry.staging["ativos"] = "http://stg:8080"  # type: ignore[attr-defined]
+        yield c
+
+
+def test_the_staging_path_forwards_to_staging_with_its_own_base(hub: TestClient) -> None:
+    assert hub.get("/staging/_frag/ativos/ativos/x").status_code == 200
+    assert SEEN[-1] == {
+        "host": "stg",
+        "env": "staging",
+        "base": "/staging/apps/ativos",
+        "path": "/ativos/ativos/x",
+    }
+    hub.get("/_frag/ativos/ativos/x", headers={"cookie": f"{hub.headers['cookie']}; hub_env=staging"})
+    prod = SEEN[-1]  # the path wins over the cookie; the upstream path is the same
+    assert (prod["env"], prod["base"], prod["path"]) == ("producao", "/apps/ativos", "/ativos/ativos/x")
+
+
+def test_the_staging_page_loads_fragments_from_staging(hub: TestClient) -> None:
+    page = hub.get("/staging/apps/ativos/ativos").text
+    assert 'data-hub-frag="/staging/_frag"' in page and 'data-hub-base="/staging/apps/ativos"' in page
+    assert "data-hub-staging-bar" in page and "data-hub-env-badge" in page
+    assert "data-hub-env-badge" not in hub.get("/apps/ativos").text
+
+
+def test_production_url_with_the_staging_cookie_goes_to_the_staging_url(hub: TestClient) -> None:
+    r = hub.get("/apps/ativos/ativos?a=1", headers={"cookie": f"{hub.headers['cookie']}; hub_env=staging"})
+    assert r.status_code == 303 and r.headers["location"] == "/staging/apps/ativos/ativos?a=1"
+
+
+def test_switching_environment_keeps_the_app_page(hub: TestClient) -> None:
+    to_stg = hub.get("/hub-env?to=staging&next=/apps/ativos/ativos")
+    assert to_stg.headers["location"] == "/staging/apps/ativos/ativos"
+    assert hub.get("/hub-env?to=producao&next=/staging/apps/ativos").headers["location"] == "/apps/ativos"
+
+
+def test_staging_url_needs_the_staging_permission(hub: TestClient) -> None:
+    colab = add_user(hub, "colab", ["Colaborador"])
+    assert colab.get("/staging/apps/ativos").status_code == 403
+    assert colab.get("/staging/_frag/ativos/ativos/x").status_code == 403
+    assert colab.get("/apps/ativos").status_code == 200
+
+
+def test_staging_websocket_needs_the_staging_permission(hub: TestClient) -> None:
+    from starlette.websockets import WebSocketDisconnect
+
+    colab = add_user(hub, "colab", ["Colaborador"])
+    with (
+        pytest.raises(WebSocketDisconnect) as e,
+        colab.websocket_connect("/staging/apps/ativos/ws", headers={"origin": "http://testserver"}),
+    ):
+        pass
+    assert e.value.code == 1008
+
+
+def test_an_app_redirect_stays_in_staging(hub: TestClient) -> None:
+    assert hub.get("/staging/_frag/ativos/ativos/redir").headers["location"] == "/staging/apps/ativos/y"
+    assert hub.get("/_frag/ativos/ativos/redir").headers["location"] == "/apps/ativos/y"

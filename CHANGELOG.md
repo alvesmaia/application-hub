@@ -17,6 +17,10 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   existing `.prod.env` generates only what is missing.
 
 ### Added
+- Staging has its own URL: `/staging/apps/<id>/…` (production stays `/apps/<id>/…`). The path picks the
+  environment for pages, fragments, the app API and WebSockets; `x-hub-base` and the app's redirects carry the
+  prefix. The `hub_env` cookie (set at `/hub-env`) only sends `/apps/<id>` to the staging URL. A "STAGING" badge
+  shows in the header while in staging.
 - Apps hidden from the catalog (Settings, "Hidden from the catalog"): only users with access to the app still see
   it; the others no longer find it under "Other applications".
 - Status page with a 12-month view (one bar per month). Daily availability is kept for 400 days in
@@ -32,6 +36,9 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   `.prod.env` (names shown, values never). The install notice says there is one Postgres.
 
 ### Fixed
+- English screens no longer leak Portuguese: /developers navigation, deploy/backup/runtime labels, the 403 page, the pager count, staging error pages and texts written by the shell JavaScript now have catalog pairs; a test renders every menu screen and every /developers page in English.
+- Row "⋯" menus open upwards when a panel with overflow would cut them (e.g. the last row of /admin/users).
+- Admin runtime: the host capacity bars no longer paint Platform and Applications in the same color; the engine caveats ("Connected to…", per-container usage, CPU limit) and the Docker/Podman chips, which only relabelled a read-only field, left the page (the caveat stays in `/api/ops/runtime`).
 - Signing in with SSO never takes over a local account with admin permissions (e.g. the installer's admin with the
   same e-mail, even if linked before): the SSO login gets its own account with the default role and the person's
   name; admin only by assignment or by the Entra group mapping.

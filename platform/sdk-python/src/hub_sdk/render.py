@@ -78,10 +78,11 @@ def html(body: str, status: int = 200, headers: dict[str, str] | None = None) ->
 
 
 def public_base(conn: HTTPConnection, app_id: str) -> str:
-    """App's public base for links/forms: the hub's ``x-hub-base`` (``/apps/{id}``), or that
-    default when the header is missing or has anything besides letters, digits, ``/`` and ``-``."""
+    """App's public base for links/forms: the hub's ``x-hub-base`` (``/apps/{id}``, or ``/staging/apps/{id}``
+    in staging), or ``/apps/{id}`` when the header is missing or has anything besides letters, digits, ``/``
+    and ``-``."""
     b = conn.headers.get("x-hub-base", "").strip()
-    ok = b.startswith("/apps/") and all(c.isalnum() or c in "/-" for c in b)
+    ok = b.startswith(("/apps/", "/staging/apps/")) and all(c.isalnum() or c in "/-" for c in b)
     return b if ok else f"/apps/{app_id}"
 
 

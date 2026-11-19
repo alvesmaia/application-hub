@@ -163,7 +163,7 @@
     try { u = new URL(url, location.href); } catch (_) { return null; }
     if (u.origin !== location.origin) return null;
     // Public `/apps/{app}/…` (or the old `/{app}/…`) → path on the gateway `/{app}/…`.
-    const p = u.pathname.startsWith('/apps/') ? u.pathname.slice(5) : u.pathname;
+    const p = u.pathname.replace(/^(?:\/staging)?\/apps\//, '/'); // staging: `/staging/apps/{app}/…`
     const app = curApp();
     if (!app || (p !== `/${app}` && !p.startsWith(`/${app}/`))) return null;
     return p + u.search;

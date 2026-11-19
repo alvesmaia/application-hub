@@ -23,7 +23,7 @@ from hub.auth import (
     token_covers,
 )
 from hub.ux.shell import eyebrow_for
-from hub.ux.texts import resolve
+from hub.ux.texts import page_response, resolve
 
 _PUBLIC_PREFIXES = (
     "/assets/",
@@ -259,16 +259,10 @@ def _forbidden(request: Request, path: str) -> Response:
     if path.startswith("/api/"):
         return JSONResponse({"error": "Acesso negado."}, status_code=403)
     w = request.app.state.web
-    return cast(
-        Response,
-        w.templates.TemplateResponse(
-            request,
-            "forbidden.html",
-            w.page_ctx(request)
-            | {
-                "message": "Você não tem permissão para acessar esta página.",
-                "eyebrow": eyebrow_for(path, getattr(request.state, "lang", "pt-BR")),
-            },
-            status_code=403,
-        ),
-    )
+    lang = getattr(request.state, "lang", "pt-BR")
+    ctx = w.page_ctx(request) | {
+        "message": "Você não tem permissão para acessar esta página.",
+        "eyebrow": eyebrow_for(path, lang),
+        "lang": lang,
+    }
+    return page_response(w.templates, request, "forbidden.html", ctx, status_code=403)

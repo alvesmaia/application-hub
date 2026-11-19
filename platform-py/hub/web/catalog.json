@@ -1100,10 +1100,6 @@
 "Completed the basic steps"
 ],
 [
-"Conectado a {} · {}",
-"Connected to {} · {}"
-],
-[
 "Conectado como",
 "Signed in as"
 ],
@@ -3922,10 +3918,6 @@
 [
 "Sem aplicações marcadas = todas. O token aparece uma única vez.",
 "No applications checked = all. The token is shown only once."
-],
-[
-"Sem conexão com {}",
-"No connection to {}"
 ],
 [
 "Sem confirmação do app (tempo esgotado). Tente decidir de novo.",
@@ -7944,10 +7936,6 @@
 "Per-container usage unavailable: the engine does not measure each container (rootless Podman without cgroup delegation). The limits stay configured."
 ],
 [
-"O limite de CPU não é aplicado: o controlador cpu não está delegado ao usuário do engine.",
-"The CPU limit is not enforced: the cpu controller is not delegated to the engine's user."
-],
-[
 "Limites dos apps acima da capacidade do host em {} vCPU · {} GiB: os apps disputam CPU e memória.",
 "App limits above the host capacity by {} vCPU · {} GiB: the apps compete for CPU and memory."
 ],
@@ -7974,5 +7962,213 @@
 [
 "{} em 12 meses",
 "{} in 12 months"
+],
+[
+"Ambiente: staging",
+"Environment: staging"
+],
+[
+"API do app (OpenAPI)",
+"App API (OpenAPI)"
+],
+[
+"Consultas SQL a conexões",
+"SQL queries on connections"
+],
+[
+"Envio de arquivos em duas fases",
+"Two-phase file uploads"
+],
+[
+"Idempotência",
+"Idempotency"
+],
+[
+"Identidade do user",
+"User identity"
+],
+[
+"Ligar o SDK ao app",
+"Wiring the SDK into the app"
+],
+[
+"MCP do app",
+"App MCP"
+],
+[
+"Prontidão",
+"Readiness"
+],
+[
+"Stack do app",
+"App stack"
+],
+[
+"Tabelas do SDK",
+"SDK tables"
+],
+[
+"Tarefas duráveis",
+"Durable tasks"
+],
+[
+"Tarefas: execução",
+"Tasks: execution"
+],
+[
+"Texto completo numa página só (bom para agentes):",
+"Full text on a single page (good for agents):"
+],
+[
+"Criar um app",
+"Create an app"
+],
+[
+"Dashboards: formatação",
+"Dashboards: formatting"
+],
+[
+"Idioma e formatação",
+"Language and formatting"
+],
+[
+"JavaScript próprio",
+"Own JavaScript"
+],
+[
+"Aprovações",
+"Approvals"
+],
+[
+"Versão atual",
+"Current version"
+],
+[
+"Versões",
+"Versions"
+],
+[
+"Versões de {}",
+"Versions of {}"
+],
+[
+"Execução",
+"Run"
+],
+[
+"versão em execução antes da primeira implantação",
+"version running before the first deployment"
+],
+[
+"Autorizações",
+"Authorizations"
+],
+[
+"último: {} ({})",
+"last: {} ({})"
+],
+[
+"Variáveis alteradas depois da criação do contêiner. Use Aplicar no menu.",
+"Variables changed after the container was created. Use Apply in the menu."
+],
+[
+"Grupo",
+"Group"
+],
+[
+"Plataforma (somente leitura)",
+"Platform (read-only)"
+],
+[
+"plataforma (agendador)",
+"platform (scheduler)"
+],
+[
+"sem resposta",
+"no response"
+],
+[
+"Você não tem permissão para acessar esta página.",
+"You do not have permission to access this page."
+],
+[
+"Staging restrito",
+"Restricted staging"
+],
+[
+"Staging indisponível",
+"Staging unavailable"
+],
+[
+"Você não tem permissão para ver {} em staging. Volte para produção em /hub-env?to=producao&next=/apps/{}.",
+"You do not have permission to view {} in staging. Go back to production at /hub-env?to=producao&next=/apps/{}."
+],
+[
+"{} não tem versão implantada em staging. Volte para produção em /hub-env?to=producao&next=/apps/{}.",
+"{} has no version deployed in staging. Go back to production at /hub-env?to=producao&next=/apps/{}."
+],
+[
+"Página inicial",
+"Home page"
+],
+[
+"{}–{} de {}",
+"{}–{} of {}"
+],
+[
+"Gráfico de {}, série {}, total de {} {}, variação de {} em relação ao período anterior.",
+"Chart of {}, series {}, total of {} {}, change of {} versus the previous period."
+],
+[
+"Por categoria",
+"By category"
+],
+[
+"Este mês",
+"This month"
+],
+[
+"Série {}",
+"Series {}"
+],
+[
+"Conexão instável, tentando de novo ({}/{})…",
+"Unstable connection, retrying ({}/{})…"
+],
+[
+"O app está com muitas operações pesadas agora; a sua entra assim que houver vaga. Tentando de novo em",
+"The app is running many heavy operations right now; yours starts as soon as there is room. Retrying in"
+],
+[
+"s (tentativa {} de {})…",
+"s (attempt {} of {})…"
+],
+[
+"Operação em fila…",
+"Operation queued…"
+],
+[
+"Aplicação indisponível",
+"Application unavailable"
+],
+[
+"A aplicação não respondeu. Tente novamente em instantes.",
+"The application did not respond. Try again in a moment."
+],
+[
+"{} não respondeu; pode estar reiniciando. Tente novamente em instantes.",
+"{} did not respond; it may be restarting. Try again in a moment."
+],
+[
+"Atraso aleatório máximo (s)",
+"Maximum random delay (s)"
+],
+[
+"Fuso (vazio = padrão da plataforma)",
+"Time zone (empty = platform default)"
+],
+[
+"Volumes (separados por vírgula)",
+"Volumes (comma-separated)"
 ]
 ]

@@ -80,6 +80,7 @@ def with_base(value: str | None) -> Request:
 def test_public_base_follows_the_hub_header_and_refuses_odd_values() -> None:
     assert public_base(with_base("/apps/demo-alt"), "demo") == "/apps/demo-alt"
     assert public_base(with_base(None), "demo") == "/apps/demo"
+    assert public_base(with_base("/staging/apps/demo"), "demo") == "/staging/apps/demo"  # staging's own URL
     for odd in ("/elsewhere", '/apps/x"><script>', "/apps/a b", "//evil.example/apps"):
         assert public_base(with_base(odd), "demo") == "/apps/demo", odd
 

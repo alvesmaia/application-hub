@@ -14,6 +14,7 @@ from fastapi.templating import Jinja2Templates
 
 from hub.auth import ABSOLUTE_MS, COOKIE, AuthStore, entra
 from hub.config import Settings
+from hub.gateway.env_path import env_of
 from hub.gateway.proxy import Gateway
 from hub.insight.runtime import Insight
 from hub.ux.inbox_routes import bell_of
@@ -21,7 +22,7 @@ from hub.ux.shell import can_open, i18n_for, nav_for, platform_palette, tabs_for
 from hub.ux.texts import t, tn, tr
 
 THEME = "#0a2848"
-# Discreet strip for staging mode (cookie `hub_env`), served together with the theme.
+# Staging mode (cookie `hub_env` or the `/staging/…` URL): strip and header badge, served with the theme.
 STAGING_BAR_CSS = (
     ".hub-staging-bar{display:flex;gap:8px;justify-content:center;align-items:center;padding:4px 16px;"
     "font-size:12px;background:var(--color-warning-soft);color:var(--color-text);"
@@ -29,7 +30,11 @@ STAGING_BAR_CSS = (
     # On app screens the workspace covers #app-root: the strip becomes a floating badge (F17).
     "html[data-hub-app] .hub-staging-bar{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);"
     "z-index:var(--z-header);border:1px solid var(--color-warning-shape);border-radius:999px;"
-    "box-shadow:0 4px 14px rgb(0 0 0/.15)}\n"
+    "box-shadow:0 4px 14px rgb(0 0 0/.15)}"
+    # Header badge: the environment stays in sight on every screen, apps included.
+    ".hub-env-badge{display:inline-flex;align-items:center;margin-left:8px;padding:2px 8px;border-radius:999px;"
+    "font-size:11px;font-weight:700;letter-spacing:.06em;white-space:nowrap;background:var(--color-warning-soft);"
+    "color:var(--color-warning);border:1px solid var(--color-warning-shape)}\n"
 )
 # hub-ux.js and the files split from it, in load order.
 UX_SCRIPTS = ("hub-ux.js", "hub-ux-palette.js", "hub-ux-rail.js", "hub-ux-colfilter.js", "hub-ux-pages.js")
@@ -132,7 +137,7 @@ class WebCtx:
         return {
             "body_class": body_class,
             "rail_ctx": rail_ctx,
-            "staging": request.cookies.get("hub_env") == "staging",
+            "staging": request.cookies.get("hub_env") == "staging" or env_of(request.scope) == "staging",
             "brand": self.settings.brand,
             "source_url": self.settings.source_url,
             "user": user,

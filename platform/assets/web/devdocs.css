@@ -56,7 +56,7 @@ body:has(.dev-docs),body:has(.dev-docs) #app-root{background:var(--dd-bg)}
   .dev-nav-filter{width:100%}
   .dev-nav-search kbd{display:none}
 }
-.dev-note{margin:0 0 var(--space-12);padding:var(--space-8) var(--space-12);border:1px solid var(--dd-border);border-radius:var(--radius-md);background:var(--dd-active);color:var(--dd-muted);font-size:var(--font-size-sm)}
+.dev-note{margin:0 0 var(--space-12);padding:var(--space-8) var(--space-12);border:1px solid var(--dd-border);border-radius:var(--radius-md);background:var(--dd-active);color:var(--dd-text);font-size:var(--font-size-sm)}
 /* text typography (16/28) */
 .dev-doc{color:var(--dd-text);font-size:16px;line-height:28px;overflow-wrap:anywhere}
 .dev-doc h1{margin:0 0 var(--space-8);font-size:35px;font-weight:600;line-height:43.75px;letter-spacing:-.875px;color:var(--dd-text)}

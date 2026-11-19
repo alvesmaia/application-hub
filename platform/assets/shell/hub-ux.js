@@ -269,7 +269,15 @@
     if (!list) return;
     const r = list.getBoundingClientRect();
     const s = d.getBoundingClientRect();
-    if (r.bottom > window.innerHeight - 8 && s.top > window.innerHeight - s.bottom) d.classList.add('hub-row-menu--up');
+    // The edge that cuts the menu: the viewport or a panel with overflow (e.g. the last row of a table card).
+    let top = 0, bottom = window.innerHeight;
+    for (let c = d.parentElement; c && c !== document.body; c = c.parentElement) {
+      if (getComputedStyle(c).overflowY === 'visible') continue;
+      const b = c.getBoundingClientRect();
+      top = Math.max(top, b.top); bottom = Math.min(bottom, b.bottom);
+      break;
+    }
+    if (r.bottom > bottom - 8 && s.top - top > bottom - s.bottom) d.classList.add('hub-row-menu--up');
     if (r.left < 8) d.classList.add('hub-row-menu--start');
   }, true);
 

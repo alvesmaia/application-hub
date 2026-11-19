@@ -21,10 +21,10 @@ def test_runtime_paginates_containers_and_keeps_query(hub: TestClient) -> None:
     fake = FakeDocker()
     fake.names += [f"app-hub-plat{i:02d}" for i in range(30)]  # platform containers: the list that grows
     hub.app.state.ops_engine.factory = lambda: fake  # type: ignore[attr-defined]
-    page = hub.get("/admin/runtime?runtime=podman&per=10&page=2").text
+    page = hub.get("/admin/runtime?ordem=x&per=10&page=2").text
     assert 'class="hub-pager"' in page and "Página 2 de " in page
     assert page.count('class="ops-ct-row"') == 10 and page.count('class="ops-detail"') == 10
-    assert "runtime=podman&amp;page=3&amp;per=10" in page and "/run/podman/podman.sock" in page
+    assert "ordem=x&amp;page=3&amp;per=10" in page
 
 
 def test_runtime_without_many_containers_has_no_pager(hub: TestClient) -> None:

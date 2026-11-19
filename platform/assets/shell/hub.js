@@ -159,7 +159,7 @@
   // `/{id}/...` (app not yet updated) is accepted and normalized to the new one.
   const pub = me.dataset.hubBase || `/apps/${app}`;
   function canon(path) {
-    if (path === `/${app}` || path.startsWith(`/${app}/`) || path.startsWith(`/${app}?`)) return `/apps${path}`;
+    if (path === `/${app}` || path.startsWith(`/${app}/`) || path.startsWith(`/${app}?`)) return `${pub.slice(0, -app.length - 1)}${path}`;
     return path;
   }
   function sectionOf(path) {

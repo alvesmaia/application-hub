@@ -384,12 +384,9 @@ def test_runtime_api_and_page(hub: TestClient, docker: FakeDocker) -> None:
         and live["cpu_used"] == pytest.approx(0.2)
     )
     page = hub.get("/admin/runtime").text
-    assert "Em execução" in page and "Docker Desktop 28.5" in page and "Arquivos somente leitura" in page
+    assert "Em execução" in page and "Arquivos somente leitura" in page
     assert 'data-ops-container="restart"' in page and "cap-drop ALL" in page
-    assert (
-        "runtime=podman" in page
-        and "/run/podman/podman.sock" in hub.get("/admin/runtime?runtime=podman").text
-    )
+    assert "runtime=podman" not in page  # no Docker/Podman chips: they only relabelled a read-only field
 
 
 def test_runtime_unreachable(hub: TestClient) -> None:

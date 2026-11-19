@@ -24,6 +24,7 @@ from hub.config import Settings, load_settings
 from hub.connections.provision import ObjectStore
 from hub.connections.routes import mount_connections
 from hub.connections.store import ConnStore
+from hub.gateway.env_path import StagingPath
 from hub.gateway.identity import user_sig_key
 from hub.gateway.proxy import Gateway, GwOptions
 from hub.gateway.registry import load_registry
@@ -71,6 +72,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
         app.include_router(r)
     _mount_sections(app, w, conns, admin)
     app.add_middleware(Cors, mcp_path=apicfg.mcp.path)
+    app.add_middleware(StagingPath)  # outermost: before routing
     return app
 
 

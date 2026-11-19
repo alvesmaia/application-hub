@@ -82,7 +82,7 @@
     if (reservedPath(u.pathname)) return false;
     if (!app) return false;
     // The app's pages at `/apps/{app}/…` (the old `/{app}/…` is still accepted).
-    const p = u.pathname.startsWith('/apps/') ? u.pathname.slice(5) : u.pathname;
+    const p = u.pathname.replace(/^(?:\/staging)?\/apps\//, '/'); // staging: `/staging/apps/{app}/…`
     return p === `/${app}` || p.startsWith(`/${app}/`);
   }
 

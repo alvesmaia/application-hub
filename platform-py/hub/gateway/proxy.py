@@ -15,6 +15,7 @@ from starlette.requests import HTTPConnection, Request
 from starlette.responses import HTMLResponse, Response, StreamingResponse
 
 from hub.gateway.csp import app_url
+from hub.gateway.env_path import env_of, public
 from hub.gateway.identity import USER_SIG_HEADER, Identity, sign_user
 from hub.gateway.registry import AppEntry, Registry
 from hub.httpclients import internal_client
@@ -172,13 +173,13 @@ def build_upstream_headers(
             (USER_SIG_HEADER, sign_user(key, app.id, env, ident, int(time.time()) if now is None else now))
         )
     out.append(("x-hub-env", env))
-    out.append((BASE_HEADER, app_url(app.id)))
+    out.append((BASE_HEADER, public(app_url(app.id), env)))
     if identity.locale:
         out.append(("x-hub-locale", identity.locale))
     return out
 
 
-def _response_header(lk: str, v: str, app_id: str) -> tuple[bytes, bytes] | None:
+def _response_header(lk: str, v: str, app_id: str, env: str) -> tuple[bytes, bytes] | None:
     """One upstream header as the browser receives it, or None to drop it."""
     if lk == "set-cookie":
         c = sanitize_set_cookie(v)
@@ -186,11 +187,13 @@ def _response_header(lk: str, v: str, app_id: str) -> tuple[bytes, bytes] | None
     if lk == "location":
         pub = public_location(app_id, v)
         if pub is not None:
-            v = pub
+            v = public(pub, env)  # a staging redirect stays on the staging URL
     return (lk.encode("latin-1"), v.encode("latin-1", "replace"))
 
 
-def filter_response_headers(raw: list[tuple[str, str]], app_id: str) -> list[tuple[bytes, bytes]]:
+def filter_response_headers(
+    raw: list[tuple[str, str]], app_id: str, env: str = "producao"
+) -> list[tuple[bytes, bytes]]:
     listed: set[str] = set()
     for k, v in raw:
         if k.lower() == "connection":
@@ -200,7 +203,7 @@ def filter_response_headers(raw: list[tuple[str, str]], app_id: str) -> list[tup
         lk = k.lower()
         if lk in HOP_BY_HOP or lk in listed or lk in ("date", "server") or lk.startswith("x-hub-"):
             continue
-        h = _response_header(lk, v, app_id)
+        h = _response_header(lk, v, app_id, env)
         if h is not None:
             out.append(h)
     return out
@@ -297,9 +300,11 @@ class Gateway:
             )
         return app, ident
 
-    def _staging(self, request: Request, app: AppEntry, ident: Identity) -> tuple[AppEntry, str] | Response:
-        """The environment to forward to: staging only with the `hub_env` cookie and the permission."""
-        if request.cookies.get("hub_env") != "staging":  # staging mode (set at /hub-env); needs permission
+    def staging_target(
+        self, request: HTTPConnection, app: AppEntry, ident: Identity
+    ) -> tuple[AppEntry, str] | Response:
+        """The environment to forward to, from the URL (`/staging/…`, see `env_path`); staging needs the permission."""
+        if env_of(request.scope) != "staging":
             return app, "producao"
         if not ident.can_view_staging():
             return friendly(403, "Staging restrito", f"Você não tem permissão para ver {app.name} em staging. "
@@ -367,7 +372,7 @@ class Gateway:
         if isinstance(checked, Response):
             return checked
         app, ident = checked
-        staged = self._staging(request, app, ident)
+        staged = self.staging_target(request, app, ident)
         if isinstance(staged, Response):
             return staged
         app, env = staged
@@ -385,7 +390,7 @@ class Gateway:
         if isinstance(up, Response):
             return up
         resp = StreamingResponse(_relay(up), status_code=up.status_code)
-        resp.raw_headers = filter_response_headers(list(up.headers.multi_items()), app.id)
+        resp.raw_headers = filter_response_headers(list(up.headers.multi_items()), app.id, env)
         return resp
 
     @staticmethod

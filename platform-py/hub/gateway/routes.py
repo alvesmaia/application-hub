@@ -8,13 +8,15 @@ from dataclasses import dataclass
 from typing import Any, cast
 
 from fastapi import APIRouter, Depends, FastAPI, Request, Response, WebSocket
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from starlette.requests import HTTPConnection
 
 from hub.auth import COOKIE, permissions
 from hub.gateway.csp import approved_scripts, csp_with, sandbox_fragment
+from hub.gateway.env_path import env_of, public
 from hub.gateway.proxy import Gateway
+from hub.gateway.registry import AppEntry
 from hub.gateway.ws import proxy_ws
 from hub.ux.texts import page_response
 
@@ -118,6 +120,17 @@ async def _ws_user(ws: WebSocket, app_id: str) -> bool:
     return True
 
 
+def _env_page(request: Request, c: GwCtx, entry: AppEntry) -> Response | None:
+    """The staging cookie sends the production URL to the staging one; the staging URL needs the permission."""
+    if env_of(request.scope) == "producao":
+        if request.cookies.get("hub_env") != "staging":
+            return None
+        query = request.url.query
+        return RedirectResponse(public(request.url.path, "staging") + (f"?{query}" if query else ""), 303)
+    staged = c.gw.staging_target(request, entry, c.gw.identity_for(request))
+    return staged if isinstance(staged, Response) else None
+
+
 @router.get("/apps/{app_id}", response_class=HTMLResponse)
 @router.get("/apps/{app_id}/{section}", response_class=HTMLResponse)
 async def page(
@@ -129,13 +142,19 @@ async def page(
         nf = page_response(c.templates, request, "not_found.html", c.page_ctx(request))
         nf.status_code = 404
         return nf
-    d = entry.display
+    if (moved := _env_page(request, c, entry)) is not None:
+        return moved
+    d, env = entry.display, env_of(request.scope)
+    frag = public("/_frag", env)
     scripts = [
-        {"src": f"/_frag/{app_id}/assets/{f}", "integrity": s} for f, s in approved_scripts(app_id, False)
+        {"src": f"{frag}/{app_id}/assets/{f}", "integrity": s}
+        for f, s in approved_scripts(app_id, env == "staging")
     ]
     data = c.page_ctx(request) | {
         "path": f"/apps/{app_id}",
         "app": {
+            "frag": frag,
+            "base": public(f"/apps/{app_id}", env),
             "id": app_id,
             "name": entry.name,
             "version": entry.version,

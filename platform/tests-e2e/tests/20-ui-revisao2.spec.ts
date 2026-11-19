@@ -122,3 +122,17 @@ test('403 com cabeçalho de página; login com "Mostrar senha" @core', async ({ 
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');
   await anon.close();
 });
+
+test('menu "⋯" da última linha abre para cima, inteiro dentro do painel @core', async ({ page }) => {
+  await page.goto('/admin/users');
+  const last = page.locator('table details.hub-row-menu').last();
+  await last.scrollIntoViewIfNeeded();
+  await last.locator('summary').click();
+  await expect(last).toHaveClass(/hub-row-menu--up/);
+  const fits = await last.evaluate((d) => {
+    const l = d.querySelector('.hub-row-menu-list')!.getBoundingClientRect();
+    const p = d.closest('.content-panel')!.getBoundingClientRect();
+    return l.top >= p.top && l.bottom <= p.bottom;
+  });
+  expect(fits).toBe(true);
+});

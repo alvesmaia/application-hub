@@ -140,9 +140,13 @@ def tr_html(html: str, lang: str) -> str:
     return "".join(out)
 
 
-def page_response(templates: Jinja2Templates, request: Request, name: str, data: dict[str, Any]) -> Response:
+def page_response(
+    templates: Jinja2Templates, request: Request, name: str, data: dict[str, Any], status_code: int = 200
+) -> Response:
     """`TemplateResponse` with the body translated into the user's language."""
-    resp = templates.TemplateResponse(request, name, data)  # body already rendered (bytes)
+    resp = templates.TemplateResponse(
+        request, name, data, status_code=status_code
+    )  # body already rendered (bytes)
     lang = data.get("lang", "pt-BR")
     if lang != "pt-BR":
         resp.body = tr_html(bytes(resp.body).decode(), lang).encode()

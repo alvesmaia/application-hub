@@ -612,8 +612,9 @@ HTML fragments with the shell's look (Jinja2) and common responses.
 
 ### `public_base(conn: HTTPConnection, app_id: str) -> str`
 
-App's public base for links/forms: the hub's ``x-hub-base`` (``/apps/{id}``), or that
-default when the header is missing or has anything besides letters, digits, ``/`` and ``-``.
+App's public base for links/forms: the hub's ``x-hub-base`` (``/apps/{id}``, or ``/staging/apps/{id}``
+in staging), or ``/apps/{id}`` when the header is missing or has anything besides letters, digits, ``/``
+and ``-``.
 
 ### class `Renderer`
 

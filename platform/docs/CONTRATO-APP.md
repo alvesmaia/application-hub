@@ -66,8 +66,11 @@ through `/_frag/{id}/…` (gateway); the app receives `/{id}/…`.
   (`/apps/{id}`); the SDK has `hub_sdk.base(id)` and, in the Python SDK
   templates, the `{{ base }}` variable. Notification links (§20) and search results (§19) also use
   `/apps/{id}/…` (the hub still accepts the old `/{id}/…` and converts it).
+- **Staging has its own URL:** `/staging/apps/{id}/…` (fragments at `/staging/_frag/{id}/…`). There the gateway
+  sends `x-hub-base: /staging/apps/{id}` and `x-hub-env: staging`, so an app that builds its links with the base
+  keeps the user in staging; the upstream path is the same `/{id}/…`. Never hard-code `/apps/{id}`.
 - A redirect `Location` from the app to `/{id}/…` is rewritten by the gateway to
-  `/apps/{id}/…`.
+  `/apps/{id}/…` (in staging, `/staging/apps/{id}/…`).
 - Compatibility: an old `/{id}/…` path of a **registered** app responds **301**
   (GET/HEAD) or **308** (other methods) to `/apps/{id}/…`, with the same query. The
   `hub.js`/`hub-kit.js` still accept an old link of the app itself (they normalize it), but the
@@ -112,7 +115,7 @@ Dynamic responses **must** have `Cache-Control: no-store`.
   (name, data). `hub dev` injects a development identity in the same format.
 - Display: `name` (otherwise `user`). The workspace **must** show the user
   (`hub-user-note`: "Conectado como …" (Signed in as …)).
-- `x-hub-env`: `producao` (default) or `staging`.
+- `x-hub-env`: `producao` (default) or `staging` (the request came through `/staging/apps/{id}/…`).
 - `x-hub-locale` (wave 9): user language resolved by the hub (`pt-BR` or `en`),
   repeated in the `locale` field of `x-hub-user`. The app **must** use, in this order,
   `x-hub-locale` → the identity's `locale` → `Accept-Language` (the gateway passes the browser's) → `pt-BR` (see item 21).

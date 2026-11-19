@@ -69,5 +69,10 @@
 - ✅ 72 · Home sem o contêiner de atalhos (shortcuts)
 - ✅ 73 · Status: mensagem geral coerente com app instável
 - ✅ 74 · Status: histórico de disponibilidade de um ano
-- ⬜ 75 · URL própria de staging: /staging/apps/<id>/… (x-hub-base com o prefixo; produção sem mudança)
-- ⬜ 76 · Selo "STAGING" no header global quando o ambiente for staging
+- ✅ 75 · URL própria de staging: /staging/apps/<id>/… (x-hub-base com o prefixo; produção sem mudança)
+- ✅ 76 · Selo "STAGING" no header global quando o ambiente for staging
+- ✅ 77 · admin/runtime: cores distintas Plataforma/Aplicações, sem notas do engine e sem botões Docker/Podman
+- ✅ 78 · Revisão de idioma: telas em inglês sem trechos em português (Copy prompt, JS e Python)
+  - ✅ varredura das telas em inglês · subagente: Varredura de idioma misto
+  - ✅ strings fixas em JS/Python: 51 pares novos no catálogo, 403 e paginador traduzidos no servidor
+- ✅ 79 · Menu "⋯" das tabelas não fica cortado na última linha (abre para cima dentro do painel)

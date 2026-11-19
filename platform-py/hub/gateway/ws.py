@@ -9,8 +9,10 @@ import time
 from collections import Counter
 
 import websockets
+from starlette.responses import Response
 from starlette.websockets import WebSocket, WebSocketDisconnect, WebSocketState
 
+from hub.gateway.env_path import env_of
 from hub.gateway.identity import Identity
 from hub.gateway.proxy import Gateway, build_upstream_headers
 from hub.gateway.registry import AppEntry
@@ -45,7 +47,9 @@ def _target(
     gw: Gateway, ws: WebSocket, app: AppEntry, app_id: str, ident: Identity, rest: str
 ) -> tuple[str, list[tuple[str, str]]]:
     """Upstream `ws://` URL and the headers that go with the handshake."""
-    hdrs = build_upstream_headers(list(ws.headers.items()), app, ident, "producao", gw.opts.user_sig_key)
+    hdrs = build_upstream_headers(
+        list(ws.headers.items()), app, ident, env_of(ws.scope), gw.opts.user_sig_key
+    )
     skip = ("sec-websocket-", "content-length", "origin", "accept-encoding", "sec-fetch-")
     hdrs = [(k, v) for k, v in hdrs if not k.lower().startswith(skip)]
     base = app.upstream.rstrip("/").replace("https://", "wss://", 1).replace("http://", "ws://", 1)
@@ -77,15 +81,27 @@ async def _tunnel(
                 await ws.close(code=1001)
 
 
+def _admitted(gw: Gateway, ws: WebSocket, app_id: str) -> tuple[AppEntry, Identity] | None:
+    """The app in the URL's environment (`/staging/…` needs the permission) and the caller; None = refuse."""
+    app = gw.registry.get(app_id)
+    if app is None or _refused(ws):
+        return None
+    ident = gw.identity_for(ws)
+    staged = gw.staging_target(ws, app, ident)
+    if isinstance(staged, Response):
+        return None
+    return staged[0], ident
+
+
 async def proxy_ws(gw: Gateway, ws: WebSocket, app_id: str, rest: str) -> None:
     max_per_user = _env("HUB_WS_MAX_PER_USER", 8)
     max_msg = _env("HUB_WS_MAX_MESSAGE_KB", 256) * 1024
     limits = (max_msg, _env("HUB_WS_IDLE_SECS", 60), _env("HUB_WS_MAX_SECS", 900))
-    app = gw.registry.get(app_id)
-    if app is None or _refused(ws):
+    admitted = _admitted(gw, ws, app_id)
+    if admitted is None:
         await ws.close(code=1008)  # handshake recusado (403)
         return
-    ident = gw.identity_for(ws)
+    app, ident = admitted
     slot = f"{app_id}\n{ident.user}"
     if _CONNS[slot] >= max_per_user:
         await ws.close(code=1013)

@@ -59,8 +59,9 @@ def test_metrics_the_engine_cannot_measure_show_as_unavailable(hub: TestClient) 
     assert "indisponível" in j["engine"]["metrics_note"]
     page = hub.get("/admin/runtime").text
     assert "2035" not in page and "198 /" not in page
-    assert "Uso por contêiner indisponível" in page
-    assert "limite de CPU não é aplicado" in page  # CpuCfsQuota false: the cpu controller is not delegated
+    # engine caveats stay in the API, not on the page (owner's call: noise for the admin)
+    assert "Uso por contêiner indisponível" not in page
+    assert "limite de CPU não é aplicado" not in page
 
 
 def test_the_real_socket_of_the_host_is_shown(hub: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:  # noqa: F811
@@ -68,7 +69,7 @@ def test_the_real_socket_of_the_host_is_shown(hub: TestClient, monkeypatch: pyte
     sock = "/data/app-hub-engine/run/podman/podman.sock"
     monkeypatch.setenv("HUB_CONTAINER_SOCKET_HOST", sock)
     page = hub.get("/admin/runtime").text
-    assert f'value="{sock}"' in page and f"Conectado a {sock}" in page
+    assert f'value="{sock}"' in page and "Conectado a" not in page
     assert "/var/run/docker.sock" not in page
 
 

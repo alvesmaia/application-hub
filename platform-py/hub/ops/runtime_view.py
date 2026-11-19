@@ -27,16 +27,6 @@ def host_segments(host: rt.Host, alloc_cpu: float, alloc_mem: float) -> tuple[li
     return cpu, mem
 
 
-def engine_notes(info: Row) -> list[str]:
-    """What the engine cannot do here: measure each container, apply the CPU limit."""
-    notes: list[str] = [str(info["metrics_note"])] if info.get("metrics_note") else []
-    if info.get("cpu_quota") is False:
-        notes.append(
-            "O limite de CPU não é aplicado: o controlador cpu não está delegado ao usuário do engine."
-        )
-    return notes
-
-
 def capacity_notes(free_cpu: float, free_mem: float) -> list[str]:
     """Limits of the apps above the host: say so instead of a negative free share."""
     if free_cpu >= 0 and free_mem >= 0:

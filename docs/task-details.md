@@ -272,3 +272,13 @@ E2E `10-onda9` passou a usar Recentes e Status.
 `hub/insight/uptime_daily.py`: a cada `Metrics.save` os buckets de 5 min viram uma linha por dia em
 `uptime-daily.json` (400 dias; um dia parcial nunca sobrescreve o completo). `daily_uptime` agrupa os buckets numa
 passada só e usa a linha diária quando o dia saiu da janela de 30 dias. `/status?periodo=12m` mostra uma barra por mês.
+
+✅ **Task 75/76 — URL própria de staging e selo no header**
+`hub/gateway/env_path.py`: middleware ASGI externo (`StagingPath`) tira o prefixo de `/staging/apps/…` e
+`/staging/_frag/…` e marca `scope["hub_env"]`; todas as rotas (página, fragmento, API, WebSocket) seguem iguais e
+o ambiente vem do caminho (`Gateway.staging_target`, que exige a permissão de staging). `x-hub-base` e o `Location`
+reescrito levam o prefixo. Na página do app, `data-hub-frag`/`data-hub-base` do ambiente; o cookie `hub_env` só
+redireciona `/apps/<id>` para a URL de staging, e `/hub-env` leva a página do app para o ambiente escolhido. O JS do
+shell (`hub.js`, `hub-kit.js`, `hub-safe.js`, `hub-device.js`) reconhece `/staging/apps/`. Selo "STAGING" no
+header (`data-hub-env-badge`). Testes em `tests/test_staging_url.py`; E2E `07-staging` atualizado (precisa de app
+com staging implantada: fica para a validação pesada, junto com o teste de carga do gateway).

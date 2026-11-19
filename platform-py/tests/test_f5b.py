@@ -385,7 +385,7 @@ def test_staging_deploys_alongside_and_needs_own_db(hub: TestClient, fake: FD) -
     assert "app-hub-app-ativos__staging" in fake.cs and any("recriado" in x for x in out), out
 
 
-def test_staging_mode_cookie_routes_gateway_to_staging(hub: TestClient, fake: FD) -> None:
+def test_staging_url_routes_gateway_to_staging(hub: TestClient, fake: FD) -> None:
     seen: list[tuple[str, str]] = []
     reg = hub.app.state.gateway.registry  # type: ignore[attr-defined]
     reg.staging["ativos"] = "http://stg:8080"
@@ -403,16 +403,16 @@ def test_staging_mode_cookie_routes_gateway_to_staging(hub: TestClient, fake: FD
         r = hub.get("/hub-env?to=staging&next=/apps/ativos", follow_redirects=False)
         assert (
             r.status_code == 303
-            and r.headers["location"] == "/apps/ativos"
+            and r.headers["location"] == "/staging/apps/ativos"
             and "hub_env=staging" in r.headers["set-cookie"]
         )
         assert (
             hub.get("/hub-env?to=staging&next=//evil.com", follow_redirects=False).headers["location"] == "/"
         )
-        hub.get("/_frag/ativos/ativos/x", headers=stg)
+        hub.get("/staging/_frag/ativos/ativos/x", headers=stg)
         assert seen[-1] == ("stg", "staging")
         reg.staging.pop("ativos")
-        assert hub.get("/_frag/ativos/ativos/x", headers=stg).status_code == 404
+        assert hub.get("/staging/_frag/ativos/ativos/x", headers=stg).status_code == 404
         hub.get("/hub-env?to=producao", follow_redirects=False)
         print("R", hub.get("/_frag/ativos/ativos/x").text[:300], flush=True)
         assert seen[-1][1] == "producao"
