@@ -233,6 +233,15 @@
   }
 
   // `target` = the page path in the app (/{id}/{section}) + query.
+  // Where a fragment request ended after the app's redirects (`/_frag/{id}/…`) → its public path (`/apps/{id}/…`).
+  function publicOfFrag(finalUrl) {
+    if (!finalUrl) return null;
+    const u = new URL(finalUrl, location.href);
+    const base = fragUrl(pub);
+    if (u.origin !== location.origin || (u.pathname !== base && !u.pathname.startsWith(`${base}/`))) return null;
+    return pub + u.pathname.slice(base.length) + u.search;
+  }
+
   async function fetchFragment(target) {
     let res;
     try {
@@ -250,6 +259,9 @@
       return { ok: false, html: '' };
     }
     const html = await res.text();
+    // the app redirected (e.g. `/` → `/painel`): the address bar follows, so a reload opens the same page
+    const moved = res.redirected ? publicOfFrag(res.url) : null;
+    if (res.ok && moved && moved !== location.pathname + location.search) history.replaceState({}, '', moved);
     if (res.ok) return { ok: true, html };
     if (Policy.queued(res.status)) {
       const retryAfter = res.headers && res.headers.get ? res.headers.get('retry-after') : null;
@@ -260,5 +272,5 @@
   }
   Object.assign(P, { Policy, me, app, root, LOADER_MS, SKELETON_MS, PAGE_SKELETON_MS, store,
     OPENED_KEY, startedAt, tr, appName, wait, pub, canon, sectionOf, fragUrl, toLogin, assetsReady,
-    unavailable, fetchFragment });
+    unavailable, fetchFragment, publicOfFrag });
 })();

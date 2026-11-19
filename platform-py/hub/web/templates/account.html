@@ -2,7 +2,7 @@
 {% block title %}{{ tr('Minha conta') }} · {{ brand }}{% endblock %}
 {% block main %}
 <div class="page-container">
-<div class="app-page-header page-head"><div class="page-head-text"><div class="eyebrow">{{ t('acct.eyebrow') }}</div><h1 class="page-title">{{ tr('Minha conta') }}</h1><p class="page-subtitle">{{ t('acct.settings_subtitle') }}</p></div><div class="page-actions admin-actions"></div></div>
+<div class="app-page-header page-head"><div class="page-head-text"><div class="eyebrow">{{ t('acct.eyebrow') }}</div><div class="page-title-row"><h1 class="page-title">{{ tr('Minha conta') }}</h1>{% with info_title=tr('Minha conta'), info_text=t('acct.settings_subtitle') %}{% include "_page_info.html" %}{% endwith %}</div></div><div class="page-actions admin-actions"></div></div>
 {% include "_tabs.html" %}
 <div class="acct-settings-body">
 {% if tab == 'perfil' %}

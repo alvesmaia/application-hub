@@ -58,7 +58,7 @@ hub check [-h] [--dir DIR] [--only ONLY] [--full] [--json]
 | Argument | Description | Default |
 |---|---|---|
 | `--dir` |  | `.` |
-| `--only` | comma-separated steps: manifesto,ruff,formato,ty,openapi,pytest,conformidade |  |
+| `--only` | comma-separated steps: manifesto,ruff,formato,ty,openapi,pytest,identidade,conformidade |  |
 | `--full` | also the full contract suite (conformance.json) |  |
 | `--json` |  |  |
 

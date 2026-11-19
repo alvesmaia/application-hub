@@ -82,5 +82,18 @@ def test_staging_websocket_needs_the_staging_permission(hub: TestClient) -> None
 
 
 def test_an_app_redirect_stays_in_staging(hub: TestClient) -> None:
-    assert hub.get("/staging/_frag/ativos/ativos/redir").headers["location"] == "/staging/apps/ativos/y"
-    assert hub.get("/_frag/ativos/ativos/redir").headers["location"] == "/apps/ativos/y"
+    nav = {"sec-fetch-mode": "navigate"}  # the browser itself (a download link): the public URL
+    assert (
+        hub.get("/staging/_frag/ativos/ativos/redir", headers=nav).headers["location"]
+        == "/staging/apps/ativos/y"
+    )
+    assert hub.get("/_frag/ativos/ativos/redir", headers=nav).headers["location"] == "/apps/ativos/y"
+
+
+def test_a_fragment_redirect_stays_a_fragment(hub: TestClient) -> None:
+    """hub.js fetches fragments: a 303 after a POST (Post/Redirect/Get) must lead to the next fragment, not to the
+    whole hub page (which ended up embedded inside the app's screen)."""
+    for mode in ({}, {"sec-fetch-mode": "cors"}, {"sec-fetch-mode": "same-origin"}):
+        assert hub.get("/_frag/ativos/ativos/redir", headers=mode).headers["location"] == "/_frag/ativos/y"
+        staged = hub.get("/staging/_frag/ativos/ativos/redir", headers=mode).headers["location"]
+        assert staged == "/staging/_frag/ativos/y"

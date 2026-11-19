@@ -136,3 +136,22 @@ test('menu "⋯" da última linha abre para cima, inteiro dentro do painel @core
   });
   expect(fits).toBe(true);
 });
+
+test('"i" ao lado do título abre o painel com a descrição da página @core', async ({ page }) => {
+  await page.goto('/admin/tasks');
+  await expect(page.locator('.page-subtitle')).toHaveCount(0);
+  const btn = page.locator('[data-hub-info-open]');
+  await btn.click();
+  const panel = page.locator('#hub-page-info');
+  await expect(panel).toBeVisible();
+  await expect(panel).toContainText('Importações, exportações e outros processos longos');
+  await page.keyboard.press('Escape');
+  await expect(panel).toBeHidden();
+  await expect(btn).toBeFocused();
+});
+
+test('versão do hub visível no header para quem está logado @core', async ({ page }) => {
+  await page.goto('/admin/tasks');
+  await expect(page.locator('[data-hub-version]')).toBeVisible();
+  await expect(page.locator('[data-hub-version]')).toHaveText(/^v\d+\.\d+\.\d+/);
+});

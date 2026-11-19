@@ -9,7 +9,8 @@
  *                        data-hub-swap="outerHTML|innerHTML|beforeend|afterbegin|none",
  *                        data-hub-trigger="click|change|submit|input|load|every 5s",
  *                        data-hub-include="#form" (fields sent along)
- *   confirmation         data-hub-confirm="Text"   (links, buttons, forms)
+ *   confirmation         data-hub-confirm="Text"   (links, buttons, forms); optional data-hub-confirm-title,
+ *                        data-hub-confirm-label (button text) and data-hub-confirm-danger (red button)
  *   modal                data-hub-modal="#template-id"; inside: data-hub-close;
  *                        <form data-hub-dismiss data-hub-toast="…"> closes without sending
  *   table                <table data-hub-table data-hub-page-size="10">, <th data-hub-sort>,
@@ -25,6 +26,7 @@
  *   validation           <form data-hub-validate> + data-hub-msg-required / -type / -pattern /
  *                        -min / -max / -minlength / -maxlength on the fields
  *   mobile menu          data-hub-menu="open|close" (app sidebar on narrow screens)
+ *   filter on change     <select data-hub-autosubmit> submits its form when the choice changes
  *   real time            data-hub-ws="/apps/{app}/ws/…" (WebSocket through the gateway) +
  *                        data-hub-ws-target="#id" / data-hub-ws-swap="outerHTML|…": messages
  *                        {"html":"…","target":"#id","swap":"…"} (or {"fragments":[…]}) go
@@ -194,6 +196,17 @@
     if ('disabled' in el && el.tagName !== 'FORM') el.disabled = on;
   }
 
+  // Post/Redirect/Get from a partial form (e.g. a form in a modal): the app sent the user to another page — close
+  // the modal, show that page in the workspace and move the address bar there (`/_frag/…` → `/apps/…`).
+  function landed(el, finalUrl, html) {
+    el.closest('[data-hub-layer]')?.remove();
+    const ws = document.querySelector('#app-root .workspace');
+    if (ws && html.trim()) insert(ws, html, 'outerHTML');
+    const u = new URL(finalUrl, location.href);
+    const pub = u.pathname.replace(/^(\/staging)?\/_frag\//, (_m, stg) => `${stg || ''}/apps/`);
+    if (pub !== u.pathname) history.pushState({}, '', pub + u.search);
+  }
+
   async function request(el, evt) {
     const method = el.hasAttribute('data-hub-post') ? 'POST' : 'GET';
     const path = ownPath(el.getAttribute(method === 'POST' ? 'data-hub-post' : 'data-hub-get'));
@@ -230,7 +243,8 @@
       if (res.status === 401) { location.href = `/login?next=${encodeURIComponent(location.pathname + location.search)}`; return; }
       const html = await res.text();
       const note = res.headers.get('x-hub-toast');
-      if (target.isConnected && html.trim()) insert(target, html, swap);
+      if (method === 'POST' && res.ok && res.redirected) landed(el, res.url, html);
+      else if (target.isConnected && html.trim()) insert(target, html, swap);
       else if (target.isConnected && swap !== 'none' && !res.ok) toast(t('js.kit_error', 'Não foi possível concluir a operação.'));
       if (note) { let msg = note; try { msg = decodeURIComponent(note); } catch (_) { /* raw text */ } toast(msg); }
       else if (res.ok && el.dataset.hubToast) toast(el.dataset.hubToast);
@@ -270,13 +284,14 @@
     return { host, close };
   }
 
-  function confirmDialog(text) {
+  // `opts` (optional, from data-hub-confirm-title/-label/-danger): an adapted app keeps its own wording and color.
+  function confirmDialog(text, opts = {}) {
     return new Promise((resolve) => {
       dialog((box, close) => {
         box.classList.add('hub-confirm');
         const h = document.createElement('h2');
         h.id = `hub-confirm-${Date.now()}`;
-        h.textContent = t('js.kit_confirm_title', 'Confirmar');
+        h.textContent = opts.title || t('js.kit_confirm_title', 'Confirmar');
         box.setAttribute('aria-labelledby', h.id);
         const p = document.createElement('p');
         p.className = 'modal-copy';
@@ -290,9 +305,9 @@
         no.textContent = t('js.kit_cancel', 'Cancelar');
         const yes = document.createElement('button');
         yes.type = 'button';
-        yes.className = 'primary-button';
+        yes.className = opts.danger ? 'danger-button' : 'primary-button';
         yes.setAttribute('data-hub-confirm-ok', '');
-        yes.textContent = t('js.kit_ok', 'Confirmar');
+        yes.textContent = opts.label || t('js.kit_ok', 'Confirmar');
         yes.addEventListener('click', () => close(true));
         actions.append(no, yes);
         box.append(h, p, actions);
@@ -306,7 +321,9 @@
     if (confirmed.has(el)) { confirmed.delete(el); return false; }
     e.preventDefault();
     e.stopImmediatePropagation();
-    confirmDialog(text || el.getAttribute('data-hub-confirm')).then((ok) => {
+    const opts = { title: el.getAttribute('data-hub-confirm-title'), label: el.getAttribute('data-hub-confirm-label'),
+      danger: el.hasAttribute('data-hub-confirm-danger') };
+    confirmDialog(text || el.getAttribute('data-hub-confirm'), opts).then((ok) => {
       if (!ok) return;
       confirmed.add(el);
       replay();

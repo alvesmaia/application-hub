@@ -66,13 +66,15 @@ function seriesGeometry(series){
 }
 
 function fmtNumber(value,locale){return Math.round(value).toLocaleString(locale||'pt-BR')}
+// Axis ticks in compact form ("30 mil", "1,2 mi"): the left gutter is fixed, a full "30.000" was cut off.
+function fmtAxis(value,locale){return new Intl.NumberFormat(locale||'pt-BR',{notation:'compact',maximumFractionDigits:1}).format(value)}
 function fmtChange(value){return`${value>0?'+':value<0?'−':''}${Math.abs(value).toFixed(1).replace('.',',')}%`}
 function escapeAttr(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 function gridAndAxisSVG(scale,periods){
   const grid=scale.ticks.map(tick=>{
     const y=yAt(tick,scale);
-    return`<line class="tsc-grid-line" x1="${PAD.left}" y1="${y}" x2="${W-PAD.right}" y2="${y}"/><text class="tsc-y-label" x="${PAD.left-6}" y="${y}" text-anchor="end" dominant-baseline="middle">${fmtNumber(tick)}</text>`
+    return`<line class="tsc-grid-line" x1="${PAD.left}" y1="${y}" x2="${W-PAD.right}" y2="${y}"/><text class="tsc-y-label" x="${PAD.left-6}" y="${y}" text-anchor="end" dominant-baseline="middle">${fmtAxis(tick)}</text>`
   }).join('');
   const count=periods.length,xLabels=periods.map((label,i)=>{
     const x=PAD.left+(count<=1?0:i/(count-1)*PLOT_W);
@@ -330,7 +332,7 @@ function drawChart(host,raw){
     const all=spec.series.flatMap(s=>s.values);
     const scale=niceScale(Math.min(0,...(all.length?all:[0])),Math.max(...(all.length?all:[1])),5);
     const n=Math.max(spec.labels.length,...spec.series.map(s=>s.values.length),1);
-    scale.ticks.forEach(t=>{const y=yAt(t,scale);svg.append(el('line',{class:'tsc-grid-line',x1:PAD.left,y1:y,x2:W-PAD.right,y2:y}));svg.append(el('text',{class:'tsc-y-label',x:PAD.left-6,y,'text-anchor':'end','dominant-baseline':'middle'},fmtNumber(t)))});
+    scale.ticks.forEach(t=>{const y=yAt(t,scale);svg.append(el('line',{class:'tsc-grid-line',x1:PAD.left,y1:y,x2:W-PAD.right,y2:y}));svg.append(el('text',{class:'tsc-y-label',x:PAD.left-6,y,'text-anchor':'end','dominant-baseline':'middle'},fmtAxis(t)))});
     const slot=PLOT_W/n;
     spec.labels.forEach((l,i)=>{const x=spec.type==='bar'?PAD.left+slot*(i+0.5):xAt(i,n);svg.append(el('text',{class:'tsc-x-label',x,y:H-6,'text-anchor':'middle'},l))});
     spec.series.forEach((s,si)=>{

@@ -131,14 +131,26 @@ def _env_page(request: Request, c: GwCtx, entry: AppEntry) -> Response | None:
     return staged if isinstance(staged, Response) else None
 
 
+def _segments_ok(section: str, rest: str) -> bool:
+    """`<section>[/<a>/<b>…]`: up to 8 segments of letters, digits, `-` and `_` (64 each); a trailing `/` is fine."""
+    parts = [section, *[x for x in rest.split("/") if x]]
+    return len(parts) <= 8 and all(
+        x.replace("-", "").replace("_", "").isalnum() and len(x) <= 64 for x in parts
+    )
+
+
 @router.get("/apps/{app_id}", response_class=HTMLResponse)
 @router.get("/apps/{app_id}/{section}", response_class=HTMLResponse)
+@router.get(
+    "/apps/{app_id}/{section}/{rest:path}", response_class=HTMLResponse
+)  # deep links of nested routes
 async def page(
-    request: Request, app_id: str, section: str = "dashboard", c: GwCtx = Depends(ctx)
+    request: Request, app_id: str, section: str = "dashboard", rest: str = "", c: GwCtx = Depends(ctx)
 ) -> Response:
     entry = c.gw.registry.get(app_id)
-    ok = section.replace("-", "").replace("_", "").isalnum() and len(section) <= 64
-    if entry is None or not ok:  # HTML (not an empty body): the browser does not treat it as a download
+    if entry is None or not _segments_ok(
+        section, rest
+    ):  # HTML (not an empty body): the browser does not treat it as a download
         nf = page_response(c.templates, request, "not_found.html", c.page_ctx(request))
         nf.status_code = 404
         return nf

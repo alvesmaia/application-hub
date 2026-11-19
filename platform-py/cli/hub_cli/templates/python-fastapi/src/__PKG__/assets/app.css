@@ -1,2 +1,5 @@
-/* The app's own styles (the shell loads demo.css + app.css). Use the hub tokens (var(--…)), never literal colors. */
+/* The app's own styles (the shell loads demo.css + app.css). Rules use tokens (var(--…)), never literal colors.
+   Own identity (§29 of the contract): declare the --app-* roles on :root (e.g. --app-primary, --app-chrome for the
+   sidebar) AND the same roles under :root[data-theme="dark"] and the prefers-color-scheme media query (`hub check`
+   requires the dark theme once --app-* appears). Without --app-*, the app uses the hub's colors. */
 .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-16); }

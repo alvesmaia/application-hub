@@ -88,6 +88,18 @@ def step_manifest(directory: Path) -> tuple[bool, str]:
     return not probs, "; ".join(probs) or "ok"
 
 
+def step_identity(directory: Path) -> tuple[bool, str]:
+    """§29: own colors (`--app-*` in `assets/app.css`) need the dark theme as well; hub colors only is fine."""
+    for css_file in sorted(directory.glob("src/*/assets/app.css")):
+        css = css_file.read_text(encoding="utf-8")
+        if "--app-" in css and not re.search(r'data-theme="?dark', css):
+            return False, (
+                f"§29 {css_file.relative_to(directory).as_posix()} declara cores próprias (--app-*) sem o tema "
+                'dark: repita os papéis em :root[data-theme="dark"] e no @media (prefers-color-scheme: dark)'
+            )
+    return True, "ok"
+
+
 def step_openapi(directory: Path) -> tuple[bool, str]:
     p = _uv_raw(directory, "python", "-m", _pkg(directory), "openapi")
     if p.returncode != 0:
@@ -155,6 +167,24 @@ def _conformance_shell(asgi: Any, app_id: str, need: Callable[[bool, str], None]
             not any(k.startswith("x-hub-") for k in frag.headers), "§12 nenhum cabeçalho x-hub-* na resposta"
         )
         need(c.get(f"/_frag/{app_id}/secao-que-nao-existe").status_code == 404, "§3 seção desconhecida → 404")
+        _conformance_links(c, app_id, body, need)
+
+
+def _conformance_links(c: Any, app_id: str, start: str, need: Callable[[bool, str], None]) -> None:
+    """Every `/apps/<id>/…` link of the screens (two levels, up to 60) opens as a page and as a fragment."""
+    link = re.compile(rf'href="/apps/{re.escape(app_id)}(/[^"#]*)?"')
+    seen: set[str] = set()
+    level = [start]
+    for _ in range(2):
+        found = {m.group(1) or "" for html in level for m in link.finditer(html)} - seen
+        found = set(sorted(found)[: 60 - len(seen)])
+        seen |= found
+        level = []
+        for rest in sorted(found):
+            frag, page = c.get(f"/_frag/{app_id}{rest}"), c.get(f"/apps/{app_id}{rest}")
+            need(frag.status_code < 400 and page.status_code < 400,
+                 f"§3 link quebrado /apps/{app_id}{rest} (fragmento {frag.status_code}, página {page.status_code})")  # fmt: skip
+            level.append(frag.text)
 
 
 def _conformance_openapi(upstream: str, app_id: str, need: Callable[[bool, str], None]) -> None:
@@ -270,6 +300,7 @@ STEPS: list[Step] = [
     ("ty", lambda d: _uv(d, "ty", "check", "src")),
     ("openapi", step_openapi),
     ("pytest", lambda d: _uv(d, "pytest", "-q")),
+    ("identidade", step_identity),
     ("conformidade", step_conformance),
 ]
 

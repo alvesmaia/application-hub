@@ -2,7 +2,7 @@
 {% block title %}{{ t('shell.apps') }} · {{ brand }}{% endblock %}
 {% block main %}
 <div class="page-container">
-<div class="app-page-header page-head"><div class="page-head-text"><div class="eyebrow">{{ t('shell.apps') }}</div><h1 class="page-title">{{ t('shell.apps') }}</h1><p class="page-subtitle">{{ t('apps.subtitle') }}</p></div><div class="page-actions admin-actions"></div></div>
+<div class="app-page-header page-head"><div class="page-head-text"><div class="eyebrow">{{ t('shell.apps') }}</div><div class="page-title-row"><h1 class="page-title">{{ t('shell.apps') }}</h1>{% with info_title=t('shell.apps'), info_text=t('apps.subtitle') %}{% include "_page_info.html" %}{% endwith %}</div></div><div class="page-actions admin-actions"></div></div>
 {% if not mine %}<div class="empty-state">{{ t('apps.empty') }}</div>{% endif %}
 <div class="app-grid app-catalog-grid">
 {% for c, tx, st in mine %}<article class="app-card" data-app="{{ c.id }}">

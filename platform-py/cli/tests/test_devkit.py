@@ -91,7 +91,7 @@ def test_manifest_problems() -> None:
     assert len(probs) == 6 and any(p.startswith("requires") for p in probs)
 
 
-def fake_app(app_id: str, good: bool = True) -> FastAPI:
+def fake_app(app_id: str, good: bool | str = True) -> FastAPI:
     a = FastAPI()
     body = '<div class="workspace x"><a href="/apps/x/a">a</a></div>' if good else "<html><script>x</script>"
 
@@ -108,10 +108,14 @@ def fake_app(app_id: str, good: bool = True) -> FastAPI:
     def itens() -> JSONResponse:
         return JSONResponse([], status_code=401)
 
-    @a.get(f"/{app_id}/{{s}}")
+    if good == "links":  # one nested link that works, one that is broken
+        body = f'<div class="workspace x"><a href="/apps/{app_id}/ok/1">ok</a><a href="/apps/{app_id}/sumiu">x</a></div>'
+
+    @a.get(f"/{app_id}/{{s:path}}")
     @a.get(f"/{app_id}/")
     def frag(s: str = "") -> HTMLResponse:
-        return HTMLResponse(body, status_code=404 if s else 200, headers={"Cache-Control": "no-store"})
+        status = 200 if s in ("", "ok/1") else 404
+        return HTMLResponse(body, status_code=status, headers={"Cache-Control": "no-store"})
 
     return a
 
@@ -147,6 +151,17 @@ def test_conformance_red(upstream: str, tmp_path: Path, monkeypatch: pytest.Monk
     monkeypatch.setenv("HUB_DATA_DIR", str(tmp_path / "data"))
     fails = check.conformance(mk_manifest(tmp_path / "a"), upstream, "xx")
     assert any("ready" in f for f in fails) and any("script" in f for f in fails)
+
+
+@pytest.mark.parametrize("upstream", ["links"], indirect=True)
+def test_conformance_flags_a_broken_app_link(
+    upstream: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Every `/apps/<id>/…` link of the screens must open (as a page and as a fragment): an adapted app that
+    flattened or lost a route shows up here, not in front of the user."""
+    monkeypatch.setenv("HUB_DATA_DIR", str(tmp_path / "data"))
+    fails = check.conformance(mk_manifest(tmp_path / "a"), upstream, "xx")
+    assert any("/apps/xx/sumiu" in f for f in fails) and not any("/apps/xx/ok/1" in f for f in fails)
 
 
 def done(code: int, out: str = "", err: str = "") -> subprocess.CompletedProcess[str]:

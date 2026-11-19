@@ -134,7 +134,7 @@ Rules: the id_token is validated (signature by the cached JWKS, issuer, audience
 ## Connect AI clients (MCP) with single sign-on
 
 The hub is the OAuth 2.1 server for `/mcp` itself: the client registers on its own, opens the browser, the user signs in
-(e-mail/password or "Sign in with Microsoft", if Entra is configured), approves the consent and the client receives
+(e-mail/password or "Microsoft SSO", if Entra is configured), approves the consent and the client receives
 a **hub** token, valid only at `/mcp`. No extra scope in Entra: only `openid`, `profile`, `email`. The Entra
 token stays in the hub; the client never calls Graph. Do not register the clients' `localhost` URIs in Entra.
 

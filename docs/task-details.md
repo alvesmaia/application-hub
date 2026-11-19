@@ -282,3 +282,15 @@ redireciona `/apps/<id>` para a URL de staging, e `/hub-env` leva a página do a
 shell (`hub.js`, `hub-kit.js`, `hub-safe.js`, `hub-device.js`) reconhece `/staging/apps/`. Selo "STAGING" no
 header (`data-hub-env-badge`). Testes em `tests/test_staging_url.py`; E2E `07-staging` atualizado (precisa de app
 com staging implantada: fica para a validação pesada, junto com o teste de carga do gateway).
+
+✅ **Task 82 — Teste de adequação de app existente**
+
+App "Frota" (FastAPI + Jinja, 8 páginas, sidebar, abas, modais, validação, JS próprio) feito por um subagente sem
+conhecer o hub; roteiro de 36 verificações (prints desktop/celular/escuro + 12 funções) que vale para o original e para
+a versão no hub. Três rodadas de adequação, cada uma por um agente novo só com o texto do Copy prompt:
+rodada 1 = 31/36 (URLs achatadas por 404 de links profundos, sidebar sem identidade e com ícones errados, filtro sem
+aplicar ao mudar, PRG quebrado, eixo do gráfico cortado); rodada 2 = 33/36 (URLs e identidade mantidas; restavam o
+redirect de fragmento que embutia a página do hub, a confirmação sem rótulo próprio, o modal virando cartão, o nome
+branco na sidebar clara e o botão de menu do celular sem nome acessível); rodada 3 = 36/36, com tema escuro coerente.
+Achado à parte: o ambiente da CLI usava uma cópia do hub de outubro (force-include no build); o hub-check --all agora
+reinstala antes de testar.

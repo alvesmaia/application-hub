@@ -70,7 +70,9 @@ through `/_frag/{id}/…` (gateway); the app receives `/{id}/…`.
   sends `x-hub-base: /staging/apps/{id}` and `x-hub-env: staging`, so an app that builds its links with the base
   keeps the user in staging; the upstream path is the same `/{id}/…`. Never hard-code `/apps/{id}`.
 - A redirect `Location` from the app to `/{id}/…` is rewritten by the gateway to
-  `/apps/{id}/…` (in staging, `/staging/apps/{id}/…`).
+  `/apps/{id}/…` (in staging, `/staging/apps/{id}/…`). When `hub.js` fetches a fragment (`/_frag/…`, not a
+  browser navigation), it becomes `/_frag/{id}/…` instead: Post/Redirect/Get works as in a standalone app — the
+  hub shows the page the app redirected to and the address bar follows it.
 - Compatibility: an old `/{id}/…` path of a **registered** app responds **301**
   (GET/HEAD) or **308** (other methods) to `/apps/{id}/…`, with the same query. The
   `hub.js`/`hub-kit.js` still accept an old link of the app itself (they normalize it), but the
@@ -781,7 +783,7 @@ without reloading; `<form method="get">` becomes navigation (the query goes into
 | `data-hub-swap` | same | `outerHTML` (default), `innerHTML`, `beforeend`, `afterbegin`, `none` |
 | `data-hub-trigger` | same | `click` (default for buttons/links), `submit` (forms), `change` (select/checkbox/file), `input` (text fields, with a 300 ms wait), `load` (when it appears), `every 5s` (repeats; minimum 1 s; stops when the element leaves the screen). Combinable: `load, every 10s` |
 | `data-hub-poll="/{id}/…"` + `data-hub-interval` | element | reloads until the response no longer carries `data-hub-poll` (job progress) |
-| `data-hub-confirm="Texto"` | link, button, `<form>`, submit button | the hub's confirmation dialog before the action |
+| `data-hub-confirm="Texto"` | link, button, `<form>`, submit button | the hub's confirmation dialog before the action; optional `data-hub-confirm-title` (dialog title), `data-hub-confirm-label` (confirm button text, e.g. "Excluir") and `data-hub-confirm-danger` (red confirm button) |
 | `data-hub-modal="#tpl"` | button/link | opens `<template id="tpl">` in a hub modal; `data-hub-modal-labelledby` on the template gives the accessible title; `[data-hub-close]`, `.modal-close`, `.modal-cancel`, Esc and clicking outside close it |
 | `data-hub-dismiss` (+ `data-hub-toast`) | `<form>` inside the modal | validates, closes the modal and shows the toast, without sending anything |
 | `data-hub-toast="Mensagem"` | clickable element; element with `data-hub-get/post` | hub toast (in the second case, after success). The response can also request a toast through the `X-Hub-Toast` header (URL-encoded text) |
@@ -798,6 +800,7 @@ without reloading; `<form method="get">` becomes navigation (the query goes into
 | `data-hub-ws="/apps/{id}/ws/…"` (+ `data-hub-ws-target="#id"`, `data-hub-ws-swap`) | container | **real-time over WebSocket** (wave 13): opens `wss://<hub>/apps/{id}/ws/…` (only the app itself and only below `/ws`; one socket per URL, inherited by a new element with the same attribute). Each text message from the server is JSON: `{"html":"…","target":"#id","swap":"outerHTML"}` (or `{"fragments":[…]}`, up to 20) — the HTML goes **through `hub-safe.js`**, as in `data-hub-get`; `{"text":"…","target":"#id"}` replaces only the text; `{"event":"nome","data":…}` becomes the `hub:ws` event (`detail = {event, data}`) on the container; text that is not JSON = HTML for the default target. Default target = `data-hub-ws-target` (otherwise the container itself); default swap `outerHTML`. If it drops → reconnects with increasing back-off (1 s, 2 s, 4 s… up to 30 s, ±25 %) and, meanwhile, the `data-hub-get` + `data-hub-trigger="every 2s"` of the **same** container polls (the `every` does not run while the socket is open); back up → stops polling and fetches the `data-hub-get` once to correct the state. `data-hub-ws-state="connecting\|open\|polling"` shows the status |
 | `data-hub-sse="/apps/{id}/…"` (+ `data-hub-sse-target="#id"`, `data-hub-sse-swap`) | container | **real-time over SSE**: opens an `EventSource` at `/_frag/{id}/…` (only the app itself; the gateway passes `text/event-stream` through as a stream). Each event's `data:` has the **same format** as the `data-hub-ws` messages (JSON `{"html","target","swap"}`, `{"fragments":[…]}`, `{"text"}`, `{"event","data"}` → `hub:sse` event, or raw HTML); the HTML goes through `hub-safe.js`. The browser reconnects on its own; if the stream closes (status ≠ 200), the hub retries with the same increasing back-off and, meanwhile, the `data-hub-get` + `data-hub-trigger="every …"` of the same container polls. `data-hub-sse-state="connecting\|open\|polling"`. No app JavaScript and no script approval |
 | `data-hub-menu="open\|close"` | buttons | opens/closes the app's sidebar on narrow screens (< 768px: the `open` button becomes the fixed bar "☰ App · Seção" (App · Section) and toggles the sections panel; Esc, the background or choosing a section close it) |
+| `data-hub-autosubmit` | `<select>` inside a form | submits the form as soon as the choice changes (filters that apply on change); the submission goes through `hub.js` like any other |
 
 Examples:
 

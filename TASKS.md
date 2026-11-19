@@ -76,3 +76,14 @@
   - ✅ varredura das telas em inglês · subagente: Varredura de idioma misto
   - ✅ strings fixas em JS/Python: 51 pares novos no catálogo, 403 e paginador traduzidos no servidor
 - ✅ 79 · Menu "⋯" das tabelas não fica cortado na última linha (abre para cima dentro do painel)
+- ✅ 80 · Descrição da página num "i" que abre painel lateral (no lugar do subtítulo e das notas fixas)
+- ✅ 81 · Versão do hub no header (só para quem está logado)
+- ✅ 82 · Teste de adequação: app existente (FastAPI + Jinja) adequado ao hub sem perder layout, design e funções
+  - ✅ app "legado" independente, com várias páginas, sidebar, formulários e JS próprio · subagente: Constrói app legado de frota
+  - ✅ capturas de referência e roteiro funcional do app original (36/36)
+  - ✅ outro subagente, sem contexto, adequa o app só com o prompt do Copy prompt · subagente: Adequa app Frota ao hub (rodada 1): 7/12 funções
+  - ✅ avaliação conjunta: antes × depois (design, UX, funções)
+  - ✅ melhorias: links profundos, PRG atualiza a URL, autosubmit, ícones e SVG próprio, help_card opcional, eixo do gráfico, roteiro de adequação, prompt, hub check (links e tema escuro), hub-check ressincroniza a CLI
+  - ✅ rodada 2 com agente novo · subagente: Adequa app Frota ao hub (rodada 2): 33/36; achados: redirect de fragmento, confirmação com rótulo próprio, modal com formulário, nome na sidebar, menu do celular sem nome acessível
+  - ✅ rodada 3 com agente novo · subagente: Adequa app Frota ao hub (rodada 3): 36/36, design e tema escuro coerentes
+- ✅ 83 · Botão de SSO na tela de login com o rótulo "Microsoft SSO"

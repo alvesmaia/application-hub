@@ -7520,10 +7520,6 @@
 "Use your Microsoft work account."
 ],
 [
-"Entrar com Microsoft",
-"Sign in with Microsoft"
-],
-[
 "ou com e-mail e senha",
 "or with email and password"
 ],
@@ -8170,5 +8166,13 @@
 [
 "Volumes (separados por vírgula)",
 "Volumes (comma-separated)"
+],
+[
+"Sobre esta página",
+"About this page"
+],
+[
+"Versão do Application Hub",
+"Application Hub version"
 ]
 ]

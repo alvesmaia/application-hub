@@ -1,7 +1,9 @@
 # Instructions for agents
 
 You are a coding agent. Follow these steps to create and publish an app on this Application Hub
-(`@HUB@`). If the request does not say what the app does, ask before starting.
+(`@HUB@`). If the request is a **new** app and does not say what it does, ask before starting. If the app
+**already exists**, read [Adapting an existing app](#adapting-an-existing-app) first: the goal is the same app,
+with the same pages, URLs, layout, design and behavior, now inside the hub.
 
 ## 1. Install the CLI
 
@@ -68,6 +70,47 @@ CLI token: run `hub pack --build-dir .`, call the MCP tool `deployments_upload` 
 run the `curl` it returns with the `.hubapp` (one-time link, 10 minutes). Follow with `jobs_get` and
 `deployments_list`; production waits for `deployments_approve`, which asks for a `confirm_token`: confirm with the
 user before calling again. Step by step in [Publish and operate through MCP](/developers/guias/mcp-api).
+
+## Adapting an existing app
+
+The person expects to open the hub and find **their app as it was**. Rewriting it in the template's look is a
+failure even when `hub check` is green.
+
+1. **Inventory before touching code.** Run the original app and write down, as a checklist you will verify at the
+   end: every route (including nested ones like `/veiculos/12/editar`), every link of the sidebar and its icon,
+   every form (fields, validation messages, what happens after saving or deleting), every JavaScript behavior,
+   the flash messages, and the visual identity (colors, fonts, radii, shadows, the sidebar look). Take screenshots
+   (desktop, phone). Then create the project (step 2) next to the original and port it page by page.
+2. **Keep the URLs.** Each route keeps its path under `/{id}/…`; nested paths work (deep links open the same page).
+   Build links with `{{ base }}` (the public base); never flatten routes to `?id=`.
+3. **Return fragments, keep the layout.** Drop the app's own `<html>`/`<head>`/`<body>` and top bar: the page is
+   the `workspace` fragment (§3 of the [contract](@HUB@/dev/docs/contrato.md)). The app's sidebar becomes the
+   workspace sidebar: same labels, same order, same icons — pass the app's own SVG as `Markup` in
+   `NavItem(icon=Markup('<path …/>'))` (or a name from `hub_sdk.render.ICONS`). `AppInfo(help_card=False)` keeps
+   the sidebar without the hub's help card. What the top bar showed (company name, user) goes to the page header.
+4. **Keep the identity.** Move the CSS to `/{id}/assets/app.css` and translate the app's palette into the
+   `--app-*` tokens (§29), **including** `--app-chrome`, `--app-chrome-raised`, `--app-chrome-text`,
+   `--app-chrome-text-2` and `--app-chrome-icon` (the sidebar), plus `--app-primary`/`--app-on-primary`. Write the
+   dark theme too (mandatory): the same roles under `:root[data-theme="dark"]` and the `auto` media query.
+5. **Replace the JavaScript, not the behavior** (no app JS by default):
+
+   | The app did (JS) | In the hub |
+   |---|---|
+   | sidebar collapse, hamburger/drawer | the hub's sidebar does it (`data-hub-menu="open\|close"` on phones) |
+   | tabs | `[data-hub-tabs] > [data-hub-tab="#panel"]` |
+   | modal with a form | keep it a modal: `data-hub-modal="#tpl"` on the button; in `<template id="tpl">` a `<form id="f" data-hub-post="{{ base }}/…" data-hub-target="#f">` with `data-hub-close` on Cancel. Invalid: answer `422` with the form (it replaces itself in the modal). Valid: answer `303` to the page — the modal closes and that page shows |
+   | "are you sure?" before delete | `data-hub-confirm="Text"` on the form or button, with `data-hub-confirm-title`, `-label` and `-danger` to keep the original wording and color |
+   | select that filters on change | `<select data-hub-autosubmit>` |
+   | dismissible flash message | keep it as it is: the app's own cookies pass through the hub both ways (any name except `hub_*`, no `Domain`), so a cookie flash set on the `303` shows on the next page |
+   | chart drawn with CSS/JS | keep the CSS bars, or `data-hub-chart` |
+   | anything else | §25 attributes; only then the reviewed exception of §13.1 |
+
+6. **Keep Post/Redirect/Get.** A `POST` that answers `303` to the list or the detail works as before: the hub
+   follows the redirect, shows that page and updates the address bar. Validation errors answer `422` with the
+   form (use `data-hub-target` to replace only the form).
+7. **Verify against the checklist** in `hub dev`: every page, every sidebar link, every form (valid and invalid),
+   delete, the phone layout and the dark theme, side by side with your screenshots of the original. Anything you
+   could not keep goes in your final report, with the reason.
 
 ## Rules
 

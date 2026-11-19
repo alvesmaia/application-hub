@@ -93,3 +93,40 @@ def test_page_links_use_the_request_base(tmp_path: Path) -> None:
         in bytes(r.page(with_base("/apps/demo-alt"), "page.html", "d").body).decode()
     )
     assert 'href="/apps/demo/x"' in bytes(r.page(with_base(None), "page.html", "d").body).decode()
+
+
+def test_sidebar_icons_cover_common_domains_and_accept_the_apps_own_svg() -> None:
+    from markupsafe import Markup
+
+    from hub_sdk.render import ICONS, icon
+
+    for name in (
+        "truck",
+        "wrench",
+        "user",
+        "users",
+        "calendar",
+        "list",
+        "box",
+        "tag",
+        "money",
+        "map",
+        "home",
+    ):
+        assert name in ICONS and ICONS[name] in str(icon(name))
+    own = Markup('<path d="M3 16V8h11v8"/>')  # the app's own icon, kept when adapting an existing app
+    assert '<path d="M3 16V8h11v8"/>' in str(icon(own))
+    assert ICONS["file"] in str(icon("nao-existe"))
+
+
+def test_sidebar_help_card_can_be_left_out(tmp_path: Path) -> None:
+    from dataclasses import replace
+
+    (tmp_path / "page.html").write_text(
+        '{% extends "workspace.html" %}{% block content %}x{% endblock %}', "utf-8"
+    )
+    full = bytes(Renderer(APP, tmp_path).page(req("ana"), "page.html", "dashboard").body).decode()
+    assert "help-card" in full and "hub-user-note" in full
+    lean = Renderer(replace(APP, help_card=False), tmp_path)  # an adapted app keeps its sidebar as it was
+    body = bytes(lean.page(req("ana"), "page.html", "dashboard").body).decode()
+    assert "help-card" not in body and "hub-user-note" not in body and "back-link" in body

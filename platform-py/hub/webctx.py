@@ -12,6 +12,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import Response
 from fastapi.templating import Jinja2Templates
 
+from hub import __version__
 from hub.auth import ABSOLUTE_MS, COOKIE, AuthStore, entra
 from hub.config import Settings
 from hub.gateway.env_path import env_of
@@ -139,6 +140,8 @@ class WebCtx:
             "rail_ctx": rail_ctx,
             "staging": request.cookies.get("hub_env") == "staging" or env_of(request.scope) == "staging",
             "brand": self.settings.brand,
+            # signed in only: no version fingerprint for anonymous visitors
+            "hub_version": __version__ if hasattr(request.state, "user") else "",
             "source_url": self.settings.source_url,
             "user": user,
             "perms": " ".join(perms),

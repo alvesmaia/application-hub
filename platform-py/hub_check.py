@@ -144,6 +144,12 @@ def project_steps(path: Path, fast: bool) -> list[tuple[str, list[str], Path]]:
     ]
     if not fast and (path / "tests").is_dir():
         steps.append(("pytest", [*run, "pytest", "-q"]))
+    if (
+        path.name == "cli"
+    ):  # the CLI wheel embeds a copy of the hub (force-include): refresh it before testing
+        steps.insert(
+            0, ("sync", ["uv", "sync", "-q", "--project", str(path), "--reinstall-package", "hub-cli"])
+        )
     return [(f"{path.name}/{n}", c, path) for n, c in steps]
 
 

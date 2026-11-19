@@ -392,6 +392,8 @@
       if (p === el) fillDependent(c);
     });
     if ((el.hasAttribute('data-hub-get') || el.hasAttribute('data-hub-post')) && wants(el, 'change')) request(el);
+    // filter that applies on change (common in existing apps): requestSubmit keeps hub.js in charge of the navigation
+    if (el.matches('select[data-hub-autosubmit]') && el.form) el.form.requestSubmit();
   });
 
   P.mount = mount; // hub-kit.js (insert, modals) calls mount through P: it loads before this file

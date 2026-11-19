@@ -367,8 +367,10 @@ AGENTS = (("claude", "Claude Code"), ("codex", "OpenAI Codex"), ("copilot", "Git
           ("cursor", "Cursor"), ("opencode", "OpenCode"))  # fmt: skip
 
 _PROMPTS = {
-    "pt-BR": "Siga as instruções em {base}/dev/docs/AGENTS.md para criar e publicar um app neste Application Hub.",
-    "en": "Follow the instructions at {base}/dev/docs/AGENTS.md to create and publish an app on this Application Hub.",
+    "pt-BR": "Siga as instruções em {base}/dev/docs/AGENTS.md para criar e publicar um app neste Application Hub "
+    "(ou adequar um app existente, mantendo páginas, URLs, layout, design e comportamento).",
+    "en": "Follow the instructions at {base}/dev/docs/AGENTS.md to create and publish an app on this Application Hub "
+    "(or adapt an existing app, keeping its pages, URLs, layout, design and behavior).",
 }
 
 

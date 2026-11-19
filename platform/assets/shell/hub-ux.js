@@ -308,6 +308,31 @@
       if (lost && !openDialog() && beforeDialog && beforeDialog.isConnected) beforeDialog.focus();
     }).observe(document.body, { childList: true, subtree: true });
   }
+  // ---- Page "i" (_page_info.html): side panel with the page description. Delegated, so it survives page swaps.
+  let infoOpener = null;
+  const infoParts = () => [document.getElementById('hub-page-info'), document.querySelector('[data-hub-info-backdrop]')];
+  const infoClose = () => {
+    const [panel, bd] = infoParts();
+    if (!panel || panel.hidden) return;
+    panel.hidden = true; if (bd) bd.hidden = true;
+    document.body.classList.remove('ops-drawer-open');
+    if (infoOpener && infoOpener.isConnected) { infoOpener.setAttribute('aria-expanded', 'false'); infoOpener.focus(); }
+  };
+  document.addEventListener('click', (e) => {
+    const el = e.target instanceof Element ? e.target : null;
+    if (!el) return;
+    if (el.closest('[data-hub-info-close]')) { infoClose(); return; }
+    const btn = el.closest('[data-hub-info-open]');
+    if (!btn) return;
+    const [panel, bd] = infoParts();
+    if (!panel) return;
+    infoOpener = btn; btn.setAttribute('aria-expanded', 'true');
+    panel.hidden = false; if (bd) bd.hidden = false;
+    document.body.classList.add('ops-drawer-open');
+    panel.querySelector('[data-hub-info-close]')?.focus();
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') infoClose(); });
+
   Object.assign(P, { Pure, body, T, t, inApp, esc, paletteIndex, announce, store, api, feature,
     recordSearch, menus });
 })();

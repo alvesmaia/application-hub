@@ -1,0 +1,4 @@
+{# "i" next to the page title: opens a side panel with the page description (and optional notes in info_more). #}
+<button type="button" class="hub-info-toggle" data-hub-info-open="" aria-haspopup="dialog" aria-controls="hub-page-info" aria-label="{{ tr('Sobre esta página') }}" title="{{ tr('Sobre esta página') }}">i</button>
+<div class="ops-drawer-backdrop" data-hub-info-backdrop="" hidden=""></div>
+<aside id="hub-page-info" class="ops-drawer hub-info-panel" data-hub-info="" role="dialog" aria-modal="true" aria-labelledby="hub-page-info-title" hidden=""><div class="ops-drawer-head"><div class="ops-drawer-titles"><span class="eyebrow">{{ tr('Sobre esta página') }}</span><h2 id="hub-page-info-title">{{ info_title }}</h2></div><button type="button" class="icon-button ops-drawer-close" data-hub-info-close="" aria-label="{{ tr('Fechar') }}">✕</button></div><div class="ops-drawer-body"><p>{{ info_text }}</p>{{ info_more|default('') }}</div></aside>

@@ -215,7 +215,9 @@ for (const u of UNITS) {
 
         for (const t of triggers) {
           const before = page.url();
-          const marked = await page.evaluate((L) => { document.querySelectorAll(L).forEach((e) => e.setAttribute('data-sweep-pre', '')); return true; }, LAYERS).catch(() => false);
+          // only layers already visible count as "before": a hidden panel in the markup (e.g. the page "i") that the
+          // trigger reveals is a new layer
+          const marked = await page.evaluate((L) => { document.querySelectorAll(L).forEach((e) => { const r = e.getBoundingClientRect(); if (e.tagName === 'DETAILS' || (r.width > 2 && r.height > 2 && getComputedStyle(e).visibility !== 'hidden')) e.setAttribute('data-sweep-pre', ''); }); return true; }, LAYERS).catch(() => false);
           if (!marked) break;
           const el = page.locator(`[data-sweep-trigger="${t.idx}"]`);
           try { await el.click({ timeout: 3_000 }); } catch { continue; }

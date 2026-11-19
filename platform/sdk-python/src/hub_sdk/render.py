@@ -41,11 +41,29 @@ ICONS: dict[str, str] = {
     'l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"></path>',
     "back": '<path d="m15 18-6-6 6-6M9 12h11"></path>',
     "menu": '<path d="M4 6h16M4 12h16M4 18h16"></path>',
+    # common domains, so an adapted app keeps meaningful icons (a vehicle is not an "upload")
+    "truck": '<path d="M3 16V8a1 1 0 0 1 1-1h10v9"></path><path d="M14 10h4l3 3v3h-7"></path>'
+    '<circle cx="7.5" cy="17" r="1.8"></circle><circle cx="17.5" cy="17" r="1.8"></circle>',
+    "wrench": '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"></path>',
+    "user": '<circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path>',
+    "users": '<circle cx="9" cy="8" r="3.5"></circle><path d="M2 20a7 7 0 0 1 14 0"></path>'
+    '<path d="M16 4.5a3.5 3.5 0 0 1 0 7M22 20a7 7 0 0 0-4-6.3"></path>',
+    "calendar": '<rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path>',
+    "list": '<path d="M9 6h12M9 12h12M9 18h12"></path><circle cx="4" cy="6" r="1"></circle>'
+    '<circle cx="4" cy="12" r="1"></circle><circle cx="4" cy="18" r="1"></circle>',
+    "box": '<path d="M21 8 12 3 3 8v8l9 5 9-5z"></path><path d="M3 8l9 5 9-5M12 13v8"></path>',
+    "tag": '<path d="M20 12 12 20 4 12V4h8z"></path><circle cx="8" cy="8" r="1.5"></circle>',
+    "money": '<rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="3"></circle>',
+    "map": '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"></path><path d="M9 4v14M15 6v14"></path>',
+    "home": '<path d="M3 11 12 4l9 7"></path><path d="M5 10v10h14V10"></path>',
+    "search": '<circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path>',
+    "bell": '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"></path><path d="M10 21h4"></path>',
 }
 
 
-def icon(name: str) -> Markup:
-    body = ICONS.get(name, ICONS["file"])
+def icon(name: str | Markup) -> Markup:
+    """A named icon (`ICONS`) or the app's own SVG body as `Markup` (e.g. the icons of an app being adapted)."""
+    body = str(name) if isinstance(name, Markup) else ICONS.get(name, ICONS["file"])
     return Markup(f'<svg viewBox="0 0 24 24" aria-hidden="true">{body}</svg>')  # noqa: S704 — SVG fixo
 
 
@@ -53,7 +71,7 @@ def icon(name: str) -> Markup:
 class NavItem:
     section: str
     label: str
-    icon: str = "file"
+    icon: str | Markup = "file"
 
 
 @dataclass(frozen=True)
@@ -66,6 +84,8 @@ class AppInfo:
     nav: Sequence[NavItem] = field(default_factory=tuple)
     #: Short line under the name in the sidebar (e.g. "Contracts and suppliers"); empty = name only.
     tagline: str = ""
+    #: "Signed in as" and the help card at the bottom of the sidebar; False keeps an adapted app's sidebar as it was.
+    help_card: bool = True
 
     def has_section(self, s: str) -> bool:
         return any(n.section == s for n in self.nav)

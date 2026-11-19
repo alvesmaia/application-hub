@@ -212,8 +212,11 @@ def test_upload_limit(hub: TestClient) -> None:
 
 
 def test_location_rewrite_and_legacy_redirects(hub: TestClient) -> None:
-    r = hub.get("/_frag/ativos/go")
+    r = hub.get("/_frag/ativos/go", headers={"sec-fetch-mode": "navigate"})
     assert r.status_code == 302 and r.headers["location"] == "/apps/ativos/dest?a=1"
+    assert (
+        hub.get("/_frag/ativos/go").headers["location"] == "/_frag/ativos/dest?a=1"
+    )  # hub.js: next fragment
     r = hub.get("/ativos/assets?q=1")
     assert r.status_code == 301 and r.headers["location"] == "/apps/ativos/assets?q=1"
     r = hub.post("/ativos/api/x", content=b"1")

@@ -7,7 +7,7 @@
   if (!P) return;
   const { Policy, me, app, root, LOADER_MS, SKELETON_MS, PAGE_SKELETON_MS, store, OPENED_KEY,
     startedAt, tr, appName, wait, pub, canon, sectionOf, fragUrl, toLogin, assetsReady, unavailable,
-    fetchFragment } = P;
+    fetchFragment, publicOfFrag } = P;
   let navToken = 0;
   // In-flight/rendered target (wave 9 bug): `location` already changes in pushState, before the
   // fragment arrives — comparing the click with `location` leaves a click during that
@@ -162,6 +162,8 @@
         label.textContent = sec ? `${appName} · ${sec}` : appName;
         Array.from(bar.childNodes).forEach((n) => { if (n.nodeType === 3) n.remove(); });
         bar.append(label);
+        // the visible text is "App · Section": the accessible name says what the button does
+        bar.setAttribute('aria-label', `${tr('js.app_menu', 'Menu da aplicação')}: ${label.textContent}`);
       }
     } catch (_) { /* barra opcional */ }
     try { window.HubKit?.mount(scope); } catch (err) { console.error(err); }
@@ -351,6 +353,13 @@
   const RETRY_STATUS = [0, 502, 503, 504];
   const RETRY_DELAYS = [1000, 2000, 4000, 8000];
 
+  // Post/Redirect/Get (what most existing apps do): the XHR follows the 303 silently; the address bar must show
+  // where the app sent the user (e.g. back to the list after a delete), or a reload repeats the old page.
+  function followRedirect(finalUrl, target) {
+    const dest = publicOfFrag(finalUrl);
+    if (dest && dest !== publicOfFrag(new URL(fragUrl(target), location.href).href)) history.pushState({}, '', dest);
+  }
+
   function submitPost(form, target, data) {
     const hasFile = [...data.values()].some((v) => v instanceof File);
     const body = hasFile || form.enctype === 'multipart/form-data' ? data : new URLSearchParams([...data].filter(([, v]) => typeof v === 'string'));
@@ -390,7 +399,11 @@
         }
         done(html);
       };
-      xhr.onload = () => xhr.status === 401 ? toLogin() : retryOrDone(xhr.status, xhr.responseText.trim() ? xhr.responseText : unavailable());
+      xhr.onload = () => {
+        if (xhr.status === 401) { toLogin(); return; }
+        followRedirect(xhr.responseURL, target);
+        retryOrDone(xhr.status, xhr.responseText.trim() ? xhr.responseText : unavailable());
+      };
       xhr.onerror = () => retryOrDone(0, unavailable());
       xhr.send(body);
     };

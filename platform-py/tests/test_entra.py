@@ -71,6 +71,13 @@ def test_sso_button_is_light_so_the_microsoft_logo_keeps_its_colors(sso: TestCli
     assert ".auth-sso svg{flex:none;width:18px;height:18px;stroke:none}" in css
 
 
+def test_sso_button_reads_microsoft_sso_in_both_languages(sso: TestClient) -> None:
+    client = anon(client_for(create_app()))
+    for lang in ("pt-BR", "en"):
+        page = client.get("/login", headers={"accept-language": lang}).text
+        assert ">Microsoft SSO<" in page and "Entrar com Microsoft" not in page
+
+
 def test_success_jit_provisioning_and_session(sso: TestClient) -> None:
     client = anon(client_for(create_app()))
     page = client.get("/login").text

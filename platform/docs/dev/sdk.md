@@ -600,7 +600,9 @@ Real time (SSE or WebSocket): wakes the open connections when the data changes.
 
 HTML fragments with the shell's look (Jinja2) and common responses.
 
-### `icon(name: str) -> Markup`
+### `icon(name: str | Markup) -> Markup`
+
+A named icon (`ICONS`) or the app's own SVG body as `Markup` (e.g. the icons of an app being adapted).
 
 ### class `NavItem`
 

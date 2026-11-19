@@ -17,6 +17,12 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   existing `.prod.env` generates only what is missing.
 
 ### Added
+- Adapting an existing app: a new section in the agents' guide (`/dev/docs/AGENTS.md`) with the inventory, URLs, layout, identity tokens and a JavaScript → `data-hub-*` table; the "Copy prompt" now also covers adapting. Measured with a sample FastAPI + Jinja app adapted by a fresh agent: 31/36 checks before, 36/36 after.
+- App kit: `<select data-hub-autosubmit>` (filter on change); `data-hub-confirm-title`, `-label` and `-danger` (the app's own wording and red button); a partial form (e.g. in a modal) that ends in a redirect closes the modal and shows the destination page.
+- SDK: common sidebar icons (truck, wrench, user, users, calendar, list, box, tag, money, map, home, search, bell), the app's own SVG as `Markup` in `NavItem.icon`, and `AppInfo(help_card=False)`.
+- `hub check`: every `/apps/<id>/…` link of the screens must open (page and fragment), and own colors (`--app-*`) need the dark theme (§29).
+- Page description behind an "i" next to the title: it opens a side panel (also for static notes, e.g. backups); the subtitle line under the title is gone. Status alerts stay on the page.
+- Hub version in the header, small and right after the GitHub icon, for signed-in people (hidden on phones under 480 px and for anonymous visitors).
 - Staging has its own URL: `/staging/apps/<id>/…` (production stays `/apps/<id>/…`). The path picks the
   environment for pages, fragments, the app API and WebSockets; `x-hub-base` and the app's redirects carry the
   prefix. The `hub_env` cookie (set at `/hub-env`) only sends `/apps/<id>` to the staging URL. A "STAGING" badge
@@ -36,6 +42,11 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   `.prod.env` (names shown, values never). The install notice says there is one Postgres.
 
 ### Fixed
+- Deep links of nested app routes (`/apps/<id>/veiculos/12/editar`) opened a 404 on reload or bookmark.
+- Post/Redirect/Get inside the hub: a redirect answered to a fragment request now stays a fragment (it embedded the whole hub page in the app screen), and the address bar follows the app's redirects.
+- The app name in the sidebar ignored the app's sidebar colors (white on a light sidebar); chart axis labels were cut (compact numbers now); the phone app-menu button has an accessible name.
+- `hub-check --all` refreshes the hub copy embedded in the CLI environment before testing it (it was a month old).
+- Login: the SSO button reads "Microsoft SSO".
 - English screens no longer leak Portuguese: /developers navigation, deploy/backup/runtime labels, the 403 page, the pager count, staging error pages and texts written by the shell JavaScript now have catalog pairs; a test renders every menu screen and every /developers page in English.
 - Row "⋯" menus open upwards when a panel with overflow would cut them (e.g. the last row of /admin/users).
 - Admin runtime: the host capacity bars no longer paint Platform and Applications in the same color; the engine caveats ("Connected to…", per-container usage, CPU limit) and the Docker/Podman chips, which only relabelled a read-only field, left the page (the caveat stays in `/api/ops/runtime`).
