@@ -112,3 +112,12 @@
 - ✅ 97 · admin/runtime: "Capacidade do host" mostra o uso real medido (/proc do host + uso de cada contêiner), atualiza a cada 5 s; "Aplicações" em magenta; hover com valor / total; runtime no "i" ao lado do título
 - ✅ 98 · admin/runtime: "Atualizado às HH:MM:SS" no lugar de "Uso atual · atualiza sozinho"
 - ✅ 99 · Ícones do menu: Status com o medidor (antes do grupo Operação); Operação com uma chave inglesa
+
+## Apps de exemplo em inglês (0.4.0)
+
+- ▶️ 100 · ids e rotas dos apps de exemplo em inglês (assets, suppliers, servicedesk, collector, automations), com migração automática das instalações existentes; telas seguem o idioma do usuário
+  - ▶️ inventário de tudo que guarda o id do app (hub, banco, segredos, contêineres, bucket, histórico) · subagente: Inventário de ids dos apps
+  - ⬜ desenho da migração (ordem, reversão, o que fica como histórico)
+  - ⬜ renomeação dos apps e das rotas (código, compose, registro, conformance, CI, docs, testes)
+  - ⬜ migração automática (bancos, papéis, segredos, contêineres, bucket, dados do hub)
+  - ⬜ validação: hub-check --all, conformance, E2E, ui-sweep e atualização medida 0.3.x → 0.4.0

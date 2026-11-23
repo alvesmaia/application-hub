@@ -309,3 +309,30 @@ camadas, 5 apps saudáveis, 3 funções padrão, 3 pacotes de exemplo, 0,5 CPU p
 o `install.sh` gravava `HUB_ENTRA_DEFAULT_ROLE=Colaborador` (função que não existe mais nas instalações novas).
 Proposta (não feita): `hub_update.py` aplicar a configuração do compose e conectar redes novas sem recriar o hub.
 
+
+▶️ **Task 100 — Sample apps in English (0.4.0): design of the rename and of the migration**
+
+Map: `ativos→assets`, `fornecedores→suppliers`, `servicos→servicedesk`, `coletor→collector`, `automacoes→automations`
+(no hyphen: the id is also a Postgres database and role name). In-app routes also go English (e.g. automations:
+`catalog`, `runs`, `processes`, `packages`, `triggers`). Screens keep following the user's language.
+
+Where the id lives (inventory): hub `/data` JSON stores (admin.json: variable bindings, managed variable names
+`HUB_INTERNAL_TOKEN_<APP>`, `DATABASE_URL_<APP>`, values with db/role names, role `apps`, catalog/status settings,
+health/flags/SLOs/incidents; ops.json: deployments, limits, schedules, policies, maintenance, backup secrets keys;
+connections.json, inbox.json, ux.json favorites/recents, auth.json token apps, analytics/usage/metrics/uptime), files
+under `/data/backups/<app>`, `/data/apps/<app>`, `/data/outbox/<app>.json`; Postgres database = role = id (comment
+`hub-managed:demo=<id>`); MinIO buckets (`fornecedores`, `app-<id>`); `.prod.env` keys `APP_HUB_APP_DB_PASSWORD_<APP>`,
+`HUB_INTERNAL_TOKEN_<APP>`, `HUB_APP_PORT_<APP>`; compose services/containers/networks/images; job kinds inside each
+app database (`ativos.import`, `automacoes.run`…). The audit chain is hash-linked and signed: old events keep the old
+ids (history), new events use the new ones.
+
+Migration (one offline command, modelled on `db-merge.sh`, `scripts/rename-sample-apps.sh --project <p>`), run after
+`git checkout v0.4.0` and before `dc up -d`; idempotent (a step already done is skipped):
+1. backup (`docs/ATUALIZACAO.md` §1); stop the hub and the old sample app containers;
+2. Postgres: per pair, terminate connections, `ALTER DATABASE old RENAME TO new`, `ALTER ROLE old RENAME TO new`
+   (SCRAM passwords survive a rename), comment `hub-managed:demo=new`; job kinds `old.*` → `new.*`;
+3. MinIO: copy buckets `old` → `new` (old kept until removed by hand, for rollback);
+4. `.prod.env`: rename the per-app keys, keeping their values;
+5. hub data: `python -m hub.admin rename-apps` in the new image over `/data` (every store above, file/dir renames);
+6. remove the old containers and networks; `dc up -d` creates the new ones.
+Rollback: the same command with `--reverse` (same steps backwards) or the backup.
