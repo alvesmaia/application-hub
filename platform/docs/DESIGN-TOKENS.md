@@ -139,7 +139,7 @@ server, even with a dark OS — no flash; `<meta name="color-scheme">` follows
   property (text/border/background) and by the color; a new literal color in those files is converted when
   the generator runs and rejected by `--check`. These apps' own terracotta/forest palette was removed
   (it did not pass contrast in both themes); each app's identity stays in `--app-ink`/
-  `--app-color` (catalog; `fornecedores`/`contratos` inks darkened to 4.5:1).
+  `--app-color` (catalog; `suppliers`/`contratos` inks darkened to 4.5:1).
 - **Brand color** (white label): in dark, `theme.css` mixes the brand color with
   white (45%), to keep the contrast.
 - **Charts**: `hub-chart.js` uses the identity's series palette (`#4F6BFF` first).
@@ -193,7 +193,7 @@ CSS only for the hub (`hub.css`; not an app contract — no new `data-hub-*`):
 ## Visual regression
 
 `tests-e2e/visual/visual.spec.ts` + `playwright.visual.config.ts`: 12 screens (login, home,
-catalog, Administration, Operations, `ativos`, `servicos`) compared with the reference recorded
+catalog, Administration, Operations, `inventory`, `servicedesk`) compared with the reference recorded
 **before** the extraction (1% pixel tolerance; relative times and the rail — which gained
 new items in wave 8 — masked). Run with the native hub (`bash scripts/demo.sh` on
 fresh data):

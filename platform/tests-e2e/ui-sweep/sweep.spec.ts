@@ -16,7 +16,7 @@ type Unit = { role: Role | 'anon'; theme: Theme; vw: number; vh: number; interac
 const QUICK = process.env.SWEEP_MODE === 'quick';
 // Phone (390×844): shell (drawer), Home, Users (cards) and an app.
 const MOBILE_UNITS: Unit[] = (['light', 'dark'] as Theme[]).map((theme) => (
-  { role: 'admin' as Role, theme, vw: 390, vh: 844, interact: true, focus: false, only: /^\/(|admin\/users|ativos)$/ }));
+  { role: 'admin' as Role, theme, vw: 390, vh: 844, interact: true, focus: false, only: /^\/(|admin\/users|inventory)$/ }));
 // Visitor without a session: only the public documentation (/developers/*), minimal shell (header without rail).
 const DOCS = /^\/developers(\/|$)/;
 const ANON_UNITS: Unit[] = (['light', 'os-dark', 'dark'] as Theme[]).flatMap((theme) => [

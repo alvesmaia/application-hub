@@ -46,7 +46,9 @@ def test_sample_app_is_in_the_registry_with_its_manifest(app: str) -> None:
     entries = {e["manifest"]["id"]: e for e in json.loads(_read("apps.json"))}
     assert entries[app]["upstream"] == f"http://app-hub-app-{app}:8080"
     manifest = ROOT.parent / "platform" / "demo-apps-py" / app / "manifest.json"
-    if manifest.exists():  # coletor builds from platform/Dockerfile.coletor and keeps its manifest elsewhere
+    if (
+        manifest.exists()
+    ):  # collector builds from platform/Dockerfile.collector and keeps its manifest elsewhere
         assert entries[app]["manifest"]["id"] == json.loads(manifest.read_text("utf-8"))["id"]
 
 

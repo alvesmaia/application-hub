@@ -28,7 +28,7 @@ for (const width of [1280, 1440]) {
     if (width === 1440) await page.screenshot({ path: path.join(OUT, `header-user-menu-${theme}.png`), clip: { x: width - 420, y: 0, width: 420, height: 260 } });
     report.push({ width, theme, button: (await page.locator('.hub-user-menu .user-copy').innerText()).trim(), menu: (await pop.locator('.hub-user-who').innerText()).trim() });
     await page.keyboard.press('Escape');
-    for (const app of ['ativos', 'fornecedores', 'servicos']) {
+    for (const app of ['inventory', 'suppliers', 'servicedesk']) {
       await page.goto(`${HUB}/${app}`);
       await page.locator('#app-root .app-sidebar .sidebar-app strong').waitFor({ timeout: 20000 });
       await page.waitForFunction(() => !document.querySelector('.app-loading') && !document.querySelector('.component-loading'));

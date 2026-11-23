@@ -16,12 +16,14 @@ MF = {"id": "estoque", "name": "Estoque", "version": "0.1.0", "routes": ["/estoq
 
 
 def test_register_persist_and_reload(tmp_path: Path) -> None:
-    reg, apps = Registry([]), ["ativos"]
+    reg, apps = Registry([]), ["inventory"]
     assert newapp.register(tmp_path, reg, apps, MF)
     assert not newapp.register(tmp_path, reg, apps, MF)
     e = reg.get("estoque")
-    assert e is not None and e.upstream == "http://app-hub-app-estoque:8080" and apps == ["ativos", "estoque"]
-    assert newapp.is_dynamic(tmp_path, "estoque") and not newapp.is_dynamic(tmp_path, "ativos")
+    assert (
+        e is not None and e.upstream == "http://app-hub-app-estoque:8080" and apps == ["inventory", "estoque"]
+    )
+    assert newapp.is_dynamic(tmp_path, "estoque") and not newapp.is_dynamic(tmp_path, "inventory")
     fresh = Registry([])
     assert newapp.load_dynamic(tmp_path, fresh) == ["estoque"] and newapp.load_dynamic(tmp_path, fresh) == []
     assert newapp.load_dynamic(tmp_path / "vazio", fresh) == []

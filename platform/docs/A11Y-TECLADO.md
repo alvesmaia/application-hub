@@ -28,4 +28,4 @@ checking the focus ring in the screenshots. No test with real screen readers (NV
 
 Failures found and fixed during the walkthrough: script order (Inbox actions with no effect),
 contrast of grays and of the apps' own colors (in both themes), missing labels in the
-`ativos` Settings fields, 404 without title/language, inverted chrome in the dark theme.
+`inventory` Settings fields, 404 without title/language, inverted chrome in the dark theme.

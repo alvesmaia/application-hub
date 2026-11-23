@@ -32,9 +32,9 @@ def seed_health(data: dict[str, Any], apps: list[str], now: int) -> None:
         return
     rows = [
         ("Autenticação", "Identity", None, 2),
-        ("Gestão de Ativos", "Aplicação", "ativos", 2),
-        ("Rede de Fornecedores", "Aplicação", "fornecedores", 2),
-        ("Central de Serviços", "Aplicação", "servicos", 2),
+        ("Gestão de Ativos", "Aplicação", "inventory", 2),
+        ("Rede de Fornecedores", "Aplicação", "suppliers", 2),
+        ("Central de Serviços", "Aplicação", "servicedesk", 2),
         ("Notificações", "Serviço", None, 5),
     ]
     data["health"] = [

@@ -49,7 +49,7 @@ test('token de API criado pela tela chama a API v1 (leitura sim, escrita não)',
   const apps = await api.get('/api/v1/apps');
   expect(apps.status()).toBe(200);
   const body = await apps.json();
-  expect(body.items.map((a: { id: string }) => a.id)).toEqual(expect.arrayContaining(['ativos', 'fornecedores', 'servicos', 'coletor']));
+  expect(body.items.map((a: { id: string }) => a.id)).toEqual(expect.arrayContaining(['inventory', 'suppliers', 'servicedesk', 'collector']));
   expect(body.items[0].api.enabled).toBe(true);
   const deps = await api.get('/api/v1/deployments?limit=2');
   expect(deps.status()).toBe(200);
@@ -58,12 +58,12 @@ test('token de API criado pela tela chama a API v1 (leitura sim, escrita não)',
   expect(w.status()).toBe(401);
   expect(w.headers()['content-type']).toContain('application/problem+json');
   // App API through the gateway with an app-api token.
-  const appTok = await createToken(page, `APP E2E ${RUN}`, ['app-api'], ['ativos']);
+  const appTok = await createToken(page, `APP E2E ${RUN}`, ['app-api'], ['inventory']);
   const appApi = await bearer(appTok);
-  const assets = await appApi.get('/apps/ativos/api/v1/assets?q=a');
+  const assets = await appApi.get('/apps/inventory/api/v1/assets?q=a');
   expect(assets.status()).toBe(200);
   expect(typeof (await assets.json()).total).toBe('number');
-  expect((await appApi.get('/apps/servicos/api/v1/tickets')).status()).toBe(403);
+  expect((await appApi.get('/apps/servicedesk/api/v1/tickets')).status()).toBe(403);
 });
 
 test('cliente MCP: ferramentas do hub e dos apps, confirmação de ação destrutiva', async ({ page }) => {
@@ -84,11 +84,11 @@ test('cliente MCP: ferramentas do hub e dos apps, confirmação de ação destru
   expect(session).not.toBe('');
   const tools: { name: string; annotations: { destructiveHint: boolean } }[] = (await rpc('tools/list')).result.tools;
   const names = tools.map((t) => t.name);
-  for (const t of ['apps_list', 'deployments_rollback', 'ativos.assets_list', 'servicos.tickets_list']) {
+  for (const t of ['apps_list', 'deployments_rollback', 'inventory.assets_list', 'servicedesk.tickets_list']) {
     expect(names, t).toContain(t);
   }
-  expect(tools.find((t) => t.name === 'ativos.assets_delete')!.annotations.destructiveHint).toBe(true);
-  const list = (await rpc('tools/call', { name: 'ativos.assets_list', arguments: {} })).result;
+  expect(tools.find((t) => t.name === 'inventory.assets_delete')!.annotations.destructiveHint).toBe(true);
+  const list = (await rpc('tools/call', { name: 'inventory.assets_list', arguments: {} })).result;
   expect(list.isError).toBe(false);
   expect(list.structuredContent.total).toBeGreaterThan(0);
   // App mutation without a hint (POST in the package's OpenAPI) also requires confirmation (I3).

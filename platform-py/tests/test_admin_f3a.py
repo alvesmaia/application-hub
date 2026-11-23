@@ -44,7 +44,7 @@ def test_pure_helpers() -> None:
     assert display_value({"kind": "connection_string", "value": "postgres://u:p@h/db"}) == "••••••••"
     var = {"name": "A", "value": SECRET, "kind": "secreta", "bindings": [], "inject_as": "B", "managed": True}
     assert SECRET not in json.dumps(masked(var)) and masked(var)["inject_as"] == "B"
-    assert is_platform_env("HUB_STORAGE_TOKEN_ATIVOS_PRODUCAO") and not is_platform_env("HUB_STORAGE")
+    assert is_platform_env("HUB_STORAGE_TOKEN_INVENTORY_PRODUCAO") and not is_platform_env("HUB_STORAGE")
     env = [
         {
             "name": "X",
@@ -265,12 +265,12 @@ def test_roles_crud_permissions_apps_and_live_effect(hub: TestClient) -> None:
     assert hub.put("/api/admin/roles/Auditor/permissions/x", json={"granted": True}).status_code == 400
     assert hub.put("/api/admin/roles/Administrador/permissions/1", json={"granted": False}).status_code == 400
     # allowed apps
-    assert hub.put("/api/admin/roles/Auditor/apps", json={"apps": ["ativos", "ativos"]}).json()["apps"] == [
-        "ativos"
-    ]
+    assert hub.put("/api/admin/roles/Auditor/apps", json={"apps": ["inventory", "inventory"]}).json()[
+        "apps"
+    ] == ["inventory"]
     assert hub.put("/api/admin/roles/Auditor/apps", json={"apps": ["nao-existe"]}).status_code == 400
     assert hub.put("/api/admin/roles/Auditor/apps", json={"apps": None}).json().get("apps") is None
-    assert hub.put("/api/admin/roles/Administrador/apps", json={"apps": ["ativos"]}).status_code == 400
+    assert hub.put("/api/admin/roles/Administrador/apps", json={"apps": ["inventory"]}).status_code == 400
     # Administrator cannot be deleted; the others can
     assert dele(hub, "/api/admin/roles/Administrador").status_code == 400
     assert dele(hub, "/api/admin/roles/Auditor").status_code == 204
@@ -313,15 +313,15 @@ def test_env_seed_masking_and_page(hub: TestClient) -> None:
     secret = next(v for v in listed if v["name"] == "AUTH_CLIENT_ID")
     assert secret["value"] == "••••••••3f9a" and "sk_live" not in json.dumps(listed)
     api = next(v for v in listed if v["name"] == "API_BASE_URL")
-    assert [b["app"] for b in api["bindings"]] == ["ativos", "fornecedores", "servicos"] and api[
+    assert [b["app"] for b in api["bindings"]] == ["inventory", "servicedesk", "suppliers"] and api[
         "managed"
     ] is False
     html = hub.get("/admin/env").text
     assert "sk_live" not in html and "••••••••3f9a" in html
     assert "data-env-reveal" not in html and "env-icon-placeholder" not in html  # secret is never revealed
-    only = hub.get("/admin/env?app=servicos").text
+    only = hub.get("/admin/env?app=servicedesk").text
     assert "NOTIFICATIONS_WEBHOOK_URL" in only and "FEATURE_FLAG_NEW_DASHBOARD" not in only
-    assert 'data-env-app-chip="servicos"' in only and 'value="servicos" checked' in only
+    assert 'data-env-app-chip="servicedesk"' in only and 'value="servicedesk" checked' in only
     assert "app=desconhecido" not in hub.get("/admin/env?app=desconhecido").text
 
 
@@ -330,7 +330,7 @@ def test_env_crud_validation_audit_and_pending_restart(hub: TestClient) -> None:
         "name": "MINHA_VAR",
         "value": SECRET,
         "kind": "secreta",
-        "bindings": [{"app": "ativos", "env": "producao"}, {"app": "ativos", "env": "producao"}],
+        "bindings": [{"app": "inventory", "env": "producao"}, {"app": "inventory", "env": "producao"}],
     }
     r = hub.post("/api/admin/env", json=body)
     assert r.status_code == 201 and r.json()["value"] == "••••••••3456" and len(r.json()["bindings"]) == 1
@@ -342,7 +342,7 @@ def test_env_crud_validation_audit_and_pending_restart(hub: TestClient) -> None:
         {**body, "name": "OUTRA", "value": "a\nb"},
         {**body, "name": "OUTRA", "kind": "estranha"},
         {**body, "name": "OUTRA", "bindings": [{"app": "nao", "env": "producao"}]},
-        {**body, "name": "OUTRA", "bindings": [{"app": "ativos", "env": "dev"}]},
+        {**body, "name": "OUTRA", "bindings": [{"app": "inventory", "env": "dev"}]},
         {**body, "name": "PORT"},
         {**body, "name": "HUB_INTERNAL_TOKEN"},
         {**body, "name": "HUB_STORAGE_TOKEN_X"},
@@ -351,7 +351,7 @@ def test_env_crud_validation_audit_and_pending_restart(hub: TestClient) -> None:
         {
             **body,
             "name": "OUTRA",
-            "bindings": [{"app": "ativos", "env": "producao"}],
+            "bindings": [{"app": "inventory", "env": "producao"}],
             "inject_as": "LOG_LEVEL",
         },
     ):
@@ -361,7 +361,7 @@ def test_env_crud_validation_audit_and_pending_restart(hub: TestClient) -> None:
         "name": "OUTRA",
         "value": "x",
         "kind": "publica",
-        "bindings": [{"app": "ativos", "env": "producao"}],
+        "bindings": [{"app": "inventory", "env": "producao"}],
         "inject_as": "MINHA_VAR",
     }
     assert "já entra como MINHA_VAR" in hub.post("/api/admin/env", json=clash).json()["error"]
@@ -372,17 +372,17 @@ def test_env_crud_validation_audit_and_pending_restart(hub: TestClient) -> None:
             "name": "MINHA_VAR",
             "value": "",
             "kind": "secreta",
-            "bindings": [{"app": "coletor", "env": "staging"}],
+            "bindings": [{"app": "collector", "env": "staging"}],
         },
     )
-    assert r.status_code == 200 and r.json()["bindings"] == [{"app": "coletor", "env": "staging"}]
+    assert r.status_code == 200 and r.json()["bindings"] == [{"app": "collector", "env": "staging"}]
     assert hub.post("/api/admin/env/MINHA_VAR/reveal", json={}).status_code in (
         403,
         404,
         405,
     )  # no longer exists
     pend = asyncio.run(hub.app.state.admin.cfg.pending_restart())  # type: ignore[attr-defined]
-    assert "MINHA_VAR" in pend["ativos"]["vars"] and "MINHA_VAR" in pend["coletor"]["vars"]
+    assert "MINHA_VAR" in pend["inventory"]["vars"] and "MINHA_VAR" in pend["collector"]["vars"]
     assert "Aplicações com reinício pendente" in hub.get("/admin/env").text
     assert hub.put("/api/admin/env/NAO_EXISTE", json={"value": "x", "kind": "publica"}).status_code == 404
     assert dele(hub, "/api/admin/env/MINHA_VAR").status_code == 204
@@ -441,64 +441,68 @@ def test_managed_variables_are_read_only_and_internal_tokens_live_in_the_vault(
 ) -> None:
     store = hub.app.state.admin  # type: ignore[attr-defined]
     cfg = store.cfg
-    token = "ativos-token-interno-demo-7f3a91"
+    token = "inventory-token-interno-demo-7f3a91"
     created = asyncio.run(
-        cfg.ensure_internal_tokens("plataforma", lambda app: token if app == "ativos" else None)
+        cfg.ensure_internal_tokens("plataforma", lambda app: token if app == "inventory" else None)
     )
-    assert set(created) == {"ativos", "coletor", "fornecedores", "servicos"}
+    assert set(created) == {"inventory", "collector", "suppliers", "servicedesk"}
     assert (
-        asyncio.run(cfg.ensure_internal_tokens("plataforma", lambda app: token if app == "ativos" else None))
+        asyncio.run(
+            cfg.ensure_internal_tokens("plataforma", lambda app: token if app == "inventory" else None)
+        )
         == []
     )
-    assert store.tokens["ativos"] == token and len(store.tokens["servicos"]) == 64
-    var = next(v for v in hub.get("/api/admin/env").json() if v["name"] == "HUB_INTERNAL_TOKEN_ATIVOS")
+    assert store.tokens["inventory"] == token and len(store.tokens["servicedesk"]) == 64
+    var = next(v for v in hub.get("/api/admin/env").json() if v["name"] == "HUB_INTERNAL_TOKEN_INVENTORY")
     assert (
         var["managed"] is True and var["inject_as"] == "HUB_INTERNAL_TOKEN" and token not in json.dumps(var)
     )
     assert token not in (tmp_path / "admin.json").read_text(encoding="utf-8")  # encrypted in the vault
     # federated search and the Inbox use the vault token (not the hub environment)
-    monkeypatch.setenv("HUB_INTERNAL_TOKEN_ATIVOS", "valor-do-ambiente-que-nao-vale")
-    assert srch.internal_token("ativos") == token
+    monkeypatch.setenv("HUB_INTERNAL_TOKEN_INVENTORY", "valor-do-ambiente-que-nao-vale")
+    assert srch.internal_token("inventory") == token
     # read-only here; rotating is the audited action
     ro = hub.put(
-        "/api/admin/env/HUB_INTERNAL_TOKEN_ATIVOS",
+        "/api/admin/env/HUB_INTERNAL_TOKEN_INVENTORY",
         json={"value": "novo-valor-qualquer", "kind": "secreta", "bindings": var["bindings"]},
     )
     assert ro.status_code == 400 and "gerida pela plataforma" in ro.json()["error"]
-    assert dele(hub, "/api/admin/env/HUB_INTERNAL_TOKEN_ATIVOS").status_code == 400
-    old = store.tokens["servicos"]
-    asyncio.run(cfg.rotate_internal_token("plataforma", "servicos"))
-    assert store.tokens["servicos"] != old and "Token interno rotacionado" in audit_titles(hub)
+    assert dele(hub, "/api/admin/env/HUB_INTERNAL_TOKEN_INVENTORY").status_code == 400
+    old = store.tokens["servicedesk"]
+    asyncio.run(cfg.rotate_internal_token("plataforma", "servicedesk"))
+    assert store.tokens["servicedesk"] != old and "Token interno rotacionado" in audit_titles(hub)
     with pytest.raises(Exception, match="sem token interno"):
         asyncio.run(cfg.rotate_internal_token("plataforma", "nao-existe"))
     assert "gerida" in hub.get("/admin/env").text
     # "Rotate token" on the app card (POST /api/ops/rotate): replaces the token and leaves the restart pending
-    before = store.tokens["coletor"]
-    r = hub.post("/api/ops/rotate/coletor/token", json={})
+    before = store.tokens["collector"]
+    r = hub.post("/api/ops/rotate/collector/token", json={})
     assert (
-        r.json() == {"variable": "HUB_INTERNAL_TOKEN_COLETOR", "restart_pending": True}
-        and store.tokens["coletor"] != before
+        r.json() == {"variable": "HUB_INTERNAL_TOKEN_COLLECTOR", "restart_pending": True}
+        and store.tokens["collector"] != before
     )
-    assert hub.post("/api/ops/rotate/coletor/database", json={}).status_code == 409  # no database provisioned
+    assert (
+        hub.post("/api/ops/rotate/collector/database", json={}).status_code == 409
+    )  # no database provisioned
     assert hub.post("/api/ops/rotate/nao-existe/token", json={}).status_code == 404
-    assert hub.post("/api/ops/rotate/coletor/outro", json={}).status_code == 404
+    assert hub.post("/api/ops/rotate/collector/outro", json={}).status_code == 404
     add_role(hub, "Product Owner", PRODUCT_OWNER)
     assert (
-        add_user(hub, "po2", ["Product Owner"]).post("/api/ops/rotate/coletor/token", json={}).status_code
+        add_user(hub, "po2", ["Product Owner"]).post("/api/ops/rotate/collector/token", json={}).status_code
         == 403
     )
-    assert api_required("POST", ["ops", "rotate", "ativos", "token"]) == ("gerenciar_variaveis",)
+    assert api_required("POST", ["ops", "rotate", "inventory", "token"]) == ("gerenciar_variaveis",)
 
 
 def test_bootstrap_import_only_creates_missing_without_marking_restart(hub: TestClient) -> None:
     cfg = hub.app.state.admin.cfg  # type: ignore[attr-defined]
     items = [
         {
-            "name": "DATABASE_URL_ATIVOS",
+            "name": "DATABASE_URL_INVENTORY",
             "kind": "connection_string",
             "inject_as": "HUB_DB_URL",
             "value": "postgres://u:p@h/db",
-            "bindings": [{"app": "ativos", "env": "producao"}],
+            "bindings": [{"app": "inventory", "env": "producao"}],
         },
         {"name": "LOG_LEVEL", "kind": "publica", "value": "debug", "bindings": []},
     ]
@@ -537,10 +541,10 @@ def test_bootstrap_ignores_bindings_of_apps_outside_catalog(hub: TestClient) -> 
          "value": "postgres://u:p@h/db", "bindings": [{"app": "nao-instalado", "env": "producao"}]},
         {"name": "DB_MISTO", "kind": "connection_string", "inject_as": "HUB_DB_URL",
          "value": "postgres://u:p@h/db2",
-         "bindings": [{"app": "nao-instalado", "env": "producao"}, {"app": "ativos", "env": "staging"}]},
+         "bindings": [{"app": "nao-instalado", "env": "producao"}, {"app": "inventory", "env": "staging"}]},
     ]  # fmt: skip
     assert asyncio.run(cfg.import_bootstrap("plataforma", items)) == 1  # only the mixed one gets in
     env = asyncio.run(cfg.read())["env"]
     nomes = {e["name"]: e for e in env}
     assert "DB_FANTASMA" not in nomes
-    assert nomes["DB_MISTO"]["bindings"] == [{"app": "ativos", "env": "staging"}]
+    assert nomes["DB_MISTO"]["bindings"] == [{"app": "inventory", "env": "staging"}]

@@ -17,10 +17,10 @@ SECRET = "sk_live_filtro-secreto-987654"
 def hub(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     c = make_hub(tmp_path, monkeypatch)
     for name, kind, value, apps in (
-        ("SO_ATIVOS", "publica", "1", ["ativos"]),
-        ("SO_COLETOR", "publica", "1", ["coletor"]),
+        ("SO_INVENTORY", "publica", "1", ["inventory"]),
+        ("SO_COLLECTOR", "publica", "1", ["collector"]),
         ("SEM_VINCULO", "publica", "1", []),
-        ("SEGREDO_ATIVOS", "secreta", SECRET, ["ativos"]),
+        ("SEGREDO_INVENTORY", "secreta", SECRET, ["inventory"]),
     ):
         binds = [{"app": a, "env": "producao"} for a in apps]
         body = {"name": name, "value": value, "kind": kind, "bindings": binds}
@@ -41,35 +41,35 @@ def test_per_application_section_is_gone(hub: TestClient) -> None:
 def test_application_column_lists_bound_apps(hub: TestClient) -> None:
     html = hub.get("/admin/env").text
     assert "<th" in html and 'class="env-app-col"' in html and 'name="app"' in html
-    row = html.split(">SO_ATIVOS</code>", 1)[1].split("</tr>", 1)[0]
-    assert 'data-env-app-chip="ativos"' in row and 'data-env-app-chip="coletor"' not in row
+    row = html.split(">SO_INVENTORY</code>", 1)[1].split("</tr>", 1)[0]
+    assert 'data-env-app-chip="inventory"' in row and 'data-env-app-chip="collector"' not in row
     unbound = html.split(">SEM_VINCULO</code>", 1)[1].split("</tr>", 1)[0]
     assert "data-env-unbound" in unbound and "Nenhuma aplicação" in unbound
 
 
 def test_filter_by_one_app(hub: TestClient) -> None:
-    html = hub.get("/admin/env?app=ativos").text
-    assert shown(html, "SO_ATIVOS") and shown(html, "SEGREDO_ATIVOS")
-    assert not shown(html, "SO_COLETOR") and not shown(html, "SEM_VINCULO")
-    assert 'value="ativos" checked' in html and 'value="coletor" checked' not in html
+    html = hub.get("/admin/env?app=inventory").text
+    assert shown(html, "SO_INVENTORY") and shown(html, "SEGREDO_INVENTORY")
+    assert not shown(html, "SO_COLLECTOR") and not shown(html, "SEM_VINCULO")
+    assert 'value="inventory" checked' in html and 'value="collector" checked' not in html
 
 
 def test_filter_by_several_apps(hub: TestClient) -> None:
-    html = hub.get("/admin/env?app=ativos&app=coletor").text
-    assert shown(html, "SO_ATIVOS") and shown(html, "SO_COLETOR") and not shown(html, "SEM_VINCULO")
+    html = hub.get("/admin/env?app=inventory&app=collector").text
+    assert shown(html, "SO_INVENTORY") and shown(html, "SO_COLLECTOR") and not shown(html, "SEM_VINCULO")
 
 
 def test_no_filter_shows_everything_including_unbound(hub: TestClient) -> None:
     html = hub.get("/admin/env").text
-    assert all(shown(html, n) for n in ("SO_ATIVOS", "SO_COLETOR", "SEM_VINCULO", "SEGREDO_ATIVOS"))
+    assert all(shown(html, n) for n in ("SO_INVENTORY", "SO_COLLECTOR", "SEM_VINCULO", "SEGREDO_INVENTORY"))
 
 
 def test_unknown_app_is_ignored(hub: TestClient) -> None:
     only_bad = hub.get("/admin/env?app=desconhecido").text
-    assert shown(only_bad, "SEM_VINCULO") and shown(only_bad, "SO_COLETOR")  # same as no filter
+    assert shown(only_bad, "SEM_VINCULO") and shown(only_bad, "SO_COLLECTOR")  # same as no filter
     assert "desconhecido" not in only_bad
-    mixed = hub.get("/admin/env?app=desconhecido&app=coletor").text
-    assert shown(mixed, "SO_COLETOR") and not shown(mixed, "SO_ATIVOS")
+    mixed = hub.get("/admin/env?app=desconhecido&app=collector").text
+    assert shown(mixed, "SO_COLLECTOR") and not shown(mixed, "SO_INVENTORY")
 
 
 def test_new_texts_are_translated(hub: TestClient) -> None:
@@ -83,5 +83,5 @@ def test_new_texts_are_translated(hub: TestClient) -> None:
 
 
 def test_secret_value_never_rendered(hub: TestClient) -> None:
-    for url in ("/admin/env", "/admin/env?app=ativos", "/admin/env?app=ativos&app=coletor"):
+    for url in ("/admin/env", "/admin/env?app=inventory", "/admin/env?app=inventory&app=collector"):
         assert SECRET not in hub.get(url).text

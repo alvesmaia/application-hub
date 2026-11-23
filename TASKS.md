@@ -115,9 +115,10 @@
 
 ## Apps de exemplo em inglês (0.4.0)
 
-- ▶️ 100 · ids e rotas dos apps de exemplo em inglês (assets, suppliers, servicedesk, collector, automations), com migração automática das instalações existentes; telas seguem o idioma do usuário
-  - ▶️ inventário de tudo que guarda o id do app (hub, banco, segredos, contêineres, bucket, histórico) · subagente: Inventário de ids dos apps
-  - ⬜ desenho da migração (ordem, reversão, o que fica como histórico)
-  - ⬜ renomeação dos apps e das rotas (código, compose, registro, conformance, CI, docs, testes)
-  - ⬜ migração automática (bancos, papéis, segredos, contêineres, bucket, dados do hub)
-  - ⬜ validação: hub-check --all, conformance, E2E, ui-sweep e atualização medida 0.3.x → 0.4.0
+- ✅ 100 · ids e rotas dos apps de exemplo em inglês (inventory, suppliers, servicedesk, collector, automations), com migração automática das instalações existentes; telas seguem o idioma do usuário
+  - ✅ inventário de tudo que guarda o id do app (hub, banco, segredos, contêineres, bucket, histórico) · subagente: Inventário de ids dos apps
+  - ✅ desenho da migração (ordem, reversão, o que fica como histórico) — docs/task-details.md
+  - ✅ renomeação dentro dos apps (pastas, pacotes, rotas, testes, conformance, E2E) · subagente: Renomear apps de exemplo para inglês (ativos virou inventory: `assets` colidia com /assets/ do hub)
+  - ✅ renomeação na plataforma (hub, compose, registro, segredos, scripts, CI, docs, testes do hub)
+  - ✅ migração automática (bancos, papéis, segredos, contêineres, bucket, dados do hub) — scripts/rename-sample-apps.sh + python -m hub.admin rename-apps; achados no teste real: valores do cofre presos ao nome (recifrar), redes antigas com a mesma faixa, valores da .prod.env, rotas no histórico
+  - ✅ validação: atualização real 0.3.2 → 0.4.0 (dados preservados, ~1 min 40 s fora), conformance 5/5, E2E 52/52, ui-sweep 0 achados; hub-check --all

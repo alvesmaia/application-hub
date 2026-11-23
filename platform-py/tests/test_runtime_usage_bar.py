@@ -33,3 +33,15 @@ def test_containers_not_measured_show_the_usage_without_detail() -> None:
     assert bars.cpu[0][2].startswith("Em uso (sem detalhe por contêiner): 2,00 / 8,00 vCPU")
     assert [lbl.split(":")[0] for _, _, lbl in bars.cpu][1:3] == ["Plataforma", "Aplicações"]
     assert bars.cpu[1][0] == bars.cpu[2][0] == "flex:0.0000"
+
+
+def test_rounding_never_shows_a_negative_share() -> None:
+    """Measured system usage = host usage minus the containers: float noise left "-0,00 / 16,00 vCPU (-0,0%)"."""
+    from hub.ops.runtime_view import _seg
+
+    for v in (-5.6e-17, -0.0):
+        assert _seg(v, 16.0, "ops-seg sys", "Sistema", "vCPU") == (
+            "flex:0.0000",
+            "ops-seg sys",
+            "Sistema: 0,00 / 16,00 vCPU (0,0%)",
+        )

@@ -23,14 +23,14 @@ from hub.ops.model import OpsError
 def bpack(version: str = "9.1.0", dockerfile: str = "Dockerfile", extra: dict[str, bytes] | None = None,
           with_df: bool = True) -> bytes:  # fmt: skip
     man = {
-        "id": "ativos",
+        "id": "inventory",
         "name": "Ativos",
         "version": version,
-        "routes": ["/ativos/"],
-        "permissions": ["ativos.read"],
+        "routes": ["/inventory/"],
+        "permissions": ["inventory.read"],
     }
     api = {"openapi": "3.0.0", "info": {"title": "t", "version": "1"},
-           "paths": {"/ativos/api/x": {"get": {"responses": {"200": {"description": "ok"}}}}}}  # fmt: skip
+           "paths": {"/inventory/api/x": {"get": {"responses": {"200": {"description": "ok"}}}}}}  # fmt: skip
     body = {"manifest.json": json.dumps(man).encode(), "openapi.json": json.dumps(api).encode(),
             "runtime.json": json.dumps({"build": {"dockerfile": dockerfile}}).encode(), "ui/index.html": b"<h1>x</h1>",
             "build/app.js": b"console.log(1)", **(extra or {})}  # fmt: skip
@@ -82,11 +82,11 @@ class Builder:
 
 def test_pipeline_accepts_build_package_and_rejects_bad_ones() -> None:
     r = asyncio.run(pl.run_all(bpack(), "producao", []))
-    assert r["passed"] and r["build"] and r["image"] == "app-hub-app-ativos:9.1.0"
+    assert r["passed"] and r["build"] and r["image"] == "app-hub-app-inventory:9.1.0"
     assert "construída no hub" in r["steps"][3]["detail"]
-    m_ = {"id": "ativos", "version": "9.1.0"}
+    m_ = {"id": "inventory", "version": "9.1.0"}
     files = {"build/Dockerfile": b"x"}
-    assert pl._build_spec(m_, {}, files) == ("", "app-hub-app-ativos:9.1.0")
+    assert pl._build_spec(m_, {}, files) == ("", "app-hub-app-inventory:9.1.0")
     assert "ausente" in pl._build_spec(m_, {"dockerfile": "X"}, files)[0]
     assert "inválido" in pl._build_spec(m_, {"dockerfile": "../x"}, files)[0]
     assert "tag" in pl._build_spec({"id": "a", "version": "1 0"}, {}, files)[0]
@@ -97,20 +97,20 @@ def test_build_deploy_pins_previous_and_rollback(hub: TestClient, fake: FD) -> N
     b = Builder(fake)
     j = up(hub, bpack())
     rep = j["result"]["report"]
-    assert rep["passed"] and rep["build"] and rep["image"] == "app-hub-app-ativos:9.1.0", rep
+    assert rep["passed"] and rep["build"] and rep["image"] == "app-hub-app-inventory:9.1.0", rep
     dep = j["result"]["deployment"]
     assert dep["status"] == m.AGUARDANDO and dep["build"]
     r = hub.post(f"/api/ops/deployments/{dep['id']}/approve?wait=true", headers=JSON)
     assert r.status_code == 200 and r.json()["status"] == m.IMPLANTADO, r.text
     assert len(b.calls) == 1
     c = b.calls[0]
-    assert c["tag"] == "app-hub-app-ativos:9.1.0" and c["dockerfile"] == "Dockerfile"
+    assert c["tag"] == "app-hub-app-inventory:9.1.0" and c["dockerfile"] == "Dockerfile"
     assert c["container_limits"]["memory"] == c["container_limits"]["memswap"] == 1 << 30
     assert c["rm"] and c["forcerm"]
     # new image in the container; the previous one (the compose baseline) was pinned with the name app-hub-app-*
-    assert fake.cs["app-hub-app-ativos"].attrs["Image"] == "sha256:" + "cc" * 32
-    assert any(t.startswith("app-hub-app-ativos:baseline-") for t in b.tags)
-    assert any(t.startswith("app-hub-app-ativos:keep-") for t in b.tags)
+    assert fake.cs["app-hub-app-inventory"].attrs["Image"] == "sha256:" + "cc" * 32
+    assert any(t.startswith("app-hub-app-inventory:baseline-") for t in b.tags)
+    assert any(t.startswith("app-hub-app-inventory:keep-") for t in b.tags)
     full = next(d for d in hub.get("/api/ops/deployments").json() if d["version"] == "9.1.0")
     assert "Successfully built" in full["build_log"]
     # rollback: baseline image (still on the daemon, because pinned) without rebuilding
@@ -118,7 +118,7 @@ def test_build_deploy_pins_previous_and_rollback(hub: TestClient, fake: FD) -> N
     fake.images.get = lambda ref: SimpleNamespace(id="sha256:" + "aa" * 32, attrs={"Config": {"Env": []}})  # type: ignore[method-assign]
     rb = hub.post(f"/api/ops/deployments/{cur['id']}/rollback?wait=true", headers=JSON)
     assert rb.status_code == 200 and rb.json()["status"] == m.IMPLANTADO, rb.text
-    assert fake.cs["app-hub-app-ativos"].attrs["Image"] == "sha256:" + "aa" * 32
+    assert fake.cs["app-hub-app-inventory"].attrs["Image"] == "sha256:" + "aa" * 32
     assert len(b.calls) == 1
 
 
@@ -127,8 +127,8 @@ def test_build_failure_marks_deployment_and_keeps_active(hub: TestClient, fake: 
     dep = up(hub, bpack())["result"]["deployment"]
     r = hub.post(f"/api/ops/deployments/{dep['id']}/approve?wait=true", headers=JSON)
     assert r.status_code == 422 and r.json()["status"] == m.FALHOU and "Build falhou" in r.json()["note"]
-    assert "app-hub-app-ativos__new" not in fake.cs
-    assert fake.cs["app-hub-app-ativos"].attrs["Image"] == "sha256:" + "aa" * 32
+    assert "app-hub-app-inventory__new" not in fake.cs
+    assert fake.cs["app-hub-app-inventory"].attrs["Image"] == "sha256:" + "aa" * 32
 
 
 def test_build_package_validation(hub: TestClient, fake: FD) -> None:  # noqa: F811

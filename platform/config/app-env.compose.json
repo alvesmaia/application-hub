@@ -1,72 +1,72 @@
 [
   {
-    "name": "DATABASE_URL_ATIVOS",
+    "name": "DATABASE_URL_INVENTORY",
     "kind": "connection_string",
     "inject_as": "HUB_DB_URL",
-    "value": "postgres://ativos:ativos-demo-senha@hub-db:5432/ativos",
+    "value": "postgres://inventory:inventory-demo-senha@hub-db:5432/inventory",
     "bindings": [
       {
-        "app": "ativos",
+        "app": "inventory",
         "env": "producao"
       }
     ]
   },
   {
-    "name": "DATABASE_URL_SERVICOS",
+    "name": "DATABASE_URL_SERVICEDESK",
     "kind": "connection_string",
     "inject_as": "HUB_DB_URL",
-    "value": "postgres://servicos:servicos-demo-senha@hub-db:5432/servicos",
+    "value": "postgres://servicedesk:servicedesk-demo-senha@hub-db:5432/servicedesk",
     "bindings": [
       {
-        "app": "servicos",
+        "app": "servicedesk",
         "env": "producao"
       }
     ]
   },
   {
-    "name": "HUB_INTERNAL_TOKEN_ATIVOS",
+    "name": "HUB_INTERNAL_TOKEN_INVENTORY",
     "kind": "secreta",
     "inject_as": "HUB_INTERNAL_TOKEN",
-    "value": "ativos-token-interno-demo-7f3a91",
+    "value": "inventory-token-interno-demo-7f3a91",
     "bindings": [
       {
-        "app": "ativos",
+        "app": "inventory",
         "env": "staging"
       },
       {
-        "app": "ativos",
+        "app": "inventory",
         "env": "producao"
       }
     ]
   },
   {
-    "name": "HUB_INTERNAL_TOKEN_FORNECEDORES",
+    "name": "HUB_INTERNAL_TOKEN_SUPPLIERS",
     "kind": "secreta",
     "inject_as": "HUB_INTERNAL_TOKEN",
-    "value": "fornecedores-token-interno-demo-2c8e44",
+    "value": "suppliers-token-interno-demo-2c8e44",
     "bindings": [
       {
-        "app": "fornecedores",
+        "app": "suppliers",
         "env": "staging"
       },
       {
-        "app": "fornecedores",
+        "app": "suppliers",
         "env": "producao"
       }
     ]
   },
   {
-    "name": "HUB_INTERNAL_TOKEN_SERVICOS",
+    "name": "HUB_INTERNAL_TOKEN_SERVICEDESK",
     "kind": "secreta",
     "inject_as": "HUB_INTERNAL_TOKEN",
-    "value": "servicos-token-interno-demo-b51d07",
+    "value": "servicedesk-token-interno-demo-b51d07",
     "bindings": [
       {
-        "app": "servicos",
+        "app": "servicedesk",
         "env": "staging"
       },
       {
-        "app": "servicos",
+        "app": "servicedesk",
         "env": "producao"
       }
     ]
@@ -77,11 +77,11 @@
     "value": "http://hub-objstore:9000",
     "bindings": [
       {
-        "app": "fornecedores",
+        "app": "suppliers",
         "env": "staging"
       },
       {
-        "app": "fornecedores",
+        "app": "suppliers",
         "env": "producao"
       }
     ]
@@ -89,14 +89,14 @@
   {
     "name": "HUB_S3_BUCKET",
     "kind": "publica",
-    "value": "fornecedores",
+    "value": "suppliers",
     "bindings": [
       {
-        "app": "fornecedores",
+        "app": "suppliers",
         "env": "staging"
       },
       {
-        "app": "fornecedores",
+        "app": "suppliers",
         "env": "producao"
       }
     ]
@@ -104,14 +104,14 @@
   {
     "name": "HUB_S3_ACCESS_KEY",
     "kind": "publica",
-    "value": "fornecedores",
+    "value": "suppliers",
     "bindings": [
       {
-        "app": "fornecedores",
+        "app": "suppliers",
         "env": "staging"
       },
       {
-        "app": "fornecedores",
+        "app": "suppliers",
         "env": "producao"
       }
     ]
@@ -119,14 +119,14 @@
   {
     "name": "HUB_S3_SECRET_KEY",
     "kind": "secreta",
-    "value": "fornecedores-demo-segredo",
+    "value": "suppliers-demo-segredo",
     "bindings": [
       {
-        "app": "fornecedores",
+        "app": "suppliers",
         "env": "staging"
       },
       {
-        "app": "fornecedores",
+        "app": "suppliers",
         "env": "producao"
       }
     ]
@@ -137,11 +137,11 @@
     "value": "2",
     "bindings": [
       {
-        "app": "ativos",
+        "app": "inventory",
         "env": "staging"
       },
       {
-        "app": "ativos",
+        "app": "inventory",
         "env": "producao"
       }
     ]
@@ -152,11 +152,11 @@
     "value": "15",
     "bindings": [
       {
-        "app": "ativos",
+        "app": "inventory",
         "env": "staging"
       },
       {
-        "app": "ativos",
+        "app": "inventory",
         "env": "producao"
       }
     ]
@@ -167,19 +167,19 @@
     "value": "1",
     "bindings": [
       {
-        "app": "ativos",
+        "app": "inventory",
         "env": "staging"
       },
       {
-        "app": "ativos",
+        "app": "inventory",
         "env": "producao"
       },
       {
-        "app": "servicos",
+        "app": "servicedesk",
         "env": "staging"
       },
       {
-        "app": "servicos",
+        "app": "servicedesk",
         "env": "producao"
       }
     ]
@@ -190,11 +190,11 @@
     "value": "2000",
     "bindings": [
       {
-        "app": "servicos",
+        "app": "servicedesk",
         "env": "staging"
       },
       {
-        "app": "servicos",
+        "app": "servicedesk",
         "env": "producao"
       }
     ]
@@ -261,45 +261,45 @@
     ]
   },
   {
-    "name": "DATABASE_URL_COLETOR",
+    "name": "DATABASE_URL_COLLECTOR",
     "kind": "connection_string",
     "inject_as": "HUB_DB_URL",
     "managed": true,
-    "value": "postgres://app_coletor:coletor-demo-senha@hub-db:5432/app_coletor",
+    "value": "postgres://app_collector:collector-demo-senha@hub-db:5432/app_collector",
     "bindings": [
       {
-        "app": "coletor",
+        "app": "collector",
         "env": "producao"
       }
     ]
   },
   {
-    "name": "HUB_INTERNAL_TOKEN_COLETOR",
+    "name": "HUB_INTERNAL_TOKEN_COLLECTOR",
     "kind": "secreta",
     "inject_as": "HUB_INTERNAL_TOKEN",
-    "value": "coletor-token-interno-demo-8e1b35",
+    "value": "collector-token-interno-demo-8e1b35",
     "bindings": [
       {
-        "app": "coletor",
+        "app": "collector",
         "env": "staging"
       },
       {
-        "app": "coletor",
+        "app": "collector",
         "env": "producao"
       }
     ]
   },
   {
-    "name": "COLETOR_HUB_URL",
+    "name": "COLLECTOR_HUB_URL",
     "kind": "publica",
     "value": "http://hub-web:8080",
     "bindings": [
       {
-        "app": "coletor",
+        "app": "collector",
         "env": "staging"
       },
       {
-        "app": "coletor",
+        "app": "collector",
         "env": "producao"
       }
     ]

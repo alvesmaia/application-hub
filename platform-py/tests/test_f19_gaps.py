@@ -201,7 +201,7 @@ def test_inbox_writes_merge_across_replicas(tmp_path: Path) -> None:
     from hub.ux.inbox import InboxStore
 
     a, b = InboxStore(tmp_path / "inbox.json"), InboxStore(tmp_path / "inbox.json")
-    item = {"kind": "notification", "app": "ativos", "title": "x", "body": "", "source": "", "targets": {}}
+    item = {"kind": "notification", "app": "inventory", "title": "x", "body": "", "source": "", "targets": {}}
     a.push(dict(item))
     b.push(dict(item))  # b rereads under the lock before writing: does not delete a's item
     assert len(InboxStore(tmp_path / "inbox.json").items) == 2

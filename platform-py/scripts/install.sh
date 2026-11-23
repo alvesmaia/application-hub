@@ -374,11 +374,11 @@ if [ ! -f "$ENVF" ]; then
     echo "HUB_MC_IMAGE=$PROJECT-mc:0.10.0"
     if [ "$PORT" != 8090 ]; then # debug ports (127.0.0.1 only) outside the default instance's
       echo "HUB_APPDB_PORT=$((PORT + 10000))"
-      echo "HUB_APP_PORT_ATIVOS=$((PORT + 1011))"
-      echo "HUB_APP_PORT_FORNECEDORES=$((PORT + 1012))"
-      echo "HUB_APP_PORT_SERVICOS=$((PORT + 1013))"
-      echo "HUB_APP_PORT_COLETOR=$((PORT + 1015))"
-      echo "HUB_APP_PORT_AUTOMACOES=$((PORT + 1016))"
+      echo "HUB_APP_PORT_INVENTORY=$((PORT + 1011))"
+      echo "HUB_APP_PORT_SUPPLIERS=$((PORT + 1012))"
+      echo "HUB_APP_PORT_SERVICEDESK=$((PORT + 1013))"
+      echo "HUB_APP_PORT_COLLECTOR=$((PORT + 1015))"
+      echo "HUB_APP_PORT_AUTOMATIONS=$((PORT + 1016))"
     fi
     if [ "$DEMO" = 1 ]; then echo "COMPOSE_PROFILES=demo-apps"; else echo "HUB_APPS_JSON=./apps.empty.json"; fi
   } >> "$ENVF"
@@ -398,8 +398,8 @@ else
   echo "usando platform-py/$ENVF existente (segredos mantidos)"
   secrets_topup
   # debug port of a sample app added later (instances outside 8090 cannot share the default)
-  if [ "$PORT" != 8090 ] && ! grep -q '^HUB_APP_PORT_AUTOMACOES=' "$ENVF"; then
-    echo "HUB_APP_PORT_AUTOMACOES=$((PORT + 1016))" >> "$ENVF"
+  if [ "$PORT" != 8090 ] && ! grep -q '^HUB_APP_PORT_AUTOMATIONS=' "$ENVF"; then
+    echo "HUB_APP_PORT_AUTOMATIONS=$((PORT + 1016))" >> "$ENVF"
   fi
 fi
 setv() { # setv KEY VALUE: replaces or appends in .prod.env (VALUE may contain any character)

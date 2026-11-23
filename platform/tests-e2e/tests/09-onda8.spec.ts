@@ -10,11 +10,11 @@ const RUN = uniq();
 const toast = (page: Page) => page.locator('#toast');
 
 test('observabilidade na Saúde: gráficos por app e requisições mais lentas; link antigo redireciona', async ({ page }) => {
-  // Traffic: pages of ativos (the list queries the database).
-  await openApp(page, '/apps/ativos/assets');
-  await openApp(page, '/apps/ativos/dashboard');
-  await page.goto('/admin/observability?app=ativos&env=producao&min=15');
-  await expect(page).toHaveURL(/\/admin\/health\?app=ativos&env=producao&min=15#obs$/);
+  // Traffic: pages of inventory (the list queries the database).
+  await openApp(page, '/apps/inventory/assets');
+  await openApp(page, '/apps/inventory/dashboard');
+  await page.goto('/admin/observability?app=inventory&env=producao&min=15');
+  await expect(page).toHaveURL(/\/admin\/health\?app=inventory&env=producao&min=15#obs$/);
   await expect(page.locator('[data-obs-chart]')).toHaveCount(5);
   await expect(page.locator('[data-obs-chart="Requisições por segundo"] polyline')).toHaveCount(1);
   await expect(page.locator('.obs-traces')).toBeVisible();
@@ -24,7 +24,7 @@ test('SLO: definir na Saúde e ver orçamento de erro', async ({ page }) => {
   await page.goto('/admin/health?tab=slos'); // SLOs became a tab of Health (F7a)
   await page.click('button[data-slo-edit=""]');
   const m = page.locator('[data-insights-modal] form');
-  await m.locator('[name="app"]').selectOption('ativos');
+  await m.locator('[name="app"]').selectOption('inventory');
   await m.locator('[name="env"]').selectOption('producao');
   await m.locator('[name="availability"]').fill('99.5');
   await m.locator('[name="latency_ms"]').fill('800');
@@ -44,7 +44,7 @@ test('status page: estado dos apps, incidente manual com nota e resolução; lei
   const title = `Lentidão E2E ${RUN}`;
   await page.click('[data-incident-new]');
   const m = page.locator('[data-insights-modal] form');
-  await m.locator('[name="app"]').selectOption('servicos');
+  await m.locator('[name="app"]').selectOption('servicedesk');
   await m.locator('[name="title"]').fill(title);
   await m.locator('[name="severity"]').selectOption('minor');
   await m.locator('[name="note"]').fill('Investigando lentidão.');
@@ -71,27 +71,27 @@ test('feature flags (só API; a tela foi removida): regra por função liga o re
   test.setTimeout(180_000);
   const api = await apiAs('admin');
   // Clean state (from a previous run).
-  await api.delete('/api/admin/flags/ativos/novo-resumo', { data: {} });
+  await api.delete('/api/admin/flags/inventory/novo-resumo', { data: {} });
   const rule = { enabled: true, default: 'off', rules: [{ roles: ['Administrador'], users: [], serve: 'on' }] };
-  const created = await api.post('/api/admin/flags', { data: { key: 'novo-resumo', app: 'ativos', description: 'Resumo novo no dashboard (E2E)', kind: 'boolean', variants: [], envs: { producao: rule } } });
+  const created = await api.post('/api/admin/flags', { data: { key: 'novo-resumo', app: 'inventory', description: 'Resumo novo no dashboard (E2E)', kind: 'boolean', variants: [], envs: { producao: rule } } });
   expect(created.ok()).toBeTruthy();
   // The old page redirects to Settings.
   await page.goto('/admin/flags');
   await expect(page).toHaveURL(/[/]admin$/);
   // Admin (Administrator role) sees the feature; reader does not.
-  await openApp(page, '/apps/ativos/dashboard');
+  await openApp(page, '/apps/inventory/dashboard');
   await expect(page.locator('[data-flag="novo-resumo"]')).toBeVisible();
   const ctx = await newRoleContext(browser, 'leitor');
   const lp = await ctx.newPage();
-  await openApp(lp, '/apps/ativos/dashboard');
+  await openApp(lp, '/apps/inventory/dashboard');
   await expect(lp.locator('[data-flag="novo-resumo"]')).toHaveCount(0);
   await ctx.close();
   // Kill switch.
-  expect((await api.post('/api/admin/flags/ativos/novo-resumo/producao/enabled', { data: { enabled: false } })).ok()).toBeTruthy();
-  await openApp(page, '/apps/ativos/dashboard');
+  expect((await api.post('/api/admin/flags/inventory/novo-resumo/producao/enabled', { data: { enabled: false } })).ok()).toBeTruthy();
+  await openApp(page, '/apps/inventory/dashboard');
   await expect(page.locator('[data-flag="novo-resumo"]')).toHaveCount(0);
   // Audited in the app's scope.
-  const audit = await json(await api.get('/api/admin/audit?scope=ativos&limit=20'));
+  const audit = await json(await api.get('/api/admin/audit?scope=inventory&limit=20'));
   expect(audit.map((e: { title: string }) => e.title)).toEqual(expect.arrayContaining(['Feature flag criada', 'Feature flag desligada (kill switch)']));
   await api.dispose();
 });

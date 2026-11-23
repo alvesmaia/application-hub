@@ -41,7 +41,7 @@ def post(
 
 
 def test_a_bucket_that_keeps_failing_shows_the_error_and_the_likely_cause(tmp_path: Path) -> None:
-    docker = 'echo "mc: <ERROR> Unable to make bucket r/fornecedores. Access Denied." >&2; exit 1'
+    docker = 'echo "mc: <ERROR> Unable to make bucket r/suppliers. Access Denied." >&2; exit 1'
     rc, out = post(tmp_path, "P=app-hub HUB_MC_IMAGE=mc APP_HUB_OBJSTORE_PASSWORD=x make_bucket", docker)
     assert rc == 0  # the hub works without the sample bucket: warn, do not abort
     assert (

@@ -19,7 +19,7 @@ from hub.models import AppManifest
 
 __all__ = ["HDR", "add_user", "api_hub", "bearer", "make_token", "rpc"]
 
-APPS = ("ativos", "servicos")
+APPS = ("inventory", "servicedesk")
 _ENV = (
     "HUB_PUBLIC_URL", "HUB_ADMIN_ALLOWED_CIDRS", "HUB_API_ENABLED", "HUB_API_DOCS_ENABLED", "HUB_API_RATE_PER_MIN",
     "HUB_MCP_ENABLED", "HUB_MCP_PUBLIC_NETWORK", "HUB_MCP_DESTRUCTIVE_ACTIONS", "HUB_MCP_ALLOWED_ORIGINS",

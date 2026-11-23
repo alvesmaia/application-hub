@@ -24,7 +24,7 @@ wait_healthy() {
 }
 setup_store() {
   docker exec app-hub-web mc alias set app-hub http://app-hub-objstore:9000 hubadmin "${APP_HUB_OBJSTORE_PASSWORD:-app-hub-objstore-dev}" >/dev/null
-  docker exec app-hub-web mc mb --ignore-existing app-hub/fornecedores >/dev/null
+  docker exec app-hub-web mc mb --ignore-existing app-hub/suppliers >/dev/null
 }
 # shellcheck source=install/db.sh
 . scripts/install/db.sh

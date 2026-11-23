@@ -23,10 +23,10 @@ export const STATIC_ROUTES = [
 ];
 
 /** App screens with state in the query that no sidebar link reaches — included only if the app
- *  exists in the stack (the light stack only has ativos). */
+ *  exists in the stack (the light stack only has inventory). */
 export const APP_ROUTES: Record<string, string[]> = {
   // Wave 13 — Coletor: location/order/code chosen.
-  coletor: ['/apps/coletor/escanear?codigo=COL-0001', '/apps/coletor/folha', '/apps/coletor/diagnostico'],
+  collector: ['/apps/collector/scan?codigo=COL-0001', '/apps/collector/sheet', '/apps/collector/diagnostics'],
 };
 
 /** Links left out of the sweep: exit, destructive/mutable, downloads, APIs, resources and test routes. */

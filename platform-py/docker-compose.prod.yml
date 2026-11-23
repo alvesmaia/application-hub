@@ -37,39 +37,39 @@ services:
   app-hub-db-roles:
     environment:
       HUB_APPDB_ADMIN_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:?}@app-hub-app-db:5432/postgres
-      APP_HUB_APP_DB_PASSWORD_ATIVOS: ${APP_HUB_APP_DB_PASSWORD_ATIVOS:?}
-      APP_HUB_APP_DB_PASSWORD_FORNECEDORES: ${APP_HUB_APP_DB_PASSWORD_FORNECEDORES:?}
-      APP_HUB_APP_DB_PASSWORD_SERVICOS: ${APP_HUB_APP_DB_PASSWORD_SERVICOS:?}
-      APP_HUB_APP_DB_PASSWORD_COLETOR: ${APP_HUB_APP_DB_PASSWORD_COLETOR:?}
-      APP_HUB_APP_DB_PASSWORD_AUTOMACOES: ${APP_HUB_APP_DB_PASSWORD_AUTOMACOES:?}
+      APP_HUB_APP_DB_PASSWORD_INVENTORY: ${APP_HUB_APP_DB_PASSWORD_INVENTORY:?}
+      APP_HUB_APP_DB_PASSWORD_SUPPLIERS: ${APP_HUB_APP_DB_PASSWORD_SUPPLIERS:?}
+      APP_HUB_APP_DB_PASSWORD_SERVICEDESK: ${APP_HUB_APP_DB_PASSWORD_SERVICEDESK:?}
+      APP_HUB_APP_DB_PASSWORD_COLLECTOR: ${APP_HUB_APP_DB_PASSWORD_COLLECTOR:?}
+      APP_HUB_APP_DB_PASSWORD_AUTOMATIONS: ${APP_HUB_APP_DB_PASSWORD_AUTOMATIONS:?}
 
-  app-hub-app-ativos:
+  app-hub-app-inventory:
     environment: &prod-app
       HUB_DEMO_E2E_HOSTILE: "0"
-      HUB_DB_URL: postgresql://ativos:${APP_HUB_APP_DB_PASSWORD_ATIVOS:?}@app-hub-app-db:5432/ativos
-      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_ATIVOS:?}
+      HUB_DB_URL: postgresql://inventory:${APP_HUB_APP_DB_PASSWORD_INVENTORY:?}@app-hub-app-db:5432/inventory
+      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_INVENTORY:?}
 
-  app-hub-app-fornecedores:
+  app-hub-app-suppliers:
     environment:
       <<: *prod-app
-      HUB_DB_URL: postgresql://fornecedores:${APP_HUB_APP_DB_PASSWORD_FORNECEDORES:?}@app-hub-app-db:5432/fornecedores
-      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_FORNECEDORES:?}
-      HUB_S3_SECRET_KEY_FORNECEDORES: ${APP_HUB_OBJSTORE_PASSWORD:?}
+      HUB_DB_URL: postgresql://suppliers:${APP_HUB_APP_DB_PASSWORD_SUPPLIERS:?}@app-hub-app-db:5432/suppliers
+      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_SUPPLIERS:?}
+      HUB_S3_SECRET_KEY_SUPPLIERS: ${APP_HUB_OBJSTORE_PASSWORD:?}
 
-  app-hub-app-servicos:
+  app-hub-app-servicedesk:
     environment:
       <<: *prod-app
-      HUB_DB_URL: postgresql://servicos:${APP_HUB_APP_DB_PASSWORD_SERVICOS:?}@app-hub-app-db:5432/servicos
-      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_SERVICOS:?}
+      HUB_DB_URL: postgresql://servicedesk:${APP_HUB_APP_DB_PASSWORD_SERVICEDESK:?}@app-hub-app-db:5432/servicedesk
+      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_SERVICEDESK:?}
 
-  app-hub-app-coletor:
+  app-hub-app-collector:
     environment:
       <<: *prod-app
-      HUB_DB_URL: postgresql://coletor:${APP_HUB_APP_DB_PASSWORD_COLETOR:?}@app-hub-app-db:5432/coletor
-      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_COLETOR:?}
+      HUB_DB_URL: postgresql://collector:${APP_HUB_APP_DB_PASSWORD_COLLECTOR:?}@app-hub-app-db:5432/collector
+      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_COLLECTOR:?}
 
-  app-hub-app-automacoes:
+  app-hub-app-automations:
     environment:
       <<: *prod-app
-      HUB_DB_URL: postgresql://automacoes:${APP_HUB_APP_DB_PASSWORD_AUTOMACOES:?}@app-hub-app-db:5432/automacoes
-      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_AUTOMACOES:?}
+      HUB_DB_URL: postgresql://automations:${APP_HUB_APP_DB_PASSWORD_AUTOMATIONS:?}@app-hub-app-db:5432/automations
+      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_AUTOMATIONS:?}

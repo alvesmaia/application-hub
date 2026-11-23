@@ -1,0 +1,8 @@
+{#- Controles da sessão (os mesmos no computador e no celular). `tela` e `target` vêm de quem inclui. -#}
+<div class="col-session-actions" role="group" aria-label="{{ t('Controles da sessão') }}">
+<form method="post" action="{{ base }}/session/next" data-hub-target="{{ target }}"><input type="hidden" name="tela" value="{{ tela }}"><button type="submit" class="col-button col-button-dark" data-col-action="next">{{ t('Próximo') }}</button></form>
+{% if sess.status == 'paused' %}<form method="post" action="{{ base }}/session/resume" data-hub-target="{{ target }}"><input type="hidden" name="tela" value="{{ tela }}"><button type="submit" class="col-button col-button-primary" data-col-action="resume">{{ t('Continuar') }}</button></form>
+{% else %}<form method="post" action="{{ base }}/session/stop" data-hub-target="{{ target }}"><input type="hidden" name="tela" value="{{ tela }}"><button type="submit" class="col-button col-button-ghost" data-col-action="stop">{{ t('Parar') }}</button></form>{% endif %}
+<form method="post" action="{{ base }}/session/restart" data-hub-target="{{ target }}"><input type="hidden" name="tela" value="{{ tela }}"><button type="submit" class="col-button col-button-ghost" data-col-action="restart" data-hub-confirm="{{ t('Reiniciar a sessão? Os códigos são sorteados em nova ordem e os resultados atuais são apagados.') }}">{{ t('Reiniciar') }}</button></form>
+<form method="post" action="{{ base }}/session/cancel" data-hub-target="{{ target }}"><input type="hidden" name="tela" value="{{ tela }}"><button type="submit" class="col-button col-button-ghost" data-col-action="cancel">{{ t('Cancelar') }}</button></form>
+</div>

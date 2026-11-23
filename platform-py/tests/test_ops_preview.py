@@ -61,9 +61,11 @@ def test_preview_new_app_lists_requires(hub: TestClient) -> None:
 def test_preview_update_shows_current_versions(hub: TestClient) -> None:
     store = hub.app.state.ops  # type: ignore[attr-defined]
     d = store.read()
-    m.push(d, {"app": "ativos", "version": "1.2.0", "env": m.PRODUCAO, "status": m.IMPLANTADO})
+    m.push(d, {"app": "inventory", "version": "1.2.0", "env": m.PRODUCAO, "status": m.IMPLANTADO})
     store.write(d)
-    body = preview(hub, manifest_pkg(id="ativos", name="Ativos", version="1.3.0", routes=["/ativos/"])).json()
+    body = preview(
+        hub, manifest_pkg(id="inventory", name="Ativos", version="1.3.0", routes=["/inventory/"])
+    ).json()
     assert body["valid"] and not body["new"]
     assert body["current"] == {"producao": "1.2.0", "staging": ""}
 

@@ -310,9 +310,9 @@ o `install.sh` gravava `HUB_ENTRA_DEFAULT_ROLE=Colaborador` (função que não e
 Proposta (não feita): `hub_update.py` aplicar a configuração do compose e conectar redes novas sem recriar o hub.
 
 
-▶️ **Task 100 — Sample apps in English (0.4.0): design of the rename and of the migration**
+✅ **Task 100 — Sample apps in English (0.4.0): design of the rename and of the migration**
 
-Map: `ativos→assets`, `fornecedores→suppliers`, `servicos→servicedesk`, `coletor→collector`, `automacoes→automations`
+Map: `ativos→inventory` (not `assets`: it collided with the hub's `/assets/` static path and its legacy `/<id>/` redirect), `fornecedores→suppliers`, `servicos→servicedesk`, `coletor→collector`, `automacoes→automations`
 (no hyphen: the id is also a Postgres database and role name). In-app routes also go English (e.g. automations:
 `catalog`, `runs`, `processes`, `packages`, `triggers`). Screens keep following the user's language.
 
@@ -336,3 +336,14 @@ Migration (one offline command, modelled on `db-merge.sh`, `scripts/rename-sampl
 5. hub data: `python -m hub.admin rename-apps` in the new image over `/data` (every store above, file/dir renames);
 6. remove the old containers and networks; `dc up -d` creates the new ones.
 Rollback: the same command with `--reverse` (same steps backwards) or the backup.
+
+Validation (real upgrade, isolated project from v0.3.2 with the sample apps and their seed data): databases, roles,
+job kinds, bucket, `.prod.env` keys (old values kept), hub variables (resealed under the new names), role apps,
+favorites and recents (route segments too) moved; the old session kept working; `/apps/<new>` 200 and
+`/apps/<old>` 404; ~1 min 40 s without the hub and the apps. Found and fixed during it: vault values are sealed with
+the variable name as AAD (renaming without resealing put the hub in a boot loop), each new app network reuses the
+old one's address range (old networks must go first), `.prod.env` new keys created by `--config-only` must take the
+old values, and recents/Inbox paths needed the section map. Conformance 5/5, E2E of the apps 52/52, ui-sweep with the
+apps up: 0 findings. Not covered: the binary sample packages `platform/samples/*.hubapp` keep the old ids (built by
+`platform/scripts/sample-packages.sh` from images; regenerate in the heavy validation).
+

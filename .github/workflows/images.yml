@@ -38,14 +38,14 @@ jobs:
           docker build --target mc    -t "$REG/app-hub-mc:$VER"    platform-py/infra/minio
           docker build --target minio -t "$REG/app-hub-minio:$VER" platform-py/infra/minio
           docker build -f platform-py/Dockerfile --build-arg MC_IMAGE="$REG/app-hub-mc:$VER" -t "$REG/app-hub-web:$VER" .
-          for a in ativos fornecedores servicos automacoes; do
+          for a in inventory suppliers servicedesk automations; do
             docker build -f "platform/demo-apps-py/$a/Dockerfile" -t "$REG/app-hub-$a:$VER" platform
           done
-          docker build -f platform/Dockerfile.coletor -t "$REG/app-hub-coletor:$VER" platform
+          docker build -f platform/Dockerfile.collector -t "$REG/app-hub-collector:$VER" platform
       - name: Push
         run: |
           set -eux
-          for i in mc minio web ativos fornecedores servicos coletor automacoes; do
+          for i in mc minio web inventory suppliers servicedesk collector automations; do
             docker push "$REG/app-hub-$i:$VER"
             if [ "${{ inputs.latest }}" = true ]; then
               docker tag "$REG/app-hub-$i:$VER" "$REG/app-hub-$i:latest"

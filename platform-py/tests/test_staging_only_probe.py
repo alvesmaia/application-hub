@@ -26,7 +26,7 @@ def test_a_new_app_without_production_is_not_probed_until_it_reaches_production(
     ins = app.state.insight
     assert newapp.register(tmp_path, ins.registry, [], MANIFEST)
     ids = [a for a, _ in ins.targets()]
-    assert "novo" not in ids and "ativos" in ids  # compose apps are always probed
+    assert "novo" not in ids and "inventory" in ids  # compose apps are always probed
     deps = [{"id": 1, "app": "novo", "env": "Produção", "status": "Implantado", "version": "1.0.0"}]
     (tmp_path / "ops.json").write_text(json.dumps({"deployments": deps}), encoding="utf-8")
     assert "novo" in [a for a, _ in ins.targets()]

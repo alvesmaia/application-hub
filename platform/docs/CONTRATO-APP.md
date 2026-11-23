@@ -456,7 +456,7 @@ the user can reach: `GET {upstream}/{id}/_hub/search?q=<consulta>&limit=<n>` ove
   `HUB_SEARCH_TIMEOUT_MS` (default 800 ms) per app, reads up to 64 KiB and proceeds without it
   (partial result). A 404 removes the app from searches for 5 min.
 - Bounded-cost queries: an index (trigram/prefix) or a recent window (e.g. the
-  last 20 thousand tickets of `servicos`). SDK: `hub_sdk.search`.
+  last 20 thousand tickets of `servicedesk`). SDK: `hub_sdk.search`.
 
 ## 20. Notifications and approvals through the Inbox (wave 9)
 
@@ -609,7 +609,7 @@ the screen warns when overridden).
 
 **SDK**: `hub_sdk.storage` (`connection`, `s3_direct(S3Config)`, `for_user(x_hub_user, x_hub_user_sig)`, `upload` of bytes or
 file, `download().chunks()`, `list`, `meta`, `delete`, `move`, `share_link`; no
-new dependencies). Examples: attachments of `fornecedores` (connection `fornecedores-anexos` if
+new dependencies). Examples: attachments of `suppliers` (connection `suppliers-anexos` if
 bound, otherwise the app's bucket) and documents of `contratos` (`contratos-docs`).
 
 ### 22.1 SQL connections and dashboards (0.2)
@@ -812,13 +812,13 @@ Examples:
 <div id="lista" data-hub-get="/contratos/lista" data-hub-trigger="load" data-hub-swap="innerHTML"></div>
 
 <!-- Action with confirmation and toast -->
-<button data-hub-post="/ativos/itens/42/baixar" data-hub-target="#item-42" data-hub-confirm="Dar baixa no ativo 42?" data-hub-toast="Baixa registrada.">Dar baixa</button>
+<button data-hub-post="/inventory/items/42/write-off" data-hub-target="#item-42" data-hub-confirm="Dar baixa no ativo 42?" data-hub-toast="Baixa registrada.">Dar baixa</button>
 
 <!-- Modal from a fragment template -->
 <button data-hub-modal="#novo">Novo</button>
 <template id="novo" data-hub-modal-labelledby="novo-t">
   <div class="modal-header"><h2 id="novo-t">Novo item</h2><button class="modal-close" data-hub-close aria-label="Fechar">×</button></div>
-  <form method="post" action="/ativos/itens" data-hub-target="#lista" data-hub-validate>
+  <form method="post" action="/inventory/items" data-hub-target="#lista" data-hub-validate>
     <input name="nome" required data-hub-msg-required="Informe o nome.">
     <button type="submit" class="primary-button">Salvar</button>
   </form>
@@ -857,7 +857,7 @@ Also from the hub (the app still has **no JavaScript**), loaded on the app pages
 | `data-hub-scan-continuous` | scan button | continuous reading (the layer stays open; the same reading within 1.5 s — or `data-hub-scan-dedup="ms"`, up to 60 s — counts once; each submission's result appears in the layer) |
 | `data-hub-scan-formats="lin…\|qr_code,…"` + `data-hub-scan-modes="barras\|qr"` + `data-hub-scan-mode-labels="Código de barras\|QR"` + `data-hub-scan-mode="barras"` (+ `data-hub-scan-mode-target="#campo"`) | scan button | **switching inside the camera** (wave 13): with 2+ format groups separated by `\|`, the layer shows a segmented selector with the labels; tapping switches the decoder's formats **without closing the video**, the frame (square for the 2D groups) and the wrong-mode warning (`data-hub-scan-wrong-hint` accepts one text per group, also with `\|`). The chosen key goes to `data-hub-scan-prefs` (below; preferred) and/or to the `<input>` of `data-hub-scan-mode-target` with a `change` (old form: `data-hub-post` + `data-hub-trigger="change"` on it). The layer exposes `data-mode` and `data-formats` |
 | `data-hub-scan-reader="interativo\|automatico"` + `data-hub-scan-cooldown="ms"` (+ `data-hub-scan-cooldowns="0\|1000\|2000\|3000\|5000"`) | scan button | **reader mode inside the camera**: the top bar of the layer (dark and translucent over the video, targets ≥ 44 px, groups with `role=group`/`aria-pressed`) shows **Interativo** (Interactive) \| **Automático** (Automatic) and, in Automatic, a **Pausa** (Pause) selector with the options from `-cooldowns` (ms, up to 10 s; "Sem pausa" (No pause) = 0). The button's values are only the **initial** ones: the app does **not** draw these selectors on the page. In Interactive the repeat window goes back to 1.5 s; in Automatic `data-hub-scan-dedup` applies. The layer exposes `data-reader` and `data-pause`. Whoever holds/waits the reading is still the app's response (`data-hub-scan-next` / `data-hub-scan-cooldown` below) |
-| `data-hub-scan-prefs="/apps/{app}/…"` | scan button | on each change made in the camera bar (code type, reader mode, pause) the hub does a `POST` (form, with `Idempotency-Key`) to that route of the **app itself** with `modo=<chave do grupo>` (mode=<group key>) and, if there is `data-hub-scan-reader`, `leitor=interativo\|automatico` and `pausa=<ms>`; expected response `204` (failure → toast). The hub also updates the button's `data-hub-scan-mode`/`-reader`/`-cooldown`, so reopening the camera shows the choices; on reload, the app draws the button with the values it stored (Coletor (Collector) stores them per user at `POST /coletor/escanear/prefs`) |
+| `data-hub-scan-prefs="/apps/{app}/…"` | scan button | on each change made in the camera bar (code type, reader mode, pause) the hub does a `POST` (form, with `Idempotency-Key`) to that route of the **app itself** with `modo=<chave do grupo>` (mode=<group key>) and, if there is `data-hub-scan-reader`, `leitor=interativo\|automatico` and `pausa=<ms>`; expected response `204` (failure → toast). The hub also updates the button's `data-hub-scan-mode`/`-reader`/`-cooldown`, so reopening the camera shows the choices; on reload, the app draws the button with the values it stored (Coletor (Collector) stores them per user at `POST /collector/scan/prefs`) |
 | (region of interest) | reading layer | **only what is inside the aiming frame is read**: on each frame the hub measures the stage and the frame (CSS px), converts to video px considering `object-fit: cover` (scale = the larger stage/video ratio, sides or top cropped; the DPR cancels out), crops that region (+10 % margin) on a canvas and only that goes to the `BarcodeDetector`/ZXing (less CPU). With a position in the result (`cornerPoints`/`boundingBox`, or ZXing's points) the code must be **≥ 90 % inside** the frame. Frame: barcode = 80 % of the stage width × 30 % of its height (with a "laser" line), QR/2D = square at 60 % of the smaller side; outside it the image is darkened. The layer exposes the crop in `data-roi="x,y,l,a"` |
 | `[data-hub-scan-next]` (app button **in the response**) | inside the `data-hub-feedback-result` element | **"Próximo"** (Next) (interactive reader): the camera stops reading and shows a large button with the text of the app's button; tapping it triggers the app's button (e.g. a `data-hub-post` that releases the next reading on the server) and resumes reading. The layer gets `data-held` while waiting |
 | `data-hub-scan-cooldown="ms"` | `data-hub-feedback-result` element in the response | **pause between readings** (automatic reader): the camera waits `ms` (up to 10 s) before reading again; the layer shows "Pronto para a próxima leitura em N s" (Ready for the next reading in N s) and `data-cooldown` |
@@ -891,21 +891,21 @@ Example (Coletor):
   <button type="button" data-hub-scan data-hub-scan-target="#codigo" data-hub-scan-format-target="#formato"
           data-hub-scan-continuous data-hub-scan-formats="ean_13,ean_8,upc_a,upc_e,code_128,code_39,itf"
           data-hub-scan-wrong-hint="Modo código de barras — troque para QR">Ler com a câmera</button>
-  <form method="post" action="/apps/coletor/escanear/ler" data-hub-target="#painel" data-hub-offline-queue="Leitura">
+  <form method="post" action="/apps/collector/scan/read" data-hub-target="#painel" data-hub-offline-queue="Leitura">
     <input type="hidden" id="formato" name="formato">
     <input id="codigo" name="codigo" data-hub-wedge data-hub-clear>
     <button type="submit">Registrar</button>
   </form>
   <section id="painel"><div data-hub-feedback-result="ok">Item: Parafuso M8 · EAN-13 · câmera</div></section>
   <!-- another screen, live over WebSocket (polling every 2 s only if the socket drops): -->
-  <div data-hub-ws="/apps/coletor/ws/live?view=folha" data-hub-ws-target="#estado"
-       data-hub-get="/apps/coletor/folha/estado" data-hub-trigger="every 2s" data-hub-target="#estado">
+  <div data-hub-ws="/apps/collector/ws/live?view=sheet" data-hub-ws-target="#estado"
+       data-hub-get="/apps/collector/sheet/status" data-hub-trigger="every 2s" data-hub-target="#estado">
     <section id="estado">…</section>
   </div>
 </div>
 ```
 
-The demo apps (ativos, fornecedores, serviços, contratos and coletor) use only these
+The demo apps (inventory, suppliers, serviços, contratos and collector) use only these
 attributes — none of them serves JavaScript.
 
 **App WebSocket (server side).** The hub's gateway forwards `GET /apps/{id}/ws/…` with
@@ -980,10 +980,10 @@ identity**. The app's CSS (`/{id}/assets/app.css`) enters confined by `@scope (#
   `node scripts/gen-dark-theme.mjs --check`, which does **not** rewrite the apps' CSS).
 - **Behavior and usability do not change:** components and `data-hub-*` attributes (§25) are
   the hub's; the app's sidebar may have a different look, but keeps the width and the targets (≥ 28 px).
-- Examples: `demo-apps/assets/ativos.css` (teal-blue), `app2.css` (Fornecedores: terracotta,
+- Examples: `demo-apps/assets/inventory.css` (teal-blue), `app2.css` (Fornecedores: terracotta,
   serif titles), `app3.css` (Serviços: forest green, rounded shapes) and
   `demo-apps-py/contratos/src/contratos/assets/app.css` (burgundy, dense tables) and
-  `demo-apps-py/coletor/src/coletor/assets/app.css` (safety yellow/graphite, touch first) — blocks
+  `demo-apps-py/collector/src/collector/assets/app.css` (safety yellow/graphite, touch first) — blocks
   `identidade:` (tokens) and `forma:` (own rules).
 
 ## 16. Conformance suite
@@ -995,7 +995,7 @@ API or sections are restricted to a role (e.g. `["Administrador"]`).
 
 ```bash
 # against the compose apps (container on each app's internal network; hub-web stopped during the suite)
-bash conformance/run.sh                 # ativos fornecedores servicos contratos
+bash conformance/run.sh                 # inventory suppliers servicedesk contratos
 # against any local app
 CONF_APP=contratos CONF_URL=http://127.0.0.1:9104 CONF_TOKEN=<token> CONF_DB_URL=<url> \
   python -m pytest conformance
@@ -1039,7 +1039,7 @@ repeating; body cap with `Idempotency-Key` (depends on each app's limit).
 | Heavy-operations semaphore | per process; with `UVICORN_WORKERS=N`, effective limit `N × HUB_HEAVY_MAX` |
 | Concurrency | 1 asyncio loop per process; heavy CPU in `asyncio.to_thread`; scales with `UVICORN_WORKERS` |
 | Tasks | `HUB_JOBS_MODE=process` in the image; `inline` in `hub dev` and tests |
-| Examples | `ativos`, `fornecedores`, `servicos`, `contratos`, `coletor` (`demo-apps-py/`) |
+| Examples | `inventory`, `suppliers`, `servicedesk`, `contratos`, `collector` (`demo-apps-py/`) |
 | `hub dev` | `hub dev --dir demo-apps-py/contratos --limits -- .venv/Scripts/python -m contratos` |
 
 Other languages: implement this contract and pass `conformance/run.sh` (create a

@@ -90,7 +90,7 @@ def test_bucket_vectors() -> None:
 def test_flag_evaluation_and_header() -> None:
     flag = {
         "key": "novo-painel",
-        "app": "ativos",
+        "app": "inventory",
         "kind": "boolean",
         "envs": {
             "producao": {
@@ -166,9 +166,9 @@ def test_user_digest_vector_and_hashed_rules_match() -> None:
 def test_redact_target_rules() -> None:
     from hub_sdk.telemetry import redact_target
 
-    assert redact_target("/ativos/itens/42?q=segredo#x") == "/ativos/itens/:id"
+    assert redact_target("/inventory/itens/42?q=segredo#x") == "/inventory/itens/:id"
     assert redact_target("/auth/reset/abc") == "/auth/reset/:redacted"
     assert redact_target("/contratos/u/ana@demo.local/perfil") == "/contratos/u/:email/perfil"
     assert redact_target("/x/0f8fad5b-d9cb-469f-a165-70867728950e") == "/x/:id"
     assert redact_target("/files/aB3dE5fG7hJ9kL1m/baixar") == "/files/:token/baixar"
-    assert redact_target("/servicos/lista/ordens") == "/servicos/lista/ordens"
+    assert redact_target("/servicedesk/lista/ordens") == "/servicedesk/lista/ordens"

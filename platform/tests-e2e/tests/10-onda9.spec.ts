@@ -45,7 +45,7 @@ test('onboarding: tour no primeiro acesso (teclado, interromper e retomar, pular
   await expect(page.locator('.hub-tour')).toHaveCount(0);
   // First steps: opening an app ticks the step by itself (server).
   await expect(page.locator('[data-widget="onboarding"]')).toBeVisible();
-  await openApp(page, '/apps/fornecedores/indicators');
+  await openApp(page, '/apps/suppliers/indicators');
   await page.goto('/');
   await expect(page.locator('li[data-step="open_app"]')).toHaveClass(/done/);
   // The operator (Power User) sees the administrator steps they can do.
@@ -67,13 +67,13 @@ test('onboarding: tour no primeiro acesso (teclado, interromper e retomar, pular
   await ctx.close();
 });
 
-test('inbox: aprovação do servicos de ponta a ponta (outbox → Inbox → decisão pelo canal interno → chamado)', async ({ browser }) => {
+test('inbox: aprovação do servicedesk de ponta a ponta (outbox → Inbox → decisão pelo canal interno → chamado)', async ({ browser }) => {
   test.setTimeout(180_000);
   const title = `Aprovação E2E ${RUN}`;
   // Operator opens a request that needs approval.
   const octx = await newRoleContext(browser, 'operador');
   const op = await octx.newPage();
-  await openApp(op, '/apps/servicos/requests?new=1');
+  await openApp(op, '/apps/servicedesk/requests?new=1');
   const form = op.locator('#ticket-new form');
   await form.locator('[name="title"]').fill(title);
   await form.locator('[name="category"]').selectOption('Acessos');
@@ -93,7 +93,7 @@ test('inbox: aprovação do servicos de ponta a ponta (outbox → Inbox → deci
   await ap.goto('/inbox?filter=approvals');
   const item = ap.locator('.hub-inbox-item').filter({ hasText: proto! });
   await expect(item).toBeVisible();
-  await expect(item.locator('a').first()).toHaveAttribute('href', new RegExp(`^/apps/servicos/requests\\?protocolo=${proto}`));
+  await expect(item.locator('a').first()).toHaveAttribute('href', new RegExp(`^/apps/servicedesk/requests\\?protocolo=${proto}`));
   await item.locator('[data-decide-comment]').fill('Liberado pelo E2E');
   await item.locator('button[data-decide="approve"]').click();
   await expect(ap.locator('.hub-inbox-item').filter({ hasText: proto! }).locator('.hub-approval')).toHaveAttribute('data-status', 'approved');
@@ -103,7 +103,7 @@ test('inbox: aprovação do servicos de ponta a ponta (outbox → Inbox → deci
   expect(mine?.approval?.can_decide ?? false).toBe(false);
 
   // The request changed in the app (the decision came back through /_hub/approvals) and the operator was notified.
-  await openApp(op, `/apps/servicos/requests?protocolo=${proto}`);
+  await openApp(op, `/apps/servicedesk/requests?protocolo=${proto}`);
   await expect(op.locator('#app-root')).toContainText('Em atendimento');
   await expect
     .poll(async () => (await inboxItems(opApi, 'notifications')).some((i) => i.title.includes(`${proto} aprovado`)), { timeout: 60_000 })
@@ -126,30 +126,30 @@ test('inbox: aprovação do servicos de ponta a ponta (outbox → Inbox → deci
 
 test('inbox: pedido de acesso a app fora da lista → administrador aprova → acesso liberado; preferências de canal', async ({ browser }) => {
   const admin = await apiAs('admin');
-  // Collaborator (reader) without the servicos app.
-  expect((await admin.put('/api/admin/roles/User/apps', { data: { apps: ['ativos', 'fornecedores', 'coletor'] } })).status()).toBe(200);
+  // Collaborator (reader) without the servicedesk app.
+  expect((await admin.put('/api/admin/roles/User/apps', { data: { apps: ['inventory', 'suppliers', 'collector'] } })).status()).toBe(200);
   const lctx = await newRoleContext(browser, 'leitor');
   const lp = await lctx.newPage();
   try {
-    expect((await lp.goto('/apps/servicos'))?.status()).toBe(403);
+    expect((await lp.goto('/apps/servicedesk'))?.status()).toBe(403);
     await lp.goto('/applications');
-    const card = lp.locator('.hub-locked[data-app="servicos"]');
+    const card = lp.locator('.hub-locked[data-app="servicedesk"]');
     await expect(card).toBeVisible();
     await card.locator('[data-request-access]').click();
     await expect(card).toContainText('Acesso solicitado');
     const req = await expect
-      .poll(async () => (await inboxItems(admin, 'approvals')).find((i) => i.kind === 'access' && i.app === 'servicos' && i.approval?.status === 'pending')?.id)
+      .poll(async () => (await inboxItems(admin, 'approvals')).find((i) => i.kind === 'access' && i.app === 'servicedesk' && i.approval?.status === 'pending')?.id)
       .toBeTruthy();
     void req;
-    const id = (await inboxItems(admin, 'approvals')).find((i) => i.kind === 'access' && i.app === 'servicos' && i.approval?.status === 'pending')!.id;
+    const id = (await inboxItems(admin, 'approvals')).find((i) => i.kind === 'access' && i.app === 'servicedesk' && i.approval?.status === 'pending')!.id;
     const r = await admin.post(`/api/me/inbox/${encodeURIComponent(id)}/decide`, { data: { decision: 'approve', comment: 'ok' } });
     expect(r.status(), JSON.stringify(await json(r))).toBe(200);
-    expect((await lp.goto('/apps/servicos'))?.status()).toBe(200);
+    expect((await lp.goto('/apps/servicedesk'))?.status()).toBe(200);
     const leitor = await apiAs('leitor');
     await expect.poll(async () => (await inboxItems(leitor)).some((i) => i.title.includes('Acesso a Central de Serviços liberado'))).toBe(true);
     // Revoke (administrator's Inbox).
     expect((await admin.post('/api/admin/grants/revoke', { data: { item: id } })).status()).toBe(200);
-    expect((await lp.goto('/apps/servicos'))?.status()).toBe(403);
+    expect((await lp.goto('/apps/servicedesk'))?.status()).toBe(403);
     // Channel preference: notifications outside the bell counter.
     await lp.goto('/account#prefs');
     await lp.locator('input[name="notification.in_app"]').uncheck();
@@ -176,7 +176,7 @@ test('busca ⌘K: plataforma + apps federados, teclado, listbox e buscas recente
   const listbox = dialog.getByRole('listbox');
   await expect(listbox.getByRole('option', { name: /Norte Tecnologia/ }).first()).toBeVisible({ timeout: 15_000 });
   await expect(listbox.getByRole('group').first()).toBeVisible();
-  // Group of the fornecedores app (federated result through /_hub/search).
+  // Group of the suppliers app (federated result through /_hub/search).
   await expect(dialog.locator('.hub-palette-group', { hasText: 'Rede de Fornecedores' })).toBeVisible();
   // Arrows move the active option (aria-activedescendant).
   await page.keyboard.press('ArrowDown');
@@ -187,7 +187,7 @@ test('busca ⌘K: plataforma + apps federados, teclado, listbox e buscas recente
   const id = await opt.getAttribute('id');
   for (let i = 0; i < 12 && (await input.getAttribute('aria-activedescendant')) !== id; i++) await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(/\/apps\/fornecedores\/indicators\?id=FOR-0284/);
+  await expect(page).toHaveURL(/\/apps\/suppliers\/indicators\?id=FOR-0284/);
   await expect(page.locator('#app-root .app-sidebar')).toBeVisible({ timeout: 30_000 });
   // Inside the app the palette uses the local index (CSP) and offers the full search.
   await page.keyboard.press('Control+k');
@@ -210,11 +210,11 @@ test('início: personalizar (remover, reordenar pelo teclado, adicionar), favori
   const api = await apiAs('admin');
   await api.delete('/api/me/home');
   await page.goto('/applications');
-  const star = page.locator('button[data-fav="servicos"]');
+  const star = page.locator('button[data-fav="servicedesk"]');
   if ((await star.getAttribute('aria-pressed')) !== 'true') await star.click();
   await expect(star).toHaveAttribute('aria-pressed', 'true');
   await page.goto('/');
-  await expect(page.locator('[data-widget="favorites"] a[href="/apps/servicos"]')).toBeVisible();
+  await expect(page.locator('[data-widget="favorites"] a[href="/apps/servicedesk"]')).toBeVisible();
   await page.locator('[data-home-customize]').click();
   await expect(page.locator('[data-home-editor]')).toBeVisible();
   // Remove "Recentes".
@@ -266,7 +266,7 @@ test('uso: card em Configurações (MAU, uso por app, buscas sem resultado), CSV
   await ctx.close();
 });
 
-test('tema escuro e idioma: menu do usuário persiste no servidor; en/es no shell e no ativos', async ({ browser }) => {
+test('tema escuro e idioma: menu do usuário persiste no servidor; en/es no shell e no inventory', async ({ browser }) => {
   const api = await apiAs('operador');
   const ctx = await newRoleContext(browser, 'operador');
   const page = await ctx.newPage();
@@ -309,10 +309,10 @@ test('tema escuro e idioma: menu do usuário persiste no servidor; en/es no shel
     await expect(page.locator('.platform-rail')).toContainText('Home');
     await expect(page.locator('h1.page-title')).toHaveText('Applications');
     // Translated Python fragment (x-hub-locale of the hub).
-    await openApp(page, '/apps/ativos/dashboard');
+    await openApp(page, '/apps/inventory/dashboard');
     await expect(page.locator('#app-root .page-title')).toHaveText('Overview');
     await expect(page.locator('#app-root')).toContainText('Back to platform');
-    await openApp(page, '/apps/ativos/settings');
+    await openApp(page, '/apps/inventory/settings');
     await expect(page.locator('#app-root .page-title')).toHaveText('Settings');
     // Automatic: follows the browser's Accept-Language (`es` was dropped in 10/2026: becomes en).
     await prefs(api, { lang: '' });
@@ -328,7 +328,7 @@ test('tema escuro e idioma: menu do usuário persiste no servidor; en/es no shel
 });
 
 // ---- Accessibility: axe (WCAG 2.2 AA) on the main pages, 2 themes × 2 languages ----------
-const PAGES = ['/', '/applications', '/inbox', '/search?q=norte', '/status', '/admin', '/admin/health', '/admin/connections', '/apps/ativos/assets', '/apps/servicos/requests', '/apps/fornecedores/indicators'];
+const PAGES = ['/', '/applications', '/inbox', '/search?q=norte', '/status', '/admin', '/admin/health', '/admin/connections', '/apps/inventory/assets', '/apps/servicedesk/requests', '/apps/suppliers/indicators'];
 
 async function axe(page: Page) {
   const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
@@ -346,7 +346,7 @@ for (const theme of ['light', 'dark'] as const) {
       const found: string[] = [];
       try {
         for (const p of PAGES) {
-          if (/^\/(ativos|servicos|fornecedores)\//.test(p)) await openApp(page, p);
+          if (/^\/(inventory|servicedesk|suppliers)\//.test(p)) await openApp(page, p);
           else await page.goto(p);
           await expect(page.locator('html')).toHaveAttribute('lang', lang);
           for (const v of await axe(page)) found.push(`${p} ${v.id} (${v.nodes.length}): ${v.nodes.slice(0, 3).map((n) => n.target.join(' ')).join(' | ')}`);
@@ -381,8 +381,8 @@ test('acessibilidade: pular para o conteúdo, foco na troca de seção e Esc nos
   await expect(page.locator('.hub-user-menu')).not.toHaveAttribute('open', '');
   await expect(page.locator('.hub-user-menu summary')).toBeFocused();
   // Section change in an app: focus goes to the title of the new page.
-  await openApp(page, '/apps/ativos/dashboard');
-  await page.locator('.sidebar-nav a.nav-item[href="/apps/ativos/assets"]').click();
-  await expect(page).toHaveURL(/\/apps\/ativos\/assets$/);
+  await openApp(page, '/apps/inventory/dashboard');
+  await page.locator('.sidebar-nav a.nav-item[href="/apps/inventory/assets"]').click();
+  await expect(page).toHaveURL(/\/apps\/inventory\/assets$/);
   await expect.poll(() => page.evaluate(() => /^H[12]$/.test(document.activeElement?.tagName || '') || document.activeElement?.id === 'app-root')).toBe(true);
 });

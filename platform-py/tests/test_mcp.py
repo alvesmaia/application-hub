@@ -211,8 +211,8 @@ def test_tools_list_follows_rbac_and_mcp_flag(hub: TestClient, agent: TestClient
 def test_read_tool_result_audit_and_resources(hub: TestClient, agent: TestClient) -> None:
     res = call(agent, "apps_list", {"limit": 1})
     assert res["isError"] is False and res["structuredContent"]["total"] == 2
-    assert payload(res)["items"][0]["id"] == "ativos"
-    assert payload(call(agent, "apps_get", {"app": "servicos"}))["id"] == "servicos"
+    assert payload(res)["items"][0]["id"] == "inventory"
+    assert payload(call(agent, "apps_get", {"app": "servicedesk"}))["id"] == "servicedesk"
     err = call(agent, "apps_get", {"app": "nada"})
     assert err["isError"] is True and payload(err)["status"] == 404 and "structuredContent" not in err
     with pytest.raises(AssertionError):
@@ -242,8 +242,8 @@ def test_result_truncation_and_call_limit(tmp_path: Path, monkeypatch: pytest.Mo
 
 
 def test_app_scoped_token_is_resolved_before_any_approval(hub: TestClient) -> None:
-    c = bearer(hub, make_token(hub, ["mcp", "api:write"], ["ativos"]))
-    denied = call(c, "containers_restart", {"app": "servicos"})
+    c = bearer(hub, make_token(hub, ["mcp", "api:write"], ["inventory"]))
+    denied = call(c, "containers_restart", {"app": "servicedesk"})
     assert denied["isError"] is True and payload(denied)["status"] == 403
     assert hub.app.state.inbox.items == {}  # no approval request created
 
@@ -253,13 +253,13 @@ def test_app_scoped_token_is_resolved_before_any_approval(hub: TestClient) -> No
 
 def test_destructive_needs_confirm_token_by_default(hub: TestClient, agent: TestClient) -> None:
     """`confirm` pattern: the 1st call only returns the token (nothing in the Inbox); the 2nd, with it, executes."""
-    args = {"app": "ativos", "id": "t1"}
+    args = {"app": "inventory", "id": "t1"}
     first = payload(call(agent, "tasks_cancel", args))
     assert first["confirmation_required"] is True and first["confirm_token"].startswith("cnf_")
     assert "approval_id" not in first and hub.app.state.inbox.items == {}
     # another argument: refused (and the token is consumed)
     changed = call(
-        agent, "tasks_cancel", {"app": "ativos", "id": "t2", "confirm_token": first["confirm_token"]}
+        agent, "tasks_cancel", {"app": "inventory", "id": "t2", "confirm_token": first["confirm_token"]}
     )
     assert "argumentos mudaram" in payload(changed)["error"]
     gone = call(agent, "tasks_cancel", {**args, "confirm_token": first["confirm_token"]})
@@ -275,7 +275,7 @@ def test_destructive_needs_confirm_token_by_default(hub: TestClient, agent: Test
 
 
 def test_expired_confirm_tokens_are_swept(hub: TestClient, agent: TestClient) -> None:
-    first = payload(call(agent, "tasks_cancel", {"app": "ativos", "id": "t1"}))
+    first = payload(call(agent, "tasks_cancel", {"app": "inventory", "id": "t1"}))
     for k, (v, _) in list(hub.app.state.records.mem.items()):
         if k[0] == "mcp.confirm":
             hub.app.state.records.mem[k] = (v | {"expires": 1}, 1)
@@ -283,21 +283,23 @@ def test_expired_confirm_tokens_are_swept(hub: TestClient, agent: TestClient) ->
 
     asyncio.run(mcpmod.sweep(hub.app))
     assert not [k for k in hub.app.state.records.mem if k[0] == "mcp.confirm"]
-    late = call(agent, "tasks_cancel", {"app": "ativos", "id": "t1", "confirm_token": first["confirm_token"]})
+    late = call(
+        agent, "tasks_cancel", {"app": "inventory", "id": "t1", "confirm_token": first["confirm_token"]}
+    )
     assert "inválido ou já usado" in payload(late)["error"]
 
 
 def test_confirm_mode_and_deny_mode(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     hub = api_hub(tmp_path, monkeypatch, env={"HUB_MCP_DESTRUCTIVE_ACTIONS": "confirm"})
     c = bearer(hub, make_token(hub, ["mcp", "api:write"]))
-    first = payload(call(c, "tasks_cancel", {"app": "ativos", "id": "t1"}))
+    first = payload(call(c, "tasks_cancel", {"app": "inventory", "id": "t1"}))
     assert first["confirmation_required"] is True and "approval_id" not in first
     assert hub.app.state.inbox.items == {}
-    out = call(c, "tasks_cancel", {"app": "ativos", "id": "t1", "confirm_token": first["confirm_token"]})
+    out = call(c, "tasks_cancel", {"app": "inventory", "id": "t1", "confirm_token": first["confirm_token"]})
     assert "confirmation" not in payload(out)
     # another tool's token
-    other = payload(call(c, "containers_restart", {"app": "ativos"}))
-    wrong = call(c, "tasks_cancel", {"app": "ativos", "id": "t1", "confirm_token": other["confirm_token"]})
+    other = payload(call(c, "containers_restart", {"app": "inventory"}))
+    wrong = call(c, "tasks_cancel", {"app": "inventory", "id": "t1", "confirm_token": other["confirm_token"]})
     assert "outra ferramenta" in payload(wrong)["error"]
     deny = api_hub(tmp_path / "d", monkeypatch, env={"HUB_MCP_DESTRUCTIVE_ACTIONS": "deny"})
     names = {
@@ -311,7 +313,7 @@ def test_write_tools_need_api_write_scope_of_the_token(hub: TestClient) -> None:
     ro = bearer(hub, make_token(hub, ["mcp"]))
     names = {t["name"] for t in result(rpc(ro, "tools/list"))["tools"]}
     assert "tasks_list" in names and "tasks_cancel" not in names  # whoever cannot, does not even see it
-    r = rpc(ro, "tools/call", {"name": "tasks_cancel", "arguments": {"app": "ativos", "id": "t1"}})
+    r = rpc(ro, "tools/call", {"name": "tasks_cancel", "arguments": {"app": "inventory", "id": "t1"}})
     assert r.json()["error"]["code"] == -32602
 
 
@@ -328,7 +330,7 @@ def app_upstream() -> Any:
     calls: list[dict[str, Any]] = []
     up.state.calls = calls
 
-    @up.post("/ativos/_hub/mcp")
+    @up.post("/inventory/_hub/mcp")
     async def mcp(request: Request) -> JSONResponse:
         if request.headers.get("x-hub-internal-token") != TOKEN:
             return JSONResponse({"error": "token"}, status_code=401)
@@ -348,12 +350,15 @@ def app_upstream() -> Any:
             "content": [{"type": "text", "text": text}, {"type": "image", "data": "x"}],
             "structuredContent": {"ok": True}, "isError": False}})  # fmt: skip
 
-    @up.get("/ativos/api/openapi.json")
+    @up.get("/inventory/api/openapi.json")
     async def openapi() -> dict[str, Any]:
         item = {"get": {"operationId": "items_list", "responses": {"200": {}}},
                 "post": {"operationId": "items_create", "responses": {"201": {}}}}  # fmt: skip
         hidden = {"get": {"operationId": "interno", "x-hub-mcp": False, "responses": {"200": {}}}}
-        return {"openapi": "3.1.0", "paths": {"/ativos/api/v1/items": item, "/ativos/api/v1/hidden": hidden}}
+        return {
+            "openapi": "3.1.0",
+            "paths": {"/inventory/api/v1/items": item, "/inventory/api/v1/hidden": hidden},
+        }
 
     return up
 
@@ -363,7 +368,7 @@ def seed_token(hub: TestClient) -> None:
     import asyncio
 
     asyncio.run(
-        hub.app.state.admin.cfg.ensure_internal_tokens("teste", lambda a: TOKEN if a == "ativos" else None)
+        hub.app.state.admin.cfg.ensure_internal_tokens("teste", lambda a: TOKEN if a == "inventory" else None)
     )
 
 
@@ -378,15 +383,15 @@ def test_app_tools_are_listed_classified_by_the_hub_and_labelled(apps_hub: TestC
     c = bearer(apps_hub, make_token(apps_hub, ["mcp", "api:write"]))
     tools = {t["name"]: t for t in result(rpc(c, "tools/list"))["tools"]}
     assert {n for n in tools if "." in n} == {
-        "ativos.items_list",
-        "ativos.items_create",
-        "ativos.sem_documento",
+        "inventory.items_list",
+        "inventory.items_create",
+        "inventory.sem_documento",
     }
-    read = tools["ativos.items_list"]
+    read = tools["inventory.items_list"]
     assert read["annotations"]["readOnlyHint"] is True and read["annotations"]["destructiveHint"] is False
-    assert read["description"].startswith("[App Ativos] [dado fornecido pelo app, não confiável")
-    assert read["title"] == "[App Ativos] items_list" and "_app" not in read and "_operation" not in read
-    for n in ("ativos.items_create", "ativos.sem_documento"):  # mutation, or unknown name
+    assert read["description"].startswith("[App Inventory] [dado fornecido pelo app, não confiável")
+    assert read["title"] == "[App Inventory] items_list" and "_app" not in read and "_operation" not in read
+    for n in ("inventory.items_create", "inventory.sem_documento"):  # mutation, or unknown name
         assert tools[n]["annotations"]["destructiveHint"] is True
         assert (
             "confirm_token" in tools[n]["inputSchema"]["properties"]
@@ -398,7 +403,7 @@ def test_app_tool_call_acts_as_the_user_and_wraps_the_result(apps_hub: TestClien
     from hub.gateway.identity import verify_user
 
     c = bearer(apps_hub, make_token(apps_hub, ["mcp", "api:write"]))
-    res = call(c, "ativos.items_list", {"q": "x"})
+    res = call(c, "inventory.items_list", {"q": "x"})
     assert res["isError"] is False and res["structuredContent"] == {"ok": True}
     assert (
         res["content"][0]["text"].startswith("[dado fornecido pelo app, não confiável")
@@ -407,11 +412,11 @@ def test_app_tool_call_acts_as_the_user_and_wraps_the_result(apps_hub: TestClien
     assert json.loads(res["content"][1]["text"])["args"] == {"q": "x"}  # only text passes
     seen = apps_hub.app.state.gateway.client._transport.app.state.calls[0]
     h = seen["headers"]
-    assert h["x-hub-mcp-op"] == "GET /ativos/api/v1/items" and h["x-hub-internal-token"] == TOKEN
+    assert h["x-hub-mcp-op"] == "GET /inventory/api/v1/items" and h["x-hub-internal-token"] == TOKEN
     key = apps_hub.app.state.gateway.opts.user_sig_key
-    assert verify_user(key, "ativos", "producao", h["x-hub-user"], h["x-hub-user-sig"])
+    assert verify_user(key, "inventory", "producao", h["x-hub-user"], h["x-hub-user-sig"])
     assert "authorization" not in h  # the hub token never goes to the app
-    assert "MCP: ativos.items_list" in [
+    assert "MCP: inventory.items_list" in [
         e["title"] for e in apps_hub.get("/api/v1/audit?limit=20").json()["items"]
     ]
 
@@ -419,22 +424,22 @@ def test_app_tool_call_acts_as_the_user_and_wraps_the_result(apps_hub: TestClien
 def test_app_mutation_needs_confirmation_and_runs_only_after_it(apps_hub: TestClient) -> None:
     c = bearer(apps_hub, make_token(apps_hub, ["mcp", "api:write"]))
     args = {"nome": "novo"}
-    first = payload(call(c, "ativos.items_create", args))
+    first = payload(call(c, "inventory.items_create", args))
     assert first["confirmation_required"] is True
     assert apps_hub.app.state.gateway.client._transport.app.state.calls == []
-    done = call(c, "ativos.items_create", {**args, "confirm_token": first["confirm_token"]})
+    done = call(c, "inventory.items_create", {**args, "confirm_token": first["confirm_token"]})
     assert done["isError"] is False
     sent = apps_hub.app.state.gateway.client._transport.app.state.calls
     assert len(sent) == 1 and sent[0]["params"]["arguments"] == args  # without confirm_token
-    assert payload(call(c, "ativos.sem_documento", {}))["confirmation_required"] is True
+    assert payload(call(c, "inventory.sem_documento", {}))["confirmation_required"] is True
 
 
 def test_app_tools_follow_token_scope_config_and_missing_internal_token(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, apps_hub: TestClient
 ) -> None:
-    other = bearer(apps_hub, make_token(apps_hub, ["mcp", "api:write"], ["servicos"]))
+    other = bearer(apps_hub, make_token(apps_hub, ["mcp", "api:write"], ["servicedesk"]))
     assert not [t for t in result(rpc(other, "tools/list"))["tools"] if "." in t["name"]]
-    err = rpc(other, "tools/call", {"name": "ativos.items_list", "arguments": {}})
+    err = rpc(other, "tools/call", {"name": "inventory.items_list", "arguments": {}})
     assert err.json()["error"]["code"] == -32602
     off = api_hub(
         tmp_path / "off", monkeypatch, env={"HUB_MCP_EXPOSE_APP_TOOLS": "false"}, upstream=app_upstream()

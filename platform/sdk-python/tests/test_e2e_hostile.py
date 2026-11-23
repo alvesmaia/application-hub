@@ -9,15 +9,17 @@ from hub_sdk import e2e_hostile
 def test_routes_off_by_default_and_on_with_env(monkeypatch):
     monkeypatch.delenv(e2e_hostile.ENV, raising=False)
     off = FastAPI()
-    e2e_hostile.install(off, "ativos")
-    assert TestClient(off).get("/ativos/e2e-hostil").status_code == 404
+    e2e_hostile.install(off, "inventory")
+    assert TestClient(off).get("/inventory/e2e-hostil").status_code == 404
 
     monkeypatch.setenv(e2e_hostile.ENV, "1")
     on = FastAPI()
-    e2e_hostile.install(on, "ativos")
+    e2e_hostile.install(on, "inventory")
     c = TestClient(on)
-    page = c.get("/ativos/e2e-hostil")
-    assert page.status_code == 200 and "data-e2e-ok" in page.text and "/apps/ativos/e2e-hostil" in page.text
-    assert "data-e2e-posted-own" in c.post("/ativos/e2e-hostil").text
-    assert c.get("/ativos/assets/e2e-approved.js").text == e2e_hostile.APPROVED_JS
-    assert c.get("/ativos/assets/e2e-tampered.js").text == e2e_hostile.TAMPERED_JS
+    page = c.get("/inventory/e2e-hostil")
+    assert (
+        page.status_code == 200 and "data-e2e-ok" in page.text and "/apps/inventory/e2e-hostil" in page.text
+    )
+    assert "data-e2e-posted-own" in c.post("/inventory/e2e-hostil").text
+    assert c.get("/inventory/assets/e2e-approved.js").text == e2e_hostile.APPROVED_JS
+    assert c.get("/inventory/assets/e2e-tampered.js").text == e2e_hostile.TAMPERED_JS

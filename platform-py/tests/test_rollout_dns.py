@@ -45,13 +45,13 @@ def fake(hub: TestClient) -> FD:
 
 
 def test_candidate_answers_to_its_final_name_and_staging_never_takes_productions_aliases() -> None:
-    prod = {"Name": "/app-hub-app-ativos", "Id": "0123456789abcdef",
-            "NetworkSettings": {"Networks": {"net": {"Aliases": ["ativos-svc", "app-hub-app-ativos"]}}}}  # fmt: skip
-    assert ro.candidate_aliases(prod, ["net"], "app-hub-app-ativos") == {
-        "net": ["ativos-svc", "app-hub-app-ativos"]
+    prod = {"Name": "/app-hub-app-inventory", "Id": "0123456789abcdef",
+            "NetworkSettings": {"Networks": {"net": {"Aliases": ["inventory-svc", "app-hub-app-inventory"]}}}}  # fmt: skip
+    assert ro.candidate_aliases(prod, ["net"], "app-hub-app-inventory") == {
+        "net": ["inventory-svc", "app-hub-app-inventory"]
     }
-    assert ro.candidate_aliases(prod, ["net"], "app-hub-app-ativos__staging") == {
-        "net": ["app-hub-app-ativos__staging"]
+    assert ro.candidate_aliases(prod, ["net"], "app-hub-app-inventory__staging") == {
+        "net": ["app-hub-app-inventory__staging"]
     }
     assert ro.candidate_aliases({}, ["default", "bridge"], "x") == {}  # Docker refuses aliases there
 
@@ -64,14 +64,16 @@ def test_the_candidate_is_created_with_the_final_name_as_alias(hub: TestClient, 
     assert r.json()["status"] == m.IMPLANTADO, r.text
     create = next(c for c in fake.calls if c[0] == "create")
     assert create[3]["networking_config"]["EndpointsConfig"]["app-hub_default"]["Aliases"] == [
-        "app-hub-app-ativos"
+        "app-hub-app-inventory"
     ]
 
 
 def test_a_final_name_the_hub_cannot_reach_fails_the_deploy_with_the_cause(hub: TestClient, fake: FD) -> None:
-    UNRESOLVED.add("app-hub-app-ativos")
+    UNRESOLVED.add("app-hub-app-inventory")
     dep = upload(hub).json()["result"]["deployment"]
     r = hub.post(f"/api/ops/deployments/{dep['id']}/approve?wait=true", headers=JSON).json()
-    assert r["status"] == m.FALHOU and "app-hub-app-ativos" in r["note"] and "DNS" in r["note"], r
+    assert r["status"] == m.FALHOU and "app-hub-app-inventory" in r["note"] and "DNS" in r["note"], r
     reg = hub.app.state.gateway.registry  # type: ignore[attr-defined]
-    assert reg.get("ativos").upstream == "http://app-hub-app-ativos__new:8080"  # the route that still answers
+    assert (
+        reg.get("inventory").upstream == "http://app-hub-app-inventory__new:8080"
+    )  # the route that still answers

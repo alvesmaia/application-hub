@@ -341,7 +341,7 @@ def send(
             http.post(m["path"], files={f["field"]: (f["name"], content.encode(), f["type"])}, headers=h)
         )
     if "json" in m:
-        # Wave 13: mutation through the app's JSON API (e.g. coletor, POST /coletor/api/v1/counts).
+        # Wave 13: mutation through the app's JSON API (e.g. collector, POST /collector/api/v1/counts).
         body = dict(m["json"])
         if vary:
             body[m["vary"]] = str(body.get(m["vary"], "")) + " (variante)"

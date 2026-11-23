@@ -96,7 +96,7 @@ async def test_file_locks_distributed_locks_jobs_kv_replicas(db: StateDb) -> Non
         assert (await db.file_gens())["counter"] == 1
     async with db.file_lock("counter"):
         assert (await db.file_gens())["counter"] == 1
-    async with db.dlock("app:ativos"), db.dlock("app:ativos", wait=False) as got:
+    async with db.dlock("app:inventory"), db.dlock("app:inventory", wait=False) as got:
         assert not got
     async with db.dlock("app:backup", shared=True), db.dlock("app:backup", shared=True, wait=False) as got:
         assert got

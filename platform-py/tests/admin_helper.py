@@ -20,7 +20,7 @@ from hub.gateway.proxy import Gateway, GwOptions
 from hub.gateway.registry import AppEntry, Registry
 
 HDR = {"origin": "http://testserver", "sec-fetch-site": "same-origin"}
-APPS = ("ativos", "coletor", "fornecedores", "servicos")
+APPS = ("inventory", "collector", "suppliers", "servicedesk")
 _PH = PasswordHasher(time_cost=2, memory_cost=19456, parallelism=1, hash_len=32, salt_len=16)
 PASSWORD = "senha-forte-123"
 

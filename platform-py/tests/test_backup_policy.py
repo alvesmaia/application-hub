@@ -11,8 +11,8 @@ GOOD = {"schedule": "Diário 02:00", "keep": 7, "volumes": ["data"], "destinatio
 
 
 def test_valid_policy_gets_defaults() -> None:
-    pol = parse_policy("ativos", GOOD)
-    assert pol == {"app": "ativos", "schedule": "Diário 02:00", "keep": 7, "volumes": ["data"], "hooks": False,
+    pol = parse_policy("inventory", GOOD)
+    assert pol == {"app": "inventory", "schedule": "Diário 02:00", "keep": 7, "volumes": ["data"], "hooks": False,
                    "destination": "local", "envs": ["producao"], "missed": "executar", "jitter_s": 20, "tz": ""}  # fmt: skip
 
 
@@ -32,4 +32,4 @@ def test_valid_policy_gets_defaults() -> None:
 )
 def test_invalid_field_is_named(patch: dict[str, object], needle: str) -> None:
     with pytest.raises(OpsError, match=needle):
-        parse_policy("ativos", GOOD | patch)
+        parse_policy("inventory", GOOD | patch)

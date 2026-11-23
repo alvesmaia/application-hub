@@ -126,7 +126,7 @@ async def service_worker(w: WebCtx = Depends(web)) -> Response:
 @router.get("/manifest.webmanifest")
 async def manifest(request: Request, start: str = "", w: WebCtx = Depends(web)) -> JSONResponse:
     lang = resolve("", request.headers.get("accept-language"))
-    ents = sorted(w.gateway.registry.entries(), key=lambda e: (e.id != "coletor", e.id))
+    ents = sorted(w.gateway.registry.entries(), key=lambda e: (e.id != "collector", e.id))
     s = start.strip()
     sid = s.removeprefix("/apps/") if s.startswith("/apps/") else s.removeprefix("/")
     brand = w.settings.brand

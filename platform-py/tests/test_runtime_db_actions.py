@@ -27,22 +27,23 @@ def detail(page: str, key: str) -> str:
 
 
 def test_app_details_have_db_and_token_actions(hub: TestClient) -> None:
-    ativos = detail(hub.get("/admin/runtime").text, "ativos|producao")
-    assert 'data-ops-provision="ativos"' in ativos and "Provisionar banco" in ativos
-    assert 'data-ops-provision="ativos" data-env="staging"' in ativos
-    assert 'data-ops-rotate="ativos|token"' in ativos
-    assert 'data-ops-rotate="ativos|database"' not in ativos  # no database yet
+    inventory = detail(hub.get("/admin/runtime").text, "inventory|producao")
+    assert 'data-ops-provision="inventory"' in inventory and "Provisionar banco" in inventory
+    assert 'data-ops-provision="inventory" data-env="staging"' in inventory
+    assert 'data-ops-rotate="inventory|token"' in inventory
+    assert 'data-ops-rotate="inventory|database"' not in inventory  # no database yet
     assert (
-        'data-requires="editar_configuracoes"' in ativos and 'data-requires="gerenciar_variaveis"' in ativos
+        'data-requires="editar_configuracoes"' in inventory
+        and 'data-requires="gerenciar_variaveis"' in inventory
     )
 
 
 def test_app_with_database_can_check_and_rotate_its_password(hub: TestClient) -> None:
-    var = {"name": "DB_ATIVOS", "kind": "connection_string", "inject_as": "HUB_DB_URL", "value": "postgres://u:p@h/db",
-           "bindings": [{"app": "ativos", "env": "producao"}]}  # fmt: skip
+    var = {"name": "DB_INVENTORY", "kind": "connection_string", "inject_as": "HUB_DB_URL", "value": "postgres://u:p@h/db",
+           "bindings": [{"app": "inventory", "env": "producao"}]}  # fmt: skip
     assert hub.post("/api/admin/env", json=var).status_code == 201
-    ativos = detail(hub.get("/admin/runtime").text, "ativos|producao")
-    assert "Verificar banco" in ativos and 'data-ops-rotate="ativos|database"' in ativos
+    inventory = detail(hub.get("/admin/runtime").text, "inventory|producao")
+    assert "Verificar banco" in inventory and 'data-ops-rotate="inventory|database"' in inventory
 
 
 def test_platform_containers_have_no_db_actions(hub: TestClient) -> None:
@@ -64,5 +65,5 @@ def test_messages_point_to_the_app_details() -> None:
 
 
 def test_rotate_error_names_the_new_place(hub: TestClient) -> None:
-    r = hub.post("/api/ops/rotate/coletor/database", json={}, headers={"accept-language": "en"})
+    r = hub.post("/api/ops/rotate/collector/database", json={}, headers={"accept-language": "en"})
     assert r.status_code == 409 and "Containers › app details" in r.text

@@ -129,7 +129,7 @@ test.describe('celular 390×844', () => {
   });
 
   test('app: barra "App · Seção" abre as seções como painel, sem estouro horizontal @core', async ({ page }) => {
-    await page.goto('/apps/ativos');
+    await page.goto('/apps/inventory');
     await expect(page.locator('#app-root .app-sidebar')).toBeAttached({ timeout: 30_000 });
     await expect(page.locator('#app-root .component-loading')).toHaveCount(0, { timeout: 30_000 });
     await expect(page.locator('#app-root .app-sidebar')).not.toBeInViewport();
@@ -152,7 +152,7 @@ test.describe('celular 390×844', () => {
   });
 
   test('app: o documento rola (puxar para atualizar), sem trava depois de abrir e fechar menus @core', async ({ page }) => {
-    await page.goto('/apps/ativos');
+    await page.goto('/apps/inventory');
     await expect(page.locator('#app-root .app-sidebar')).toBeAttached({ timeout: 30_000 });
     await expect(page.locator('#app-root .component-loading')).toHaveCount(0, { timeout: 30_000 });
     // Long content guaranteed (the Ativos list is already long; reinforce if needed).
@@ -267,7 +267,7 @@ for (const w of [1024, 1280]) {
 
 test('app a 800: barra "App · Seção" no lugar do sidebar em coluna', async ({ page }) => {
   await page.setViewportSize({ width: 800, height: 900 });
-  await page.goto('/apps/ativos');
+  await page.goto('/apps/inventory');
   await expect(page.locator('#app-root .component-loading')).toHaveCount(0, { timeout: 30_000 });
   const sb = page.locator('#app-root .app-sidebar');
   await expect(sb).toBeHidden();

@@ -15,7 +15,7 @@ from hub.ux.inbox import item_of
 def _notices(client: TestClient, n: int) -> None:
     for i in range(n):
         item = item_of(
-            "notification", "servicos", f"Aviso N{i:02d}", source=f"s:n{i}", to_roles=["Administrador"]
+            "notification", "servicedesk", f"Aviso N{i:02d}", source=f"s:n{i}", to_roles=["Administrador"]
         )
         client.app.state.inbox.push(item)  # type: ignore[attr-defined]
 

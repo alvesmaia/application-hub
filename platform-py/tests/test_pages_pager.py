@@ -36,7 +36,7 @@ def test_backups_paginates_history(hub: TestClient) -> None:
     store = hub.app.state.ops  # type: ignore[attr-defined]
     d = store.read()
     d["backups"] = [
-        {"id": i, "app": "ativos", "kind": "Backup", "size": 0, "status": "Falhou", "at": 1_700_000_000_000 + i,
+        {"id": i, "app": "inventory", "kind": "Backup", "size": 0, "status": "Falhou", "at": 1_700_000_000_000 + i,
          "detail": f"falha-{i:02d}"}
         for i in range(30)
     ]  # fmt: skip

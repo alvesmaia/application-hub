@@ -124,10 +124,10 @@ def test_every_build_gets_the_proxy_ca_and_mirrors(tmp_path: Path) -> None:
 DOCKERFILES = [
     "platform-py/Dockerfile",
     "platform-py/infra/minio/Dockerfile",
-    "platform/demo-apps-py/ativos/Dockerfile",
-    "platform/demo-apps-py/fornecedores/Dockerfile",
-    "platform/demo-apps-py/servicos/Dockerfile",
-    "platform/Dockerfile.coletor",
+    "platform/demo-apps-py/inventory/Dockerfile",
+    "platform/demo-apps-py/suppliers/Dockerfile",
+    "platform/demo-apps-py/servicedesk/Dockerfile",
+    "platform/Dockerfile.collector",
 ]
 
 

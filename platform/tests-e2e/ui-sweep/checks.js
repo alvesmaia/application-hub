@@ -237,7 +237,7 @@
     // 7b. Wave 13: apps live at /apps/{id}/… — no link/form/behavior to the
     // old path /{id}… (ids: the known apps + the app of the current page).
     {
-      const ids = new Set(['ativos', 'fornecedores', 'servicos', 'coletor']);
+      const ids = new Set(['inventory', 'suppliers', 'servicedesk', 'collector']);
       const cur = document.querySelector('script[data-hub-app]');
       if (cur && cur.dataset.hubApp) ids.add(cur.dataset.hubApp);
       const attrs = ['href', 'action', 'formaction', 'data-hub-get', 'data-hub-post', 'data-hub-poll'];

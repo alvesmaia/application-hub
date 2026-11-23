@@ -28,7 +28,7 @@ PG = {
     "database": "vendas",
     "username": "leitor",
     "secret": PASSWORD,
-    "bindings": [{"app": "ativos", "env": "producao"}],
+    "bindings": [{"app": "inventory", "env": "producao"}],
 }
 
 
@@ -69,7 +69,7 @@ def fake(hub: TestClient, name: str) -> SqliteBackend:
 
 
 def token_of(hub: TestClient) -> str:
-    return str(run(hub.app.state.admin.cfg.managed_var("HUB_STORAGE_TOKEN_ATIVOS_PRODUCAO"))["value"])  # type: ignore[attr-defined]
+    return str(run(hub.app.state.admin.cfg.managed_var("HUB_STORAGE_TOKEN_INVENTORY_PRODUCAO"))["value"])  # type: ignore[attr-defined]
 
 
 # ---- regras puras -------------------------------------------------------------------------------
@@ -190,7 +190,7 @@ def test_broker_sql_query_limits_and_audit_without_data(hub: TestClient) -> None
     hub.post("/api/admin/connections", json={**PG, "max_rows": 5})
     hub.post(
         "/api/admin/connections",
-        json={**PG, "name": "outro", "bindings": [{"app": "coletor", "env": "producao"}]},
+        json={**PG, "name": "outro", "bindings": [{"app": "collector", "env": "producao"}]},
     )
     fake(hub, "vendas-bi")
     b = TestClient(broker_mod.build_broker(hub.app.state.conns, hub.app.state.admin, b"k" * 32))  # type: ignore[attr-defined]

@@ -9,7 +9,7 @@ test.use({ storageState: stateFile('admin') });
 test('aplicações: balão da stack só no "i" (hover, foco, toque; Esc fecha) @core', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/applications');
-  const card = page.locator('.app-card[data-app="ativos"]');
+  const card = page.locator('.app-card[data-app="inventory"]');
   const stack = card.locator('.hub-stack');
   const t = card.locator('.hub-stack-toggle');
   await expect(stack).toBeHidden();
@@ -25,11 +25,11 @@ test('aplicações: balão da stack só no "i" (hover, foco, toque; Esc fecha) @
   await expect(stack).toContainText(/API ligada · MCP ligado/);
   await expect(stack).toContainText(/v\d+\.\d+\.\d+/);
   await expect(card.locator('.open-link')).toBeVisible();
-  const coletor = page.locator('.app-card[data-app="coletor"]');
-  if (await coletor.count()) {
-    await coletor.locator('.hub-stack-toggle').hover();
-    await expect(coletor.locator('.hub-stack')).toContainText('Python 3.12 · FastAPI');
-    await expect(coletor.locator('.hub-stack-chip')).toContainText(['python-barcode', 'segno']);
+  const collector = page.locator('.app-card[data-app="collector"]');
+  if (await collector.count()) {
+    await collector.locator('.hub-stack-toggle').hover();
+    await expect(collector.locator('.hub-stack')).toContainText('Python 3.12 · FastAPI');
+    await expect(collector.locator('.hub-stack-chip')).toContainText(['python-barcode', 'segno']);
     await page.waitForTimeout(300); // end of the transition
     fs.mkdirSync(path.join(__dirname, '..', '..', 'dist'), { recursive: true });
     await page.screenshot({ path: path.join(__dirname, '..', '..', 'dist', 'applications-hover.png') });

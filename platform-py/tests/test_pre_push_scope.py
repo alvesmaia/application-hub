@@ -32,7 +32,7 @@ def test_light_pushes_skip_the_full_suite() -> None:
 def test_code_still_runs_the_full_suite() -> None:
     for path in ("platform-py/hub/gate.py", "platform-py/hub/web/templates/base.html", "platform/assets/shell/hub.css",
                  "platform-py/docker-compose.yml", "platform-py/scripts/install.sh", "platform-py/tests/test_x.py",
-                 "platform/demo-apps-py/automacoes/src/automacoes/app.py", "platform/sdk-python/README.md"):  # fmt: skip
+                 "platform/demo-apps-py/automations/src/automations/app.py", "platform/sdk-python/README.md"):  # fmt: skip
         assert _runs_full(path) or path.endswith(".md"), path
 
 

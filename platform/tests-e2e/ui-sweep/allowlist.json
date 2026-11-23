@@ -62,9 +62,9 @@
     },
     {
       "check": "console",
-      "route": "^/apps/servicos(/|$)",
+      "route": "^/apps/servicedesk(/|$)",
       "message": "e2e-tampered|integrity",
-      "reason": "Dado de teste: o E2E de scripts de app (14-onda12) deixou aprovado em 'servicos' um script adulterado de propósito; o navegador recusa pelo SRI (é a defesa funcionando). Sai quando o estado de teste for limpo."
+      "reason": "Dado de teste: o E2E de scripts de app (14-onda12) deixou aprovado em 'servicedesk' um script adulterado de propósito; o navegador recusa pelo SRI (é a defesa funcionando). Sai quando o estado de teste for limpo."
     },
     {
       "check": "tema-padrao",

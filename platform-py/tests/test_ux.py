@@ -58,19 +58,21 @@ def test_home_layout_prefs_roundtrip(client: TestClient) -> None:
 
 def test_favorites_and_catalog(client: TestClient) -> None:
     assert 'aria-pressed="false"' in client.get("/applications").text
-    r = client.put("/api/me/favorites/ativos", json={"on": True}, headers=HDR)
-    assert r.json() == {"ok": True, "favorites": ["ativos"]}
+    r = client.put("/api/me/favorites/inventory", json={"on": True}, headers=HDR)
+    assert r.json() == {"ok": True, "favorites": ["inventory"]}
     page = client.get("/applications").text
     assert 'class="icon-button hub-star on"' in page
     assert "Tirar Gestão de Ativos dos favoritos" in page
-    assert 'class="hub-fav" href="/apps/ativos"' in client.get("/").text
+    assert 'class="hub-fav" href="/apps/inventory"' in client.get("/").text
     assert client.put("/api/me/favorites/nope", json={"on": True}, headers=HDR).status_code == 403
-    assert client.put("/api/me/favorites/ativos", json={"on": False}, headers=HDR).json()["favorites"] == []
-    assert client.put("/api/me/favorites/ativos", json={}, headers=HDR).status_code == 400
+    assert (
+        client.put("/api/me/favorites/inventory", json={"on": False}, headers=HDR).json()["favorites"] == []
+    )
+    assert client.put("/api/me/favorites/inventory", json={}, headers=HDR).status_code == 400
 
 
 def test_catalog_cards_show_stack_and_deployed_version(data_dir: Path) -> None:
-    (data_dir / "deployments.json").write_text(json.dumps({"ativos": "9.9.9"}))
+    (data_dir / "deployments.json").write_text(json.dumps({"inventory": "9.9.9"}))
     page = client_for(create_app()).get("/applications").text
     assert "Versão implantada" in page
     assert 'class="app-version" title="Versão 9.9.9">v9.9.9<' in page
@@ -95,11 +97,11 @@ def test_prefs_validation(client: TestClient) -> None:
 
 
 def test_app_visit_feeds_recents(client: TestClient) -> None:
-    client.get("/apps/ativos/assets")
-    client.get("/apps/ativos/assets")  # repeated: a single item
-    client.get("/apps/ativos")
+    client.get("/apps/inventory/assets")
+    client.get("/apps/inventory/assets")  # repeated: a single item
+    client.get("/apps/inventory")
     prefs = client.get("/api/me/prefs").json()
-    assert [r["path"] for r in prefs["recents"]] == ["/apps/ativos", "/apps/ativos/assets"]
+    assert [r["path"] for r in prefs["recents"]] == ["/apps/inventory", "/apps/inventory/assets"]
     home = client.get("/").text
     assert "Gestão de Ativos · Inventário de ativos" in home
     assert "agora" in home
@@ -122,7 +124,7 @@ def test_status_public_only_when_enabled(data_dir: Path) -> None:
     c = TC(anon, follow_redirects=False)
     assert c.get("/status").status_code == 303
     (data_dir / "admin.json").write_text(
-        json.dumps({"settings": {"status_public": True, "status_public_apps": ["ativos"]}})
+        json.dumps({"settings": {"status_public": True, "status_public_apps": ["inventory"]}})
     )
     r = c.get("/status")
     assert r.status_code == 200
@@ -170,10 +172,10 @@ def test_two_replicas_sharing_ux_json_do_not_lose_writes(tmp_path: Path) -> None
     a, b = UxStore(tmp_path / "ux.json"), UxStore(tmp_path / "ux.json")
     a.update("u1", theme="dark")
     b.update("u2", theme="light")  # b still had the empty version in memory
-    b.toggle_favorite("u1", "ativos", True)
+    b.toggle_favorite("u1", "inventory", True)
     assert UxStore(tmp_path / "ux.json").prefs("u1").theme == "dark"
-    assert UxStore(tmp_path / "ux.json").prefs("u1").favorites == ["ativos"]
-    assert a.prefs("u2").theme == "light" and a.prefs("u1").favorites == ["ativos"]
+    assert UxStore(tmp_path / "ux.json").prefs("u1").favorites == ["inventory"]
+    assert a.prefs("u2").theme == "light" and a.prefs("u1").favorites == ["inventory"]
 
 
 def test_catalog_stack_button_only_for_admins(data_dir: Path) -> None:
@@ -184,7 +186,7 @@ def test_catalog_stack_button_only_for_admins(data_dir: Path) -> None:
     auth = app.state.auth.path
     auth.write_text(auth.read_text(encoding="utf-8").replace('"Administrador"]', '"User"]'), encoding="utf-8")
     page = admin.get("/applications").text
-    assert 'data-app="ativos"' in page and 'class="app-version"' in page
+    assert 'data-app="inventory"' in page and 'class="app-version"' in page
     assert "hub-stack-toggle" not in page and "hub-stack-chip" not in page
 
 

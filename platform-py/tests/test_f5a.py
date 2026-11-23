@@ -71,14 +71,17 @@ def test_notice_units() -> None:
     assert allowed_roles(["Suporte", "Aprovador"], [], ["suporte"]) == ["Aprovador"]
     assert allowed_roles(["Suporte", "Aprovador"], ["Suporte"], ["suporte"]) == ["Suporte"]
     ev = {"event_id": "e", "kind": "approval_request", "user": "ana", "at": 5,
-          "meta": {"title": "Aprovar?", "approval_id": "ap-1", "to_roles": ["Suporte"], "link": "/ativos/x"}}  # fmt: skip
-    assert item_from_notice("ativos", ev, []) is None  # refused: never falls back to "who caused it"
-    it = item_from_notice("ativos", ev, ["Suporte"])
+          "meta": {"title": "Aprovar?", "approval_id": "ap-1", "to_roles": ["Suporte"], "link": "/inventory/x"}}  # fmt: skip
+    assert item_from_notice("inventory", ev, []) is None  # refused: never falls back to "who caused it"
+    it = item_from_notice("inventory", ev, ["Suporte"])
     assert (
-        it and it["kind"] == "approval" and it["approval"]["ext_id"] == "ap-1" and it["source"] == "ativos:e"
+        it
+        and it["kind"] == "approval"
+        and it["approval"]["ext_id"] == "ap-1"
+        and it["source"] == "inventory:e"
     )
-    assert it["link"] == "/apps/ativos/x"
-    bad = item_from_notice("ativos", {**ev, "meta": {"approval_id": "x y", "title": ""}}, [])
+    assert it["link"] == "/apps/inventory/x"
+    bad = item_from_notice("inventory", {**ev, "meta": {"approval_id": "x y", "title": ""}}, [])
     assert bad and bad["kind"] == "notification" and bad["title"] == "Notificação"
 
 
@@ -93,9 +96,9 @@ class Remote:
 
     def __call__(self, req: httpx.Request) -> httpx.Response:
         p = req.url.path
-        if p == "/ativos/_hub/outbox":
+        if p == "/inventory/_hub/outbox":
             return httpx.Response(200, json={"events": self.events})
-        if p == "/ativos/_hub/outbox/ack":
+        if p == "/inventory/_hub/outbox/ack":
             if self.fail_ack:
                 return httpx.Response(503)
             self.acks.append(json.loads(req.content)["ids"])
@@ -114,7 +117,7 @@ def hub(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, remote: Remote) -> Iter
     monkeypatch.setenv("HUB_OUTBOX_POLL_S", "3600")
     monkeypatch.delenv("HUB_BACKUP_OFFSITE_URL", raising=False)
     with make_hub(tmp_path, monkeypatch, remote) as c:
-        c.app.state.admin.tokens["ativos"] = TOKEN  # type: ignore[attr-defined]
+        c.app.state.admin.tokens["inventory"] = TOKEN  # type: ignore[attr-defined]
         yield c
 
 
@@ -138,7 +141,7 @@ def test_outbox_exactly_once_and_inbox(hub: TestClient, remote: Remote) -> None:
         {"id": 5, "event_id": "e5", "kind": "desconhecido"},
     ]  # fmt: skip
     remote.fail_ack = True
-    out = call(hub, ob.pull_app, "ativos", "http://upstream", TOKEN, 0)
+    out = call(hub, ob.pull_app, "inventory", "http://upstream", TOKEN, 0)
     assert out["fetched"] == 5 and out["recorded"] == 1 and remote.acks == []  # ack failed: nothing confirmed
     titles = [e["title"] for e in audit_rows(hub)]
     assert titles.count("Ativo cadastrado") == 1
@@ -146,10 +149,10 @@ def test_outbox_exactly_once_and_inbox(hub: TestClient, remote: Remote) -> None:
     assert any(i["approval"] and i["approval"]["ext_id"] == "ap-9" for i in inbox.items.values())
     # redelivered after the ack failure: nothing duplicates; now confirms everything written (except the invalid id)
     remote.fail_ack = False
-    out = call(hub, ob.pull_app, "ativos", "http://upstream", TOKEN, 0)
+    out = call(hub, ob.pull_app, "inventory", "http://upstream", TOKEN, 0)
     assert out["recorded"] == 0 and remote.acks == [["e1", "e2", "e3", "e5"]]
     assert [e["title"] for e in audit_rows(hub)].count("Ativo cadastrado") == 1 and len(inbox.items) == 2
-    assert call(hub, ob.ingest.pending, "ativos") == []  # compactado
+    assert call(hub, ob.ingest.pending, "inventory") == []  # compactado
     # tick walks the apps with a token; the others answer 404 and become a single warning
     call(hub, ob.tick)
     call(hub, ob.tick)
@@ -165,8 +168,8 @@ def test_outbox_only_leader_acks(hub: TestClient, remote: Remote) -> None:
         return False
 
     ob.leader.checked = lost
-    call(hub, ob.pull_app, "ativos", "http://upstream", TOKEN, 0)
-    assert remote.acks == [] and call(hub, ob.ingest.pending, "ativos") == ["x1"]
+    call(hub, ob.pull_app, "inventory", "http://upstream", TOKEN, 0)
+    assert remote.acks == [] and call(hub, ob.ingest.pending, "inventory") == ["x1"]
 
 
 # ---- agendador ----------------------------------------------------------------------------------------------
@@ -186,55 +189,55 @@ def bk(hub: TestClient) -> FakeDocker:
 def set_policy(c: TestClient, **kw: Any) -> None:
     pol = {"schedule": "A cada 10 min", "keep": 7, "volumes": ["data"], "hooks": False, "destination": "Local",
            "jitter_s": 0, **kw}  # fmt: skip
-    assert c.put("/api/ops/backups/policies/ativos", json=pol).status_code == 200
+    assert c.put("/api/ops/backups/policies/inventory", json=pol).status_code == 200
 
 
 def test_scheduler_runs_skips_and_defers(hub: TestClient, bk: FakeDocker) -> None:
     sched, ops = hub.app.state.ops_scheduler, hub.app.state.ops  # type: ignore[attr-defined]
     # the other apps' default "Diário 02:00" also falls due when the test runs near 02:00: keep them manual
-    for other in ("coletor", "fornecedores", "servicos"):
+    for other in ("collector", "suppliers", "servicedesk"):
         pol = {"schedule": "Manual", "keep": 7, "volumes": ["data"], "hooks": False, "destination": "Local"}
         assert hub.put(f"/api/ops/backups/policies/{other}", json=pol).status_code == 200
     set_policy(hub)
     t0 = now_ms()
     assert call(hub, sched.tick, t0) == []
-    st = ops.read()["schedules"]["ativos|producao"]
+    st = ops.read()["schedules"]["inventory|producao"]
     assert st["next_due"] > t0 and "próximo" in hub.get("/admin/backups").text
     # right away: runs as "Scheduled" with the scheduler's actor
     lines = call(hub, sched.tick, st["run_at"] + 1000)
     assert len(lines) == 1 and "Agendado" in lines[0]
-    job_id = ops.read()["schedules"]["ativos|producao"]["last_job"]
+    job_id = ops.read()["schedules"]["inventory|producao"]["last_job"]
     assert wait_job(hub, job_id)["ok"]
     hist = hub.get("/api/ops/backups").json()["history"]
     assert hist[0]["kind"] == "Agendado" and hist[0]["status"] == "Concluído"
     call(hub, sched.tick, st["run_at"] + 2000)
-    assert ops.read()["schedules"]["ativos|producao"]["last_status"] == "Concluído"
+    assert ops.read()["schedules"]["inventory|producao"]["last_status"] == "Concluído"
     assert "último: Concluído" in hub.get("/admin/backups").text
     # missed (hub offline) with the "skip" policy: does not run
     set_policy(hub, missed="pular")  # policy changed: the next run is recalculated
-    assert "ativos|producao" not in ops.read()["schedules"]
+    assert "inventory|producao" not in ops.read()["schedules"]
     call(hub, sched.tick, now_ms())
-    s = ops.read()["schedules"]["ativos|producao"]
+    s = ops.read()["schedules"]["inventory|producao"]
 
-    def ativos_hist() -> int:
-        return len([h for h in hub.get("/api/ops/backups").json()["history"] if h["app"] == "ativos"])
+    def inventory_hist() -> int:
+        return len([h for h in hub.get("/api/ops/backups").json()["history"] if h["app"] == "inventory"])
 
-    n = ativos_hist()
+    n = inventory_hist()
     lines = call(hub, sched.tick, s["run_at"] + 3_600_000)  # +1 h may cross another app's daily schedule
-    assert any(x.startswith("ativos|producao: pulado") for x in lines)
-    assert ativos_hist() == n
-    assert ops.read()["schedules"]["ativos|producao"]["last_status"] == "Perdido (pulado)"
+    assert any(x.startswith("inventory|producao: pulado") for x in lines)
+    assert inventory_hist() == n
+    assert ops.read()["schedules"]["inventory|producao"]["last_status"] == "Perdido (pulado)"
     # app job in progress: postpones 15 s
-    s = ops.read()["schedules"]["ativos|producao"]
-    call(hub, hub.app.state.ops_jobs.claim, "ativos")  # type: ignore[attr-defined]
+    s = ops.read()["schedules"]["inventory|producao"]
+    call(hub, hub.app.state.ops_jobs.claim, "inventory")  # type: ignore[attr-defined]
     assert call(hub, sched.tick, s["run_at"] + 1)[0].endswith("adiado")
-    assert ops.read()["schedules"]["ativos|producao"]["last_status"] == "Adiado (job em andamento)"
+    assert ops.read()["schedules"]["inventory|producao"]["last_status"] == "Adiado (job em andamento)"
     # invalid schedule becomes a visible error; manual does not schedule
     d = ops.read()
-    d["policies"][next(i for i, p in enumerate(d["policies"]) if p["app"] == "ativos")]["schedule"] = "x y"
+    d["policies"][next(i for i, p in enumerate(d["policies"]) if p["app"] == "inventory")]["schedule"] = "x y"
     ops.write(d)
     call(hub, sched.tick, now_ms())
-    assert ops.read()["schedules"]["ativos|producao"]["error"]
+    assert ops.read()["schedules"]["inventory|producao"]["error"]
     assert "agenda inválida" in hub.get("/admin/backups").text
 
 
@@ -268,13 +271,13 @@ def test_offsite_copy_and_failure_alert(
     monkeypatch.setenv("HUB_BACKUP_OFFSITE_URL", "http://k:s3cr3t@app-hub-objstore:9000/bk-ext/pre")
     b, copies = hub.app.state.ops_backups, {}  # type: ignore[attr-defined]
     b.objstore = ObjectStore(runner=fake_mc(copies))
-    j = wait_job(hub, hub.post("/api/ops/backups/ativos/run", headers=JSON).json()["id"])
+    j = wait_job(hub, hub.post("/api/ops/backups/inventory/run", headers=JSON).json()["id"])
     assert j["ok"]
     rec = hub.get("/api/ops/backups").json()["history"][0]
-    assert "cópia externa em app-hub-objstore/bk-ext/pre/ativos/" in rec["detail"] and len(copies) == 1
+    assert "cópia externa em app-hub-objstore/bk-ext/pre/inventory/" in rec["detail"] and len(copies) == 1
     assert "s3cr3t" not in rec["detail"]
     b.objstore = ObjectStore(runner=fake_mc(copies, fail=True))
-    j = wait_job(hub, hub.post("/api/ops/backups/ativos/run", headers=JSON).json()["id"])
+    j = wait_job(hub, hub.post("/api/ops/backups/inventory/run", headers=JSON).json()["id"])
     assert j["ok"]  # the local backup is the one that counts
     rec = hub.get("/api/ops/backups").json()["history"][0]
     assert rec["status"] == "Concluído" and "cópia externa FALHOU" in rec["detail"]
@@ -282,7 +285,7 @@ def test_offsite_copy_and_failure_alert(
     assert alerts and alerts[0]["to_perm"] == "editar_configuracoes" and alerts[0]["level"] == "error"
     monkeypatch.setenv("HUB_BACKUP_OFFSITE_URL", "ftp://x")
     with pytest.raises(OpsError):
-        call(hub, b.offsite, "ativos", "producao", rec["file"])
+        call(hub, b.offsite, "inventory", "producao", rec["file"])
 
 
 def test_aside_restore_flow_and_undo(hub: TestClient, bk: FakeDocker) -> None:
@@ -364,7 +367,7 @@ def test_aside_list_and_actions(hub: TestClient, bk: FakeDocker) -> None:
 
 def test_restore_snapshot_maintenance_and_alert(hub: TestClient, bk: FakeDocker) -> None:
     b, ops = hub.app.state.ops_backups, hub.app.state.ops  # type: ignore[attr-defined]
-    rid = wait_job(hub, hub.post("/api/ops/backups/ativos/run", headers=JSON).json()["id"])["result"][
+    rid = wait_job(hub, hub.post("/api/ops/backups/inventory/run", headers=JSON).json()["id"])["result"][
         "record"
     ]
 
@@ -387,12 +390,12 @@ def test_restore_snapshot_maintenance_and_alert(hub: TestClient, bk: FakeDocker)
     b._load = boom
     j = wait_job(hub, hub.post(f"/api/ops/backups/records/{rid}/restore", headers=JSON).json()["id"])
     assert not j["ok"]
-    assert ops.read()["maintenance"]["ativos|producao"]["kind"] == "restauracao_falhou"
+    assert ops.read()["maintenance"]["inventory|producao"]["kind"] == "restauracao_falhou"
     assert "Liberar (dados conferidos)" in hub.get("/admin/backups").text
     assert any(
         i["kind"] == "alert" and "Restauração" in i["title"] for i in hub.app.state.inbox.items.values()
     )  # type: ignore[attr-defined]
-    assert hub.post("/api/ops/maintenance/ativos/clear", headers=JSON).status_code == 200
+    assert hub.post("/api/ops/maintenance/inventory/clear", headers=JSON).status_code == 200
 
 
 def test_restore_safety_snapshot_can_be_disabled(
@@ -400,7 +403,7 @@ def test_restore_safety_snapshot_can_be_disabled(
 ) -> None:
     monkeypatch.setenv("HUB_RESTORE_SAFETY_SNAPSHOT", "0")
     b = hub.app.state.ops_backups  # type: ignore[attr-defined]
-    rid = wait_job(hub, hub.post("/api/ops/backups/ativos/run", headers=JSON).json()["id"])["result"][
+    rid = wait_job(hub, hub.post("/api/ops/backups/inventory/run", headers=JSON).json()["id"])["result"][
         "record"
     ]
 
@@ -416,7 +419,7 @@ def test_inbox_reload_between_replicas_and_leader_route(hub: TestClient) -> None
     inbox = hub.app.state.inbox  # type: ignore[attr-defined]
     path = inbox.path
     other = InboxStore(path)  # "other replica" on the same file
-    other.push(item_of("alert", "ativos", "Outra réplica", source="r2"))
+    other.push(item_of("alert", "inventory", "Outra réplica", source="r2"))
     woke = []
     inbox.watchers.add(type("Q", (), {"empty": lambda s: True, "put_nowait": lambda s, v: woke.append(1)})())
     assert (
@@ -575,19 +578,19 @@ def test_offsite_copy_to_a_sharepoint_connection(
         "C", (), {"get": staticmethod(conns.get), "backend": staticmethod(lambda c: FakeGraph())}
     )()
     monkeypatch.setenv("HUB_BACKUP_OFFSITE_URL", "sharepoint://bk-sp/Backups/hub")
-    j = wait_job(hub, hub.post("/api/ops/backups/ativos/run", headers=JSON).json()["id"])
+    j = wait_job(hub, hub.post("/api/ops/backups/inventory/run", headers=JSON).json()["id"])
     assert j["ok"]
     rec = hub.get("/api/ops/backups").json()["history"][0]
-    assert f"cópia externa em SharePoint bk-sp/Backups/hub/ativos/{rec['file']}" in rec["detail"]
-    assert files[f"Backups/hub/ativos/{rec['file']}"] == (b.root / "ativos" / rec["file"]).read_bytes()
+    assert f"cópia externa em SharePoint bk-sp/Backups/hub/inventory/{rec['file']}" in rec["detail"]
+    assert files[f"Backups/hub/inventory/{rec['file']}"] == (b.root / "inventory" / rec["file"]).read_bytes()
     files_before = dict(files)
     FakeGraph.download = lambda self, rel: _corrupt(files_before[rel])  # type: ignore[method-assign]
     with pytest.raises(OpsError, match="diverge"):
-        call(hub, b.offsite, "ativos", "producao", rec["file"])
+        call(hub, b.offsite, "inventory", "producao", rec["file"])
     for bad in ("sharepoint://nao-existe", "sharepoint://s3"):
         monkeypatch.setenv("HUB_BACKUP_OFFSITE_URL", bad)
         with pytest.raises(OpsError, match="SharePoint"):
-            call(hub, b.offsite, "ativos", "producao", rec["file"])
+            call(hub, b.offsite, "inventory", "producao", rec["file"])
 
 
 async def _corrupt(data: bytes) -> tuple[str, int | None, Any]:

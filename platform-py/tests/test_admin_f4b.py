@@ -36,10 +36,10 @@ def test_admin_landing_settings_and_menu_by_permission(hub: TestClient) -> None:
 
 def test_settings_api_validates_and_persists(hub: TestClient) -> None:
     ok = {"platform_name": " Meu Hub ", "brand_color": "#ABCDEF", "status_public": True,
-          "status_public_apps": ["ativos", "ativos"], "language": "en", "timezone": "America/Sao_Paulo"}  # fmt: skip
+          "status_public_apps": ["inventory", "inventory"], "language": "en", "timezone": "America/Sao_Paulo"}  # fmt: skip
     r = hub.put("/api/admin/settings", json=ok)
     assert r.status_code == 200 and r.json()["platform_name"] == "Meu Hub"
-    assert r.json()["brand_color"] == "#abcdef" and r.json()["status_public_apps"] == ["ativos"]
+    assert r.json()["brand_color"] == "#abcdef" and r.json()["status_public_apps"] == ["inventory"]
     assert hub.get("/api/admin/settings").json()["language"] == "en"
     assert "--color-accent: #abcdef" in hub.get("/assets/theme.css").text  # white label
     assert 'value="Meu Hub"' in hub.get("/admin").text
@@ -62,14 +62,14 @@ def test_settings_api_validates_and_persists(hub: TestClient) -> None:
 
 
 def test_tokens_page_api_and_oauth_section(hub: TestClient) -> None:
-    r = hub.post("/api/admin/tokens", json={"name": "ci", "apps": ["ativos"], "envs": ["staging"],
+    r = hub.post("/api/admin/tokens", json={"name": "ci", "apps": ["inventory"], "envs": ["staging"],
                                             "actions": ["upload", "status"], "expires_days": 30})  # fmt: skip
     assert r.status_code == 201
     secret, item = r.json()["token"], r.json()["item"]
     assert secret.startswith("hubt_") and item["envs"] == ["staging"] and item["active"]
     page = hub.get("/admin/tokens").text
     assert "Credenciais" in page and "ci" in page and secret not in page
-    assert "Apps: ativos · Ambientes: staging" in page and "em 30 dias" in page
+    assert "Apps: inventory · Ambientes: staging" in page and "em 30 dias" in page
     assert 'id="oauth"' in page and "Clientes de IA conectados" in page and "Autorizações ativas" in page
     assert hub.post("/api/admin/tokens", json={"name": "x", "actions": ["bogus"]}).status_code == 400
     assert (

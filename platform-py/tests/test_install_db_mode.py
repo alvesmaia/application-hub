@@ -46,8 +46,8 @@ def test_a_rerun_adds_the_new_secrets_and_keeps_the_existing(tmp_path: Path) -> 
     assert all(len(after[k]) == 48 for k in DEMO_PWS)
     assert all(after[k] == v for k, v in before.items() if k not in DEMO_PWS)
     assert (
-        "APP_HUB_APP_DB_PASSWORD_ATIVOS" in r.stderr
-        and after["APP_HUB_APP_DB_PASSWORD_ATIVOS"] not in r.stderr
+        "APP_HUB_APP_DB_PASSWORD_INVENTORY" in r.stderr
+        and after["APP_HUB_APP_DB_PASSWORD_INVENTORY"] not in r.stderr
     )
 
 

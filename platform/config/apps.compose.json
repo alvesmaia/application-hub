@@ -1,12 +1,12 @@
 [
   {
     "manifest": {
-      "id": "ativos",
+      "id": "inventory",
       "name": "Gestão de Ativos",
       "version": "2.5.0",
       "mode": "fragment",
       "routes": [
-        "/ativos/*"
+        "/inventory/*"
       ],
       "resources": {
         "cpu": 1,
@@ -20,16 +20,16 @@
         "API_BASE_URL"
       ],
       "permissions": [
-        "ativos.read"
+        "inventory.read"
       ],
       "jobs": [
         {
-          "name": "ativos.import",
+          "name": "inventory.import",
           "max_duration_s": 3600,
           "max_attempts": 5
         },
         {
-          "name": "ativos.export_xlsx",
+          "name": "inventory.export_xlsx",
           "max_duration_s": 1800,
           "max_attempts": 3
         }
@@ -50,7 +50,7 @@
         ]
       }
     },
-    "upstream": "http://hub-app-ativos:8080",
+    "upstream": "http://hub-app-inventory:8080",
     "display": {
       "description": "Controle e acompanhe os ativos da organização.",
       "color": "#e0f2f1",
@@ -61,12 +61,12 @@
   },
   {
     "manifest": {
-      "id": "fornecedores",
+      "id": "suppliers",
       "name": "Rede de Fornecedores",
       "version": "1.9.0",
       "mode": "fragment",
       "routes": [
-        "/fornecedores/*"
+        "/suppliers/*"
       ],
       "limits": {
         "max_upload_mb": 25
@@ -75,7 +75,7 @@
         "API_BASE_URL"
       ],
       "permissions": [
-        "fornecedores.read"
+        "suppliers.read"
       ],
       "sdk": "1.0",
       "runtime": {
@@ -91,7 +91,7 @@
         ]
       }
     },
-    "upstream": "http://hub-app-fornecedores:8080",
+    "upstream": "http://hub-app-suppliers:8080",
     "display": {
       "description": "Gerencie parceiros, avaliações e contratos em um só lugar.",
       "color": "#f6e4dc",
@@ -102,12 +102,12 @@
   },
   {
     "manifest": {
-      "id": "servicos",
+      "id": "servicedesk",
       "name": "Central de Serviços",
       "version": "3.2.0",
       "mode": "fragment",
       "routes": [
-        "/servicos/*"
+        "/servicedesk/*"
       ],
       "notify_roles": [
         "Administrador"
@@ -121,7 +121,7 @@
         "API_BASE_URL"
       ],
       "permissions": [
-        "servicos.read"
+        "servicedesk.read"
       ],
       "sdk": "1.0",
       "runtime": {
@@ -137,7 +137,7 @@
         ]
       }
     },
-    "upstream": "http://hub-app-servicos:8080",
+    "upstream": "http://hub-app-servicedesk:8080",
     "display": {
       "description": "Atendimento interno, solicitações e aprovações em um só lugar.",
       "color": "#e3f1df",
@@ -196,7 +196,7 @@
     },
     "upstream": "http://hub-app-contratos:8080",
     "display": {
-      "description": "Contratos, vigências e valores acordados com fornecedores.",
+      "description": "Contratos, vigências e valores acordados com suppliers.",
       "color": "#f5e4e8",
       "ink": "#8b1e3f",
       "icon": "file",
@@ -205,12 +205,12 @@
   },
   {
     "manifest": {
-      "id": "coletor",
+      "id": "collector",
       "name": "Coletor",
       "version": "1.0.0",
       "mode": "fragment",
       "routes": [
-        "/coletor/*"
+        "/collector/*"
       ],
       "resources": {
         "cpu": 1,
@@ -221,7 +221,7 @@
         "max_upload_mb": 8
       },
       "permissions": [
-        "coletor.read"
+        "collector.read"
       ],
       "sdk": "1.0",
       "runtime": {
@@ -239,7 +239,7 @@
         ]
       }
     },
-    "upstream": "http://hub-app-coletor:8080",
+    "upstream": "http://hub-app-collector:8080",
     "display": {
       "description": "Inventário, recebimento e consulta pelo celular com leitor de código de barras.",
       "color": "#ffc20e",

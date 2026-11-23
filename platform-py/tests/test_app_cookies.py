@@ -14,7 +14,10 @@ from fastapi.testclient import TestClient
 
 def upstream(request: httpx.Request) -> httpx.Response:
     if request.method == "POST":
-        headers = {"location": "/ativos/lista", "set-cookie": "flash=Ve%C3%ADculo%20salvo.; Path=/; HttpOnly"}
+        headers = {
+            "location": "/inventory/lista",
+            "set-cookie": "flash=Ve%C3%ADculo%20salvo.; Path=/; HttpOnly",
+        }
         return httpx.Response(303, headers=headers, stream=httpx.ByteStream(b""))
     return httpx.Response(200, stream=httpx.ByteStream(request.headers.get("cookie", "").encode()))
 
@@ -26,8 +29,8 @@ def hub(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]
 
 
 def test_flash_cookie_set_on_post_reaches_the_next_page(hub: TestClient) -> None:
-    r = hub.post("/_frag/ativos/salvar", data={"a": "1"}, headers={"origin": "http://testserver"})
-    assert r.status_code == 303 and r.headers["location"] == "/_frag/ativos/lista"
+    r = hub.post("/_frag/inventory/salvar", data={"a": "1"}, headers={"origin": "http://testserver"})
+    assert r.status_code == 303 and r.headers["location"] == "/_frag/inventory/lista"
     assert "flash=" in r.headers["set-cookie"]
     page = hub.get(r.headers["location"])  # the client keeps the cookie, as the browser does
     assert "flash=Ve%C3%ADculo%20salvo." in page.text and "hub_session" not in page.text

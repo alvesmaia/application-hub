@@ -37,9 +37,9 @@ def _entry(app_id: str, name: str) -> AppEntry:
 
 def make_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, handler: Any = None) -> TestClient:
     monkeypatch.setenv("HUB_DATA_DIR", str(tmp_path))
-    monkeypatch.setenv("HUB_INTERNAL_TOKEN_SERVICOS", TOKEN)
+    monkeypatch.setenv("HUB_INTERNAL_TOKEN_SERVICEDESK", TOKEN)
     monkeypatch.setenv("HUB_INTERNAL_TOKEN_CONTRATOS", TOKEN)
-    reg = Registry([_entry("servicos", "Central de Serviços"), _entry("contratos", "Gestão de Contratos")])
+    reg = Registry([_entry("servicedesk", "Central de Serviços"), _entry("contratos", "Gestão de Contratos")])
     transport = httpx.MockTransport(handler or (lambda r: httpx.Response(404)))
     gw = Gateway(reg, GwOptions(), transport=transport)
     return client_for(create_app(gateway=gw))
@@ -48,9 +48,9 @@ def make_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, handler: Any = 
 def approval(client: TestClient, **kw: Any) -> int:
     item = item_of(
         "approval",
-        "servicos",
+        "servicedesk",
         "Aprovar chamado SD-1",
-        source="servicos:evt-1",
+        source="servicedesk:evt-1",
         by="operador@demo.local",
         by_id="u-op",
         to_roles=["Administrador"],
@@ -68,21 +68,21 @@ def test_targets_and_decide_rules() -> None:
         id="u1", email="boss@x", roles=["Gestor"], perms=["aprovar_solicitacoes", "gerenciar_usuarios"]
     )
     it = item_of(
-        "approval", "servicos", "t", by="op@x", by_id="u2", to_roles=["gestor"], approval=approval_of("a")
+        "approval", "servicedesk", "t", by="op@x", by_id="u2", to_roles=["gestor"], approval=approval_of("a")
     )
     assert targets(it, boss) and can_decide(it, boss)
     assert not targets(it, Who(id="u3", roles=["Outro"]))
-    assert not targets(it, Who(id="u1", roles=["Gestor"], apps=["ativos"]))  # does not reach the app
+    assert not targets(it, Who(id="u1", roles=["Gestor"], apps=["inventory"]))  # does not reach the app
     assert not can_decide(it | {"by": "boss@x"}, boss)  # nobody approves their own request
-    own = item_of("notification", "servicos", "t", by="op@x")  # no recipient: only whoever caused it
+    own = item_of("notification", "servicedesk", "t", by="op@x")  # no recipient: only whoever caused it
     assert targets(own, Who(id="u9", email="OP@x")) and not targets(own, boss)
 
 
 def test_store_push_dedupe_states_and_reload(tmp_path: Path) -> None:
     store = InboxStore(tmp_path / "inbox.json")
     who = Who(id="u1", email="a@x", roles=["R"])
-    a = store.push(item_of("notification", "servicos", "um", source="s:1", to_roles=["R"]))
-    assert store.push(item_of("notification", "servicos", "dup", source="s:1", to_roles=["R"])) == a
+    a = store.push(item_of("notification", "servicedesk", "um", source="s:1", to_roles=["R"]))
+    assert store.push(item_of("notification", "servicedesk", "dup", source="s:1", to_roles=["R"])) == a
     entries = store.entries(who, "pt-BR", lambda _k: True, lambda x: x)
     assert [e["title"] for e in entries] == ["um"] and store.unread(entries) == 1
     assert store.set_state(who, [a, 999], True, None) == 1
@@ -98,13 +98,13 @@ def test_access_request_rules_and_grant(tmp_path: Path) -> None:
     store = InboxStore(tmp_path / "inbox.json")
     user = Who(id="u2", email="op@x", name="Op", perms=[])
     admin = Who(id="u1", email="adm@x", name="Adm", perms=["gerenciar_usuarios"])
-    item_id = store.request_access(user, "ativos", "Gestão de Ativos", "preciso\x00")
+    item_id = store.request_access(user, "inventory", "Gestão de Ativos", "preciso\x00")
     assert (store.item(item_id) or {})["body"] == "preciso"
     with pytest.raises(InboxError) as dup:
-        store.request_access(user, "ativos", "Gestão de Ativos", "")
+        store.request_access(user, "inventory", "Gestão de Ativos", "")
     assert dup.value.status == 409
     assert store.begin(admin, item_id, "approve", "ok")["approval"]["status"] == "approved"
-    assert store.grants == {"u2": ["ativos"]}
+    assert store.grants == {"u2": ["inventory"]}
     with pytest.raises(InboxError) as twice:
         store.begin(admin, item_id, "approve", "")
     assert twice.value.status == 409
@@ -131,7 +131,7 @@ async def test_sse_delivers_unread_changes(tmp_path: Path) -> None:
     assert not task.done() or task.result().startswith(":")
     if task.done():
         task = asyncio.ensure_future(anext(events))
-    store.push(item_of("notification", "servicos", "novo", source="s:9", to_roles=["R"]))
+    store.push(item_of("notification", "servicedesk", "novo", source="s:9", to_roles=["R"]))
     ev = await asyncio.wait_for(task, 2)
     while ev.startswith(":"):
         ev = await asyncio.wait_for(anext(events), 2)
@@ -176,7 +176,7 @@ def test_decide_calls_the_app_and_records_result(tmp_path: Path, monkeypatch: py
     r = c.post(f"/api/me/inbox/i:{item}/decide", json={"decision": "approve", "comment": "ok"}, headers=HDR)
     assert r.json() == {"ok": True, "status": "approved"}
     req = seen[0]
-    assert req.url.path == "/servicos/_hub/approvals/ap-1"
+    assert req.url.path == "/servicedesk/_hub/approvals/ap-1"
     assert req.headers["x-hub-internal-token"] == TOKEN and "x-hub-user" in req.headers
     assert json.loads(req.content) | {"decided_at": 0} == {
         "decision": "approve",
@@ -211,12 +211,12 @@ def test_decide_failures(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
 def test_access_requests_api(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     c = make_client(tmp_path, monkeypatch)
     assert c.post("/api/me/access-requests", json={"app": "nada"}, headers=HDR).status_code == 404
-    assert c.post("/api/me/access-requests", json={"app": "servicos"}, headers=HDR).status_code == 409
+    assert c.post("/api/me/access-requests", json={"app": "servicedesk"}, headers=HDR).status_code == 409
     assert c.post("/api/me/access-requests", json={}, headers=HDR).status_code == 400
     c.app.state.inbox.push(  # type: ignore[attr-defined]
         item_of(
             "access",
-            "servicos",
+            "servicedesk",
             "pede",
             by_id="u2",
             by="op@x",
@@ -228,7 +228,7 @@ def test_access_requests_api(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
     assert item["approval"]["can_decide"] and item["kind"] == "access"
     r = c.post(f"/api/me/inbox/{item['id']}/decide", json={"decision": "approve"}, headers=HDR)
     assert r.json()["status"] == "approved"
-    assert c.app.state.inbox.grants == {"u2": ["servicos"]}  # type: ignore[attr-defined]
+    assert c.app.state.inbox.grants == {"u2": ["servicedesk"]}  # type: ignore[attr-defined]
     assert c.post("/api/admin/grants/revoke", json={"item": item["id"]}, headers=HDR).json() == {"ok": True}
     assert c.post("/api/admin/grants/revoke", json={"item": 99}, headers=HDR).status_code == 404
 
@@ -281,7 +281,7 @@ def test_search_endpoints_federate_and_rank(tmp_path: Path, monkeypatch: pytest.
                     ]
                 },
             )
-        if req.url.path.startswith("/servicos/"):
+        if req.url.path.startswith("/servicedesk/"):
             return httpx.Response(404)  # no search
         return httpx.Response(500)
 
@@ -298,7 +298,7 @@ def test_search_endpoints_federate_and_rank(tmp_path: Path, monkeypatch: pytest.
             "score": 1.0,
         }
     ]
-    assert "servicos" in srch._unsupported and body["partial"] is False
+    assert "servicedesk" in srch._unsupported and body["partial"] is False
     assert c.get("/api/me/search?q=").json() == {"q": "", "groups": [], "recent": []}
     final = c.post("/api/me/search", json={"q": " contrato "}, headers=HDR).json()
     assert final["ok"] is True and c.get("/api/me/prefs").json()["searches"] == ["contrato"]
@@ -318,7 +318,7 @@ def test_search_endpoints_federate_and_rank(tmp_path: Path, monkeypatch: pytest.
 
 def test_search_failure_marks_partial_and_see_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     def handler(req: httpx.Request) -> httpx.Response:
-        if req.url.path.startswith("/servicos/"):
+        if req.url.path.startswith("/servicedesk/"):
             raise httpx.ConnectError("down")
         n = int(req.url.params["limit"])
         return httpx.Response(
@@ -329,7 +329,7 @@ def test_search_failure_marks_partial_and_see_all(tmp_path: Path, monkeypatch: p
     srch._buckets.clear()
     srch._unsupported.clear()
     body = c.get("/api/me/search?q=contrato").json()
-    assert body["partial"] is True and body["unavailable"] == ["servicos"]
+    assert body["partial"] is True and body["unavailable"] == ["servicedesk"]
     more = next(g for g in body["groups"] if g["id"] == "contratos")["more_url"]
     assert more == "/search?q=contrato&app=contratos"
     page = c.get("/search?q=contrato&app=contratos").text
@@ -351,15 +351,15 @@ def test_search_rate_limit_and_helpers() -> None:
     assert srch.mark_split("Gestão de Contratos", "gestao") == ("", "Gestão", " de Contratos")
     assert srch.mark_split("Contrato 12", "TRATO") == ("Con", "trato", " 12")
     assert srch.mark_split("abc", "z") == ("abc", "", "")
-    assert srch.safe_app_link("servicos", "/servicos/r/1") == "/apps/servicos/r/1"
+    assert srch.safe_app_link("servicedesk", "/servicedesk/r/1") == "/apps/servicedesk/r/1"
     for bad in (
         "/admin/users",
-        "https://evil.example/servicos",
-        "/servicos/%2e%2e/admin",
+        "https://evil.example/servicedesk",
+        "/servicedesk/%2e%2e/admin",
         "javascript:x",
-        "/apps/servicos/a b",
+        "/apps/servicedesk/a b",
     ):
-        assert srch.safe_app_link("servicos", bad) == "/apps/servicos"
+        assert srch.safe_app_link("servicedesk", bad) == "/apps/servicedesk"
     assert srch.internal_token("nao-existe") is None
 
 
@@ -500,7 +500,7 @@ def test_language_resolution_and_translation(tmp_path: Path, monkeypatch: pytest
 def test_legacy_agent_items_are_dropped_on_load(tmp_path: Path) -> None:
     """Action requests from an agent (approval in the Inbox, now removed) recorded earlier do not show up again."""
     store = InboxStore(tmp_path / "inbox.json")
-    keep = store.push(item_of("app", "ativos", "fica", to_users=["u1"]))
+    keep = store.push(item_of("app", "inventory", "fica", to_users=["u1"]))
     gone = store.push(item_of("agent", "platform", "sai", to_users=["u1"], approval=approval_of("x")))
     again = InboxStore(tmp_path / "inbox.json")
     assert keep in again.items and gone not in again.items
@@ -517,14 +517,14 @@ def test_access_decision_notifies_the_requester(tmp_path: Path) -> None:
         roles=["Administrador"],
         session=True,
     )
-    i = store.push(item_of("access", "servicos", "pede acesso", by_id="u9", by="Ana", to_perm="gerenciar_usuarios",
+    i = store.push(item_of("access", "servicedesk", "pede acesso", by_id="u9", by="Ana", to_perm="gerenciar_usuarios",
                            approval=approval_of("r"), source="req1"))  # fmt: skip
     store.begin(boss, i, "approve", "ok", "Central de Serviços")
     mine = [x for x in store.items.values() if x["kind"] == "notification"]
     assert [x["title"] for x in mine] == ["Acesso a Central de Serviços liberado"] and mine[0][
         "to_users"
     ] == ["u9"]
-    j = store.push(item_of("access", "servicos", "pede acesso", by_id="u8", by="Beto", to_perm="gerenciar_usuarios",
+    j = store.push(item_of("access", "servicedesk", "pede acesso", by_id="u8", by="Beto", to_perm="gerenciar_usuarios",
                            approval=approval_of("r2"), source="req2"))  # fmt: skip
     store.begin(boss, j, "reject", "", "Central de Serviços")
     assert "Pedido de acesso a Central de Serviços recusado" in [x["title"] for x in store.items.values()]

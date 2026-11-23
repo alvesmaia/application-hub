@@ -19,7 +19,7 @@ def upstream(request: httpx.Request) -> httpx.Response:
     SEEN.append({"host": request.url.host, "env": request.headers.get("x-hub-env", ""),
                  "base": request.headers.get("x-hub-base", ""), "path": request.url.path})  # fmt: skip
     if request.url.path.endswith("/redir"):
-        return httpx.Response(302, headers={"location": "/ativos/y"}, stream=httpx.ByteStream(b""))
+        return httpx.Response(302, headers={"location": "/inventory/y"}, stream=httpx.ByteStream(b""))
     return httpx.Response(200, stream=httpx.ByteStream(b"<p>ok</p>"))
 
 
@@ -27,46 +27,54 @@ def upstream(request: httpx.Request) -> httpx.Response:
 def hub(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     SEEN.clear()
     with make_hub(tmp_path, monkeypatch, upstream) as c:
-        c.app.state.gateway.registry.staging["ativos"] = "http://stg:8080"  # type: ignore[attr-defined]
+        c.app.state.gateway.registry.staging["inventory"] = "http://stg:8080"  # type: ignore[attr-defined]
         yield c
 
 
 def test_the_staging_path_forwards_to_staging_with_its_own_base(hub: TestClient) -> None:
-    assert hub.get("/staging/_frag/ativos/ativos/x").status_code == 200
+    assert hub.get("/staging/_frag/inventory/inventory/x").status_code == 200
     assert SEEN[-1] == {
         "host": "stg",
         "env": "staging",
-        "base": "/staging/apps/ativos",
-        "path": "/ativos/ativos/x",
+        "base": "/staging/apps/inventory",
+        "path": "/inventory/inventory/x",
     }
-    hub.get("/_frag/ativos/ativos/x", headers={"cookie": f"{hub.headers['cookie']}; hub_env=staging"})
+    hub.get("/_frag/inventory/inventory/x", headers={"cookie": f"{hub.headers['cookie']}; hub_env=staging"})
     prod = SEEN[-1]  # the path wins over the cookie; the upstream path is the same
-    assert (prod["env"], prod["base"], prod["path"]) == ("producao", "/apps/ativos", "/ativos/ativos/x")
+    assert (prod["env"], prod["base"], prod["path"]) == (
+        "producao",
+        "/apps/inventory",
+        "/inventory/inventory/x",
+    )
 
 
 def test_the_staging_page_loads_fragments_from_staging(hub: TestClient) -> None:
-    page = hub.get("/staging/apps/ativos/ativos").text
-    assert 'data-hub-frag="/staging/_frag"' in page and 'data-hub-base="/staging/apps/ativos"' in page
+    page = hub.get("/staging/apps/inventory/inventory").text
+    assert 'data-hub-frag="/staging/_frag"' in page and 'data-hub-base="/staging/apps/inventory"' in page
     assert "data-hub-staging-bar" in page and "data-hub-env-badge" in page
-    assert "data-hub-env-badge" not in hub.get("/apps/ativos").text
+    assert "data-hub-env-badge" not in hub.get("/apps/inventory").text
 
 
 def test_production_url_with_the_staging_cookie_goes_to_the_staging_url(hub: TestClient) -> None:
-    r = hub.get("/apps/ativos/ativos?a=1", headers={"cookie": f"{hub.headers['cookie']}; hub_env=staging"})
-    assert r.status_code == 303 and r.headers["location"] == "/staging/apps/ativos/ativos?a=1"
+    r = hub.get(
+        "/apps/inventory/inventory?a=1", headers={"cookie": f"{hub.headers['cookie']}; hub_env=staging"}
+    )
+    assert r.status_code == 303 and r.headers["location"] == "/staging/apps/inventory/inventory?a=1"
 
 
 def test_switching_environment_keeps_the_app_page(hub: TestClient) -> None:
-    to_stg = hub.get("/hub-env?to=staging&next=/apps/ativos/ativos")
-    assert to_stg.headers["location"] == "/staging/apps/ativos/ativos"
-    assert hub.get("/hub-env?to=producao&next=/staging/apps/ativos").headers["location"] == "/apps/ativos"
+    to_stg = hub.get("/hub-env?to=staging&next=/apps/inventory/inventory")
+    assert to_stg.headers["location"] == "/staging/apps/inventory/inventory"
+    assert (
+        hub.get("/hub-env?to=producao&next=/staging/apps/inventory").headers["location"] == "/apps/inventory"
+    )
 
 
 def test_staging_url_needs_the_staging_permission(hub: TestClient) -> None:
     colab = add_user(hub, "colab", ["User"])
-    assert colab.get("/staging/apps/ativos").status_code == 403
-    assert colab.get("/staging/_frag/ativos/ativos/x").status_code == 403
-    assert colab.get("/apps/ativos").status_code == 200
+    assert colab.get("/staging/apps/inventory").status_code == 403
+    assert colab.get("/staging/_frag/inventory/inventory/x").status_code == 403
+    assert colab.get("/apps/inventory").status_code == 200
 
 
 def test_staging_websocket_needs_the_staging_permission(hub: TestClient) -> None:
@@ -75,7 +83,7 @@ def test_staging_websocket_needs_the_staging_permission(hub: TestClient) -> None
     colab = add_user(hub, "colab", ["User"])
     with (
         pytest.raises(WebSocketDisconnect) as e,
-        colab.websocket_connect("/staging/apps/ativos/ws", headers={"origin": "http://testserver"}),
+        colab.websocket_connect("/staging/apps/inventory/ws", headers={"origin": "http://testserver"}),
     ):
         pass
     assert e.value.code == 1008
@@ -84,16 +92,19 @@ def test_staging_websocket_needs_the_staging_permission(hub: TestClient) -> None
 def test_an_app_redirect_stays_in_staging(hub: TestClient) -> None:
     nav = {"sec-fetch-mode": "navigate"}  # the browser itself (a download link): the public URL
     assert (
-        hub.get("/staging/_frag/ativos/ativos/redir", headers=nav).headers["location"]
-        == "/staging/apps/ativos/y"
+        hub.get("/staging/_frag/inventory/inventory/redir", headers=nav).headers["location"]
+        == "/staging/apps/inventory/y"
     )
-    assert hub.get("/_frag/ativos/ativos/redir", headers=nav).headers["location"] == "/apps/ativos/y"
+    assert hub.get("/_frag/inventory/inventory/redir", headers=nav).headers["location"] == "/apps/inventory/y"
 
 
 def test_a_fragment_redirect_stays_a_fragment(hub: TestClient) -> None:
     """hub.js fetches fragments: a 303 after a POST (Post/Redirect/Get) must lead to the next fragment, not to the
     whole hub page (which ended up embedded inside the app's screen)."""
     for mode in ({}, {"sec-fetch-mode": "cors"}, {"sec-fetch-mode": "same-origin"}):
-        assert hub.get("/_frag/ativos/ativos/redir", headers=mode).headers["location"] == "/_frag/ativos/y"
-        staged = hub.get("/staging/_frag/ativos/ativos/redir", headers=mode).headers["location"]
-        assert staged == "/staging/_frag/ativos/y"
+        assert (
+            hub.get("/_frag/inventory/inventory/redir", headers=mode).headers["location"]
+            == "/_frag/inventory/y"
+        )
+        staged = hub.get("/staging/_frag/inventory/inventory/redir", headers=mode).headers["location"]
+        assert staged == "/staging/_frag/inventory/y"

@@ -13,8 +13,8 @@ const DIST = path.join(__dirname, '..', '..', 'dist');
 
 async function skeleton(page: Page) {
   // Holds the fragment: the skeleton stays on screen after the loader.
-  await page.route('**/_frag/ativos/**', async (r) => { await new Promise((x) => setTimeout(x, 5000)); await r.continue().catch(() => undefined); });
-  await page.goto('/apps/ativos');
+  await page.route('**/_frag/inventory/**', async (r) => { await new Promise((x) => setTimeout(x, 5000)); await r.continue().catch(() => undefined); });
+  await page.goto('/apps/inventory');
   const box = page.locator('#app-root .component-loading');
   await expect(box).toBeVisible({ timeout: 30_000 });
   await expect(box.locator('.skeleton-table, .table-skeleton')).toBeVisible();

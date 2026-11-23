@@ -494,7 +494,7 @@ def test_backup_offsite_copy_goes_to_the_sharepoint_site(sim: Sim, tmp_path: Pat
 
     from hub.ops.backups import Backups
 
-    pkg = tmp_path / "backups" / "ativos" / "ativos-1.zip"
+    pkg = tmp_path / "backups" / "inventory" / "inventory-1.zip"
     pkg.parent.mkdir(parents=True)
     pkg.write_bytes(bytes(range(256)) * 24_000)  # ~6 MB: goes through the chunked upload session
     g = client(sim)
@@ -504,10 +504,12 @@ def test_backup_offsite_copy_goes_to_the_sharepoint_site(sim: Sim, tmp_path: Pat
         conns=SimpleNamespace(get=lambda n: conn if n == "bk-sp" else None, backend=lambda c: g),
     )
     dest = run(
-        Backups._offsite_sharepoint(me, "sharepoint://bk-sp/Backups", "ativos", "producao", "ativos-1.zip")
+        Backups._offsite_sharepoint(
+            me, "sharepoint://bk-sp/Backups", "inventory", "producao", "inventory-1.zip"
+        )
     )
-    assert dest == "SharePoint bk-sp/Backups/ativos/ativos-1.zip"
-    _, _, body = run(g.download("Backups/ativos/ativos-1.zip"))
+    assert dest == "SharePoint bk-sp/Backups/inventory/inventory-1.zip"
+    _, _, body = run(g.download("Backups/inventory/inventory-1.zip"))
 
     async def read() -> bytes:
         return b"".join([c async for c in body])

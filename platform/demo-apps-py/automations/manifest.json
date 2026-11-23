@@ -1,0 +1,46 @@
+{
+  "id": "automations",
+  "name": "Automações",
+  "version": "1.0.0",
+  "mode": "fragment",
+  "routes": [
+    "/automations/*"
+  ],
+  "resources": {
+    "cpu": 0.5,
+    "memory": "512Mi",
+    "pids": 100
+  },
+  "limits": {
+    "max_upload_mb": 8
+  },
+  "env": [
+    "AUTOMATIONS_VIACEP_URL",
+    "AUTOMATIONS_BRASILAPI_URL",
+    "AUTOMATIONS_ADMIN_ROLES"
+  ],
+  "permissions": [
+    "automations.read"
+  ],
+  "jobs": [
+    {
+      "name": "automations.run",
+      "max_duration_s": 3660,
+      "max_attempts": 3
+    }
+  ],
+  "sdk": "1.0",
+  "runtime": {
+    "stack": "python"
+  },
+  "stack": {
+    "language": "Python 3.12",
+    "framework": "FastAPI",
+    "sdk": "hub-sdk-python 1.0",
+    "db": "PostgreSQL 16",
+    "libs": [
+      "httpx",
+      "asyncpg"
+    ]
+  }
+}

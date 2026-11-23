@@ -40,7 +40,7 @@ for (const role of Object.keys(USERS) as Role[]) {
       }
     }
     // Everyone opens the applications.
-    const app = await page.goto('/apps/ativos/dashboard');
+    const app = await page.goto('/apps/inventory/dashboard');
     expect(app?.status()).toBe(200);
     // The control plane API follows the same rules.
     const api = await page.request.get('/api/admin/users');

@@ -17,7 +17,7 @@
         "additionalProperties": false,
         "examples": [
           {
-            "app": "ativos",
+            "app": "inventory",
             "reason": "Vou cuidar do inventário do 2º andar"
           }
         ],
@@ -264,25 +264,25 @@
         "examples": [
           {
             "api": {
-              "base": "/ativos/api/v1",
+              "base": "/inventory/api/v1",
               "enabled": true,
-              "openapi": "/ativos/api/openapi.json"
+              "openapi": "/inventory/api/openapi.json"
             },
-            "id": "ativos",
+            "id": "inventory",
             "jobs": [],
             "mcp": {
               "enabled": true,
               "exposed_by_hub": true,
-              "tool_prefix": "ativos."
+              "tool_prefix": "inventory."
             },
             "mode": "fragment",
             "name": "Gestão de Ativos",
             "routes": [
-              "/ativos/*"
+              "/inventory/*"
             ],
             "stack": null,
             "status": "ok",
-            "url": "/ativos",
+            "url": "/inventory",
             "version": "2.4.1"
           }
         ],
@@ -398,7 +398,7 @@
         "additionalProperties": true,
         "examples": [
           {
-            "app": "ativos",
+            "app": "inventory",
             "last_hour": {
               "availability": 1.0,
               "errors": 0,
@@ -455,7 +455,7 @@
         "additionalProperties": true,
         "examples": [
           {
-            "detail": "banco de lado ativos_old apagado",
+            "detail": "banco de lado inventory_old apagado",
             "done": true
           }
         ],
@@ -594,7 +594,7 @@
         "additionalProperties": true,
         "examples": [
           {
-            "app": "ativos",
+            "app": "inventory",
             "at": 1790762598243,
             "env": "producao",
             "id": 3,
@@ -631,7 +631,7 @@
         "additionalProperties": true,
         "examples": [
           {
-            "app": "ativos",
+            "app": "inventory",
             "destination": "local",
             "envs": [
               "producao"
@@ -794,7 +794,7 @@
         "additionalProperties": false,
         "examples": [
           {
-            "app": "ativos",
+            "app": "inventory",
             "env": "producao"
           }
         ],
@@ -820,7 +820,7 @@
           {
             "bindings": [
               {
-                "app": "ativos",
+                "app": "inventory",
                 "env": "producao"
               }
             ]
@@ -1457,11 +1457,11 @@
         "additionalProperties": true,
         "examples": [
           {
-            "container": "hub-app-ativos",
+            "container": "hub-app-inventory",
             "cpu": 1.0,
             "env": "producao",
-            "id": "ativos",
-            "image": "ghcr.io/org/ativos@sha256:…",
+            "id": "inventory",
+            "image": "ghcr.io/org/inventory@sha256:…",
             "memory": "1Gi",
             "memory_bytes": 1073741824,
             "name": "Gestão de Ativos",
@@ -1525,7 +1525,7 @@
         "examples": [
           {
             "action": "restart",
-            "container": "hub-app-ativos"
+            "container": "hub-app-inventory"
           }
         ],
         "properties": {
@@ -1584,7 +1584,7 @@
         "additionalProperties": true,
         "examples": [
           {
-            "container": "app-hub-app-ativos",
+            "container": "app-hub-app-inventory",
             "items": [
               {
                 "level": "info",
@@ -1617,7 +1617,7 @@
           {
             "provisioned": {
               "changed": false,
-              "database": "ativos",
+              "database": "inventory",
               "variable": "DATABASE_URL"
             },
             "restart_pending": false
@@ -1697,12 +1697,12 @@
         "additionalProperties": true,
         "examples": [
           {
-            "app": "ativos",
+            "app": "inventory",
             "at": 1790762598243,
             "commit": "a91f3c2",
             "env": "Produção",
             "id": 5,
-            "image": "ghcr.io/org/ativos@sha256:…",
+            "image": "ghcr.io/org/inventory@sha256:…",
             "note": "",
             "origin": "GitHub Actions",
             "package": null,
@@ -1793,7 +1793,7 @@
         "additionalProperties": false,
         "examples": [
           {
-            "confirm": "hub-ativos"
+            "confirm": "hub-inventory"
           }
         ],
         "properties": {
@@ -1839,7 +1839,7 @@
         "additionalProperties": true,
         "examples": [
           {
-            "app": "ativos",
+            "app": "inventory",
             "description": "",
             "envs": {
               "producao": {
@@ -1894,7 +1894,7 @@
         "additionalProperties": false,
         "examples": [
           {
-            "app": "ativos",
+            "app": "inventory",
             "envs": {
               "producao": {
                 "default": "off",
@@ -2126,7 +2126,7 @@
             "health": [],
             "results": [
               {
-                "app": "ativos",
+                "app": "inventory",
                 "available": true,
                 "latency_ms": 12
               }
@@ -2394,7 +2394,7 @@
         "additionalProperties": true,
         "examples": [
           {
-            "app": "ativos",
+            "app": "inventory",
             "env": "producao",
             "id": 1,
             "kind": "manual",
@@ -2460,7 +2460,7 @@
         "additionalProperties": false,
         "examples": [
           {
-            "app": "ativos",
+            "app": "inventory",
             "severity": "minor",
             "title": "Lentidão na busca"
           }
@@ -2524,7 +2524,7 @@
         "description": "Job assíncrono do hub (implantação, backup, restauração).",
         "examples": [
           {
-            "app": "ativos",
+            "app": "inventory",
             "done": false,
             "env": "producao",
             "id": 1,
@@ -2610,7 +2610,7 @@
         "additionalProperties": true,
         "examples": [
           {
-            "applied": "salvo; aplicado ao container app-hub-app-ativos",
+            "applied": "salvo; aplicado ao container app-hub-app-inventory",
             "limits": {
               "cpu": 0.5,
               "memory": "256Mi",
@@ -2636,7 +2636,7 @@
         "additionalProperties": true,
         "examples": [
           {
-            "app": "ativos",
+            "app": "inventory",
             "at": 1790767578173,
             "level": "INFO",
             "message": "Novo ativo cadastrado",
@@ -2772,7 +2772,7 @@
           {
             "items": [
               {
-                "app": "ativos",
+                "app": "inventory",
                 "availability": 1.0,
                 "env": "producao",
                 "errors": 0,
@@ -3008,7 +3008,7 @@
         "examples": [
           {
             "apps": [
-              "ativos"
+              "inventory"
             ]
           }
         ],
@@ -3104,7 +3104,7 @@
           {
             "failed": 0,
             "items": [
-              "ativos/producao: ok"
+              "inventory/producao: ok"
             ],
             "rotated": 2
           }
@@ -3237,7 +3237,7 @@
                     "score": 0.6,
                     "subtitle": "",
                     "title": "Gestão de Ativos",
-                    "url": "/ativos"
+                    "url": "/inventory"
                   }
                 ],
                 "id": "platform",
@@ -3245,7 +3245,7 @@
               }
             ],
             "partial": false,
-            "q": "ativos",
+            "q": "inventory",
             "took_ms": 3,
             "total": 1,
             "unavailable": []
@@ -3296,7 +3296,7 @@
         "examples": [
           {
             "restart_pending": true,
-            "variable": "HUB_INTERNAL_TOKEN_ATIVOS"
+            "variable": "HUB_INTERNAL_TOKEN_INVENTORY"
           }
         ],
         "properties": {
@@ -3422,7 +3422,7 @@
         "additionalProperties": true,
         "examples": [
           {
-            "app": "ativos",
+            "app": "inventory",
             "availability": 99.5,
             "env": "producao",
             "latency_ms": 500,
@@ -3468,7 +3468,7 @@
         "additionalProperties": false,
         "examples": [
           {
-            "app": "ativos",
+            "app": "inventory",
             "availability": 99.5,
             "env": "producao",
             "latency_ms": 500,
@@ -3542,7 +3542,7 @@
           {
             "apps": [
               {
-                "id": "ativos",
+                "id": "inventory",
                 "name": "Gestão de Ativos",
                 "status": "ok"
               }
@@ -3579,9 +3579,9 @@
         "additionalProperties": true,
         "examples": [
           {
-            "app": "ativos",
-            "bucket": "hub-ativos",
-            "connection": "hub-ativos-producao",
+            "app": "inventory",
+            "bucket": "hub-inventory",
+            "connection": "hub-inventory-producao",
             "env": "producao"
           }
         ],
@@ -3618,8 +3618,8 @@
             "changed": true,
             "detail": "bucket, usuário e conexão criados",
             "storage": {
-              "app": "ativos",
-              "bucket": "hub-ativos",
+              "app": "inventory",
+              "bucket": "hub-inventory",
               "env": "producao"
             }
           }
@@ -3654,7 +3654,7 @@
         "additionalProperties": true,
         "examples": [
           {
-            "app": "ativos",
+            "app": "inventory",
             "app_name": "Gestão de Ativos",
             "attempts": 1,
             "cancel_requested": false,
@@ -3900,7 +3900,7 @@
         "examples": [
           {
             "actions": 9,
-            "app": "ativos",
+            "app": "inventory",
             "app_name": "Ativos",
             "days": 6,
             "email": "ana@empresa.com",
@@ -4160,7 +4160,7 @@
           {
             "bindings": [
               {
-                "app": "ativos",
+                "app": "inventory",
                 "env": "producao"
               }
             ],
@@ -4207,7 +4207,7 @@
           {
             "bindings": [
               {
-                "app": "ativos",
+                "app": "inventory",
                 "env": "producao"
               }
             ],
@@ -4262,7 +4262,7 @@
           {
             "bindings": [
               {
-                "app": "ativos",
+                "app": "inventory",
                 "env": "producao"
               }
             ],
@@ -4394,7 +4394,7 @@
           "content": {
             "application/json": {
               "example": {
-                "app": "ativos",
+                "app": "inventory",
                 "reason": "Vou cuidar do inventário do 2º andar"
               },
               "schema": {
@@ -4746,25 +4746,25 @@
                   "items": [
                     {
                       "api": {
-                        "base": "/ativos/api/v1",
+                        "base": "/inventory/api/v1",
                         "enabled": true,
-                        "openapi": "/ativos/api/openapi.json"
+                        "openapi": "/inventory/api/openapi.json"
                       },
-                      "id": "ativos",
+                      "id": "inventory",
                       "jobs": [],
                       "mcp": {
                         "enabled": true,
                         "exposed_by_hub": true,
-                        "tool_prefix": "ativos."
+                        "tool_prefix": "inventory."
                       },
                       "mode": "fragment",
                       "name": "Gestão de Ativos",
                       "routes": [
-                        "/ativos/*"
+                        "/inventory/*"
                       ],
                       "stack": null,
                       "status": "ok",
-                      "url": "/ativos",
+                      "url": "/inventory",
                       "version": "2.4.1"
                     }
                   ],
@@ -4824,7 +4824,7 @@
         "operationId": "apps_get",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -4840,25 +4840,25 @@
               "application/json": {
                 "example": {
                   "api": {
-                    "base": "/ativos/api/v1",
+                    "base": "/inventory/api/v1",
                     "enabled": true,
-                    "openapi": "/ativos/api/openapi.json"
+                    "openapi": "/inventory/api/openapi.json"
                   },
-                  "id": "ativos",
+                  "id": "inventory",
                   "jobs": [],
                   "mcp": {
                     "enabled": true,
                     "exposed_by_hub": true,
-                    "tool_prefix": "ativos."
+                    "tool_prefix": "inventory."
                   },
                   "mode": "fragment",
                   "name": "Gestão de Ativos",
                   "routes": [
-                    "/ativos/*"
+                    "/inventory/*"
                   ],
                   "stack": null,
                   "status": "ok",
-                  "url": "/ativos",
+                  "url": "/inventory",
                   "version": "2.4.1"
                 },
                 "schema": {
@@ -4897,7 +4897,7 @@
         "operationId": "backups_run",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -4925,7 +4925,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "app": "ativos",
+                  "app": "inventory",
                   "done": false,
                   "env": "producao",
                   "id": 1,
@@ -4979,7 +4979,7 @@
         "operationId": "backups_set_policy",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -5012,7 +5012,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "app": "ativos",
+                  "app": "inventory",
                   "destination": "local",
                   "envs": [
                     "producao"
@@ -5075,7 +5075,7 @@
         "operationId": "containers_apply",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -5104,7 +5104,7 @@
               "application/json": {
                 "example": {
                   "action": "restart",
-                  "container": "hub-app-ativos"
+                  "container": "hub-app-inventory"
                 },
                 "schema": {
                   "$ref": "#/components/schemas/ContainerAction"
@@ -5148,7 +5148,7 @@
         "operationId": "containers_inspect",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -5212,7 +5212,7 @@
         "operationId": "containers_logs",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -5251,7 +5251,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "container": "app-hub-app-ativos",
+                  "container": "app-hub-app-inventory",
                   "items": [
                     {
                       "level": "info",
@@ -5296,7 +5296,7 @@
         "operationId": "containers_restart",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -5325,7 +5325,7 @@
               "application/json": {
                 "example": {
                   "action": "restart",
-                  "container": "hub-app-ativos"
+                  "container": "hub-app-inventory"
                 },
                 "schema": {
                   "$ref": "#/components/schemas/ContainerAction"
@@ -5369,7 +5369,7 @@
         "operationId": "containers_start",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -5398,7 +5398,7 @@
               "application/json": {
                 "example": {
                   "action": "restart",
-                  "container": "hub-app-ativos"
+                  "container": "hub-app-inventory"
                 },
                 "schema": {
                   "$ref": "#/components/schemas/ContainerAction"
@@ -5442,7 +5442,7 @@
         "operationId": "containers_stop",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -5471,7 +5471,7 @@
               "application/json": {
                 "example": {
                   "action": "restart",
-                  "container": "hub-app-ativos"
+                  "container": "hub-app-inventory"
                 },
                 "schema": {
                   "$ref": "#/components/schemas/ContainerAction"
@@ -5515,7 +5515,7 @@
         "operationId": "database_provision",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -5545,7 +5545,7 @@
                 "example": {
                   "provisioned": {
                     "changed": false,
-                    "database": "ativos",
+                    "database": "inventory",
                     "variable": "DATABASE_URL"
                   },
                   "restart_pending": false
@@ -5592,7 +5592,7 @@
         "operationId": "containers_set_limits",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -5622,7 +5622,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "applied": "salvo; aplicado ao container app-hub-app-ativos",
+                  "applied": "salvo; aplicado ao container app-hub-app-inventory",
                   "limits": {
                     "cpu": 0.5,
                     "memory": "256Mi",
@@ -5677,7 +5677,7 @@
         "operationId": "maintenance_clear",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -5747,7 +5747,7 @@
         "operationId": "variables_rotate",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -5789,7 +5789,7 @@
               "application/json": {
                 "example": {
                   "restart_pending": true,
-                  "variable": "HUB_INTERNAL_TOKEN_ATIVOS"
+                  "variable": "HUB_INTERNAL_TOKEN_INVENTORY"
                 },
                 "schema": {
                   "$ref": "#/components/schemas/SecretRotated"
@@ -5833,7 +5833,7 @@
         "operationId": "apps_status",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -5848,7 +5848,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "app": "ativos",
+                  "app": "inventory",
                   "last_hour": {
                     "availability": 1.0,
                     "errors": 0,
@@ -5900,7 +5900,7 @@
         "operationId": "storage_provision",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -5931,8 +5931,8 @@
                   "changed": true,
                   "detail": "bucket, usuário e conexão criados",
                   "storage": {
-                    "app": "ativos",
-                    "bucket": "hub-ativos",
+                    "app": "inventory",
+                    "bucket": "hub-inventory",
                     "env": "producao"
                   }
                 },
@@ -5978,7 +5978,7 @@
         "operationId": "storage_deprovision",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -6005,7 +6005,7 @@
           "content": {
             "application/json": {
               "example": {
-                "confirm": "hub-ativos"
+                "confirm": "hub-inventory"
               },
               "schema": {
                 "$ref": "#/components/schemas/DeprovisionRequest"
@@ -6022,8 +6022,8 @@
                   "changed": true,
                   "detail": "bucket, usuário e conexão criados",
                   "storage": {
-                    "app": "ativos",
-                    "bucket": "hub-ativos",
+                    "app": "inventory",
+                    "bucket": "hub-inventory",
                     "env": "producao"
                   }
                 },
@@ -6314,7 +6314,7 @@
                 "example": {
                   "items": [
                     {
-                      "app": "ativos",
+                      "app": "inventory",
                       "at": 1790762598243,
                       "env": "producao",
                       "id": 3,
@@ -6435,7 +6435,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "detail": "banco de lado ativos_old apagado",
+                  "detail": "banco de lado inventory_old apagado",
                   "done": true
                 },
                 "schema": {
@@ -6495,7 +6495,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "detail": "banco de lado ativos_old apagado",
+                  "detail": "banco de lado inventory_old apagado",
                   "done": true
                 },
                 "schema": {
@@ -6546,7 +6546,7 @@
                 "example": {
                   "failed": 0,
                   "items": [
-                    "ativos/producao: ok"
+                    "inventory/producao: ok"
                   ],
                   "rotated": 2
                 },
@@ -6607,7 +6607,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "app": "ativos",
+                  "app": "inventory",
                   "done": false,
                   "env": "producao",
                   "id": 1,
@@ -6676,7 +6676,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "app": "ativos",
+                  "app": "inventory",
                   "done": false,
                   "env": "producao",
                   "id": 1,
@@ -6745,7 +6745,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "app": "ativos",
+                  "app": "inventory",
                   "done": false,
                   "env": "producao",
                   "id": 1,
@@ -6978,7 +6978,7 @@
         "operationId": "connections_rotate_storage_token",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -7204,7 +7204,7 @@
               "example": {
                 "bindings": [
                   {
-                    "app": "ativos",
+                    "app": "inventory",
                     "env": "producao"
                   }
                 ]
@@ -7482,11 +7482,11 @@
                 "example": {
                   "items": [
                     {
-                      "container": "hub-app-ativos",
+                      "container": "hub-app-inventory",
                       "cpu": 1.0,
                       "env": "producao",
-                      "id": "ativos",
-                      "image": "ghcr.io/org/ativos@sha256:…",
+                      "id": "inventory",
+                      "image": "ghcr.io/org/inventory@sha256:…",
                       "memory": "1Gi",
                       "memory_bytes": 1073741824,
                       "name": "Gestão de Ativos",
@@ -7613,12 +7613,12 @@
                 "example": {
                   "items": [
                     {
-                      "app": "ativos",
+                      "app": "inventory",
                       "at": 1790762598243,
                       "commit": "a91f3c2",
                       "env": "Produção",
                       "id": 5,
-                      "image": "ghcr.io/org/ativos@sha256:…",
+                      "image": "ghcr.io/org/inventory@sha256:…",
                       "note": "",
                       "origin": "GitHub Actions",
                       "package": null,
@@ -7747,7 +7747,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "app": "ativos",
+                  "app": "inventory",
                   "done": false,
                   "env": "producao",
                   "id": 1,
@@ -7901,7 +7901,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "app": "ativos",
+                  "app": "inventory",
                   "done": false,
                   "env": "producao",
                   "id": 1,
@@ -7970,7 +7970,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "app": "ativos",
+                  "app": "inventory",
                   "done": false,
                   "env": "producao",
                   "id": 1,
@@ -8039,7 +8039,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "app": "ativos",
+                  "app": "inventory",
                   "done": false,
                   "env": "producao",
                   "id": 1,
@@ -8147,7 +8147,7 @@
                 "example": {
                   "items": [
                     {
-                      "app": "ativos",
+                      "app": "inventory",
                       "description": "",
                       "envs": {
                         "producao": {
@@ -8218,7 +8218,7 @@
           "content": {
             "application/json": {
               "example": {
-                "app": "ativos",
+                "app": "inventory",
                 "envs": {
                   "producao": {
                     "default": "off",
@@ -8239,7 +8239,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "app": "ativos",
+                  "app": "inventory",
                   "description": "",
                   "envs": {
                     "producao": {
@@ -8300,7 +8300,7 @@
         "operationId": "flags_delete",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -8365,7 +8365,7 @@
         "operationId": "flags_update",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -8409,7 +8409,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "app": "ativos",
+                  "app": "inventory",
                   "description": "",
                   "envs": {
                     "producao": {
@@ -8470,7 +8470,7 @@
         "operationId": "flags_set_enabled",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -8521,7 +8521,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "app": "ativos",
+                  "app": "inventory",
                   "description": "",
                   "envs": {
                     "producao": {
@@ -8829,7 +8829,7 @@
                   "health": [],
                   "results": [
                     {
-                      "app": "ativos",
+                      "app": "inventory",
                       "available": true,
                       "latency_ms": 12
                     }
@@ -9429,7 +9429,7 @@
                 "example": {
                   "items": [
                     {
-                      "app": "ativos",
+                      "app": "inventory",
                       "env": "producao",
                       "id": 1,
                       "kind": "manual",
@@ -9497,7 +9497,7 @@
           "content": {
             "application/json": {
               "example": {
-                "app": "ativos",
+                "app": "inventory",
                 "severity": "minor",
                 "title": "Lentidão na busca"
               },
@@ -9513,7 +9513,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "app": "ativos",
+                  "app": "inventory",
                   "env": "producao",
                   "id": 1,
                   "kind": "manual",
@@ -9600,7 +9600,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "app": "ativos",
+                  "app": "inventory",
                   "env": "producao",
                   "id": 1,
                   "kind": "manual",
@@ -9673,7 +9673,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "app": "ativos",
+                  "app": "inventory",
                   "done": false,
                   "env": "producao",
                   "id": 1,
@@ -9786,7 +9786,7 @@
                 "example": {
                   "items": [
                     {
-                      "app": "ativos",
+                      "app": "inventory",
                       "at": 1790767578173,
                       "level": "INFO",
                       "message": "Novo ativo cadastrado",
@@ -9924,7 +9924,7 @@
                 "example": {
                   "items": [
                     {
-                      "app": "ativos",
+                      "app": "inventory",
                       "availability": 1.0,
                       "env": "producao",
                       "errors": 0,
@@ -10363,7 +10363,7 @@
             "application/json": {
               "example": {
                 "apps": [
-                  "ativos"
+                  "inventory"
                 ]
               },
               "schema": {
@@ -10565,7 +10565,7 @@
                           "score": 0.6,
                           "subtitle": "",
                           "title": "Gestão de Ativos",
-                          "url": "/ativos"
+                          "url": "/inventory"
                         }
                       ],
                       "id": "platform",
@@ -10573,7 +10573,7 @@
                     }
                   ],
                   "partial": false,
-                  "q": "ativos",
+                  "q": "inventory",
                   "took_ms": 3,
                   "total": 1,
                   "unavailable": []
@@ -10790,7 +10790,7 @@
                 "example": {
                   "items": [
                     {
-                      "app": "ativos",
+                      "app": "inventory",
                       "availability": 99.5,
                       "env": "producao",
                       "latency_ms": 500,
@@ -10855,7 +10855,7 @@
           "content": {
             "application/json": {
               "example": {
-                "app": "ativos",
+                "app": "inventory",
                 "availability": 99.5,
                 "env": "producao",
                 "latency_ms": 500,
@@ -10873,7 +10873,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "app": "ativos",
+                  "app": "inventory",
                   "availability": 99.5,
                   "env": "producao",
                   "latency_ms": 500,
@@ -10928,7 +10928,7 @@
         "operationId": "slos_delete",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -11004,7 +11004,7 @@
                 "example": {
                   "apps": [
                     {
-                      "id": "ativos",
+                      "id": "inventory",
                       "name": "Gestão de Ativos",
                       "status": "ok"
                     }
@@ -11102,9 +11102,9 @@
                 "example": {
                   "items": [
                     {
-                      "app": "ativos",
-                      "bucket": "hub-ativos",
-                      "connection": "hub-ativos-producao",
+                      "app": "inventory",
+                      "bucket": "hub-inventory",
+                      "connection": "hub-inventory-producao",
                       "env": "producao"
                     }
                   ],
@@ -11227,7 +11227,7 @@
                 "example": {
                   "items": [
                     {
-                      "app": "ativos",
+                      "app": "inventory",
                       "app_name": "Gestão de Ativos",
                       "attempts": 1,
                       "cancel_requested": false,
@@ -11304,7 +11304,7 @@
         "operationId": "tasks_cancel",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -11379,7 +11379,7 @@
         "operationId": "tasks_retry",
         "parameters": [
           {
-            "description": "Id do app (ex.: ativos)",
+            "description": "Id do app (ex.: inventory)",
             "in": "path",
             "name": "app",
             "required": true,
@@ -11779,7 +11779,7 @@
                   "items": [
                     {
                       "actions": 9,
-                      "app": "ativos",
+                      "app": "inventory",
                       "app_name": "Ativos",
                       "days": 6,
                       "email": "ana@empresa.com",
@@ -12338,7 +12338,7 @@
                     {
                       "bindings": [
                         {
-                          "app": "ativos",
+                          "app": "inventory",
                           "env": "producao"
                         }
                       ],
@@ -12407,7 +12407,7 @@
               "example": {
                 "bindings": [
                   {
-                    "app": "ativos",
+                    "app": "inventory",
                     "env": "producao"
                   }
                 ],
@@ -12429,7 +12429,7 @@
                 "example": {
                   "bindings": [
                     {
-                      "app": "ativos",
+                      "app": "inventory",
                       "env": "producao"
                     }
                   ],
@@ -12557,7 +12557,7 @@
               "example": {
                 "bindings": [
                   {
-                    "app": "ativos",
+                    "app": "inventory",
                     "env": "producao"
                   }
                 ],
@@ -12578,7 +12578,7 @@
                 "example": {
                   "bindings": [
                     {
-                      "app": "ativos",
+                      "app": "inventory",
                       "env": "producao"
                     }
                   ],

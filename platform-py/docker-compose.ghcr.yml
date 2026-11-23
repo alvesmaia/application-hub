@@ -8,13 +8,13 @@ services:
     image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-web:${HUB_VERSION:?defina HUB_VERSION}
   app-hub-objstore:
     image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-minio:${HUB_VERSION:?}
-  app-hub-app-ativos:
-    image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-ativos:${HUB_VERSION:?}
-  app-hub-app-fornecedores:
-    image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-fornecedores:${HUB_VERSION:?}
-  app-hub-app-servicos:
-    image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-servicos:${HUB_VERSION:?}
-  app-hub-app-coletor:
-    image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-coletor:${HUB_VERSION:?}
-  app-hub-app-automacoes:
-    image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-automacoes:${HUB_VERSION:?}
+  app-hub-app-inventory:
+    image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-inventory:${HUB_VERSION:?}
+  app-hub-app-suppliers:
+    image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-suppliers:${HUB_VERSION:?}
+  app-hub-app-servicedesk:
+    image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-servicedesk:${HUB_VERSION:?}
+  app-hub-app-collector:
+    image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-collector:${HUB_VERSION:?}
+  app-hub-app-automations:
+    image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-automations:${HUB_VERSION:?}

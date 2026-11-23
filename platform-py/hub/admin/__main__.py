@@ -95,6 +95,10 @@ def _parser() -> argparse.ArgumentParser:
     sub.add_parser(
         "demo-db-roles", help="papel próprio de cada app de exemplo no Postgres dos apps (idempotente)"
     )
+    rn = sub.add_parser(
+        "rename-apps", help="0.4.0: ids dos apps de exemplo em inglês nos dados do hub (idempotente)"
+    )
+    rn.add_argument("--reverse", action="store_true", help="desfaz (volta aos ids em português)")
     sp = sub.add_parser(
         "add-sharepoint", help="cria ou atualiza uma conexão SharePoint (segredo pela entrada padrão)"
     )
@@ -125,6 +129,16 @@ def main(argv: list[str] | None = None) -> int:
         from hub.admin import demo_db
 
         return demo_db.main()
+    if a.cmd == "rename-apps":
+        from hub.admin import rename_apps
+
+        data = Path(os.getenv("HUB_DATA_DIR", "/data"))
+        vault = (
+            Vault.open(data) if (data / "admin.json").is_file() else None
+        )  # reseals values whose name moves
+        for line in rename_apps.migrate(data, a.reverse, vault) or ["nada a mudar"]:
+            print(f"rename-apps: {line}")
+        return 0
     store = AuthStore(Path(os.getenv("HUB_DATA_DIR", "/data")) / "auth.json")
     if a.cmd == "create-admin":
         text = asyncio.run(create_admin(store, a.email, a.name))

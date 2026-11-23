@@ -154,10 +154,10 @@ const roleDecls = (theme) => Object.entries(roles).map(([k, v]) => [`--am-${k}`,
 // 3. Contrast of the demo apps' identities: `--app-<papel>` of `:root` (light)
 //    and of `:root[data-theme="dark"]` in each app CSS, for the same pairs checked in the hub.
 const APP_CSS = [
-  'demo-apps-py/ativos/src/ativos/assets/app.css',
-  'demo-apps-py/fornecedores/src/fornecedores/assets/app.css',
-  'demo-apps-py/servicos/src/servicos/assets/app.css',
-  'demo-apps-py/coletor/src/coletor/assets/app.css',
+  'demo-apps-py/inventory/src/inventory/assets/app.css',
+  'demo-apps-py/suppliers/src/suppliers/assets/app.css',
+  'demo-apps-py/servicedesk/src/servicedesk/assets/app.css',
+  'demo-apps-py/collector/src/collector/assets/app.css',
 ];
 for (const rel of APP_CSS) {
   const file = path.join(root, rel);

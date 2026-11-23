@@ -77,7 +77,7 @@ def test_the_real_socket_of_the_host_is_shown(hub: TestClient, monkeypatch: pyte
 
 def test_local_images_are_not_labelled_as_docker_hub() -> None:
     assert rt.image_label("docker.io/library/app-hub-web:latest") == "app-hub-web:latest"
-    assert rt.image_label("localhost/app-hub-app-ativos:3") == "app-hub-app-ativos:3"
+    assert rt.image_label("localhost/app-hub-app-inventory:3") == "app-hub-app-inventory:3"
     assert rt.image_label("ghcr.io/empresa/app:1") == "ghcr.io/empresa/app:1"
 
 

@@ -111,7 +111,7 @@ def test_deactivated_owner_cannot_use_the_ticket(hub: TestClient) -> None:
 
 
 def test_app_scoped_token_only_uploads_its_apps(hub: TestClient) -> None:
-    c = bearer(hub, make_token(hub, ["mcp", "api:write"], ["ativos"]))
+    c = bearer(hub, make_token(hub, ["mcp", "api:write"], ["inventory"]))
     r = send(hub, link(c, "producao")["upload_url"])
     assert r.status_code == 403 and "novoapp" in r.json()["error"]
 

@@ -47,7 +47,7 @@ def backups(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> tuple[Backups, R
 
 def test_dump_leaves_out_privileges(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     b, rec = backups(monkeypatch, tmp_path)
-    asyncio.run(b._dump_db("ativos", lambda pct, msg: None))
+    asyncio.run(b._dump_db("inventory", lambda pct, msg: None))
     dump = next(cmd for cmd, _ in rec.calls if cmd[0] == "pg_dump")
     assert "--no-privileges" in dump and "--no-owner" in dump
 
@@ -58,7 +58,7 @@ def test_concurrent_backup_roles_use_distinct_sql_files(
     b, rec = backups(monkeypatch, tmp_path)
 
     async def both() -> None:
-        await asyncio.gather(b.ensure_pg_role("ativos"), b.ensure_pg_role("servicos"))
+        await asyncio.gather(b.ensure_pg_role("inventory"), b.ensure_pg_role("servicedesk"))
 
     asyncio.run(both())
     paths = [p for _, p in rec.calls]

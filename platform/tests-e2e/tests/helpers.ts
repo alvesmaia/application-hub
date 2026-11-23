@@ -79,13 +79,13 @@ export async function confirmHub(page: Page): Promise<void> {
   if (!ok) throw new Error('modal de confirmação do hub não apareceu');
 }
 
-/** Generates (once) the large spreadsheet with the ativos app itself (`python -m ativos gen-xlsx`). */
+/** Generates (once) the large spreadsheet with the inventory app itself (`python -m inventory gen-xlsx`). */
 export function bigXlsx(rows: number, prefix: string): string {
   fs.mkdirSync(WORK_DIR, { recursive: true });
   const name = `import-${rows}-${prefix}.xlsx`;
   const file = path.join(WORK_DIR, name);
   if (!fs.existsSync(file)) {
-    const gen = [`${CP}ativos`];
+    const gen = [`${CP}inventory`];
     execFileSync('docker', ['run', '--rm', '--user', '0', '--mount', `type=bind,source=${WORK_DIR},target=/w`,
       ...gen, 'gen-xlsx', String(rows), `/w/${name}`, '10', prefix],
     { stdio: 'inherit', env: { ...process.env, MSYS_NO_PATHCONV: '1' } });

@@ -27,7 +27,7 @@ const setRail = async (mode) => {
 if (!only || only === 'apps') {
   for (const theme of ['light', 'dark']) {
     await setTheme(theme);
-    for (const app of ['ativos', 'fornecedores', 'servicos']) {
+    for (const app of ['inventory', 'suppliers', 'servicedesk']) {
       await openApp(app);
       await setRail('hidden');
       await page.screenshot({ path: path.join(OUT, `apps-identity-${app}-${theme}.png`) });
@@ -36,7 +36,7 @@ if (!only || only === 'apps') {
   await setTheme('light');
 }
 if (!only || only === 'rail') {
-  await openApp('servicos');
+  await openApp('servicedesk');
   for (const m of ['expanded', 'collapsed', 'hidden']) {
     await setRail(m);
     if (m === 'collapsed') { await page.locator('#hub-rail .rail-group-label').nth(2).hover(); await page.waitForTimeout(400); }
@@ -48,8 +48,8 @@ if (!only || only === 'rail') {
 if (!only || only === 'loader') {
   const c2 = await b.newContext({ viewport: { width: 1440, height: 900 }, storageState: path.join(import.meta.dirname, '.auth', 'admin.json') });
   const p2 = await c2.newPage();
-  await p2.route('**/_frag/fornecedores**', async (r) => { if (r.request().headers()['x-hub-nav']) await new Promise((x) => setTimeout(x, 4000)); await r.continue(); });
-  p2.goto(`${HUB}/fornecedores`).catch(() => {});
+  await p2.route('**/_frag/suppliers**', async (r) => { if (r.request().headers()['x-hub-nav']) await new Promise((x) => setTimeout(x, 4000)); await r.continue(); });
+  p2.goto(`${HUB}/suppliers`).catch(() => {});
   await p2.locator('.app-loading').waitFor({ state: 'visible' });
   await p2.waitForFunction(() => parseInt(document.querySelector('.loader-percentage')?.textContent || '0', 10) >= 49);
   await p2.screenshot({ path: path.join(OUT, 'loader.png') });

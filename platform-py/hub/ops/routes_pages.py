@@ -49,15 +49,15 @@ SAGA_STEP = {"pending": "pendente", "done": "feito", "attempted": "falhou", "com
 
 
 MANIFEST_EXAMPLE = """{
-  "id": "fornecedores",
+  "id": "suppliers",
   "name": "Rede de Fornecedores",
   "version": "1.8.0",
-  "routes": ["/fornecedores/*"],
+  "routes": ["/suppliers/*"],
   "resources": { "cpu": 1.0, "memory": "1Gi", "pids": 100 },
-  "permissions": ["fornecedores.read"],
+  "permissions": ["suppliers.read"],
   "requires": { "database": true, "variables": ["API_BASE_URL"], "secrets": ["SMTP_PASSWORD"] },
   "sdk": "1.0",
-  "jobs": [{ "name": "fornecedores.reprocessar", "max_duration_s": 600, "max_attempts": 3 }]
+  "jobs": [{ "name": "suppliers.reprocess", "max_duration_s": 600, "max_attempts": 3 }]
 }"""
 
 SDK_CMDS = [

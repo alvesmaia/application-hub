@@ -1,29 +1,29 @@
 {
  "App": {
   "api": {
-   "base": "/ativos/api/v1",
+   "base": "/inventory/api/v1",
    "enabled": true,
-   "openapi": "/ativos/api/openapi.json"
+   "openapi": "/inventory/api/openapi.json"
   },
-  "id": "ativos",
+  "id": "inventory",
   "jobs": [],
   "mcp": {
    "enabled": true,
    "exposed_by_hub": true,
-   "tool_prefix": "ativos."
+   "tool_prefix": "inventory."
   },
   "mode": "fragment",
   "name": "Gestão de Ativos",
   "routes": [
-   "/ativos/*"
+   "/inventory/*"
   ],
   "stack": null,
   "status": "ok",
-  "url": "/ativos",
+  "url": "/inventory",
   "version": "2.4.1"
  },
  "AppStatus": {
-  "app": "ativos",
+  "app": "inventory",
   "last_hour": {
    "availability": 1,
    "errors": 0,
@@ -61,7 +61,7 @@
   "segments": 1
  },
  "Backup": {
-  "app": "ativos",
+  "app": "inventory",
   "at": 1790762598243,
   "env": "producao",
   "id": 3,
@@ -87,11 +87,11 @@
   ]
  },
  "Container": {
-  "container": "hub-app-ativos",
+  "container": "hub-app-inventory",
   "cpu": 1,
   "env": "producao",
-  "id": "ativos",
-  "image": "ghcr.io/org/ativos@sha256:…",
+  "id": "inventory",
+  "image": "ghcr.io/org/inventory@sha256:…",
   "memory": "1Gi",
   "memory_bytes": 1073741824,
   "name": "Gestão de Ativos",
@@ -100,7 +100,7 @@
  },
  "ContainerAction": {
   "action": "restart",
-  "container": "hub-app-ativos"
+  "container": "hub-app-inventory"
  },
  "DecideRequest": {
   "comment": "ok",
@@ -111,12 +111,12 @@
   "status": "approved"
  },
  "Deployment": {
-  "app": "ativos",
+  "app": "inventory",
   "at": 1790762598243,
   "commit": "a91f3c2",
   "env": "Produção",
   "id": 5,
-  "image": "ghcr.io/org/ativos@sha256:…",
+  "image": "ghcr.io/org/inventory@sha256:…",
   "note": "",
   "origin": "GitHub Actions",
   "package": null,
@@ -126,7 +126,7 @@
   "version": "2.4.1"
  },
  "DeprovisionRequest": {
-  "confirm": "hub-ativos"
+  "confirm": "hub-inventory"
  },
  "InboxItem": {
   "app": "contratos",
@@ -137,7 +137,7 @@
   "title": "Aprovar contrato"
  },
  "Job": {
-  "app": "ativos",
+  "app": "inventory",
   "done": false,
   "env": "producao",
   "id": 1,
@@ -150,7 +150,7 @@
   "title": "Backup de Gestão de Ativos"
  },
  "LogLine": {
-  "app": "ativos",
+  "app": "inventory",
   "at": 1790767578173,
   "level": "INFO",
   "message": "Novo ativo cadastrado",
@@ -161,7 +161,7 @@
  "Observability": {
   "items": [
    {
-    "app": "ativos",
+    "app": "inventory",
     "availability": 1,
     "env": "producao",
     "errors": 0,
@@ -205,7 +205,7 @@
  "RotateResult": {
   "failed": 0,
   "items": [
-   "ativos/producao: ok"
+   "inventory/producao: ok"
   ],
   "rotated": 2
  },
@@ -218,7 +218,7 @@
       "score": 0.6,
       "subtitle": "",
       "title": "Gestão de Ativos",
-      "url": "/ativos"
+      "url": "/inventory"
      }
     ],
     "id": "platform",
@@ -226,7 +226,7 @@
    }
   ],
   "partial": false,
-  "q": "ativos",
+  "q": "inventory",
   "took_ms": 3,
   "total": 1,
   "unavailable": []
@@ -234,7 +234,7 @@
  "StatusPage": {
   "apps": [
    {
-    "id": "ativos",
+    "id": "inventory",
     "name": "Gestão de Ativos",
     "status": "ok"
    }
@@ -243,22 +243,22 @@
   "overall": "ok"
  },
  "Storage": {
-  "app": "ativos",
-  "bucket": "hub-ativos",
-  "connection": "hub-ativos-producao",
+  "app": "inventory",
+  "bucket": "hub-inventory",
+  "connection": "hub-inventory-producao",
   "env": "producao"
  },
  "StorageChange": {
   "changed": true,
   "detail": "bucket, usuário e conexão criados",
   "storage": {
-   "app": "ativos",
-   "bucket": "hub-ativos",
+   "app": "inventory",
+   "bucket": "hub-inventory",
    "env": "producao"
   }
  },
  "Task": {
-  "app": "ativos",
+  "app": "inventory",
   "app_name": "Gestão de Ativos",
   "attempts": 1,
   "cancel_requested": false,
@@ -289,7 +289,7 @@
  },
  "UsageRow": {
   "actions": 9,
-  "app": "ativos",
+  "app": "inventory",
   "app_name": "Ativos",
   "days": 6,
   "email": "ana@empresa.com",
@@ -335,7 +335,7 @@
  "Variable": {
   "bindings": [
    {
-    "app": "ativos",
+    "app": "inventory",
     "env": "producao"
    }
   ],

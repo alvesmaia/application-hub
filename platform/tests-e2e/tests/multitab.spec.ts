@@ -29,9 +29,9 @@ test('5 abas: apps diferentes, deep links, SSE compartilhado com failover e 409 
 
   // Tabs 1–3: three different apps, opened directly on a section (deep link → no loader).
   const [t1, t2, t3] = [await newTab(), await newTab(), await newTab()];
-  await t1.goto('/apps/ativos/assets?q=MacBook');
-  await t2.goto('/apps/fornecedores/indicators');
-  await t3.goto('/apps/servicos/requests');
+  await t1.goto('/apps/inventory/assets?q=MacBook');
+  await t2.goto('/apps/suppliers/indicators');
+  await t3.goto('/apps/servicedesk/requests');
   for (const t of [t1, t2, t3]) {
     await expect(t.locator('#app-root .app-sidebar')).toBeVisible({ timeout: 20_000 });
   }
@@ -57,7 +57,7 @@ test('5 abas: apps diferentes, deep links, SSE compartilhado com failover e 409 
   // All tabs receive the same line (the leader relays it through BroadcastChannel).
   const marker = `multitab-${uniq().toLowerCase()}`;
   await expect.poll(async () => {
-    await t1.request.get(`/_frag/servicos/${marker}`);
+    await t1.request.get(`/_frag/servicedesk/${marker}`);
     const texts = await Promise.all(live.map((t) => t.locator('[data-log-terminal]').textContent()));
     return texts.every((x) => (x || '').includes(marker));
   }, { timeout: 30_000 }).toBe(true);
@@ -70,7 +70,7 @@ test('5 abas: apps diferentes, deep links, SSE compartilhado com failover e 409 
   await expect.poll(() => subscribers(), { timeout: 45_000 }).toBe(base + 1);
   const marker2 = `failover-${uniq().toLowerCase()}`;
   await expect.poll(async () => {
-    await t1.request.get(`/_frag/servicos/${marker2}`);
+    await t1.request.get(`/_frag/servicedesk/${marker2}`);
     const texts = await Promise.all(followers.map((t) => t.locator('[data-log-terminal]').textContent()));
     return texts.every((x) => (x || '').includes(marker2));
   }, { timeout: 30_000 }).toBe(true);
@@ -79,15 +79,15 @@ test('5 abas: apps diferentes, deep links, SSE compartilhado com failover e 409 
   // Concurrent editing of the same asset in two tabs of the same session → 409 on the second.
   const id = 46;
   const [e1, e2] = [t1, t2];
-  await openApp(e1, `/apps/ativos/assets?edit=${id}`);
-  await openApp(e2, `/apps/ativos/assets?edit=${id}`);
-  const form = (p: Page) => p.locator(`form[action="/apps/ativos/itens/${id}"]`).first();
+  await openApp(e1, `/apps/inventory/assets?edit=${id}`);
+  await openApp(e2, `/apps/inventory/assets?edit=${id}`);
+  const form = (p: Page) => p.locator(`form[action="/apps/inventory/items/${id}"]`).first();
   await form(e1).locator('input[name="name"]').fill(`Aba 1 ${uniq()}`);
-  const s1 = e1.waitForResponse((r) => r.url().endsWith(`/_frag/ativos/itens/${id}`));
+  const s1 = e1.waitForResponse((r) => r.url().endsWith(`/_frag/inventory/items/${id}`));
   await form(e1).locator('button[type="submit"]').click();
   expect((await s1).status()).toBe(200);
   await form(e2).locator('input[name="name"]').fill('Aba 2');
-  const s2 = e2.waitForResponse((r) => r.url().endsWith(`/_frag/ativos/itens/${id}`));
+  const s2 = e2.waitForResponse((r) => r.url().endsWith(`/_frag/inventory/items/${id}`));
   await form(e2).locator('button[type="submit"]').click();
   expect((await s2).status()).toBe(409);
   await expect(e2.locator('#app-root')).toContainText('Este ativo foi alterado por outra pessoa');

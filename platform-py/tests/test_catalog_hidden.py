@@ -19,13 +19,13 @@ def hub(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
 def test_a_hidden_app_shows_only_to_users_with_access(hub: TestClient) -> None:
     hub.post("/api/admin/roles", json={"name": "Só Ativos", "level": "Padrão"})
     hub.put("/api/admin/roles/Só Ativos/permissions/0", json={"granted": True})
-    hub.put("/api/admin/roles/Só Ativos/apps", json={"apps": ["ativos"]})
+    hub.put("/api/admin/roles/Só Ativos/apps", json={"apps": ["inventory"]})
     ana = add_user(hub, "ana", ["Só Ativos"])
-    assert 'data-app="fornecedores"' in ana.get("/applications").text  # under "Other applications"
-    r = hub.put("/api/admin/settings", json=BASE | {"catalog_hidden_apps": ["fornecedores", "ativos"]})
-    assert r.status_code == 200 and r.json()["catalog_hidden_apps"] == ["ativos", "fornecedores"]
+    assert 'data-app="suppliers"' in ana.get("/applications").text  # under "Other applications"
+    r = hub.put("/api/admin/settings", json=BASE | {"catalog_hidden_apps": ["suppliers", "inventory"]})
+    assert r.status_code == 200 and r.json()["catalog_hidden_apps"] == ["inventory", "suppliers"]
     page = ana.get("/applications").text
-    assert 'data-app="fornecedores"' not in page and 'data-app="ativos"' in page  # hidden, but she has access
-    assert 'data-app="fornecedores"' in hub.get("/applications").text  # the admin has access to every app
-    assert 'name="catalog_hidden_app" value="fornecedores" checked' in hub.get("/admin").text
+    assert 'data-app="suppliers"' not in page and 'data-app="inventory"' in page  # hidden, but she has access
+    assert 'data-app="suppliers"' in hub.get("/applications").text  # the admin has access to every app
+    assert 'name="catalog_hidden_app" value="suppliers" checked' in hub.get("/admin").text
     assert hub.put("/api/admin/settings", json=BASE | {"catalog_hidden_apps": ["zzz"]}).status_code == 400

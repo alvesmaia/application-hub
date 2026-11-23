@@ -1,0 +1,46 @@
+{
+  "id": "automations",
+  "stack": "python",
+  "roles": [
+    "Administrador"
+  ],
+  "sections": [
+    "catalog",
+    "runs",
+    "processes",
+    "packages",
+    "triggers"
+  ],
+  "durable": true,
+  "jobs": [
+    "automations.run"
+  ],
+  "mutation": {
+    "path": "/automations/catalog/3/run",
+    "form": {
+      "p_documentos": "529.982.247-25\nCONF-{uniq}",
+      "p_tipo": "auto"
+    },
+    "vary": "p_documentos",
+    "ok": [
+      303
+    ],
+    "audit_action": "Execução solicitada"
+  },
+  "job_trigger": {
+    "path": "/automations/catalog/3/run",
+    "form": {
+      "p_documentos": "11.222.333/0001-81\nJOB-{uniq}",
+      "p_tipo": "auto"
+    },
+    "ok": [
+      303
+    ],
+    "kind": "automations.run"
+  },
+  "heavy": null,
+  "search": {
+    "q": "Validar",
+    "min": 1
+  }
+}

@@ -56,10 +56,10 @@ test('Busca: registros dos apps antes do interno; "ver todos" por app @core', as
   const r = await json(await api.get('/api/me/search?q=a'));
   const ids: string[] = r.groups.map((g: { id: string }) => g.id);
   if (ids.includes('admin')) expect(ids[ids.length - 1]).toBe('admin');
-  const atv = r.groups.find((g: { id: string }) => g.id === 'ativos');
+  const atv = r.groups.find((g: { id: string }) => g.id === 'inventory');
   expect(atv, 'registros do Ativos').toBeTruthy();
-  expect(ids.indexOf('ativos')).toBeLessThan(ids.includes('admin') ? ids.indexOf('admin') : 99);
-  if (atv.hits.length >= 5) expect(atv.more_url).toContain('app=ativos');
+  expect(ids.indexOf('inventory')).toBeLessThan(ids.includes('admin') ? ids.indexOf('admin') : 99);
+  if (atv.hits.length >= 5) expect(atv.more_url).toContain('app=inventory');
   await api.dispose();
   await page.goto('/search?q=a');
   await expect(page.locator('.hub-search-group mark').first()).toBeVisible();
@@ -69,7 +69,7 @@ test('Busca: registros dos apps antes do interno; "ver todos" por app @core', as
   await page.goto('/search?q=a');
   await expect(page.locator('.hub-search-group').first()).toBeVisible();
   expect(Date.now() - t0).toBeLessThan(4000);
-  await page.goto('/search?q=a&app=ativos');
+  await page.goto('/search?q=a&app=inventory');
   await expect(page.locator('.hub-search-group')).toHaveCount(1);
   await expect(page.locator('.hub-search-back a')).toBeVisible();
 });
@@ -83,15 +83,15 @@ test('Catálogo: versão "vX.Y.Z" vinda da implantação ativa @core', async ({ 
   const deps = await json(await api.get('/api/ops/deployments'));
   await api.dispose();
   const list = (Array.isArray(deps) ? deps : deps.deployments || []) as { app: string; env: string; status: string; version: string }[];
-  const prod = list.find((d) => d.app === 'servicos' && d.env === 'Produção' && d.status === 'Implantado');
+  const prod = list.find((d) => d.app === 'servicedesk' && d.env === 'Produção' && d.status === 'Implantado');
   if (prod) {
-    await expect(page.locator('.app-card[data-app="servicos"] .app-version')).toHaveText(`v${prod.version.replace(/^v/, '')}`);
+    await expect(page.locator('.app-card[data-app="servicedesk"] .app-version')).toHaveText(`v${prod.version.replace(/^v/, '')}`);
   }
 });
 
 test('Recentes: sem rota de teste e sem repetidos; própria conta sem "Desativar" @core', async ({ page }) => {
-  await page.goto('/apps/ativos');
-  await page.goto('/apps/ativos/e2e-hostil').catch(() => undefined);
+  await page.goto('/apps/inventory');
+  await page.goto('/apps/inventory/e2e-hostil').catch(() => undefined);
   await page.goto('/');
   const recents = page.locator('[data-widget="recents"] a, .hub-recents a');
   const hrefs = await recents.evaluateAll((els) => els.map((e) => e.getAttribute('href')));

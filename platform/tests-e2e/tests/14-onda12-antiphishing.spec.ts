@@ -35,7 +35,7 @@ test('(a) fragmento hostil: nada executa, formulários para /login, /account e /
   });
   const dialogs: string[] = [];
   page.on('dialog', (d) => { dialogs.push(d.message()); d.dismiss().catch(() => {}); });
-  const res = await page.goto('/apps/ativos/e2e-hostil');
+  const res = await page.goto('/apps/inventory/e2e-hostil');
   const csp = res!.headers()['content-security-policy'] || '';
   expect(csp).toContain("require-trusted-types-for 'script'");
   const scriptSrc = csp.split(';').find((d) => d.trim().startsWith('script-src'))!;
@@ -71,10 +71,10 @@ test('(a) fragmento hostil: nada executa, formulários para /login, /account e /
   expect(await page.evaluate(() => (window as any).__pwned)).toBeUndefined();
   expect(sent).toEqual([]);
   expect(dialogs).toEqual([]);
-  expect(new URL(page.url()).pathname).toBe('/apps/ativos/e2e-hostil');
+  expect(new URL(page.url()).pathname).toBe('/apps/inventory/e2e-hostil');
 
   // Opened directly in the browser (malicious link to the fragment): document in sandbox.
-  const direct = await page.goto('/_frag/ativos/e2e-hostil');
+  const direct = await page.goto('/_frag/inventory/e2e-hostil');
   expect(direct!.headers()['content-security-policy']).toMatch(/; sandbox$/);
   expect(await page.evaluate(() => (window as any).__pwned)).toBeUndefined();
   await page.locator('#e2e-steal-btn').click();
@@ -86,7 +86,7 @@ test('(a) fragmento hostil: nada executa, formulários para /login, /account e /
 test('comportamentos data-hub-*: modal, toast, filtro, gráfico e menu sem JavaScript do app', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(String(e)));
-  await openFragment(page, '/apps/ativos/movements', '[data-hub-filter]');
+  await openFragment(page, '/apps/inventory/movements', '[data-hub-filter]');
   // No app script loaded.
   const scripts = await page.evaluate(() => [...document.scripts].map((s) => s.src).filter(Boolean));
   expect(scripts.filter((s) => s.includes('/_frag/'))).toEqual([]);
@@ -106,12 +106,12 @@ test('comportamentos data-hub-*: modal, toast, filtro, gráfico e menu sem JavaS
   await expect(modal).toHaveCount(0);
   await expect(page.locator('#toast')).toContainText('Ativo cadastrado com sucesso.');
   // Hub chart (TimeSeriesChart) mounted from data-hub-charts.
-  await openFragment(page, '/apps/ativos/dashboard', '[data-tsc]');
+  await openFragment(page, '/apps/inventory/dashboard', '[data-tsc]');
   const cat = page.locator('.tsc-cat-row').first();
   await cat.click();
   await expect(cat).toHaveAttribute('aria-pressed', 'true');
-  // Search in the knowledge base (filter with empty value) — servicos.
-  await openFragment(page, '/apps/servicos/knowledge', '[data-hub-filter-item]');
+  // Search in the knowledge base (filter with empty value) — servicedesk.
+  await openFragment(page, '/apps/servicedesk/knowledge', '[data-hub-filter-item]');
   await page.locator('[data-hub-filter="#kb-page"]').fill('zzz-nada-aqui');
   await expect(page.locator('.app3-kb-empty')).toBeVisible();
   await page.locator('[data-hub-filter="#kb-page"]').fill('reembolso');
@@ -161,7 +161,7 @@ async function deployments(api: APIRequestContext) {
 test('(c)+(b) JavaScript próprio: REVISE no pipeline, revisão separada e auditada, SRI no navegador', async ({ page }) => {
   test.setTimeout(480_000);
   autoConfirm(page);
-  const APP = 'servicos';
+  const APP = 'servicedesk';
   const VERSION = `3.9.${Math.floor(Date.now() / 1000) % 1_000_000}`;
   let api = await apiAs('admin');
   // Separation of duties (M2): whoever submits is another administrator; Ana reviews.
@@ -210,7 +210,7 @@ test('(c)+(b) JavaScript próprio: REVISE no pipeline, revisão separada e audit
   expect(blocked.status()).toBe(400);
   expect(await blocked.text()).toContain('JavaScript próprio');
   // Review through the screen (button separate from the approval).
-  const drawer = await openDeployVersion(page, 'servicos', dep.id);
+  const drawer = await openDeployVersion(page, 'servicedesk', dep.id);
   const review = drawer.locator(`[data-ops-scripts-review="${dep.id}"]`);
   await expect(review).toContainText('Revisar: o app traz JavaScript próprio');
   await expect(review).toContainText('ui/assets/e2e-tampered.js');
@@ -218,7 +218,7 @@ test('(c)+(b) JavaScript próprio: REVISE no pipeline, revisão separada e audit
   await drawer.locator(`[data-ops-approve-scripts="${dep.id}"]`).click(); // button stays in the version's actions (drawer), outside the review frame
   await expect(page.locator('#toast')).toContainText('JavaScript próprio aprovado');
   await expect(page.locator(`[data-ops-scripts-review="${dep.id}"]`)).toHaveCount(0);
-  await page.goto('/admin/audit?scope=servicos');
+  await page.goto('/admin/audit?scope=servicedesk');
   await expect(page.locator('#app-root')).toContainText('JavaScript próprio aprovado');
   // Now the deployment is approved (real blue/green).
   const ok = await api.post(`/api/ops/deployments/${dep.id}/approve?wait=true`, { headers: { 'content-type': 'application/json' }, data: {} });
@@ -228,10 +228,10 @@ test('(c)+(b) JavaScript próprio: REVISE no pipeline, revisão separada e audit
   // (b) Browser: the approved one runs; the tampered one (served ≠ reviewed) is refused by SRI.
   const consoleErrors: string[] = [];
   page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
-  const res = await page.goto('/apps/servicos/dashboard');
+  const res = await page.goto('/apps/servicedesk/dashboard');
   const csp = res!.headers()['content-security-policy'] || '';
   expect(csp).toContain(`'${sri(APPROVED_JS)}'`);
-  expect(csp).toContain('/_frag/servicos/assets/e2e-approved.js');
+  expect(csp).toContain('/_frag/servicedesk/assets/e2e-approved.js');
   await expect(page.locator('html')).toHaveAttribute('data-e2e-approved', 'ran', { timeout: 30_000 });
   await page.waitForTimeout(800);
   expect(await page.locator('html').getAttribute('data-e2e-tampered')).toBeNull();
@@ -267,7 +267,7 @@ test('(d) consentimento OAuth é tela de topo sem script', async ({ page }) => {
 
 // ---- security review of 2.1 --------------------------------------------------------
 test('H1: data-hub-* com seletor malicioso não alcança o shell (só ids dentro do app) @core', async ({ page }) => {
-  await openFragment(page, '/apps/ativos/movements', '[data-hub-filter]');
+  await openFragment(page, '/apps/inventory/movements', '[data-hub-filter]');
   const r = await page.evaluate(async () => {
     const root = document.getElementById('app-root')!;
     const header = document.querySelector('.platform-header')!;
@@ -275,13 +275,13 @@ test('H1: data-hub-* com seletor malicioso não alcança o shell (só ids dentro
     const box = document.createElement('div');
     // Same path as the app's HTML: sanitizer + hub-kit.
     (window as any).HubSafe.setHTML(box, `
-      <button id="h1a" data-hub-get="/apps/ativos/movements" data-hub-target=", .platform-header" data-hub-swap="outerHTML">a</button>
-      <button id="h1b" data-hub-get="/apps/ativos/movements" data-hub-target=", body" data-hub-swap="innerHTML">b</button>
-      <button id="h1c" data-hub-get="/apps/ativos/movements" data-hub-target="#x, header" data-hub-swap="outerHTML">c</button>
-      <button id="h1d" data-hub-get="/apps/ativos/movements" data-hub-target="#app-root" data-hub-swap="innerHTML">d</button>
+      <button id="h1a" data-hub-get="/apps/inventory/movements" data-hub-target=", .platform-header" data-hub-swap="outerHTML">a</button>
+      <button id="h1b" data-hub-get="/apps/inventory/movements" data-hub-target=", body" data-hub-swap="innerHTML">b</button>
+      <button id="h1c" data-hub-get="/apps/inventory/movements" data-hub-target="#x, header" data-hub-swap="outerHTML">c</button>
+      <button id="h1d" data-hub-get="/apps/inventory/movements" data-hub-target="#app-root" data-hub-swap="innerHTML">d</button>
       <div data-hub-tabs><button id="h1e" data-hub-tab=", .platform-header">e</button></div>
       <input id="h1f" data-hub-filter=", .platform-header" data-hub-filter-empty=", body">
-      <button id="h1g" data-hub-copy-from=", input">g</button>`, { app: 'ativos' });
+      <button id="h1g" data-hub-copy-from=", input">g</button>`, { app: 'inventory' });
     root.querySelector('.workspace-content')!.prepend(box);
     (window as any).HubKit.mount(box);
     for (const id of ['h1a', 'h1b', 'h1c', 'h1d', 'h1e', 'h1g']) (document.getElementById(id) as HTMLElement).click();
@@ -300,11 +300,11 @@ test('H1: data-hub-* com seletor malicioso não alcança o shell (só ids dentro
 });
 
 test('M1: position:fixed do app não cobre o header nem o rail do hub @core', async ({ page }) => {
-  await openFragment(page, '/apps/ativos/movements', '[data-hub-filter]');
+  await openFragment(page, '/apps/inventory/movements', '[data-hub-filter]');
   const r = await page.evaluate(() => {
     const root = document.getElementById('app-root')!;
     const d = document.createElement('div');
-    (window as any).HubSafe.setHTML(d, '<div id="cover" style="position:fixed;inset:0;z-index:2147483647;background:red">capa</div><div id="pop" popover="auto">x</div><button id="popbtn" popovertarget="pop">p</button>', { app: 'ativos' });
+    (window as any).HubSafe.setHTML(d, '<div id="cover" style="position:fixed;inset:0;z-index:2147483647;background:red">capa</div><div id="pop" popover="auto">x</div><button id="popbtn" popovertarget="pop">p</button>', { app: 'inventory' });
     root.querySelector('.workspace-content')!.append(d);
     const header = document.querySelector('.platform-header')!.getBoundingClientRect();
     const hx = header.left + header.width / 2, hy = header.top + header.height / 2;
@@ -329,7 +329,7 @@ test('M1: position:fixed do app não cobre o header nem o rail do hub @core', as
 test('M3: um script da página do app não lê a tela de credencial aberta com window.open', async ({ page }) => {
   const res = await page.goto('/account/password');
   expect(res!.headers()['cross-origin-opener-policy']).toBe('noopener-allow-popups');
-  await openFragment(page, '/apps/ativos/movements', '[data-hub-filter]');
+  await openFragment(page, '/apps/inventory/movements', '[data-hub-filter]');
   const popup = page.waitForEvent('popup');
   const read = await page.evaluate(async () => {
     const w = window.open('/account/password', '_blank');
@@ -345,7 +345,7 @@ test('M3: um script da página do app não lê a tela de credencial aberta com w
 });
 
 test('M1 (CSS): folha do app com regras contra o shell não esconde nem troca o header', async ({ page }) => {
-  await openFragment(page, '/apps/ativos/movements', '[data-hub-filter]');
+  await openFragment(page, '/apps/inventory/movements', '[data-hub-filter]');
   // The app's CSS never comes in as a global <link>: sheet built with @scope.
   const real = await page.evaluate(() => ({
     links: document.querySelectorAll('link[href*="/_frag/"]').length,

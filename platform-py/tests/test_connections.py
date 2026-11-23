@@ -29,7 +29,7 @@ S3 = {
     "bucket": "docs",
     "access_key": "AKEY",
     "secret": SECRET,
-    "bindings": [{"app": "ativos", "env": "producao"}],
+    "bindings": [{"app": "inventory", "env": "producao"}],
 }
 SP = {
     "name": "contratos-sp",
@@ -132,7 +132,9 @@ def test_names_and_link_policy() -> None:
         and not valid_name("a")
         and not valid_name("x-")
     )
-    assert names("ativos", "producao") == "app-ativos" and names("ativos", "staging") == "stg-ativos"
+    assert (
+        names("inventory", "producao") == "app-inventory" and names("inventory", "staging") == "stg-inventory"
+    )
     for bad in ("Ativos", "a" * 40):
         with pytest.raises(ConnError):
             names(bad, "producao")
@@ -143,25 +145,25 @@ def test_names_and_link_policy() -> None:
         "allow_edit_links": False,
         "max_link_hours": 48,
     }
-    assert link_policy(c, "ativos", "view", 24) == "organization"
+    assert link_policy(c, "inventory", "view", 24) == "organization"
     with pytest.raises(ConnError, match="de 1 a 48"):
-        link_policy(c, "ativos", "view", 49)
+        link_policy(c, "inventory", "view", 49)
     with pytest.raises(ConnError, match="Tipo de link"):
-        link_policy(c, "ativos", "rw", 1)
+        link_policy(c, "inventory", "rw", 1)
     with pytest.raises(ConnError, match="edição não liberados"):
-        link_policy(c, "ativos", "edit", 1)
-    assert link_policy({**c, "allow_edit_links": True}, "ativos", "edit", 1) == "organization"
-    anon = {**c, "share_scope": "anonymous", "anonymous_link_apps": ["ativos"], "allow_edit_links": True}
+        link_policy(c, "inventory", "edit", 1)
+    assert link_policy({**c, "allow_edit_links": True}, "inventory", "edit", 1) == "organization"
+    anon = {**c, "share_scope": "anonymous", "anonymous_link_apps": ["inventory"], "allow_edit_links": True}
     assert (
-        link_policy(anon, "ativos", "view", 1) == "anonymous"
-        and link_policy(anon, "coletor", "view", 1) == "organization"
+        link_policy(anon, "inventory", "view", 1) == "anonymous"
+        and link_policy(anon, "collector", "view", 1) == "organization"
     )
     with pytest.raises(ConnError, match="edição não liberados"):
-        link_policy(anon, "ativos", "edit", 1)  # never anonymous editing
-    s3 = {**c, "kind": "s3", "anonymous_link_apps": ["ativos"]}
-    assert link_policy(s3, "ativos", "view", 1) == "anonymous"
+        link_policy(anon, "inventory", "edit", 1)  # never anonymous editing
+    s3 = {**c, "kind": "s3", "anonymous_link_apps": ["inventory"]}
+    assert link_policy(s3, "inventory", "view", 1) == "anonymous"
     with pytest.raises(ConnError, match="pré-assinados"):
-        link_policy(s3, "coletor", "view", 1)
+        link_policy(s3, "collector", "view", 1)
     assert "s3:DeleteObject" in policy("meu-bucket") and "arn:aws:s3:::meu-bucket/*" in policy("meu-bucket")
 
 
@@ -170,22 +172,26 @@ def test_who_of_and_source_guard() -> None:
         b"k" * 32,
         base64.urlsafe_b64encode(json.dumps({"user": "ana@x"}).encode()).decode().rstrip("="),
     )
-    sig = sign_user(key, "ativos", "producao", user, 1_000_000)
-    assert who_of({"x-hub-user": user, "x-hub-user-sig": sig}, key, "ativos", "producao", 1_000_000) == (
+    sig = sign_user(key, "inventory", "producao", user, 1_000_000)
+    assert who_of({"x-hub-user": user, "x-hub-user-sig": sig}, key, "inventory", "producao", 1_000_000) == (
         "ana@x",
         "",
     )
-    actor, note = who_of({"x-hub-user": user, "x-hub-user-sig": sig}, key, "coletor", "producao", 1_000_000)
-    assert actor == "app:coletor" and "não verificado" in note  # another app's signature is not valid
-    assert who_of({"x-hub-user": user}, key, "ativos", "producao")[0] == "app:ativos"
-    assert who_of({"x-hub-user": "%%%"}, key, "ativos", "producao") == ("app:ativos", "")
-    assert who_of({}, key, "ativos", "producao") == ("app:ativos", "")
-    nets = parse_cidrs("ativos=10.231.1.0/24, lixo, coletor=10.231.5.0/24, x=abc")
-    assert source_allowed({}, "ativos", None)  # no list = only the token
-    assert source_allowed(nets, "ativos", "10.231.1.9") and not source_allowed(nets, "ativos", "10.231.5.9")
-    assert not source_allowed(nets, "servicos", "10.231.1.9") and not source_allowed(nets, "ativos", None)
-    assert source_allowed(nets, "ativos", "::ffff:10.231.1.9") and not source_allowed(
-        nets, "ativos", "fd00::1"
+    actor, note = who_of({"x-hub-user": user, "x-hub-user-sig": sig}, key, "collector", "producao", 1_000_000)
+    assert actor == "app:collector" and "não verificado" in note  # another app's signature is not valid
+    assert who_of({"x-hub-user": user}, key, "inventory", "producao")[0] == "app:inventory"
+    assert who_of({"x-hub-user": "%%%"}, key, "inventory", "producao") == ("app:inventory", "")
+    assert who_of({}, key, "inventory", "producao") == ("app:inventory", "")
+    nets = parse_cidrs("inventory=10.231.1.0/24, lixo, collector=10.231.5.0/24, x=abc")
+    assert source_allowed({}, "inventory", None)  # no list = only the token
+    assert source_allowed(nets, "inventory", "10.231.1.9") and not source_allowed(
+        nets, "inventory", "10.231.5.9"
+    )
+    assert not source_allowed(nets, "servicedesk", "10.231.1.9") and not source_allowed(
+        nets, "inventory", None
+    )
+    assert source_allowed(nets, "inventory", "::ffff:10.231.1.9") and not source_allowed(
+        nets, "inventory", "fd00::1"
     )
 
 
@@ -208,7 +214,7 @@ def test_connection_crud_masks_secret_everywhere(hub: TestClient, tmp_path: Path
     assert hub.post("/api/admin/connections", json=S3).status_code == 400  # nome repetido
     html = hub.get("/admin/connections").text
     assert SECRET not in html and 'data-conn-row="docs-s3"' in html and "AKEY · ••••••••" in html
-    assert "Nunca testada" in html and "Ativos · Produção" in html and "Armazenamento provisionado" in html
+    assert "Nunca testada" in html and "Inventory · Produção" in html and "Armazenamento provisionado" in html
     # nothing in clear text on disk or in the trail; the S3 key is encrypted in the vault
     disk = (tmp_path / "connections.json").read_text(encoding="utf-8")
     assert SECRET not in disk and '"secret": "' in disk
@@ -245,7 +251,7 @@ def test_connection_crud_masks_secret_everywhere(hub: TestClient, tmp_path: Path
         ({"max_upload_mb": 5000}, "de 1 a 2048"),
         ({"max_link_hours": 0}, "Validade máxima"),
         ({"bindings": [{"app": "nao", "env": "producao"}]}, "Aplicação desconhecida"),
-        ({"bindings": [{"app": "ativos", "env": "dev"}]}, "Ambiente inválido"),
+        ({"bindings": [{"app": "inventory", "env": "dev"}]}, "Ambiente inválido"),
         ({"public_url": "ftp://x"}, "URL pública"),
         ({"endpoint": "http://169.254.169.254"}, "bloqueado"),
         ({"anonymous_link_apps": ["nao"]}, "Aplicação desconhecida"),
@@ -269,7 +275,7 @@ def test_s3_validation(hub: TestClient, patch: dict[str, Any], msg: str) -> None
         ({"auth": "certificate"}, "certificado"),
         ({"share_scope": "anonymous"}, "Links anônimos: escolha"),
         (
-            {"share_scope": "anonymous", "anonymous_link_apps": ["ativos"], "allow_edit_links": True},
+            {"share_scope": "anonymous", "anonymous_link_apps": ["inventory"], "allow_edit_links": True},
             "não podem ser de edição",
         ),
     ],
@@ -278,7 +284,8 @@ def test_sharepoint_validation(hub: TestClient, patch: dict[str, Any], msg: str)
     r = hub.post("/api/admin/connections", json={**SP, **patch})
     assert r.status_code == 400 and msg in r.json()["error"]
     ok = hub.post(
-        "/api/admin/connections", json={**SP, "share_scope": "anonymous", "anonymous_link_apps": ["ativos"]}
+        "/api/admin/connections",
+        json={**SP, "share_scope": "anonymous", "anonymous_link_apps": ["inventory"]},
     )
     assert (
         ok.status_code == 201
@@ -296,7 +303,7 @@ def test_connection_rbac_and_json_only(hub: TestClient) -> None:
         assert c.post("/api/admin/connections", json=S3).status_code == 403
         assert c.post("/api/admin/connections/docs-s3/test", json={}).status_code == 403
         assert c.get("/admin/connections").status_code == 403
-        assert c.post("/api/admin/connections/storage/ativos", json={}).status_code == 403
+        assert c.post("/api/admin/connections/storage/inventory", json={}).status_code == 403
     lead = add_user(hub, "lead", ["Power User"])  # editar_configuracoes
     assert (
         lead.get("/api/admin/connections").status_code == 200
@@ -314,9 +321,9 @@ def test_connection_rbac_and_json_only(hub: TestClient) -> None:
     )
     assert hub.get("/api/admin/connections", headers={"authorization": "Bearer hubt_x"}).status_code == 401
     # no body (actions such as "provision storage") does not require Content-Type; with a non-JSON body it still returns 415
-    empty = hub.post("/api/admin/connections/storage/ativos", headers={"content-type": ""})
+    empty = hub.post("/api/admin/connections/storage/inventory", headers={"content-type": ""})
     assert empty.status_code != 415
-    assert hub.post("/api/admin/connections/storage/ativos", content="x=1",
+    assert hub.post("/api/admin/connections/storage/inventory", content="x=1",
                     headers={"content-type": "application/x-www-form-urlencoded"}).status_code == 415  # fmt: skip
 
 
@@ -326,13 +333,13 @@ def test_bindings_sync_managed_variables_and_pending_restart(hub: TestClient) ->
     assert not any(n.startswith("HUB_STORAGE") or n.startswith("HUB_CONNECTIONS") for n in names_before)
     r = hub.put(
         "/api/admin/connections/docs-s3/bindings",
-        json={"bindings": [{"app": "ativos", "env": "producao"}, {"app": "ativos", "env": "staging"}]},
+        json={"bindings": [{"app": "inventory", "env": "producao"}, {"app": "inventory", "env": "staging"}]},
     )
     assert r.status_code == 200 and len(r.json()["bindings"]) == 2
     env = {v["name"]: v for v in hub.get("/api/admin/env").json()}
-    lst = env["HUB_CONNECTIONS_ATIVOS_PRODUCAO"]
+    lst = env["HUB_CONNECTIONS_INVENTORY_PRODUCAO"]
     assert lst["value"] == "docs-s3=s3" and lst["managed"] is True and lst["inject_as"] == "HUB_CONNECTIONS"
-    tok = env["HUB_STORAGE_TOKEN_ATIVOS_STAGING"]
+    tok = env["HUB_STORAGE_TOKEN_INVENTORY_STAGING"]
     assert (
         tok["kind"] == "secreta"
         and tok["inject_as"] == "HUB_STORAGE_TOKEN"
@@ -358,10 +365,11 @@ def test_bindings_sync_managed_variables_and_pending_restart(hub: TestClient) ->
     )
     # unbinding removes the variables from the app; with no bindings left, the broker address also disappears
     hub.put(
-        "/api/admin/connections/docs-s3/bindings", json={"bindings": [{"app": "ativos", "env": "producao"}]}
+        "/api/admin/connections/docs-s3/bindings",
+        json={"bindings": [{"app": "inventory", "env": "producao"}]},
     )
     env = {v["name"] for v in hub.get("/api/admin/env").json()}
-    assert "HUB_STORAGE_TOKEN_ATIVOS_STAGING" not in env and "HUB_STORAGE_TOKEN_ATIVOS_PRODUCAO" in env
+    assert "HUB_STORAGE_TOKEN_INVENTORY_STAGING" not in env and "HUB_STORAGE_TOKEN_INVENTORY_PRODUCAO" in env
     hub.put("/api/admin/connections/docs-s3/bindings", json={"bindings": []})
     assert "HUB_STORAGE_URL" not in {v["name"] for v in hub.get("/api/admin/env").json()}
     assert hub.put("/api/admin/connections/docs-s3/bindings", json={"bindings": "x"}).status_code == 400
@@ -407,7 +415,7 @@ def broker_for(hub: TestClient) -> TestClient:
     return TestClient(app)
 
 
-def token_of(hub: TestClient, app: str = "ativos", env: str = "producao") -> str:
+def token_of(hub: TestClient, app: str = "inventory", env: str = "producao") -> str:
     return str(
         run(hub.app.state.admin.cfg.managed_var(f"HUB_STORAGE_TOKEN_{app.upper()}_{env.upper()}"))["value"]
     )  # type: ignore[attr-defined]
@@ -423,7 +431,7 @@ def test_broker_authorizes_by_binding_and_operation_and_audits(hub: TestClient) 
     assert b.get("/_hub/storage").status_code == 401
     assert b.get("/_hub/storage", headers={"authorization": "Bearer " + "z" * 40}).status_code == 401
     r = b.get("/_hub/storage", headers=auth).json()
-    assert r["app"] == "ativos" and r["env"] == "producao"
+    assert r["app"] == "inventory" and r["env"] == "producao"
     assert r["connections"] == [
         {
             "name": "docs-s3",
@@ -487,7 +495,8 @@ def test_broker_authorizes_by_binding_and_operation_and_audits(hub: TestClient) 
         "Armazenamento: acesso negado",
     } <= titles
     assert all(
-        e["scope"] == "ativos" and e["actor"] == "app:ativos" and "Produção" in e["detail"] for e in mine
+        e["scope"] == "inventory" and e["actor"] == "app:inventory" and "Produção" in e["detail"]
+        for e in mine
     )
     blob = json.dumps(audit)
     assert SECRET not in blob and tok not in blob
@@ -497,32 +506,32 @@ def test_broker_isolation_between_apps_environments_and_rotation(hub: TestClient
     hub.post("/api/admin/connections", json=S3)
     hub.post(
         "/api/admin/connections",
-        json={**S3, "name": "outra", "bindings": [{"app": "coletor", "env": "producao"}]},
+        json={**S3, "name": "outra", "bindings": [{"app": "collector", "env": "producao"}]},
     )
     fake(hub, "docs-s3")
     fake(hub, "outra")
     b = broker_for(hub)
-    ativos, coletor = token_of(hub, "ativos"), token_of(hub, "coletor")
-    assert ativos != coletor
+    inventory, collector = token_of(hub, "inventory"), token_of(hub, "collector")
+    assert inventory != collector
     h = lambda t: {"authorization": f"Bearer {t}"}  # noqa: E731
-    assert b.get("/_hub/storage/docs-s3/list", headers=h(ativos)).status_code == 200
+    assert b.get("/_hub/storage/docs-s3/list", headers=h(inventory)).status_code == 200
     assert (
-        b.get("/_hub/storage/docs-s3/list", headers=h(coletor)).status_code == 404
+        b.get("/_hub/storage/docs-s3/list", headers=h(collector)).status_code == 404
     )  # other app: does not even know whether it exists
-    assert b.get("/_hub/storage/outra/list", headers=h(ativos)).status_code == 404
+    assert b.get("/_hub/storage/outra/list", headers=h(inventory)).status_code == 404
     # the production token is not valid for staging (exact app x environment binding)
     hub.put(
         "/api/admin/connections/docs-s3/bindings",
-        json={"bindings": [{"app": "ativos", "env": "producao"}, {"app": "ativos", "env": "staging"}]},
+        json={"bindings": [{"app": "inventory", "env": "producao"}, {"app": "inventory", "env": "staging"}]},
     )
-    stg = token_of(hub, "ativos", "staging")
-    assert stg != ativos and b.get("/_hub/storage", headers=h(stg)).json()["env"] == "staging"
+    stg = token_of(hub, "inventory", "staging")
+    assert stg != inventory and b.get("/_hub/storage", headers=h(stg)).json()["env"] == "staging"
     # rotation: the old token stops working immediately
-    assert hub.post("/api/admin/connections/tokens/ativos/producao/rotate", json={}).status_code == 200
-    assert b.get("/_hub/storage", headers=h(ativos)).status_code == 401
-    new = token_of(hub, "ativos")
-    assert new != ativos and b.get("/_hub/storage", headers=h(new)).status_code == 200
-    assert hub.post("/api/admin/connections/tokens/servicos/producao/rotate", json={}).status_code == 404
+    assert hub.post("/api/admin/connections/tokens/inventory/producao/rotate", json={}).status_code == 200
+    assert b.get("/_hub/storage", headers=h(inventory)).status_code == 401
+    new = token_of(hub, "inventory")
+    assert new != inventory and b.get("/_hub/storage", headers=h(new)).status_code == 200
+    assert hub.post("/api/admin/connections/tokens/servicedesk/producao/rotate", json={}).status_code == 404
     # unbinding cuts access right away (before any app restart)
     hub.put("/api/admin/connections/docs-s3/bindings", json={"bindings": []})
     assert b.get("/_hub/storage/docs-s3/list", headers=h(new)).status_code in (401, 404)
@@ -533,7 +542,7 @@ def test_broker_isolation_between_apps_environments_and_rotation(hub: TestClient
             "name": "TOKEN_FALSO",
             "value": "f" * 40,
             "kind": "secreta",
-            "bindings": [{"app": "servicos", "env": "producao"}],
+            "bindings": [{"app": "servicedesk", "env": "producao"}],
         },
     )
     assert b.get("/_hub/storage", headers=h("f" * 40)).status_code == 401
@@ -545,7 +554,7 @@ def test_broker_share_link_policy_move_and_provider_errors(hub: TestClient) -> N
         json={
             **S3,
             "allowed_ops": ["share_link", "move", "list", "delete"],
-            "anonymous_link_apps": ["ativos"],
+            "anonymous_link_apps": ["inventory"],
             "max_link_hours": 48,
         },
     )
@@ -594,12 +603,12 @@ def test_broker_attributes_verified_user_and_concurrency_limit(
     user = base64.urlsafe_b64encode(json.dumps({"user": "ana@demo.local"}).encode()).decode().rstrip("=")
     import time
 
-    sig = sign_user(b"k" * 32, "ativos", "producao", user, int(time.time()))
+    sig = sign_user(b"k" * 32, "inventory", "producao", user, int(time.time()))
     b.get("/_hub/storage/docs-s3/list", headers={**auth, "x-hub-user": user, "x-hub-user-sig": sig})
     b.get("/_hub/storage/docs-s3/meta", params={"path": "a.txt"}, headers={**auth, "x-hub-user": user})
     audit = run(hub.app.state.admin.cfg.read())["audit"]  # type: ignore[attr-defined]
     assert any(e["actor"] == "ana@demo.local" and e["title"] == "Armazenamento: listar" for e in audit)
-    assert any(e["actor"] == "app:ativos" and "não verificado" in e["detail"] for e in audit)
+    assert any(e["actor"] == "app:inventory" and "não verificado" in e["detail"] for e in audit)
 
 
 async def test_broker_per_app_concurrency_limit(hub: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -616,7 +625,7 @@ async def test_broker_per_app_concurrency_limit(hub: TestClient, monkeypatch: py
 
     monkeypatch.setattr(f, "ls", slow)
     app = broker_mod.build_broker(hub.app.state.conns, hub.app.state.admin, b"k" * 32)  # type: ignore[attr-defined]
-    managed = await hub.app.state.admin.cfg.managed_var("HUB_STORAGE_TOKEN_ATIVOS_PRODUCAO")  # type: ignore[attr-defined]
+    managed = await hub.app.state.admin.cfg.managed_var("HUB_STORAGE_TOKEN_INVENTORY_PRODUCAO")  # type: ignore[attr-defined]
     auth = {"authorization": f"Bearer {managed['value']}"}
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://broker") as c:
         first = asyncio.create_task(c.get("/_hub/storage/docs-s3/list", headers=auth))
@@ -635,7 +644,7 @@ async def test_broker_per_app_concurrency_limit(hub: TestClient, monkeypatch: py
 def test_broker_network_guard(hub: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     hub.post("/api/admin/connections", json=S3)
     fake(hub, "docs-s3")
-    monkeypatch.setenv("HUB_BROKER_APP_CIDRS", "ativos=10.231.1.0/24")
+    monkeypatch.setenv("HUB_BROKER_APP_CIDRS", "inventory=10.231.1.0/24")
     b = broker_for(hub)  # TestClient arrives as "testclient": outside the app's network
     r = b.get("/_hub/storage", headers={"authorization": f"Bearer {token_of(hub)}"})
     assert r.status_code == 403 and "Origem não permitida" in r.json()["error"]
@@ -687,36 +696,36 @@ def test_provision_idempotent_with_undo_and_deprovision(hub: TestClient) -> None
     conns = cast(ConnStore, hub.app.state.conns)
     mc = FakeMc()
     obj = provisioner(hub, mc)
-    status, out = run(prov.provision(conns, obj, "ativos", "producao", "admin", "http://hub-web:8081"))
-    assert status == 201 and out["changed"] and out["storage"]["bucket"] == "app-ativos"
-    c = conns.get("app-ativos")
+    status, out = run(prov.provision(conns, obj, "inventory", "producao", "admin", "http://hub-web:8081"))
+    assert status == 201 and out["changed"] and out["storage"]["bucket"] == "app-inventory"
+    c = conns.get("app-inventory")
     assert (
         c is not None
         and c["kind"] == "s3"
         and c["endpoint"] == "http://objstore:9000"
-        and c["bindings"] == [{"app": "ativos", "env": "producao"}]
+        and c["bindings"] == [{"app": "inventory", "env": "producao"}]
     )
     assert c["secret"] and "http://hubadmin" not in json.dumps(c)
-    assert {"app-ativos"} == mc.buckets and {"app-ativos"} == mc.users
-    status, again = run(prov.provision(conns, obj, "ativos", "producao", "admin", "http://hub-web:8081"))
+    assert {"app-inventory"} == mc.buckets and {"app-inventory"} == mc.users
+    status, again = run(prov.provision(conns, obj, "inventory", "producao", "admin", "http://hub-web:8081"))
     assert status == 200 and again["changed"] is False and len(conns.all()) == 1
     # the connection appears on the page and the app receives the broker variables
     html = hub.get("/admin/connections").text
-    assert 'data-conn-storage-row="ativos|producao"' in html and "app-ativos" in html
-    assert "HUB_STORAGE_TOKEN_ATIVOS_PRODUCAO" in {v["name"] for v in hub.get("/api/admin/env").json()}
+    assert 'data-conn-storage-row="inventory|producao"' in html and "app-inventory" in html
+    assert "HUB_STORAGE_TOKEN_INVENTORY_PRODUCAO" in {v["name"] for v in hub.get("/api/admin/env").json()}
     # deprovisioning requires the bucket name; with objects, force and the password of whoever asks
     fake_be = FakeBackend()
-    conns.clients["app-ativos"] = (c["rev"], cast(Backend, fake_be))
+    conns.clients["app-inventory"] = (c["rev"], cast(Backend, fake_be))
 
     async def step_up(pw: str) -> str | None:
         return None if pw == PASSWORD else "Senha incorreta"
 
     with pytest.raises(ConnError, match="Confirme digitando"):
-        run(prov.deprovision(conns, obj, "ativos", "producao", "admin", {"confirm": "x"}, step_up, "u"))
+        run(prov.deprovision(conns, obj, "inventory", "producao", "admin", {"confirm": "x"}, step_up, "u"))
     with pytest.raises(ConnError, match="tem objetos"):
         run(
             prov.deprovision(
-                conns, obj, "ativos", "producao", "admin", {"confirm": "app-ativos"}, step_up, "u"
+                conns, obj, "inventory", "producao", "admin", {"confirm": "app-inventory"}, step_up, "u"
             )
         )
     with pytest.raises(ConnError, match="Senha incorreta"):
@@ -724,10 +733,10 @@ def test_provision_idempotent_with_undo_and_deprovision(hub: TestClient) -> None
             prov.deprovision(
                 conns,
                 obj,
-                "ativos",
+                "inventory",
                 "producao",
                 "admin",
-                {"confirm": "app-ativos", "force": True, "password": "errada"},
+                {"confirm": "app-inventory", "force": True, "password": "errada"},
                 step_up,
                 "u",
             )
@@ -736,51 +745,51 @@ def test_provision_idempotent_with_undo_and_deprovision(hub: TestClient) -> None
         prov.deprovision(
             conns,
             obj,
-            "ativos",
+            "inventory",
             "producao",
             "admin",
-            {"confirm": "app-ativos", "force": True, "password": PASSWORD},
+            {"confirm": "app-inventory", "force": True, "password": PASSWORD},
             step_up,
             "u",
         )
     )
     assert res["removed"] and not conns.all() and not mc.buckets and not mc.users and not conns.storage
-    assert "HUB_STORAGE_TOKEN_ATIVOS_PRODUCAO" not in {v["name"] for v in hub.get("/api/admin/env").json()}
+    assert "HUB_STORAGE_TOKEN_INVENTORY_PRODUCAO" not in {v["name"] for v in hub.get("/api/admin/env").json()}
     with pytest.raises(ConnError, match="Nenhum armazenamento"):
         run(
             prov.deprovision(
-                conns, obj, "ativos", "producao", "admin", {"confirm": "app-ativos"}, step_up, "u"
+                conns, obj, "inventory", "producao", "admin", {"confirm": "app-inventory"}, step_up, "u"
             )
         )
     # failure midway rolls back in reverse order and leaves no trace; the secret never leaks into the message
     mc2 = FakeMc()
     mc2.fail_on = "admin policy attach"
     with pytest.raises(ConnError) as e:
-        run(prov.provision(conns, provisioner(hub, mc2), "coletor", "staging", "admin", "u"))
+        run(prov.provision(conns, provisioner(hub, mc2), "collector", "staging", "admin", "u"))
     assert "Object store" in str(e.value) and not conns.all() and not conns.storage
-    assert not mc2.buckets and not mc2.users and "coletor" not in json.dumps(conns.storage)
+    assert not mc2.buckets and not mc2.users and "collector" not in json.dumps(conns.storage)
     secret_tail = next(c for c in mc2.log if c[:3] == ["admin", "user", "add"])[-1]
     assert secret_tail not in str(e.value)
     # refuses what the hub did not create
     mc3 = FakeMc()
-    mc3.buckets.add("app-servicos")
+    mc3.buckets.add("app-servicedesk")
     with pytest.raises(ConnError, match="não foi provisionado pelo hub"):
-        run(prov.provision(conns, provisioner(hub, mc3), "servicos", "producao", "admin", "u"))
+        run(prov.provision(conns, provisioner(hub, mc3), "servicedesk", "producao", "admin", "u"))
     with pytest.raises(ConnError, match="não encontrada"):
         run(prov.provision(conns, obj, "nao-existe", "producao", "admin", "u"))
     with pytest.raises(ConnError, match="não configurado"):
-        run(prov.provision(conns, ObjectStore(""), "ativos", "producao", "admin", "u"))
+        run(prov.provision(conns, ObjectStore(""), "inventory", "producao", "admin", "u"))
 
 
 def test_storage_api_unavailable_without_object_store_and_env_validation(hub: TestClient) -> None:
     r = hub.get("/api/admin/connections/storage").json()
     assert r["available"] is False and "HUB_S3_ADMIN_URL" in r["reason"] and r["storage"] == []
-    assert hub.post("/api/admin/connections/storage/ativos", json={}).status_code == 503
-    assert hub.post("/api/admin/connections/storage/ativos?env=dev", json={}).status_code == 400
-    assert hub.post("/api/admin/connections/storage/ativos/deprovision", json={}).status_code == 404
+    assert hub.post("/api/admin/connections/storage/inventory", json={}).status_code == 503
+    assert hub.post("/api/admin/connections/storage/inventory?env=dev", json={}).status_code == 400
+    assert hub.post("/api/admin/connections/storage/inventory/deprovision", json={}).status_code == 404
     assert (
         hub.post(
-            "/api/admin/connections/storage/ativos/deprovision",
+            "/api/admin/connections/storage/inventory/deprovision",
             content="x",
             headers={"content-type": "application/json"},
         ).status_code

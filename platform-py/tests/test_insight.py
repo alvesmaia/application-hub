@@ -63,7 +63,7 @@ def flag_body(key: str = "novo", **over: Any) -> dict[str, Any]:
     }
     return {
         "key": key,
-        "app": "ativos",
+        "app": "inventory",
         "description": "d",
         "kind": "boolean",
         "variants": [],
@@ -104,10 +104,10 @@ def test_flag_evaluation_order() -> None:
 
 def test_flag_header_value_and_validation() -> None:
     a, b = fl.parse_flag(flag_body("b")), fl.parse_flag(flag_body("a"))
-    assert fl.header_value([a, b], "ativos", "producao", "x", ["Administrador"]) == "a=on,b=on"
+    assert fl.header_value([a, b], "inventory", "producao", "x", ["Administrador"]) == "a=on,b=on"
     assert fl.header_value([a], "outro", "producao", "x", []) == ""
     big = [fl.parse_flag(flag_body(f"k{i:04}" + "x" * 50)) for i in range(100)]
-    assert len(fl.header_value(big, "ativos", "producao", "x", ["Administrador"])) <= fl.MAX_HEADER_BYTES
+    assert len(fl.header_value(big, "inventory", "producao", "x", ["Administrador"])) <= fl.MAX_HEADER_BYTES
     bad = lambda **o: pytest.raises(ValueError).__enter__ and fl.parse_flag(flag_body(**o)).validate_rules()  # noqa: E731
     for over in (
         {"key": "Inválida"},
@@ -229,7 +229,7 @@ def test_trace_store_slow_and_owner() -> None:
 
 
 def test_redact_target_and_helpers() -> None:
-    assert redact_target("/ativos/itens/42?q=segredo#x") == "/ativos/itens/:id"
+    assert redact_target("/inventory/itens/42?q=segredo#x") == "/inventory/itens/:id"
     assert redact_target("/auth/reset/abc") == "/auth/reset/:redacted"
     assert redact_target("/c/u/ana@demo.local/perfil") == "/c/u/:email/perfil"
     assert redact_target("/x/" + "a1" * 10) == "/x/:token"
@@ -254,19 +254,19 @@ def test_analytics_privacy_aggregates_and_csv(tmp_path: Path) -> None:
     a, now = Analytics(tmp_path, None), 1_790_000_000_000
     for u in ("u1", "u2"):
         a.record(u, "login", now=now)
-        a.record(u, "open", "ativos", now=now)
-    a.record("u1", "action", "ativos", now=now)
-    a.record("u1", "section", "ativos", "assets", now=now)
+        a.record(u, "open", "inventory", now=now)
+    a.record("u1", "action", "inventory", now=now)
+    a.record("u1", "section", "inventory", "assets", now=now)
     a.record("u1", "page", "/admin/users", now=now)
     a.record("u1", "search", "ana@x.com 123", n=0, now=now)  # with @: discarded
     a.record("u1", "search", "contrato 12345", n=0, now=now)
     a.record("u1", "feature", "palette_open", now=now)
     a.record("u1", "feature", "inventada", now=now)
-    a.record_global("approval_approved", "ativos", now=now)
+    a.record_global("approval_approved", "inventory", now=now)
     s = a.summary(now)
     assert (s["dau"], s["wau"], s["mau"]) == (2, 2, 2) and s["funnel"] == [2, 2, 1]
-    assert s["apps"] == [["ativos", 2, 2, 2, 2]] and s["searches"] == 2 and s["searches_zero"] == 2
-    assert s["top_sections"] == [["ativos/assets", 1]] and s["features"] == [["palette_open", 1]]
+    assert s["apps"] == [["inventory", 2, 2, 2, 2]] and s["searches"] == 2 and s["searches_zero"] == 2
+    assert s["top_sections"] == [["inventory/assets", 1]] and s["features"] == [["palette_open", 1]]
     assert s["zero_terms"][0][0].startswith("termo #")  # hash only, no opt-in
     a.set_raw_terms(True)
     a.record("u1", "search", "contrato 99", n=0, now=now)
@@ -278,7 +278,7 @@ def test_analytics_privacy_aggregates_and_csv(tmp_path: Path) -> None:
     assert "u1" not in disk and "ana@x.com" not in disk and "contrato" not in disk
     assert (tmp_path / "analytics.key").exists()
     csv = a.csv(now)
-    assert csv.startswith("dia;usuarios_ativos") and '"ativos";2;2;2;2' in csv
+    assert csv.startswith("dia;usuarios_ativos") and '"inventory";2;2;2;2' in csv
     first = a._h("user|u1")
     a.rotate_key(now)
     assert a._h("user|u1") != first  # new ids do not link to the old ones
@@ -316,22 +316,22 @@ def test_analytics_csv_neutralizes_formulas() -> None:
 def test_log_bus_filters() -> None:
     bus, now = LogBus(), int(time.time() * 1000)
     for ago, app, user, level, source in (
-        (97, "ativos", "ana", "INFO", "gateway"),
-        (70, "fornecedores", "bia", "WARN", "admin"),
-        (2, "servicos", "caio", "ERROR", "gateway"),
+        (97, "inventory", "ana", "INFO", "gateway"),
+        (70, "suppliers", "bia", "WARN", "admin"),
+        (2, "servicedesk", "caio", "ERROR", "gateway"),
     ):
         bus.add(level, app, user, "m", source, now - ago * 60_000)
     q = lambda **f: len(bus.query(f))  # noqa: E731
-    assert q() == 3 and q(minutes="60") == 1 and q(app="ativos") == 1 and q(app="all") == 3
+    assert q() == 3 and q(minutes="60") == 1 and q(app="inventory") == 1 and q(app="all") == 3
     assert (
         q(user="ANA") == 1
         and q(level="WARN,ERROR") == 2
         and q(source="admin") == 1
         and q(app="platform") == 0
     )
-    bus.gateway("GET", "/x", 502, 12, "ativos", "u")
+    bus.gateway("GET", "/x", 502, 12, "inventory", "u")
     assert bus.lines[-1]["level"] == "ERROR" and "GET /x → 502 (12 ms)" in bus.lines[-1]["message"]
-    bus.gateway("GET", "/x", 404, 1, "ativos", "u")
+    bus.gateway("GET", "/x", 404, 1, "inventory", "u")
     assert bus.lines[-1]["level"] == "WARN"
 
 
@@ -342,8 +342,8 @@ def test_pages_render_and_rbac(hub: TestClient) -> None:
     for p in ("logs", "audit", "health"):
         r = hub.get(f"/admin/{p}")
         assert r.status_code == 200, p
-    old = hub.get("/admin/observability?app=ativos", follow_redirects=False)
-    assert old.status_code == 308 and old.headers["location"] == "/admin/health?app=ativos#obs"
+    old = hub.get("/admin/observability?app=inventory", follow_redirects=False)
+    assert old.status_code == 308 and old.headers["location"] == "/admin/health?app=inventory#obs"
     assert hub.get("/admin/analytics", follow_redirects=False).headers["location"] == "/admin#uso"
     assert hub.get("/admin/flags", follow_redirects=False).status_code == 308  # removed screen
     assert "Logs · " in hub.get("/admin/logs").text and "Auditoria · " in hub.get("/admin/audit").text
@@ -395,26 +395,30 @@ def test_flags_crud_is_audited_and_validated(hub: TestClient) -> None:
     assert hub.post("/api/admin/flags", content=b"[]", headers=JSON).status_code == 400
     assert hub.post("/api/admin/flags", content=b"{", headers=JSON).status_code == 400
     assert (
-        hub.put("/api/admin/flags/ativos/novo", json=flag_body(description="outra")).json()["description"]
+        hub.put("/api/admin/flags/inventory/novo", json=flag_body(description="outra")).json()["description"]
         == "outra"
     )
-    assert hub.put("/api/admin/flags/ativos/nao", json=flag_body("nao")).status_code == 404
-    r = hub.post("/api/admin/flags/ativos/novo/staging/enabled", json={"enabled": True})
+    assert hub.put("/api/admin/flags/inventory/nao", json=flag_body("nao")).status_code == 404
+    r = hub.post("/api/admin/flags/inventory/novo/staging/enabled", json={"enabled": True})
     assert r.status_code == 200 and r.json()["envs"]["staging"]["enabled"] is True
-    assert hub.post("/api/admin/flags/ativos/novo/dev/enabled", json={"enabled": True}).status_code == 400
-    assert hub.post("/api/admin/flags/ativos/novo/staging/enabled", json={"enabled": "s"}).status_code == 400
-    assert hub.post("/api/admin/flags/ativos/nao/staging/enabled", json={"enabled": True}).status_code == 404
+    assert hub.post("/api/admin/flags/inventory/novo/dev/enabled", json={"enabled": True}).status_code == 400
+    assert (
+        hub.post("/api/admin/flags/inventory/novo/staging/enabled", json={"enabled": "s"}).status_code == 400
+    )
+    assert (
+        hub.post("/api/admin/flags/inventory/nao/staging/enabled", json={"enabled": True}).status_code == 404
+    )
     listed = hub.get("/api/admin/flags").json()
     assert listed["version"] == 3 and [f["key"] for f in listed["flags"]] == ["novo"]
-    assert hub.delete("/api/admin/flags/ativos/novo", headers=JSON).json() == {"deleted": "novo"}
-    assert hub.delete("/api/admin/flags/ativos/novo", headers=JSON).status_code == 404
+    assert hub.delete("/api/admin/flags/inventory/novo", headers=JSON).json() == {"deleted": "novo"}
+    assert hub.delete("/api/admin/flags/inventory/novo", headers=JSON).status_code == 404
     titles = audit_titles(hub)
     for t in ("Feature flag criada", "Feature flag alterada", "Feature flag ligada", "Feature flag excluída"):
         assert t in titles, t
     assert "Feature flag desligada (kill switch)" not in titles
     hub.post("/api/admin/flags", json=flag_body("v", kind="variant", variants=["a", "b"], envs={}))
-    hub.post("/api/admin/flags/ativos/v/producao/enabled", json={"enabled": True})
-    hub.post("/api/admin/flags/ativos/v/producao/enabled", json={"enabled": False})
+    hub.post("/api/admin/flags/inventory/v/producao/enabled", json={"enabled": True})
+    hub.post("/api/admin/flags/inventory/v/producao/enabled", json={"enabled": False})
     assert "Feature flag desligada (kill switch)" in audit_titles(hub)
     assert hub.app.state.admin.chain.verify().ok  # type: ignore[attr-defined]
     many = [flag_body(f"f{i}") for i in range(fl.MAX_FLAGS_PER_APP)]
@@ -425,7 +429,7 @@ def test_flags_crud_is_audited_and_validated(hub: TestClient) -> None:
 
 def test_gateway_observed_metrics_logs_traces_and_flags_header(hub: TestClient) -> None:
     hub.post("/api/admin/flags", json=flag_body("resumo"))
-    r = hub.get("/_frag/ativos/echo", headers={"x-hub-nav": "1"})
+    r = hub.get("/_frag/inventory/echo", headers={"x-hub-nav": "1"})
     assert r.status_code == 200
     h = r.json()["headers"]
     assert (
@@ -434,46 +438,47 @@ def test_gateway_observed_metrics_logs_traces_and_flags_header(hub: TestClient) 
         and h["traceparent"].endswith("-01")
     )
     ins = hub.app.state.insight  # type: ignore[attr-defined]
-    w = ins.tel.metrics.window("ativos", "producao", 0, int(time.time()) + 600)
+    w = ins.tel.metrics.window("inventory", "producao", 0, int(time.time()) + 600)
     assert w.requests == 1 and w.errors == 0
     root = ins.tel.traces.spans[-1]
     assert (
-        root["attrs"]["hub.app"] == "ativos"
-        and root["attrs"]["http.target"] == "/ativos/echo"
+        root["attrs"]["hub.app"] == "inventory"
+        and root["attrs"]["http.target"] == "/inventory/echo"
         and root["span_id"] in h["traceparent"]
     )
-    logs = hub.get("/api/admin/logs?source=gateway&app=ativos").json()
+    logs = hub.get("/api/admin/logs?source=gateway&app=inventory").json()
     assert (
         logs
-        and "[gateway] GET /ativos/echo → 200" in logs[-1]["message"]
+        and "[gateway] GET /inventory/echo → 200" in logs[-1]["message"]
         and logs[-1]["user"] == "Administrador"
     )
     assert hub.get("/api/admin/logs/stats").json() == {"subscribers": 0}
     page = hub.get("/admin/logs").text
-    assert "[gateway] GET /ativos/echo" in page and "log-level-info" in page
+    assert "[gateway] GET /inventory/echo" in page and "log-level-info" in page
     # unknown app: no metric, log under "platform"
     assert hub.get("/_frag/nao-existe/x").status_code == 404
     assert ins.tel.metrics.window("nao-existe", "producao", 0, 2**40).requests == 0
     # another user (without the per-role rule) gets the flag off
     colab = add_user(hub, "colab", ["User"])
-    assert colab.get("/_frag/ativos/echo").json()["headers"]["x-hub-flags"] == "resumo=off"
-    assert "x-hub-flags" not in hub.get("/_frag/ativos/echo").json()["headers"] or True
+    assert colab.get("/_frag/inventory/echo").json()["headers"]["x-hub-flags"] == "resumo=off"
+    assert "x-hub-flags" not in hub.get("/_frag/inventory/echo").json()["headers"] or True
 
 
 def test_observability_on_health_page(hub: TestClient) -> None:
-    hub.get("/_frag/ativos/echo")
+    hub.get("/_frag/inventory/echo")
     ins = hub.app.state.insight  # type: ignore[attr-defined]
     ins.tel.traces.record({**ins.tel.traces.spans[-1], "span_id": "c" * 16, "parent_id": ins.tel.traces.spans[-1]["span_id"],
-                           "service": "ativos", "kind": "client", "start_us": ins.tel.traces.spans[-1]["start_us"] + 1})  # fmt: skip
-    r = hub.get("/admin/health?app=ativos&min=15")
+                           "service": "inventory", "kind": "client", "start_us": ins.tel.traces.spans[-1]["start_us"] + 1})  # fmt: skip
+    r = hub.get("/admin/health?app=inventory&min=15")
     assert r.status_code == 200 and 'id="obs"' in r.text and "Requisições mais lentas" in r.text
     assert (
-        'class="filter-chip active" href="/admin/health?app=ativos&amp;env=producao&amp;min=15#obs"' in r.text
+        'class="filter-chip active" href="/admin/health?app=inventory&amp;env=producao&amp;min=15#obs"'
+        in r.text
     )
-    assert "Sem dados" in hub.get("/admin/health?app=fornecedores&env=staging").text
+    assert "Sem dados" in hub.get("/admin/health?app=suppliers&env=staging").text
     # restricted to one app: does not see another app's trace
     add_role(hub, "Product Owner", PRODUCT_OWNER)
-    asyncio.run(hub.app.state.admin.cfg.role_apps("t", "Product Owner", ["servicos"]))  # type: ignore[attr-defined]
+    asyncio.run(hub.app.state.admin.cfg.role_apps("t", "Product Owner", ["servicedesk"]))  # type: ignore[attr-defined]
     hub.app.state.roles = __import__("hub.auth", fromlist=["roles_for"]).roles_for(hub.app.state.data_dir)  # type: ignore[attr-defined]
     po = add_user(hub, "po2", ["Product Owner"])
     page = po.get("/admin/health").text
@@ -486,15 +491,15 @@ def test_ingest_from_apps_is_validated(hub: TestClient) -> None:
             "attrs": {"hub.app": "falso", "enduser.id": "x", "http.target": "/u/1/y?z=1", "k": "v"}}  # fmt: skip
     payload = {"spans": [good, {**good, "trace_id": "zz"}, {**good, "span_id": "c" * 16, "duration_us": -1}, "lixo"],
                "gauges": {"jobs_queued": 2, "ruim": "x", "k" * 41: 1}}  # fmt: skip
-    assert ins.ingest("ativos", "producao", payload) == 1
+    assert ins.ingest("inventory", "producao", payload) == 1
     s = ins.tel.traces.spans[-1]
-    assert s["service"] == "ativos" and s["attrs"] == {
+    assert s["service"] == "inventory" and s["attrs"] == {
         "k": "v",
         "http.target": "/u/:id/y",
-        "hub.app": "ativos",
+        "hub.app": "inventory",
         "hub.env": "producao",
     }
-    assert ins.tel.metrics.last_gauges("ativos", "producao")["app"] == {"jobs_queued": 2.0}  # type: ignore[index]
+    assert ins.tel.metrics.last_gauges("inventory", "producao")["app"] == {"jobs_queued": 2.0}  # type: ignore[index]
     # another app does not graft spans onto the assets trace
     assert ins.ingest("contratos", "producao", {"spans": [{**good, "span_id": "d" * 16}]}) == 0
     assert len(ins.tel.traces.spans) == 1
@@ -530,13 +535,13 @@ def test_health_slo_incidents_and_status(hub: TestClient) -> None:
     )
     assert 'data-row-menu="health:Fila"' in hub.get("/admin/health").text
     chk = hub.post("/api/admin/health/check", json={}).json()
-    assert {x["app"] for x in chk["results"]} >= {"ativos"} and all(x["available"] for x in chk["results"])
+    assert {x["app"] for x in chk["results"]} >= {"inventory"} and all(x["available"] for x in chk["results"])
     assert any(s["latency_ms"] is not None for s in chk["health"] if s["app"])
     assert hub.delete("/api/admin/health/Fila", headers=JSON).status_code == 204
     assert hub.delete("/api/admin/health/Fila", headers=JSON).status_code == 404
 
     slo = {
-        "app": "ativos",
+        "app": "inventory",
         "env": "producao",
         "availability": 99.5,
         "latency_ms": 800,
@@ -545,9 +550,9 @@ def test_health_slo_incidents_and_status(hub: TestClient) -> None:
     }
     assert hub.put("/api/admin/slos", json=slo).json() == slo
     for bad in ({**slo, "app": "n"}, {**slo, "env": "x"}, {**slo, "availability": 10}, {**slo, "latency_ms": 0},
-                {**slo, "window_days": 5}, {"app": "ativos"}):  # fmt: skip
+                {**slo, "window_days": 5}, {"app": "inventory"}):  # fmt: skip
         assert hub.put("/api/admin/slos", json=bad).status_code == 400
-    hub.get("/_frag/ativos/echo")
+    hub.get("/_frag/inventory/echo")
     page = hub.get("/admin/health").text
     assert (
         "99,5% · 95% ≤ 800 ms · 30 dias" in page and "Dentro da meta" in page and "100,00% (1 req.)" in page
@@ -556,11 +561,11 @@ def test_health_slo_incidents_and_status(hub: TestClient) -> None:
 
     inc = hub.post(
         "/api/admin/incidents",
-        json={"app": "ativos", "title": "Lento", "severity": "minor", "note": "olhando"},
+        json={"app": "inventory", "title": "Lento", "severity": "minor", "note": "olhando"},
     ).json()
     assert inc["id"] == 1 and inc["notes"][0]["author"] == "Administrador" and inc["kind"] == "manual"
-    for bad in ({"app": "n", "title": "x", "severity": "minor"}, {"app": "ativos", "title": "", "severity": "minor"},
-                {"app": "ativos", "title": "x", "severity": "?"}, {"app": "ativos", "title": "x", "severity": "minor", "note": "n" * 2001}):  # fmt: skip
+    for bad in ({"app": "n", "title": "x", "severity": "minor"}, {"app": "inventory", "title": "", "severity": "minor"},
+                {"app": "inventory", "title": "x", "severity": "?"}, {"app": "inventory", "title": "x", "severity": "minor", "note": "n" * 2001}):  # fmt: skip
         assert hub.post("/api/admin/incidents", json=bad).status_code == 400
     st = hub.get("/status").text
     assert (
@@ -583,8 +588,8 @@ def test_health_slo_incidents_and_status(hub: TestClient) -> None:
     st = hub.get("/status").text
     assert "Todos os sistemas operacionais" in st and "data-incident-resolve" not in st
     assert [i["id"] for i in hub.get("/api/admin/incidents").json()] == [2, 1]
-    assert hub.delete("/api/admin/slos/ativos/producao", headers=JSON).json() == {"deleted": True}
-    assert hub.delete("/api/admin/slos/ativos/producao", headers=JSON).status_code == 404
+    assert hub.delete("/api/admin/slos/inventory/producao", headers=JSON).json() == {"deleted": True}
+    assert hub.delete("/api/admin/slos/inventory/producao", headers=JSON).status_code == 404
     titles = audit_titles(hub)
     for t in ("Serviço adicionado ao monitoramento", "Serviço atualizado", "Verificação de integridade concluída",
               "Serviço removido do monitoramento", "SLO definido", "SLO removido", "Incidente registrado",
@@ -596,25 +601,25 @@ def test_status_reflects_probes_and_uptime(hub: TestClient) -> None:
     ins = hub.app.state.insight  # type: ignore[attr-defined]
     now = int(time.time())
     for i in range(5):
-        ins.tel.metrics.record_probe("ativos", "producao", False, now - i)
+        ins.tel.metrics.record_probe("inventory", "producao", False, now - i)
     st = hub.get("/status").text
     assert "Degradado" in st and "Instável" not in st and "uptime-bad" in st
     home = hub.get("/").text
     assert "Degradado" in home
     data = status_data(
         hub.app.state.gateway.registry,
-        {"ativos"},
+        {"inventory"},
         time.time(),
         ins.tel.metrics,
         {"incidents": [], "slos": []},
     )  # type: ignore[attr-defined]
-    assert [a.name for a in data.apps] == ["App Ativos"] and data.apps[0].uptime.endswith("em 30 dias")
+    assert [a.name for a in data.apps] == ["App Inventory"] and data.apps[0].uptime.endswith("em 30 dias")
 
 
 def test_auto_incident_from_fast_burn(hub: TestClient) -> None:
     ins = hub.app.state.insight  # type: ignore[attr-defined]
     slo = {
-        "app": "ativos",
+        "app": "inventory",
         "env": "producao",
         "availability": 99.0,
         "latency_ms": 500,
@@ -623,14 +628,14 @@ def test_auto_incident_from_fast_burn(hub: TestClient) -> None:
     }
     hub.put("/api/admin/slos", json=slo)
     for i in range(60):
-        ins.tel.metrics.observe("ativos", "producao", 503 if i % 2 else 200, 10.0)
+        ins.tel.metrics.observe("inventory", "producao", 503 if i % 2 else 200, 10.0)
 
     async def run() -> list[dict[str, Any]]:
         await ins.check_slo(slo)
         await ins.check_slo(slo)  # no duplication
         first = list(await ins.ops.incidents())
         assert len(first) == 1 and first[0]["kind"] == "auto" and first[0]["resolved"] is None
-        ins.tel.metrics.series["ativos|producao"].coarse.clear()
+        ins.tel.metrics.series["inventory|producao"].coarse.clear()
         await ins.check_slo(slo)
         return list(await ins.ops.incidents())
 
@@ -644,10 +649,10 @@ def test_auto_incident_from_fast_burn(hub: TestClient) -> None:
 
 def test_audit_page_verify_export_and_filter(hub: TestClient) -> None:
     hub.post("/api/admin/flags", json=flag_body("a1"))
-    hub.app.state.admin.logs.add("INFO", "ativos", "x", "m", "app")  # type: ignore[attr-defined]
+    hub.app.state.admin.logs.add("INFO", "inventory", "x", "m", "app")  # type: ignore[attr-defined]
     asyncio.run(
         hub.app.state.admin.audit(
-            "Ana", "Token rotacionado", "HUB_INTERNAL_TOKEN_X (Secreta) hubt_ab12…", scope="ativos"
+            "Ana", "Token rotacionado", "HUB_INTERNAL_TOKEN_X (Secreta) hubt_ab12…", scope="inventory"
         )
     )  # type: ignore[attr-defined]
     page = hub.get("/admin/audit").text
@@ -657,10 +662,10 @@ def test_audit_page_verify_export_and_filter(hub: TestClient) -> None:
         and "<code>hubt_ab12…</code>" in page
     )
     assert "Proteção contra rollback: só local" in page and '<option value="" selected>Todas</option>' in page
-    only = hub.get("/admin/audit?scope=ativos").text
+    only = hub.get("/admin/audit?scope=inventory").text
     assert "Token rotacionado" in only and "Acesso" not in only.split("activity-list")[1]
-    assert "Nenhum evento" in hub.get("/admin/audit?scope=servicos").text
-    api = hub.get("/api/admin/audit?scope=ativos&limit=1").json()
+    assert "Nenhum evento" in hub.get("/admin/audit?scope=servicedesk").text
+    api = hub.get("/api/admin/audit?scope=inventory&limit=1").json()
     assert len(api) == 1 and api[0]["title"] == "Token rotacionado"  # mais recente primeiro
     assert len(hub.get("/api/admin/audit?limit=0").json()) == 1
     v = hub.post("/api/admin/audit/verify", json={}).json()
@@ -690,10 +695,10 @@ def test_audit_page_verify_export_and_filter(hub: TestClient) -> None:
 def test_analytics_card_api_and_tracking(hub: TestClient) -> None:
     hub.get("/applications")
     hub.get("/admin/users")
-    hub.get("/_frag/ativos/assets", headers={"x-hub-nav": "1"})
-    hub.get("/_frag/ativos/_interno", headers={"x-hub-nav": "1"})
-    hub.post("/_frag/ativos/acao", headers={"sec-fetch-site": "same-origin"})
-    hub.get("/apps/ativos")
+    hub.get("/_frag/inventory/assets", headers={"x-hub-nav": "1"})
+    hub.get("/_frag/inventory/_interno", headers={"x-hub-nav": "1"})
+    hub.post("/_frag/inventory/acao", headers={"sec-fetch-site": "same-origin"})
+    hub.get("/apps/inventory")
     hub.post("/api/me/analytics", json={"feature": "palette_open"})
     ins = hub.app.state.insight  # type: ignore[attr-defined]
     ins.analytics.record("u-test", "login")
@@ -702,10 +707,10 @@ def test_analytics_card_api_and_tracking(hub: TestClient) -> None:
     assert (
         sm["dau"] == 1 and ["/applications", 1] in sm["top_pages"] and ["/admin/users", 1] in sm["top_pages"]
     )
-    assert ["ativos/assets", 1] in sm["top_sections"] and not any(
+    assert ["inventory/assets", 1] in sm["top_sections"] and not any(
         "_interno" in k for k, _ in sm["top_sections"]
     )
-    assert sm["apps"][0][0] == "ativos" and sm["funnel"][0] == 1 and s["retention_days"] == 90
+    assert sm["apps"][0][0] == "inventory" and sm["funnel"][0] == 1 and s["retention_days"] == 90
     page = hub.get("/admin").text
     assert 'id="uso"' in page and "Usuários ativos (MAU)" in page and "Buscas sem resultado" in page
     csv = hub.get("/api/admin/analytics.csv")
@@ -740,7 +745,7 @@ def test_login_and_search_feed_analytics(hub: TestClient) -> None:
 def test_for_push_hashes_users_and_keeps_only_env() -> None:
     f = fl.parse_flag(flag_body("p", envs={"producao": {"enabled": True, "default": "off", "rules": [{"users": ["Ana@Demo.local"], "serve": "on"}]},
                                           "staging": {"enabled": True, "default": "off"}}))  # fmt: skip
-    pushed = fl.for_push([f, fl.parse_flag(flag_body("q", app="outro"))], "ativos", "producao")
+    pushed = fl.for_push([f, fl.parse_flag(flag_body("q", app="outro"))], "inventory", "producao")
     assert [p["key"] for p in pushed] == ["p"] and list(pushed[0]["envs"]) == ["producao"]
     assert "ana@demo.local" not in json.dumps(pushed).lower()
     assert pushed[0]["envs"]["producao"]["rules"][0]["users"] == [fl.user_digest("p", "Ana@Demo.local")]
@@ -750,7 +755,9 @@ def test_for_push_hashes_users_and_keeps_only_env() -> None:
 def test_background_loops_probe_poll_and_push(hub: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     ins = hub.app.state.insight  # type: ignore[attr-defined]
     asyncio.run(
-        ins.admin.cfg.ensure_internal_tokens("t", lambda a: "tok-interno-123456" if a == "ativos" else None)
+        ins.admin.cfg.ensure_internal_tokens(
+            "t", lambda a: "tok-interno-123456" if a == "inventory" else None
+        )
     )
     hub.post("/api/admin/flags", json=flag_body("bg"))
     seen: list[tuple[str, str, str]] = []
@@ -788,11 +795,11 @@ def test_background_loops_probe_poll_and_push(hub: TestClient, monkeypatch: pyte
     asyncio.run(run())
     methods = {(m, p.rsplit("/", 1)[-1]) for m, p, _ in seen}
     assert ("GET", "telemetry") in methods and ("POST", "flags") in methods
-    assert all(tok == "tok-interno-123456" for _, p, tok in seen if p.startswith("/ativos/_hub"))
-    assert ins.tel.traces.spans and ins.tel.metrics.last_gauges("ativos", "producao")["app"] == {
+    assert all(tok == "tok-interno-123456" for _, p, tok in seen if p.startswith("/inventory/_hub"))
+    assert ins.tel.traces.spans and ins.tel.metrics.last_gauges("inventory", "producao")["app"] == {
         "heavy_in_use": 1.0
     }  # type: ignore[index]
-    w = ins.tel.metrics.window("ativos", "producao", 0, int(time.time()) + 600)
+    w = ins.tel.metrics.window("inventory", "producao", 0, int(time.time()) + 600)
     assert w.probes >= 1 and w.probes_ok == 0  # probe with no response counts as down
     assert (Path(ins.tel.metrics.path).exists()) and ins.tel.metrics.path is not None  # type: ignore[arg-type]
 
@@ -813,17 +820,17 @@ def test_usage_per_user_store(tmp_path: Path) -> None:
     from hub.insight.usage import Usage
 
     u, now = Usage(tmp_path), 1_790_000_000_000
-    u.record("u1", "ativos", "open", now=now - 86_400_000)
-    u.record("u1", "ativos", "action", now=now)
-    u.record("u2", "ativos", "section", now=now)
+    u.record("u1", "inventory", "open", now=now - 86_400_000)
+    u.record("u1", "inventory", "action", now=now)
+    u.record("u2", "inventory", "section", now=now)
     u.record("u2", "=x", "open", now=now)
     q = u.query(now)
     assert q["rows"][0]["last"] == now and len(q["rows"]) == 3
     r1 = next(r for r in q["rows"] if r["user"] == "u1")
     assert (r1["opens"], r1["actions"], r1["days"]) == (1, 1, 2)
-    assert next(a for a in q["by_app"] if a["app"] == "ativos")["users"] == 2
+    assert next(a for a in q["by_app"] if a["app"] == "inventory")["users"] == 2
     assert [r["user"] for r in u.query(now, user="u2")["rows"]] == ["u2", "u2"]
-    assert len(u.query(now, days=1, app="ativos")["rows"]) == 2
+    assert len(u.query(now, days=1, app="inventory")["rows"]) == 2
     assert '"\'=x"' in u.csv(now) and u.csv(now).startswith("usuario;")
     u.flush(30, now)
     assert len(Usage(tmp_path).query(now)["rows"]) == 3
@@ -835,12 +842,12 @@ def test_usage_per_user_store(tmp_path: Path) -> None:
 
 
 def test_usage_tracking_page_and_rbac(hub: TestClient) -> None:
-    hub.get("/apps/ativos")
-    hub.get("/_frag/ativos/assets", headers={"x-hub-nav": "1"})
-    hub.post("/_frag/ativos/acao", headers={"sec-fetch-site": "same-origin"})
+    hub.get("/apps/inventory")
+    hub.get("/_frag/inventory/assets", headers={"x-hub-nav": "1"})
+    hub.post("/_frag/inventory/acao", headers={"sec-fetch-site": "same-origin"})
     hub.get("/applications")
     q = hub.get("/api/admin/usage").json()
-    row = next(r for r in q["rows"] if r["app"] == "ativos")
+    row = next(r for r in q["rows"] if r["app"] == "inventory")
     assert (row["opens"], row["sections"], row["actions"]) == (1, 1, 1) and row["email"]
     assert any(r["app"] == "_hub" and r["app_name"] == "Hub" for r in q["rows"])
     assert hub.get("/api/admin/usage", params={"app": "nada"}).json()["rows"] == []
@@ -860,11 +867,11 @@ def test_usage_tracking_page_and_rbac(hub: TestClient) -> None:
 def test_usage_ignores_analytics_opt_out_and_keeps_deleted_users(hub: TestClient) -> None:
     # deliberate decision: opt-out applies only to anonymous analytics; the admin sees everyone's usage
     hub.put("/api/me/prefs", json={"analytics_opt_out": True})
-    hub.get("/apps/ativos")
-    assert any(r["app"] == "ativos" for r in hub.get("/api/admin/usage").json()["rows"])
+    hub.get("/apps/inventory")
+    assert any(r["app"] == "inventory" for r in hub.get("/api/admin/usage").json()["rows"])
     # deleted user: the rows are kept (history), without name or e-mail
     ins = hub.app.state.insight  # type: ignore[attr-defined]
-    ins.usage.record("u-excluido", "ativos", "open")
+    ins.usage.record("u-excluido", "inventory", "open")
     row = next(r for r in hub.get("/api/admin/usage").json()["rows"] if r["user"] == "u-excluido")
     assert (row["name"], row["email"], row["opens"]) == ("", "", 1)
     page = hub.get("/admin/usage").text
@@ -874,7 +881,7 @@ def test_usage_ignores_analytics_opt_out_and_keeps_deleted_users(hub: TestClient
 def test_usage_page_period_filter(hub: TestClient) -> None:
     ins = hub.app.state.insight  # type: ignore[attr-defined]
     now = int(time.time() * 1000)
-    ins.usage.record("u-antigo", "ativos", "open", now=now - 20 * 86_400_000)
+    ins.usage.record("u-antigo", "inventory", "open", now=now - 20 * 86_400_000)
     assert "u-antigo" in hub.get("/admin/usage?days=30").text
     assert "u-antigo" not in hub.get("/admin/usage?days=7").text
     assert "u-antigo" in hub.get("/admin/usage?days=90").text
@@ -890,15 +897,15 @@ def test_two_replicas_telemetry_files_add_up(tmp_path: Path) -> None:
     assert merge3({"a": 5, "s": {1}}, {"a": 3, "s": {2}}, {"a": 1}) == {"a": 7, "s": {1, 2}}
     now = 1_790_000_000_000
     u1, u2 = Usage(tmp_path), Usage(tmp_path)
-    u1.record("ana", "ativos", "open", now)
-    u2.record("ana", "ativos", "open", now + 5)
-    u2.record("bia", "ativos", "action", now)
+    u1.record("ana", "inventory", "open", now)
+    u2.record("ana", "inventory", "open", now + 5)
+    u2.record("bia", "inventory", "action", now)
     u1.flush(90, now)
     u2.flush(90, now)
     u1.flush(90, now)  # nothing new: only adopts what the other one wrote
     rows = {(r["user"], r["app"]): r for r in Usage(tmp_path).query(now)["rows"]}
-    assert rows[("ana", "ativos")]["opens"] == 2 and rows[("ana", "ativos")]["last"] == now + 5
-    assert rows[("bia", "ativos")]["actions"] == 1
+    assert rows[("ana", "inventory")]["opens"] == 2 and rows[("ana", "inventory")]["last"] == now + 5
+    assert rows[("bia", "inventory")]["actions"] == 1
     assert {(r["user"], r["app"]) for r in u1.query(now)["rows"]} == set(rows)
 
     a1, a2 = Analytics(tmp_path, None), Analytics(tmp_path, None)

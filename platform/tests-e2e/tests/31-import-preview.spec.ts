@@ -6,7 +6,7 @@ import { apiAs, gotoSafe, json, packSample, stateFile, WORK_DIR } from './helper
 // Task 29: manual import = choose the .hubapp → preview → variables/secrets → environment → deploy.
 test.use({ storageState: stateFile('admin') });
 
-const APP = 'fornecedores';
+const APP = 'suppliers';
 const RUN = Math.floor(Date.now() / 1000) % 1_000_000;
 const VERSION = `1.7.${RUN}`;
 const SECRET = `e2e-segredo-${RUN}-nao-pode-aparecer`;
@@ -80,7 +80,7 @@ test(`importar pacote: prévia → variável e segredo → botão por ambiente �
   const env = await (await api.get('/api/admin/env')).text();
   const jobs = await (await api.get('/api/ops/deployments')).text();
   await api.dispose();
-  expect(env).toContain('E2E_IMPORT_KEY_FORNECEDORES_STAGING'); // the secret arrived (by name)
+  expect(env).toContain('E2E_IMPORT_KEY_SUPPLIERS_STAGING'); // the secret arrived (by name)
   expect(env).toContain(VAR_VALUE); // the public variable arrived with its value
   expect(env).not.toContain(SECRET);
   expect(jobs).not.toContain(SECRET);

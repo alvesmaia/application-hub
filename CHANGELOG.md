@@ -7,6 +7,35 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Attention
+- **Sample apps renamed to English ids and routes:** `ativos`→`inventory`, `fornecedores`→`suppliers`,
+  `servicos`→`servicedesk`, `coletor`→`collector`, `automacoes`→`automations` (URLs `/apps/<id>/…`, containers,
+  databases, roles, secrets, buckets, job kinds; in-app routes in English too, e.g. `catalogo`→`catalog`,
+  `execucoes`→`runs`, `folha`→`sheet`, `escanear`→`scan`, `itens`→`items`). Screens keep following each user's
+  language. An existing install migrates once with `scripts/rename-sample-apps.sh` (below); old bookmarks to
+  `/apps/<old-id>` stop working. The audit chain keeps the old ids in past events (it is signed).
+- App-specific variables follow the ids (e.g. `AUTOMACOES_ADMIN_ROLES`→`AUTOMATIONS_ADMIN_ROLES`,
+  `HUB_SERVICOS_APPROVER_ROLES`→`HUB_SERVICEDESK_APPROVER_ROLES`); the migration renames them in the hub's variables
+  and in `.prod.env`.
+
+### Upgrade from 0.3.x
+From `platform-py/` (the sample apps and the hub stop for a few minutes):
+
+1. Backup (`docs/ATUALIZACAO.md` §1).
+2. `git fetch --tags && git checkout v0.4.0`
+3. `bash scripts/install.sh --config-only --yes` (new secret names are generated only if missing).
+4. `dc build` — the new images (hub and sample apps).
+5. `bash scripts/rename-sample-apps.sh --yes` — dumps the apps' Postgres and `.prod.env` to `.secrets/rename-apps/`,
+   stops the hub and the old sample containers, renames databases/roles/job kinds, copies the buckets, renames the
+   `.prod.env` keys and the hub data, removes the old containers. Safe to run again.
+6. `dc up -d` — the hub and the sample apps under the new ids.
+7. Check: `/healthz` answers `"version":"0.4.0"`, every `<project>-app-*` container is `(healthy)`, the catalog opens
+   `/apps/inventory`, and staging of a sample app (if you used it) is deployed again from Implantações.
+
+Rollback: `bash scripts/rename-sample-apps.sh --yes --reverse`, then `git checkout v0.3.2 && dc build && dc up -d`
+(or restore the step 1 backup). Not using the sample apps (`--no-demo-apps`)? Run step 5 anyway: it renames only
+what exists.
+
 ## [0.3.2] — 2026-11-23
 
 ### Upgrade from 0.3.1

@@ -29,19 +29,19 @@ from hub.ops.schedule import normalize
 JSON = {"content-type": "application/json"}
 DIGEST = "sha256:" + "ab" * 32
 JOBS = [
-    {"id": "job-1", "kind": "ativos.import", "status": "failed", "attempts": 2, "max_attempts": 3,
+    {"id": "job-1", "kind": "inventory.import", "status": "failed", "attempts": 2, "max_attempts": 3,
      "progress_done": 5, "progress_total": 10, "error": "boom", "user": "Ana", "created_at": 1_700_000_000_000,
      "elapsed_s": 3.2, "checkpoint": {"saga": {"state": "compensating", "steps": [{"name": "a", "state": "done"}]}}},
-    {"id": "job-2", "kind": "ativos.export", "status": "running", "attempts": 1, "max_attempts": 3,
+    {"id": "job-2", "kind": "inventory.export", "status": "running", "attempts": 1, "max_attempts": 3,
      "created_at": 1_700_000_100_000},
 ]  # fmt: skip
 
 
 def upstream(request: httpx.Request) -> httpx.Response:
     p = request.url.path
-    if p == "/ativos/_hub/jobs" and request.headers.get("x-hub-internal-token"):
+    if p == "/inventory/_hub/jobs" and request.headers.get("x-hub-internal-token"):
         return httpx.Response(200, json={"jobs": JOBS})
-    if p.startswith("/ativos/_hub/jobs/job-1/"):
+    if p.startswith("/inventory/_hub/jobs/job-1/"):
         return httpx.Response(200, json={"job": {**JOBS[0], "status": "queued"}})
     return httpx.Response(404)
 
@@ -96,12 +96,12 @@ def audit_titles(c: TestClient) -> list[str]:
 class FakeContainer:
     def __init__(self, cl: FakeDocker, name: str, status: str = "running") -> None:
         self.cl, self.name, self.status = cl, name, status
-        self.image = SimpleNamespace(tags=["hub-ativos:latest"])
+        self.image = SimpleNamespace(tags=["hub-inventory:latest"])
         self.attrs: dict[str, Any] = {
             "State": {"StartedAt": "2026-10-06T10:00:00.5Z", "Health": {"Status": "healthy"}},
             "Config": {"Env": ["SECRET=abc", "A=b"]},
-            "HostConfig": {"NetworkMode": "hub-app-ativos", "ReadonlyRootfs": True, "CapDrop": ["ALL"]},
-            "NetworkSettings": {"Networks": {"hub-app-ativos": {}}},
+            "HostConfig": {"NetworkMode": "hub-app-inventory", "ReadonlyRootfs": True, "CapDrop": ["ALL"]},
+            "NetworkSettings": {"Networks": {"hub-app-inventory": {}}},
         }
 
     def stats(self, stream: bool = False) -> dict[str, Any]:
@@ -138,7 +138,7 @@ class FakeDocker:
     def __init__(self) -> None:
         self.calls: list[tuple[Any, ...]] = []
         self.fail: dict[str, int] = {}
-        self.names = ["app-hub-app-ativos", "app-hub-app-db"]
+        self.names = ["app-hub-app-inventory", "app-hub-app-db"]
         self.containers = SimpleNamespace(list=self._list, get=self._get)
 
     def _list(self, all: bool = True, filters: Any = None) -> list[FakeContainer]:
@@ -177,11 +177,13 @@ def test_pages_render_and_rbac(hub: TestClient, docker: FakeDocker) -> None:
     for p in ("deploys", "runtime", "tasks", "backups"):
         assert colab.get(f"/admin/{p}").status_code == 403, p
     for method, url in (("get", "/api/ops/deployments"), ("get", "/api/ops/runtime"), ("get", "/api/ops/tasks"),
-                        ("get", "/api/ops/backups"), ("post", "/api/ops/backups/ativos/run"),
-                        ("post", "/api/ops/runtime/ativos/restart"), ("put", "/api/ops/runtime/ativos/limits")):  # fmt: skip
+                        ("get", "/api/ops/backups"), ("post", "/api/ops/backups/inventory/run"),
+                        ("post", "/api/ops/runtime/inventory/restart"), ("put", "/api/ops/runtime/inventory/limits")):  # fmt: skip
         assert getattr(colab, method)(url, headers=JSON).status_code == 403, url
     assert hub.get("/api/ops/deployments").headers["cache-control"] == "no-store"
-    assert hub.post("/api/ops/backups/ativos/run", content=b"x").status_code == 415  # only application/json
+    assert (
+        hub.post("/api/ops/backups/inventory/run", content=b"x").status_code == 415
+    )  # only application/json
 
 
 def test_upload_pipeline_and_audit(hub: TestClient) -> None:
@@ -376,9 +378,9 @@ async def test_pipeline_failures(files: dict[str, bytes], needle: str) -> None:
 def test_runtime_api_and_page(hub: TestClient, docker: FakeDocker) -> None:
     j = hub.get("/api/ops/runtime").json()
     assert j["engine"]["reachable"] and j["host"]["cpu"] == 8
-    app = next(a for a in j["apps"] if a["id"] == "ativos")
-    assert app["container"] == "app-hub-app-ativos" and app["image"] == "sem imagem implantada"
-    live = next(x for x in j["engine"]["live"] if x["name"] == "app-hub-app-ativos")
+    app = next(a for a in j["apps"] if a["id"] == "inventory")
+    assert app["container"] == "app-hub-app-inventory" and app["image"] == "sem imagem implantada"
+    live = next(x for x in j["engine"]["live"] if x["name"] == "app-hub-app-inventory")
     assert (
         live["status"].startswith("Up ")
         and "(healthy)" in live["status"]
@@ -420,44 +422,49 @@ def test_runtime_unreachable(hub: TestClient) -> None:
     assert "Runtime indisponível" in page and "Não criado" not in page and "Sem conexão" in page
     # without the runtime the containers cannot be measured: the host's usage is shown whole, not as "Sistema"
     assert 'title="Em uso (sem detalhe por contêiner): ' in hub.get("/admin/runtime/host").text
-    assert hub.post("/api/ops/runtime/ativos/restart", headers=JSON).status_code == 503
-    assert hub.get("/api/ops/runtime/ativos/logs").status_code == 503
+    assert hub.post("/api/ops/runtime/inventory/restart", headers=JSON).status_code == 503
+    assert hub.get("/api/ops/runtime/inventory/logs").status_code == 503
 
 
 def test_runtime_actions_logs_inspect_limits(
     hub: TestClient, docker: FakeDocker, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    r = hub.post("/api/ops/runtime/ativos/restart", headers=JSON)
+    r = hub.post("/api/ops/runtime/inventory/restart", headers=JSON)
     assert (
-        r.json() == {"container": "app-hub-app-ativos", "action": "restart"}
-        and ("restart", "app-hub-app-ativos") in docker.calls
+        r.json() == {"container": "app-hub-app-inventory", "action": "restart"}
+        and ("restart", "app-hub-app-inventory") in docker.calls
     )
     assert "Container reiniciado" in audit_titles(hub)
-    assert hub.post("/api/ops/runtime/ativos/zzz", headers=JSON).status_code == 404
+    assert hub.post("/api/ops/runtime/inventory/zzz", headers=JSON).status_code == 404
     assert hub.post("/api/ops/runtime/nao/stop", headers=JSON).status_code == 404
     assert (
-        hub.post("/api/ops/runtime/ativos/apply", headers=JSON).status_code == 422
+        hub.post("/api/ops/runtime/inventory/apply", headers=JSON).status_code == 422
     )  # no local image (simulated Docker)
-    assert hub.post("/api/ops/runtime/coletor/stop", headers=JSON).status_code == 503  # container inexistente
-    lg = hub.get("/api/ops/runtime/ativos/logs?tail=10").json()
+    assert (
+        hub.post("/api/ops/runtime/collector/stop", headers=JSON).status_code == 503
+    )  # container inexistente
+    lg = hub.get("/api/ops/runtime/inventory/logs?tail=10").json()
     assert [(i["level"], i["text"]) for i in lg["items"]] == [("INFO", "INFO ok"), ("ERROR", "ERROR falha")]
-    env = hub.get("/api/ops/runtime/ativos/inspect").json()["Config"]["Env"]
+    env = hub.get("/api/ops/runtime/inventory/inspect").json()["Config"]["Env"]
     assert env == ["SECRET=••••", "A=••••"]
     assert hub.get("/api/ops/runtime/nao/logs/stream").status_code == 404
     # limits: validation, admission control, application to the live container and audit
     ok = {"cpu": 0.5, "memory": "512Mi", "pids": 200}
-    r = hub.put("/api/ops/runtime/ativos/limits", json=ok)
-    assert r.status_code == 200 and "aplicado ao container app-hub-app-ativos" in r.json()["applied"]
+    r = hub.put("/api/ops/runtime/inventory/limits", json=ok)
+    assert r.status_code == 200 and "aplicado ao container app-hub-app-inventory" in r.json()["applied"]
     assert any(c[0] == "update" and c[2]["pids_limit"] == 200 for c in docker.calls)
     assert "Limites de container alterados" in audit_titles(hub)
     for bad in ({"cpu": 9, "memory": "1Gi", "pids": 1}, {"cpu": 1, "memory": "1GB", "pids": 1}, {"cpu": 1}):
-        assert hub.put("/api/ops/runtime/ativos/limits", json=bad).status_code == 400
+        assert hub.put("/api/ops/runtime/inventory/limits", json=bad).status_code == 400
     monkeypatch.setenv("HUB_HOST_CPU", "4")
     assert (
-        hub.put("/api/ops/runtime/ativos/limits", json={"cpu": 4, "memory": "8Gi", "pids": 10}).status_code
+        hub.put("/api/ops/runtime/inventory/limits", json={"cpu": 4, "memory": "8Gi", "pids": 10}).status_code
         == 400
     )  # capacidade
-    assert hub.get("/api/ops/runtime").json()["apps"][0]["edited"] is True
+    assert (
+        next(a for a in hub.get("/api/ops/runtime").json()["apps"] if a["id"] == "inventory")["edited"]
+        is True
+    )
 
 
 def test_runtime_units(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -472,33 +479,33 @@ def test_runtime_units(monkeypatch: pytest.MonkeyPatch) -> None:
 
 # ---- Tarefas ---------------------------------------------------------------------------------------
 def test_tasks_list_page_and_actions(hub: TestClient) -> None:
-    hub.app.state.admin.tokens["ativos"] = "t" * 20  # type: ignore[attr-defined]
+    hub.app.state.admin.tokens["inventory"] = "t" * 20  # type: ignore[attr-defined]
     j = hub.get("/api/ops/tasks").json()
     assert [t["id"] for t in j["tasks"]] == ["job-2", "job-1"]  # mais recentes primeiro
     assert j["tasks"][1]["saga"]["state"] == "compensating" and "checkpoint" not in j["tasks"][1]
-    assert any(e[0] == "coletor" for e in j["errors"])  # app mudo (404)
+    assert any(e[0] == "collector" for e in j["errors"])  # app mudo (404)
     page = hub.get("/admin/tasks").text
     assert "2 tarefas · 1 em execução · 1 com falha" in page and "Saga:" in page and "compensando" in page
     assert (
-        'data-ops-task="ativos|job-1|retry|producao"' in page
-        and 'data-ops-task="ativos|job-2|cancel|producao"' in page
+        'data-ops-task="inventory|job-1|retry|producao"' in page
+        and 'data-ops-task="inventory|job-2|cancel|producao"' in page
     )
     assert "Sem resposta de:" in page
     assert (
         "job-1" not in hub.get("/admin/tasks?status=running").text
         and "job-2" in hub.get("/admin/tasks?status=running").text
     )
-    assert "job-2" not in hub.get("/admin/tasks?app=ativos&status=failed").text
-    r = hub.post("/api/ops/tasks/ativos/job-1/retry", headers=JSON)
+    assert "job-2" not in hub.get("/admin/tasks?app=inventory&status=failed").text
+    r = hub.post("/api/ops/tasks/inventory/job-1/retry", headers=JSON)
     assert r.status_code == 200 and r.json()["job"]["status"] == "queued"
     assert "Tarefa reprocessada" in audit_titles(hub)
-    assert hub.post("/api/ops/tasks/ativos/job-1/zzz", headers=JSON).status_code == 409
+    assert hub.post("/api/ops/tasks/inventory/job-1/zzz", headers=JSON).status_code == 409
     assert (
-        hub.post("/api/ops/tasks/ativos/job-9/cancel", headers=JSON).status_code == 409
+        hub.post("/api/ops/tasks/inventory/job-9/cancel", headers=JSON).status_code == 409
     )  # app respondeu 404
-    assert hub.post("/api/ops/tasks/ativos/job-1/retry?env=staging", headers=JSON).status_code == 404
+    assert hub.post("/api/ops/tasks/inventory/job-1/retry?env=staging", headers=JSON).status_code == 404
     assert hub.post("/api/ops/tasks/nao/job-1/retry", headers=JSON).status_code == 404
-    assert hub.post("/api/ops/tasks/ativos/a%20b/retry", headers=JSON).status_code == 409
+    assert hub.post("/api/ops/tasks/inventory/a%20b/retry", headers=JSON).status_code == 409
 
 
 def test_jobs_helpers() -> None:
@@ -534,13 +541,13 @@ def wait_job(c: TestClient, jid: int) -> dict[str, Any]:
 
 
 def test_backup_run_least_privilege_and_vault(hub: TestClient, bk: FakeDocker, tmp_path: Path) -> None:
-    r = hub.post("/api/ops/backups/ativos/run", headers=JSON)
+    r = hub.post("/api/ops/backups/inventory/run", headers=JSON)
     assert r.status_code == 202
     j = wait_job(hub, r.json()["id"])
     assert j["ok"], j["message"]
     rec = hub.get("/api/ops/backups").json()["history"][0]
-    assert rec["status"] == "Concluído" and rec["file"].startswith("ativos-") and "appdb" in rec["detail"]
-    f = Path(hub.app.state.data_dir) / "backups" / "ativos" / rec["file"]  # type: ignore[attr-defined]
+    assert rec["status"] == "Concluído" and rec["file"].startswith("inventory-") and "appdb" in rec["detail"]
+    f = Path(hub.app.state.data_dir) / "backups" / "inventory" / rec["file"]  # type: ignore[attr-defined]
     assert hashlib.sha256(f.read_bytes()).hexdigest() == rec["sha256"]
     # pg_dump ran with the read-only role and the vault password (never in clear text in ops.json)
     dump = next(c for c in bk.calls if c[0] == "exec" and c[2][0] == "pg_dump")
@@ -574,7 +581,7 @@ def test_backup_run_least_privilege_and_vault(hub: TestClient, bk: FakeDocker, t
 
 def test_backup_failure_and_busy(hub: TestClient, bk: FakeDocker) -> None:
     bk.fail["pg_dump"] = 1
-    r = hub.post("/api/ops/backups/ativos/run", headers=JSON)
+    r = hub.post("/api/ops/backups/inventory/run", headers=JSON)
     j = wait_job(hub, r.json()["id"])
     assert not j["ok"] and "pg_dump" in j["message"]
     rec = hub.get("/api/ops/backups").json()["history"][0]
@@ -586,20 +593,20 @@ def test_backup_failure_and_busy(hub: TestClient, bk: FakeDocker) -> None:
     # app in maintenance blocks the backup until released
     ops = hub.app.state.ops  # type: ignore[attr-defined]
     d = ops.read()
-    d["maintenance"]["ativos|producao"] = {"kind": "restauracao_falhou", "since": 1, "detail": "x"}
+    d["maintenance"]["inventory|producao"] = {"kind": "restauracao_falhou", "since": 1, "detail": "x"}
     ops.write(d)
-    assert hub.post("/api/ops/backups/ativos/run", headers=JSON).status_code == 409
+    assert hub.post("/api/ops/backups/inventory/run", headers=JSON).status_code == 409
     assert "Liberar (dados conferidos)" in hub.get("/admin/backups").text
     assert "Em manutenção" in hub.get("/admin/runtime").text
-    assert hub.post("/api/ops/runtime/ativos/restart", headers=JSON).status_code == 409
-    assert hub.post("/api/ops/maintenance/ativos/clear", headers=JSON).status_code == 200
-    assert hub.post("/api/ops/maintenance/ativos/clear", headers=JSON).status_code == 409
+    assert hub.post("/api/ops/runtime/inventory/restart", headers=JSON).status_code == 409
+    assert hub.post("/api/ops/maintenance/inventory/clear", headers=JSON).status_code == 200
+    assert hub.post("/api/ops/maintenance/inventory/clear", headers=JSON).status_code == 409
     assert "Manutenção liberada" in audit_titles(hub)
 
 
 def test_backup_policy_and_retention(hub: TestClient, bk: FakeDocker) -> None:
     pol = {"schedule": "A cada 6 h", "keep": 1, "volumes": ["data"], "hooks": False, "destination": "Local"}
-    r = hub.put("/api/ops/backups/policies/ativos", json=pol)
+    r = hub.put("/api/ops/backups/policies/inventory", json=pol)
     assert r.status_code == 200 and r.json()["envs"] == ["producao"]
     assert "Política de backup alterada" in audit_titles(hub)
     for bad in (
@@ -607,12 +614,12 @@ def test_backup_policy_and_retention(hub: TestClient, bk: FakeDocker) -> None:
         {**pol, "volumes": []}, {**pol, "volumes": ["A/B"]}, {**pol, "destination": ""}, {**pol, "envs": ["x"]},
         {**pol, "missed": "x"}, {**pol, "tz": "Nao/Existe"},
     ):  # fmt: skip
-        assert hub.put("/api/ops/backups/policies/ativos", json=bad).status_code == 400, bad
+        assert hub.put("/api/ops/backups/policies/inventory", json=bad).status_code == 400, bad
     assert hub.put("/api/ops/backups/policies/zzz", json=pol).status_code == 404
     ids = []
     for _ in range(2):  # keep=1: the second backup expires the first
         ids.append(
-            wait_job(hub, hub.post("/api/ops/backups/ativos/run", headers=JSON).json()["id"])["result"][
+            wait_job(hub, hub.post("/api/ops/backups/inventory/run", headers=JSON).json()["id"])["result"][
                 "record"
             ]
         )
@@ -620,7 +627,8 @@ def test_backup_policy_and_retention(hub: TestClient, bk: FakeDocker) -> None:
     assert hist[ids[0]]["status"] == "Expirado" and hist[ids[1]]["status"] == "Concluído"
     assert (
         "manual" in hub.get("/admin/backups").text
-        or hub.put("/api/ops/backups/policies/ativos", json={**pol, "schedule": "Manual"}).status_code == 200
+        or hub.put("/api/ops/backups/policies/inventory", json={**pol, "schedule": "Manual"}).status_code
+        == 200
     )
     assert "produção: manual" in hub.get("/admin/backups").text
 
@@ -685,26 +693,26 @@ def test_bundle_with_bucket_and_volumes(hub: TestClient, bk: FakeDocker, tmp_pat
     backups.objstore = ObjectStore("http://admin:pw@objstore:9000", runner)
 
     async def env(app: str, e: str) -> dict[str, str]:
-        return {"HUB_S3_BUCKET": "ativos-bkt"}
+        return {"HUB_S3_BUCKET": "inventory-bkt"}
 
     backups.app_env = env
-    vol = Path(hub.app.state.data_dir) / "apps" / "ativos" / "data"  # type: ignore[attr-defined]
+    vol = Path(hub.app.state.data_dir) / "apps" / "inventory" / "data"  # type: ignore[attr-defined]
     vol.mkdir(parents=True)
     (vol / "a.txt").write_text("v1", encoding="utf-8")
-    jid = hub.post("/api/ops/backups/ativos/run", headers=JSON).json()["id"]
+    jid = hub.post("/api/ops/backups/inventory/run", headers=JSON).json()["id"]
     j = wait_job(hub, jid)
     assert j["ok"], j["message"]
-    assert any("bkp-ativos-bkt" in " ".join(a) for a in seen)  # read-only user created
+    assert any("bkp-inventory-bkt" in " ".join(a) for a in seen)  # read-only user created
     rec = hub.get("/api/ops/backups").json()["history"][0]
-    assert "bucket ativos-bkt" in rec["detail"] and "volume data" in rec["detail"]
+    assert "bucket inventory-bkt" in rec["detail"] and "volume data" in rec["detail"]
     (vol / "a.txt").write_text("alterado", encoding="utf-8")
     assert wait_job(
         hub, hub.post(f"/api/ops/backups/records/{rec['id']}/restore", headers=JSON).json()["id"]
     )["ok"]
     assert (vol / "a.txt").read_text(encoding="utf-8") == "v1"
-    assert any("mirror" in a and a[-1] == "hub/ativos-bkt" for a in seen)
+    assert any("mirror" in a and a[-1] == "hub/inventory-bkt" for a in seen)
     # tampered file: sha256 does not match
-    f = Path(hub.app.state.data_dir) / "backups" / "ativos" / rec["file"]  # type: ignore[attr-defined]
+    f = Path(hub.app.state.data_dir) / "backups" / "inventory" / rec["file"]  # type: ignore[attr-defined]
     f.write_bytes(f.read_bytes() + b"x")
     j = wait_job(hub, hub.post(f"/api/ops/backups/records/{rec['id']}/test", headers=JSON).json()["id"])
     assert not j["ok"] and "sha256" in j["message"]
@@ -715,7 +723,7 @@ def test_bundle_without_targets(hub: TestClient, bk: FakeDocker) -> None:
         return {}
 
     hub.app.state.ops_backups.app_env = env  # type: ignore[attr-defined]
-    j = wait_job(hub, hub.post("/api/ops/backups/servicos/run", headers=JSON).json()["id"])
+    j = wait_job(hub, hub.post("/api/ops/backups/servicedesk/run", headers=JSON).json()["id"])
     assert not j["ok"] and "Nada a copiar" in j["message"]
 
 
@@ -752,7 +760,7 @@ def test_sdk_page_and_manifest_validate(hub: TestClient) -> None:
     assert bad.status_code == 200 and bad.json()["valid"] is False and bad.json()["error"]
     conflict = hub.post(
         "/api/ops/manifest/validate",
-        content=json.dumps({"id": "novoapp", "name": "N", "routes": ["/ativos/x"]}),
+        content=json.dumps({"id": "novoapp", "name": "N", "routes": ["/inventory/x"]}),
         headers=JSON | HDR,
     )
     assert conflict.json()["valid"] is False
@@ -806,7 +814,7 @@ def test_forbidden_page_is_inside_the_shell_and_loader_text(hub: TestClient) -> 
     assert r.status_code == 403
     assert 'class="page-title">Acesso negado<' in r.text and 'class="eyebrow">Acesso<' in r.text
     assert 'id="app-root"' in r.text
-    page = hub.get("/apps/ativos")
+    page = hub.get("/apps/inventory")
     assert page.status_code == 200 and "Preparando sua aplicação" in page.text
 
 
@@ -828,10 +836,10 @@ def test_rail_mode_cookie_is_per_context_and_loader_texts(hub: TestClient) -> No
         return str(hub.get(path, headers={"cookie": jar}).text)
 
     assert 'class="rail-expanded' in get("/applications") and 'data-rail-ctx="hub"' in get("/applications")
-    app_page = get("/apps/ativos")
+    app_page = get("/apps/inventory")
     assert 'class="rail-hidden in-app' in app_page and 'data-rail-ctx="app"' in app_page
     assert "Carregando workspace" in app_page
-    assert 'class="rail-collapsed in-app' in get("/apps/ativos", app="collapsed")
+    assert 'class="rail-collapsed in-app' in get("/apps/inventory", app="collapsed")
     assert 'class="rail-expanded' in get(
         "/applications", app="collapsed"
     )  # what is chosen inside does not leak outside
@@ -845,19 +853,19 @@ def test_approved_script_enters_the_page_csp(hub: TestClient) -> None:
     ops = hub.app.state.ops  # type: ignore[attr-defined]
     d = ops.read()
     sha = "sha384-" + "A" * 64
-    dep = {"id": d["next_deploy_id"], "app": "ativos", "version": "9.9.9", "env": "Produção", "origin": "Import manual",
+    dep = {"id": d["next_deploy_id"], "app": "inventory", "version": "9.9.9", "env": "Produção", "origin": "Import manual",
            "commit": "—", "status": m.IMPLANTADO, "at": 1, "package": None, "sha256": "", "image": "x", "note": "",
            "runtime": "", "scripts": [{"path": "ui/assets/x.js", "sha384": sha, "reason": "gráfico interativo da tela"}],
            "submitted_by": "", "submitted_by_id": ""}  # fmt: skip
     d["next_deploy_id"] += 1
     d["deployments"].insert(0, dep)
     ops.write(d)
-    assert approved_scripts("ativos", False) == []  # still without the security review
+    assert approved_scripts("inventory", False) == []  # still without the security review
     d = ops.read()
     d["script_approvals"].append(
-        {"app": "ativos", "path": "ui/assets/x.js", "sha384": sha, "by": "r", "by_id": "r1", "at": 2}
+        {"app": "inventory", "path": "ui/assets/x.js", "sha384": sha, "by": "r", "by_id": "r1", "at": 2}
     )
     ops.write(d)
-    assert approved_scripts("ativos", False) == [("x.js", sha)]
-    csp = hub.get("/apps/ativos").headers["content-security-policy"]
-    assert f"'{sha}'" in csp and "/_frag/ativos/assets/x.js" in csp
+    assert approved_scripts("inventory", False) == [("x.js", sha)]
+    csp = hub.get("/apps/inventory").headers["content-security-policy"]
+    assert f"'{sha}'" in csp and "/_frag/inventory/assets/x.js" in csp

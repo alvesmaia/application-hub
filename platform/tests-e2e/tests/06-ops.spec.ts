@@ -5,7 +5,7 @@ import { HUB, apiAs, gotoSafe, autoConfirm, docker, json, packSample, stateFile,
 test.use({ storageState: stateFile('admin') });
 test.describe.configure({ mode: 'serial' });
 
-const APP = 'fornecedores';
+const APP = 'suppliers';
 // Unique version per run (versions are immutable in the hub).
 const RUN = Math.floor(Date.now() / 1000) % 1_000_000;
 const BASE = `1.8.${RUN}`;
@@ -92,24 +92,24 @@ test(`implantações: importar pacote → passos de validação → promover →
 test('containers: estado real do engine (parar → iniciar)', async ({ page }) => {
   test.setTimeout(240_000);
   await page.goto('/admin/runtime');
-  for (const app of ['ativos', 'fornecedores', 'servicos']) {
+  for (const app of ['inventory', 'suppliers', 'servicedesk']) {
     const card = page.locator(`[data-ops-app="${app}"][data-ops-env="producao"]`);
     await expect(card).toContainText(`${CP}app-${app}`);
     await expect(card).toContainText('Em execução');
     expect(docker('inspect', '-f', '{{.State.Running}}', `${CP}app-${app}`)).toBe('true');
   }
-  const card = page.locator('[data-ops-app="servicos"][data-ops-env="producao"]');
+  const card = page.locator('[data-ops-app="servicedesk"][data-ops-env="producao"]');
   await card.locator('details.hub-row-menu > summary').click();
   await card.locator('[data-ops-container="stop"]').click();
   await expect(toast(page)).toContainText('parado', { timeout: 60_000 });
-  const stopped = page.locator('[data-ops-app="servicos"][data-ops-env="producao"]');
+  const stopped = page.locator('[data-ops-app="servicedesk"][data-ops-env="producao"]');
   await expect(stopped).not.toContainText('Em execução');
-  expect(docker('inspect', '-f', '{{.State.Running}}', `${CP}app-servicos`)).toBe('false');
+  expect(docker('inspect', '-f', '{{.State.Running}}', `${CP}app-servicedesk`)).toBe('false');
   await stopped.locator('details.hub-row-menu > summary').click();
   await stopped.locator('[data-ops-container="start"]').click();
   await expect(toast(page)).toContainText('iniciado', { timeout: 60_000 });
-  await expect(page.locator('[data-ops-app="servicos"][data-ops-env="producao"]')).toContainText('Em execução');
-  expect(docker('inspect', '-f', '{{.State.Running}}', `${CP}app-servicos`)).toBe('true');
+  await expect(page.locator('[data-ops-app="servicedesk"][data-ops-env="producao"]')).toContainText('Em execução');
+  expect(docker('inspect', '-f', '{{.State.Running}}', `${CP}app-servicedesk`)).toBe('true');
 });
 
 test('backups: backup agora + restaurar com faixa de manutenção', async ({ page, browser }) => {
@@ -172,13 +172,13 @@ test('backups: backup agora + restaurar com faixa de manutenção', async ({ pag
 test('tarefas: cancelar e reprocessar uma exportação em andamento', async ({ page }) => {
   test.setTimeout(300_000);
   // XLSX export of the whole database (long durable task) triggered by the app.
-  const r = await page.request.post('/_frag/ativos/itens/export.xlsx', { form: { sort: 'nome', dir: 'asc' }, headers: { origin: HUB } });
+  const r = await page.request.post('/_frag/inventory/items/export.xlsx', { form: { sort: 'nome', dir: 'asc' }, headers: { origin: HUB } });
   expect(r.status(), await r.text()).toBeLessThan(300);
   const api = await apiAs('admin');
   const findTask = async (states: string[]) => {
     const t = await json(await api.get('/api/ops/tasks'));
     const all = (t.tasks || t.items || t) as any[];
-    return all.find((x) => x.app === 'ativos' && String(x.kind).includes('export') && states.includes(x.status));
+    return all.find((x) => x.app === 'inventory' && String(x.kind).includes('export') && states.includes(x.status));
   };
   await expect.poll(async () => Boolean(await findTask(['running', 'queued'])), { timeout: 60_000 }).toBe(true);
   const task = await findTask(['running', 'queued']);
@@ -186,7 +186,7 @@ test('tarefas: cancelar e reprocessar uma exportação em andamento', async ({ p
   // the query may come back empty once — reloads until the row appears.
   const openRow = async (sel: string) => {
     await expect(async () => {
-      await gotoSafe(page, '/admin/tasks?app=ativos');
+      await gotoSafe(page, '/admin/tasks?app=inventory');
       await expect(page.locator(sel).first()).toBeVisible({ timeout: 3000 });
     }).toPass({ timeout: 90_000 });
     await page.locator(sel).first().click();
@@ -199,6 +199,6 @@ test('tarefas: cancelar e reprocessar uma exportação em andamento', async ({ p
   await expect.poll(async () => Boolean(await findTask(['queued', 'running', 'done'])), { timeout: 60_000 }).toBe(true);
   // Does not leave the export of 1 million rows running after the test.
   const again = await findTask(['queued', 'running']);
-  if (again) await api.post(`/api/ops/tasks/ativos/${again.id}/cancel`, { headers: { 'content-type': 'application/json' }, data: {} });
+  if (again) await api.post(`/api/ops/tasks/inventory/${again.id}/cancel`, { headers: { 'content-type': 'application/json' }, data: {} });
   await api.dispose();
 });

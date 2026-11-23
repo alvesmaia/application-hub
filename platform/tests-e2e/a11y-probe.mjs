@@ -7,7 +7,7 @@ import fs from 'node:fs';
 const HUB = process.env.HUB || 'http://localhost:8080';
 const out = process.argv[2] || 'probe-out';
 fs.mkdirSync(out, { recursive: true });
-const pages = (process.env.PAGES || '/,/applications,/inbox,/status,/search?q=a,/admin,/admin/analytics,/ativos/assets,/servicos/requests').split(',').map((p) => (p.startsWith('/') ? p : `/${p}`));
+const pages = (process.env.PAGES || '/,/applications,/inbox,/status,/search?q=a,/admin,/admin/analytics,/inventory/assets,/servicedesk/requests').split(',').map((p) => (p.startsWith('/') ? p : `/${p}`));
 const browser = await chromium.launch();
 const summary = [];
 for (const scheme of (process.env.SCHEMES || 'light,dark').split(',')) {
@@ -23,7 +23,7 @@ for (const scheme of (process.env.SCHEMES || 'light,dark').split(',')) {
     await page.waitForURL((u) => !u.pathname.startsWith('/login'));
     for (const p of pages) {
       await page.goto(`${HUB}${p}`);
-      if (/^\/(ativos|servicos|fornecedores)/.test(p)) {
+      if (/^\/(inventory|servicedesk|suppliers)/.test(p)) {
         await page.locator('#app-root .app-sidebar').waitFor({ timeout: 30000 }).catch(() => {});
         await page.waitForTimeout(500);
       } else {

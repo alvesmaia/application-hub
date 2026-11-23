@@ -13,8 +13,8 @@ const PAGES: [string, string][] = [
   ['admin-saude', '/admin/health'],
   ['ops-implantacoes', '/admin/deploys'],
   ['ops-backups', '/admin/backups'],
-  ['app-ativos', '/apps/ativos'],
-  ['app-servicos', '/apps/servicos/dashboard'],
+  ['app-inventory', '/apps/inventory'],
+  ['app-servicedesk', '/apps/servicedesk/dashboard'],
 ];
 
 test('login', async ({ page }) => {
@@ -29,7 +29,7 @@ test.describe('autenticado', () => {
       await page.goto(path);
       await page.waitForLoadState('networkidle').catch(() => {});
       // Apps: espera o fragmento substituir o loader/skeleton.
-      if (path.startsWith('/apps/ativos') || path.startsWith('/apps/servicos')) {
+      if (path.startsWith('/apps/inventory') || path.startsWith('/apps/servicedesk')) {
         await page.waitForFunction(() => !document.querySelector('.loader-fill') && !!document.querySelector('.workspace'), null, { timeout: 20_000 });
         await page.waitForTimeout(1500);
       } else {
@@ -70,7 +70,7 @@ test.describe('autenticado — tema escuro', () => {
       await page.goto(path);
       await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
       await page.waitForLoadState('networkidle').catch(() => {});
-      if (path.startsWith('/apps/ativos') || path.startsWith('/apps/servicos')) {
+      if (path.startsWith('/apps/inventory') || path.startsWith('/apps/servicedesk')) {
         await page.waitForFunction(() => !document.querySelector('.loader-fill') && !!document.querySelector('.workspace'), null, { timeout: 20_000 });
         await page.waitForTimeout(1500);
       } else {

@@ -28,7 +28,7 @@ test('loader: abrir o app mostra o carregador 0→100% em ~3,5 s, depois o skele
       if (document.querySelector('.app-sidebar') && !document.querySelector('.component-loading') && !w.__t.content) w.__t.content = performance.now();
     }).observe(document, { subtree: true, childList: true, characterData: true, attributes: true });
   });
-  await page.goto('/apps/ativos');
+  await page.goto('/apps/inventory');
   const loader = page.locator('#app-root .app-loading');
   await expect(loader).toBeVisible();
   await expect(loader.locator('.loader-app-name')).toHaveText(/Ativos/);
@@ -52,8 +52,8 @@ test('loader: abrir o app mostra o carregador 0→100% em ~3,5 s, depois o skele
 test('loader: fragmento lento — o skeleton fica até o conteúdo chegar (nunca área vazia)', async ({ browser }) => {
   const ctx = await browser.newContext({ storageState: stateFile('admin') });
   const page = await ctx.newPage();
-  await slowFragments(page, 'fornecedores', 8000);
-  await page.goto('/apps/fornecedores');
+  await slowFragments(page, 'suppliers', 8000);
+  await page.goto('/apps/suppliers');
   await expect(page.locator('#app-root .component-loading')).toBeVisible({ timeout: 6_000 });
   await page.waitForTimeout(1500);
   await expect(page.locator('#app-root .component-loading')).toBeVisible();
@@ -63,21 +63,21 @@ test('loader: fragmento lento — o skeleton fica até o conteúdo chegar (nunca
 });
 
 test('loader: troca de página no app mostra só o skeleton (~0,7 s) @core', async ({ page }) => {
-  await page.goto('/apps/ativos');
+  await page.goto('/apps/inventory');
   await expect(page.locator('#app-root .component-loading')).toHaveCount(0, { timeout: 10_000 });
   await expect(page.locator('#app-root .app-sidebar')).toBeVisible();
   const t0 = Date.now();
-  await page.locator('.sidebar-nav a.nav-item[href="/apps/ativos/movements"]').click();
+  await page.locator('.sidebar-nav a.nav-item[href="/apps/inventory/movements"]').click();
   const busy = page.locator('#app-root .workspace-content.component-loading');
   await expect(busy).toBeVisible();
   await expect(page.locator('#app-root .app-loading')).toHaveCount(0);
   await expect(page.locator('#app-root .app-sidebar')).toBeVisible();
   await expect(busy).toHaveCount(0, { timeout: 10_000 });
   expect(Date.now() - t0).toBeGreaterThanOrEqual(650);
-  await expect(page.locator('.sidebar-nav a.nav-item.active[href="/apps/ativos/movements"]')).toBeVisible();
+  await expect(page.locator('.sidebar-nav a.nav-item.active[href="/apps/inventory/movements"]')).toBeVisible();
   // Browser back cancels the skeleton (as in the mockup).
   await page.goBack();
-  await expect(page).toHaveURL(/\/apps\/ativos$/);
+  await expect(page).toHaveURL(/\/apps\/inventory$/);
   await expect(page.locator('#app-root .component-loading')).toHaveCount(0);
 });
 
@@ -96,7 +96,7 @@ test('rail: 3 modos dentro e fora dos apps, lembrados à parte @core', async ({ 
   await expect(rail.locator('.rail-name').first()).toBeVisible();
 
   // Inside the app: hidden by default; the button opens the rail.
-  await page.goto('/apps/ativos');
+  await page.goto('/apps/inventory');
   await expect(page.locator('#app-root .component-loading')).toHaveCount(0, { timeout: 20_000 });
   await expect(page.locator('#app-root .app-sidebar')).toBeVisible();
   expect(await mode(page)).toBe('hidden');
@@ -127,7 +127,7 @@ test('rail: 3 modos dentro e fora dos apps, lembrados à parte @core', async ({ 
   await expect(rail.locator('.rail-group-label .rail-group-icon').first()).toBeVisible();
 
   // Persistence inside the app (a new app page opens collapsed).
-  await page.goto('/apps/fornecedores');
+  await page.goto('/apps/suppliers');
   await expect(page.locator('#app-root .app-sidebar')).toBeVisible({ timeout: 20_000 });
   expect(await mode(page)).toBe('collapsed');
   // … and outside the app the choice from outside remains (expanded).
@@ -142,7 +142,7 @@ test('rail: 3 modos dentro e fora dos apps, lembrados à parte @core', async ({ 
   await expect(toggle).toHaveAttribute('aria-label', /oculto/);
   await toggle.click(); // → expandido (ciclo)
   expect(await mode(page)).toBe('expanded');
-  await page.goto('/apps/ativos');
+  await page.goto('/apps/inventory');
   expect(await mode(page)).toBe('collapsed');
   await ctx.close();
 });

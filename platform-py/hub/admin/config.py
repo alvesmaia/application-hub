@@ -44,17 +44,17 @@ _DEFAULT_ENV = (
     ("API_BASE_URL", "https://api.platform.internal", "publica", "all", "producao"),
     ("AUTH_CLIENT_ID", "sk_live_7f3ac82e9b3f9a", "secreta", "all", "producao"),
     ("LOG_LEVEL", "info", "publica", "all", "producao"),
-    ("FEATURE_FLAG_NEW_DASHBOARD", "true", "publica", ("fornecedores",), "producao"),
+    ("FEATURE_FLAG_NEW_DASHBOARD", "true", "publica", ("suppliers",), "producao"),
     (
         "NOTIFICATIONS_WEBHOOK_URL",
         "https://hooks.platform.internal/notify",
         "publica",
-        ("servicos",),
+        ("servicedesk",),
         "producao",
     ),
-    ("ASSET_SYNC_INTERVAL_MIN", "15", "publica", ("ativos",), "staging"),
+    ("ASSET_SYNC_INTERVAL_MIN", "15", "publica", ("inventory",), "staging"),
 )
-_ORIGINAL_APPS = ("ativos", "fornecedores", "servicos")
+_ORIGINAL_APPS = ("inventory", "suppliers", "servicedesk")
 
 
 # Dev password of the stack (compose) -> environment variable with the rotated password (`.prod.env`).
@@ -62,11 +62,11 @@ DEV_INFRA_PASSWORDS = {
     "APP_HUB_APP_DB_PASSWORD": "hubpy-app-dev",
     "APP_HUB_OBJSTORE_PASSWORD": "hubpy-objstore-dev",
     # sample apps' own roles (hub/admin/demo_db.py); no dev password may contain another (plain substring replacement)
-    "APP_HUB_APP_DB_PASSWORD_ATIVOS": "hubpy-ativos-dev",
-    "APP_HUB_APP_DB_PASSWORD_FORNECEDORES": "hubpy-fornecedores-dev",
-    "APP_HUB_APP_DB_PASSWORD_SERVICOS": "hubpy-servicos-dev",
-    "APP_HUB_APP_DB_PASSWORD_COLETOR": "hubpy-coletor-dev",
-    "APP_HUB_APP_DB_PASSWORD_AUTOMACOES": "hubpy-automacoes-dev",
+    "APP_HUB_APP_DB_PASSWORD_INVENTORY": "hubpy-inventory-dev",
+    "APP_HUB_APP_DB_PASSWORD_SUPPLIERS": "hubpy-suppliers-dev",
+    "APP_HUB_APP_DB_PASSWORD_SERVICEDESK": "hubpy-servicedesk-dev",
+    "APP_HUB_APP_DB_PASSWORD_COLLECTOR": "hubpy-collector-dev",
+    "APP_HUB_APP_DB_PASSWORD_AUTOMATIONS": "hubpy-automations-dev",
 }
 
 

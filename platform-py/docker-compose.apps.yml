@@ -1,5 +1,5 @@
-# The one Postgres (the hub's `hub` database and one database per app) + the 5 sample apps (ativos, fornecedores,
-# servicos, coletor, automacoes).
+# The one Postgres (the hub's `hub` database and one database per app) + the 5 sample apps (inventory, suppliers,
+# servicedesk, collector, automations).
 # The apps only start with the `demo-apps` profile (COMPOSE_PROFILES=demo-apps or --profile demo-apps); without it the hub and the
 # apps database start on their own (use HUB_APPS_JSON=./apps.empty.json for an empty catalog).
 # Host debug ports (HUB_APPDB_PORT, HUB_APP_PORT_<APP>) bound to 127.0.0.1 only.
@@ -11,11 +11,11 @@ services:
       - ${HUB_APPS_JSON:-./apps.json}:/config/apps.json:ro
     depends_on:
       app-hub-app-db: { condition: service_started }
-      app-hub-app-ativos: { condition: service_started, required: false }
-      app-hub-app-fornecedores: { condition: service_started, required: false }
-      app-hub-app-servicos: { condition: service_started, required: false }
-      app-hub-app-coletor: { condition: service_started, required: false }
-      app-hub-app-automacoes: { condition: service_started, required: false }
+      app-hub-app-inventory: { condition: service_started, required: false }
+      app-hub-app-suppliers: { condition: service_started, required: false }
+      app-hub-app-servicedesk: { condition: service_started, required: false }
+      app-hub-app-collector: { condition: service_started, required: false }
+      app-hub-app-automations: { condition: service_started, required: false }
 
   app-hub-app-db:
     image: ${HUB_IMAGE_PREFIX:-}postgres:16-alpine
@@ -45,20 +45,20 @@ services:
     mem_limit: 256m
     environment:
       HUB_APPDB_ADMIN_URL: postgresql://hub:${APP_HUB_APP_DB_PASSWORD:-hubpy-app-dev}@app-hub-app-db:5432/postgres
-      APP_HUB_APP_DB_PASSWORD_ATIVOS: ${APP_HUB_APP_DB_PASSWORD_ATIVOS:-hubpy-ativos-dev}
-      APP_HUB_APP_DB_PASSWORD_FORNECEDORES: ${APP_HUB_APP_DB_PASSWORD_FORNECEDORES:-hubpy-fornecedores-dev}
-      APP_HUB_APP_DB_PASSWORD_SERVICOS: ${APP_HUB_APP_DB_PASSWORD_SERVICOS:-hubpy-servicos-dev}
-      APP_HUB_APP_DB_PASSWORD_COLETOR: ${APP_HUB_APP_DB_PASSWORD_COLETOR:-hubpy-coletor-dev}
-      APP_HUB_APP_DB_PASSWORD_AUTOMACOES: ${APP_HUB_APP_DB_PASSWORD_AUTOMACOES:-hubpy-automacoes-dev}
+      APP_HUB_APP_DB_PASSWORD_INVENTORY: ${APP_HUB_APP_DB_PASSWORD_INVENTORY:-hubpy-inventory-dev}
+      APP_HUB_APP_DB_PASSWORD_SUPPLIERS: ${APP_HUB_APP_DB_PASSWORD_SUPPLIERS:-hubpy-suppliers-dev}
+      APP_HUB_APP_DB_PASSWORD_SERVICEDESK: ${APP_HUB_APP_DB_PASSWORD_SERVICEDESK:-hubpy-servicedesk-dev}
+      APP_HUB_APP_DB_PASSWORD_COLLECTOR: ${APP_HUB_APP_DB_PASSWORD_COLLECTOR:-hubpy-collector-dev}
+      APP_HUB_APP_DB_PASSWORD_AUTOMATIONS: ${APP_HUB_APP_DB_PASSWORD_AUTOMATIONS:-hubpy-automations-dev}
     depends_on: [app-hub-app-db]
     labels: { hub.py: "1" }
 
-  app-hub-app-ativos:
-    image: ${HUB_PROJECT:-app-hub}-ativos
+  app-hub-app-inventory:
+    image: ${HUB_PROJECT:-app-hub}-inventory
     profiles: [demo-apps]
     build:
       context: ../platform
-      dockerfile: demo-apps-py/ativos/Dockerfile
+      dockerfile: demo-apps-py/inventory/Dockerfile
       # network settings for the build, from the environment (scripts/install.sh); an unset one is not passed
       args:
         - HTTP_PROXY
@@ -70,26 +70,26 @@ services:
         - EXTRA_CA_PEM
         - IMAGE_PREFIX
         - PIP_INDEX_URL
-    container_name: ${HUB_PROJECT:-app-hub}-app-ativos
+    container_name: ${HUB_PROJECT:-app-hub}-app-inventory
     mem_limit: 1g # = resources.memory in the manifests and the `app` service of the previous compose version; 256m caused OOM on the 200k-row import
     cpus: 0.5 # sample apps: half a CPU each (= resources.cpu in the manifests)
     restart: unless-stopped
     environment: &app-hub-app-env
-      HUB_DB_URL: postgresql://ativos:${APP_HUB_APP_DB_PASSWORD_ATIVOS:-hubpy-ativos-dev}@app-hub-app-db:5432/ativos # one database per app (ativos); the others override it
-      HUB_DEMO_E2E_HOSTILE: "1" # tests only: routes for the anti-phishing E2E (ativos/servicos); the production compose never enables it
-      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_ATIVOS:-hubpy-${APP_HUB_APP_TOKEN:-local}-ativos}
+      HUB_DB_URL: postgresql://inventory:${APP_HUB_APP_DB_PASSWORD_INVENTORY:-hubpy-inventory-dev}@app-hub-app-db:5432/inventory # one database per app (inventory); the others override it
+      HUB_DEMO_E2E_HOSTILE: "1" # tests only: routes for the anti-phishing E2E (inventory/servicedesk); the production compose never enables it
+      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_INVENTORY:-hubpy-${APP_HUB_APP_TOKEN:-local}-inventory}
     depends_on: &app-hub-app-deps
       app-hub-db-roles: { condition: service_completed_successfully }
-    ports: ["127.0.0.1:${HUB_APP_PORT_ATIVOS:-9101}:8080"]
-    networks: [default, hub-app-ativos]
+    ports: ["127.0.0.1:${HUB_APP_PORT_INVENTORY:-9101}:8080"]
+    networks: [default, hub-app-inventory]
     labels: { hub.py: "1" }
 
-  app-hub-app-fornecedores:
-    image: ${HUB_PROJECT:-app-hub}-fornecedores
+  app-hub-app-suppliers:
+    image: ${HUB_PROJECT:-app-hub}-suppliers
     profiles: [demo-apps]
     build:
       context: ../platform
-      dockerfile: demo-apps-py/fornecedores/Dockerfile
+      dockerfile: demo-apps-py/suppliers/Dockerfile
       # network settings for the build, from the environment (scripts/install.sh); an unset one is not passed
       args:
         - HTTP_PROXY
@@ -101,31 +101,31 @@ services:
         - EXTRA_CA_PEM
         - IMAGE_PREFIX
         - PIP_INDEX_URL
-    container_name: ${HUB_PROJECT:-app-hub}-app-fornecedores
+    container_name: ${HUB_PROJECT:-app-hub}-app-suppliers
     mem_limit: 1g # = resources.memory in the manifests and the `app` service of the previous compose version; 256m caused OOM on the 200k-row import
     cpus: 0.5 # sample apps: half a CPU each (= resources.cpu in the manifests)
     restart: unless-stopped
     environment:
       <<: *app-hub-app-env
-      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_FORNECEDORES:-hubpy-${APP_HUB_APP_TOKEN:-local}-fornecedores}
-      HUB_DB_URL: postgresql://fornecedores:${APP_HUB_APP_DB_PASSWORD_FORNECEDORES:-hubpy-fornecedores-dev}@app-hub-app-db:5432/fornecedores # one database per app
-      HUB_S3_ENDPOINT_FORNECEDORES: http://app-hub-objstore:9000
-      HUB_S3_BUCKET_FORNECEDORES: fornecedores
-      HUB_S3_ACCESS_KEY_FORNECEDORES: hubadmin
-      HUB_S3_SECRET_KEY_FORNECEDORES: ${APP_HUB_OBJSTORE_PASSWORD:-hubpy-objstore-dev}
+      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_SUPPLIERS:-hubpy-${APP_HUB_APP_TOKEN:-local}-suppliers}
+      HUB_DB_URL: postgresql://suppliers:${APP_HUB_APP_DB_PASSWORD_SUPPLIERS:-hubpy-suppliers-dev}@app-hub-app-db:5432/suppliers # one database per app
+      HUB_S3_ENDPOINT_SUPPLIERS: http://app-hub-objstore:9000
+      HUB_S3_BUCKET_SUPPLIERS: suppliers
+      HUB_S3_ACCESS_KEY_SUPPLIERS: hubadmin
+      HUB_S3_SECRET_KEY_SUPPLIERS: ${APP_HUB_OBJSTORE_PASSWORD:-hubpy-objstore-dev}
     depends_on:
       <<: *app-hub-app-deps
       app-hub-objstore: { condition: service_started }
-    ports: ["127.0.0.1:${HUB_APP_PORT_FORNECEDORES:-9102}:8080"]
-    networks: [default, hub-app-fornecedores]
+    ports: ["127.0.0.1:${HUB_APP_PORT_SUPPLIERS:-9102}:8080"]
+    networks: [default, hub-app-suppliers]
     labels: { hub.py: "1" }
 
-  app-hub-app-servicos:
-    image: ${HUB_PROJECT:-app-hub}-servicos
+  app-hub-app-servicedesk:
+    image: ${HUB_PROJECT:-app-hub}-servicedesk
     profiles: [demo-apps]
     build:
       context: ../platform
-      dockerfile: demo-apps-py/servicos/Dockerfile
+      dockerfile: demo-apps-py/servicedesk/Dockerfile
       # network settings for the build, from the environment (scripts/install.sh); an unset one is not passed
       args:
         - HTTP_PROXY
@@ -137,25 +137,25 @@ services:
         - EXTRA_CA_PEM
         - IMAGE_PREFIX
         - PIP_INDEX_URL
-    container_name: ${HUB_PROJECT:-app-hub}-app-servicos
+    container_name: ${HUB_PROJECT:-app-hub}-app-servicedesk
     mem_limit: 1g # = resources.memory in the manifests and the `app` service of the previous compose version; 256m caused OOM on the 200k-row import
     cpus: 0.5 # sample apps: half a CPU each (= resources.cpu in the manifests)
     restart: unless-stopped
     environment:
       <<: *app-hub-app-env
-      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_SERVICOS:-hubpy-${APP_HUB_APP_TOKEN:-local}-servicos}
-      HUB_DB_URL: postgresql://servicos:${APP_HUB_APP_DB_PASSWORD_SERVICOS:-hubpy-servicos-dev}@app-hub-app-db:5432/servicos # one database per app
+      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_SERVICEDESK:-hubpy-${APP_HUB_APP_TOKEN:-local}-servicedesk}
+      HUB_DB_URL: postgresql://servicedesk:${APP_HUB_APP_DB_PASSWORD_SERVICEDESK:-hubpy-servicedesk-dev}@app-hub-app-db:5432/servicedesk # one database per app
     depends_on: *app-hub-app-deps
-    ports: ["127.0.0.1:${HUB_APP_PORT_SERVICOS:-9103}:8080"]
-    networks: [default, hub-app-servicos]
+    ports: ["127.0.0.1:${HUB_APP_PORT_SERVICEDESK:-9103}:8080"]
+    networks: [default, hub-app-servicedesk]
     labels: { hub.py: "1" }
 
-  app-hub-app-coletor:
-    image: ${HUB_PROJECT:-app-hub}-coletor
+  app-hub-app-collector:
+    image: ${HUB_PROJECT:-app-hub}-collector
     profiles: [demo-apps]
     build:
       context: ../platform
-      dockerfile: Dockerfile.coletor
+      dockerfile: Dockerfile.collector
       # network settings for the build, from the environment (scripts/install.sh); an unset one is not passed
       args:
         - HTTP_PROXY
@@ -167,26 +167,26 @@ services:
         - EXTRA_CA_PEM
         - IMAGE_PREFIX
         - PIP_INDEX_URL
-    container_name: ${HUB_PROJECT:-app-hub}-app-coletor
+    container_name: ${HUB_PROJECT:-app-hub}-app-collector
     mem_limit: 1g # = resources.memory in the manifests and the `app` service of the previous compose version; 256m caused OOM on the 200k-row import
     cpus: 0.5 # sample apps: half a CPU each (= resources.cpu in the manifests)
     restart: unless-stopped
     environment:
       <<: *app-hub-app-env
-      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_COLETOR:-hubpy-${APP_HUB_APP_TOKEN:-local}-coletor}
-      HUB_DB_URL: postgresql://coletor:${APP_HUB_APP_DB_PASSWORD_COLETOR:-hubpy-coletor-dev}@app-hub-app-db:5432/coletor # one database per app
+      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_COLLECTOR:-hubpy-${APP_HUB_APP_TOKEN:-local}-collector}
+      HUB_DB_URL: postgresql://collector:${APP_HUB_APP_DB_PASSWORD_COLLECTOR:-hubpy-collector-dev}@app-hub-app-db:5432/collector # one database per app
     depends_on: *app-hub-app-deps
-    ports: ["127.0.0.1:${HUB_APP_PORT_COLETOR:-9105}:8080"]
-    networks: [default, hub-app-coletor]
+    ports: ["127.0.0.1:${HUB_APP_PORT_COLLECTOR:-9105}:8080"]
+    networks: [default, hub-app-collector]
     labels: { hub.py: "1" }
 
   # Automations: needs outbound HTTPS (public CEP and holidays APIs) for two of its three examples.
-  app-hub-app-automacoes:
-    image: ${HUB_PROJECT:-app-hub}-automacoes
+  app-hub-app-automations:
+    image: ${HUB_PROJECT:-app-hub}-automations
     profiles: [demo-apps]
     build:
       context: ../platform
-      dockerfile: demo-apps-py/automacoes/Dockerfile
+      dockerfile: demo-apps-py/automations/Dockerfile
       # network settings for the build, from the environment (scripts/install.sh); an unset one is not passed
       args:
         - HTTP_PROXY
@@ -198,17 +198,17 @@ services:
         - EXTRA_CA_PEM
         - IMAGE_PREFIX
         - PIP_INDEX_URL
-    container_name: ${HUB_PROJECT:-app-hub}-app-automacoes
+    container_name: ${HUB_PROJECT:-app-hub}-app-automations
     mem_limit: 512m
     cpus: 0.5 # sample apps: half a CPU each (= resources.cpu in the manifests)
     restart: unless-stopped
     environment:
       <<: *app-hub-app-env
-      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_AUTOMACOES:-hubpy-${APP_HUB_APP_TOKEN:-local}-automacoes}
-      HUB_DB_URL: postgresql://automacoes:${APP_HUB_APP_DB_PASSWORD_AUTOMACOES:-hubpy-automacoes-dev}@app-hub-app-db:5432/automacoes # one database per app
+      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_AUTOMATIONS:-hubpy-${APP_HUB_APP_TOKEN:-local}-automations}
+      HUB_DB_URL: postgresql://automations:${APP_HUB_APP_DB_PASSWORD_AUTOMATIONS:-hubpy-automations-dev}@app-hub-app-db:5432/automations # one database per app
     depends_on: *app-hub-app-deps
-    ports: ["127.0.0.1:${HUB_APP_PORT_AUTOMACOES:-9106}:8080"]
-    networks: [default, hub-app-automacoes]
+    ports: ["127.0.0.1:${HUB_APP_PORT_AUTOMATIONS:-9106}:8080"]
+    networks: [default, hub-app-automations]
     labels: { hub.py: "1" }
 
 volumes:

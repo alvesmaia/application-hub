@@ -80,18 +80,18 @@ def test_apps_catalog_status_and_filters(hub: TestClient) -> None:
     page = r.json()
     assert page["total"] == 2 and page["next"] is None
     app = page["items"][0]
-    assert app["id"] == "ativos" and app["stack"] == "python" and app["url"] == "/apps/ativos"
-    assert app["api"]["base"] == "/apps/ativos/api/v1" and app["mcp"]["tool_prefix"] == "ativos."
+    assert app["id"] == "inventory" and app["stack"] == "python" and app["url"] == "/apps/inventory"
+    assert app["api"]["base"] == "/apps/inventory/api/v1" and app["mcp"]["tool_prefix"] == "inventory."
     assert hub.get("/api/v1/apps?stack=go").json()["total"] == 0
-    assert hub.get("/api/v1/apps?q=SERVICOS").json()["total"] == 1
-    assert hub.get("/api/v1/apps/servicos").json()["id"] == "servicos"
+    assert hub.get("/api/v1/apps?q=SERVICEDESK").json()["total"] == 1
+    assert hub.get("/api/v1/apps/servicedesk").json()["id"] == "servicedesk"
     problem(hub.get("/api/v1/apps/nada"), 404, "not-found")
-    st = hub.get("/api/v1/apps/ativos/status").json()
-    assert st["app"] == "ativos" and st["open_incidents"] == [] and st["last_hour"]["requests"] == 0
+    st = hub.get("/api/v1/apps/inventory/status").json()
+    assert st["app"] == "inventory" and st["open_incidents"] == [] and st["last_hour"]["requests"] == 0
     sp = hub.get("/api/v1/status").json()
-    assert sp["overall"] == "ok" and [a["id"] for a in sp["apps"]] == ["ativos", "servicos"]
-    obs = hub.get("/api/v1/observability/summary?minutes=30&app=ativos").json()
-    assert obs["minutes"] == 30 and [i["app"] for i in obs["items"]] == ["ativos"]
+    assert sp["overall"] == "ok" and [a["id"] for a in sp["apps"]] == ["inventory", "servicedesk"]
+    obs = hub.get("/api/v1/observability/summary?minutes=30&app=inventory").json()
+    assert obs["minutes"] == 30 and [i["app"] for i in obs["items"]] == ["inventory"]
 
 
 def test_pagination_and_bad_numbers(hub: TestClient) -> None:
@@ -99,7 +99,7 @@ def test_pagination_and_bad_numbers(hub: TestClient) -> None:
     assert len(p1["items"]) == 1 and p1["total"] == 2 and p1["limit"] == 1
     assert p1["next"] == "/api/v1/apps?limit=1&offset=1"
     p2 = hub.get(p1["next"]).json()
-    assert p2["items"][0]["id"] == "servicos" and p2["next"] is None
+    assert p2["items"][0]["id"] == "servicedesk" and p2["next"] is None
     problem(hub.get("/api/v1/apps?limit=x"), 400, "bad-request")
     assert hub.get("/api/v1/apps?limit=9999").json()["limit"] == 500
 
@@ -136,9 +136,9 @@ def test_token_scopes_and_owner_rbac(hub: TestClient) -> None:
 
 
 def test_app_scoped_token_limits_apps_everywhere(hub: TestClient) -> None:
-    sc = bearer(hub, make_token(hub, ["api:read", "api:write"], ["ativos"]))
-    assert [a["id"] for a in sc.get("/api/v1/apps").json()["items"]] == ["ativos"]
-    problem(sc.post("/api/v1/apps/servicos/backups"), 403, "forbidden")
+    sc = bearer(hub, make_token(hub, ["api:read", "api:write"], ["inventory"]))
+    assert [a["id"] for a in sc.get("/api/v1/apps").json()["items"]] == ["inventory"]
+    problem(sc.post("/api/v1/apps/servicedesk/backups"), 403, "forbidden")
     problem(sc.post("/api/v1/deployments/99/approve"), 404, "not-found")  # unknown id: no leak
     problem(sc.post("/api/v1/audit/verify"), 403, "forbidden")  # no app: denied to restricted token
 
@@ -220,26 +220,26 @@ def test_app_api_tokens_through_the_gateway(tmp_path: Path, monkeypatch: pytest.
         return {"auth": request.headers.get("authorization", ""), "app": app}
 
     hub = api_hub(tmp_path, monkeypatch, upstream=up)
-    tok = make_token(hub, ["app-api"], ["ativos"])
+    tok = make_token(hub, ["app-api"], ["inventory"])
     c = bearer(hub, tok)
-    r = c.post("/apps/ativos/api/v1/items")  # no CSRF: there is no browser
+    r = c.post("/apps/inventory/api/v1/items")  # no CSRF: there is no browser
     assert r.status_code == 200 and r.json()["auth"] == "", "o token do hub nunca é repassado ao app"
-    assert c.get("/apps/servicos/api/v1/items").status_code == 403  # outside the token's app scope
-    assert c.get("/apps/ativos").status_code == 401  # outside /apps/{app}/api the token is not valid
+    assert c.get("/apps/servicedesk/api/v1/items").status_code == 403  # outside the token's app scope
+    assert c.get("/apps/inventory").status_code == 401  # outside /apps/{app}/api the token is not valid
     assert c.get("/api/v1/apps").status_code == 401
     assert (
-        hub.post("/_frag/ativos/_hub/mcp", json={}).status_code == 404
+        hub.post("/_frag/inventory/_hub/mcp", json={}).status_code == 404
     )  # the app's internal MCP is never reachable
-    assert hub.post("/apps/ativos/api/../_hub/mcp", json={}).status_code // 100 == 4
+    assert hub.post("/apps/inventory/api/../_hub/mcp", json={}).status_code // 100 == 4
     # revoked: refused at once, on all three surfaces
-    both = make_token(hub, ["mcp", "app-api"], ["ativos"], name="c")
+    both = make_token(hub, ["mcp", "app-api"], ["inventory"], name="c")
     cc = bearer(hub, both)
-    assert cc.get("/apps/ativos/api/v1/items").status_code == 200
+    assert cc.get("/apps/inventory/api/v1/items").status_code == 200
     tid = next(t["id"] for t in hub.get("/api/me/tokens").json()["items"] if t["name"] == "c")
     assert next(t for t in hub.get("/api/me/tokens").json()["items"] if t["id"] == tid)["active"] is True
     assert hub.post(f"/api/me/tokens/{tid}/revoke").status_code == 200
     assert next(t for t in hub.get("/api/me/tokens").json()["items"] if t["id"] == tid)["active"] is False
-    assert cc.get("/apps/ativos/api/v1/items").status_code == 401
+    assert cc.get("/apps/inventory/api/v1/items").status_code == 401
     assert rpc(cc, "initialize", {}).status_code == 401
 
 

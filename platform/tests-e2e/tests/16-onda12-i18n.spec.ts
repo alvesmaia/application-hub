@@ -28,9 +28,9 @@ test.describe('inglês', () => {
     await expect.poll(() => page.evaluate(() => (window as unknown as { hubT: (s: string) => string }).hubT('Variável excluída.'))).toBe('Variable deleted.');
     await page.evaluate(() => {
       const t = document.getElementById('toast')!;
-      t.textContent = 'Token sem acesso ao app ativos.';
+      t.textContent = 'Token sem acesso ao app inventory.';
     });
-    await expect(page.locator('#toast')).toHaveText('Token has no access to app ativos.');
+    await expect(page.locator('#toast')).toHaveText('Token has no access to app inventory.');
   });
 });
 

@@ -31,6 +31,29 @@ dc up -d                                              # the hub on the single se
   `.prod.env` generates only what is missing; `APP_HUB_DB_PASSWORD` is no longer used.
 - At boot the hub moves the seeded `DATABASE_URL_<APP>` variables off the superuser to each sample app's role.
 
+## Sample apps in English (0.4.0, once)
+
+0.4.0 renames the sample apps: `ativos`→`inventory`, `fornecedores`→`suppliers`, `servicos`→`servicedesk`,
+`coletor`→`collector`, `automacoes`→`automations` (URLs, containers, databases, roles, secrets, buckets, job kinds and
+the hub's data). Once, coming from 0.3.x (the hub and the sample apps stop for about two minutes):
+
+```bash
+git fetch --tags && git checkout v0.4.0
+bash scripts/install.sh --config-only --yes          # new secret names, if missing
+dc build                                              # hub + sample app images of this version
+bash scripts/rename-sample-apps.sh --yes              # backups in .secrets/rename-apps/, then renames everything
+dc up -d                                              # the stack under the new ids
+```
+
+- The script dumps the apps' Postgres, copies `.prod.env` and the hub's `/data` stores to `.secrets/rename-apps/`
+  (0600) before changing anything; it renames each database and role (passwords kept), the job kinds inside them,
+  copies the buckets (the old ones stay), renames the `.prod.env` keys keeping their values, reseals the hub's
+  secrets under the new variable names (it needs the same master key as the hub) and removes the old containers and
+  networks. Every step skips what is already done.
+- Rollback: `bash scripts/rename-sample-apps.sh --yes --reverse`, then `git checkout v0.3.2 && dc build && dc up -d`.
+- Staging of a sample app is deployed again from Implantações. Old bookmarks to `/apps/<old-id>` answer 404.
+- Measured on a test install with the sample apps and their seed data: ~1 min 40 s without the hub and the apps.
+
 ## Zero downtime (recommended)
 
 The hub's port belongs to the edge (`<project>-edge`, Caddy), which only sends traffic to whoever answers `/healthz`. The

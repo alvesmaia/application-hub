@@ -36,7 +36,7 @@ test('modal do hub (Aplicações › Variáveis): clicar fora não fecha nem per
 });
 
 test('modal de app (data-hub-modal, hub-kit): clicar fora não fecha nem perde o texto @core', async ({ page }) => {
-  await openApp(page, '/apps/ativos/movements');
+  await openApp(page, '/apps/inventory/movements');
   const trigger = page.locator('[data-hub-modal]').first();
   await expect(trigger).toBeVisible({ timeout: 30_000 });
   await trigger.click();

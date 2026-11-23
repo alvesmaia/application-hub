@@ -14,7 +14,7 @@ NET=$P-net
 PORT=${ISO_HUB_PORT:-8093}
 ENVF=.iso-instance.env
 IMG=$P-web
-APPS=(ativos fornecedores servicos coletor automacoes)
+APPS=(inventory suppliers servicedesk collector automations)
 tok() { grep -A3 "\"HUB_INTERNAL_TOKEN_$(echo "$1" | tr a-z A-Z)\"" app-env.json | sed -n 's/.*"value": "\(.*\)".*/\1/p'; }
 
 case "${1:-}" in
@@ -24,7 +24,7 @@ up)
   # images of this checkout's apps (app-hub-iso-<id>): never retags the production app-hub-<id> images
   for a in "${APPS[@]}"; do
     df=demo-apps-py/$a/Dockerfile
-    [ "$a" = coletor ] && df=Dockerfile.coletor
+    [ "$a" = collector ] && df=Dockerfile.collector
     docker build -q -f "../platform/$df" -t "$P-$a" ../platform >/dev/null
   done
   docker network create --label hub.py=1 "$NET" >/dev/null
@@ -39,11 +39,11 @@ up)
   # one database per app (= infra/app-db-init.sh, without mounting the file: CRLF in a Windows checkout breaks the shebang)
   until docker exec $P-appdb psql -U hub -c 'select 1' >/dev/null 2>&1; do sleep 1; done
   for a in "${APPS[@]}"; do docker exec $P-appdb createdb -U hub "$a"; done
-  # bucket for the attachments of fornecedores (in production it already exists in the objstore volume)
+  # bucket for the attachments of suppliers (in production it already exists in the objstore volume)
   for _ in $(seq 30); do
     docker run --rm --network "$NET" -e HTTP_PROXY= -e HTTPS_PROXY= -e http_proxy= -e https_proxy= \
       --entrypoint sh app-hub-mc:0.10.0 -c \
-      'mc alias set r http://app-hub-objstore:9000 hubadmin hubpy-objstore-dev >/dev/null && mc mb -p r/fornecedores >/dev/null' && break
+      'mc alias set r http://app-hub-objstore:9000 hubadmin hubpy-objstore-dev >/dev/null && mc mb -p r/suppliers >/dev/null' && break
     sleep 1
   done
   hubtok=()
@@ -51,10 +51,10 @@ up)
     t=$(tok "$a")
     hubtok+=(-e "HUB_INTERNAL_TOKEN_$(echo "$a" | tr a-z A-Z)=$t")
     extra=()
-    [ "$a" = fornecedores ] && extra=(-e HUB_S3_ENDPOINT_FORNECEDORES=http://app-hub-objstore:9000
-      -e HUB_S3_BUCKET_FORNECEDORES=fornecedores -e HUB_S3_ACCESS_KEY_FORNECEDORES=hubadmin
-      -e HUB_S3_SECRET_KEY_FORNECEDORES=hubpy-objstore-dev)
-    [ "$a" = coletor ] && extra=(-e COLETOR_HUB_URL=http://app-hub-web:8090)
+    [ "$a" = suppliers ] && extra=(-e HUB_S3_ENDPOINT_SUPPLIERS=http://app-hub-objstore:9000
+      -e HUB_S3_BUCKET_SUPPLIERS=suppliers -e HUB_S3_ACCESS_KEY_SUPPLIERS=hubadmin
+      -e HUB_S3_SECRET_KEY_SUPPLIERS=hubpy-objstore-dev)
+    [ "$a" = collector ] && extra=(-e COLLECTOR_HUB_URL=http://app-hub-web:8090)
     run --name $P-app-$a --network-alias app-hub-app-$a -m 1g --restart unless-stopped \
       -e HUB_DB_URL=postgresql://hub:hubpy-app-dev@app-hub-app-db:5432/$a -e HUB_DEMO_E2E_HOSTILE=1 \
       -e HUB_INTERNAL_TOKEN="$t" "${extra[@]}" $P-$a
@@ -89,8 +89,8 @@ run) # bash scripts/iso-instance.sh run npx playwright test …  (in platform/te
   shift
   set -a
   . "./$ENVF"
-  E2E_CONTAINER_PREFIX=$P- E2E_DATA_NETWORK=$NET E2E_OBJSTORE_PASS=hubpy-objstore-dev E2E_ATIVOS_STACK=python E2E_APP_DB=$P-appdb
-  ZD_IMAGE_NAME=$P-ativos HUB_URL=$HUB HUB_PASSWORD=$HUB_DEMO_PASSWORD   # py-resilience.mjs and mcp-client
+  E2E_CONTAINER_PREFIX=$P- E2E_DATA_NETWORK=$NET E2E_OBJSTORE_PASS=hubpy-objstore-dev E2E_INVENTORY_STACK=python E2E_APP_DB=$P-appdb
+  ZD_IMAGE_NAME=$P-inventory HUB_URL=$HUB HUB_PASSWORD=$HUB_DEMO_PASSWORD   # py-resilience.mjs and mcp-client
   HUB_BIN=${HUB_BIN:-$(command -v hub)} HUB_MC_IMAGE=${HUB_MC_IMAGE:-app-hub-mc:0.10.0}
   command -v cygpath >/dev/null && HUB_BIN=$(cygpath -m "$HUB_BIN")
   for a in "${APPS[@]}"; do

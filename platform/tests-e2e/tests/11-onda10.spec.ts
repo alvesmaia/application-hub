@@ -95,20 +95,20 @@ test.describe('Onda 10 — Conexões (SharePoint pelo simulador)', () => {
   test.describe.configure({ mode: 'serial' });
   test.setTimeout(300_000);
 
-  test('fornecedores: anexos pelo SharePoint quando fornecedores-anexos está vinculada (e de volta ao S3)', async ({ browser }) => {
+  test('suppliers: anexos pelo SharePoint quando suppliers-anexos está vinculada (e de volta ao S3)', async ({ browser }) => {
     const api = await apiAs('admin');
     test.skip(!(await simEnabled(api)), 'compose sem o perfil sharepoint-sim');
-    await removeIfExists(api, 'fornecedores-anexos');
+    await removeIfExists(api, 'suppliers-anexos');
     const ctx = await newRoleContext(browser, 'admin');
     const page = await ctx.newPage();
     autoConfirm(page);
-    await createViaUi(page, 'fornecedores-anexos', 'Hub/Fornecedores');
-    await bindViaUi(page, 'fornecedores-anexos', 'Fornecedores · Produção');
-    await applyViaUi(page, 'fornecedores');
+    await createViaUi(page, 'suppliers-anexos', 'Hub/Fornecedores');
+    await bindViaUi(page, 'suppliers-anexos', 'Fornecedores · Produção');
+    await applyViaUi(page, 'suppliers');
     try {
-      await openApp(page, '/apps/fornecedores/indicators?id=FOR-0284');
+      await openApp(page, '/apps/suppliers/indicators?id=FOR-0284');
       const att = page.locator('#attachments');
-      await expect(att).toContainText('Guardados no SharePoint (conexão fornecedores-anexos)');
+      await expect(att).toContainText('Guardados no SharePoint (conexão suppliers-anexos)');
       const file = path.join(WORK_DIR, 'contrato-social-e2e.pdf');
       const bytes = Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.alloc(120_000, 3)]);
       fs.writeFileSync(file, bytes);
@@ -124,14 +124,14 @@ test.describe('Onda 10 — Conexões (SharePoint pelo simulador)', () => {
       await expect(page.locator('#attachments')).toContainText('Anexo excluído', { timeout: 60_000 });
     } finally {
       // Back to the app's object store (DR checks the attachments in the bucket).
-      await api.put('/api/admin/connections/fornecedores-anexos/bindings', { data: { bindings: [] } });
+      await api.put('/api/admin/connections/suppliers-anexos/bindings', { data: { bindings: [] } });
       // Without a link the card disappears from the Connections screen: applies through the API (same button as Variables).
-      const r = await api.post('/api/ops/runtime/fornecedores/apply', { data: {} });
+      const r = await api.post('/api/ops/runtime/suppliers/apply', { data: {} });
       expect(r.status(), await r.text()).toBe(200);
       await ctx.close();
     }
     const p2 = await (await newRoleContext(browser, 'admin')).newPage();
-    await openApp(p2, '/apps/fornecedores/indicators?id=FOR-0284');
+    await openApp(p2, '/apps/suppliers/indicators?id=FOR-0284');
     await expect(p2.locator('#attachments')).toContainText('Guardados no object store do app');
     await p2.context().close();
   });
@@ -143,21 +143,21 @@ test.describe('Onda 10 — Conexões (SharePoint pelo simulador)', () => {
       data: { kind: "sharepoint", name, tenant_id: SIM.tenant, client_id: SIM.client, auth: "secret", secret: SIM.secret, site: SIM.site, drive: SIM.drive, bindings },
     });
     await api.delete("/api/admin/connections/e2e-propria");
-    await mk("e2e-propria", [{ app: "fornecedores", env: "producao" }]);
+    await mk("e2e-propria", [{ app: "suppliers", env: "producao" }]);
     try {
-    const tok = await reveal(api, "fornecedores");
+    const tok = await reveal(api, "suppliers");
     // From the suppliers' network, with their token: the linked connection responds.
-    expect(probeFrom(`${CP}app-fornecedores`, tok, "e2e-propria")).toBe("200");
+    expect(probeFrom(`${CP}app-suppliers`, tok, "e2e-propria")).toBe("200");
     // The same token coming from another app's network: refused (origin).
-    expect(probeFrom(`${CP}app-servicos`, tok, 'e2e-propria')).toBe('403');
+    expect(probeFrom(`${CP}app-servicedesk`, tok, 'e2e-propria')).toBe('403');
     // No token / invalid token: 401.
-    expect(probeFrom(`${CP}app-servicos`, 'x'.repeat(40), 'e2e-propria')).toBe('401');
+    expect(probeFrom(`${CP}app-servicedesk`, 'x'.repeat(40), 'e2e-propria')).toBe('401');
     // Existing connection, but not linked to the app: 404 (without revealing that it exists).
     await api.post('/api/admin/connections', {
       data: { kind: 'sharepoint', name: 'e2e-alheia', tenant_id: SIM.tenant, client_id: SIM.client, auth: 'secret', secret: SIM.secret, site: SIM.site, drive: SIM.drive, bindings: [] },
     });
     try {
-      expect(probeFrom(`${CP}app-fornecedores`, tok, 'e2e-alheia')).toBe('404');
+      expect(probeFrom(`${CP}app-suppliers`, tok, 'e2e-alheia')).toBe('404');
     } finally {
       await api.delete('/api/admin/connections/e2e-alheia');
     }

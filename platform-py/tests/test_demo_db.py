@@ -33,9 +33,9 @@ def test_the_dev_passwords_do_not_contain_each_other() -> None:
 
 
 def test_existing_superuser_dsns_move_to_the_app_role() -> None:
-    pairs = demo_db.superuser_dsn_pairs("S" * 20, {"ativos": "A" * 20})
+    pairs = demo_db.superuser_dsn_pairs("S" * 20, {"inventory": "A" * 20})
     assert pairs == {
-        f"postgresql://hub:{'S' * 20}@app-hub-app-db:5432/ativos": f"postgresql://ativos:{'A' * 20}@app-hub-app-db:5432/ativos"
+        f"postgresql://hub:{'S' * 20}@app-hub-app-db:5432/inventory": f"postgresql://inventory:{'A' * 20}@app-hub-app-db:5432/inventory"
     }
 
 
@@ -109,8 +109,8 @@ async def test_the_role_owns_its_database_has_limits_and_no_more(two_dbs: tuple[
 
 
 def test_the_boot_migration_needs_the_real_passwords() -> None:
-    env = {"APP_HUB_APP_DB_PASSWORD": "S" * 20, "APP_HUB_APP_DB_PASSWORD_ATIVOS": "A" * 20}
-    assert demo_db.migration_pairs(env) == demo_db.superuser_dsn_pairs("S" * 20, {"ativos": "A" * 20})
+    env = {"APP_HUB_APP_DB_PASSWORD": "S" * 20, "APP_HUB_APP_DB_PASSWORD_INVENTORY": "A" * 20}
+    assert demo_db.migration_pairs(env) == demo_db.superuser_dsn_pairs("S" * 20, {"inventory": "A" * 20})
     assert (
-        demo_db.migration_pairs({"APP_HUB_APP_DB_PASSWORD_ATIVOS": "A" * 20}) == {}
+        demo_db.migration_pairs({"APP_HUB_APP_DB_PASSWORD_INVENTORY": "A" * 20}) == {}
     )  # dev stack: nothing to move

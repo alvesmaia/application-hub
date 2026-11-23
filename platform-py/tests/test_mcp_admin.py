@@ -96,8 +96,8 @@ def test_users_and_roles(hub: TestClient, agent: TestClient) -> None:
     assert call(agent, "roles_update", {"name": "Suporte N1", "body": {"description": "N1", "level": "Alto"}})
     perms = call(agent, "roles_set_permission", {"name": "Suporte N1", "index": 3, "body": {"granted": True}})
     assert perms["permissions"][3] is True
-    assert call(agent, "roles_set_apps", {"name": "Suporte N1", "body": {"apps": ["ativos"]}})["apps"] == [
-        "ativos"
+    assert call(agent, "roles_set_apps", {"name": "Suporte N1", "body": {"apps": ["inventory"]}})["apps"] == [
+        "inventory"
     ]
     assert "Suporte N1" in [r["name"] for r in call(agent, "roles_list")["items"]]
     call(agent, "roles_delete", {"name": "Suporte N1"})
@@ -139,23 +139,29 @@ def test_health_slos_incidents_flags_and_analytics(agent: TestClient) -> None:
     )
     assert "results" in call(agent, "health_check")
     call(agent, "health_delete", {"name": "Fila de Pedidos"})
-    slo = {"app": "ativos", "env": "producao", "availability": 99.5, "latency_ms": 500, "window_days": 30}
+    slo = {"app": "inventory", "env": "producao", "availability": 99.5, "latency_ms": 500, "window_days": 30}
     assert call(agent, "slos_set", {"body": slo})["availability"] == 99.5
     assert call(agent, "slos_list")["total"] == 1
-    call(agent, "slos_delete", {"app": "ativos", "env": "producao"})
+    call(agent, "slos_delete", {"app": "inventory", "env": "producao"})
     inc = call(
-        agent, "incidents_create", {"body": {"app": "ativos", "title": "Lentidão", "severity": "minor"}}
+        agent, "incidents_create", {"body": {"app": "inventory", "title": "Lentidão", "severity": "minor"}}
     )
     assert call(agent, "incidents_update", {"id": inc["id"], "body": {"resolve": True}})["resolved"]
     assert call(agent, "incidents_list")["total"] == 1
-    flag = {"key": "novo-fluxo", "app": "ativos", "envs": {"producao": {"enabled": False, "default": "off"}}}
+    flag = {
+        "key": "novo-fluxo",
+        "app": "inventory",
+        "envs": {"producao": {"enabled": False, "default": "off"}},
+    }
     assert call(agent, "flags_create", {"body": flag})["key"] == "novo-fluxo"
-    on = call(agent, "flags_set_enabled", {"app": "ativos", "key": "novo-fluxo", "env": "producao",
+    on = call(agent, "flags_set_enabled", {"app": "inventory", "key": "novo-fluxo", "env": "producao",
                                            "body": {"enabled": True}})  # fmt: skip
     assert on["envs"]["producao"]["enabled"] is True
-    assert call(agent, "flags_update", {"app": "ativos", "key": "novo-fluxo", "body": {"description": "x"}})
+    assert call(
+        agent, "flags_update", {"app": "inventory", "key": "novo-fluxo", "body": {"description": "x"}}
+    )
     assert call(agent, "flags_list")["total"] == 1
-    call(agent, "flags_delete", {"app": "ativos", "key": "novo-fluxo"})
+    call(agent, "flags_delete", {"app": "inventory", "key": "novo-fluxo"})
     assert "retention_days" in call(agent, "analytics_get")
     assert call(agent, "analytics_set_terms", {"body": {"raw": False}})["raw"] is False
     assert call(agent, "analytics_set_retention", {"body": {"days": 90}})["days"] == 90
@@ -165,7 +171,7 @@ def test_health_slos_incidents_flags_and_analytics(agent: TestClient) -> None:
 
 def test_variables_and_connections_never_hand_out_secrets(hub: TestClient, agent: TestClient) -> None:
     var = {"name": "API_SEGREDO", "value": SECRET_VAR, "kind": "secreta",
-           "bindings": [{"app": "ativos", "env": "producao"}]}  # fmt: skip
+           "bindings": [{"app": "inventory", "env": "producao"}]}  # fmt: skip
     results = [call(agent, "variables_create", {"body": var})]
     results.append(
         call(
@@ -184,13 +190,13 @@ def test_variables_and_connections_never_hand_out_secrets(hub: TestClient, agent
     results.append(
         call(agent, "connections_update", {"name": "docs-s3", "body": {**same, "description": "Docs"}})
     )
-    bind = {"bindings": [{"app": "ativos", "env": "producao"}]}
+    bind = {"bindings": [{"app": "inventory", "env": "producao"}]}
     results.append(call(agent, "connections_set_bindings", {"name": "docs-s3", "body": bind}))
     results.append(
         call(agent, "connections_rotate", {"name": "docs-s3", "body": {"secret": SECRET_CONN + "-2"}})
     )
     results.append(call(agent, "connections_list"))
-    results.append(call(agent, "connections_rotate_storage_token", {"app": "ativos", "env": "producao"}))
+    results.append(call(agent, "connections_rotate_storage_token", {"app": "inventory", "env": "producao"}))
     results.append(call(agent, "connections_delete", {"name": "docs-s3"}))
     results.append(call(agent, "variables_delete", {"name": "API_SEGREDO"}))
     dump = json.dumps(results, ensure_ascii=False) + json.dumps(hub.get("/api/admin/audit?limit=200").json())
@@ -202,22 +208,22 @@ def test_operations_area(hub: TestClient, agent: TestClient) -> None:
     lim = call(
         agent,
         "containers_set_limits",
-        {"app": "ativos", "body": {"cpu": 0.5, "memory": "256Mi", "pids": 100}},
+        {"app": "inventory", "body": {"cpu": 0.5, "memory": "256Mi", "pids": 100}},
     )
     assert lim["limits"]["pids"] == 100
     pol = {"schedule": "diário 02:00", "keep": 7, "volumes": ["data"], "destination": "local"}
-    assert call(agent, "backups_set_policy", {"app": "ativos", "body": pol})["keep"] == 7
+    assert call(agent, "backups_set_policy", {"app": "inventory", "body": pol})["keep"] == 7
     assert call(agent, "backups_aside_list")["aside"] == []
     assert isinstance(call(agent, "replicas_get"), dict)
-    assert "não está em manutenção" in error_of(agent, "maintenance_clear", {"app": "ativos"})["detail"]
+    assert "não está em manutenção" in error_of(agent, "maintenance_clear", {"app": "inventory"})["detail"]
     assert error_of(agent, "backups_clone", {"id": "999"})["status"] == 404
-    assert error_of(agent, "backups_aside_drop", {"name": "ativos_old"})["status"] in (404, 503)
+    assert error_of(agent, "backups_aside_drop", {"name": "inventory_old"})["status"] in (404, 503)
 
 
 def test_personal_inbox_actions(hub: TestClient, colab: TestClient) -> None:
     assert "marked" in call(colab, "inbox_mark_read", {"body": {}})
     assert "changed" in call(colab, "inbox_archive", {"body": {"ids": []}})
-    assert "já tem acesso" in error_of(colab, "access_request", {"body": {"app": "ativos"}})["detail"]
+    assert "já tem acesso" in error_of(colab, "access_request", {"body": {"app": "inventory"}})["detail"]
 
 
 def test_bodies_are_validated_at_the_edge(agent: TestClient) -> None:

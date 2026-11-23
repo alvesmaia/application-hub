@@ -248,8 +248,10 @@ def test_upstream_down_is_502() -> None:
 
 def test_app_page_renders_shell() -> None:
     c = client_for(create_app())
-    r = c.get("/apps/ativos")
-    assert r.status_code == 200 and 'data-hub-app="ativos"' in r.text and 'data-hub-frag="/_frag"' in r.text
+    r = c.get("/apps/inventory")
+    assert (
+        r.status_code == 200 and 'data-hub-app="inventory"' in r.text and 'data-hub-frag="/_frag"' in r.text
+    )
     assert "trusted-types" in r.headers["content-security-policy"]
     assert c.get("/apps/nope").status_code == 404
 

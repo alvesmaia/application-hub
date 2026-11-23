@@ -29,6 +29,7 @@ class UsageBars:
 
 
 def _seg(v: float, total: float, cls: str, lbl: str, unit: str) -> tuple[str, str, str]:
+    v = max(v, 0.0) + 0.0  # never "-0,00": float noise (0.1 * 8 - 0.3 - 0.5) and the negative zero
     share = v / total * 100 if total else 0.0
     return (
         f"flex:{max(v / total, 0.0) if total else 0.0:.4f}",

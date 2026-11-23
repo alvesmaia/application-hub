@@ -54,7 +54,7 @@ class Op:
         return "/api/v1" + self.path
 
 
-P_APP = Param("app", "path", S_ID, "Id do app (ex.: ativos)", True)
+P_APP = Param("app", "path", S_ID, "Id do app (ex.: inventory)", True)
 P_ID = Param("id", "path", S_ID, "Identificador", True)
 P_ENV = Param("env", "query", S_ENV, "Ambiente (padrão: producao)")
 

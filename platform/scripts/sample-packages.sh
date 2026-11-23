@@ -2,14 +2,14 @@
 # Generates the sample .hubapp packages in platform/samples/ with the real `hub pack`,
 # from the folders in platform/samples/src/<app>/ (manifest.json + ui/).
 #
-#   valid:      ativos-2.5.0.hubapp, fornecedores-1.9.0.hubapp, servicos-3.2.0.hubapp,
-#              contratos-1.1.0.hubapp, coletor-1.0.0.hubapp (Python/FastAPI)
-#   invalid:    invalido-segredo-ativos-2.5.1.hubapp        (ui/.env with token → "Segurança" section)
-#              invalido-script-inline-fornecedores-1.9.1.hubapp (inline <script> → Front-end)
+#   valid:      inventory-2.5.0.hubapp, suppliers-1.9.0.hubapp, servicedesk-3.2.0.hubapp,
+#              contratos-1.1.0.hubapp, collector-1.0.0.hubapp (Python/FastAPI)
+#   invalid:    invalido-segredo-inventory-2.5.1.hubapp        (ui/.env with token → "Segurança" section)
+#              invalido-script-inline-suppliers-1.9.1.hubapp (inline <script> → Front-end)
 #
-# Image: each package points to its own Python image (e.g. `hub-ativos`):
+# Image: each package points to its own Python image (e.g. `hub-inventory`):
 #
-#   hub-ativos@sha256:<Image ID>
+#   hub-inventory@sha256:<Image ID>
 #
 # A local build has no registry RepoDigest (it only exists after push/pull);
 # so the digest used is the Image ID (`docker image inspect -f '{{.Id}}'`). The
@@ -39,21 +39,21 @@ image() {
   if [ -n "$id" ]; then echo "$name@$id"; else echo "ghcr.io/org/$1@sha256:$(digest "$1")"; fi
 }
 
-for app in ativos fornecedores servicos coletor; do
+for app in inventory suppliers servicedesk collector; do
   version=$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' "$SRC/$app/manifest.json")
   "$HUB" pack --dir "$SRC/$app" --image "$(image "$app")" --out "$OUT/$app-$version.hubapp"
 done
 
 # Invalid 1: secret file inside ui/ (`hub pack` includes ui/**).
-cp -r "$SRC/ativos" "$TMP/segredo"
+cp -r "$SRC/inventory" "$TMP/segredo"
 sed -i 's/"2.5.0"/"2.5.1"/' "$TMP/segredo/manifest.json"
 printf 'API_TOKEN=ghp_%s\n' "$(digest token | head -c 36)" > "$TMP/segredo/ui/.env"
-"$HUB" pack --dir "$TMP/segredo" --image "$(image ativos)" --out "$OUT/invalido-segredo-ativos-2.5.1.hubapp"
+"$HUB" pack --dir "$TMP/segredo" --image "$(image inventory)" --out "$OUT/invalido-segredo-inventory-2.5.1.hubapp"
 
 # Invalid 2: inline script in the fragment (incompatible with the CSP).
-cp -r "$SRC/fornecedores" "$TMP/inline"
+cp -r "$SRC/suppliers" "$TMP/inline"
 sed -i 's/"1.9.0"/"1.9.1"/' "$TMP/inline/manifest.json"
 printf '<section>\n  <script>document.title = "x"</script>\n</section>\n' > "$TMP/inline/ui/index.html"
-"$HUB" pack --dir "$TMP/inline" --image "$(image fornecedores)" --out "$OUT/invalido-script-inline-fornecedores-1.9.1.hubapp"
+"$HUB" pack --dir "$TMP/inline" --image "$(image suppliers)" --out "$OUT/invalido-script-inline-suppliers-1.9.1.hubapp"
 
 ls -l "$OUT"/*.hubapp

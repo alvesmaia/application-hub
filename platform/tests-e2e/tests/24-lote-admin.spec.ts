@@ -33,12 +33,12 @@ test('containers: lista limpa e painel com variáveis mascaradas, logs e inspect
   const bgs = await page.locator('.ops-ct-icon').evaluateAll((els) => [...new Set(els.map((e) => getComputedStyle(e).backgroundColor))]);
   expect(bgs.length).toBe(1);
   await page.screenshot({ path: path.join(DIST, 'runtime-list.png'), fullPage: true });
-  const row = page.locator('tr[data-ops-row="ativos|producao"]');
-  await expect(row).toContainText(`${CP}app-ativos`);
+  const row = page.locator('tr[data-ops-row="inventory|producao"]');
+  await expect(row).toContainText(`${CP}app-inventory`);
   await row.locator('td').first().click();
   const drawer = page.locator('[data-ops-drawer]');
   await expect(drawer).toBeVisible();
-  await expect(drawer.locator('[data-ops-drawer-title]')).toHaveText(`${CP}app-ativos`);
+  await expect(drawer.locator('[data-ops-drawer-title]')).toHaveText(`${CP}app-inventory`);
   await expect(drawer.locator('.ops-detail:not([hidden]) .ops-facts')).toContainText('Porta interna');
   // Background does not close.
   await page.mouse.click(50, 450);
@@ -95,7 +95,7 @@ test('tarefas: filtros por coluna com estado na URL @core', async ({ page }) => 
   const api = await apiAs('admin');
   const has = async () => { const t = await json(await api.get('/api/ops/tasks')); return ((t.tasks || t.items || t) as unknown[]).length; };
   if (!(await has())) {
-    await page.request.post('/_frag/ativos/itens/export.xlsx', { form: { sort: 'nome', dir: 'asc' }, headers: { origin: HUB } });
+    await page.request.post('/_frag/inventory/items/export.xlsx', { form: { sort: 'nome', dir: 'asc' }, headers: { origin: HUB } });
     await expect.poll(has, { timeout: 60_000 }).toBeGreaterThan(0);
   }
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -161,12 +161,12 @@ test.describe('celular', () => {
 });
 
 test('logs: só registros reais (linha do gateway após usar um app) @core', async ({ page }) => {
-  await openApp(page, '/apps/ativos/dashboard');
+  await openApp(page, '/apps/inventory/dashboard');
   const api = await apiAs('admin');
   const all = await json(await api.get('/api/admin/logs?app=all&minutes=1440'));
   expect(all.some((l: { source: string }) => l.source === 'simulated' || l.source === 'seed')).toBe(false);
   expect(all.some((l: { user: string }) => /john\.doe|lucas\.ferreira/.test(l.user))).toBe(false);
-  expect(all.some((l: { source: string; app: string }) => l.source === 'gateway' && l.app === 'ativos')).toBe(true);
+  expect(all.some((l: { source: string; app: string }) => l.source === 'gateway' && l.app === 'inventory')).toBe(true);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/admin/logs');
   await expect(page.locator('[data-log-terminal]')).toContainText('[gateway]');
