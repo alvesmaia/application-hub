@@ -1,5 +1,7 @@
 """Public API `/api/v1`: authorization, scopes, RFC 9457 errors, pagination, rate limit and contract."""
 
+import time
+import types
 from pathlib import Path
 from typing import Any
 
@@ -143,6 +145,13 @@ def test_app_scoped_token_limits_apps_everywhere(hub: TestClient) -> None:
 
 def test_writes_are_audited_and_rate_limited(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     hub = api_hub(tmp_path, monkeypatch, env={"HUB_API_RATE_PER_MIN": "3"})
+    # the limit is a fixed window aligned to the clock minute: requests that straddle a minute boundary (a slow,
+    # loaded machine) reset the count and the 429 never came — freeze the clock mid-window
+
+    import hub.api.v1_base as v1_base
+
+    mid = (time.time_ns() // 60_000_000_000) * 60_000_000_000 + 30_000_000_000  # this minute, second 30
+    monkeypatch.setattr(v1_base, "time", types.SimpleNamespace(time_ns=lambda: mid))
     assert hub.post("/api/v1/audit/verify").status_code == 200
     audit = hub.get("/api/v1/audit?limit=5").json()["items"]
     assert any(e["title"] == "API v1: audit_verify" for e in audit)
