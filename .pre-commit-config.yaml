@@ -34,9 +34,18 @@ repos:
         name: arquivos grandes (>1 MB)
         entry: uv run --project platform-py python -c "import os,sys;b=[f for f in sys.argv[1:] if os.path.getsize(f)>1<<20];print(*b,sep=chr(10));sys.exit(1 if b else 0)"
         language: system
+      # Push: the full suite (~20 min) only when the pushed commits carry code; docs, CHANGELOG/TASKS and the
+      # release's version bump (hub/__init__.py, pyproject.toml, uv.lock) only get the fast check below.
       - id: hub-check
         name: hub-check (completo, so hub)
         entry: uv run --project platform-py hub-check
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+        exclude: (\.md$|^platform/docs/dev/dates\.json$|^platform-py/(hub/__init__\.py|pyproject\.toml|uv\.lock)$)
+      - id: hub-check-fast
+        name: hub-check --fast (ruff, formato e ty)
+        entry: uv run --project platform-py hub-check --fast
         language: system
         pass_filenames: false
         always_run: true
