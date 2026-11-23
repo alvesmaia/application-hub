@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+from datetime import datetime, timedelta, timezone
 from functools import partial
 from typing import Any
 
@@ -70,6 +71,7 @@ SDK_CMDS = [
 ]  # fmt: skip
 
 router = APIRouter()
+_GMT3 = timezone(timedelta(hours=-3))
 HOST_USAGE = HostUsage()  # keeps the previous /proc/stat sample: CPU is the difference between two
 
 
@@ -148,7 +150,8 @@ async def host_panel(ops: OpsCtx, info: dict[str, Any]) -> dict[str, Any]:
     )
     bars = rv.usage_bars(host, usage, plat, apps)
     sock = os.getenv("HUB_CONTAINER_SOCKET_HOST") or info.get("socket", "")  # on the host, not inside the hub
-    return {"bars": bars, "runtime_info": f"Runtime: {sock} · {info.get('version', '')}".rstrip(" ·"),
+    at = datetime.now(_GMT3).strftime("%H:%M:%S")  # same fixed GMT-3 as the other screens
+    return {"bars": bars, "measured_at": at, "runtime_info": f"Runtime: {sock} · {info.get('version', '')}".rstrip(" ·"),
             "cpu_title": f"CPU · {br(bars.cpu_used, 1)} de {br(host.cpu, 1)} vCPU em uso",
             "mem_title": f"Memória · {br(bars.mem_used, 1)} de {br(host.mem_gib, 1)} GiB em uso",
             "free_label": f"Livre {br(host.cpu - bars.cpu_used, 1)} vCPU · {br(host.mem_gib - bars.mem_used, 1)} GiB"}  # fmt: skip

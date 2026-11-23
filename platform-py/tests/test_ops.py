@@ -402,6 +402,11 @@ def test_runtime_page_host_usage_panel_with_runtime_in_the_i(hub: TestClient, do
     assert 'data-ops-host="/admin/runtime/host"' in page and "acima da capacidade do host" not in page
     part = hub.get("/admin/runtime/host")
     assert part.status_code == 200 and part.text.lstrip().startswith('<section class="panel ops-host"')
+    # when it was measured, not a promise that it refreshes (the time changes on every refresh)
+    assert re.search(
+        r'<span class="ops-muted" data-ops-host-at="">Atualizado às \d\d:\d\d:\d\d</span>', part.text
+    )
+    assert "atualiza sozinho" not in part.text
     assert re.search(r'title="Aplicações: [0-9,]+ / 8,00 vCPU \([0-9,]+%\)"', part.text)
 
 
