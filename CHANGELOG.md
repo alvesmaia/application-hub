@@ -7,6 +7,15 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Upgrade from 0.3.1
+Only the hub changes. From `platform-py/`: `git fetch --tags && git checkout v0.3.2`, then
+`python scripts/hub_update.py --build --project <project>` (no downtime). Check that `/healthz` answers
+`"version":"0.3.2"`. Coming from 0.2.0 or 0.3.0, follow those versions' steps first.
+
+### Changed
+- Containers page: the host panel says when it was measured ("Atualizado às HH:MM:SS" / "Updated at …", GMT-3 like
+  the other screens) instead of "current usage · updates itself".
+
 ## [0.3.1] — 2026-11-23
 
 ### Upgrade from 0.3.0
