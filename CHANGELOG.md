@@ -25,6 +25,32 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 - Sessions: 24 h without use (was 30 min), renewed at most once per hour while browsing, 3 days after the login at
   most (was 12 h) — `HUB_SESSION_IDLE_MIN`, `HUB_SESSION_RENEW_MIN`, `HUB_SESSION_ABSOLUTE_HOURS`.
 
+### Upgrade from 0.2.0
+Run from `platform-py/` with `dc() { docker compose --env-file .prod.env -f docker-compose.yml -f docker-compose.apps.yml -f docker-compose.prod.yml "$@"; }`
+(add `--profile demo-apps` only if `COMPOSE_PROFILES` is not set in `.prod.env`):
+
+1. Backup (`docs/ATUALIZACAO.md` §1) and keep the vault master key and `.prod.env` off the server.
+2. `git fetch --tags && git checkout v0.3.0`
+3. `bash scripts/install.sh --config-only --yes` — adds only the missing secrets (sample apps' database roles,
+   `automacoes`); nothing else in `.prod.env` changes.
+4. Only if a `<project>-db` container still exists (installs from before the single Postgres): follow «Moving to the
+   single Postgres» in `docs/ATUALIZACAO.md` (`dc build`, `dc up -d --no-deps app-hub-app-db`,
+   `bash scripts/db-merge.sh --project <project>`, `dc up -d`) and skip step 5.
+5. `python scripts/hub_update.py --build --project <project>` — swaps the hub without downtime (backup, copy, watch,
+   automatic rollback).
+6. `dc build && dc up -d` — rebuilds the sample apps, creates `automacoes` and applies this version's compose changes.
+   This step recreates the hub once (new app network and broker range) and each sample app.
+7. Check: `curl -s http://127.0.0.1:<port>/healthz` answers `"version":"0.3.0"`; `docker ps` shows every
+   `<project>-app-*` container `(healthy)`; sign in and open an app; Administração › Saúde has no alert.
+
+Measured on a test install (0.2.0 → 0.3.0, sample apps on): step 5 took 2 min with **no** downtime; step 6 took
+~40 s (build + up) with the **hub unavailable ~10 s** and **each sample app ~17 s** (recreated by compose, no
+blue/green for them). Signed-in sessions survive. Apps you deploy through the hub (packages) are not touched.
+
+Rollback: `python scripts/hub_update.py --rollback` (hub), then `git checkout v0.2.0 && dc build && dc up -d`
+(apps). Data written by 0.3.0 stays readable by 0.2.0 (additive migrations only); the extra roles and the
+`automacoes` database are simply unused there.
+
 ### Changed
 - Sample apps ask for half a CPU each (manifests, registry and compose `cpus: 0.5`).
 - Entra ID accounts have no "Reset password" (screen and API: 409) and no "Change password" in the account.
