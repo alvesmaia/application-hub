@@ -1,14 +1,15 @@
 {
- "CONTRATO-APP.md": "2026-10-16",
- "dev/AGENTS.md": "2026-10-16",
- "dev/cli.md": "2026-10-16",
+ "CONTRATO-APP.md": "2026-11-23",
+ "dev/AGENTS.md": "2026-11-19",
+ "dev/cli.md": "2026-11-19",
  "dev/comecar.md": "2026-10-16",
- "dev/guias/armazenamento.md": "2026-10-08",
- "dev/guias/banco.md": "2026-10-08",
- "dev/guias/dashboards.md": "2026-10-08",
+ "dev/guias/armazenamento.md": "2026-10-14",
+ "dev/guias/banco.md": "2026-10-14",
+ "dev/guias/dashboards.md": "2026-10-14",
  "dev/guias/mcp-api.md": "2026-10-16",
- "dev/guias/primeiro-app.md": "2026-10-08",
+ "dev/guias/primeiro-app.md": "2026-10-14",
  "dev/guias/publicar.md": "2026-10-16",
- "dev/guias/telas.md": "2026-10-08",
- "dev/sdk.md": "2026-10-08"
+ "dev/guias/telas.md": "2026-10-14",
+ "dev/guias/tempo-real.md": "2026-10-14",
+ "dev/sdk.md": "2026-11-19"
 }

@@ -7,6 +7,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-11-23
+
 ### Attention
 - **One Postgres only:** the hub's `hub` database now lives in the apps' server (`app-hub-app-db`); the compose no
   longer has `app-hub-db` and `APP_HUB_DB_PASSWORD` is no longer used. An existing install must move its hub database

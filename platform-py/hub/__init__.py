@@ -1,3 +1,3 @@
 """Application Hub — hub Python."""
 
-__version__ = "0.2.0"  # = [project].version in pyproject.toml (scripts/release.sh updates both)
+__version__ = "0.3.0"  # = [project].version in pyproject.toml (scripts/release.sh updates both)
