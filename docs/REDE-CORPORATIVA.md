@@ -114,7 +114,7 @@ Sign-in with Microsoft without questions (the secret is read from a file and sto
 or on the command line; the end of the install prints the Redirect URI to register):
 
 ```bash
-bash platform-py/scripts/install.sh … --public-url https://hub.empresa.local   --entra-tenant <tenant GUID> --entra-client-id <client GUID> --entra-client-secret-file ~/entra-secret.txt   [--entra-domains empresa.com] [--entra-role Colaborador] [--local-login admins|todos|nenhum]
+bash platform-py/scripts/install.sh … --public-url https://hub.empresa.local   --entra-tenant <tenant GUID> --entra-client-id <client GUID> --entra-client-secret-file ~/entra-secret.txt   [--entra-domains empresa.com] [--entra-role User] [--local-login admins|todos|nenhum]
 ```
 
 `--local-login admins` (default) keeps e-mail/password sign-in for administrators only, the way in when Microsoft is

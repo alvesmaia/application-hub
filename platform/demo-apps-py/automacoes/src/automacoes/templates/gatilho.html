@@ -1,0 +1,30 @@
+{% extends "workspace.html" %}
+{% block content %}
+{% set title = t('Editar gatilho') if trigger else t('Novo gatilho') %}{% set subtitle = t('Escolha o processo, quando ele roda e os valores dos campos. Um gatilho novo começa inativo.') %}
+{% include "_head.html" %}
+{% if notice_html %}{{ notice_html }}{% endif %}
+{% if not trigger and choices %}
+<form class="aut-filters" method="get" action="{{ base }}/gatilhos/novo">
+<div class="form-field"><label for="g-processo">{{ t('Processo') }}</label><select id="g-processo" name="processo" data-hub-autosubmit>{% for x in choices %}<option value="{{ x.key }}"{% if a and x.key == a.key %} selected{% endif %}>{{ x.name }}</option>{% endfor %}</select></div>
+</form>
+{% endif %}
+{% if rule_errors.processo %}<div class="hub-notice hub-notice-error" role="alert"><strong>{{ rule_errors.processo }}</strong></div>{% endif %}
+{% if a %}
+<form id="trigger-form" class="content-panel aut-panel aut-form" method="post" action="{{ base }}/gatilhos{{ '/' ~ trigger.id if trigger else '' }}">
+<input type="hidden" name="processo" value="{{ a.key }}">
+{% if errors or rule_errors %}<div class="hub-notice hub-notice-error" role="alert"><strong>{{ t('Verifique os campos destacados.') }}</strong></div>{% endif %}
+<h2 class="aut-panel-title">{{ a.name }}</h2>
+<fieldset class="aut-fieldset"><legend>{{ t('Quando') }}</legend>
+<div class="form-field"><label for="s-tipo">{{ t('Tipo') }}</label><select id="s-tipo" name="tipo"{% if rule_errors.tipo %} aria-invalid="true" aria-describedby="s-tipo-err"{% endif %}><option value="intervalo"{% if rule.get('tipo') == 'intervalo' %} selected{% endif %}>{{ t('A cada intervalo') }}</option><option value="diario"{% if rule.get('tipo') == 'diario' %} selected{% endif %}>{{ t('Diário') }}</option></select>{% if rule_errors.tipo %}<span class="hub-field-error" id="s-tipo-err" role="alert">{{ rule_errors.tipo }}</span>{% endif %}</div>
+<div class="form-field"><label for="s-intervalo">{{ t('Intervalo (minutos)') }}</label><input id="s-intervalo" name="intervalo" type="number" min="5" max="1440" value="{{ rule.get('intervalo', '') }}" aria-describedby="s-intervalo-help{{ ' s-intervalo-err' if rule_errors.intervalo else '' }}"{% if rule_errors.intervalo %} aria-invalid="true"{% endif %}><small class="aut-help" id="s-intervalo-help">{{ t('Usado no tipo "A cada intervalo" (mínimo 5).') }}</small>{% if rule_errors.intervalo %}<span class="hub-field-error" id="s-intervalo-err" role="alert">{{ rule_errors.intervalo }}</span>{% endif %}</div>
+<div class="form-field"><label for="s-horario">{{ t('Horário') }}</label><input id="s-horario" name="horario" type="time" value="{{ rule.get('horario', '') }}" aria-describedby="s-horario-help{{ ' s-horario-err' if rule_errors.horario else '' }}"{% if rule_errors.horario %} aria-invalid="true"{% endif %}><small class="aut-help" id="s-horario-help">{{ t('Usado no tipo "Diário" (horário de Brasília).') }}</small>{% if rule_errors.horario %}<span class="hub-field-error" id="s-horario-err" role="alert">{{ rule_errors.horario }}</span>{% endif %}</div>
+</fieldset>
+<fieldset class="aut-fieldset"><legend>{{ t('Campos do processo') }}</legend>
+{% include "_fields.html" %}
+</fieldset>
+<div class="modal-actions"><a class="secondary-button" href="{{ base }}/gatilhos">{{ t('Cancelar') }}</a><button type="submit" class="primary-button">{{ t('Salvar') }}</button></div>
+</form>
+{% elif not notice_html %}
+<p class="empty-state">{{ t('Crie e ative um processo antes de agendá-lo.') }}</p>
+{% endif %}
+{% endblock %}

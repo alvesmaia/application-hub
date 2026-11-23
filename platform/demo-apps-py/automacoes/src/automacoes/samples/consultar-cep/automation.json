@@ -1,0 +1,22 @@
+{
+  "name": "consultar-cep",
+  "version": "1.0.0",
+  "description": "Busca o endereço de um CEP no ViaCEP.",
+  "entrypoint": "main.py:run",
+  "fields": [
+    {
+      "name": "cep",
+      "label": "CEP",
+      "type": "text",
+      "required": true,
+      "help": "8 dígitos, com ou sem hífen (ex.: 01001-000).",
+      "pattern": "\\d{5}-?\\d{3}"
+    }
+  ],
+  "labels": {
+    "uf": "UF",
+    "ibge": "Código IBGE",
+    "ddd": "DDD",
+    "localidade": "Cidade"
+  }
+}

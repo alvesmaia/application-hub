@@ -11,7 +11,7 @@ from typing import Any
 
 import httpx
 import pytest
-from admin_helper import HDR, add_user, make_hub
+from admin_helper import HDR, PRODUCT_OWNER, add_role, add_user, make_hub
 from fastapi.testclient import TestClient
 from starlette.requests import Request
 
@@ -347,7 +347,7 @@ def test_pages_render_and_rbac(hub: TestClient) -> None:
     assert hub.get("/admin/analytics", follow_redirects=False).headers["location"] == "/admin#uso"
     assert hub.get("/admin/flags", follow_redirects=False).status_code == 308  # removed screen
     assert "Logs · " in hub.get("/admin/logs").text and "Auditoria · " in hub.get("/admin/audit").text
-    colab = add_user(hub, "colab", ["Colaborador"])
+    colab = add_user(hub, "colab", ["User"])
     for p in ("logs", "audit", "health", "observability", "analytics"):
         assert colab.get(f"/admin/{p}").status_code == 403, p
     for url in (
@@ -359,6 +359,7 @@ def test_pages_render_and_rbac(hub: TestClient) -> None:
         "/api/admin/analytics",
     ):
         assert colab.get(url).status_code == 403, url
+    add_role(hub, "Product Owner", PRODUCT_OWNER)
     po = add_user(hub, "po", ["Product Owner"])  # view audit, without editing settings
     for p in ("logs", "audit", "health"):
         assert po.get(f"/admin/{p}").status_code == 200, p
@@ -454,7 +455,7 @@ def test_gateway_observed_metrics_logs_traces_and_flags_header(hub: TestClient) 
     assert hub.get("/_frag/nao-existe/x").status_code == 404
     assert ins.tel.metrics.window("nao-existe", "producao", 0, 2**40).requests == 0
     # another user (without the per-role rule) gets the flag off
-    colab = add_user(hub, "colab", ["Colaborador"])
+    colab = add_user(hub, "colab", ["User"])
     assert colab.get("/_frag/ativos/echo").json()["headers"]["x-hub-flags"] == "resumo=off"
     assert "x-hub-flags" not in hub.get("/_frag/ativos/echo").json()["headers"] or True
 
@@ -471,6 +472,7 @@ def test_observability_on_health_page(hub: TestClient) -> None:
     )
     assert "Sem dados" in hub.get("/admin/health?app=fornecedores&env=staging").text
     # restricted to one app: does not see another app's trace
+    add_role(hub, "Product Owner", PRODUCT_OWNER)
     asyncio.run(hub.app.state.admin.cfg.role_apps("t", "Product Owner", ["servicos"]))  # type: ignore[attr-defined]
     hub.app.state.roles = __import__("hub.auth", fromlist=["roles_for"]).roles_for(hub.app.state.data_dir)  # type: ignore[attr-defined]
     po = add_user(hub, "po2", ["Product Owner"])
@@ -846,10 +848,11 @@ def test_usage_tracking_page_and_rbac(hub: TestClient) -> None:
     assert page.status_code == 200 and "data-usage-rows" in page.text
     assert hub.get("/api/admin/usage.csv").text.startswith("﻿usuario;")
     assert "/admin/usage" in hub.get("/admin").text
-    colab = add_user(hub, "colab", ["Colaborador"])
+    colab = add_user(hub, "colab", ["User"])
     assert colab.get("/admin/usage").status_code == 403
     assert colab.get("/api/admin/usage").status_code == 403
     assert colab.get("/api/admin/usage.csv").status_code == 403
+    add_role(hub, "Product Owner", PRODUCT_OWNER)
     po = add_user(hub, "po", ["Product Owner"])
     assert po.get("/api/admin/usage").status_code == 200
 

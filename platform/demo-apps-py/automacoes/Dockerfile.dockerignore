@@ -1,0 +1,12 @@
+# Context for hub-automacoes: only the Python SDK, the app and the shared assets.
+*
+!sdk-python/
+!demo-apps-py/automacoes/
+!demo-apps/assets/demo.css
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/*.egg-info
+sdk-python/tests
+demo-apps-py/automacoes/tests

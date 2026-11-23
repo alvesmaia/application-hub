@@ -1,5 +1,9 @@
 [
 [
+"Contas do Entra ID não têm senha no hub: a senha é gerida na Microsoft.",
+"Entra ID accounts have no hub password: the password is managed at Microsoft."
+],
+[
 "(biblioteca padrão)",
 "(default library)"
 ],
@@ -7930,10 +7934,6 @@
 [
 "Uso por contêiner indisponível: o engine não mede cada contêiner (Podman rootless sem delegação de cgroup). Os limites seguem configurados.",
 "Per-container usage unavailable: the engine does not measure each container (rootless Podman without cgroup delegation). The limits stay configured."
-],
-[
-"Limites dos apps acima da capacidade do host em {} vCPU · {} GiB: os apps disputam CPU e memória.",
-"App limits above the host capacity by {} vCPU · {} GiB: the apps compete for CPU and memory."
 ],
 [
 "Ocultas no catálogo (só quem tem acesso as vê)",

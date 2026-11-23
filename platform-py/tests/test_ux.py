@@ -142,9 +142,9 @@ def test_store_persistence_and_limits(tmp_path: Path) -> None:
     assert len(s.prefs("u").favorites) == 24
     again = UxStore(tmp_path / "ux.json")
     assert again.prefs("nobody").favorites == []
-    assert again.layout_for("u", ["Colaborador"])[1] == "default"
-    again.set_role_layout("Colaborador", ["status"])
-    assert UxStore(tmp_path / "ux.json").layout_for("u", ["Colaborador"]) == (["status"], "role")
+    assert again.layout_for("u", ["User"])[1] == "default"
+    again.set_role_layout("User", ["status"])
+    assert UxStore(tmp_path / "ux.json").layout_for("u", ["User"]) == (["status"], "role")
     with pytest.raises(ValueError, match="Widget desconhecido"):
         valid_layout(["x"])
     assert UxStore(tmp_path / "missing" / "ux.json").prefs("u").tour == ""
@@ -182,9 +182,7 @@ def test_catalog_stack_button_only_for_admins(data_dir: Path) -> None:
     admin = client_for(app)
     assert 'class="hub-stack-toggle"' in admin.get("/applications").text
     auth = app.state.auth.path
-    auth.write_text(
-        auth.read_text(encoding="utf-8").replace('"Administrador"]', '"Colaborador"]'), encoding="utf-8"
-    )
+    auth.write_text(auth.read_text(encoding="utf-8").replace('"Administrador"]', '"User"]'), encoding="utf-8")
     page = admin.get("/applications").text
     assert 'data-app="ativos"' in page and 'class="app-version"' in page
     assert "hub-stack-toggle" not in page and "hub-stack-chip" not in page
@@ -192,9 +190,9 @@ def test_catalog_stack_button_only_for_admins(data_dir: Path) -> None:
 
 def test_a_saved_layout_with_removed_widgets_still_loads_and_saves(tmp_path: Path) -> None:
     store = UxStore(tmp_path / "ux.json")
-    store.set_role_layout("Colaborador", ["status"])
+    store.set_role_layout("User", ["status"])
     raw = json.loads((tmp_path / "ux.json").read_text(encoding="utf-8"))
-    raw["role_layouts"]["Colaborador"] = ["inbox", "status", "shortcuts"]  # saved before the removal
+    raw["role_layouts"]["User"] = ["inbox", "status", "shortcuts"]  # saved before the removal
     (tmp_path / "ux.json").write_text(json.dumps(raw), encoding="utf-8")
-    layout, _ = UxStore(tmp_path / "ux.json").layout_for("u", ["Colaborador"])
+    layout, _ = UxStore(tmp_path / "ux.json").layout_for("u", ["User"])
     assert layout == ["status"] and valid_layout(layout) == ["status"]

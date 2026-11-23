@@ -190,6 +190,9 @@
     return nodes;
   }
 
+  // Content inserted by hub-kit (partial answers, the page a modal form lands on) polls like a swapped fragment.
+  document.addEventListener('hub:inserted', (e) => (e.detail?.nodes || []).forEach((n) => n.isConnected && startPolling(n)));
+
   // Polling of [data-hub-poll] elements (background job progress).
   function startPolling(scope) {
     const els = scope.matches?.('[data-hub-poll]') ? [scope] : [...scope.querySelectorAll('[data-hub-poll]')];

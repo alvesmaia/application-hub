@@ -1,5 +1,5 @@
-# The one Postgres (the hub's `hub` database and one database per app) + the 4 sample apps (ativos, fornecedores,
-# servicos, coletor).
+# The one Postgres (the hub's `hub` database and one database per app) + the 5 sample apps (ativos, fornecedores,
+# servicos, coletor, automacoes).
 # The apps only start with the `demo-apps` profile (COMPOSE_PROFILES=demo-apps or --profile demo-apps); without it the hub and the
 # apps database start on their own (use HUB_APPS_JSON=./apps.empty.json for an empty catalog).
 # Host debug ports (HUB_APPDB_PORT, HUB_APP_PORT_<APP>) bound to 127.0.0.1 only.
@@ -15,6 +15,7 @@ services:
       app-hub-app-fornecedores: { condition: service_started, required: false }
       app-hub-app-servicos: { condition: service_started, required: false }
       app-hub-app-coletor: { condition: service_started, required: false }
+      app-hub-app-automacoes: { condition: service_started, required: false }
 
   app-hub-app-db:
     image: ${HUB_IMAGE_PREFIX:-}postgres:16-alpine
@@ -48,6 +49,7 @@ services:
       APP_HUB_APP_DB_PASSWORD_FORNECEDORES: ${APP_HUB_APP_DB_PASSWORD_FORNECEDORES:-hubpy-fornecedores-dev}
       APP_HUB_APP_DB_PASSWORD_SERVICOS: ${APP_HUB_APP_DB_PASSWORD_SERVICOS:-hubpy-servicos-dev}
       APP_HUB_APP_DB_PASSWORD_COLETOR: ${APP_HUB_APP_DB_PASSWORD_COLETOR:-hubpy-coletor-dev}
+      APP_HUB_APP_DB_PASSWORD_AUTOMACOES: ${APP_HUB_APP_DB_PASSWORD_AUTOMACOES:-hubpy-automacoes-dev}
     depends_on: [app-hub-app-db]
     labels: { hub.py: "1" }
 
@@ -70,6 +72,7 @@ services:
         - PIP_INDEX_URL
     container_name: ${HUB_PROJECT:-app-hub}-app-ativos
     mem_limit: 1g # = resources.memory in the manifests and the `app` service of the previous compose version; 256m caused OOM on the 200k-row import
+    cpus: 0.5 # sample apps: half a CPU each (= resources.cpu in the manifests)
     restart: unless-stopped
     environment: &app-hub-app-env
       HUB_DB_URL: postgresql://ativos:${APP_HUB_APP_DB_PASSWORD_ATIVOS:-hubpy-ativos-dev}@app-hub-app-db:5432/ativos # one database per app (ativos); the others override it
@@ -100,6 +103,7 @@ services:
         - PIP_INDEX_URL
     container_name: ${HUB_PROJECT:-app-hub}-app-fornecedores
     mem_limit: 1g # = resources.memory in the manifests and the `app` service of the previous compose version; 256m caused OOM on the 200k-row import
+    cpus: 0.5 # sample apps: half a CPU each (= resources.cpu in the manifests)
     restart: unless-stopped
     environment:
       <<: *app-hub-app-env
@@ -135,6 +139,7 @@ services:
         - PIP_INDEX_URL
     container_name: ${HUB_PROJECT:-app-hub}-app-servicos
     mem_limit: 1g # = resources.memory in the manifests and the `app` service of the previous compose version; 256m caused OOM on the 200k-row import
+    cpus: 0.5 # sample apps: half a CPU each (= resources.cpu in the manifests)
     restart: unless-stopped
     environment:
       <<: *app-hub-app-env
@@ -164,6 +169,7 @@ services:
         - PIP_INDEX_URL
     container_name: ${HUB_PROJECT:-app-hub}-app-coletor
     mem_limit: 1g # = resources.memory in the manifests and the `app` service of the previous compose version; 256m caused OOM on the 200k-row import
+    cpus: 0.5 # sample apps: half a CPU each (= resources.cpu in the manifests)
     restart: unless-stopped
     environment:
       <<: *app-hub-app-env
@@ -172,6 +178,37 @@ services:
     depends_on: *app-hub-app-deps
     ports: ["127.0.0.1:${HUB_APP_PORT_COLETOR:-9105}:8080"]
     networks: [default, hub-app-coletor]
+    labels: { hub.py: "1" }
+
+  # Automations: needs outbound HTTPS (public CEP and holidays APIs) for two of its three examples.
+  app-hub-app-automacoes:
+    image: ${HUB_PROJECT:-app-hub}-automacoes
+    profiles: [demo-apps]
+    build:
+      context: ../platform
+      dockerfile: demo-apps-py/automacoes/Dockerfile
+      # network settings for the build, from the environment (scripts/install.sh); an unset one is not passed
+      args:
+        - HTTP_PROXY
+        - HTTPS_PROXY
+        - NO_PROXY
+        - http_proxy
+        - https_proxy
+        - no_proxy
+        - EXTRA_CA_PEM
+        - IMAGE_PREFIX
+        - PIP_INDEX_URL
+    container_name: ${HUB_PROJECT:-app-hub}-app-automacoes
+    mem_limit: 512m
+    cpus: 0.5 # sample apps: half a CPU each (= resources.cpu in the manifests)
+    restart: unless-stopped
+    environment:
+      <<: *app-hub-app-env
+      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_AUTOMACOES:-hubpy-${APP_HUB_APP_TOKEN:-local}-automacoes}
+      HUB_DB_URL: postgresql://automacoes:${APP_HUB_APP_DB_PASSWORD_AUTOMACOES:-hubpy-automacoes-dev}@app-hub-app-db:5432/automacoes # one database per app
+    depends_on: *app-hub-app-deps
+    ports: ["127.0.0.1:${HUB_APP_PORT_AUTOMACOES:-9106}:8080"]
+    networks: [default, hub-app-automacoes]
     labels: { hub.py: "1" }
 
 volumes:

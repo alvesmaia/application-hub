@@ -1,0 +1,11 @@
+# Third-party dependencies of the hub-automacoes image (hub-sdk-python + automacoes app) and the
+# build dependencies of the two local packages. Source for requirements.lock (with hashes) — regenerate with
+# uv pip compile --generate-hashes requirements.in -o requirements.lock
+fastapi==0.141.1
+starlette==1.7.0
+asyncpg==0.31.0
+jinja2==3.1.6
+uvicorn==0.54.0
+python-multipart==0.0.32
+httpx==0.28.1
+setuptools>=69

@@ -85,7 +85,7 @@ def test_success_jit_provisioning_and_session(sso: TestClient) -> None:
     r = flow(client, sso)
     assert r.status_code == 303 and r.headers["location"] == "/applications"
     u = next(u for u in users(client) if u["email"] == "ana@contoso.com")
-    assert u["roles"] == ["Colaborador"] and u["sso_subject"] == "oid-ana" and "password_hash" not in u
+    assert u["roles"] == ["User"] and u["sso_subject"] == "oid-ana" and "password_hash" not in u
     client.headers["cookie"] = f"hub_session={r.cookies['hub_session']}"
     assert client.get("/").status_code == 200
     # second login: same user, no duplicate
@@ -167,7 +167,7 @@ def test_sso_link_drops_unchanged_temporary_password(sso: TestClient) -> None:
     """Linking by e-mail a user who never changed the temporary password cancels that password and does not require the change."""
     client = anon(client_for(create_app()))
     store = client.app.state.auth  # type: ignore[attr-defined]
-    asyncio.run(store.create_user("ana@contoso.com", "Ana", ["Colaborador"], "Temporaria-123!", True))
+    asyncio.run(store.create_user("ana@contoso.com", "Ana", ["User"], "Temporaria-123!", True))
     r = flow(client, sso)
     assert r.status_code == 303 and r.headers["location"] == "/applications"
     u = next(u for u in users(client) if u["email"] == "ana@contoso.com")
@@ -229,6 +229,6 @@ def test_sso_never_adopts_a_local_admin_account(sso: TestClient) -> None:
         assert flow(anon(client), sso).status_code == 303
     mine = [u for u in users(client) if u["email"] == "ana@contoso.com"]
     sso_u = next(u for u in mine if u["id"] != admin["id"])
-    assert len(mine) == 2 and sso_u["roles"] == ["Colaborador"] and sso_u["name"] != "Administrador"
+    assert len(mine) == 2 and sso_u["roles"] == ["User"] and sso_u["name"] != "Administrador"
     assert next(u for u in mine if u["id"] == admin["id"])["roles"] == ["Administrador"]
     assert asyncio.run(store.authenticate("ana@contoso.com", "Senha-Local-123!"))["id"] == admin["id"]

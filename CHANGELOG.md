@@ -15,8 +15,33 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   `dev.sh` and `hub_update.py` stop with that instruction instead of starting an empty hub.
 - New secrets `APP_HUB_APP_DB_PASSWORD_<APP>` (the sample apps' own roles): `install.sh --config-only --yes` on an
   existing `.prod.env` generates only what is missing.
+- Default roles are now three: `Administrador`, `Power User` (everything but managing users) and `User` (apps only;
+  the former `Colaborador`). Existing installs keep their roles; SSO sign-ins fall back to `User`, then to the legacy
+  `Colaborador`. `install.sh --entra-role` takes `User` (default), `"Power User"` or `Administrador`.
+- New sample app `automacoes`: `install.sh --config-only --yes` adds its secrets (`APP_HUB_APP_DB_PASSWORD_AUTOMACOES`,
+  `HUB_INTERNAL_TOKEN_AUTOMACOES`); the next `dc up -d` recreates the hub once (new network and broker range, ~10 s).
+- Sessions: 24 h without use (was 30 min), renewed at most once per hour while browsing, 3 days after the login at
+  most (was 12 h) — `HUB_SESSION_IDLE_MIN`, `HUB_SESSION_RENEW_MIN`, `HUB_SESSION_ABSOLUTE_HOURS`.
+
+### Changed
+- Sample apps ask for half a CPU each (manifests, registry and compose `cpus: 0.5`).
+- Entra ID accounts have no "Reset password" (screen and API: 409) and no "Change password" in the account.
+- `admin/runtime`: host capacity on the left, runtime on the right; the "limits above the host" note is gone.
+
+### Fixed
+- Signing in again after leaving sent the browser to `GET /logout` ("Method Not Allowed"): a POST that met an ended
+  session no longer becomes `next`, and the login never returns to `/logout`.
+- Content inserted by the app kit (a partial answer, the page a modal form lands on) now keeps `data-hub-poll` going.
+- Checkboxes and radios inside `.form-field` were stretched to the whole row.
+- Row hover in tables left a lighter strip under the actions column; the select arrow could render as two triangles.
 
 ### Added
+- Sample app **Automações** (`automacoes`): a small automation orchestrator — versioned Python packages (upload on the
+  screen, through the API with an `app-api` token, or MCP), processes pinned to a package version, scheduled triggers
+  (interval or daily, a single fire across processes) and runs (durable jobs, shown in Tasks) with the form generated
+  from the package fields and validated on the server. Package code runs in a subprocess without the app's secrets.
+  App admins = hub roles in `AUTOMACOES_ADMIN_ROLES` (default `Administrador,Power User`); others run and see their runs.
+- Conformance profile key `"roles"`: the hub roles of the suite's identity (for APIs restricted to a role).
 - Adapting an existing app: a new section in the agents' guide (`/dev/docs/AGENTS.md`) with the inventory, URLs, layout, identity tokens and a JavaScript → `data-hub-*` table; the "Copy prompt" now also covers adapting. Measured with a sample FastAPI + Jinja app adapted by a fresh agent: 31/36 checks before, 36/36 after.
 - App kit: `<select data-hub-autosubmit>` (filter on change); `data-hub-confirm-title`, `-label` and `-danger` (the app's own wording and red button); a partial form (e.g. in a modal) that ends in a redirect closes the modal and shows the destination page.
 - SDK: common sidebar icons (truck, wrench, user, users, calendar, list, box, tag, money, map, home, search, bell), the app's own SVG as `Markup` in `NavItem.icon`, and `AppInfo(help_card=False)`.

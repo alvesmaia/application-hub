@@ -990,7 +990,8 @@ identity**. The app's CSS (`/{id}/assets/app.css`) enters confined by `@scope (#
 
 `platform/conformance` (pytest, black-box over HTTP). One profile per app
 (`conformance/profiles/<id>.json`) states the sections, one action that writes data, one task
-trigger and one heavy route.
+trigger and one heavy route. Optional `"roles"`: the hub roles of the suite's identity (default `["Leitor"]`) — for apps whose
+API or sections are restricted to a role (e.g. `["Administrador"]`).
 
 ```bash
 # against the compose apps (container on each app's internal network; hub-web stopped during the suite)

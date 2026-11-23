@@ -242,5 +242,33 @@
         "env": "producao"
       }
     ]
+  },
+  {
+    "name": "DATABASE_URL_AUTOMACOES",
+    "kind": "connection_string",
+    "inject_as": "HUB_DB_URL",
+    "value": "postgresql://automacoes:hubpy-automacoes-dev@app-hub-app-db:5432/automacoes",
+    "bindings": [
+      {
+        "app": "automacoes",
+        "env": "producao"
+      }
+    ]
+  },
+  {
+    "name": "HUB_INTERNAL_TOKEN_AUTOMACOES",
+    "kind": "secreta",
+    "inject_as": "HUB_INTERNAL_TOKEN",
+    "value": "automacoes-token-interno-demo-fe9d2f",
+    "bindings": [
+      {
+        "app": "automacoes",
+        "env": "staging"
+      },
+      {
+        "app": "automacoes",
+        "env": "producao"
+      }
+    ]
   }
 ]

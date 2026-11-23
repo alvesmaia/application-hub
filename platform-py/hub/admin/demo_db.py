@@ -15,7 +15,7 @@ import asyncpg
 from hub.ops.backup_db import _lit, _qi, chown_sql
 from hub.ops.provision import limits_sql
 
-DEMO_APPS = ("ativos", "fornecedores", "servicos", "coletor")
+DEMO_APPS = ("ativos", "fornecedores", "servicos", "coletor", "automacoes")
 HOST = "app-hub-app-db:5432"
 _NAME = re.compile(r"^[a-z][a-z0-9_]{0,47}$")
 

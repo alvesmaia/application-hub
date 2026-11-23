@@ -1,0 +1,23 @@
+{% extends "workspace.html" %}
+{% block content %}
+{% set title = t('Execuções') %}{% set subtitle = t('Execuções manuais, por gatilho e pela API.') if admin else t('As suas execuções.') %}
+{% include "_head.html" %}
+{% if notice_html %}{{ notice_html }}{% endif %}
+<form class="aut-filters" method="get" action="{{ base }}/execucoes" aria-label="{{ t('Filtros') }}">
+<div class="form-field"><label for="f-processo">{{ t('Processo') }}</label><select id="f-processo" name="processo" data-hub-autosubmit><option value="">{{ t('Todos') }}</option>{% for key, name in names.items() %}<option value="{{ key }}"{% if f.process_id == key %} selected{% endif %}>{{ name }}</option>{% endfor %}</select></div>
+<div class="form-field"><label for="f-status">{{ t('Status') }}</label><select id="f-status" name="status" data-hub-autosubmit><option value="">{{ t('Todos') }}</option>{% for s in statuses %}<option value="{{ s }}"{% if f.status == s %} selected{% endif %}>{{ t(status_label(s)) }}</option>{% endfor %}</select></div>
+<div class="form-field"><label for="f-periodo">{{ t('Período') }}</label><select id="f-periodo" name="periodo" data-hub-autosubmit>{% for d in periods %}<option value="{{ d }}"{% if f.days == d %} selected{% endif %}>{{ t('Últimos {n} dias', n=d) }}</option>{% endfor %}</select></div>
+</form>
+<section class="content-panel">
+{% if items %}
+<div class="aut-table-wrap"><table class="data-table aut-runs">
+<thead><tr><th scope="col">#</th><th scope="col">{{ t('Processo') }}</th><th scope="col">{{ t('Status') }}</th><th scope="col">{{ t('Origem') }}</th><th scope="col">{{ t('Quem') }}</th><th scope="col">{{ t('Início') }}</th><th scope="col">{{ t('Duração') }}</th></tr></thead>
+<tbody>
+{% for r in items %}<tr data-run="{{ r.id }}"><td><a href="{{ base }}/execucoes/{{ r.id }}">#{{ r.id }}</a></td><td>{{ r.process_name }} <small class="aut-muted">{{ r.package_version }}</small></td><td><span class="status-pill {{ status_class(r.status) }}">{{ t(status_label(r.status)) }}</span></td><td>{{ t(trigger_label(r.trigger)) }}</td><td>{{ r.requested_by }}</td><td>{{ when(r.started_at or r.created_at) }}</td><td>{{ duration(r.duration_ms) }}</td></tr>{% endfor %}
+</tbody></table></div>
+<div class="table-footer"><span>{{ t('{n} execuções', n=total) }} · {{ t('página {a} de {b}', a=f.page, b=pages) }}</span><nav class="aut-pages" aria-label="{{ t('Páginas') }}">{% if links.prev %}<a class="secondary-button" href="{{ base }}/execucoes{{ links.prev }}">{{ t('Anterior') }}</a>{% endif %}{% if links.next %}<a class="secondary-button" href="{{ base }}/execucoes{{ links.next }}">{{ t('Próxima') }}</a>{% endif %}</nav></div>
+{% else %}
+<p class="empty-state">{{ t('Nenhuma execução neste filtro.') }}</p>
+{% endif %}
+</section>
+{% endblock %}

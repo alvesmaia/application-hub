@@ -1,0 +1,18 @@
+{% extends "workspace.html" %}
+{% block content %}
+{% set title = t('Processos') %}{% set subtitle = t('Cada processo usa uma versão escolhida de um pacote, com parâmetros padrão.') %}
+{% set action %}<a class="primary-button" href="{{ base }}/processos/novo">{{ t('Novo processo') }}</a>{% endset %}
+{% include "_head.html" %}
+{% if notice_html %}{{ notice_html }}{% endif %}
+<section class="content-panel">
+{% if items %}
+<div class="aut-table-wrap"><table class="data-table aut-processes">
+<thead><tr><th scope="col">{{ t('Processo') }}</th><th scope="col">{{ t('Pacote') }}</th><th scope="col">{{ t('Versão') }}</th><th scope="col">{{ t('Tempo limite') }}</th><th scope="col">{{ t('Ativo') }}</th><th scope="col"><span class="aut-sr">{{ t('Ações') }}</span></th></tr></thead>
+<tbody>
+{% for p in items %}<tr data-process="{{ p.id }}"><td>{{ p.name }}</td><td>{{ p.package_name }}</td><td>{{ p.package_version }}</td><td>{{ p.timeout_s }} s</td><td>{{ t('Sim') if p.enabled else t('Não') }}</td><td class="aut-row-actions"><a class="secondary-button" href="{{ base }}/processos/{{ p.id }}/editar">{{ t('Editar') }}</a><a class="secondary-button" href="{{ base }}/execucoes?processo={{ p.id }}">{{ t('Execuções') }}</a></td></tr>{% endfor %}
+</tbody></table></div>
+{% else %}
+<p class="empty-state">{{ t('Nenhum processo ainda.') }}</p>
+{% endif %}
+</section>
+{% endblock %}

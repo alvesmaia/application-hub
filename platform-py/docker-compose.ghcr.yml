@@ -16,3 +16,5 @@ services:
     image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-servicos:${HUB_VERSION:?}
   app-hub-app-coletor:
     image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-coletor:${HUB_VERSION:?}
+  app-hub-app-automacoes:
+    image: ${HUB_REGISTRY:-ghcr.io/alvesmaia}/app-hub-automacoes:${HUB_VERSION:?}

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-from admin_helper import PASSWORD, add_user, make_hub
+from admin_helper import PASSWORD, PRODUCT_OWNER, add_role, add_user, make_hub
 from fastapi.testclient import TestClient
 from httpx import Response
 
@@ -87,7 +87,7 @@ def test_pure_helpers() -> None:
 def test_users_crud_audit_and_no_hash_leak(hub: TestClient) -> None:
     r = hub.post(
         "/api/admin/users",
-        json={"email": "Ana@Demo.local", "name": "Ana", "roles": ["Colaborador"], "password": PASSWORD},
+        json={"email": "Ana@Demo.local", "name": "Ana", "roles": ["User"], "password": PASSWORD},
     )
     assert r.status_code == 201
     ana = r.json()
@@ -103,7 +103,7 @@ def test_users_crud_audit_and_no_hash_leak(hub: TestClient) -> None:
     assert {u["email"] for u in listed} == {"admin@demo.local", "ana@demo.local"}
     assert "argon2" not in json.dumps(listed)
     # duplicate, unknown role, weak password, invalid body
-    base = {"email": "ana@demo.local", "name": "Ana", "roles": ["Colaborador"], "password": PASSWORD}
+    base = {"email": "ana@demo.local", "name": "Ana", "roles": ["User"], "password": PASSWORD}
     assert hub.post("/api/admin/users", json=base).status_code == 400
     assert hub.post(
         "/api/admin/users", json={**base, "email": "b@demo.local", "roles": ["Inexistente"]}
@@ -124,8 +124,8 @@ def test_users_crud_audit_and_no_hash_leak(hub: TestClient) -> None:
     )
     # editar, desativar, reativar
     uid = ana["id"]
-    r = hub.put(f"/api/admin/users/{uid}", json={"name": "Ana Maria", "roles": ["Tech Lead"]})
-    assert (r.json()["name"], r.json()["roles"]) == ("Ana Maria", ["Tech Lead"])
+    r = hub.put(f"/api/admin/users/{uid}", json={"name": "Ana Maria", "roles": ["Power User"]})
+    assert (r.json()["name"], r.json()["roles"]) == ("Ana Maria", ["Power User"])
     assert hub.put(f"/api/admin/users/{uid}", json={"active": False}).json()["active"] is False
     assert hub.put(f"/api/admin/users/{uid}", json={"active": True}).json()["active"] is True
     assert hub.put("/api/admin/users/nao-existe", json={"name": "x"}).status_code == 404
@@ -156,7 +156,7 @@ def test_users_self_protection_last_admin_and_unlock(hub: TestClient) -> None:
     users = hub.get("/api/admin/users").json()
     me = users[0]["id"]
     assert hub.put(f"/api/admin/users/{me}", json={"active": False}).status_code == 403
-    assert hub.put(f"/api/admin/users/{me}", json={"roles": ["Colaborador"]}).status_code == 403
+    assert hub.put(f"/api/admin/users/{me}", json={"roles": ["User"]}).status_code == 403
     assert hub.put(f"/api/admin/users/{me}", json={"name": "Outro Nome"}).status_code == 200
     other_admin = add_user(hub, "chefe", ["Administrador"])
     # the other administrator can deactivate the first; nobody deactivates the last active one
@@ -173,8 +173,8 @@ def test_users_self_protection_last_admin_and_unlock(hub: TestClient) -> None:
 
 
 def test_users_rbac_denials_and_privilege_escalation(hub: TestClient) -> None:
-    colab = add_user(hub, "colab", ["Colaborador"])
-    lead = add_user(hub, "lead", ["Tech Lead"])
+    colab = add_user(hub, "colab", ["User"])
+    lead = add_user(hub, "lead", ["Power User"])
     for c in (colab, lead):
         assert c.get("/api/admin/users").status_code == 403
         assert c.post("/api/admin/users", json={}).status_code == 403
@@ -194,7 +194,7 @@ def test_users_rbac_denials_and_privilege_escalation(hub: TestClient) -> None:
     assert hub.put("/api/admin/roles/RH/permissions/0", json={"granted": True}).status_code == 200
     rh = add_user(hub, "rh", ["RH"])
     assert rh.get("/api/admin/users").status_code == 200 and rh.get("/admin/users").status_code == 200
-    new = {"email": "n@demo.local", "name": "N", "roles": ["Colaborador"], "password": PASSWORD}
+    new = {"email": "n@demo.local", "name": "N", "roles": ["User"], "password": PASSWORD}
     assert rh.post("/api/admin/users", json=new).status_code == 201
     assert (
         rh.post(
@@ -206,7 +206,9 @@ def test_users_rbac_denials_and_privilege_escalation(hub: TestClient) -> None:
         rh.post("/api/admin/users", json={**new, "email": "m@demo.local", "roles": ["RH"]}).status_code == 403
     )
     assert (
-        rh.post("/api/admin/users", json={**new, "email": "m@demo.local", "roles": ["Tech Lead"]}).status_code
+        rh.post(
+            "/api/admin/users", json={**new, "email": "m@demo.local", "roles": ["Power User"]}
+        ).status_code
         == 403
     )
     admin_id = next(u["id"] for u in rh.get("/api/admin/users").json() if u["email"] == "admin@demo.local")
@@ -231,7 +233,7 @@ def test_users_rbac_denials_and_privilege_escalation(hub: TestClient) -> None:
 
 def test_roles_crud_permissions_apps_and_live_effect(hub: TestClient) -> None:
     roles = hub.get("/api/admin/roles").json()
-    assert [r["name"] for r in roles] == ["Administrador", "Product Owner", "Tech Lead", "Colaborador"]
+    assert [r["name"] for r in roles] == ["Administrador", "Power User", "User"]
     assert list(roles[0]) == ["name", "description", "members", "level", "permissions"]
     r = hub.post(
         "/api/admin/roles", json={"name": "Auditor", "description": " olha ", "level": "Padrão", "members": 2}
@@ -287,10 +289,10 @@ def test_roles_crud_permissions_apps_and_live_effect(hub: TestClient) -> None:
 def test_roles_page_markup_editable_and_readonly(hub: TestClient) -> None:
     html = hub.get("/admin/users?tab=roles").text
     assert hub.get("/admin/roles").headers["location"] == "/admin/users?tab=roles"
-    assert html.count('class="role-card"') == 4 and 'data-admin-add="role"' in html
+    assert html.count('class="role-card"') == 3 and 'data-admin-add="role"' in html
     assert 'data-role="Administrador"' in html and 'data-role-perm="5"' in html
-    assert '"members":4' in html.replace("&#34;", '"') and "1 usuário" in html
-    rh_html = add_user(hub, "x1", ["Colaborador"]).get("/admin/users?tab=roles")
+    assert '"members":3' in html.replace("&#34;", '"') and "1 usuário" in html
+    rh_html = add_user(hub, "x1", ["User"]).get("/admin/users?tab=roles")
     assert rh_html.status_code == 403
     hub.post("/api/admin/roles", json={"name": "RH2", "level": "Alto"})
     hub.put("/api/admin/roles/RH2/permissions/1", json={"granted": True})
@@ -415,7 +417,8 @@ def test_env_secrets_are_sealed_on_disk_and_never_logged(
 
 
 def test_env_rbac_and_token_scope(hub: TestClient) -> None:
-    lead = add_user(hub, "lead", ["Tech Lead"])  # variables + settings
+    lead = add_user(hub, "lead", ["Power User"])  # variables + settings
+    add_role(hub, "Product Owner", PRODUCT_OWNER)
     po = add_user(hub, "po", ["Product Owner"])  # no variables or settings
     assert po.get("/api/admin/env").status_code == 403 and po.get("/admin/env").status_code == 403
     assert lead.get("/api/admin/env").status_code == 200 and lead.get("/admin/env").status_code == 200
@@ -479,6 +482,7 @@ def test_managed_variables_are_read_only_and_internal_tokens_live_in_the_vault(
     assert hub.post("/api/ops/rotate/coletor/database", json={}).status_code == 409  # no database provisioned
     assert hub.post("/api/ops/rotate/nao-existe/token", json={}).status_code == 404
     assert hub.post("/api/ops/rotate/coletor/outro", json={}).status_code == 404
+    add_role(hub, "Product Owner", PRODUCT_OWNER)
     assert (
         add_user(hub, "po2", ["Product Owner"]).post("/api/ops/rotate/coletor/token", json={}).status_code
         == 403
@@ -506,7 +510,7 @@ def test_bootstrap_import_only_creates_missing_without_marking_restart(hub: Test
 
 
 def test_users_page_markup(hub: TestClient) -> None:
-    add_user(hub, "bia", ["Colaborador"])
+    add_user(hub, "bia", ["User"])
     html = hub.get("/admin/users").text
     assert (
         'class="data-table hub-table-cards"' in html

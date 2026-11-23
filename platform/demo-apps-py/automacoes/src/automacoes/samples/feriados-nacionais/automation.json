@@ -1,0 +1,17 @@
+{
+  "name": "feriados-nacionais",
+  "version": "1.0.0",
+  "description": "Lista os feriados nacionais de um ano pela BrasilAPI.",
+  "entrypoint": "main.py:run",
+  "fields": [
+    {
+      "name": "ano",
+      "label": "Ano",
+      "type": "number",
+      "required": true,
+      "min": 1900,
+      "max": 2199,
+      "default": 2026
+    }
+  ]
+}

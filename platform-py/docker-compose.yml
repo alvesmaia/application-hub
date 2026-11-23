@@ -53,7 +53,7 @@ services:
       # apps on the hub-app-<id> network (not published); each token is only valid from its app's network.
       HUB_BROKER_ADDR: 0.0.0.0:8081
       HUB_BROKER_PUBLIC_URL: http://app-hub-web:8081
-      HUB_BROKER_APP_CIDRS: "ativos=${HUB_SUBNET:-10.231}.1.0/24,fornecedores=${HUB_SUBNET:-10.231}.2.0/24,servicos=${HUB_SUBNET:-10.231}.3.0/24,coletor=${HUB_SUBNET:-10.231}.5.0/24"
+      HUB_BROKER_APP_CIDRS: "ativos=${HUB_SUBNET:-10.231}.1.0/24,fornecedores=${HUB_SUBNET:-10.231}.2.0/24,servicos=${HUB_SUBNET:-10.231}.3.0/24,coletor=${HUB_SUBNET:-10.231}.5.0/24,automacoes=${HUB_SUBNET:-10.231}.6.0/24"
       # Platform object store (MinIO) for «Provisionar armazenamento».
       HUB_S3_ADMIN_URL: http://hubadmin:${APP_HUB_OBJSTORE_PASSWORD:-hubpy-objstore-dev}@app-hub-objstore:9000
     # No --reload: the published hub does not restart when code on disk changes (reload only in dev mode).
@@ -76,6 +76,7 @@ services:
       - default
       - edge
       - hub-app-ativos
+      - hub-app-automacoes
       - hub-app-coletor
       - hub-app-fornecedores
       - hub-app-servicos
@@ -166,3 +167,7 @@ networks:
     name: ${HUB_PROJECT:-app-hub}-app-coletor
     driver: bridge
     ipam: { config: [{ subnet: "${HUB_SUBNET:-10.231}.5.0/24" }] }
+  hub-app-automacoes:
+    name: ${HUB_PROJECT:-app-hub}-app-automacoes
+    driver: bridge
+    ipam: { config: [{ subnet: "${HUB_SUBNET:-10.231}.6.0/24" }] }

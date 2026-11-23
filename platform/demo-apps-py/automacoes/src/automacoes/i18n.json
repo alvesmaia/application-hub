@@ -1,0 +1,642 @@
+[
+ [
+  "Campo obrigatório.",
+  "Required field."
+ ],
+ [
+  "8 dígitos, com ou sem hífen (ex.: 01001-000).",
+  "8 digits, with or without a hyphen (e.g. 01001-000)."
+ ],
+ [
+  "A cada intervalo",
+  "Every interval"
+ ],
+ [
+  "A execução terminou com erro",
+  "The run ended with an error"
+ ],
+ [
+  "API",
+  "API"
+ ],
+ [
+  "AUTOMAÇÕES",
+  "AUTOMATIONS"
+ ],
+ [
+  "Acesso restrito",
+  "Restricted access"
+ ],
+ [
+  "Ano",
+  "Year"
+ ],
+ [
+  "Anterior",
+  "Previous"
+ ],
+ [
+  "Arquivo .zip (até 5 MB)",
+  ".zip file (up to 5 MB)"
+ ],
+ [
+  "As suas execuções.",
+  "Your runs."
+ ],
+ [
+  "Ativo",
+  "Active"
+ ],
+ [
+  "Ativo (aparece em Automações)",
+  "Active (listed in Automations)"
+ ],
+ [
+  "Automações",
+  "Automations"
+ ],
+ [
+  "Ações",
+  "Actions"
+ ],
+ [
+  "Banco de dados indisponível",
+  "Database unavailable"
+ ],
+ [
+  "Banco de dados não configurado",
+  "Database not configured"
+ ],
+ [
+  "Busca o endereço de um CEP no ViaCEP.",
+  "Looks up the address of a CEP (Brazilian postal code) on ViaCEP."
+ ],
+ [
+  "CEP",
+  "CEP (postal code)"
+ ],
+ [
+  "CNPJ",
+  "CNPJ"
+ ],
+ [
+  "CPF",
+  "CPF"
+ ],
+ [
+  "Cada processo usa uma versão escolhida de um pacote, com parâmetros padrão.",
+  "Each process uses a chosen version of a package, with default parameters."
+ ],
+ [
+  "Campo desconhecido neste pacote.",
+  "Unknown field in this package."
+ ],
+ [
+  "Campos do processo",
+  "Process fields"
+ ],
+ [
+  "Cancelado",
+  "Cancelled"
+ ],
+ [
+  "Cancelar",
+  "Cancel"
+ ],
+ [
+  "Cancelar esta execução?",
+  "Cancel this run?"
+ ],
+ [
+  "Cancelar execução",
+  "Cancel run"
+ ],
+ [
+  "Cidade",
+  "City"
+ ],
+ [
+  "Concluído",
+  "Done"
+ ],
+ [
+  "Confere os dígitos verificadores de uma lista de CPFs e CNPJs, sem consulta externa.",
+  "Checks the check digits of a list of CPFs and CNPJs, with no external lookup."
+ ],
+ [
+  "Crie e ative um processo antes de agendá-lo.",
+  "Create and enable a process before scheduling it."
+ ],
+ [
+  "Código IBGE",
+  "IBGE code"
+ ],
+ [
+  "Código das automações: um zip com automation.json na raiz. Versões são imutáveis.",
+  "Automation code: a zip with automation.json at the root. Versions are immutable."
+ ],
+ [
+  "DDD",
+  "Area code"
+ ],
+ [
+  "Defina HUB_DB_URL para guardar pacotes, processos e execuções.",
+  "Set HUB_DB_URL to store packages, processes and runs."
+ ],
+ [
+  "Descrição",
+  "Description"
+ ],
+ [
+  "Detectar",
+  "Detect"
+ ],
+ [
+  "Diário",
+  "Daily"
+ ],
+ [
+  "Documentos",
+  "Documents"
+ ],
+ [
+  "Duração",
+  "Duration"
+ ],
+ [
+  "Editar",
+  "Edit"
+ ],
+ [
+  "Editar gatilho",
+  "Edit trigger"
+ ],
+ [
+  "Editar processo",
+  "Edit process"
+ ],
+ [
+  "Em andamento — esta página se atualiza sozinha.",
+  "In progress — this page refreshes by itself."
+ ],
+ [
+  "Enviado",
+  "Uploaded"
+ ],
+ [
+  "Enviar",
+  "Upload"
+ ],
+ [
+  "Enviar pacote",
+  "Upload package"
+ ],
+ [
+  "Envio",
+  "Upload"
+ ],
+ [
+  "Erro",
+  "Error"
+ ],
+ [
+  "Erro ao consultar as execuções",
+  "Error loading the runs"
+ ],
+ [
+  "Erro ao consultar os gatilhos",
+  "Error loading the triggers"
+ ],
+ [
+  "Escolha o processo, quando ele roda e os valores dos campos. Um gatilho novo começa inativo.",
+  "Choose the process, when it runs and the field values. A new trigger starts inactive."
+ ],
+ [
+  "Escolha o tipo de agendamento.",
+  "Choose the schedule type."
+ ],
+ [
+  "Escolha um arquivo .zip.",
+  "Choose a .zip file."
+ ],
+ [
+  "Escolha um processo, preencha os campos e acompanhe o resultado em Execuções.",
+  "Choose a process, fill in the fields and follow the result in Runs."
+ ],
+ [
+  "Escolha um processo.",
+  "Choose a process."
+ ],
+ [
+  "Escolha uma das opções.",
+  "Choose one of the options."
+ ],
+ [
+  "Escolha…",
+  "Choose…"
+ ],
+ [
+  "Esta versão do pacote não existe.",
+  "This package version does not exist."
+ ],
+ [
+  "Esta área é só para administradores do app.",
+  "This area is for the app administrators only."
+ ],
+ [
+  "Ex.: {\"ano\": 2026}. Só campos do pacote; o formulário de execução começa com estes valores.",
+  "E.g. {\"ano\": 2026}. Package fields only; the run form starts with these values."
+ ],
+ [
+  "Excluir",
+  "Delete"
+ ],
+ [
+  "Excluir este gatilho? As execuções já feitas continuam no histórico.",
+  "Delete this trigger? Runs already made stay in the history."
+ ],
+ [
+  "Excluir gatilho",
+  "Delete trigger"
+ ],
+ [
+  "Executar",
+  "Run"
+ ],
+ [
+  "Execução",
+  "Run"
+ ],
+ [
+  "Execução #{n}",
+  "Run #{n}"
+ ],
+ [
+  "Execuções",
+  "Runs"
+ ],
+ [
+  "Execuções deste processo",
+  "Runs of this process"
+ ],
+ [
+  "Execuções manuais, por gatilho e pela API.",
+  "Manual, triggered and API runs."
+ ],
+ [
+  "Fechar",
+  "Close"
+ ],
+ [
+  "Filtros",
+  "Filters"
+ ],
+ [
+  "Fim",
+  "End"
+ ],
+ [
+  "Formato inválido.",
+  "Invalid format."
+ ],
+ [
+  "Gatilho",
+  "Trigger"
+ ],
+ [
+  "Gatilhos",
+  "Triggers"
+ ],
+ [
+  "Horário",
+  "Time"
+ ],
+ [
+  "Inativo",
+  "Inactive"
+ ],
+ [
+  "Informe de {a} a {b} minutos.",
+  "Enter {a} to {b} minutes."
+ ],
+ [
+  "Informe o horário no formato HH:MM.",
+  "Enter the time as HH:MM."
+ ],
+ [
+  "Informe um número.",
+  "Enter a number."
+ ],
+ [
+  "Informe um valor entre {a} e {b}.",
+  "Enter a value between {a} and {b}."
+ ],
+ [
+  "Informe uma data válida.",
+  "Enter a valid date."
+ ],
+ [
+  "Intervalo (minutos)",
+  "Interval (minutes)"
+ ],
+ [
+  "Inválidos",
+  "Invalid"
+ ],
+ [
+  "Início",
+  "Start"
+ ],
+ [
+  "JSON inválido.",
+  "Invalid JSON."
+ ],
+ [
+  "Já existe um processo com este nome.",
+  "A process with this name already exists."
+ ],
+ [
+  "Lista os feriados nacionais de um ano pela BrasilAPI.",
+  "Lists the national holidays of a year from BrasilAPI."
+ ],
+ [
+  "Log",
+  "Log"
+ ],
+ [
+  "Manual",
+  "Manual"
+ ],
+ [
+  "Nenhum gatilho ainda.",
+  "No triggers yet."
+ ],
+ [
+  "Nenhum pacote enviado ainda.",
+  "No packages uploaded yet."
+ ],
+ [
+  "Nenhum processo ainda.",
+  "No processes yet."
+ ],
+ [
+  "Nenhum processo ativo ainda.",
+  "No active processes yet."
+ ],
+ [
+  "Nenhuma execução ainda.",
+  "No runs yet."
+ ],
+ [
+  "Nenhuma execução neste filtro.",
+  "No runs for this filter."
+ ],
+ [
+  "No máximo {n} linhas preenchidas.",
+  "At most {n} filled lines."
+ ],
+ [
+  "Nome",
+  "Name"
+ ],
+ [
+  "Novo gatilho",
+  "New trigger"
+ ],
+ [
+  "Novo processo",
+  "New process"
+ ],
+ [
+  "Não",
+  "No"
+ ],
+ [
+  "O banco ainda está subindo ou não respondeu. Tente novamente em instantes.",
+  "The database is still starting or did not answer. Try again shortly."
+ ],
+ [
+  "O pacote não foi aceito.",
+  "The package was not accepted."
+ ],
+ [
+  "Origem",
+  "Origin"
+ ],
+ [
+  "Orquestrador de automações",
+  "Automation orchestrator"
+ ],
+ [
+  "Pacote",
+  "Package"
+ ],
+ [
+  "Pacotes",
+  "Packages"
+ ],
+ [
+  "Parâmetros",
+  "Parameters"
+ ],
+ [
+  "Parâmetros padrão (JSON)",
+  "Default parameters (JSON)"
+ ],
+ [
+  "Pendente",
+  "Pending"
+ ],
+ [
+  "Período",
+  "Period"
+ ],
+ [
+  "Processando",
+  "Processing"
+ ],
+ [
+  "Processo",
+  "Process"
+ ],
+ [
+  "Processos",
+  "Processes"
+ ],
+ [
+  "Processos que rodam sozinhos, a cada intervalo ou todo dia no mesmo horário.",
+  "Processes that run on their own, every interval or every day at the same time."
+ ],
+ [
+  "Próxima",
+  "Next"
+ ],
+ [
+  "Próximo disparo",
+  "Next fire"
+ ],
+ [
+  "Páginas",
+  "Pages"
+ ],
+ [
+  "Quando",
+  "When"
+ ],
+ [
+  "Quem",
+  "Who"
+ ],
+ [
+  "Reexecutar",
+  "Run again"
+ ],
+ [
+  "Resultado",
+  "Result"
+ ],
+ [
+  "Salvar",
+  "Save"
+ ],
+ [
+  "Sem parâmetros.",
+  "No parameters."
+ ],
+ [
+  "Sem resultado.",
+  "No result."
+ ],
+ [
+  "Sim",
+  "Yes"
+ ],
+ [
+  "Solicitada em",
+  "Requested at"
+ ],
+ [
+  "Status",
+  "Status"
+ ],
+ [
+  "Tamanho",
+  "Size"
+ ],
+ [
+  "Tempo limite",
+  "Timeout"
+ ],
+ [
+  "Tempo limite (segundos)",
+  "Timeout (seconds)"
+ ],
+ [
+  "Tipo",
+  "Type"
+ ],
+ [
+  "Todos",
+  "All"
+ ],
+ [
+  "Trocar a versão do pacote vale para as próximas execuções e fica registrado na auditoria.",
+  "Changing the package version applies to the next runs and is recorded in the audit trail."
+ ],
+ [
+  "UF",
+  "State"
+ ],
+ [
+  "Um por linha, com ou sem pontuação (até 500 linhas).",
+  "One per line, with or without punctuation (up to 500 lines)."
+ ],
+ [
+  "Usado no tipo \"A cada intervalo\" (mínimo 5).",
+  "Used by the \"Every interval\" type (minimum 5)."
+ ],
+ [
+  "Usado no tipo \"Diário\" (horário de Brasília).",
+  "Used by the \"Daily\" type (Brasília time)."
+ ],
+ [
+  "Usado por",
+  "Used by"
+ ],
+ [
+  "Valor inválido.",
+  "Invalid value."
+ ],
+ [
+  "Ver execuções",
+  "See runs"
+ ],
+ [
+  "Verifique os campos destacados.",
+  "Check the highlighted fields."
+ ],
+ [
+  "Versão",
+  "Version"
+ ],
+ [
+  "Voltar às execuções",
+  "Back to runs"
+ ],
+ [
+  "Válido",
+  "Valid"
+ ],
+ [
+  "Válidos",
+  "Valid"
+ ],
+ [
+  "a cada {n} min",
+  "every {n} min"
+ ],
+ [
+  "diário às {h}",
+  "daily at {h}"
+ ],
+ [
+  "página {a} de {b}",
+  "page {a} of {b}"
+ ],
+ [
+  "{n} execuções",
+  "{n} runs"
+ ],
+ [
+  "Última execução",
+  "Last run"
+ ],
+ [
+  "Último resultado",
+  "Last result"
+ ],
+ [
+  "Últimos {n} dias",
+  "Last {n} days"
+ ],
+ [
+  "Consultar CEP",
+  "Look up CEP"
+ ],
+ [
+  "Feriados nacionais",
+  "National holidays"
+ ],
+ [
+  "Validar CPF/CNPJ",
+  "Validate CPF/CNPJ"
+ ],
+ [
+  "CEP não encontrado",
+  "CEP not found"
+ ],
+ [
+  "Ano sem feriados disponíveis",
+  "No holidays available for this year"
+ ]
+]

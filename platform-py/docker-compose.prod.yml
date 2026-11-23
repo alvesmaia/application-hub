@@ -41,6 +41,7 @@ services:
       APP_HUB_APP_DB_PASSWORD_FORNECEDORES: ${APP_HUB_APP_DB_PASSWORD_FORNECEDORES:?}
       APP_HUB_APP_DB_PASSWORD_SERVICOS: ${APP_HUB_APP_DB_PASSWORD_SERVICOS:?}
       APP_HUB_APP_DB_PASSWORD_COLETOR: ${APP_HUB_APP_DB_PASSWORD_COLETOR:?}
+      APP_HUB_APP_DB_PASSWORD_AUTOMACOES: ${APP_HUB_APP_DB_PASSWORD_AUTOMACOES:?}
 
   app-hub-app-ativos:
     environment: &prod-app
@@ -66,3 +67,9 @@ services:
       <<: *prod-app
       HUB_DB_URL: postgresql://coletor:${APP_HUB_APP_DB_PASSWORD_COLETOR:?}@app-hub-app-db:5432/coletor
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_COLETOR:?}
+
+  app-hub-app-automacoes:
+    environment:
+      <<: *prod-app
+      HUB_DB_URL: postgresql://automacoes:${APP_HUB_APP_DB_PASSWORD_AUTOMACOES:?}@app-hub-app-db:5432/automacoes
+      HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_AUTOMACOES:?}

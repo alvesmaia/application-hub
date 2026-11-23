@@ -1,0 +1,6 @@
+{% extends "workspace.html" %}
+{% block content %}
+{% set title = t('Execução #{n}', n=run.id) %}{% set subtitle = run.process_name ~ ' · ' ~ run.package_name ~ ' ' ~ run.package_version %}
+{% include "_head.html" %}
+{% include "_run_body.html" %}
+{% endblock %}

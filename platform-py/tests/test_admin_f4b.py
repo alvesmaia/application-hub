@@ -21,10 +21,10 @@ def test_admin_landing_settings_and_menu_by_permission(hub: TestClient) -> None:
     r = hub.get("/admin")
     assert r.status_code == 200 and "Configurações da plataforma" in r.text
     assert 'id="hub-admin-menu"' in r.text and "Cofre de segredos" in r.text
-    tech = add_user(hub, "tech", ["Tech Lead"])
+    tech = add_user(hub, "tech", ["Power User"])
     assert tech.get("/admin").status_code == 200
     assert 'id="hub-admin-menu"' in tech.get("/applications").text
-    reader = add_user(hub, "leitor", ["Colaborador"])
+    reader = add_user(hub, "leitor", ["User"])
     home = reader.get("/applications")
     assert home.status_code == 200 and 'id="hub-admin-menu"' not in home.text
     for p in ("/admin", "/admin/env", "/admin/tokens", "/admin/users"):

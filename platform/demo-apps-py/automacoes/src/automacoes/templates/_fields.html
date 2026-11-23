@@ -1,0 +1,23 @@
+{#- Inputs generated from an automation's fields (``a.fields``), named ``p_<field>``; keeps
+    ``values`` and shows ``errors`` next to each input. -#}
+{% for f in a.fields %}
+{% set v = values.get(f.name) %}{% set err = errors.get(f.name) %}{% set fid = 'p-' ~ a.key ~ '-' ~ f.name %}
+{% set described = ((fid ~ '-help ') if f.help else '') ~ ((fid ~ '-err') if err else '') %}
+{% set aria %}{% if err %} aria-invalid="true"{% endif %}{% if described %} aria-describedby="{{ described | trim }}"{% endif %}{% endset %}
+<div class="form-field aut-field" data-field="{{ f.name }}">
+{% if f.type == 'checkbox' %}
+<label class="aut-check"><input type="checkbox" id="{{ fid }}" name="p_{{ f.name }}" value="1"{% if v in (true, '1', 'on', 'true') %} checked{% endif %}{{ aria }}> {{ t(f.label) }}</label>
+{% else %}
+<label for="{{ fid }}">{{ t(f.label) }}{% if f.required %} <span aria-hidden="true">*</span>{% endif %}</label>
+{% if f.type == 'select' %}
+<select id="{{ fid }}" name="p_{{ f.name }}"{{ aria }}>{% for val, lab in f.options %}<option value="{{ val }}"{% if (v | string) == val %} selected{% endif %}>{{ t(lab) }}</option>{% endfor %}</select>
+{% elif f.type == 'textarea' %}
+<textarea id="{{ fid }}" name="p_{{ f.name }}" rows="6"{% if f.required %} required{% endif %}{{ aria }}>{{ v if v is not none else '' }}</textarea>
+{% else %}
+<input id="{{ fid }}" name="p_{{ f.name }}" type="{{ {'number': 'number', 'date': 'date'}.get(f.type, 'text') }}" value="{{ v if v is not none else '' }}"{% if f.required %} required{% endif %}{% if f.min is not none %} min="{{ f.min | int }}"{% endif %}{% if f.max is not none %} max="{{ f.max | int }}"{% endif %}{{ aria }}>
+{% endif %}
+{% endif %}
+{% if f.help %}<small class="aut-help" id="{{ fid }}-help">{{ t(f.help) }}</small>{% endif %}
+{% if err %}<span class="hub-field-error" id="{{ fid }}-err" role="alert">{{ err }}</span>{% endif %}
+</div>
+{% endfor %}

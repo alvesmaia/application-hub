@@ -10,7 +10,7 @@ from typing import Any
 from urllib.parse import parse_qs, quote, urlencode
 
 import httpx
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from pydantic import ValidationError
 
@@ -138,6 +138,13 @@ def _local_admin(request: Request, user: dict[str, Any]) -> bool:
     return bool(user.get("password_hash")) and any(p != "acessar_aplicacoes" for p in perms)
 
 
+def sso_default_role(sso: entra.EntraConfig, roles: list[dict[str, Any]]) -> str:
+    """Role of a new SSO account: the configured one, else "User", else the legacy "Colaborador" (installs seeded
+    before the three default roles) — never a role nobody defined (it would grant nothing)."""
+    names = {r["name"] for r in roles}
+    return next((r for r in (sso.default_role, "User", "Colaborador") if r in names), sso.default_role)
+
+
 async def _sso_user(
     request: Request, w: WebCtx, sso: entra.EntraConfig, pending: dict[str, Any], admin_store: Any
 ) -> dict[str, Any]:
@@ -150,7 +157,7 @@ async def _sso_user(
         email,
         str(claims.get("name") or ""),
         sso.roles_for(claims),
-        sso.default_role,
+        sso_default_role(sso, request.app.state.roles),
         lambda u: _local_admin(request, u),
     )
     if user is None:
@@ -238,7 +245,7 @@ async def _signed_in(request: Request, w: WebCtx, user: dict[str, Any], next_url
         await admin_store.audit(user["name"], "Acesso à plataforma", f"Login via {ip}", icon="users")
     w.insight.analytics.record(user["id"], "login")
     cookie = await w.auth_store.session_new(user, request.cookies.get(COOKIE))
-    target = next_url if next_url.startswith("/") and not next_url.startswith(("//", "/\\")) else "/"
+    target = safe_next(next_url)
     if user.get("must_change_password"):
         target = "/account/password?next=" + quote(target, safe="/")
     resp = RedirectResponse(target, status_code=303)
@@ -274,13 +281,21 @@ async def logout(request: Request, w: WebCtx = Depends(web)) -> Response:
     return resp
 
 
+def _local_password_only(request: Request) -> None:
+    """Entra ID accounts have no hub password (it is managed at Microsoft)."""
+    if request.state.user.get("sso_subject"):
+        raise HTTPException(404)
+
+
 @router.get("/account/password", response_class=HTMLResponse)
 async def password_get(request: Request, next: str = "/", w: WebCtx = Depends(web)) -> Response:
+    _local_password_only(request)
     return w.password_page(request, next_url=safe_next(next))
 
 
 @router.post("/account/password")
 async def password_post(request: Request, w: WebCtx = Depends(web)) -> Response:
+    _local_password_only(request)
     user = request.state.user
     f = parse_qs((await request.body()).decode("utf-8", "replace"))
     current, new = f.get("current", [""])[0], f.get("new", [""])[0]

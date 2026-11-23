@@ -51,7 +51,8 @@ class Cfg:
         self.uniq = secrets.token_hex(4).upper()
         self.user = f"conformidade-{self.uniq.lower()}@teste.local"
         self.name = "Conformidade <Zé>"
-        self.header = ident(self.user, self.name, ["Leitor"])
+        # profile "roles": the hub roles of the suite's identity (apps whose API is restricted to a role)
+        self.header = ident(self.user, self.name, self.profile.get("roles") or ["Leitor"])
 
     def fill(self, v: Any, uniq: str | None = None) -> Any:
         u = uniq or self.uniq

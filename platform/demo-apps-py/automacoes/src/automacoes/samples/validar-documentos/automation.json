@@ -1,0 +1,41 @@
+{
+  "name": "validar-documentos",
+  "version": "1.0.0",
+  "description": "Confere os dígitos verificadores de uma lista de CPFs e CNPJs, sem consulta externa.",
+  "entrypoint": "main.py:run",
+  "fields": [
+    {
+      "name": "documentos",
+      "label": "Documentos",
+      "type": "textarea",
+      "required": true,
+      "help": "Um por linha, com ou sem pontuação (até 500 linhas).",
+      "max_lines": 500
+    },
+    {
+      "name": "tipo",
+      "label": "Tipo",
+      "type": "select",
+      "options": [
+        [
+          "auto",
+          "Detectar"
+        ],
+        [
+          "cpf",
+          "CPF"
+        ],
+        [
+          "cnpj",
+          "CNPJ"
+        ]
+      ],
+      "default": "auto"
+    }
+  ],
+  "labels": {
+    "validos": "Válidos",
+    "invalidos": "Inválidos",
+    "valido": "Válido"
+  }
+}

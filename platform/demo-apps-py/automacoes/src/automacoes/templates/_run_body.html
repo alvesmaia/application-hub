@@ -1,0 +1,32 @@
+{#- Run detail body; reloaded by the hub (data-hub-poll) until the run is terminal. -#}
+<div id="run-body" class="aut-run" data-status="{{ run.status }}"{% if not run.terminal %} data-hub-poll="{{ base }}/execucoes/{{ run.id }}/estado" data-hub-interval="1500"{% endif %}>
+{% if run.error %}<div class="hub-notice hub-notice-error aut-run-error" role="alert"><strong>{{ t('A execução terminou com erro') }}</strong><p>{{ t(run.error) }}</p></div>{% endif %}
+<div class="aut-run-grid">
+<div class="aut-run-main">
+<section class="content-panel aut-panel"><h2 class="aut-panel-title">{{ t('Parâmetros') }}</h2>{% with rows = params_rows, empty = t('Sem parâmetros.') %}{% include "_rows.html" %}{% endwith %}</section>
+<section class="content-panel aut-panel"><h2 class="aut-panel-title">{{ t('Resultado') }}</h2>
+{% if run.status == 'concluido' %}{% with rows = output_rows, empty = t('Sem resultado.') %}{% include "_rows.html" %}{% endwith %}
+{% elif not run.terminal %}<p class="aut-muted" role="status">{{ t('Em andamento — esta página se atualiza sozinha.') }}</p>
+{% else %}<p class="aut-muted">{{ t('Sem resultado.') }}</p>{% endif %}
+</section>
+{% if run.log %}<section class="content-panel aut-panel"><h2 class="aut-panel-title">{{ t('Log') }}</h2><pre class="aut-log">{{ run.log }}</pre></section>{% endif %}
+</div>
+<aside class="content-panel aut-panel aut-run-side">
+<dl class="aut-kv">
+<div class="aut-kv-row"><dt>{{ t('Status') }}</dt><dd><span class="status-pill {{ status_class(run.status) }}">{{ t(status_label(run.status)) }}</span></dd></div>
+<div class="aut-kv-row"><dt>{{ t('Pacote') }}</dt><dd>{{ run.package_name }} {{ run.package_version }}</dd></div>
+<div class="aut-kv-row"><dt>{{ t('Origem') }}</dt><dd>{{ t(trigger_label(run.trigger)) }}</dd></div>
+<div class="aut-kv-row"><dt>{{ t('Quem') }}</dt><dd>{{ run.requested_by }}</dd></div>
+<div class="aut-kv-row"><dt>{{ t('Solicitada em') }}</dt><dd>{{ when(run.created_at) }}</dd></div>
+<div class="aut-kv-row"><dt>{{ t('Início') }}</dt><dd>{{ when(run.started_at) }}</dd></div>
+<div class="aut-kv-row"><dt>{{ t('Fim') }}</dt><dd>{{ when(run.finished_at) }}</dd></div>
+<div class="aut-kv-row"><dt>{{ t('Duração') }}</dt><dd>{{ duration(run.duration_ms) }}</dd></div>
+</dl>
+<div class="aut-run-actions">
+<form method="post" action="{{ base }}/execucoes/{{ run.id }}/reexecutar"><button type="submit" class="primary-button">{{ t('Reexecutar') }}</button></form>
+{% if not run.terminal %}<form method="post" action="{{ base }}/execucoes/{{ run.id }}/cancelar" data-hub-confirm="{{ t('Cancelar esta execução?') }}" data-hub-confirm-title="{{ t('Cancelar execução') }}" data-hub-confirm-label="{{ t('Cancelar execução') }}" data-hub-confirm-danger><button type="submit" class="secondary-button">{{ t('Cancelar') }}</button></form>{% endif %}
+<a class="secondary-button" href="{{ base }}/execucoes">{{ t('Voltar às execuções') }}</a>
+</div>
+</aside>
+</div>
+</div>

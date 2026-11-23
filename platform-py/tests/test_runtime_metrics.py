@@ -79,11 +79,12 @@ def test_local_images_are_not_labelled_as_docker_hub() -> None:
     assert rt.image_label("ghcr.io/empresa/app:1") == "ghcr.io/empresa/app:1"
 
 
-def test_allocations_above_the_host_say_overcommit_instead_of_negative_free(
+def test_allocations_above_the_host_never_show_a_negative_free_share(
     hub: TestClient,  # noqa: F811
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Over-allocation keeps the bars at 0 free; the old "limits above the host" note was removed (owner)."""
     use(hub, FakeDocker())
     monkeypatch.setenv("HUB_HOST_CPU", "1")
     page = hub.get("/admin/runtime").text
-    assert "Livre -" not in page and "acima da capacidade" in page
+    assert "Livre -" not in page and "acima da capacidade" not in page

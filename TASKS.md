@@ -87,3 +87,22 @@
   - ✅ rodada 2 com agente novo · subagente: Adequa app Frota ao hub (rodada 2): 33/36; achados: redirect de fragmento, confirmação com rótulo próprio, modal com formulário, nome na sidebar, menu do celular sem nome acessível
   - ✅ rodada 3 com agente novo · subagente: Adequa app Frota ao hub (rodada 3): 36/36, design e tema escuro coerentes
 - ✅ 83 · Botão de SSO na tela de login com o rótulo "Microsoft SSO"
+
+## Sessão, SSO e funções (2026-11-23)
+
+- ✅ 84 · Sessão: 24 h sem uso, renovada enquanto o usuário navega (no máximo a cada 60 min), limite de 3 dias desde o login
+- ✅ 85 · Contas do Entra ID sem "Redefinir senha" nem "Alterar senha"
+- ✅ 86 · Funções padrão em 3 níveis: Administrador, Power User e User (antigo Colaborador)
+- ✅ 87 · Inbox: seta do dropdown aparece como 2 triângulos; trocar por uma seta só
+- ✅ 88 · /admin/users: faixa clara sob a coluna Ações no hover da linha (célula flex mais baixa que a linha)
+- ✅ 89 · App de exemplo "Automações" (orquestrador): pacotes versionados (UI, API/CLI e MCP), processos com versão escolhida, gatilhos agendados e execuções; admin configura, usuário aciona e vê resultados; 3 pacotes de exemplo (CEP, feriados, CPF/CNPJ)
+  - ✅ desenho a partir do módulo RPA de referência (modelo, parâmetros, agendamento, telas) · subagente: Extrair conceitos do módulo RPA
+  - ✅ app em platform/demo-apps-py/automacoes (orquestrador: pacotes, processos, gatilhos, execuções em subprocesso sem segredos) · subagente: Construir app de exemplo Automações
+  - ✅ integração na plataforma (compose, banco, registro, segredos, conformance, imagens, instalação)
+  - ✅ correções vistas no app rodando: amostras fora do wheel, formulário do modal (405), polling após PRG do kit, checkbox esticado em .form-field
+  - ✅ testes (app 75 + hub), conformance 25/25 (perfil com "roles"), E2E 35/35 e ui-sweep (2 achados de select vazio, corrigidos)
+- ✅ 90 · Login depois de sair: "?next=/logout" levava a uma página "Method Not Allowed"
+- ✅ 91 · Apps de exemplo com menos recursos por padrão (menos de 1 CPU)
+- ✅ 92 · admin/runtime: remover a nota "App limits above the host capacity..."
+- ✅ 93 · admin/runtime: "Capacidade do host" à esquerda e "Runtime" à direita
+- ✅ 94 · Validar implantação: instalação nova e atualização de versão existente, medindo a indisponibilidade do hub e dos apps

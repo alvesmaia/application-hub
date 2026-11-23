@@ -389,6 +389,15 @@ def test_runtime_api_and_page(hub: TestClient, docker: FakeDocker) -> None:
     assert "runtime=podman" not in page  # no Docker/Podman chips: they only relabelled a read-only field
 
 
+def test_runtime_page_host_capacity_left_runtime_right_without_over_limit_note(
+    hub: TestClient, docker: FakeDocker
+) -> None:
+    page = hub.get("/admin/runtime").text
+    grid = page.split('<div class="ops-grid-2">', 1)[1]
+    assert grid.index("<h3>Capacidade do host</h3>") < grid.index("<h3>Runtime</h3>")
+    assert "acima da capacidade do host" not in page and "ops-warn" not in grid.split("</div>", 1)[0]
+
+
 def test_runtime_unreachable(hub: TestClient) -> None:
     def boom() -> Any:
         raise OSError("sem docker")

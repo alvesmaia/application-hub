@@ -263,7 +263,7 @@ code,kbd,pre,samp,.mono,.hub-mono{font-family:var(--font-mono)}
 .data-table th{background:var(--color-surface-muted);color:var(--color-text-secondary);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;padding:8px 12px;border-bottom:1px solid var(--color-border)}
 .data-table td{padding:8px 12px;font-size:13px;color:var(--color-text);border-top:1px solid var(--color-divider)}
 .data-table td:first-child{color:var(--color-text-strong)}
-.data-table tbody tr:hover td{background:var(--color-surface-hover)}
+.data-table tbody tr:hover,.data-table tbody tr:hover td{background:var(--color-surface-hover)}
 .data-table td.num,.data-table th.num,.hub-num{text-align:right;font-variant-numeric:tabular-nums}
 .data-table code,.ops-list code,.env-table code,.ops-image code,.ops-cmd code{font-family:var(--font-mono);font-size:13px;background:var(--color-neutral-soft);color:var(--color-text-ink)}
 /* Focus: 2px indigo outline. */
@@ -323,6 +323,7 @@ code,kbd,samp{font-size:max(12px,.9em)}
 /* Checkbox/radio/range: brand color, theme background (never the system's dark control). */
 input[type=checkbox],input[type=radio],input[type=range],progress{accent-color:var(--color-accent)}
 input[type=checkbox],input[type=radio]{background-color:var(--color-surface)}
+.form-field :is(input[type=checkbox],input[type=radio]){width:16px;height:16px;min-height:0;padding:0;margin:0;flex:0 0 auto}
 select,input,textarea{color-scheme:inherit}
 /* Buttons rendered as <a>: the text color is the button's, never the link's
  * (before, link rules left the text in the background color — "Back to home"). */
@@ -1041,7 +1042,10 @@ tr[data-detail-row]:hover{background:var(--color-surface-hover)}
 .hub-tabbar>a,.hub-tabbar>[role=tab]{margin-bottom:0;min-height:40px;font-size:14px;font-weight:600;color:var(--color-text-secondary)}
 .hub-tabbar>a:hover,.hub-tabbar>[role=tab]:hover,.hub-tabbar>a[aria-current=page],.hub-tabbar>[role=tab][aria-selected=true]{color:var(--color-text-strong)}
 /* Selects: a single rule (native with its own chevron; no black border; correct in dark). */
-select:not([multiple]),.hub-select{-webkit-appearance:none!important;appearance:none!important;box-sizing:border-box;min-height:32px;height:32px;padding:4px 36px 4px 10px!important;border:1px solid var(--color-border-control);border-radius:8px;background-color:var(--color-surface);background-image:linear-gradient(45deg,transparent 50%,var(--color-text-secondary) 50%),linear-gradient(135deg,var(--color-text-secondary) 50%,transparent 50%)!important;background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%!important;background-size:5px 5px,5px 5px!important;background-repeat:no-repeat!important;color:var(--color-text-ink);font-size:13px;line-height:1.4;cursor:pointer}
+:root{--hub-select-chevron:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2352606D' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+:root[data-theme="dark"]{--hub-select-chevron:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23A5A5A5' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+@media (prefers-color-scheme:dark){:root[data-theme="auto"]{--hub-select-chevron:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23A5A5A5' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}}
+select:not([multiple]),.hub-select{-webkit-appearance:none!important;appearance:none!important;box-sizing:border-box;min-height:32px;height:32px;padding:4px 36px 4px 10px!important;border:1px solid var(--color-border-control);border-radius:8px;background-color:var(--color-surface);background-image:var(--hub-select-chevron)!important;background-position:calc(100% - 12px) 50%!important;background-size:10px 6px!important;background-repeat:no-repeat!important;color:var(--color-text-ink);font-size:13px;line-height:1.4;cursor:pointer}
 select:not([multiple]):hover{border-color:var(--color-border-strong)}
 select:not([multiple]):focus-visible,.hub-select:focus-visible{border-color:var(--color-accent-shape);outline:2px solid var(--color-focus);outline-offset:1px}
 select option{background:var(--color-surface);color:var(--color-text-ink)}

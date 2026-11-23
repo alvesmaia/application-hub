@@ -23,7 +23,7 @@ and over **MCP** for AI assistants (`/mcp`, same access control as the UI).
 | **Operations** | Blue/green deployments with mandatory readiness and rollback, containers, scheduled tasks, least-privilege backups, zero-downtime hub updates |
 | **Observability** | Metrics, SLOs and status page, usage and analytics, logs, OTLP export, verifiable hash-chained audit log (file or webhook anchor) |
 | **API & AI** | Public API `/api/v1` (OpenAPI 3.1, docs at `/api/docs`); MCP server `/mcp` with OAuth 2.1 — hub and app tools under the same access control as the UI |
-| **For developers** | Python SDK `hub_sdk`, `hub` CLI (`hub project create`, `hub dev`, `hub check --full` with the conformance suite, `hub deploy`), dev mode with reload, 4 sample apps (Assets, Suppliers, Services, Collector) |
+| **For developers** | Python SDK `hub_sdk`, `hub` CLI (`hub project create`, `hub dev`, `hub check --full` with the conformance suite, `hub deploy`), dev mode with reload, 5 sample apps (Assets, Suppliers, Services, Collector, Automations) |
 | **Deployment** | Docker only: `install.sh` generates secrets, builds everything from source and creates the first admin; multiple instances per host; tested on rootless RHEL |
 
 ## Roadmap

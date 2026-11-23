@@ -62,7 +62,7 @@ save_install_cmd() { # the options of this install as one command (proxy passwor
   [ -z "$DATA_DIR" ] || c+=" --data-dir $DATA_DIR"
   [ -z "$ENGINE_STORE" ] || c+=" --engine-store $ENGINE_STORE"
   [ -z "$TLS_CERT" ] || c+=" --tls-cert $TLS_CERT --tls-key $TLS_KEY"
-  case "${ENTRA:-n}" in s | S) c+=" --entra-tenant $ENTRA_TENANT --entra-client-id $ENTRA_CLIENT --entra-role $ENTRA_ROLE"
+  case "${ENTRA:-n}" in s | S) c+=" --entra-tenant $ENTRA_TENANT --entra-client-id $ENTRA_CLIENT --entra-role '$ENTRA_ROLE'"
     c+=" --local-login $ENTRA_LOCAL${ENTRA_DOMAINS:+ --entra-domains $ENTRA_DOMAINS}"
     c+=" --entra-client-secret-file ${ENTRA_SECRET_FILE:-<arquivo com o segredo>}" ;; esac
   case "${PROXY:-n}" in s | S) c+=" --trusted-proxy $PROXIES" ;; esac

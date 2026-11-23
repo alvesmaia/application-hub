@@ -31,7 +31,7 @@ def agent(hub: TestClient) -> TestClient:
 
 @pytest.fixture
 def colab(hub: TestClient) -> TestClient:
-    return bearer(hub, make_token(add_user(hub, "colab", ["Colaborador"]), ["mcp", "api:write"]))
+    return bearer(hub, make_token(add_user(hub, "colab", ["User"]), ["mcp", "api:write"]))
 
 
 def tools(c: TestClient) -> dict[str, dict[str, Any]]:
@@ -83,7 +83,7 @@ def test_users_and_roles(hub: TestClient, agent: TestClient) -> None:
     body = {
         "email": "ana@demo.local",
         "name": "Ana",
-        "roles": ["Colaborador"],
+        "roles": ["User"],
         "password": "senha-forte-12345",
     }
     u = call(agent, "users_create", {"body": body})
@@ -228,9 +228,8 @@ def test_bodies_are_validated_at_the_edge(agent: TestClient) -> None:
 def test_free_text_names_in_the_path(hub: TestClient, agent: TestClient) -> None:
     body = {"description": "Dono do produto", "level": "Alto"}
     assert (
-        call(agent, "roles_update", {"name": "Product Owner", "body": body})["description"]
-        == "Dono do produto"
+        call(agent, "roles_update", {"name": "Power User", "body": body})["description"] == "Dono do produto"
     )
-    assert hub.put("/api/v1/roles/Product%20Owner", json=body).status_code == 200
+    assert hub.put("/api/v1/roles/Power%20User", json=body).status_code == 200
     for bad in ("..", "a?b", "a%2Fb", "a\\b"):
         assert error_of(agent, "roles_update", {"name": bad, "body": body})["status"] == 400, bad

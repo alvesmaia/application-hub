@@ -11,7 +11,7 @@ from typing import Any, cast
 
 import httpx
 import pytest
-from admin_helper import PASSWORD, add_user, make_hub
+from admin_helper import PASSWORD, PRODUCT_OWNER, add_role, add_user, make_hub
 from fastapi.testclient import TestClient
 
 from hub.connections import broker as broker_mod
@@ -289,14 +289,15 @@ def test_sharepoint_validation(hub: TestClient, patch: dict[str, Any], msg: str)
 
 def test_connection_rbac_and_json_only(hub: TestClient) -> None:
     hub.post("/api/admin/connections", json=S3)
-    colab, po = add_user(hub, "colab", ["Colaborador"]), add_user(hub, "po", ["Product Owner"])
+    add_role(hub, "Product Owner", PRODUCT_OWNER)
+    colab, po = add_user(hub, "colab", ["User"]), add_user(hub, "po", ["Product Owner"])
     for c in (colab, po):
         assert c.get("/api/admin/connections").status_code == 403
         assert c.post("/api/admin/connections", json=S3).status_code == 403
         assert c.post("/api/admin/connections/docs-s3/test", json={}).status_code == 403
         assert c.get("/admin/connections").status_code == 403
         assert c.post("/api/admin/connections/storage/ativos", json={}).status_code == 403
-    lead = add_user(hub, "lead", ["Tech Lead"])  # editar_configuracoes
+    lead = add_user(hub, "lead", ["Power User"])  # editar_configuracoes
     assert (
         lead.get("/api/admin/connections").status_code == 200
         and lead.get("/admin/connections").status_code == 200

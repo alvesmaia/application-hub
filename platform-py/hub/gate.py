@@ -186,6 +186,11 @@ def _unauthenticated(request: Request, path: str, authz: str) -> Response:
         )  # fmt: skip
     if authz or path.startswith(("/api/", "/_frag/")):
         return JSONResponse({"error": "Não autenticado."}, status_code=401)
+    if request.method not in (
+        "GET",
+        "HEAD",
+    ):  # a POST (e.g. "Sair" after the session ended) cannot be revisited
+        return RedirectResponse("/login", status_code=303)
     return RedirectResponse(
         f"/login?next={quote(path, safe='/')}"
         + (f"%3F{quote(request.url.query)}" if request.url.query else ""),

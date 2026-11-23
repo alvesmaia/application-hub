@@ -1,0 +1,4 @@
+{#- Label/value rows (``rows``: present.Row) — a list of objects becomes a small table. -#}
+{% if rows %}<dl class="aut-kv">
+{% for row in rows %}<div class="aut-kv-row"><dt>{{ row.label }}</dt><dd>{% if row.columns %}<div class="aut-table-wrap"><table class="data-table aut-mini"><thead><tr>{% for c in row.columns %}<th scope="col">{{ c }}</th>{% endfor %}</tr></thead><tbody>{% for cells in row.cells %}<tr>{% for c in cells %}<td>{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>{% else %}{{ row.text }}{% endif %}</dd></div>
+{% endfor %}</dl>{% else %}<p class="aut-muted">{{ empty }}</p>{% endif %}

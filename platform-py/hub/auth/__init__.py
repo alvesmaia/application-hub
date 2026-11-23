@@ -55,8 +55,11 @@ def positive_env(name: str, default: int, cap: int) -> int:
         return default
 
 
-IDLE_MS = positive_env("HUB_SESSION_IDLE_MIN", 30, 24 * 60) * 60_000
-ABSOLUTE_MS = positive_env("HUB_SESSION_ABSOLUTE_HOURS", 12, 24 * 365) * 3_600_000
+# A session unused for IDLE_MS ends; browsing renews it at most once per RENEW_MS (one write per hour, not per
+# request); ABSOLUTE_MS after the login it ends anyway.
+IDLE_MS = positive_env("HUB_SESSION_IDLE_MIN", 24 * 60, 24 * 60) * 60_000
+RENEW_MS = min(IDLE_MS, positive_env("HUB_SESSION_RENEW_MIN", 60, 24 * 60) * 60_000)
+ABSOLUTE_MS = positive_env("HUB_SESSION_ABSOLUTE_HOURS", 72, 24 * 365) * 3_600_000
 MAX_SESSIONS = positive_env("HUB_MAX_SESSIONS_PER_USER", 10, 1000)
 
 
@@ -78,8 +81,8 @@ def _user_login(users: list[dict[str, Any]], login: str) -> dict[str, Any] | Non
 
 _DEMO_USERS = (  # (email, name, role, password when HUB_DEMO_PASSWORD is not set)
     ("admin@demo.local", "Administrador", "Administrador", "admin"),
-    ("operador@demo.local", "Operador", "Tech Lead", "operador"),
-    ("leitor@demo.local", "Leitor", "Colaborador", "leitor"),
+    ("operador@demo.local", "Operador", "Power User", "operador"),
+    ("leitor@demo.local", "Leitor", "User", "leitor"),
 )
 
 
@@ -291,8 +294,8 @@ class AuthStore:
             if n - s.last_seen >= IDLE_MS or n - s.created_at >= ABSOLUTE_MS:
                 await self.db.session_delete(h)
                 return None
-            if n - s.last_seen >= 60_000:
-                await self.db.session_touch(h, n, 60_000)
+            if n - s.last_seen >= RENEW_MS:
+                await self.db.session_touch(h, n, RENEW_MS)
             user_id = s.user_id
         else:
             async with self.locked(True) as d:
@@ -302,7 +305,8 @@ class AuthStore:
                 if n - s["last_seen"] >= IDLE_MS or n - s["created_at"] >= ABSOLUTE_MS:
                     d["sessions"].remove(s)
                     return None
-                s["last_seen"] = n
+                if n - s["last_seen"] >= RENEW_MS:
+                    s["last_seen"] = n
                 user_id = s["user_id"]
         async with self.locked() as d:
             user = next((u.copy() for u in d["users"] if u["id"] == user_id and u["active"]), None)

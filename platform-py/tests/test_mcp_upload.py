@@ -96,15 +96,15 @@ def test_unknown_and_expired_tickets_are_refused(
 
 
 def test_owner_who_lost_the_permission_cannot_use_the_ticket(hub: TestClient) -> None:
-    lead = add_user(hub, "lead", ["Tech Lead"])
+    lead = add_user(hub, "lead", ["Power User"])
     url = link(bearer(hub, make_token(lead, ["mcp", "api:write"])), "producao")["upload_url"]
-    assert hub.put("/api/admin/users/lead", json={"roles": ["Colaborador"]}).status_code == 200
+    assert hub.put("/api/admin/users/lead", json={"roles": ["User"]}).status_code == 200
     r = send(hub, url)
     assert r.status_code == 403 and hub.get("/api/ops/deployments").json() == []
 
 
 def test_deactivated_owner_cannot_use_the_ticket(hub: TestClient) -> None:
-    lead = add_user(hub, "lead", ["Tech Lead"])
+    lead = add_user(hub, "lead", ["Power User"])
     url = link(bearer(hub, make_token(lead, ["mcp", "api:write"])), "producao")["upload_url"]
     assert hub.put("/api/admin/users/lead", json={"active": False}).status_code == 200
     assert send(hub, url).status_code == 403
@@ -150,7 +150,7 @@ def test_ticket_never_reaches_audit_or_logs(hub: TestClient, agent: TestClient) 
 
 def test_tool_follows_rbac_and_the_write_scope(hub: TestClient, agent: TestClient) -> None:
     assert "deployments_upload" in names(agent)
-    colab = add_user(hub, "colab", ["Colaborador"])
+    colab = add_user(hub, "colab", ["User"])
     assert "deployments_upload" not in names(bearer(hub, make_token(colab, ["mcp", "api:write"])))
     assert "deployments_upload" not in names(bearer(hub, make_token(hub, ["mcp"])))
 

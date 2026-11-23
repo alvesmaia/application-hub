@@ -152,7 +152,6 @@ async def runtime_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response
         request, "ops_runtime.html", "Aplicações", "Containers", "Cada aplicação roda isolada, com limites próprios de CPU e memória.",
         rows=page_rows, pager=pager, banner=None if info["reachable"] else f"Runtime indisponível: exibindo especificação. ({info['error']})",
         shown_socket=sock, rollout=ROLLOUT, host_source=f"Medido em: {host.source}",
-        cap_notes=rv.capacity_notes(free_cpu, free_mem),
         cpu_title=f"CPU · {br(host.cpu, 1)} vCPU", mem_title=f"Memória · {br(host.mem_gib, 1)} GiB", cpu_segs=cpu_segs,
         mem_segs=mem_segs, plat_label=f"Plataforma (reservado {br(host.platform_cpu, 1)} vCPU · {br(host.platform_mem_gib, 1)} GiB)",
         free_label=f"Livre {br(max(free_cpu, 0), 1)} vCPU · {br(max(free_mem, 0), 1)} GiB",

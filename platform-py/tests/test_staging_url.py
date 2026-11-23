@@ -63,7 +63,7 @@ def test_switching_environment_keeps_the_app_page(hub: TestClient) -> None:
 
 
 def test_staging_url_needs_the_staging_permission(hub: TestClient) -> None:
-    colab = add_user(hub, "colab", ["Colaborador"])
+    colab = add_user(hub, "colab", ["User"])
     assert colab.get("/staging/apps/ativos").status_code == 403
     assert colab.get("/staging/_frag/ativos/ativos/x").status_code == 403
     assert colab.get("/apps/ativos").status_code == 200
@@ -72,7 +72,7 @@ def test_staging_url_needs_the_staging_permission(hub: TestClient) -> None:
 def test_staging_websocket_needs_the_staging_permission(hub: TestClient) -> None:
     from starlette.websockets import WebSocketDisconnect
 
-    colab = add_user(hub, "colab", ["Colaborador"])
+    colab = add_user(hub, "colab", ["User"])
     with (
         pytest.raises(WebSocketDisconnect) as e,
         colab.websocket_connect("/staging/apps/ativos/ws", headers={"origin": "http://testserver"}),

@@ -33,6 +33,8 @@ from hub.ux.pager import paginate
 api = APIRouter()
 pages = APIRouter()
 
+_SSO_MANAGED_AT_MICROSOFT = "Contas do Entra ID não têm senha no hub: a senha é gerida na Microsoft."
+
 
 @api.get("/users")
 async def list_users(c: AdminCtx = Depends(ctx)) -> Any:
@@ -121,6 +123,8 @@ async def reset_password(request: Request, user_id: str, c: AdminCtx = Depends(c
     if target is None:
         raise AdminError("Usuário não encontrado.", 404)
     check_target(request, await c.known_roles(), target)
+    if target.get("sso_subject"):
+        raise AdminError(_SSO_MANAGED_AT_MICROSOFT, 409)
     try:
         u = await c.auth.reset_password(user_id, i.password)
     except (ValueError, LookupError) as e:

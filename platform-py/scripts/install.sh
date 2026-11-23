@@ -20,7 +20,7 @@
 #   --port N             hub port on the host (default 8090)          --bind IP   (default 127.0.0.1)
 #   --project NAME       compose project / container prefix (default app-hub; must start with app-hub)
 #   --subnet A.B         app network range A.B.<n>.0/24 (default 10.231)
-#   --no-demo-apps       does not start the 4 sample apps (default: they start, for the first evaluation)
+#   --no-demo-apps       does not start the 5 sample apps (default: they start, for the first evaluation)
 #   --clone              clones the repository first (--repo URL, --ref REF, --dir FOLDER)
 #   --get-compose        downloads the official docker-compose (pinned version, sha256 checked) to ~/.local/bin — for
 #                        RHEL/Rocky without root, where the distribution does not ship a compose provider
@@ -42,7 +42,7 @@
 # Sign-in with Microsoft and a reverse proxy in front, without questions (Redirect URI to register in the app
 # registration: <public URL>/auth/entra/callback; the secret goes to the vault, never to .prod.env):
 #   --entra-tenant ID --entra-client-id ID --entra-client-secret-file FILE   (the three together)
-#   --entra-domains LIST   accepted e-mail domains     --entra-role Leitor|Colaborador|Operador|Administrador
+#   --entra-domains LIST   accepted e-mail domains     --entra-role User|"Power User"|Administrador (default User)
 #   --local-login admins|todos|nenhum   e-mail/password sign-in besides Microsoft (default admins)
 #   --trusted-proxy CIDR   reverse proxy in front (e.g. Nginx with TLS): its X-Forwarded-* headers are trusted
 #
@@ -87,7 +87,7 @@ COMPOSE_SHA=383ce6698cd5d5bbf958d2c8489ed75094e34a77d340404d9f32c4ae9e12baf0
 LIB=$(cd "$(dirname "$0")" && pwd)/install
 ORIG_ARGS=("$@")
 ADV=n OBJ_DIR="" HEAD_DIR="" HEAD_URL="" HEAD_TOKEN="" OFF_KIND=nenhuma OFF_S3="" ENTRA=n
-ENTRA_TENANT="" ENTRA_CLIENT="" ENTRA_DOMAINS="" ENTRA_ROLE=Colaborador ENTRA_LOCAL=admins ENTRA_SECRET="" ENTRA_SECRET_FILE=""
+ENTRA_TENANT="" ENTRA_CLIENT="" ENTRA_DOMAINS="" ENTRA_ROLE=User ENTRA_LOCAL=admins ENTRA_SECRET="" ENTRA_SECRET_FILE=""
 ADMIN_CIDRS="" PROXY="" PROXIES=172.16.0.0/12 TELEMETRY=s OTLP="" UPDATES=s PUBDOCS=s BUILD_CPUS=2
 if [ -f "$LIB/net.sh" ]; then
   # shellcheck source=install/net.sh
@@ -196,7 +196,7 @@ if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0
   ask PROJECT "Projeto/prefixo dos contêineres" '^app-hub(-[a-z0-9-]+)?$'
   ask SUBNET "Faixa das redes dos apps (A.B em A.B.<n>.0/24)" '^[0-9]+\.[0-9]+$'
   DEMO_IN=$([ "$DEMO" = 1 ] && echo s || echo n)
-  ask DEMO_IN "Subir os 4 apps de exemplo? (s/n)" '^[snSN]$'
+  ask DEMO_IN "Subir os 5 apps de exemplo? (s/n)" '^[snSN]$'
   case "$DEMO_IN" in s | S) DEMO=1 ;; *) DEMO=0 ;; esac
   net_questions
   disk_questions
@@ -229,7 +229,7 @@ if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0
       ask ENTRA_TENANT "  Tenant ID (GUID; organizations/common = várias empresas)" '^[0-9a-fA-F-]{36}$|^(organizations|common)$|^[a-zA-Z0-9.-]+\.[a-z]+$'
       ask ENTRA_CLIENT "  Client ID do app registration (GUID)" '^[0-9a-fA-F-]{36}$'
       ask ENTRA_DOMAINS "  Domínios de e-mail aceitos (vírgula; vazio = qualquer um do tenant)" '^$|^[a-zA-Z0-9.,-]+$'
-      ask ENTRA_ROLE "  Papel de quem entra pela primeira vez" '^(Leitor|Colaborador|Operador|Administrador)$'
+      ask ENTRA_ROLE "  Papel de quem entra pela primeira vez (User, Power User ou Administrador)" '^(User|Power User|Administrador|Colaborador)$'
       ask ENTRA_LOCAL "  Login com e-mail e senha: admins (recomendado) | todos | nenhum" '^(admins|todos|nenhum)$'
       secret ENTRA_SECRET "  Segredo do cliente (não aparece na tela)"
       if [ -z "$ENTRA_SECRET" ] || [ -z "$ENTRA_TENANT" ] || [ -z "$ENTRA_CLIENT" ]; then
@@ -378,6 +378,7 @@ if [ ! -f "$ENVF" ]; then
       echo "HUB_APP_PORT_FORNECEDORES=$((PORT + 1012))"
       echo "HUB_APP_PORT_SERVICOS=$((PORT + 1013))"
       echo "HUB_APP_PORT_COLETOR=$((PORT + 1015))"
+      echo "HUB_APP_PORT_AUTOMACOES=$((PORT + 1016))"
     fi
     if [ "$DEMO" = 1 ]; then echo "COMPOSE_PROFILES=demo-apps"; else echo "HUB_APPS_JSON=./apps.empty.json"; fi
   } >> "$ENVF"
@@ -396,6 +397,10 @@ if [ ! -f "$ENVF" ]; then
 else
   echo "usando platform-py/$ENVF existente (segredos mantidos)"
   secrets_topup
+  # debug port of a sample app added later (instances outside 8090 cannot share the default)
+  if [ "$PORT" != 8090 ] && ! grep -q '^HUB_APP_PORT_AUTOMACOES=' "$ENVF"; then
+    echo "HUB_APP_PORT_AUTOMACOES=$((PORT + 1016))" >> "$ENVF"
+  fi
 fi
 setv() { # setv KEY VALUE: replaces or appends in .prod.env (VALUE may contain any character)
   local tmp

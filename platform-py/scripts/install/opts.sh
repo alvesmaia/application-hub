@@ -38,8 +38,9 @@ entra_validate() { # --entra-*: the three together, each in the expected shape; 
   echo "$ENTRA_CLIENT" | grep -Eq '^[0-9a-fA-F-]{36}$' ||
     opts_fail "--entra-client-id: '$ENTRA_CLIENT' inválido (esperado o GUID do app registration)"
   echo "$ENTRA_DOMAINS" | grep -Eq '^$|^[a-zA-Z0-9.,-]+$' || opts_fail "--entra-domains: '$ENTRA_DOMAINS' inválido (ex.: empresa.com,filial.com)"
-  case "$ENTRA_ROLE" in Leitor | Colaborador | Operador | Administrador) ;; *)
-    opts_fail "--entra-role: '$ENTRA_ROLE' inválido (Leitor, Colaborador, Operador ou Administrador)" ;; esac
+  # Colaborador: the "User" of installs seeded before the three default roles
+  case "$ENTRA_ROLE" in User | "Power User" | Administrador | Colaborador) ;; *)
+    opts_fail "--entra-role: '$ENTRA_ROLE' inválido (User, Power User ou Administrador)" ;; esac
   case "$ENTRA_LOCAL" in admins | todos | nenhum) ;; *) opts_fail "--local-login: '$ENTRA_LOCAL' inválido (admins, todos ou nenhum)" ;; esac
   if [ "$CONFIG_ONLY" = 1 ]; then echo "aviso: --config-only não grava o segredo do Entra no cofre; a instalação grava (mesmas opções)" >&2; fi
 }
@@ -61,7 +62,7 @@ opts_write() { # .prod.env (setv): interactive answers or the flags above
     setv HUB_ENTRA_TENANT_ID "$ENTRA_TENANT"
     setv HUB_ENTRA_CLIENT_ID "$ENTRA_CLIENT"
     if [ -n "$ENTRA_DOMAINS" ]; then setv HUB_ENTRA_ALLOWED_DOMAINS "$ENTRA_DOMAINS"; fi
-    setv HUB_ENTRA_DEFAULT_ROLE "$ENTRA_ROLE"
+    case "$ENTRA_ROLE" in *" "*) setv HUB_ENTRA_DEFAULT_ROLE "'$ENTRA_ROLE'" ;; *) setv HUB_ENTRA_DEFAULT_ROLE "$ENTRA_ROLE" ;; esac
     setv HUB_LOCAL_LOGIN "$(case "$ENTRA_LOCAL" in todos) echo 1 ;; nenhum) echo 0 ;; *) echo admins ;; esac)"
   fi
   if yes_no "$PROXY"; then setv HUB_TRUST_PROXY_HEADERS 1; setv HUB_TRUSTED_PROXIES "$PROXIES"; fi

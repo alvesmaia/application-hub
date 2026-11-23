@@ -67,7 +67,7 @@ def test_every_advanced_answer_reaches_prod_env_and_secrets_stay_off_the_screen(
         "11111111-2222-4333-8444-555555555555",
         "66666666-7777-4888-9999-000000000000",
         "exemplo.com",
-        "Leitor",
+        "Power User",  # a role with a space: typed as is
         "",  # local login: admins (recommended)
         "segredo-entra-456",  # client secret (no echo; goes to the vault, not to .prod.env)
         "10.0.0.0/8",  # admin CIDRs
@@ -87,7 +87,9 @@ def test_every_advanced_answer_reaches_prod_env_and_secrets_stay_off_the_screen(
     )
     assert env["HUB_BACKUP_OFFSITE_URL"] == "https://k:segredo-s3@s3.exemplo.com:9000/bk/hub"
     assert env["HUB_SSO_PROVIDER"] == "entra" and env["HUB_ENTRA_CLIENT_ID"].startswith("66666666")
-    assert env["HUB_ENTRA_ALLOWED_DOMAINS"] == "exemplo.com" and env["HUB_ENTRA_DEFAULT_ROLE"] == "Leitor"
+    assert (
+        env["HUB_ENTRA_ALLOWED_DOMAINS"] == "exemplo.com" and env["HUB_ENTRA_DEFAULT_ROLE"] == "'Power User'"
+    )
     assert env["HUB_LOCAL_LOGIN"] == "admins" and env["HUB_ADMIN_ALLOWED_CIDRS"] == "10.0.0.0/8"
     assert env["HUB_TRUST_PROXY_HEADERS"] == "1" and env["HUB_TRUSTED_PROXIES"] == "172.16.0.0/12"
     assert env["HUB_TELEMETRY"] == "0" and env["HUB_UPDATE_CHECK"] == "0" and env["HUB_PUBLIC_DOCS"] == "0"

@@ -182,12 +182,18 @@
     const nodes = [...frag.childNodes].filter((n) => n.nodeType === 1);
     switch (swap) {
       case 'none': return [];
-      case 'innerHTML': target.replaceChildren(frag); mount(target); return [target];
+      case 'innerHTML': target.replaceChildren(frag); mount(target); return inserted([target]);
       case 'beforeend': target.append(frag); break;
       case 'afterbegin': target.prepend(frag); break;
       default: target.replaceWith(frag);
     }
     nodes.forEach((n) => mount(n));
+    return inserted(nodes);
+  }
+
+  // hub-nav owns the [data-hub-poll] timers: content the kit inserts (partial answers, PRG landing) must poll too.
+  function inserted(nodes) {
+    try { document.dispatchEvent(new CustomEvent('hub:inserted', { detail: { nodes } })); } catch (_) { /* none */ }
     return nodes;
   }
 

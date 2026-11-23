@@ -1,0 +1,8 @@
+{#- The "Executar" form of one automation (inside its modal). A 422 answer is this same form
+    with the errors, replacing itself; a valid one answers 303 to the run detail. -#}
+<form id="run-form-{{ a.key }}" class="aut-form" data-hub-post="{{ base }}/catalogo/{{ a.key }}/executar" data-hub-target="#run-form-{{ a.key }}">
+{% if notice_html %}{{ notice_html }}{% endif %}
+{% if errors %}<div class="hub-notice hub-notice-error" role="alert"><strong>{{ t('Verifique os campos destacados.') }}</strong></div>{% endif %}
+{% include "_fields.html" %}
+<div class="modal-actions"><button type="button" class="secondary-button" data-hub-close>{{ t('Cancelar') }}</button><button type="submit" class="primary-button">{{ t('Executar') }}</button></div>
+</form>

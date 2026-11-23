@@ -29,14 +29,15 @@ def entra(tmp_path: Path, *extra: str) -> tuple[str, ...]:
 
 def test_entra_flags_reach_prod_env_and_the_secret_never_does(tmp_path: Path) -> None:
     args = entra(
-        tmp_path, "--entra-domains", "empresa.com", "--entra-role", "Leitor", "--local-login", "nenhum"
+        tmp_path, "--entra-domains", "empresa.com", "--entra-role", "Power User", "--local-login", "nenhum"
     )
     r = run_install(tmp_path, ("--config-only", "--yes", *args))
     assert r.returncode == 0, r.stderr
     env = prod_env(tmp_path)
     assert env["HUB_SSO_PROVIDER"] == "entra" and env["HUB_ENTRA_TENANT_ID"] == TENANT
     assert env["HUB_ENTRA_CLIENT_ID"] == CLIENT and env["HUB_ENTRA_ALLOWED_DOMAINS"] == "empresa.com"
-    assert env["HUB_ENTRA_DEFAULT_ROLE"] == "Leitor" and env["HUB_LOCAL_LOGIN"] == "0"
+    # a space in the value: quoted, so `. ./.prod.env` (hub-start.sh, --doctor) and compose read it whole
+    assert env["HUB_ENTRA_DEFAULT_ROLE"] == "'Power User'" and env["HUB_LOCAL_LOGIN"] == "0"
     text = (tmp_path / "platform-py" / ".prod.env").read_text(encoding="utf-8")
     assert "s3gr3d0" not in text and "s3gr3d0" not in r.stdout + r.stderr
     assert "cofre" in r.stderr  # --config-only does not store the secret: it says so
@@ -48,7 +49,7 @@ def test_entra_defaults_keep_password_login_for_administrators(tmp_path: Path) -
     assert (
         r.returncode == 0
         and env["HUB_LOCAL_LOGIN"] == "admins"
-        and env["HUB_ENTRA_DEFAULT_ROLE"] == "Colaborador"
+        and env["HUB_ENTRA_DEFAULT_ROLE"] == "User"  # the default roles: Administrador, Power User, User
     )
 
 
@@ -115,3 +116,4 @@ def test_the_saved_command_keeps_the_entra_and_proxy_flags_but_not_the_secret(tm
     assert rc == 0, out
     assert f"--entra-tenant {TENANT}" in out and "--entra-client-secret-file /etc/hub/entra.txt" in out
     assert "--trusted-proxy 127.0.0.1/32" in out and "s3gr3d0" not in out
+    assert "--entra-role 'Colaborador'" in out  # quoted: "Power User" has a space

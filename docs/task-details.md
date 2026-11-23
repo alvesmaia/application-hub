@@ -294,3 +294,18 @@ redirect de fragmento que embutia a página do hub, a confirmação sem rótulo 
 branco na sidebar clara e o botão de menu do celular sem nome acessível); rodada 3 = 36/36, com tema escuro coerente.
 Achado à parte: o ambiente da CLI usava uma cópia do hub de outubro (force-include no build); o hub-check --all agora
 reinstala antes de testar.
+
+✅ **Task 94 — Validação da implantação (instalação nova e atualização)**
+
+Clone no scratchpad, projetos isolados (nunca o do dono). Instalação da versão publicada (`a4f9cc9`, projeto
+`app-hub-upg`, porta 8097): 3 min 13 s, hub + 4 apps saudáveis. Atualização para o código novo pelo
+`docs/ATUALIZACAO.md`, com monitor a cada 250 ms no `/healthz` e em `/_frag/<app>` com sessão:
+`install.sh --config-only` 1 s (só segredos novos); `hub_update.py --build` 2 min 08 s **sem nenhuma falha**;
+`dc build` 27 s; `dc up -d` 14 s com **hub fora 9,6 s** (o compose recriou o web: rede nova do automacoes e faixa no
+broker; o hub_update copia a configuração do contêiner em execução) e **apps fora ~17 s cada** (ativos 17,4 s,
+fornecedores 16,7 s, servicos 16,8 s, coletor 17,8 s — recriados pelo compose, sem blue/green). Sessão preservada,
+`automacoes` no ar logo após o `up`. Instalação nova da versão nova (`app-hub-new`, porta 8098): 56 s com cache de
+camadas, 5 apps saudáveis, 3 funções padrão, 3 pacotes de exemplo, 0,5 CPU por app. Achado corrigido no caminho:
+o `install.sh` gravava `HUB_ENTRA_DEFAULT_ROLE=Colaborador` (função que não existe mais nas instalações novas).
+Proposta (não feita): `hub_update.py` aplicar a configuração do compose e conectar redes novas sem recriar o hub.
+

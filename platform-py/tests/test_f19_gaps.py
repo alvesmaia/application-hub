@@ -184,8 +184,9 @@ def test_audit_head_webhook(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
 
 
 def test_product_owner_sees_usage_card_on_audit(hub: TestClient) -> None:
-    from admin_helper import add_user
+    from admin_helper import PRODUCT_OWNER, add_role, add_user
 
+    add_role(hub, "Product Owner", PRODUCT_OWNER)
     po = add_user(hub, "po", ["Product Owner"])
     assert po.get("/admin").status_code == 403
     html = po.get("/admin/audit").text

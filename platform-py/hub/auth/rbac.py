@@ -66,9 +66,8 @@ def permissions(user: dict[str, Any], roles: list[dict[str, Any]]) -> tuple[list
 def roles_for(data_dir: Path) -> list[dict[str, Any]]:
     defaults = [
         {"name": "Administrador", "permissions": [True] * 6, "apps": None},
-        {"name": "Product Owner", "permissions": [True, False, False, True, False, True], "apps": None},
-        {"name": "Tech Lead", "permissions": [True, False, True, True, True, False], "apps": None},
-        {"name": "Colaborador", "permissions": [True, False, False, False, False, False], "apps": None},
+        {"name": "Power User", "permissions": [True, False, True, True, True, True], "apps": None},
+        {"name": "User", "permissions": [True, False, False, False, False, False], "apps": None},
     ]
     try:
         data = json.loads((data_dir / "admin.json").read_text(encoding="utf-8"))

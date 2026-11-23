@@ -24,16 +24,15 @@ PLATFORM_ENV = (INTERNAL_TOKEN_ENV, "HUB_STORAGE_TOKEN", "HUB_STORAGE_URL", "HUB
 _NAME = re.compile(r"^[A-Z][A-Z0-9_]{0,127}$")
 _DEFAULT_ROLES = (
     (ADMIN_ROLE, "Acesso completo à plataforma e a todas as aplicações", 1, "Total", (1, 1, 1, 1, 1, 1)),
-    ("Product Owner", "Gerencia produtos, projetos e times digitais", 4, "Alto", (1, 0, 0, 1, 0, 1)),
     (
-        "Tech Lead",
-        "Acesso técnico a ambientes, deployments e configurações",
+        "Power User",
+        "Aplicações e áreas técnicas (configurações, variáveis, auditoria e aprovações), sem gerenciar usuários",
         3,
         "Alto",
-        (1, 0, 1, 1, 1, 0),
+        (1, 0, 1, 1, 1, 1),
     ),
     (
-        "Colaborador",
+        "User",
         "Acesso às aplicações do dia a dia, sem áreas administrativas",
         20,
         "Padrão",
@@ -67,6 +66,7 @@ DEV_INFRA_PASSWORDS = {
     "APP_HUB_APP_DB_PASSWORD_FORNECEDORES": "hubpy-fornecedores-dev",
     "APP_HUB_APP_DB_PASSWORD_SERVICOS": "hubpy-servicos-dev",
     "APP_HUB_APP_DB_PASSWORD_COLETOR": "hubpy-coletor-dev",
+    "APP_HUB_APP_DB_PASSWORD_AUTOMACOES": "hubpy-automacoes-dev",
 }
 
 

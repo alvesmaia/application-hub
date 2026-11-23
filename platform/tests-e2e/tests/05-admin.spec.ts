@@ -65,7 +65,7 @@ test('variáveis: criar, segredo nunca revelável, rotacionar e aplicar', async 
 
 test('funções e permissões: visualizar matriz @core', async ({ page }) => {
   await page.goto('/admin/users?tab=roles');
-  const card = page.locator('.role-card').filter({ hasText: 'Tech Lead' }).first();
+  const card = page.locator('.role-card').filter({ hasText: 'Power User' }).first();
   await card.locator('[data-role-toggle]').click();
   await expect(card).toHaveClass(/open/);
   await expect(card.locator('[data-role-perm]').first()).toBeVisible();

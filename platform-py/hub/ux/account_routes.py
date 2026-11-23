@@ -28,7 +28,9 @@ _SCOPES = {
 
 
 def safe_next(raw: str, default: str = "/") -> str:
-    return raw if raw.startswith("/") and not raw.startswith(("//", "/\\")) else default
+    """Local path to return to; never /logout (POST-only: landing there after signing in answered 405)."""
+    local = raw.startswith("/") and not raw.startswith(("//", "/\\"))
+    return raw if local and raw.split("?", 1)[0] != "/logout" else default
 
 
 def short_date(ms: int) -> str:
@@ -50,6 +52,7 @@ class AccountCtx:
         return self.page_ctx(request) | {
             "tab": tab,
             "icon": self.icon,
+            "sso_account": bool(request.state.user.get("sso_subject")),
             "tabs": [(h, label, tab == k) for h, label, k in items],
         }
 

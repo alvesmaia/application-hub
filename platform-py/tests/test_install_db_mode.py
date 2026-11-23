@@ -7,8 +7,10 @@ from pathlib import Path
 import pytest
 from install_helper import BASH, RECORDING_DOCKER, prod_env, run_install
 
+from hub.admin.demo_db import DEMO_APPS
+
 pytestmark = pytest.mark.skipif(BASH is None, reason="bash not available")
-DEMO_PWS = [f"APP_HUB_APP_DB_PASSWORD_{a}" for a in ("ATIVOS", "FORNECEDORES", "SERVICOS", "COLETOR")]
+DEMO_PWS = [f"APP_HUB_APP_DB_PASSWORD_{a.upper()}" for a in DEMO_APPS]
 FAKE = {"docker": RECORDING_DOCKER}  # gets past the compose check; stops at the build, after .prod.env
 
 
@@ -17,7 +19,9 @@ def test_a_new_install_has_one_database_password_and_one_per_sample_app(tmp_path
     env = prod_env(tmp_path)
     assert r.returncode == 0, r.stderr[-800:]
     assert "APP_HUB_DB_PASSWORD" not in env and len(env["APP_HUB_APP_DB_PASSWORD"]) == 48
-    assert len({env[k] for k in DEMO_PWS} | {env["APP_HUB_APP_DB_PASSWORD"]}) == 5  # one password per role
+    assert (
+        len({env[k] for k in DEMO_PWS} | {env["APP_HUB_APP_DB_PASSWORD"]}) == len(DEMO_PWS) + 1
+    )  # one password per role
 
 
 def test_the_option_of_two_servers_no_longer_exists(tmp_path: Path) -> None:

@@ -83,7 +83,7 @@ class EntraConfig:
     allowed_tenants: list[str] = field(default_factory=list)
     allowed_domains: list[str] = field(default_factory=list)
     role_map: dict[str, str] = field(default_factory=dict)
-    default_role: str = "Colaborador"
+    default_role: str = "User"
     _jwks: dict[str, Any] = field(default_factory=dict, repr=False)
     _jwks_at: float = 0.0
 
@@ -227,7 +227,7 @@ def load(config: dict[str, Any] | None = None, vault: Any = None) -> EntraConfig
         allowed_tenants=allowed,
         allowed_domains=_list(os.getenv("HUB_ENTRA_ALLOWED_DOMAINS") or conf.get("allowed_domains")),
         role_map=parse_role_map(os.getenv("HUB_ENTRA_ROLE_MAP") or conf.get("role_map")),
-        default_role=_get(conf, "HUB_ENTRA_DEFAULT_ROLE") or "Colaborador",
+        default_role=_get(conf, "HUB_ENTRA_DEFAULT_ROLE") or "User",
     )
 
 

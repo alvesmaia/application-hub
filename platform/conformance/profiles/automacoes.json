@@ -1,0 +1,46 @@
+{
+  "id": "automacoes",
+  "stack": "python",
+  "roles": [
+    "Administrador"
+  ],
+  "sections": [
+    "catalogo",
+    "execucoes",
+    "processos",
+    "pacotes",
+    "gatilhos"
+  ],
+  "durable": true,
+  "jobs": [
+    "automacoes.run"
+  ],
+  "mutation": {
+    "path": "/automacoes/catalogo/3/executar",
+    "form": {
+      "p_documentos": "529.982.247-25\nCONF-{uniq}",
+      "p_tipo": "auto"
+    },
+    "vary": "p_documentos",
+    "ok": [
+      303
+    ],
+    "audit_action": "Execução solicitada"
+  },
+  "job_trigger": {
+    "path": "/automacoes/catalogo/3/executar",
+    "form": {
+      "p_documentos": "11.222.333/0001-81\nJOB-{uniq}",
+      "p_tipo": "auto"
+    },
+    "ok": [
+      303
+    ],
+    "kind": "automacoes.run"
+  },
+  "heavy": null,
+  "search": {
+    "q": "Validar",
+    "min": 1
+  }
+}

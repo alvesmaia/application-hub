@@ -155,3 +155,16 @@ test('versão do hub visível no header para quem está logado @core', async ({ 
   await expect(page.locator('[data-hub-version]')).toBeVisible();
   await expect(page.locator('[data-hub-version]')).toHaveText(/^v\d+\.\d+\.\d+/);
 });
+
+test('hover da linha de /admin/users pinta também a faixa sob a coluna Ações', async ({ page }) => {
+  await page.goto('/admin/users');
+  const row = page.locator('tbody tr').nth(1);
+  const b = (await row.boundingBox())!;
+  await page.mouse.move(b.x + 200, b.y + 15);
+  await expect.poll(() => row.evaluate((tr) => getComputedStyle((tr as HTMLTableRowElement).cells[0]).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
+  const [cell, under] = await page.evaluate(([x, y, cx, cy]) => {
+    const bgOf = (e: Element | null) => { for (let n = e; n; n = n.parentElement) { const c = getComputedStyle(n).backgroundColor; if (c !== 'rgba(0, 0, 0, 0)') return c; } return ''; };
+    return [bgOf(document.elementFromPoint(cx, cy)), bgOf(document.elementFromPoint(x, y))];
+  }, [b.x + b.width - 40, b.y + b.height - 4, b.x + 200, b.y + 15]);
+  expect(under).toBe(cell);
+});

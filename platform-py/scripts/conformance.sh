@@ -11,7 +11,7 @@ export MSYS_NO_PATHCONV=1
 CP=${CONF_PREFIX:-app-hub-}
 DBNET=${CONF_DB_NET-app-hub_default}
 apps=("$@")
-[ ${#apps[@]} -eq 0 ] && apps=(ativos fornecedores servicos coletor)
+[ ${#apps[@]} -eq 0 ] && apps=(ativos fornecedores servicos coletor automacoes)
 OUT="${OUT:-loadtest/results/$(date +%F)/conformance}"
 mkdir -p "$OUT"
 host_out="$(cd "$OUT" && (pwd -W 2>/dev/null || pwd))"

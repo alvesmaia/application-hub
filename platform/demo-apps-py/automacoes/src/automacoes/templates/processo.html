@@ -1,0 +1,18 @@
+{% extends "workspace.html" %}
+{% block content %}
+{% set title = t('Editar processo') if process else t('Novo processo') %}{% set subtitle = t('Trocar a versão do pacote vale para as próximas execuções e fica registrado na auditoria.') %}
+{% include "_head.html" %}
+{% if notice_html %}{{ notice_html }}{% endif %}
+{% macro err(name) %}{% if errors.get(name) %}<span class="hub-field-error" id="pr-{{ name }}-err" role="alert">{{ errors.get(name) }}</span>{% endif %}{% endmacro %}
+{% macro aria(name) %}{% if errors.get(name) %} aria-invalid="true" aria-describedby="pr-{{ name }}-err"{% endif %}{% endmacro %}
+<form id="process-form" class="content-panel aut-panel aut-form" method="post" action="{{ base }}/processos{{ '/' ~ process.id if process else '' }}">
+{% if errors %}<div class="hub-notice hub-notice-error" role="alert"><strong>{{ t('Verifique os campos destacados.') }}</strong></div>{% endif %}
+<div class="form-field"><label for="pr-nome">{{ t('Nome') }} <span aria-hidden="true">*</span></label><input id="pr-nome" name="nome" value="{{ form.get('nome', '') }}" required maxlength="80"{{ aria('nome') }}>{{ err('nome') }}</div>
+<div class="form-field"><label for="pr-pacote">{{ t('Pacote') }}</label><select id="pr-pacote" name="pacote"{{ aria('pacote') }}><option value="">{{ t('Escolha…') }}</option>{% for name in versions %}<option value="{{ name }}"{% if form.get('pacote') == name %} selected{% endif %}>{{ name }}</option>{% endfor %}</select>{{ err('pacote') }}</div>
+<div class="form-field"><label for="pr-versao">{{ t('Versão') }}</label><select id="pr-versao" name="versao" data-hub-depends="#pr-pacote" data-hub-options="{{ options_json }}"{{ aria('versao') }}><option value="">{{ t('Escolha…') }}</option>{% for v in versions.get(form.get('pacote', ''), []) %}<option value="{{ v }}"{% if form.get('versao') == v %} selected{% endif %}>{{ v }}</option>{% endfor %}</select>{{ err('versao') }}</div>
+<div class="form-field"><label for="pr-tempo">{{ t('Tempo limite (segundos)') }}</label><input id="pr-tempo" name="tempo" type="number" min="1" max="3600" value="{{ form.get('tempo', '300') }}"{{ aria('tempo') }}>{{ err('tempo') }}</div>
+<div class="form-field"><label for="pr-parametros">{{ t('Parâmetros padrão (JSON)') }}</label><textarea id="pr-parametros" name="parametros" rows="5"{{ aria('parametros') }}>{{ form.get('parametros', '{}') }}</textarea><small class="aut-help">{{ t('Ex.: {"ano": 2026}. Só campos do pacote; o formulário de execução começa com estes valores.') }}</small>{{ err('parametros') }}</div>
+<div class="form-field"><label class="aut-check"><input type="checkbox" name="ativo" value="1"{% if form.get('ativo') == '1' %} checked{% endif %}> {{ t('Ativo (aparece em Automações)') }}</label></div>
+<div class="modal-actions"><a class="secondary-button" href="{{ base }}/processos">{{ t('Cancelar') }}</a><button type="submit" class="primary-button">{{ t('Salvar') }}</button></div>
+</form>
+{% endblock %}

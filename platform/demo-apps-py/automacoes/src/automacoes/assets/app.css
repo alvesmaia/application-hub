@@ -1,0 +1,127 @@
+/* identidade:inicio — Automações — indigo and slate (CONTRATO-APP §29). App tokens: `:root` is the
+   app's area (#app-root); the hub passes each `--app-<role>` on to what it draws there. Dark theme
+   mandatory (contrast: text ≥ 4.5:1, shapes ≥ 3:1). */
+:root {
+  --app-page: #F3F5FB;
+  --app-surface: #FFFFFF;
+  --app-raised: #FFFFFF;
+  --app-alt: #F5F7FC;
+  --app-hover: #EAEFFA;
+  --app-border: #D9E0F0;
+  --app-border-strong: #BAC5E0;
+  --app-control: #69779A;
+  --app-tint: #E4EBFB;
+  --app-tint-border: #AFC0EA;
+  --app-title: #121B36;
+  --app-body: #27314F;
+  --app-secondary: #4A5575;
+  --app-faint: #556181;
+  --app-ink: #0B1227;
+  --app-primary: #2F4FA3;
+  --app-primary-hover: #243F85;
+  --app-on-primary: #FFFFFF;
+  --app-fill: #2F4FA3;
+  --app-accent: #3D63C7;
+  --app-accent-soft: #8FA8E6;
+  --app-chrome: #141D3A;
+  --app-chrome-raised: #202C52;
+  --app-chrome-text: #FFFFFF;
+  --app-chrome-text-2: #C5CFEA;
+  --app-chrome-icon: #A9BCF0;
+}
+:root[data-theme="dark"] {
+  --app-page: #0F1424;
+  --app-surface: #151C31;
+  --app-raised: #1B2340;
+  --app-alt: #121A2D;
+  --app-hover: #1E2847;
+  --app-border: #2A3557;
+  --app-border-strong: #3A4770;
+  --app-control: #7F8DB5;
+  --app-tint: #1C2850;
+  --app-tint-border: #34478A;
+  --app-title: #F1F4FC;
+  --app-body: #D9DFF0;
+  --app-secondary: #AAB5D3;
+  --app-faint: #9AA6C7;
+  --app-ink: #FFFFFF;
+  --app-primary: #9DB4F5;
+  --app-primary-hover: #BCCBF8;
+  --app-on-primary: #0D1633;
+  --app-fill: #3555B0;
+  --app-accent: #6E8FE6;
+  --app-accent-soft: #34478A;
+  --app-chrome: #0B1020;
+  --app-chrome-raised: #1B2340;
+  --app-chrome-text: #FFFFFF;
+  --app-chrome-text-2: #AAB5D3;
+  --app-chrome-icon: #9DB4F5;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] {
+    --app-page: #0F1424;
+    --app-surface: #151C31;
+    --app-raised: #1B2340;
+    --app-alt: #121A2D;
+    --app-hover: #1E2847;
+    --app-border: #2A3557;
+    --app-border-strong: #3A4770;
+    --app-control: #7F8DB5;
+    --app-tint: #1C2850;
+    --app-tint-border: #34478A;
+    --app-title: #F1F4FC;
+    --app-body: #D9DFF0;
+    --app-secondary: #AAB5D3;
+    --app-faint: #9AA6C7;
+    --app-ink: #FFFFFF;
+    --app-primary: #9DB4F5;
+    --app-primary-hover: #BCCBF8;
+    --app-on-primary: #0D1633;
+    --app-fill: #3555B0;
+    --app-accent: #6E8FE6;
+    --app-accent-soft: #34478A;
+    --app-chrome: #0B1020;
+    --app-chrome-raised: #1B2340;
+    --app-chrome-text: #FFFFFF;
+    --app-chrome-text-2: #AAB5D3;
+    --app-chrome-icon: #9DB4F5;
+  }
+}
+/* identidade:fim */
+/* forma: layout of the app's own blocks — colors only through the hub/app tokens. */
+.aut-header { gap: 16px; }
+.aut-header-actions { display: flex; gap: 8px; align-items: center; }
+.aut-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.aut-card { display: flex; flex-direction: column; gap: 10px; padding: 18px; }
+.aut-card-title, .aut-panel-title { margin: 0; font-size: 16px; color: var(--color-text-strong); }
+.aut-card-text { margin: 0; color: var(--color-text-secondary); flex: 1; }
+.aut-card-last { margin: 0; font-size: 13px; color: var(--color-text-secondary); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.aut-card-actions, .aut-run-actions, .aut-row-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.aut-filters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+.aut-filters .form-field { margin: 0; min-width: 180px; }
+.aut-table-wrap { overflow-x: auto; }
+.aut-pages { display: flex; gap: 8px; }
+.aut-panel { padding: 18px; display: grid; gap: 12px; align-content: start; }
+.aut-run-grid { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; align-items: start; }
+.aut-run-main { display: grid; gap: 16px; }
+.aut-run-error { margin-bottom: 16px; }
+.aut-kv { margin: 0; display: grid; gap: 8px; }
+.aut-kv-row { display: grid; grid-template-columns: minmax(110px, 30%) minmax(0, 1fr); gap: 12px; align-items: baseline; }
+.aut-run-side .aut-kv-row { grid-template-columns: 110px minmax(0, 1fr); }
+.aut-kv dt { color: var(--color-text-secondary); font-size: 13px; }
+.aut-kv dd { margin: 0; color: var(--color-text-strong); overflow-wrap: anywhere; }
+.aut-mini td, .aut-mini th { padding: 6px 10px; }
+.aut-muted { margin: 0; color: var(--color-text-secondary); }
+.aut-help { color: var(--color-text-secondary); font-size: 12px; }
+.aut-fieldset { border: 1px solid var(--color-border); border-radius: 10px; padding: 4px 14px 10px; margin: 0; }
+.aut-fieldset legend { padding: 0 6px; font-weight: 600; color: var(--color-text-strong); }
+.aut-check { display: flex; gap: 8px; align-items: center; }
+.aut-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 760px) {
+  .aut-run-grid { grid-template-columns: minmax(0, 1fr); }
+  .aut-kv-row { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .aut-filters .form-field { min-width: 0; flex: 1 1 100%; }
+}
+.aut-log { margin: 0; max-height: 320px; overflow: auto; padding: 10px 12px; border-radius: 8px; background: var(--color-surface-raised, var(--app-alt)); border: 1px solid var(--color-border); font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.aut-errors { margin: 6px 0 0; padding-left: 18px; }
+.aut-upload progress { width: 100%; }

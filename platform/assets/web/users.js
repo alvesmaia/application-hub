@@ -151,7 +151,7 @@
         'A senha informada é provisória: o usuário define a própria senha no primeiro acesso.',
         field('Nome', 'name', 'text', '', 'required maxlength="80"') +
           field('E-mail', 'email', 'email', '', 'required') +
-          checks('Funções', 'roles', roleItems, (r) => r === 'Colaborador') +
+          checks('Funções', 'roles', roleItems, (r) => r === 'User' || r === 'Colaborador') +
           pwField(pw),
         'Criar usuário',
         async (form) => {

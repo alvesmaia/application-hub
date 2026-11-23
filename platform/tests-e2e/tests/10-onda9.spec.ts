@@ -48,7 +48,7 @@ test('onboarding: tour no primeiro acesso (teclado, interromper e retomar, pular
   await openApp(page, '/apps/fornecedores/indicators');
   await page.goto('/');
   await expect(page.locator('li[data-step="open_app"]')).toHaveClass(/done/);
-  // The operator (Tech Lead) sees the administrator steps they can do.
+  // The operator (Power User) sees the administrator steps they can do.
   await expect(page.locator('li[data-step="variable"]')).toBeVisible();
   await expect(page.locator('li[data-step="package"]')).toBeVisible();
   // Tour again through the user menu.
@@ -127,7 +127,7 @@ test('inbox: aprovação do servicos de ponta a ponta (outbox → Inbox → deci
 test('inbox: pedido de acesso a app fora da lista → administrador aprova → acesso liberado; preferências de canal', async ({ browser }) => {
   const admin = await apiAs('admin');
   // Collaborator (reader) without the servicos app.
-  expect((await admin.put('/api/admin/roles/Colaborador/apps', { data: { apps: ['ativos', 'fornecedores', 'coletor'] } })).status()).toBe(200);
+  expect((await admin.put('/api/admin/roles/User/apps', { data: { apps: ['ativos', 'fornecedores', 'coletor'] } })).status()).toBe(200);
   const lctx = await newRoleContext(browser, 'leitor');
   const lp = await lctx.newPage();
   try {
@@ -160,7 +160,7 @@ test('inbox: pedido de acesso a app fora da lista → administrador aprova → a
     expect(p.steps).toContain('notifications');
     await prefs(leitor, { channels: { notification: { in_app: true } } });
   } finally {
-    await admin.put('/api/admin/roles/Colaborador/apps', { data: { apps: null } });
+    await admin.put('/api/admin/roles/User/apps', { data: { apps: null } });
     await lctx.close();
   }
 });

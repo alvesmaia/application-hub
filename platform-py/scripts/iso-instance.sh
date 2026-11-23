@@ -14,7 +14,7 @@ NET=$P-net
 PORT=${ISO_HUB_PORT:-8093}
 ENVF=.iso-instance.env
 IMG=$P-web
-APPS=(ativos fornecedores servicos coletor)
+APPS=(ativos fornecedores servicos coletor automacoes)
 tok() { grep -A3 "\"HUB_INTERNAL_TOKEN_$(echo "$1" | tr a-z A-Z)\"" app-env.json | sed -n 's/.*"value": "\(.*\)".*/\1/p'; }
 
 case "${1:-}" in

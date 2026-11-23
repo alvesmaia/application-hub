@@ -7,6 +7,7 @@ import json
 import time
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 import pytest
@@ -63,8 +64,11 @@ def make_hub(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, handler: Any = Non
     return client
 
 
-def add_user(client: TestClient, user_id: str, roles: list[str], *, active: bool = True) -> TestClient:
-    """Creates a user with its own session and returns an HTTP client authenticated as that user."""
+def add_user(
+    client: TestClient, user_id: str, roles: list[str], *, active: bool = True, sso: bool = False
+) -> TestClient:
+    """Creates a user with its own session and returns an HTTP client authenticated as that user.
+    `sso`: an Entra ID account (linked, no local password, session opened by SSO)."""
     auth = client.app.state.auth  # type: ignore[attr-defined]
     doc = json.loads(auth.path.read_text(encoding="utf-8"))
     now = time.time_ns() // 1_000_000
@@ -75,7 +79,7 @@ def add_user(client: TestClient, user_id: str, roles: list[str], *, active: bool
             "name": user_id.title(),
             "roles": roles,
             "active": active,
-            "password_hash": _PH.hash(PASSWORD),
+            "password_hash": None if sso else _PH.hash(PASSWORD),
             "must_change_password": False,
             "created_at": now,
             "updated_at": now,
@@ -83,6 +87,11 @@ def add_user(client: TestClient, user_id: str, roles: list[str], *, active: bool
             "failed_attempts": 0,
             "locked_until": None,
         }
+        | (
+            {"sso_issuer": "https://login.example.test/t/v2.0", "sso_subject": f"sub-{user_id}"}
+            if sso
+            else {}
+        )
     )
     cookie = f"cookie-{user_id}"
     doc["sessions"].append(
@@ -91,7 +100,7 @@ def add_user(client: TestClient, user_id: str, roles: list[str], *, active: bool
             "user_id": user_id,
             "created_at": now,
             "last_seen": now,
-            "method": "password",
+            "method": "entra" if sso else "password",
         }
     )
     auth.path.write_text(json.dumps(doc), encoding="utf-8")
@@ -99,3 +108,16 @@ def add_user(client: TestClient, user_id: str, roles: list[str], *, active: bool
     other.headers.update(HDR)
     other.headers["cookie"] = f"hub_session={cookie}"
     return other
+
+
+PRODUCT_OWNER = (1, 0, 0, 1, 0, 1)  # legacy default role: apps, audit and approvals; no settings or variables
+
+
+def add_role(client: TestClient, name: str, perms: tuple[int, ...]) -> None:
+    """Creates a role through the Administration API (the defaults only have Administrador, Power User and User)."""
+    r = client.post("/api/admin/roles", json={"name": name, "level": "Alto", "description": name})
+    assert r.status_code == 201, r.text
+    for i, on in enumerate(perms):
+        if on:
+            r = client.put(f"/api/admin/roles/{quote(name)}/permissions/{i}", json={"granted": True})
+            assert r.status_code == 200, r.text
