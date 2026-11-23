@@ -38,6 +38,8 @@ Run from `platform-py/` with `dc() { docker compose --env-file .prod.env -f dock
    `bash scripts/db-merge.sh --project <project>`, `dc up -d`) and skip step 5.
 5. `python scripts/hub_update.py --build --project <project>` — swaps the hub without downtime (backup, copy, watch,
    automatic rollback).
+   If it stops with "a borda <project>-edge não está no ar" (installs without the edge yet), skip it: step 6 creates
+   the edge and takes over the port (~10 s, once). Podman hosts run it through `podman-docker` (as `install.sh` requires).
 6. `dc build && dc up -d` — rebuilds the sample apps, creates `automacoes` and applies this version's compose changes.
    This step recreates the hub once (new app network and broker range) and each sample app.
 7. Check: `curl -s http://127.0.0.1:<port>/healthz` answers `"version":"0.3.0"`; `docker ps` shows every
