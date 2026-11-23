@@ -111,3 +111,4 @@
 - ✅ 96 · Rótulos de status no padrão das páginas de status (Statuspage): Operacional, Degradado (antes "Instável") e Indisponível / Outage
 - ✅ 97 · admin/runtime: "Capacidade do host" mostra o uso real medido (/proc do host + uso de cada contêiner), atualiza a cada 5 s; "Aplicações" em magenta; hover com valor / total; runtime no "i" ao lado do título
 - ✅ 98 · admin/runtime: "Atualizado às HH:MM:SS" no lugar de "Uso atual · atualiza sozinho"
+- ✅ 99 · Ícones do menu: Status com o medidor (antes do grupo Operação); Operação com uma chave inglesa

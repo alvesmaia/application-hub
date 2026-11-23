@@ -15,6 +15,7 @@ Only the hub changes. From `platform-py/`: `git fetch --tags && git checkout v0.
 ### Changed
 - Containers page: the host panel says when it was measured ("Atualizado às HH:MM:SS" / "Updated at …", GMT-3 like
   the other screens) instead of "current usage · updates itself".
+- Menu icons: Status shows the gauge; the Operação group (tasks, backups, health, logs) shows a wrench.
 
 ## [0.3.1] — 2026-11-23
 
