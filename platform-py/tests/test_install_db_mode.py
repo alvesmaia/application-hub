@@ -53,7 +53,9 @@ def test_a_rerun_adds_the_new_secrets_and_keeps_the_existing(tmp_path: Path) -> 
 
 def test_an_install_that_still_has_the_old_hub_server_stops_before_building(tmp_path: Path) -> None:
     # the hub's data is in <project>-db: starting the new compose would open an empty `hub` database
-    old = RECORDING_DOCKER.replace('  "inspect "*)', '  "inspect app-hub-db") exit 0 ;;\n  "inspect "*)')
+    old = RECORDING_DOCKER.replace(
+        '  "inspect "*)', '  "inspect --type") [ "$4" = app-hub-db ] && exit 0; exit 1 ;;\n  "inspect "*)'
+    )
     log = tmp_path / "log"
     r = run_install(
         tmp_path, ("--yes", "--skip-doctor"), fakes={"docker": old}, env_extra={"FAKE_LOG": str(log)}
@@ -80,9 +82,27 @@ def test_config_only_on_an_existing_prod_env_only_adds_the_missing_secrets(tmp_p
 def test_a_rerun_checks_the_old_server_of_its_own_project(tmp_path: Path) -> None:
     # the rerun takes the project from .prod.env (no --project): another instance's old server is not this one's
     assert run_install(tmp_path, ("--config-only", "--yes", "--project", "app-hub-x")).returncode == 0
-    old = RECORDING_DOCKER.replace('  "inspect "*)', '  "inspect app-hub-x-db") exit 0 ;;\n  "inspect "*)')
+    old = RECORDING_DOCKER.replace(
+        '  "inspect "*)', '  "inspect --type") [ "$4" = app-hub-x-db ] && exit 0; exit 1 ;;\n  "inspect "*)'
+    )
     log = tmp_path / "log"
     r = run_install(
         tmp_path, ("--yes", "--skip-doctor"), fakes={"docker": old}, env_extra={"FAKE_LOG": str(log)}
     )
     assert r.returncode == 1 and "db-merge.sh --project app-hub-x" in r.stderr and not log.exists()
+
+
+def test_an_old_volume_with_the_same_prefix_is_not_an_old_server(tmp_path: Path) -> None:
+    """`docker inspect <name>` searches every object type and Podman matches name prefixes: the leftover
+    `<project>-db-data` volume made the rerun refuse ("still on two servers") with no `<project>-db` container."""
+    assert run_install(tmp_path, ("--config-only", "--yes", "--project", "app-hub-x")).returncode == 0
+    volume_only = RECORDING_DOCKER.replace(
+        '  "inspect "*)', '  "inspect app-hub-x-db") exit 0 ;;\n  "inspect "*)'
+    )
+    r = run_install(
+        tmp_path,
+        ("--yes", "--skip-doctor"),
+        fakes={"docker": volume_only},
+        env_extra={"FAKE_LOG": str(tmp_path / "log")},
+    )
+    assert "db-merge.sh" not in r.stderr, r.stderr

@@ -106,3 +106,7 @@
 - ✅ 92 · admin/runtime: remover a nota "App limits above the host capacity..."
 - ✅ 93 · admin/runtime: "Capacidade do host" à esquerda e "Runtime" à direita
 - ✅ 94 · Validar implantação: instalação nova e atualização de versão existente, medindo a indisponibilidade do hub e dos apps
+- ✅ 95 · Riscos remanescentes da 0.3.0: atualização em servidor RHEL com Podman sem root, a partir da 0.2.0 com dois servidores de banco (db-merge + hub_update)
+  - ✅ achado no laboratório Podman: hub_update.py, install.sh e db-merge.sh usavam `docker inspect` sem `--type container`; no Podman o nome `app-hub-db` casava com o volume `app-hub-db-data` e a atualização sem parada era recusada
+- ✅ 96 · Rótulos de status no padrão das páginas de status (Statuspage): Operacional, Degradado (antes "Instável") e Indisponível / Outage
+- ✅ 97 · admin/runtime: "Capacidade do host" mostra o uso real medido (/proc do host + uso de cada contêiner), atualiza a cada 5 s; "Aplicações" em magenta; hover com valor / total; runtime no "i" ao lado do título

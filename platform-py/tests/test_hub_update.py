@@ -4,6 +4,9 @@ import importlib.util
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
+
+import pytest
 
 spec = importlib.util.spec_from_file_location(
     "hub_update", Path(__file__).parents[1] / "scripts" / "hub_update.py"
@@ -144,3 +147,17 @@ def test_the_backup_dumps_the_single_server(monkeypatch, tmp_path):
     monkeypatch.setattr(hu.subprocess, "run", fake_run)
     hu.backup("app-hub", "app-hub-web:pre-update", tmp_path)
     assert dumped == ["app-hub-app-db"]
+
+
+def test_inspect_looks_only_at_containers(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`docker inspect <name>` searches every object type; Podman also matches a name prefix, so `app-hub-db` found
+    the old `app-hub-db-data` volume and the update refused to run ("still on two servers") with no such container."""
+    seen: list[tuple[str, ...]] = []
+
+    def run(*args: str, **_: Any) -> subprocess.CompletedProcess[str]:
+        seen.append(args)
+        return subprocess.CompletedProcess(args, 1, "", "no such container")
+
+    monkeypatch.setattr(hu, "run", run)
+    assert hu.inspect("app-hub-db") is None
+    assert seen == [("docker", "inspect", "--type", "container", "app-hub-db")]

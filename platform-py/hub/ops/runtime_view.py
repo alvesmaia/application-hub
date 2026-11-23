@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from typing import Any
 
 from hub.admin.config import injected_name
@@ -13,18 +14,59 @@ MIB = 1048576
 Row = dict[str, Any]
 
 
-def _seg(v: float, total: float, cls: str, lbl: str) -> tuple[str, str, str]:
-    return f"flex:{max(v / total, 0.0):.4f}", cls, lbl
+Pair = tuple[float, float]  # (CPU vCPU, memory GiB)
+UNMEASURED_LABEL = "Em uso (sem detalhe por contêiner)"
 
 
-def host_segments(host: rt.Host, alloc_cpu: float, alloc_mem: float) -> tuple[list[Any], list[Any]]:
-    """CPU and memory bars: system, platform, apps and free share of the host."""
-    free_cpu, free_mem = host.available_cpu - alloc_cpu, host.available_mem_gib - alloc_mem
-    cpu = [_seg(host.system_cpu, host.cpu, "ops-seg sys", "Sistema"), _seg(host.platform_cpu, host.cpu, "ops-seg plat", "Plataforma"),
-           _seg(alloc_cpu, host.cpu, "ops-seg apps", "Aplicações"), _seg(free_cpu, host.cpu, "ops-seg free", "Livre")]  # fmt: skip
-    mem = [_seg(host.system_mem_gib, host.mem_gib, "ops-seg sys", "Sistema"), _seg(host.platform_mem_gib, host.mem_gib, "ops-seg plat", "Plataforma"),
-           _seg(alloc_mem, host.mem_gib, "ops-seg apps", "Aplicações"), _seg(free_mem, host.mem_gib, "ops-seg free", "Livre")]  # fmt: skip
-    return cpu, mem
+@dataclass(frozen=True)
+class UsageBars:
+    """Segments (flex style, css class, hover) of the CPU and memory bars, and the host usage they add up to."""
+
+    cpu: list[tuple[str, str, str]]
+    mem: list[tuple[str, str, str]]
+    cpu_used: float
+    mem_used: float
+
+
+def _seg(v: float, total: float, cls: str, lbl: str, unit: str) -> tuple[str, str, str]:
+    share = v / total * 100 if total else 0.0
+    return (
+        f"flex:{max(v / total, 0.0) if total else 0.0:.4f}",
+        cls,
+        f"{lbl}: {br(v, 2)} / {br(total, 2)} {unit} ({br(share, 1)}%)",
+    )
+
+
+def _bar(
+    total: float, host_used: float | None, plat: float | None, apps: float | None, unit: str
+) -> tuple[list[Any], float]:
+    """System = the host's usage minus what the hub's containers use; without per-container numbers the whole
+    usage is one segment (no made-up split)."""
+    p, a = plat or 0.0, apps or 0.0
+    used = min(max(host_used if host_used is not None else p + a, p + a), total)
+    first = "Sistema" if plat is not None else UNMEASURED_LABEL
+    segs = [_seg(used - p - a, total, "ops-seg sys", first, unit), _seg(p, total, "ops-seg plat", "Plataforma", unit),
+            _seg(a, total, "ops-seg apps", "Aplicações", unit), _seg(total - used, total, "ops-seg free", "Livre", unit)]  # fmt: skip
+    return segs, used
+
+
+def usage_bars(
+    host: rt.Host, host_usage: tuple[float | None, float | None], plat: Pair | None, apps: Pair | None
+) -> UsageBars:
+    """`host_usage`: (CPU fraction 0..1, memory GiB) of the whole host, None when /proc cannot be read."""
+    frac, mem = host_usage
+    cpu_segs, cpu_used = _bar(host.cpu, frac * host.cpu if frac is not None else None,
+                              plat and plat[0], apps and apps[0], "vCPU")  # fmt: skip
+    mem_segs, mem_used = _bar(host.mem_gib, mem, plat and plat[1], apps and apps[1], "GiB")
+    return UsageBars(cpu_segs, mem_segs, round(cpu_used, 2), round(mem_used, 2))
+
+
+def measured(rows: list[Row]) -> Pair | None:
+    """(vCPU, GiB) used by these containers; None when the runtime could not measure them."""
+    if any(r.get("cpu_used") is None for r in rows if r.get("state") == "running"):
+        return None
+    run = [r for r in rows if r.get("state") == "running"]
+    return float(sum(r["cpu_used"] for r in run)), float(sum((r.get("mem_used") or 0) for r in run)) / rt.GIB
 
 
 def maintenance_alert(mt: Row | None) -> tuple[str, str, str] | None:

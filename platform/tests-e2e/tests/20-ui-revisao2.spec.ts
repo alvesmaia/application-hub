@@ -168,3 +168,17 @@ test('hover da linha de /admin/users pinta também a faixa sob a coluna Ações'
   }, [b.x + b.width - 40, b.y + b.height - 4, b.x + 200, b.y + 15]);
   expect(under).toBe(cell);
 });
+
+test('Containers: capacidade do host com uso medido, valor/total no hover e runtime no "i" @core', async ({ page }) => {
+  await page.goto('/admin/runtime');
+  const panel = page.locator('[data-ops-host]');
+  await expect(panel.locator('.ops-caption').first()).toHaveText(/CPU · [0-9,]+ de [0-9,]+ vCPU em uso/);
+  const titles = await panel.locator('.ops-seg').evaluateAll((els) => els.map((e) => e.getAttribute('title') || ''));
+  expect(titles.length).toBe(8);
+  for (const t of titles) expect(t).toMatch(/: [0-9,]+ \/ [0-9,]+ (vCPU|GiB) \([0-9,]+%\)$/);
+  await expect(panel.locator('.hub-info-toggle')).toHaveAttribute('title', /^Runtime: /);
+  await expect(page.locator('#ops-socket')).toHaveCount(0);
+  // refreshed by itself: the panel node is replaced within the polling interval
+  await panel.evaluate((el) => el.setAttribute('data-old', '1'));
+  await expect(page.locator('[data-ops-host][data-old]')).toHaveCount(0, { timeout: 12_000 });
+});

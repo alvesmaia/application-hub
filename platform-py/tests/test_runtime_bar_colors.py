@@ -30,3 +30,12 @@ def test_platform_and_apps_segments_have_distinct_colors() -> None:
     seg = {k: re.search(rf"\.ops-seg\.{k}\{{background:([^}}]+)\}}", css) for k in ("sys", "plat", "apps")}
     colors = {k: _resolve(m.group(1), tokens) for k, m in seg.items() if m}
     assert len(colors) == 3 and len(set(colors.values())) == 3, colors
+
+
+def test_apps_segment_is_magenta_not_green() -> None:
+    """Green read as "free"; magenta stands apart from the platform's blue and carries no status meaning."""
+    css = (ASSETS / "web" / "ops.css").read_text("utf-8")
+    assert (
+        ".ops-seg.apps{background:#d6409f}" in css.lower()
+        and ".ops-legend .apps:before{background:#d6409f}" in css.lower()
+    )

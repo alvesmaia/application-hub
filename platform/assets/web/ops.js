@@ -455,4 +455,14 @@
       if (out) { out.className = 'ops-validate-result err'; out.textContent = ex.message; }
     }
   });
+
+  // Host panel (/admin/runtime): measured usage, refreshed every 5 s while the tab is visible.
+  setInterval(async () => {
+    const panel = document.querySelector('[data-ops-host]');
+    if (!panel || document.hidden) return;
+    try {
+      const r = await fetch(panel.dataset.opsHost, { credentials: 'same-origin', headers: { Accept: 'text/html' } });
+      if (r.ok) panel.outerHTML = await r.text();
+    } catch (_) { /* next round */ }
+  }, 5000);
 })();

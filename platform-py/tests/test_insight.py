@@ -598,9 +598,9 @@ def test_status_reflects_probes_and_uptime(hub: TestClient) -> None:
     for i in range(5):
         ins.tel.metrics.record_probe("ativos", "producao", False, now - i)
     st = hub.get("/status").text
-    assert "Instável" in st and "uptime-bad" in st
+    assert "Degradado" in st and "Instável" not in st and "uptime-bad" in st
     home = hub.get("/").text
-    assert "Instável" in home
+    assert "Degradado" in home
     data = status_data(
         hub.app.state.gateway.registry,
         {"ativos"},

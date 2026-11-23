@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import re
 import time
 import zipfile
 from collections.abc import Iterator
@@ -389,13 +390,19 @@ def test_runtime_api_and_page(hub: TestClient, docker: FakeDocker) -> None:
     assert "runtime=podman" not in page  # no Docker/Podman chips: they only relabelled a read-only field
 
 
-def test_runtime_page_host_capacity_left_runtime_right_without_over_limit_note(
-    hub: TestClient, docker: FakeDocker
-) -> None:
+def test_runtime_page_host_usage_panel_with_runtime_in_the_i(hub: TestClient, docker: FakeDocker) -> None:
     page = hub.get("/admin/runtime").text
-    grid = page.split('<div class="ops-grid-2">', 1)[1]
-    assert grid.index("<h3>Capacidade do host</h3>") < grid.index("<h3>Runtime</h3>")
-    assert "acima da capacidade do host" not in page and "ops-warn" not in grid.split("</div>", 1)[0]
+    assert (
+        "<h3>Capacidade do host</h3>" in page
+        and "<h3>Runtime</h3>" not in page
+        and 'id="ops-socket"' not in page
+    )
+    i = re.search(r'<span class="hub-info-toggle sm"[^>]*title="Runtime: ([^"]+)"', page)
+    assert i and "docker.sock" in i.group(1)
+    assert 'data-ops-host="/admin/runtime/host"' in page and "acima da capacidade do host" not in page
+    part = hub.get("/admin/runtime/host")
+    assert part.status_code == 200 and part.text.lstrip().startswith('<section class="panel ops-host"')
+    assert re.search(r'title="Aplicações: [0-9,]+ / 8,00 vCPU \([0-9,]+%\)"', part.text)
 
 
 def test_runtime_unreachable(hub: TestClient) -> None:
@@ -406,6 +413,8 @@ def test_runtime_unreachable(hub: TestClient) -> None:
     assert hub.get("/api/ops/runtime").json()["engine"]["reachable"] is False
     page = hub.get("/admin/runtime").text
     assert "Runtime indisponível" in page and "Não criado" not in page and "Sem conexão" in page
+    # without the runtime the containers cannot be measured: the host's usage is shown whole, not as "Sistema"
+    assert 'title="Em uso (sem detalhe por contêiner): ' in hub.get("/admin/runtime/host").text
     assert hub.post("/api/ops/runtime/ativos/restart", headers=JSON).status_code == 503
     assert hub.get("/api/ops/runtime/ativos/logs").status_code == 503
 

@@ -34,3 +34,6 @@ __pycache__/
 # Local compose secrets (e.g. COLETOR_ATIVOS_TOKEN)
 /platform/.env
 /platform/.dev.env
+
+# Playwright MCP screenshots and logs (local tool output)
+.playwright-mcp/

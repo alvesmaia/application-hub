@@ -19,14 +19,14 @@ while [ $# -gt 0 ]; do
   shift
 done
 OLD=$P-db NEW=$P-app-db WEB=$P-web
-if ! docker inspect "$OLD" >/dev/null 2>&1; then echo "nada a fundir: $OLD não existe (o hub já usa um servidor só)"; exit 0; fi
+if ! docker inspect --type container "$OLD" >/dev/null 2>&1; then echo "nada a fundir: $OLD não existe (o hub já usa um servidor só)"; exit 0; fi
 if [ "$YES" = 0 ]; then
   [ -t 0 ] || { echo "sem terminal para confirmar: rode de novo com --yes" >&2; exit 1; }
   printf 'Parar o hub (%s) e mover o banco hub de %s para %s? (s/N): ' "$WEB" "$OLD" "$NEW"
   IFS= read -r a || a=n
   case "$a" in s | S | sim) ;; *) echo "cancelado: nada foi alterado" >&2; exit 1 ;; esac
 fi
-docker inspect "$NEW" >/dev/null 2>&1 || { echo "$NEW não existe: suba a pilha atual antes (o servidor dos apps)" >&2; exit 1; }
+docker inspect --type container "$NEW" >/dev/null 2>&1 || { echo "$NEW não existe: suba a pilha atual antes (o servidor dos apps)" >&2; exit 1; }
 ready() { for _ in $(seq 60); do docker exec "$1" pg_isready -U hub -d hub >/dev/null 2>&1 && return 0; sleep 1; done; echo "$1 não respondeu" >&2; exit 1; }
 q() { docker exec "$1" psql -U hub -d hub -v ON_ERROR_STOP=1 -tAc "$2"; }
 docker start "$OLD" "$NEW" >/dev/null
@@ -36,7 +36,7 @@ USER_TABLES="FROM pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_
 if [ "$(q "$NEW" "SELECT count(*) $USER_TABLES")" != 0 ]; then
   echo "o banco hub de $NEW já tem tabelas: nada foi alterado (confira se o hub já roda nele)" >&2; exit 1
 fi
-if docker inspect "$WEB" >/dev/null 2>&1; then echo "parando $WEB"; docker stop "$WEB" >/dev/null; fi
+if docker inspect --type container "$WEB" >/dev/null 2>&1; then echo "parando $WEB"; docker stop "$WEB" >/dev/null; fi
 DIR=${HUB_MERGE_DIR:-$(cd "$(dirname "$0")/.." && pwd)/.secrets/db-merge}
 mkdir -p "$DIR" && chmod 700 "$DIR"
 DUMP=$DIR/hub-$(date +%Y%m%d-%H%M%S).dump

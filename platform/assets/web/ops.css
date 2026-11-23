@@ -35,10 +35,10 @@
 .ops-pill-info{background:var(--c-blue-94);color:var(--color-accent)}
 .ops-pill-muted{background:var(--c-blue-95-13);color:var(--c-gray-52)}
 .ops-stack{display:flex;height:12px;border-radius:var(--radius-md);overflow:hidden;background:var(--c-blue-95-2)}
-.ops-seg.sys{background:var(--color-text-subtle)}.ops-seg.plat{background:var(--color-accent)}.ops-seg.apps{background:var(--color-success)}.ops-seg.free{background:var(--c-blue-95-2)}
+.ops-seg.sys{background:var(--color-text-subtle)}.ops-seg.plat{background:var(--color-accent)}.ops-seg.apps{background:#D6409F}.ops-seg.free{background:var(--c-blue-95-2)}
 .ops-legend{display:flex;flex-wrap:wrap;gap:var(--space-12);margin-top:var(--space-12);font-size:var(--font-size-2xs);color:var(--color-text-secondary)}
 .ops-legend span:before{content:"";display:inline-block;width:8px;height:8px;border-radius:var(--radius-2xs);margin-right:5px;vertical-align:-1px}
-.ops-legend .sys:before{background:var(--color-text-subtle)}.ops-legend .plat:before{background:var(--color-accent)}.ops-legend .apps:before{background:var(--color-success)}.ops-legend .free:before{background:var(--c-blue-89-3)}
+.ops-legend .sys:before{background:var(--color-text-subtle)}.ops-legend .plat:before{background:var(--color-accent)}.ops-legend .apps:before{background:#D6409F}.ops-legend .free:before{background:var(--c-blue-89-3)}
 .ops-container{display:grid;gap:var(--space-10)}
 .ops-image{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ops-meter{display:grid;grid-template-columns:62px 1fr auto;gap:var(--space-8);align-items:center;font-size:var(--font-size-xs);color:var(--color-text-secondary)}
@@ -294,3 +294,7 @@ body.ops-drawer-open{overflow:hidden}
 .ops-subhead{font-size:var(--font-size-sm);margin:var(--space-12) 0 var(--space-6);color:var(--color-text-strong)}
 .ops-pv-tag{display:inline-block;margin-right:var(--space-10)}
 [data-ops-cfg-fields] .form-field label small{margin-left:var(--space-6)}
+/* Host panel (/admin/runtime): runtime address in the hover of a small "i" next to the title; exact value on each segment's hover. */
+.ops-host-title{display:inline-flex;align-items:center;gap:8px}
+.hub-info-toggle.sm{width:18px;height:18px;min-height:18px;font-size:12px;cursor:help}
+.ops-host .ops-seg{cursor:default}

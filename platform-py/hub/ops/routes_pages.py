@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 from functools import partial
 from typing import Any
@@ -19,6 +20,7 @@ from hub.ops import pipeline as pl
 from hub.ops import runtime as rt
 from hub.ops import runtime_view as rv
 from hub.ops.devkit import mount_devkit
+from hub.ops.host_usage import HostUsage
 from hub.ops.model import now_ms
 from hub.ops.opsctx import OpsCtx, br, ctx, tone
 from hub.ops.routes_runtime import list_tasks, runtime_state
@@ -68,6 +70,7 @@ SDK_CMDS = [
 ]  # fmt: skip
 
 router = APIRouter()
+HOST_USAGE = HostUsage()  # keeps the previous /proc/stat sample: CPU is the difference between two
 
 
 def render(
@@ -135,26 +138,41 @@ async def deploys_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response
                   example=MANIFEST_EXAMPLE, cmds=SDK_CMDS)  # fmt: skip
 
 
+async def host_panel(ops: OpsCtx, info: dict[str, Any]) -> dict[str, Any]:
+    """Context of `_runtime_host.html`: the host's measured usage split by system, platform and apps."""
+    host = rt.Host(info.get("ncpu"), (info.get("mem_total") or 0) / rt.GIB or None)
+    usage = await asyncio.to_thread(HOST_USAGE.sample)
+    up = info.get("reachable", False)  # without the runtime, no container can be measured
+    plat, apps = (
+        (rv.measured(info.get("platform", [])), rv.measured(info.get("live", []))) if up else (None, None)
+    )
+    bars = rv.usage_bars(host, usage, plat, apps)
+    sock = os.getenv("HUB_CONTAINER_SOCKET_HOST") or info.get("socket", "")  # on the host, not inside the hub
+    return {"bars": bars, "runtime_info": f"Runtime: {sock} · {info.get('version', '')}".rstrip(" ·"),
+            "cpu_title": f"CPU · {br(bars.cpu_used, 1)} de {br(host.cpu, 1)} vCPU em uso",
+            "mem_title": f"Memória · {br(bars.mem_used, 1)} de {br(host.mem_gib, 1)} GiB em uso",
+            "free_label": f"Livre {br(host.cpu - bars.cpu_used, 1)} vCPU · {br(host.mem_gib - bars.mem_used, 1)} GiB"}  # fmt: skip
+
+
+@router.get("/admin/runtime/host", response_class=HTMLResponse)
+async def runtime_host(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:
+    """The host panel alone: the page fetches it every few seconds (ops.js)."""
+    data = ops.page_ctx(request) | await host_panel(ops, await ops.eng.probe())
+    return page_response(ops.templates, request, "_runtime_host.html", data)
+
+
 @router.get("/admin/runtime", response_class=HTMLResponse)
 async def runtime_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:
-    data, info, rows, host = await runtime_state(ops)
-    alloc_cpu, alloc_mem = rt.allocated(ops.registry.entries(), data["limits"])
-    free_cpu, free_mem = host.available_cpu - alloc_cpu, host.available_mem_gib - alloc_mem
-    cpu_segs, mem_segs = rv.host_segments(host, alloc_cpu, alloc_mem)
+    _data, info, rows, _host = await runtime_state(ops)
     live = {x["name"]: x for x in info["live"]}
     raw = (await ops.admin.cfg.read())["env"]
     view = [rv.container_view(r, live.get(r["container"]), raw, info["reachable"]) for r in rows]
     platform_view = [rv.platform_view(x) for x in sorted(info.get("platform", []), key=lambda z: z["name"])]
-    # the socket on the host (HUB_CONTAINER_SOCKET_HOST), not where it is mounted inside the hub
-    sock = os.getenv("HUB_CONTAINER_SOCKET_HOST") or info["socket"]
     page_rows, pager = paginate(request, view + platform_view)
     return render(ops,
         request, "ops_runtime.html", "Aplicações", "Containers", "Cada aplicação roda isolada, com limites próprios de CPU e memória.",
         rows=page_rows, pager=pager, banner=None if info["reachable"] else f"Runtime indisponível: exibindo especificação. ({info['error']})",
-        shown_socket=sock, rollout=ROLLOUT, host_source=f"Medido em: {host.source}",
-        cpu_title=f"CPU · {br(host.cpu, 1)} vCPU", mem_title=f"Memória · {br(host.mem_gib, 1)} GiB", cpu_segs=cpu_segs,
-        mem_segs=mem_segs, plat_label=f"Plataforma (reservado {br(host.platform_cpu, 1)} vCPU · {br(host.platform_mem_gib, 1)} GiB)",
-        free_label=f"Livre {br(max(free_cpu, 0), 1)} vCPU · {br(max(free_mem, 0), 1)} GiB",
+        rollout=ROLLOUT, **await host_panel(ops, info),
     )  # fmt: skip
 
 

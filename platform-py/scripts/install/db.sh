@@ -7,7 +7,7 @@ db_summary() {
 }
 
 old_db_guard() { # old_db_guard <project>: an install from before the single Postgres still has the hub's data in <project>-db
-  docker inspect "$1-db" >/dev/null 2>&1 || return 0
+  docker inspect --type container "$1-db" >/dev/null 2>&1 || return 0 # never the leftover <project>-db-data volume
   echo "este hub ainda tem o banco em $1-db (instalação com dois servidores): mova-o antes para o servidor único com" >&2
   echo "  bash platform-py/scripts/db-merge.sh --project $1" >&2
   exit 1

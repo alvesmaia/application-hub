@@ -26,8 +26,9 @@ sed -i "0,/^version = \"[^\"]*\"/s//version = \"$V\"/" platform-py/pyproject.tom
 if ! grep -q "^## \[$V\]" CHANGELOG.md; then
   sed -i "s/^## \[Unreleased\]$/## [Unreleased]\n\n## [$V] — $(date +%F)/" CHANGELOG.md
 fi
-(cd platform-py && uv lock -q && uv run python -m hub.ops.devdocs --dates)
-git add platform-py/hub/__init__.py platform-py/pyproject.toml platform-py/uv.lock CHANGELOG.md platform/docs/dev/dates.json
+# the CLI's lock records the hub version too (left stale, the next hub-check rewrote it outside the release)
+(cd platform-py && uv lock -q && uv lock -q --project cli && uv run python -m hub.ops.devdocs --dates)
+git add platform-py/hub/__init__.py platform-py/pyproject.toml platform-py/uv.lock platform-py/cli/uv.lock CHANGELOG.md platform/docs/dev/dates.json
 git commit -m "chore(release): v$V"
 git tag -a "v$V" -F "$notes"
 if [ "$PUSH" = 1 ]; then

@@ -1,5 +1,57 @@
 [
 [
+"Uso atual · atualiza sozinho",
+"Current usage · updates itself"
+],
+[
+"CPU · {} de {} vCPU em uso",
+"CPU · {} of {} vCPU in use"
+],
+[
+"Memória · {} de {} GiB em uso",
+"Memory · {} of {} GiB in use"
+],
+[
+"Sistema: {} / {} vCPU ({}%)",
+"System: {} / {} vCPU ({}%)"
+],
+[
+"Sistema: {} / {} GiB ({}%)",
+"System: {} / {} GiB ({}%)"
+],
+[
+"Plataforma: {} / {} vCPU ({}%)",
+"Platform: {} / {} vCPU ({}%)"
+],
+[
+"Plataforma: {} / {} GiB ({}%)",
+"Platform: {} / {} GiB ({}%)"
+],
+[
+"Aplicações: {} / {} vCPU ({}%)",
+"Applications: {} / {} vCPU ({}%)"
+],
+[
+"Aplicações: {} / {} GiB ({}%)",
+"Applications: {} / {} GiB ({}%)"
+],
+[
+"Livre: {} / {} vCPU ({}%)",
+"Free: {} / {} vCPU ({}%)"
+],
+[
+"Livre: {} / {} GiB ({}%)",
+"Free: {} / {} GiB ({}%)"
+],
+[
+"Em uso (sem detalhe por contêiner): {} / {} vCPU ({}%)",
+"In use (no per-container detail): {} / {} vCPU ({}%)"
+],
+[
+"Em uso (sem detalhe por contêiner): {} / {} GiB ({}%)",
+"In use (no per-container detail): {} / {} GiB ({}%)"
+],
+[
 "Contas do Entra ID não têm senha no hub: a senha é gerida na Microsoft.",
 "Entra ID accounts have no hub password: the password is managed at Microsoft."
 ],
@@ -2332,10 +2384,6 @@
 "Start"
 ],
 [
-"Instável",
-"Unstable"
-],
-[
 "Interrompida: o hub reiniciou durante a implantação e o runtime está indisponível ({e}).",
 "Interrupted: the hub restarted during the deployment and the runtime is unavailable ({e})."
 ],
@@ -3314,10 +3362,6 @@
 [
 "Plataforma",
 "Platform"
-],
-[
-"Plataforma (reservado {} vCPU · {} GiB)",
-"Platform (reserved {} vCPU · {} GiB)"
 ],
 [
 "Podman",

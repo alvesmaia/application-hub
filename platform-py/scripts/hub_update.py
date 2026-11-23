@@ -49,7 +49,9 @@ def run(
 
 
 def inspect(name: str) -> dict[str, Any] | None:
-    p = run("docker", "inspect", name, check=False, quiet=True)
+    p = run(
+        "docker", "inspect", "--type", "container", name, check=False, quiet=True
+    )  # never a same-named volume or image
     return json.loads(p.stdout)[0] if p.returncode == 0 else None
 
 

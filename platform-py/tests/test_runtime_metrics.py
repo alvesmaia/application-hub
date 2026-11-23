@@ -69,7 +69,9 @@ def test_the_real_socket_of_the_host_is_shown(hub: TestClient, monkeypatch: pyte
     sock = "/data/app-hub-engine/run/podman/podman.sock"
     monkeypatch.setenv("HUB_CONTAINER_SOCKET_HOST", sock)
     page = hub.get("/admin/runtime").text
-    assert f'value="{sock}"' in page and "Conectado a" not in page
+    assert (
+        f'title="Runtime: {sock}' in page and "Conectado a" not in page
+    )  # in the "i" next to the host panel title
     assert "/var/run/docker.sock" not in page
 
 

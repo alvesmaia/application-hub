@@ -7,6 +7,33 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Upgrade from 0.3.0
+Only the hub changes (no compose, secrets or sample app change). From `platform-py/`:
+
+1. `git fetch --tags && git checkout v0.3.1`
+2. `python scripts/hub_update.py --build --project <project>` — swaps the hub without downtime (backup, copy, watch,
+   automatic rollback). Measured: one lost check of ~0.3 s; the apps are not touched.
+3. Check: `curl -s http://127.0.0.1:<port>/healthz` answers `"version":"0.3.1"`.
+
+Coming from 0.2.0, follow the 0.3.0 steps first. Rollback: `python scripts/hub_update.py --rollback`.
+
+### Fixed
+- **Rootless Podman:** `hub_update.py`, the install guard (`install.sh`, `hub-start.sh`, `dev.sh`) and `db-merge.sh`
+  looked for the old `<project>-db` container with an untyped `docker inspect`, which also matches volumes (and, on
+  Podman, name prefixes). With the leftover `<project>-db-data` volume, the zero-downtime update refused to run
+  ("still on two servers") and a rerun of `install.sh` or a reboot (`hub-start.sh`) could stop the same way. They now
+  inspect containers only. Measured on a RHEL-like server with rootless Podman: the hub swap had one lost check
+  (~0.3 s) instead of the ~19 s stop of `dc up -d`.
+
+### Changed
+- Containers page (`/admin/runtime`): "Host capacity" shows the **measured usage** of the whole host (its `/proc`)
+  split into system, platform and applications from each container's numbers, refreshed every 5 s; each segment's
+  hover gives value / total (share); applications are magenta (green read as "free"); the runtime address moved to
+  the hover of an "i" next to the title. When containers cannot be measured, the usage shows whole ("In use, no
+  per-container detail"). Admission of new apps still uses the reserved limits.
+- App status labels follow status pages: Operational, Degraded (was "Unstable") and Outage (pt-BR: Operacional,
+  Degradado, Indisponível).
+
 ## [0.3.0] — 2026-11-23
 
 ### Attention
