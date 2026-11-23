@@ -7,6 +7,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-11-23
+
 ### Attention
 - **Sample apps renamed to English ids and routes:** `ativos`→`inventory`, `fornecedores`→`suppliers`,
   `servicos`→`servicedesk`, `coletor`→`collector`, `automacoes`→`automations` (URLs `/apps/<id>/…`, containers,
