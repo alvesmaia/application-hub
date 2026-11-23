@@ -7,6 +7,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-11-23
+
 ### Upgrade from 0.3.0
 Only the hub changes (no compose, secrets or sample app change). From `platform-py/`:
 
