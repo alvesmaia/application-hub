@@ -7,6 +7,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.4.1] — 2026-11-24
+
 ### Fixed
 - MCP sign-in (OAuth) behind a corporate proxy: the client document (e.g. GitHub Copilot desktop's
   `client-metadata.json`) failed with "certificate verify failed" because the hub pinned the vetted IP in the URL and,

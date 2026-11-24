@@ -1,6 +1,6 @@
 {
  "CONTRATO-APP.md": "2026-11-23",
- "dev/AGENTS.md": "2026-11-19",
+ "dev/AGENTS.md": "2026-11-24",
  "dev/cli.md": "2026-11-19",
  "dev/comecar.md": "2026-10-16",
  "dev/guias/armazenamento.md": "2026-10-14",
@@ -11,5 +11,5 @@
  "dev/guias/publicar.md": "2026-10-16",
  "dev/guias/telas.md": "2026-10-14",
  "dev/guias/tempo-real.md": "2026-10-14",
- "dev/sdk.md": "2026-11-19"
+ "dev/sdk.md": "2026-11-24"
 }
