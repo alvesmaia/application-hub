@@ -615,6 +615,7 @@ td.row-actions form{margin:0 0 0 var(--space-6)}
 .settings-grid .panel{margin:0}
 .check-group{border:1px solid var(--color-border);border-radius:8px;padding:var(--space-8) var(--space-12);margin:var(--space-6) 0 0;display:flex;flex-wrap:wrap;gap:var(--space-6) var(--space-16)}
 .check-group legend{font-size:12px;font-weight:600;color:var(--color-text);padding:0 4px}
+.check-group .check-row{min-height:24px} /* WCAG 2.5.8: wrapped rows keep 24px between checkboxes */
 /* Visible focus on checkbox/radio and on the app fields (the app's CSS does not remove it). */
 input[type=checkbox]:focus-visible,input[type=radio]:focus-visible{outline:2px solid var(--color-focus)!important;outline-offset:2px!important}
 #app-root :is(input,select,textarea):focus-visible{outline:2px solid var(--color-focus)!important;outline-offset:1px!important}

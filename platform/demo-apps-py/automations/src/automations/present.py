@@ -6,9 +6,8 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone, tzinfo
+from datetime import date, datetime
 from typing import Any
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from hub_sdk import locale
 from hub_sdk.locale import t
@@ -16,16 +15,7 @@ from hub_sdk.locale import t
 ISO_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 
-def _zone() -> tzinfo:
-    try:
-        return ZoneInfo("America/Sao_Paulo")
-    except ZoneInfoNotFoundError:
-        # ponytail: no tz database (e.g. Windows without tzdata) → fixed UTC-3, exact since
-        # São Paulo dropped DST in 2019; install tzdata if the rule ever changes again.
-        return timezone(timedelta(hours=-3), "America/Sao_Paulo")
-
-
-TZ = _zone()
+TZ = locale.zone()
 
 
 @dataclass(frozen=True)

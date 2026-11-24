@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from typing import Any
 
-from hub.ops import appnet
+from hub.ops import appnet, container_proc
 from hub.ops.capacity import (  # re-exported: callers use rt.Host, rt.admit, …
     GIB as GIB,
 )
@@ -182,10 +182,8 @@ class Engine:
 
             with ThreadPoolExecutor(max_workers=min(16, len(cs) or 1)) as ex:
                 out = list(ex.map(one, cs))
-            note = UNMEASURED if unmeasured(out) else ""
-            if note:  # the engine reports another cgroup: no number is better than a wrong one
-                for x in out:
-                    x.update(cpu_used=None, mem_used=None, pids=None)
+            # the engine reports another cgroup: measure from each container's /proc; no number beats a wrong one
+            note = UNMEASURED if unmeasured(out) and not container_proc.fill(out, cs) else ""
             plat = (v.get("Platform") or {}).get("Name", "Engine")
             return {"reachable": True, "socket": os.getenv("HUB_CONTAINER_SOCKET", "/var/run/docker.sock"),
                     "version": f"{plat} {v.get('Version', '')}", "error": "",

@@ -129,7 +129,7 @@ class Insight:
         self.analytics.ux = ux
         self.usage = Usage(data_dir, os.environ.get("HUB_USAGE") != "0")
         self.admin, self.registry, self.data_dir = admin, registry, data_dir
-        self.ops = InsightOps(admin)
+        self.ops = InsightOps(admin, lambda a: e.name if (e := registry.get(a)) else a)
         self.tasks: list[asyncio.Task[None]] = []
         self.firing: dict[str, bool] = {}
         self.is_leader: Callable[[], bool] = lambda: True  # only the leader opens/closes incidents and alerts
@@ -319,7 +319,7 @@ class Insight:
 
     def _short(self, app_id: str) -> str:
         e = self.registry.get(app_id)
-        return (e.display.get("short") or e.name) if e else "Plataforma"
+        return e.name if e else "Plataforma"
 
     async def _app_channel(self, client: httpx.AsyncClient) -> None:
         """Fetches new spans and meters from each app (`/{id}/_hub/telemetry`, internal token)."""

@@ -26,6 +26,7 @@ class StatusApp:
     uptime: str
     bars: list[tuple[str, str]]
     slo: str | None = None
+    start: str = ""  # left label of the bars when the data begins inside the window ("desde dd/mm")
 
 
 @dataclass
@@ -37,6 +38,12 @@ class StatusData:
 
 def _label(ms: int) -> str:
     return datetime.fromtimestamp(ms / 1000, _GMT3).strftime("%d/%m")
+
+
+def _day(t: int) -> str:
+    """Label of a daily bucket: buckets start at midnight UTC, so the date is read in UTC (in GMT-3 it is the day
+    before)."""
+    return datetime.fromtimestamp(t, UTC).strftime("%d/%m")
 
 
 def current_state(m: Metrics | None, app: str, env: str, open_: list[dict[str, Any]]) -> str:
@@ -116,11 +123,13 @@ def _status_app(
     label, css = state_label(key)
     days = daily_uptime(m, app_id, "producao", months * 31 if months else 30, int(now)) if m else []
     known = [v for _, v in days if v is not None]
-    span = f"{months} meses" if months else "30 dias"
-    uptime = f"{pct(sum(known) / len(known))} em {span}" if known else "sem dados"
-    periods = _monthly(days, months, now) if months else [(_label(t * 1000), v) for t, v in days]
+    first = next((t for t, v in days if v is not None), None)
+    start = f"desde {_day(first)}" if not months and first is not None and first > days[0][0] else ""
+    span = start or (f"em {months} meses" if months else "em 30 dias")  # a new app: since its first check
+    uptime = f"{pct(sum(known) / len(known))} {span}" if known else "sem dados"
+    periods = _monthly(days, months, now) if months else [(_day(t), v) for t, v in days]
     bars = _uptime_bars(periods) or _empty_bars(now)
-    return StatusApp(name, "Produção", label, css, uptime, bars, _slo_line(m, slos, app_id))
+    return StatusApp(name, "Produção", label, css, uptime, bars, _slo_line(m, slos, app_id), start)
 
 
 def _incident_row(i: dict[str, Any], names: dict[str, str], ms: int) -> dict[str, Any]:
@@ -155,7 +164,7 @@ def status_data(
     incidents = [i for i in admin_data.get("incidents", []) if shown(i["app"])]
     open_ = [i for i in incidents if i["resolved"] is None]
     slos = admin_data.get("slos", [])
-    names = {e.id: e.display.get("short") or e.name for e in reg.entries()}
+    names = {e.id: e.name for e in reg.entries()}
     states = app_states(reg, visible, m, incidents)
     data.apps = [_status_app(m, slos, a, n, k, now, months) for a, n, k in states]
     ms = int(now * 1000)

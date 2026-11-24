@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 
 from hub import __version__, devmode
-from hub.ux.texts import js_catalog, resolve, t
+from hub.ux.texts import default_lang, js_catalog, resolve, t
 from hub.webctx import STAGING_BAR_CSS, THEME, WebCtx, find_asset, web
 
 router = APIRouter()
@@ -125,7 +125,7 @@ async def service_worker(w: WebCtx = Depends(web)) -> Response:
 
 @router.get("/manifest.webmanifest")
 async def manifest(request: Request, start: str = "", w: WebCtx = Depends(web)) -> JSONResponse:
-    lang = resolve("", request.headers.get("accept-language"))
+    lang = resolve(default_lang(request.app.state.data_dir), request.headers.get("accept-language"))
     ents = sorted(w.gateway.registry.entries(), key=lambda e: (e.id != "collector", e.id))
     s = start.strip()
     sid = s.removeprefix("/apps/") if s.startswith("/apps/") else s.removeprefix("/")
@@ -158,7 +158,7 @@ async def manifest(request: Request, start: str = "", w: WebCtx = Depends(web)) 
 
 @router.get("/offline", response_class=HTMLResponse)
 async def offline(request: Request, w: WebCtx = Depends(web)) -> Response:
-    lang = resolve("", request.headers.get("accept-language"))
+    lang = resolve(default_lang(request.app.state.data_dir), request.headers.get("accept-language"))
     return w.templates.TemplateResponse(
         request,
         "offline.html",

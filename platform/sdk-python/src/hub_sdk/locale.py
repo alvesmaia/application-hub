@@ -15,8 +15,10 @@ from __future__ import annotations
 
 import contextvars
 import datetime as dt
+import os
 from collections.abc import Mapping
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from starlette.types import ASGIApp, Receive, Scope, Send
 
@@ -119,6 +121,16 @@ def money_cents(cents: int | None) -> str:
     code = current()
     v = number(int(cents) / 100, 2, code)
     return f"BRL {v}" if code == "en" else f"R$ {v}"
+
+
+def zone() -> dt.tzinfo:
+    """Display time zone of the apps: ``HUB_TZ`` (default ``America/Sao_Paulo``, the only one the hub admin offers)."""
+    try:
+        return ZoneInfo(os.environ.get("HUB_TZ") or "America/Sao_Paulo")
+    except (ZoneInfoNotFoundError, ValueError):
+        # ponytail: no tz database (e.g. Windows without tzdata) or a bad HUB_TZ → fixed UTC-3, exact
+        # since São Paulo dropped DST in 2019; install tzdata if the rule ever changes again.
+        return dt.timezone(dt.timedelta(hours=-3), "America/Sao_Paulo")
 
 
 def date(d: dt.date | None) -> str:

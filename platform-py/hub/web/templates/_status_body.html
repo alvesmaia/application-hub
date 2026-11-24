@@ -4,7 +4,7 @@
 {% for a in data.apps %}<div class="status-app" data-status-app="{{ a.name }}">
 <div class="status-app-head"><strong>{{ a.name }}</strong><span class="obs-muted"> · {{ tr(a.env) }}</span><span class="{{ a.css }}" data-status-state="">{{ tr(a.state) }}</span></div>
 <div class="uptime-bars" aria-label="{{ tr('Disponibilidade dos últimos 12 meses' if months else 'Disponibilidade dos últimos 30 dias') }}">{% for c, ti in a.bars %}<span class="{{ c }}" title="{{ tr(ti) }}"></span>{% endfor %}</div>
-<div class="status-app-foot"><span>{{ tr('12 meses atrás' if months else '30 dias atrás') }}</span><span>{{ tr(a.uptime) }}</span><span>{{ tr('hoje') }}</span></div>
+<div class="status-app-foot"><span>{{ tr(a.start or ('12 meses atrás' if months else '30 dias atrás')) }}</span><span>{{ tr(a.uptime) }}</span><span>{{ tr('hoje') }}</span></div>
 {% if a.slo %}<div class="obs-muted">{{ a.slo }}</div>{% endif %}
 </div>
 {% endfor %}</section>

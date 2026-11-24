@@ -105,7 +105,7 @@ class SettingsUpdate(In):
     status_public: bool = False
     status_public_apps: list[str] = Field(default_factory=list)
     catalog_hidden_apps: list[str] = Field(default_factory=list)
-    language: Literal["pt-BR", "en"]
+    language: Literal["", "pt-BR", "en"]  # "" = automatic (the browser's language)
     timezone: Literal["America/Sao_Paulo"]
 
 

@@ -93,6 +93,18 @@ def new_form(base: str, msg: str = "") -> str:
     )
 
 
+def kpi_articles(counts: dict[str, int]) -> str:
+    """The dashboard's first three KPIs from the database (count per status)."""
+    out = ""
+    for label, status in (
+        ("Chamados abertos", "Aberto"),
+        ("Em atendimento", "Em atendimento"),
+        ("Aguardando aprovação", "Aguardando"),
+    ):
+        out += f"<article><span>{label}</span><strong>{thousands(counts.get(status, 0))}</strong><small>agora</small></article>"
+    return out
+
+
 def heading_and_stats(counts: dict[str, int], base: str) -> str:
     return (
         '<div class="app3-page-heading"><div><span class="app3-overline">CENTRAL DE SERVIÇOS</span>'

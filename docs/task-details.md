@@ -347,3 +347,73 @@ old values, and recents/Inbox paths needed the section map. Conformance 5/5, E2E
 apps up: 0 findings. Not covered: the binary sample packages `platform/samples/*.hubapp` keep the old ids (built by
 `platform/scripts/sample-packages.sh` from images; regenerate in the heavy validation).
 
+
+✅ **Task 101 — "Runtime unavailable" banner in plain words**
+
+`runtime_view.runtime_banner(error)` maps the engine error to the likely cause: socket missing in the hub container
+(check `HUB_CONTAINER_SOCKET` and the socket volume), no permission on the socket, connection refused (engine
+stopped), timeout. An unknown error keeps a short detail (120 characters). Both languages in the catalog.
+
+✅ **Task 102 — `hub_update.py` applies the rest of the compose without recreating the hub**
+
+After a healthy swap it builds the apps (with `--build`) and runs `up -d --no-deps` on every service of the compose
+plus the ones running from another profile (the sample apps), never the hub. `--hub-only` skips it. Found in the real
+test: every build got a new image id even fully cached (buildx provenance attestation carries the build time, Docker
+Desktop/containerd store), so compose recreated every app; builds now set `BUILDX_NO_DEFAULT_ATTESTATIONS=1` (here
+and in `install.sh`). Isolated project from v0.4.0 (`app-hub-upg`), monitor every 250 ms: first update 0 hub
+failures (all apps recreated once: images built with the attestation); second update with only the suppliers CPU
+limit changed (0.4 → 0.3): recreated only `app-suppliers` and the hub (swap), 0 hub failures, limit applied.
+
+✅ **Task 103 — Sample packages with the English ids**
+
+`platform/scripts/sample-packages.sh` regenerated inventory, suppliers, servicedesk, collector and the two invalid
+packages; the old `ativos`/`fornecedores`/`servicos` files removed. Sources at 0.5 vCPU (= the sample apps).
+Without local `hub-<id>` images the packages point to deterministic `ghcr.io/org/<id>@sha256:` references (format
+valid, the deploy fails at runtime as documented in the script).
+
+✅ **Task 63 — Sample apps from the deployer's browser report**
+
+Buttons with a fake success toast now say "Demonstração: ação desabilitada." (or link to the real create form:
+inventory `assets?new=1`, servicedesk `requests?new=1`); inventory create keeps the list filters and answers 303 to
+the list with the new asset open (conformance profile `ok: [303]`); dashboard KPIs from the database (inventory,
+servicedesk `status_counts()`), the rest labelled illustrative; supplier contract status from the due date;
+`hub_sdk.locale.zone()` (`HUB_TZ`, default America/Sao_Paulo, UTC-3 fallback) in collector, automations and the
+three `i18n.py`; per-app test that every visible fragment text has an English entry.
+
+✅ **Task 64 — Hub consistency from the same report**
+
+Default language of Settings between the user's preference and the browser (`texts.default_lang`, cached by the
+`admin.json` mtime); pt-BR numbers inside catalog templates converted in English; `/status` "desde dd/mm" when the
+data starts inside the 30-day window (daily buckets labelled in UTC: they were one day early in GMT-3); Health
+services seeded from the registry, apps added later offered once (`health_apps`); boot syncs never mark "restart
+pending" (`ConfigOps.track_pending`); example variables only for sample apps present; `display.short` no longer used
+on hub screens. The 0.2.0 report items 1–3 and 13 were task 62; 14–15 (a11y of menus, fetch to /apps/*) dropped by
+the owner with 61.
+
+✅ **Task 105 — MCP sign-in behind a corporate proxy**
+
+Report from a 0.4.0 server: authorizing GitHub Copilot desktop failed with "cliente inválido: documento do cliente
+inacessível: [SSL: CERTIFICATE_VERIFY_FAILED]". The CIMD download pins the vetted IP in the URL (SSRF guard) and sets
+`sni_hostname`; httpcore honors `sni_hostname` on direct connections only — through the proxy tunnel the TLS
+`server_hostname` is the URL's host, so the certificate was checked against the IP. Reproduced with a local squid:
+pinned IP → "IP address mismatch", by name → HTTP 200. Through the proxy the hub now keeps the name (vetting of the
+resolved IPs still runs; the proxy resolves again). If the error persists on a network that inspects TLS, the
+corporate CA must be installed (`install.sh --ca-file`, check with `--doctor`).
+
+✅ **Task 104 — admin/runtime: x / y, scale and the 5-minute chart**
+
+Table: CPU and memory always "x / y" (stopped or not created = 0; platform rows x / limit, or only x without a
+limit). Where the engine reports another cgroup (rootless Podman, no delegation) `container_proc` reads each running
+container's /proc through `exec` (two tick readings 0.5 s apart, RSS from statm); without `sh` it stays "—". Host
+panel split in two full-width panels: "Capacidade do host" (stacked bars with 25% marks, scale, "x / y · %", legend
+with vCPU · GiB per part) and "Últimos 5 minutos" (stacked area per part, top = total, 25% grid, hover per sample).
+History kept in the hub process (`host_chart.HISTORY`, one sample per poll, lost on restart). Iterated with the
+owner on screen (proposals A/B/C → B1, separate panels, horizontal layout, legend values).
+
+✅ **Task 106 — admin/deploys log in the History side panel**
+
+`deploy_log.keep` appends the job (steps, build lines, final message) to the deployment record (`log`, last 600
+lines) after an import and after approve/promote/rollback; the version panel shows it in a scrollable box. The toast
+of a failed import/action is short and points to the History item. Pre-existing, not from this change: the E2E
+"(c)+(b) JavaScript próprio" fails on v0.4.0 too (servicedesk candidate stuck in "migrações do banco em curso" on the
+isolated instance) — to investigate.

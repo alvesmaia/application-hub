@@ -161,3 +161,69 @@ def test_inspect_looks_only_at_containers(monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(hu, "run", run)
     assert hu.inspect("app-hub-db") is None
     assert seen == [("docker", "inspect", "--type", "container", "app-hub-db")]
+
+
+def test_rest_of_stack_never_includes_the_hub_and_keeps_running_profile_services() -> None:
+    got = hu.rest_services(
+        ["app-hub-web", "app-hub-edge", "app-hub-app-db"],
+        ["app-hub-app-inventory", "app-hub-web"],
+        "app-hub-web",
+    )
+    assert got == ["app-hub-app-db", "app-hub-app-inventory", "app-hub-edge"]
+
+
+def _fake_stack(monkeypatch, argv: list[str]) -> list[tuple[str, ...]]:
+    calls: list[tuple[str, ...]] = []
+
+    def run(*args, check=True, quiet=False, env=None):
+        calls.append(args)
+        out = ""
+        if args[-2:] == ("config", "--services"):
+            out = "app-hub-web\napp-hub-edge\n"
+        elif args[:2] == ("docker", "ps"):
+            out = "app-hub-web\napp-hub-app-inventory\n"
+        elif args[:3] == ("docker", "image", "inspect"):
+            out = "sha256:new\n"
+        return subprocess.CompletedProcess(args, 0, out, "")
+
+    main_c = {"Image": "sha256:old", "State": {"Status": "running"},
+              "Config": {"Labels": {"com.docker.compose.service": "app-hub-web"}}}  # fmt: skip
+    monkeypatch.setattr(hu, "run", run)
+    monkeypatch.setattr(hu, "inspect", lambda n: None if n == "app-hub-db" else main_c)
+    monkeypatch.setattr(hu, "compose_cmd", lambda c, *_: ["docker", "compose"])
+    monkeypatch.setattr(hu, "backup", lambda *a: None)
+    monkeypatch.setattr(hu, "swap", lambda *a: "x")
+    monkeypatch.setattr(hu, "watch", lambda *a: True)
+    monkeypatch.setattr(sys, "argv", ["hub_update", *argv, "--no-backup"])
+    assert hu.main() == 0
+    return calls
+
+
+def test_after_a_healthy_swap_the_rest_of_the_compose_is_applied_without_the_hub(monkeypatch) -> None:
+    calls = _fake_stack(monkeypatch, ["--build"])
+    ups = [c for c in calls if "up" in c]
+    assert ups == [("docker", "compose", "up", "-d", "--no-deps", "app-hub-app-inventory", "app-hub-edge")]
+    builds = [c for c in calls if "build" in c]  # the hub, then the apps' new code before the up
+    assert builds[-1] == ("docker", "compose", "build", "app-hub-app-inventory", "app-hub-edge")
+    assert calls.index(builds[-1]) < calls.index(ups[0])
+
+
+def test_hub_only_leaves_the_rest_of_the_stack_alone(monkeypatch) -> None:
+    calls = _fake_stack(monkeypatch, ["--build", "--hub-only"])
+    assert not [c for c in calls if "up" in c]
+
+
+def test_builds_are_reproducible_without_the_buildx_provenance(monkeypatch) -> None:
+    """buildx attaches a provenance attestation with the build time: the image id changes on every build, even fully
+    cached, and compose recreates every app. Without it an unchanged app keeps its container."""
+    seen: list[dict[str, str] | None] = []
+    monkeypatch.setattr(hu, "run", lambda *a, check=True, quiet=False, env=None: seen.append(env))
+    monkeypatch.setattr(hu, "compose_cmd", lambda c, *_: ["docker", "compose"])
+    hu.build({}, "app-hub-app-inventory")
+    assert seen[0] is not None and seen[0]["BUILDX_NO_DEFAULT_ATTESTATIONS"] == "1"
+
+
+def test_install_builds_without_the_buildx_provenance() -> None:
+    net = (Path(__file__).parents[1] / "scripts" / "install" / "net.sh").read_text(encoding="utf-8")
+    body = net.split("build_env() {", 1)[1].split("\n}", 1)[0]
+    assert "export BUILDX_NO_DEFAULT_ATTESTATIONS=1" in body

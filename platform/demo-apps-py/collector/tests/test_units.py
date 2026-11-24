@@ -95,3 +95,14 @@ def test_linear_has_quiet_zone_and_ean_guards() -> None:
 def test_svg_label_is_escaped() -> None:
     s = str(barcodes.svg("qr_code", "x", label='<b onload="x">'))
     assert "<b " not in s and "&lt;b" in s
+
+
+def test_read_time_uses_the_hub_zone_not_the_container_zone(monkeypatch: pytest.MonkeyPatch) -> None:
+    import datetime as dt
+
+    from collector.reads import read_row
+
+    at = dt.datetime(2026, 11, 24, 15, 4, 5, tzinfo=dt.UTC)
+    row = {"kind": "item", "format": "ean13", "source": "manual", "at": at}
+    monkeypatch.delenv("HUB_TZ", raising=False)
+    assert read_row(row)["time"] == "12:04:05"  # São Paulo, whatever the container zone is

@@ -229,13 +229,7 @@ async def status_page(request: Request, c: UxCtx = Depends(ctx)) -> Response:
     data = status.status_data(c.reg, vis, time.time(), insight.tel.metrics, admin_data, months)
     perms = getattr(request.state, "permissions", [])
     meta = json.dumps(
-        {
-            "apps": [
-                {"id": e.id, "short": e.display.get("short", e.name)}
-                for e in c.reg.entries()
-                if vis is None or e.id in vis
-            ]
-        },
+        {"apps": [{"id": e.id, "short": e.name} for e in c.reg.entries() if vis is None or e.id in vis]},
         separators=(",", ":"),
         ensure_ascii=False,
     )

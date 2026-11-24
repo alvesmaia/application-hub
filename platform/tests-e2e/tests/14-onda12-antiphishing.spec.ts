@@ -97,14 +97,14 @@ test('comportamentos data-hub-*: modal, toast, filtro, gráfico e menu sem JavaS
   await page.locator('[data-hub-filter]').fill(first.slice(0, 12));
   await expect.poll(async () => (await rows.evaluateAll((rs) => rs.filter((r) => !(r as HTMLElement).hidden).length))).toBeLessThan(total);
   await page.locator('[data-hub-filter]').fill('');
-  // Declarative modal (fragment template) + form that closes and shows the toast.
+  // Declarative modal (fragment template) + form that closes and shows the toast (a demo form: it says so, nothing saved).
   await page.locator('[data-hub-modal="#modal-asset"]').first().click();
   const modal = page.locator('.overlay .modal');
   await expect(modal.getByRole('heading', { name: 'Cadastrar ativo' })).toBeVisible();
   await modal.locator('input').first().fill(`Notebook ${RUN}`);
   await modal.locator('button[type="submit"]').click();
   await expect(modal).toHaveCount(0);
-  await expect(page.locator('#toast')).toContainText('Ativo cadastrado com sucesso.');
+  await expect(page.locator('#toast')).toContainText('Demonstração: ação desabilitada.');
   // Hub chart (TimeSeriesChart) mounted from data-hub-charts.
   await openFragment(page, '/apps/inventory/dashboard', '[data-tsc]');
   const cat = page.locator('.tsc-cat-row').first();
@@ -118,7 +118,7 @@ test('comportamentos data-hub-*: modal, toast, filtro, gráfico e menu sem JavaS
   await expect(page.locator('[data-hub-filter-item]:visible')).toHaveCount(1);
   // Toast declarativo.
   await page.locator('[data-hub-filter-item]:visible').first().click();
-  await expect(page.locator('#toast')).toContainText('abertos');
+  await expect(page.locator('#toast')).toContainText('Demonstração: ação desabilitada.');
   expect(errors, errors.join('\n')).toEqual([]);
 });
 

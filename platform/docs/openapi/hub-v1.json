@@ -3375,6 +3375,7 @@
           },
           "language": {
             "enum": [
+              "",
               "pt-BR",
               "en"
             ],

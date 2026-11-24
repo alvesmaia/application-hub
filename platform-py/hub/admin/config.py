@@ -142,7 +142,9 @@ def seed(data: dict[str, Any], apps: list[str], with_env: bool = True) -> bool:
     changed = False
     if with_env and not data.get("env") and not data.get("env_seeded"):
         for name, value, kind, scope, env in _DEFAULT_ENV:
-            targets = [a for a in _ORIGINAL_APPS if a in apps] if scope == "all" else list(scope)
+            targets = [a for a in (_ORIGINAL_APPS if scope == "all" else scope) if a in apps]
+            if not targets:  # examples of the sample apps only: never a loose variable bound to nothing
+                continue
             bindings = sorted(({"app": a, "env": env} for a in targets), key=lambda b: (b["app"], b["env"]))
             data.setdefault("env", []).append(
                 {"name": name, "value": value, "kind": kind, "bindings": bindings, "managed": False}

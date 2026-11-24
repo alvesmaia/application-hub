@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import time
 from datetime import datetime, timedelta, timezone
 from functools import partial
 from typing import Any
@@ -15,6 +16,7 @@ from hub.admin.routes import relative
 from hub.admin.store import log_stamp
 from hub.gateway.env_path import to_env
 from hub.ops import backups_view as bv
+from hub.ops import host_chart
 from hub.ops import jobs as jb
 from hub.ops import model as m
 from hub.ops import pipeline as pl
@@ -108,6 +110,15 @@ async def hub_env(to: str = "producao", next: str = "/", ops: OpsCtx = Depends(c
     return r
 
 
+_STEP_CLASS = {
+    "ok": "done",
+    "running": "running",
+    "warn": "warn",
+    "failed": "failed",
+    "skipped": "skipped",
+}  # = ops.js
+
+
 @router.get("/admin/deploys", response_class=HTMLResponse)
 async def deploys_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:
     d, now = ops.store.read(), now_ms()
@@ -118,6 +129,8 @@ async def deploys_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response
             "origin_class": "status-pill ops-pill-info" if x["origin"] == "GitHub Actions" else "status-pill ops-pill-muted",
             "commit": x["commit"], "status": x["status"], "status_class": tone(x["status"]), "note": x.get("note", ""),
             "runtime": x.get("runtime", ""), "when": relative(x["at"], now), "approve": x["status"] == m.AGUARDANDO,
+            "log": "\n".join(x.get("log") or []),
+            "pipeline": [(_STEP_CLASS.get(p["state"], ""), p["name"], p["detail"]) for p in x.get("pipeline") or []],
             "promote": x["status"] == m.IMPLANTADO and x["env"] == m.STAGING,
             "rollback": x["env"] == m.PRODUCAO and (x["status"] == m.IMPLANTADO or (x["status"] == m.SUBSTITUIDO and bool(x.get("image")))),
             "active": x["status"] == m.IMPLANTADO,
@@ -151,10 +164,22 @@ async def host_panel(ops: OpsCtx, info: dict[str, Any]) -> dict[str, Any]:
     bars = rv.usage_bars(host, usage, plat, apps)
     sock = os.getenv("HUB_CONTAINER_SOCKET_HOST") or info.get("socket", "")  # on the host, not inside the hub
     at = datetime.now(_GMT3).strftime("%H:%M:%S")  # same fixed GMT-3 as the other screens
-    return {"bars": bars, "measured_at": at, "runtime_info": f"Runtime: {sock} · {info.get('version', '')}".rstrip(" ·"),
-            "cpu_title": f"CPU · {br(bars.cpu_used, 1)} de {br(host.cpu, 1)} vCPU em uso",
-            "mem_title": f"Memória · {br(bars.mem_used, 1)} de {br(host.mem_gib, 1)} GiB em uso",
-            "free_label": f"Livre {br(host.cpu - bars.cpu_used, 1)} vCPU · {br(host.mem_gib - bars.mem_used, 1)} GiB"}  # fmt: skip
+    now = time.time()
+    host_chart.HISTORY.add(now, bars.cpu_parts, bars.mem_parts)
+    hist = host_chart.HISTORY.window(now)
+    meters = [_meter("CPU", "vCPU", bars.cpu, bars.cpu_used, host.cpu, [(t, c) for t, c, _ in hist], now),
+              _meter("Memória", "GiB", bars.mem, bars.mem_used, host.mem_gib, [(t, m) for t, _, m in hist], now)]  # fmt: skip
+    return {"meters": meters, "measured_at": at, "legend": rv.legend(bars, host.cpu, host.mem_gib),
+            "runtime_info": f"Runtime: {sock} · {info.get('version', '')}".rstrip(" ·")}  # fmt: skip
+
+
+def _meter(
+    label: str, unit: str, segs: list[Any], used: float, total: float, pts: list[Any], now: float
+) -> dict[str, Any]:
+    """One resource of the host panel: the stacked bar with its scale and the 5-minute area chart."""
+    pct = round(used / total * 100) if total else 0
+    return {"label": label, "segs": segs, "value": f"{br(used, 2)} / {br(total, 2)} {unit} · {pct}%",
+            "scale": host_chart.scale(total, unit), "chart": host_chart.chart(pts, total, unit, now)}  # fmt: skip
 
 
 @router.get("/admin/runtime/host", response_class=HTMLResponse)
@@ -174,7 +199,7 @@ async def runtime_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response
     page_rows, pager = paginate(request, view + platform_view)
     return render(ops,
         request, "ops_runtime.html", "Aplicações", "Containers", "Cada aplicação roda isolada, com limites próprios de CPU e memória.",
-        rows=page_rows, pager=pager, banner=None if info["reachable"] else f"Runtime indisponível: exibindo especificação. ({info['error']})",
+        rows=page_rows, pager=pager, banner=None if info["reachable"] else rv.runtime_banner(info["error"]),
         rollout=ROLLOUT, **await host_panel(ops, info),
     )  # fmt: skip
 
@@ -218,11 +243,10 @@ async def tasks_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:
     ]
     n = len(every)
     summary = f"{n} {'tarefa' if n == 1 else 'tarefas'} · {running} em execução · {failed} com falha"
-    errors = " · ".join(f"{ops.name_of(a)}: {e}" for a, e in listing["errors"])
     rows, pager = paginate(request, rows)
     return render(ops, request, "ops_tasks.html", "Operação", "Tarefas",
                   "Importações, exportações e outros processos longos dos apps: acompanhe, reprocesse ou cancele.",
-                  rows=rows, errors=errors, summary=summary, pager=pager)  # fmt: skip
+                  rows=rows, summary=summary, pager=pager)  # fmt: skip
 
 
 @router.get("/admin/backups", response_class=HTMLResponse)

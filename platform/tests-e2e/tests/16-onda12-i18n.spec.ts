@@ -13,7 +13,7 @@ test.describe('inglês', () => {
   test('Administração e Operações em inglês, com toast traduzido no navegador @core', async ({ page }) => {
     await page.goto('/admin/users');
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-    await expect(page.getByText('Accounts with access to the platform, their roles and the state of each access.')).toBeVisible();
+    await expect(page.getByText('Accounts with access to the platform, their roles and the state of each access.')).toBeAttached(); // inside the page's "i" (hidden until opened)
     await expect(page.locator('body')).not.toContainText('Contas com acesso à plataforma');
 
     await page.goto('/admin/env');

@@ -9,6 +9,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import Response
 from hub_sdk.render import html
 
+from suppliers.contracts import restatus, today
 from suppliers.state import HERE, State, StateDep, base_of
 from suppliers.suppliers import SUPPLIERS, supplier
 from suppliers.ui import esc, param
@@ -81,6 +82,12 @@ async def directory(req: Request, st: StateDep) -> Response:
         marker = '<div class="app2-directory-summary">'
         page = page.replace(marker, f"{await detail(st, sup, base)}{marker}", 1)
     return html(page)
+
+
+@router.get("/suppliers/reports")
+async def contracts(req: Request, st: StateDep) -> Response:
+    page = st.fragment("reports", req)
+    return html(restatus(page, today())) if page is not None else not_found(base_of(req))
 
 
 # Catch-all section: registered last (``app.create_app`` includes this router after the others).

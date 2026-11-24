@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import datetime as dt
 import json
-import os
 import re
 from functools import lru_cache
 from pathlib import Path
@@ -271,14 +270,7 @@ def who(name: str) -> tuple[str, str, str]:
 
 
 def _now_local() -> dt.datetime:
-    tz = os.environ.get("HUB_TZ", "America/Sao_Paulo")
-    try:
-        from zoneinfo import ZoneInfo
-
-        zone: dt.tzinfo = ZoneInfo(tz)
-    except Exception:
-        zone = dt.timezone(dt.timedelta(hours=-3)) if tz == "America/Sao_Paulo" else dt.UTC
-    return dt.datetime.now(zone)
+    return dt.datetime.now(locale.zone())
 
 
 _DAYS = {

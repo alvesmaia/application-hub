@@ -8,7 +8,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from fastapi import Request
-from hub_sdk import outbox
+from hub_sdk import locale, outbox
 from hub_sdk.locale import t
 
 from collector import barcodes, fila
@@ -73,7 +73,7 @@ def read_row(r: Any) -> dict[str, Any]:
     d["format_label"] = FORMAT_LABELS.get(d["format"], d["format"])
     d["source_label"] = t(str(SOURCES.get(d["source"]) or d["source"]))
     at = d.get("at")
-    d["time"] = at.astimezone().strftime("%H:%M:%S") if isinstance(at, dt.datetime) else ""
+    d["time"] = at.astimezone(locale.zone()).strftime("%H:%M:%S") if isinstance(at, dt.datetime) else ""
     return d
 
 

@@ -82,6 +82,9 @@ async def test_flag_banner_and_locale(running: Running) -> None:
     assert 'class="nav-item active"' in en.text
     en = await c.get("/inventory/dashboard", headers={"x-hub-locale": "en"})
     assert "Overview" in en.text and en.headers["content-type"].startswith("text/html")
+    # without a database the KPIs and charts are static and say so, in both languages
+    assert "(illustrative data)" in en.text and "este mês" not in en.text and "do total" not in en.text
+    assert "(dados ilustrativos)" in (await c.get("/inventory/dashboard")).text
 
 
 async def _public_pages(c: httpx.AsyncClient, headers: dict[str, str]) -> list[str]:
@@ -135,10 +138,22 @@ async def test_crud_conflict_idempotency_and_audit(db_url: str, running: Running
     c = running.client
     await wait_ready(c)
     h = {"idempotency-key": "criar-ativo-0001"}
-    r1 = await c.post("/inventory/assets", data=form(), headers=h)
-    assert r1.status_code == 201 and "Ativo cadastrado" in r1.text and "Patrimônio TT-0001 criado." in r1.text
-    r2 = await c.post("/inventory/assets", data=form(), headers=h)
-    assert r2.status_code == 201 and r2.headers["idempotent-replay"] == "true"
+    new_form = await c.get("/inventory/assets?new=1&q=TT-0001")
+    assert (
+        'action="/apps/inventory/assets?q=TT-0001"' in new_form.text
+        and "data-hub-target" not in (new_form.text.split('id="asset-editor"')[1].split("</form>")[0])
+    )
+    # Post/Redirect/Get: back to the list with the same filters and the new asset open
+    r1 = await c.post("/inventory/assets?q=TT-0001", data=form(), headers=h)
+    loc = r1.headers["location"]
+    assert (
+        r1.status_code == 303 and loc.startswith("/inventory/assets?q=TT-0001&edit=") and "created=1" in loc
+    )
+    shown = await c.get(loc)
+    assert "1 ativos encontrados" in shown.text and "Patrimônio TT-0001 criado." in shown.text
+    assert 'id="asset-editor"' in shown.text
+    r2 = await c.post("/inventory/assets?q=TT-0001", data=form(), headers=h)
+    assert r2.status_code == 303 and r2.headers["idempotent-replay"] == "true"
     dup = await c.post("/inventory/assets", data=form())
     assert dup.status_code == 409 and "Patrimônio já cadastrado" in dup.text
     bad = await c.post("/inventory/assets", data=form(tag="TT-2", status="?"))
@@ -165,6 +180,19 @@ async def test_crud_conflict_idempotency_and_audit(db_url: str, running: Running
     acts = await outbox_actions(c)
     assert acts.count("Ativo cadastrado") == 1 and acts.count("Ativo atualizado") == 1
     assert acts.count("Ativo excluído") == 1
+
+
+@pytest.mark.db
+async def test_dashboard_kpis_come_from_the_database(db_url: str, running: Running) -> None:
+    c = running.client
+    await wait_ready(c)
+    in_use = await c.get("/inventory/assets?status=Em uso")
+    n = in_use.text.split(" ativos encontrados")[0].rsplit(">", 1)[-1]
+    kpis = (await c.get("/inventory/dashboard")).text.split('class="dashboard-grid"')[0]
+    assert '<div class="metric-value">500</div>' in kpis and f'<div class="metric-value">{n}</div>' in kpis
+    assert "1.284" not in kpis and "dados ilustrativos" not in kpis
+    on = await c.get("/inventory", headers={"x-hub-flags": "novo-resumo=on"})
+    assert f"<b>{n}</b> <span>ativos em uso</span>" in on.text and "1.106" not in on.text
 
 
 @pytest.mark.db

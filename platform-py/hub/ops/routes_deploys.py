@@ -9,8 +9,8 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse, Response
 from starlette.datastructures import FormData, UploadFile
 
+from hub.ops import deploy_log, newapp
 from hub.ops import model as m
-from hub.ops import newapp
 from hub.ops import pipeline as pl
 from hub.ops.deploy_jobs import Upload, run_deploy, run_import
 from hub.ops.model import Data, OpsError, now_ms
@@ -209,6 +209,7 @@ async def deployment_action(
         ok, msg, saved = await run_deploy(ops, dep["id"], job["id"], actor)
         ops.jobs.update(job["id"], lambda j: j.update(done=True, ok=ok, progress=100, message=msg,
                                                   result={"deployment": saved}))  # fmt: skip
+        await deploy_log.keep(ops, dep["id"], job["id"], title)
         return saved
 
     if request.query_params.get("wait") == "true":

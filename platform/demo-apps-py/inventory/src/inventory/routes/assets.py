@@ -64,10 +64,15 @@ async def _panel(st: State, q: Mapping[str, str], f: Filter, base: str) -> str:
     if re.fullmatch(r"-?\d+", edit):
         row = await load_asset(st, int(edit))
         if row:
-            return views.editor(row, base, "", f.qs())
+            ok = (
+                notice("ok", "Ativo cadastrado", f"Patrimônio {row['tag']} criado.")
+                if param(q, "created")
+                else ""
+            )
+            return views.editor(row, base, ok, f.qs())
         return notice("warn", "Ativo não encontrado", "Ele pode ter sido excluído.")
     if param(q, "new") == "1":
-        return views.creator({}, base)
+        return views.creator({}, base, "", f.qs())
     if param(q, "import") == "1":
         return import_form(base)
     if param(q, "job"):
@@ -116,11 +121,13 @@ async def assets_page(req: Request, st: StateDep) -> Response:
 @router.post("/inventory/assets")
 async def create(req: Request, st: StateDep) -> Response:
     form, base = values_from(await req.form()), base_of(req)
+    f = Filter.from_query(dict(req.query_params))
+    panel = partial(views.creator, form, base, qs=f.qs())
     if (n := db_notice(st)) is not None:
-        return html(views.creator(form, base, n), 503)
+        return html(panel(n), 503)
     vals, errs = validate(form, EDIT_FIELDS)
     if errs:
-        return html(views.creator(form, base, notice("error", "Verifique os campos", errs)), 422)
+        return html(panel(notice("error", "Verifique os campos", errs)), 422)
     tag = vals["tag"]
     try:
         async with st.sdk.pool.acquire() as c, c.transaction():
@@ -128,12 +135,12 @@ async def create(req: Request, st: StateDep) -> Response:
             await audit_tx(c, req, "Ativo cadastrado", tag, vals["name"] or "")
     except asyncpg.UniqueViolationError:
         msg = notice("error", "Patrimônio já cadastrado", "Use outro número de patrimônio.")
-        return html(views.creator(form, base, msg), 409)
+        return html(panel(msg), 409)
     except DB_ERRORS as e:
-        return _write_failed(e, partial(views.creator, form, base), "Erro ao cadastrar")
-    row = await load_asset(st, aid)
-    ok = notice("ok", "Ativo cadastrado", f"Patrimônio {tag} criado.")
-    return html(views.editor(row, base, ok) if row else notice("ok", "Ativo cadastrado", tag), 201)
+        return _write_failed(e, panel, "Erro ao cadastrar")
+    # PRG: the list (same filters) with the new asset open; the gateway rewrites the app path.
+    loc = f"/inventory/assets{f.qs(edit=str(aid), created='1')}"
+    return Response(status_code=303, headers={"location": loc, "cache-control": "no-store"})
 
 
 async def _save(st: State, req: Request, aid: int, sent: int, vals: dict[str, Any], tag: str) -> Any:

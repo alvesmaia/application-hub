@@ -75,6 +75,7 @@ host_curl_args() { # the install's own downloads (compose binary): the same prox
 }
 
 build_env() { # exports the build args from .prod.env; call it in a subshell so the runtime commands do not inherit them
+  export BUILDX_NO_DEFAULT_ATTESTATIONS=1 # reproducible ids: the provenance carries the build time (hub_update recreates only what changed)
   local np="localhost,127.0.0.1${HUB_NO_PROXY:+,$HUB_NO_PROXY}"
   # Podman (buildah) records build args in the image history: an authenticated proxy stays out of them
   if [ -n "${HUB_PROXY:-}" ] && docker --version 2>/dev/null | grep -qi podman && [ "$HUB_PROXY" != "$(mask_url "$HUB_PROXY")" ]; then

@@ -67,8 +67,10 @@ python scripts/hub_update.py --image <image>    # or: ready-made image (GHCR)
 python scripts/hub_update.py --rollback          # roll back later, by hand
 ```
 
-Options: `--project` (HUB_PROJECT, default `app-hub`), `--watch <s>` (observation, default 300), `--no-backup`,
-`--backup-dir` (default `~/backup-hub/<date-time>`). Open connections (SSE, WebSocket) drop during the switch and reconnect
+Once the new hub is healthy, it applies the rest of the compose without touching the hub (`up -d --no-deps` of the
+apps, the edge and the databases): only what the new version changed is recreated (new limits, a new app), so no
+`dc up -d` afterwards. Options: `--project` (HUB_PROJECT, default `app-hub`), `--watch <s>` (observation, default
+300), `--hub-only` (swap only the hub), `--no-backup`, `--backup-dir` (default `~/backup-hub/<date-time>`). Open connections (SSE, WebSocket) drop during the switch and reconnect
 on their own. The automatic rollback undoes the code, not the data: if the new version changed the data format, restore the
 backup (§5). That is why the hub's migrations are additive only (the previous version keeps reading the data).
 

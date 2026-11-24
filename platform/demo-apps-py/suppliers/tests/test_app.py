@@ -231,7 +231,9 @@ async def test_ficha_pdf_busy_when_heavy_limit_reached(running: Running) -> None
 async def test_locale_translation(running: Running) -> None:
     c = running.client
     en = await c.get("/suppliers/settings", headers={"x-hub-locale": "en"})
-    assert "Preferences saved." in en.text and "Preferências salvas." not in en.text
+    assert "Demo: action disabled." in en.text and "Demonstração: ação desabilitada." not in en.text
+    en = await c.get("/suppliers/reports", headers={"x-hub-locale": "en"})
+    assert "Annual contracted value" in en.text and "Renewal within 30 days" in en.text
     en = await c.get("/suppliers/dashboard", headers={"x-hub-locale": "en"})
     assert en.status_code == 200 and en.headers["content-type"].startswith("text/html")
     ficha = await c.get("/suppliers/indicators", params={"id": "FOR-0271"}, headers={"x-hub-locale": "en"})

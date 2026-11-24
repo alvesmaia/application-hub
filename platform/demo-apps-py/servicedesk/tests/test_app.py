@@ -120,6 +120,17 @@ async def test_seed_counters_and_current_year_protocols(db_url: str, running: Ru
 
 
 @pytest.mark.db
+async def test_dashboard_kpis_use_the_status_counts(db_url: str, running: Running) -> None:
+    c = running.client
+    await wait_ready(c)
+    stats = (await c.get("/servicedesk/requests")).text.split('class="app3-request-stats"')[1]
+    opened = stats.split("<strong>")[1].split("</strong>")[0]
+    kpis = (await c.get("/servicedesk")).text.split('class="app3-kpi-row"')[1].split("</div>")[0]
+    assert f"<strong>{opened}</strong>" in kpis and "<strong>38</strong>" not in kpis
+    assert kpis.count("(dados ilustrativos)") == 1  # only the average resolution time stays static
+
+
+@pytest.mark.db
 async def test_open_list_filter_paginate_and_update(db_url: str, running: Running) -> None:
     c = running.client
     await wait_ready(c)

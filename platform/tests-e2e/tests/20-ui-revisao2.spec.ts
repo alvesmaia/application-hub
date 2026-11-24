@@ -169,13 +169,17 @@ test('hover da linha de /admin/users pinta também a faixa sob a coluna Ações'
   expect(under).toBe(cell);
 });
 
-test('Containers: capacidade do host com uso medido, valor/total no hover e runtime no "i" @core', async ({ page }) => {
+test('Containers: capacidade do host com uso medido, escala, gráfico de 5 min, valor/total no hover e runtime no "i" @core', async ({ page }) => {
   await page.goto('/admin/runtime');
   const panel = page.locator('[data-ops-host]');
-  await expect(panel.locator('.ops-caption').first()).toHaveText(/CPU · [0-9,]+ de [0-9,]+ vCPU em uso/);
+  await expect(panel.locator('.ops-hm-head').first()).toHaveText(/^CPU\s*[0-9,]+ \/ [0-9,]+ vCPU · [0-9]+%$/);
   const titles = await panel.locator('.ops-seg').evaluateAll((els) => els.map((e) => e.getAttribute('title') || ''));
   expect(titles.length).toBe(8);
-  for (const t of titles) expect(t).toMatch(/: [0-9,]+ \/ [0-9,]+ (vCPU|GiB) \([0-9,]+%\)$/);
+  for (const t of titles) expect(t).toMatch(/[0-9,]+ \/ [0-9,]+ (vCPU|GiB) \([0-9,]+%\)$/);
+  await expect(panel.locator('.ops-hm-scale').first().locator('i')).toHaveCount(5);
+  await expect(panel.locator('.ops-chart svg')).toHaveCount(2);
+  await expect(panel.locator('.ops-chart .ops-area')).toHaveCount(6);
+  await expect(panel.locator('.ops-chart-hit title').first()).toHaveText(/Total [0-9,]+ \/ [0-9,]+ vCPU · Sistema/);
   await expect(panel.locator('.hub-info-toggle')).toHaveAttribute('title', /^Runtime: /);
   await expect(page.locator('#ops-socket')).toHaveCount(0);
   // refreshed by itself: the panel node is replaced within the polling interval

@@ -68,7 +68,7 @@
       if (note) { note.hidden = false; note.textContent = j.message; }
       toast(j.message);
     });
-    return reloadWithToast(final.message);
+    return reloadWithToast(final.ok ? final.message : 'Implantação não concluída: veja o log no item da aba Histórico.');
   }
 
   async function pollJob(id, onUpdate) {
@@ -243,8 +243,10 @@
       const final = await pollJob(job.id, (j) => paintSteps(j.steps));
       const dep = final.result && final.result.deployment;
       status.textContent = final.ok ? (dep ? dep.status : 'Concluído') : 'Rejeitado';
-      toast(final.message);
-      setTimeout(() => reloadWithToast(final.message), final.ok ? 1400 : 2600);
+      // the full message and the log stay in the deployment (History › the app › Log), not in a long toast
+      const short = final.ok ? final.message : 'Implantação não concluída: veja o log no item da aba Histórico.';
+      toast(short, final.ok ? undefined : 'error');
+      setTimeout(() => reloadWithToast(short), final.ok ? 1400 : 2600);
     } catch (ex) {
       status.textContent = 'Falha no envio';
       toast(ex.message, 'error');

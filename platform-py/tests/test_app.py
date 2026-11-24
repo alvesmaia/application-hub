@@ -56,10 +56,11 @@ def test_shell_renders(client: TestClient) -> None:
     assert r.status_code == 200
     h = r.text
     assert "Content-Security-Policy" in r.headers or "content-security-policy" in r.headers
+    # no search box in the header: users took it for the app's own search (owner's call); Ctrl+K still opens it
+    assert "hub-search-trigger" not in h and "hub-search-mobile" not in h
     for needle in (
         'class="platform-header"',
         'class="brand-name">Application Hub',
-        "data-hub-palette-open",
         'class="hub-notif-menu"',
         'class="hub-user-menu"',
         'class="platform-rail"',

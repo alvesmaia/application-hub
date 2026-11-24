@@ -403,7 +403,9 @@ def test_runtime_page_host_usage_panel_with_runtime_in_the_i(hub: TestClient, do
     assert i and "docker.sock" in i.group(1)
     assert 'data-ops-host="/admin/runtime/host"' in page and "acima da capacidade do host" not in page
     part = hub.get("/admin/runtime/host")
-    assert part.status_code == 200 and part.text.lstrip().startswith('<section class="panel ops-host"')
+    assert part.status_code == 200 and part.text.lstrip().startswith(
+        '<div class="ops-host-pair" data-ops-host='
+    )  # bars and the 5-min chart, replaced together
     # when it was measured, not a promise that it refreshes (the time changes on every refresh)
     assert re.search(
         r'<span class="ops-muted" data-ops-host-at="">Atualizado às \d\d:\d\d:\d\d</span>', part.text
@@ -420,8 +422,10 @@ def test_runtime_unreachable(hub: TestClient) -> None:
     assert hub.get("/api/ops/runtime").json()["engine"]["reachable"] is False
     page = hub.get("/admin/runtime").text
     assert "Runtime indisponível" in page and "Não criado" not in page and "Sem conexão" in page
-    # without the runtime the containers cannot be measured: the host's usage is shown whole, not as "Sistema"
-    assert 'title="Em uso (sem detalhe por contêiner): ' in hub.get("/admin/runtime/host").text
+    assert "ops-banner" not in page  # a muted line under the title, never a banner (owner's call)
+    # without the runtime the containers cannot be measured: the host's usage is shown whole, numbers only
+    host = hub.get("/admin/runtime/host").text
+    assert "sem detalhe por contêiner" not in host and 'title="Sistema' not in host
     assert hub.post("/api/ops/runtime/inventory/restart", headers=JSON).status_code == 503
     assert hub.get("/api/ops/runtime/inventory/logs").status_code == 503
 
@@ -490,7 +494,8 @@ def test_tasks_list_page_and_actions(hub: TestClient) -> None:
         'data-ops-task="inventory|job-1|retry|producao"' in page
         and 'data-ops-task="inventory|job-2|cancel|producao"' in page
     )
-    assert "Sem resposta de:" in page
+    # a silent app only lists no tasks: no banner on the page (owner's call); the reason stays in the API (`errors`)
+    assert "Sem resposta de" not in page and "ops-banner" not in page
     assert (
         "job-1" not in hub.get("/admin/tasks?status=running").text
         and "job-2" in hub.get("/admin/tasks?status=running").text

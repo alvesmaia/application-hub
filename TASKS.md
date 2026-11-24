@@ -48,16 +48,13 @@
   - ✅ --entra-tenant/--entra-client-id/--entra-client-secret-file/--entra-domains/--entra-role/--local-login
   - ✅ --trusted-proxy <CIDR>; doc do Nginx externo com TLS
   - ✅ docs, CHANGELOG, hub-check
-- ⬜ 61 · Nome real da pessoa vindo do diretório (sugestão do agente implantador; analisar antes de implementar)
-  - ⬜ login Entra: nome pelo claim `name` (fallback `preferred_username`, e-mail), sem sufixos "(Empresa)"/", external"
-  - ⬜ conciliação no login: busca por `sub`, senão adota a conta pelo e-mail (sem duplicar); nome atualizado, contas locais mantêm o seu
-  - ⬜ opcional: job LDAP diário (lote 50, reconsulta anual, status por usuário), inativo sem LDAP
 
 ## Implantação real: relatório de testes no browser (2026-11-18)
 - ✅ 62 · Runtime em host sem delegação de cgroup: métricas "indisponível" (não o agregado do usuário), aviso de overcommit/CPU não aplicada, socket real no rótulo, imagens locais sem docker.io/
-- ⬜ 63 · Apps de demonstração: botões estáticos com aviso visível, lista recarrega após cadastrar, dados coerentes (totais e status por data), horário no fuso configurado
-- ⬜ 64 · Consistência do hub: idioma padrão respeitado e traduções completas, disponibilidade "desde a instalação", Coletor na Saúde, instalação sem "restart pendente" nem variáveis de exemplo soltas, nome de exibição do app em todas as telas
-- ⬜ 65 · Acessibilidade de menus ⋯ e modais; fetch a /apps/* com erro HTTP explícito (ou documentado)
+- ✅ 63 · Apps de demonstração: botões estáticos com aviso visível, lista recarrega após cadastrar, dados coerentes (totais e status por data), horário no fuso configurado
+  - ✅ correções nos apps e no SDK (`hub_sdk.locale.zone()`) · subagente: Corrigir apps demo (tarefa 63)
+  - ✅ cartão de ajuda, perfil de conformance do inventory (303) e E2E ajustados
+- ✅ 64 · Consistência do hub: idioma padrão respeitado e traduções completas, disponibilidade "desde a instalação", Coletor na Saúde, instalação sem "restart pendente" nem variáveis de exemplo soltas, nome de exibição do app em todas as telas
 - ✅ 66 · Deploy no Podman rootless: alias DNS do nome final no candidato, staging sem os aliases de produção, implantação só conclui se o hub alcança o app pelo nome (senão falha com a causa)
 - ✅ 67 · Botão "i" (stack) dos cards de Aplicações só para admin
 - ✅ 68 · App novo só em staging marcado "Unstable": sonda de produção só depois da primeira implantação em produção
@@ -122,3 +119,15 @@
   - ✅ renomeação na plataforma (hub, compose, registro, segredos, scripts, CI, docs, testes do hub)
   - ✅ migração automática (bancos, papéis, segredos, contêineres, bucket, dados do hub) — scripts/rename-sample-apps.sh + python -m hub.admin rename-apps; achados no teste real: valores do cofre presos ao nome (recifrar), redes antigas com a mesma faixa, valores da .prod.env, rotas no histórico
   - ✅ validação: atualização real 0.3.2 → 0.4.0 (dados preservados, ~1 min 40 s fora), conformance 5/5, E2E 52/52, ui-sweep 0 achados; hub-check --all
+
+## Melhorias pós-0.4.0 (2026-11-24)
+
+- ✅ 101 · admin/runtime: aviso "Runtime indisponível" com a causa provável em palavras simples (socket ausente, sem permissão, conexão recusada, tempo esgotado), não a exceção crua
+- ✅ 102 · hub_update.py: depois da troca do hub, aplica o compose ao resto da pilha (apps, borda, bancos) sem recriar o hub; `--hub-only` mantém o comportamento antigo; builds sem atestação de proveniência (ids reproduzíveis: só o que mudou é recriado)
+- ✅ 103 · Pacotes de exemplo (platform/samples/*.hubapp) regerados com os ids em inglês e 0,5 vCPU
+- ✅ 104 · admin/runtime: x / y em CPU e memória (medição pelo /proc do contêiner quando o engine não mede), hover só com números, barras com escala e gráfico de área dos últimos 5 min em painéis separados
+- ✅ 105 · MCP (OAuth) atrás de proxy corporativo: documento do cliente (Copilot desktop) falhava com "certificate verify failed" (IP fixado na URL do túnel); pelo proxy conecta pelo nome
+- ✅ 106 · admin/deploys: sem a nota do manifest.json na importação; log de cada implantação guardado no registro (etapas, build, resultado; ações seguintes acrescentam) e exibido no painel lateral da versão no Histórico; aviso curto no lugar da mensagem longa
+- ✅ 107 · Sem banners: admin/tasks não mostra mais "Sem resposta de" (motivo fica em /api/ops/tasks); runtime indisponível e avisos de Conexões viram linha discreta
+- ✅ 108 · Cabeçalho do hub sem a caixa de pesquisa (confundida com a do app; Ctrl+K continua); guia dos agentes diz para onde vai cada item do cabeçalho próprio do app (pesquisa, notificações, menu do usuário, logo)
+- ✅ 109 · Idioma padrão "Automático (idioma do navegador)": salvar outras configurações não fixa mais pt-BR

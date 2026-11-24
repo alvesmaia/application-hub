@@ -7,6 +7,44 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Fixed
+- MCP sign-in (OAuth) behind a corporate proxy: the client document (e.g. GitHub Copilot desktop's
+  `client-metadata.json`) failed with "certificate verify failed" because the hub pinned the vetted IP in the URL and,
+  through the proxy tunnel, TLS checked the certificate against that IP. Through the proxy the hub now connects by name
+  (the public-IP vetting still runs first); direct connections keep the pinned IP.
+
+### Changed
+- `hub_update.py`: after the hub swap, applies the rest of the compose (apps, edge, databases) without recreating the
+  hub; only services whose configuration changed are recreated. `--hub-only` keeps the old behavior. Builds (here and
+  in `install.sh`) skip the buildx provenance attestation: it carries the build time, so every build got a new image
+  id and compose recreated every app.
+- The hub header no longer has a search box (users took it for the open app's own search); Ctrl+K still opens the
+  search palette.
+- Agent guide (`platform/docs/dev/AGENTS.md`, porting an app): where each item of the app's own top bar goes (global
+  search → federated `/_hub/search`, bell → Inbox events, user menu → the hub header, logo → page header).
+- No banners on hub screens: admin/tasks no longer shows "No response from: …" (an app that does not answer just
+  lists no tasks; the reason stays in `/api/ops/tasks` → `errors`); "Runtime unavailable" and the Connections notices
+  are a muted line under the title.
+- admin/deploys: each deployment keeps its validation pipeline and its log ("[date time]: …" lines: steps, build output,
+  rollout result; a later approval or rollback appends) and the History side panel shows it per version; a failed import or action
+  shows a short notice pointing there instead of the long message at the bottom of the page. The Import package tab
+  lost its manifest.json note.
+- admin/runtime: CPU and memory always as x / y (a stopped container uses 0); where the engine cannot measure each
+  container (rootless Podman without cgroup delegation) the hub reads the container's own /proc (sum of its
+  processes). The host panel shows the bars with a 25% scale and, in a second panel, a stacked area chart of the last
+  5 minutes (system, platform, apps; the top is the total) with the value of each instant on hover.
+- Sample apps: buttons that only pretended to save now say they are a demo (or open the real form); the inventory list
+  reloads with the current filters after a create; dashboard numbers come from the database where it exists;
+  supplier contract status is computed from the due date; times follow the configured zone (`hub_sdk.locale.zone()`,
+  `HUB_TZ`); missing English texts added.
+- The platform default language (Settings) applies to users without a preference of their own, before the browser's
+  language ("Automático", the default, keeps the browser deciding; saving other settings no longer pins pt-BR); numbers in translated texts follow the language; `/status` counts a new app's availability since its
+  first check ("since dd/mm"); every registered app is monitored in Health; a fresh install no longer shows "restart
+  pending" (the boot syncs mirror what compose already gave the containers) nor example variables bound to nothing;
+  one display name per app on every screen.
+- admin/runtime: the "Runtime unavailable" banner names the likely cause (socket missing, no permission, connection
+  refused, timeout) instead of the raw engine exception.
+
 ## [0.4.0] — 2026-11-23
 
 ### Attention

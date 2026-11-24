@@ -33,7 +33,7 @@ from hub.api.oauth_util import (
     sha,
 )
 from hub.auth import client_ip
-from hub.httpclients import external_client
+from hub.httpclients import bypass, external_client, no_proxy, proxy_url
 from hub.state import Change
 
 
@@ -95,6 +95,10 @@ class OAuthClients(OAuthBase):
             raise OAuthError("host do client_id não resolve")
         if not private_ok and any(not ip_public(ip) for ip in ips):
             raise OAuthError("client_id aponta para endereço interno (recusado)")
+        if proxy_url() and not bypass(host, no_proxy()):
+            # ponytail: the proxy resolves the name again (DNS rebinding window); pinning is impossible there, since
+            # the tunnel's TLS name is the URL's host and an IP fails every certificate
+            return url, host
         pin = f"[{ips[0]}]" if ips[0].version == 6 else str(ips[0])
         return url.replace(p[1] + (f":{p[2]}" if p[2] else ""), f"{pin}:{port}", 1), host
 

@@ -491,6 +491,10 @@ Translation of ``text`` (pt-BR) in the current language, with ``{placeholders}``
 
 Cents → ``R$ 1.234,50`` (pt-BR) or ``BRL 1,234.50`` (en).
 
+### `zone() -> dt.tzinfo`
+
+Display time zone of the apps: ``HUB_TZ`` (default ``America/Sao_Paulo``, the only one the hub admin offers).
+
 ### `date(d: dt.date | None) -> str`
 
 Short date: ``28/09/2026`` (pt-BR) or ``09/28/2026`` (en).

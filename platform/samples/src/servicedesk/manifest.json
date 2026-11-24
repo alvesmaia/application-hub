@@ -10,7 +10,7 @@
     "Administrador"
   ],
   "resources": {
-    "cpu": 1.0,
+    "cpu": 0.5,
     "memory": "1Gi",
     "pids": 100
   },

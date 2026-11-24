@@ -10,7 +10,8 @@ How it works (the `<proj>-edge` edge only sends traffic to whoever answers /heal
   2. starts `<proj>-web-next` with the new image and the same hub configuration (env, volumes, networks, aliases);
   3. once the copy is ready (/readyz), recreates `<proj>-web` with the new image — the edge serves through the copy;
   4. watches the hub for `--watch` seconds; on failure, swaps back to the previous image;
-  5. removes the copy.
+  5. removes the copy and applies the rest of the compose (apps, edge, databases) without touching the hub: only
+     services whose configuration changed are recreated (`--hub-only` skips this step).
 Only the standard library and the machine's `docker`. Does not print environment variables (they contain secrets).
 """
 
@@ -221,6 +222,42 @@ def drop(name: str) -> None:
     run("docker", "rm", "-f", name, check=False, quiet=True)
 
 
+def rest_services(configured: list[str], running: list[str], hub: str) -> list[str]:
+    """Services of the compose (active profiles) plus the ones running from another profile (e.g. the sample apps,
+    named explicitly so compose enables their profile), never the hub: it was already swapped without downtime."""
+    return sorted((set(configured) | set(running)) - {hub, ""})
+
+
+def build(main_c: dict[str, Any], *services: str) -> None:
+    """`compose build` with the code next to this script and the corporate network build args of `.prod.env`."""
+    cmd = compose_cmd(main_c, Path(__file__).resolve().parents[1])
+    net = build_env([cmd[i + 1] for i, x in enumerate(cmd) if x == "--env-file"])
+    # no provenance attestation: it carries the build time, so the image id would change on every (cached) build
+    # and compose would recreate every app
+    run(*cmd, "build", *services, env=os.environ | net | {"BUILDX_NO_DEFAULT_ATTESTATIONS": "1"})
+
+
+def apply_rest(proj: str, main_name: str, rebuild: bool) -> None:
+    """`up -d --no-deps` of everything but the hub (after building the apps, with `--build`): compose recreates only
+    what changed (new code, new limits, a new app)."""
+    main = inspect(main_name)
+    if main is None:
+        return
+    cmd = compose_cmd(main)
+    hub = main["Config"]["Labels"]["com.docker.compose.service"]
+    configured = run(*cmd, "config", "--services", check=False, quiet=True).stdout.split()
+    fmt = '{{.Label "com.docker.compose.service"}}'
+    running = run("docker", "ps", "--filter", f"label=com.docker.compose.project={proj}", "--format", fmt,
+                  check=False, quiet=True).stdout.split()  # fmt: skip
+    if not (rest := rest_services(configured, running, hub)):
+        return
+    if rebuild:  # services without a build section are skipped by compose
+        say("construindo os apps")
+        build(main, *rest)
+    say("aplicando o compose ao resto da pilha (só o que mudou é recriado)")
+    run(*cmd, "up", "-d", "--no-deps", *rest)
+
+
 def _parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description="Atualiza o hub sem parada (com volta automática).")
     src = ap.add_mutually_exclusive_group(required=True)
@@ -238,6 +275,9 @@ def _parse_args() -> argparse.Namespace:
     ap.add_argument("--timeout", type=int, default=180, help="espera máxima para cada cópia ficar pronta")
     ap.add_argument("--backup-dir", default=str(Path.home() / "backup-hub"), help="pasta dos backups")
     ap.add_argument("--no-backup", action="store_true", help="pula o backup (não recomendado)")
+    ap.add_argument(
+        "--hub-only", action="store_true", help="troca só o hub; não aplica o compose aos apps e à borda"
+    )
     return ap.parse_args()
 
 
@@ -283,15 +323,7 @@ def _new_image(
     """Builds or fetches the new image and backs up; None when it is already the one running."""
     if a.build:
         say("construindo a imagem nova")
-        cmd = compose_cmd(main_c, Path(__file__).resolve().parents[1])
-        env_files = [cmd[i + 1] for i, x in enumerate(cmd) if x == "--env-file"]
-        net = build_env(env_files)
-        run(
-            *cmd,
-            "build",
-            main_c["Config"]["Labels"]["com.docker.compose.service"],
-            env=os.environ | net if net else None,
-        )
+        build(main_c, main_c["Config"]["Labels"]["com.docker.compose.service"])
     else:
         if inspect(a.image) is None:  # only pulls what does not exist here
             run("docker", "pull", a.image)
@@ -331,6 +363,8 @@ def _roll_out(a: argparse.Namespace, new: str, current: str, prev: str) -> int:
     version, healthy = result
     if healthy:
         drop(next_name)
+        if not (a.hub_only or a.rollback):
+            apply_rest(a.project, main_name, a.build)
         say(f"concluído: versão {version} no ar, sem parada. Volta: hub_update.py --rollback")
         return 0
     say("a versão nova falhou: voltando para a anterior")

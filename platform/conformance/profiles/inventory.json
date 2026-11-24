@@ -30,7 +30,7 @@
     },
     "vary": "name",
     "ok": [
-      201
+      303
     ],
     "audit_action": "Ativo cadastrado"
   },

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from typing import Any
 
 from hub.admin.config import AdminError, env_label
@@ -26,30 +27,35 @@ def _missing(msg: str) -> AdminError:
     return AdminError(msg, 404)
 
 
-def seed_health(data: dict[str, Any], apps: list[str], now: int) -> None:
-    """Initial services of the mockup (only the apps that exist in the registry)."""
-    if data.get("health") or data.get("health_seeded"):
+_LEGACY_SEED = ("inventory", "suppliers", "servicedesk")  # apps of the first seed (before `health_apps`)
+
+
+def _service(name: str, kind: str, app: str | None) -> dict[str, Any]:
+    return {
+        "name": name,
+        "kind": kind,
+        "status": "Disponível",
+        "app": app,
+        "checked_at": None,
+        "latency_ms": None,
+    }
+
+
+def seed_health(data: dict[str, Any], apps: dict[str, str], now: int) -> None:
+    """Monitored services: authentication, every app of the registry (id → display name) and notifications. An app
+    is offered once (`health_apps`): one added later shows up, one the admin removed stays removed."""
+    del now  # no made-up "checked 2 min ago": a service is checked by "Verificar agora" or the probes
+    if not data.get("health_seeded"):
+        data["health"] = [_service("Autenticação", "Identity", None)]
+        data["health"] += [_service(n, "Aplicação", a) for a, n in apps.items()]
+        data["health"].append(_service("Notificações", "Serviço", None))
+        data["health_seeded"], data["health_apps"] = True, list(apps)
         return
-    rows = [
-        ("Autenticação", "Identity", None, 2),
-        ("Gestão de Ativos", "Aplicação", "inventory", 2),
-        ("Rede de Fornecedores", "Aplicação", "suppliers", 2),
-        ("Central de Serviços", "Aplicação", "servicedesk", 2),
-        ("Notificações", "Serviço", None, 5),
-    ]
-    data["health"] = [
-        {
-            "name": n,
-            "kind": k,
-            "status": "Disponível",
-            "app": a,
-            "checked_at": now - m * 60_000,
-            "latency_ms": None,
-        }
-        for n, k, a, m in rows
-        if a is None or a in apps
-    ]
-    data["health_seeded"] = True
+    offered = set(data.get("health_apps", _LEGACY_SEED)) | {s.get("app") for s in data.get("health", [])}
+    data.setdefault("health", []).extend(
+        _service(n, "Aplicação", a) for a, n in apps.items() if a not in offered
+    )
+    data["health_apps"] = sorted(offered - {None} | set(apps))
 
 
 def _put_flag(flags: list[dict[str, Any]], flag: Flag, create: bool) -> str:
@@ -71,15 +77,19 @@ def _put_flag(flags: list[dict[str, Any]], flag: Flag, create: bool) -> str:
 
 
 class InsightOps:
-    def __init__(self, store: AdminStore) -> None:
-        self.s = store
+    def __init__(self, store: AdminStore, names: Callable[[str], str] = str) -> None:
+        self.s, self.names = store, names
+
+    def _apps(self) -> dict[str, str]:
+        return {a: self.names(a) for a in self.s.apps}
 
     # ---- leitura -----------------------------------------------------------------------------------
     async def read(self) -> dict[str, Any]:
         data = await self.s.cfg.read()
-        if not data.get("health") and not data.get("health_seeded"):
+        offered = set(data.get("health_apps", _LEGACY_SEED)) if data.get("health_seeded") else set()
+        if not set(self.s.apps) <= offered | {s.get("app") for s in data.get("health", [])}:
             async with self.s.locked(True) as d:
-                seed_health(d, self.s.apps, now_ms())
+                seed_health(d, self._apps(), now_ms())
             data = await self.s.cfg.read()
         return data
 
@@ -301,7 +311,7 @@ class InsightOps:
         fields = self._check_service(raw, name)
 
         def run(d: dict[str, Any]) -> tuple[Any, str, str, str, str]:
-            seed_health(d, self.s.apps, now_ms())
+            seed_health(d, self._apps(), now_ms())
             if any(s["name"].lower() == name.lower() for s in d["health"]):
                 raise _bad(f"Já existe um serviço chamado {name}.")
             svc = {"name": name, **fields, "checked_at": now_ms(), "latency_ms": None}

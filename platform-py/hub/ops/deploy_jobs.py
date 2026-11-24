@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from hub.ops import appnet, newapp
+from hub.ops import appnet, deploy_log, newapp
 from hub.ops import model as m
 from hub.ops import pipeline as pl
 from hub.ops import provision as pv
@@ -150,6 +150,7 @@ async def run_import(ops: OpsCtx, up: Upload) -> None:
     if status == m.IMPLANTANDO:
         good, msg, saved = await run_deploy(ops, saved["id"], up.job_id, up.actor)
     _finish_import(ops, up.job_id, good, msg, saved, report)
+    await deploy_log.keep(ops, saved["id"], up.job_id, "Importação")
 
 
 # ---- baseline, build, deploy --------------------------------------------------------------------------

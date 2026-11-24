@@ -9,7 +9,8 @@ from fastapi import APIRouter, Request
 from fastapi.responses import Response
 from hub_sdk.render import html
 
-from servicedesk.state import HERE, State, StateDep, base_of
+from servicedesk import views
+from servicedesk.state import HERE, State, StateDep, base_of, db_notice
 from servicedesk.views import not_found
 
 CSS = "text/css; charset=utf-8"
@@ -31,10 +32,21 @@ def static(st: State, name: str, req: Request) -> Response:
     return html(body) if body is not None else not_found(base_of(req))
 
 
+async def dashboard_page(st: State, req: Request) -> Response:
+    body = st.page("dashboard", req)
+    if body is None:
+        return not_found(base_of(req))
+    if db_notice(st) is None:
+        start = body.find('<div class="app3-kpi-row">') + len('<div class="app3-kpi-row">')
+        end = body.find("<article><span>Tempo médio", start)
+        body = body[:start] + views.kpi_articles(await st.status_counts()) + body[end:]
+    return html(body)
+
+
 @router.get("/servicedesk")
 @router.get("/servicedesk/")
 async def dashboard(req: Request, st: StateDep) -> Response:
-    return static(st, "dashboard", req)
+    return await dashboard_page(st, req)
 
 
 @router.get("/servicedesk/_skeleton")
@@ -61,4 +73,6 @@ async def asset(name: str) -> Response:
 # Catch-all section: ``app.create_app`` includes this router after the others.
 @router.get("/servicedesk/{section}")
 async def other(req: Request, section: str, st: StateDep) -> Response:
+    if section == "dashboard":
+        return await dashboard_page(st, req)
     return static(st, section, req)

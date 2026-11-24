@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import json
 import re
-from functools import cache
+from functools import cache, lru_cache
 from html import escape, unescape
 from pathlib import Path
 from typing import Any, cast
@@ -29,8 +29,27 @@ def parse_lang(tag: str) -> str | None:
     return {"pt": "pt-BR", "en": "en", "es": "en"}.get(head)  # `es` was dropped in 10/2026: maps to en
 
 
+def default_lang(data_dir: Path) -> str:
+    """Default language saved in Settings (`admin.json`); empty when never saved (the browser decides)."""
+    try:
+        mtime = (data_dir / "admin.json").stat().st_mtime_ns
+    except OSError:
+        return ""
+    return _saved_lang(data_dir, mtime)
+
+
+@lru_cache(maxsize=4)  # keyed by mtime: read again only after Settings is saved
+def _saved_lang(data_dir: Path, _mtime: int) -> str:
+    try:
+        raw = json.loads((data_dir / "admin.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    return str((raw.get("settings") or {}).get("language") or "") if isinstance(raw, dict) else ""
+
+
 def resolve(pref: str, accept: str | None) -> str:
-    """Saved preference (empty = automatic) → `Accept-Language` (`q` weights) → pt-BR."""
+    """Saved preference (the user's, else the platform default; empty = automatic) → `Accept-Language` (`q`
+    weights) → pt-BR."""
     if lang := parse_lang(pref):
         return lang
     best: tuple[float, int, str] | None = None
@@ -79,6 +98,16 @@ def _catalog() -> tuple[dict[str, list[str]], list[tuple[re.Pattern[str], list[s
     return exact, molds
 
 
+_PT_NUMBER = re.compile(r"[+-]?(\d{1,3}(\.\d{3})+|\d+)(,\d+)?%?")
+
+
+def _number(v: str) -> str:
+    """A pt-BR number (`1.284`, `100,0%`) in English notation; empty when `v` is not one (`2.5.0` is a version)."""
+    if not _PT_NUMBER.fullmatch(v) or ("," not in v and "." not in v):
+        return ""
+    return v.translate(str.maketrans(".,", ",."))
+
+
 def tr(text: str, lang: str) -> str:
     """Translates a pt-BR text through the catalog (exact, `{…}` template or ` · ` parts); what is not in it passes through."""
     if lang not in _LANGS[1:] or not text.strip():
@@ -89,7 +118,7 @@ def tr(text: str, lang: str) -> str:
         return row[col]
     for rx, row in molds:
         if m := rx.match(s):
-            vals = iter([tr(v, lang) for v in m.groups()])
+            vals = iter([_number(v) or tr(v, lang) for v in m.groups()])
             return re.sub(_MARK, lambda _, it=vals: next(it, ""), row[col])
     if " · " in s:
         return " · ".join(tr(p, lang) for p in s.split(" · "))

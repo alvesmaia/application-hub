@@ -509,7 +509,7 @@ def test_health_slo_incidents_and_status(hub: TestClient) -> None:
     rows = hub.get("/api/admin/health").json()
     assert [r["name"] for r in rows][:2] == [
         "Autenticação",
-        "Gestão de Ativos",
+        "App Inventory",  # the registry name (the seed came from the registry)
     ] and "Verificar agora" in hub.get("/admin/health").text
     r = hub.post(
         "/api/admin/health", json={"name": "Fila", "kind": "Serviço", "status": "Disponível", "app": None}
@@ -613,7 +613,9 @@ def test_status_reflects_probes_and_uptime(hub: TestClient) -> None:
         ins.tel.metrics,
         {"incidents": [], "slos": []},
     )  # type: ignore[attr-defined]
-    assert [a.name for a in data.apps] == ["App Inventory"] and data.apps[0].uptime.endswith("em 30 dias")
+    assert [a.name for a in data.apps] == ["App Inventory"] and " desde " in data.apps[
+        0
+    ].uptime  # probes only today: since the first check
 
 
 def test_auto_incident_from_fast_burn(hub: TestClient) -> None:

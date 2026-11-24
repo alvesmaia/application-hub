@@ -10,7 +10,8 @@ from fastapi.responses import Response
 from hub_sdk import flags
 from hub_sdk.render import html
 
-from inventory.state import HERE, State, StateDep, base_of
+from inventory import views
+from inventory.state import HERE, State, StateDep, asset_counts, base_of
 from inventory.views import not_found
 
 FLAG_NOVO_RESUMO = "novo-resumo"
@@ -28,18 +29,22 @@ def shared_assets_dir() -> Path:
     return Path(env) if env else HERE.parents[3] / "demo-apps" / "assets"
 
 
-def dashboard_page(st: State, req: Request) -> Response:
+# Static numbers of the mockup: shown (marked illustrative) only without a database.
+DEMO_COUNTS = {"Em uso": 1106, "Manutenção": 23}
+
+
+async def dashboard_page(st: State, req: Request) -> Response:
     body = st.fragment("dashboard", req)
     if body is None:
         return not_found(base_of(req))
+    counts = await asset_counts(st)
+    if counts is not None:
+        start, end = body.find('<div class="metric-grid">'), body.find('<div class="dashboard-grid">')
+        body = body[:start] + views.metric_cards(counts) + body[end:]
     # Wave 8 — demo feature flag `novo-resumo` (Platform › Feature flags): the
     # hub evaluates it for the user and sends it in `x-hub-flags`.
     if flags.from_headers(req.headers).is_on(FLAG_NOVO_RESUMO):
-        banner = (
-            '<div class="hub-flag-banner" data-flag="novo-resumo" role="note"><strong>Novo resumo</strong> — 1.106 '
-            "ativos em uso, 23 em manutenção e 3 precisando de atenção hoje. "
-            "<small>(recurso liberado por feature flag)</small></div>"
-        )
+        banner = views.flag_banner(counts if counts is not None else DEMO_COUNTS)
         body = body.replace('<div class="app-page-header">', f'{banner}<div class="app-page-header">', 1)
     return html(body)
 
@@ -48,7 +53,7 @@ def dashboard_page(st: State, req: Request) -> Response:
 @router.get("/inventory/")
 @router.get("/inventory/dashboard")
 async def dashboard(req: Request, st: StateDep) -> Response:
-    return dashboard_page(st, req)
+    return await dashboard_page(st, req)
 
 
 @router.get("/inventory/_skeleton")
@@ -78,6 +83,6 @@ async def other(req: Request, section: str, st: StateDep) -> Response:
     if section not in SECTIONS:
         return not_found(base_of(req))
     if section == "dashboard":
-        return dashboard_page(st, req)
+        return await dashboard_page(st, req)
     body = st.fragment(section, req)
     return html(body) if body is not None else not_found(base_of(req))

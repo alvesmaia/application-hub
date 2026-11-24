@@ -87,7 +87,16 @@ failure even when `hub check` is green.
    the `workspace` fragment (§3 of the [contract](@HUB@/dev/docs/contrato.md)). The app's sidebar becomes the
    workspace sidebar: same labels, same order, same icons — pass the app's own SVG as `Markup` in
    `NavItem(icon=Markup('<path …/>'))` (or a name from `hub_sdk.render.ICONS`). `AppInfo(help_card=False)` keeps
-   the sidebar without the hub's help card. What the top bar showed (company name, user) goes to the page header.
+   the sidebar without the hub's help card. What the top bar showed goes where the hub already has it — never a
+   second header inside the app:
+
+   | The app's top bar had | In the hub |
+   |---|---|
+   | search box (global) | federated search: implement `GET /{id}/_hub/search` (§19, `hub_sdk.search`); the hub's Ctrl+K finds the app's records. Searching **inside a list** stays in the page, as its filter bar (`data-hub-filter` or a `GET` form) |
+   | notifications bell, unread counter | the hub's Inbox: emit `kind: "notification"` (or `approval_request`) events in the outbox (§20, `hub_sdk.outbox.notification`); no bell of its own |
+   | user menu, profile, logout, language, theme | the hub's header (identity from `x-hub-user`); the app shows none of them |
+   | company name / logo | the page header (`h1` + subtitle) or the sidebar brand |
+   | settings, help, "about" links | items of the app's sidebar |
 4. **Keep the identity.** Move the CSS to `/{id}/assets/app.css` and translate the app's palette into the
    `--app-*` tokens (§29), **including** `--app-chrome`, `--app-chrome-raised`, `--app-chrome-text`,
    `--app-chrome-text-2` and `--app-chrome-icon` (the sidebar), plus `--app-primary`/`--app-on-primary`. Write the

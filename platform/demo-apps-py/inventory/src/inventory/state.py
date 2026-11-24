@@ -5,6 +5,7 @@ queries and jobs."""
 from __future__ import annotations
 
 import contextlib
+import time
 from pathlib import Path
 from typing import Annotated, Any, cast
 
@@ -26,6 +27,7 @@ from inventory.ui import notice
 HERE = Path(__file__).resolve().parent
 TEXT_COLS = ", ".join(f"{c.key}::text AS {c.key}" for c in COLS)
 DB_ERRORS = (OSError, asyncpg.PostgresError)
+COUNT_TTL_S = 15.0
 
 
 class State:
@@ -33,6 +35,7 @@ class State:
         self.sdk = sdk
         self.scratch = scratch
         self.templates: dict[str, str] = {}
+        self.counts: tuple[float, dict[str, int]] | None = None
 
     def fragment(self, name: str, req: Request) -> str | None:
         """Static mockup fragment with the hub context (user, language, date, app name, public base)."""
@@ -119,6 +122,22 @@ async def list_assets(st: State, f: Filter) -> tuple[int, list[Any]]:
                 *params,
             )
     return total, list(rows)
+
+
+async def asset_counts(st: State) -> dict[str, int] | None:
+    """Assets per status for the dashboard (15 s cache: a ``GROUP BY`` over 300k rows on every
+    view would be wasteful); ``None`` without a ready database."""
+    if st.sdk.db is None or not st.sdk.db_ready:
+        return None
+    if st.counts is not None and time.monotonic() - st.counts[0] < COUNT_TTL_S:
+        return st.counts[1]
+    try:
+        async with st.sdk.pool.acquire() as c:
+            rows = await c.fetch("SELECT status, count(*) FROM assets GROUP BY status")
+    except DB_ERRORS:
+        return None
+    st.counts = (time.monotonic(), {r[0]: int(r[1]) for r in rows})
+    return st.counts[1]
 
 
 def jobs_ready(st: State) -> bool:

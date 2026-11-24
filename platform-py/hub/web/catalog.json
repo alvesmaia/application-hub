@@ -44,14 +44,6 @@
 "Free: {} / {} GiB ({}%)"
 ],
 [
-"Em uso (sem detalhe por contêiner): {} / {} vCPU ({}%)",
-"In use (no per-container detail): {} / {} vCPU ({}%)"
-],
-[
-"Em uso (sem detalhe por contêiner): {} / {} GiB ({}%)",
-"In use (no per-container detail): {} / {} GiB ({}%)"
-],
-[
 "Contas do Entra ID não têm senha no hub: a senha é gerida na Microsoft.",
 "Entra ID accounts have no hub password: the password is managed at Microsoft."
 ],
@@ -3842,10 +3834,6 @@
 [
 "Runtime de containers indisponível.",
 "Container runtime unavailable."
-],
-[
-"Runtime indisponível: exibindo especificação. ({})",
-"Runtime unavailable: showing the specification. ({})"
 ],
 [
 "Runtime indisponível: {e}",
@@ -8218,5 +8206,105 @@
 [
 "Versão do Application Hub",
 "Application Hub version"
+],
+[
+"Runtime indisponível: o socket do runtime não existe no contêiner do hub (confira HUB_CONTAINER_SOCKET e o volume do socket). Sem métricas ao vivo; a tela mostra a configuração salva.",
+"Runtime unavailable: the runtime socket does not exist in the hub container (check HUB_CONTAINER_SOCKET and the socket volume). No live metrics; the page shows the saved configuration."
+],
+[
+"Runtime indisponível: o hub não tem permissão no socket do runtime (confira o grupo do socket). Sem métricas ao vivo; a tela mostra a configuração salva.",
+"Runtime unavailable: the hub has no permission on the runtime socket (check the socket group). No live metrics; the page shows the saved configuration."
+],
+[
+"Runtime indisponível: o runtime recusou a conexão (o serviço do Docker ou do Podman está parado?). Sem métricas ao vivo; a tela mostra a configuração salva.",
+"Runtime unavailable: the runtime refused the connection (is the Docker or Podman service stopped?). No live metrics; the page shows the saved configuration."
+],
+[
+"Runtime indisponível: o runtime não respondeu a tempo (servidor sobrecarregado?). Sem métricas ao vivo; a tela mostra a configuração salva.",
+"Runtime unavailable: the runtime did not answer in time (server overloaded?). No live metrics; the page shows the saved configuration."
+],
+[
+"Runtime indisponível ({}). Sem métricas ao vivo; a tela mostra a configuração salva.",
+"Runtime unavailable ({}). No live metrics; the page shows the saved configuration."
+],
+[
+"hoje",
+"today"
+],
+[
+"1 arquivo retido",
+"1 file retained"
+],
+[
+"{} arquivos retidos",
+"{} files retained"
+],
+[
+"{} desde {}",
+"{} since {}"
+],
+[
+"desde {}",
+"since {}"
+],
+[
+"Total {} / {} vCPU",
+"Total {} / {} vCPU"
+],
+[
+"Total {} / {} GiB",
+"Total {} / {} GiB"
+],
+[
+"Sistema {}",
+"System {}"
+],
+[
+"Plataforma {}",
+"Platform {}"
+],
+[
+"Aplicações {}",
+"Applications {}"
+],
+[
+"{}: últimos 5 minutos",
+"{}: last 5 minutes"
+],
+[
+"{} / {} vCPU",
+"{} / {} vCPU"
+],
+[
+"{} / {} GiB",
+"{} / {} GiB"
+],
+[
+"Últimos 5 minutos",
+"Last 5 minutes"
+],
+[
+"{} vCPU",
+"{} vCPU"
+],
+[
+"{} GiB",
+"{} GiB"
+],
+[
+"Implantação não concluída: veja o log no item da aba Histórico.",
+"Deployment not completed: see the log in the History tab item."
+],
+[
+"Log da implantação {}",
+"Deployment log {}"
+],
+[
+"Log",
+"Log"
+],
+[
+"Automático (idioma do navegador)",
+"Automatic (browser language)"
 ]
 ]

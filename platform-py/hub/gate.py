@@ -23,7 +23,7 @@ from hub.auth import (
     token_covers,
 )
 from hub.ux.shell import eyebrow_for
-from hub.ux.texts import page_response, resolve
+from hub.ux.texts import default_lang, page_response, resolve
 
 _PUBLIC_PREFIXES = (
     "/assets/",
@@ -40,7 +40,9 @@ Principal = tuple[dict[str, Any] | None, dict[str, Any] | None]
 
 async def authentication(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     path, method = request.url.path, request.method
-    request.state.lang = resolve("", request.headers.get("accept-language"))
+    request.state.lang = resolve(
+        default_lang(request.app.state.data_dir), request.headers.get("accept-language")
+    )
     request.state.theme = "light"
     if (public := await _public(request, call_next, path)) is not None:
         return public
@@ -221,7 +223,8 @@ def _set_principal(
 ) -> tuple[list[str], list[Any] | None]:
     request.state.user, request.state.token = user, token
     prefs = request.app.state.ux.prefs(user["id"])
-    request.state.lang = resolve(prefs.lang, request.headers.get("accept-language"))
+    pref = prefs.lang or default_lang(request.app.state.data_dir)
+    request.state.lang = resolve(pref, request.headers.get("accept-language"))
     request.state.theme = prefs.theme
     perms, apps = permissions(user, request.app.state.roles)
     if apps is not None:  # access granted by a request approved in the Inbox

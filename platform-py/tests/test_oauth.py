@@ -644,3 +644,26 @@ def test_mcp_diagnostic_log_is_opt_in(
         and "Langdock/1" in out
         and "auth=não" in out
     )
+
+
+def test_client_document_through_the_corporate_proxy_keeps_the_host_name(
+    hub: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Through the proxy the TLS name of the tunnel is the URL's host: pinning the IP there made every certificate
+    fail ("certificate verify failed") when signing in GitHub Copilot desktop behind a corporate proxy. The proxy
+    connects by name; the vetting (public IP only) still runs first. Direct (no proxy): the IP stays pinned."""
+    url = "https://github.com/copilot/desktop/client-metadata.json"
+    o = cast(oa.OAuth, hub.app.state.oauth)
+
+    async def resolve(_host: str, _port: int) -> list[str]:
+        return ["140.82.112.3"]
+
+    o.resolver = resolve
+    import asyncio
+
+    monkeypatch.setenv("HUB_PROXY", "http://proxy.corp.example:3128")
+    assert asyncio.run(o.cimd_target(url)) == (url, "github.com")
+    monkeypatch.setenv("HUB_NO_PROXY", "github.com")
+    assert (
+        asyncio.run(o.cimd_target(url))[0] == "https://140.82.112.3:443/copilot/desktop/client-metadata.json"
+    )

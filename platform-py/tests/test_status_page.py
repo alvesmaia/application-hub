@@ -64,3 +64,22 @@ def test_status_route_switches_the_period(tmp_path: Path, monkeypatch: pytest.Mo
     assert 'href="/status?periodo=12m"' in c.get("/status").text
     page = c.get("/status?periodo=12m").text
     assert "12 meses atrás" in page and 'href="/status"' in page
+
+
+def test_a_new_app_counts_its_availability_since_the_first_check(reg: Registry, tmp_path: Path) -> None:
+    from hub.ux.texts import tr
+
+    m, now = Metrics(tmp_path), int(time.time())
+    m.record_probe("inventory", "producao", True, now - 60)  # installed today
+    app = next(a for a in status_data(reg, None, now, m).apps if a.bars[-1][0] == "uptime-bar uptime-ok")
+    today = time.strftime("%d/%m", time.gmtime(now - 60))
+    assert app.uptime == f"100,0% desde {today}" and app.start == f"desde {today}"
+    assert tr(app.uptime, "en") == f"100.0% since {today}" and tr(app.start, "en") == f"since {today}"
+
+
+def test_an_app_with_a_full_window_keeps_the_30_days(reg: Registry, tmp_path: Path) -> None:
+    m, now = Metrics(tmp_path), int(time.time())
+    m.record_probe("inventory", "producao", True, now - 29 * 86_400)
+    m.record_probe("inventory", "producao", True, now - 60)
+    app = next(a for a in status_data(reg, None, now, m).apps if a.bars[-1][0] == "uptime-bar uptime-ok")
+    assert app.uptime.endswith("em 30 dias") and app.start == ""

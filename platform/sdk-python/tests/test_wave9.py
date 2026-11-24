@@ -158,3 +158,22 @@ async def test_internal_approvals_validate_and_map() -> None:
         assert (await post("zz", p, ok)).status_code == 404
         assert (await post("a b", p, ok)).status_code == 400
         assert (await post("p-1", p, {"decision": "talvez"})).status_code == 422
+
+
+def test_zone_reads_hub_tz_with_sao_paulo_default(monkeypatch: Any) -> None:
+    jan = dt.datetime(2026, 1, 15, 12, tzinfo=dt.UTC)
+    monkeypatch.delenv("HUB_TZ", raising=False)
+    assert jan.astimezone(loc.zone()).utcoffset() == dt.timedelta(hours=-3)
+    monkeypatch.setenv("HUB_TZ", "UTC")
+    assert jan.astimezone(loc.zone()).utcoffset() == dt.timedelta(0)
+
+
+def test_zone_without_tz_database_falls_back_to_utc_minus_3(monkeypatch: Any) -> None:
+    import zoneinfo
+
+    def missing(key: str) -> Any:
+        raise zoneinfo.ZoneInfoNotFoundError(key)
+
+    monkeypatch.setattr(loc, "ZoneInfo", missing)
+    monkeypatch.setenv("HUB_TZ", "Nowhere/Invalid")
+    assert loc.zone().utcoffset(None) == dt.timedelta(hours=-3)

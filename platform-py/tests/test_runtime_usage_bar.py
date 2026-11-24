@@ -30,7 +30,7 @@ def test_no_host_reading_uses_the_containers_sum() -> None:
 
 def test_containers_not_measured_show_the_usage_without_detail() -> None:
     bars = usage_bars(_host(), (0.25, 4.0), plat=None, apps=None)
-    assert bars.cpu[0][2].startswith("Em uso (sem detalhe por contêiner): 2,00 / 8,00 vCPU")
+    assert bars.cpu[0][2].startswith("2,00 / 8,00 vCPU")  # numbers only (owner's call), no "Sistema"
     assert [lbl.split(":")[0] for _, _, lbl in bars.cpu][1:3] == ["Plataforma", "Aplicações"]
     assert bars.cpu[1][0] == bars.cpu[2][0] == "flex:0.0000"
 

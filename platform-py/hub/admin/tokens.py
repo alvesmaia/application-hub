@@ -80,7 +80,7 @@ async def _settings(c: AdminCtx) -> dict[str, Any]:
         "status_public": bool(s.get("status_public", False)),
         "status_public_apps": list(s.get("status_public_apps", [])),
         "catalog_hidden_apps": list(s.get("catalog_hidden_apps", [])),
-        "language": s.get("language", "pt-BR"),
+        "language": s.get("language", ""),  # empty = automatic (the browser's language)
         "timezone": s.get("timezone", "America/Sao_Paulo"),
     }
 
@@ -93,7 +93,7 @@ async def get_settings(c: AdminCtx = Depends(ctx)) -> dict[str, Any]:
 def _check_settings(v: SettingsIn, name: str, color: str, known: set[str]) -> None:
     if len(name) > 60 or any(ord(ch) < 32 for ch in name):
         raise AdminError("Nome da plataforma inválido (até 60 caracteres).")
-    if v.language not in dict(LANGUAGES):
+    if v.language and v.language not in dict(LANGUAGES):
         raise AdminError("Idioma inválido.")
     if v.timezone != "America/Sao_Paulo":
         raise AdminError("Fuso horário inválido.")
@@ -199,7 +199,7 @@ async def settings_page(request: Request, c: AdminCtx = Depends(ctx)) -> Respons
         tab="Configurações",
         pname=s["platform_name"] or request.app.title,
         color=s["brand_color"],
-        langs=LANGUAGES,
+        langs=(("", "Automático (idioma do navegador)"), *LANGUAGES),
         lang_cur=s["language"],
         status_public=s["status_public"],
         apps=[

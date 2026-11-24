@@ -79,6 +79,10 @@ def _check_reserved(name: str, injected: str, managed: bool) -> None:
 class ConfigOps(RoleOps):
     """Variable and function operations on `admin.json` (`AdminStore.cfg`)."""
 
+    # False during the boot syncs (lifespan): they mirror what compose already gave the containers, so they never
+    # leave an app "restart pending".
+    track_pending = True
+
     # ---- variables ----------------------------------------------------------------------
     def _check_bindings(self, raw: Any) -> list[dict[str, str]]:
         out: list[dict[str, str]] = []
@@ -118,7 +122,7 @@ class ConfigOps(RoleOps):
     ) -> tuple[Any, str, str, str, str]:
         before = [_resolved_map(d["env"], a) for a in self.apps]
         out, title, detail, icon, scope, names = fn()
-        for app, prev in zip(self.apps, before, strict=True):
+        for app, prev in zip(self.apps, before, strict=True) if self.track_pending else ():
             if _resolved_map(d["env"], app) != prev:
                 p = d.setdefault("pending_restart", {}).setdefault(
                     app, {"since": int(time.time() * 1000), "vars": []}

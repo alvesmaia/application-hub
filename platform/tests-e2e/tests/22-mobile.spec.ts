@@ -89,10 +89,10 @@ test.describe('celular 390×844', () => {
     await expect(page.locator('#hub-rail')).toBeHidden();
     await expect(page.locator('[data-hub-rail-toggle]')).toBeHidden();
     await expect(page.locator('.hub-search-trigger')).toBeHidden();
-    await expect(page.getByRole('button', { name: 'Buscar', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Buscar', exact: true })).toHaveCount(0); // no search in the header (Ctrl+K)
     const burger = page.locator('[data-hub-drawer-toggle]');
     await expect(burger).toHaveAttribute('aria-label', 'Abrir menu');
-    // ☰ in the right corner, after search and notifications; avatar inside the menu.
+    // ☰ in the right corner, after the notifications; avatar inside the menu.
     const bb = (await burger.boundingBox())!;
     expect(bb.x + bb.width).toBeGreaterThan(370);
     expect(bb.width).toBeGreaterThanOrEqual(44);

@@ -198,7 +198,7 @@ class AdminCtx:
                 {
                     "id": e.id,
                     "name": e.name,
-                    "short": d.get("short") or e.name,
+                    "short": e.name,  # one name per app everywhere (display.short read differently in Administration)
                     "color": d.get("color", ""),
                     "ink": d.get("ink", ""),
                     "icon": d.get("icon", ""),

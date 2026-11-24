@@ -28,6 +28,16 @@ from hub.state import SessionLimits, SessionRow, StateDb
 async def startup_admin(app: FastAPI) -> None:
     """Initial variables, each app's internal token (vault) and the connections' managed variables."""
     admin = cast(AdminStore, app.state.admin)
+    admin.cfg.track_pending = False
+    try:
+        await _boot_syncs(app, admin)
+    finally:
+        admin.cfg.track_pending = True
+    app.state.roles = roles_for(app.state.data_dir)
+
+
+async def _boot_syncs(app: FastAPI, admin: AdminStore) -> None:
+    """Variables that mirror the compose environment: initial ones, rotated passwords, internal tokens, broker."""
     actor = "plataforma"
     if path := os.getenv("HUB_APP_ENV_FILE"):
         with suppress(OSError, ValueError):
@@ -56,7 +66,6 @@ async def startup_admin(app: FastAPI) -> None:
         print(f"hub: apps de exemplo com papel próprio no banco em {len(moved)} variável(is)")
     await admin.cfg.ensure_internal_tokens(actor, seed_of)
     await app.state.conns.sync_env(actor, broker_url())
-    app.state.roles = roles_for(app.state.data_dir)
 
 
 async def _attach_db(app: FastAPI) -> StateDb | None:

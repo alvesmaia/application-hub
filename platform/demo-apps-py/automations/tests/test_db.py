@@ -90,7 +90,9 @@ async def test_form_run_of_the_documents_sample(running_db: Running) -> None:
     r = running_db
     pid = await process_id(r, "Validar CPF/CNPJ")
     home = (await r.client.get("/automations")).text
-    assert f'action="/apps/automations/catalog/{pid}/run"' in home and 'name="p_documentos"' in home
+    assert (
+        f'data-hub-post="/apps/automations/catalog/{pid}/run"' in home and 'name="p_documentos"' in home
+    )  # posts via hub-kit
     bad = await r.client.post(f"/automations/catalog/{pid}/run", data={"p_documentos": ""}, headers=idem())
     assert bad.status_code == 422 and "Campo obrigatório." in bad.text
     res = await r.client.post(f"/automations/catalog/{pid}/run",

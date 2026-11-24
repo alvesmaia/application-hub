@@ -58,6 +58,39 @@ def header_actions(f: Filter, base: str) -> str:
     )
 
 
+def _metric(label: str, value: int, sub: str) -> str:
+    return (
+        f'<div class="metric-card"><div class="metric-label">{esc(label)}</div>'
+        f'<div class="metric-value">{thousands(value)}</div><div class="metric-change">{sub}</div></div>'
+    )
+
+
+def metric_cards(counts: dict[str, int]) -> str:
+    """Dashboard KPIs from the database (count per status); numbers in their own nodes so the
+    language middleware converts them and the labels still match the catalog."""
+    total = sum(counts.values())
+    in_use, repair = counts.get("Em uso", 0), counts.get("Manutenção", 0)
+    pct = f"{in_use * 100 / total:.1f}".replace(".", ",") if total else "0"
+    return (
+        '<div class="metric-grid">'
+        + _metric("Total de ativos", total, "<span>no cadastro</span>")
+        + _metric("Em uso", in_use, f"<span>{pct}%</span> <span>do total</span>")
+        + _metric(
+            "Manutenção", repair, f"<span>{thousands(counts.get('Baixado', 0))}</span> <span>baixados</span>"
+        )
+        + "</div>"
+    )
+
+
+def flag_banner(counts: dict[str, int]) -> str:
+    return (
+        '<div class="hub-flag-banner" data-flag="novo-resumo" role="note"><strong>Novo resumo</strong> — '
+        f"<b>{thousands(counts.get('Em uso', 0))}</b> <span>ativos em uso</span>, "
+        f"<b>{thousands(counts.get('Manutenção', 0))}</b> <span>em manutenção</span>. "
+        "<small>(recurso liberado por feature flag)</small></div>"
+    )
+
+
 def page_header(subtitle: str, actions: str) -> str:
     return (
         '<div class="app-page-header"><div><div class="eyebrow" style="color:var(--app-ink,#644ce1)">GESTÃO DE ATIVOS</div>'
@@ -154,13 +187,15 @@ def editor(row: Any, base: str, msg: str = "", close_qs: str = "") -> str:
     )
 
 
-def creator(values: dict[str, str], base: str, msg: str = "") -> str:
+def creator(values: dict[str, str], base: str, msg: str = "", qs: str = "") -> str:
+    """Create panel; ``qs`` keeps the list filters. No ``data-hub-target``: on success the app
+    redirects (303) to the list, which replaces the whole page (header count and table included)."""
     fields = "".join(field_html(k, values.get(k, ""), False) for k in EDIT_FIELDS)
     return (
         '<section class="content-panel hub-panel" id="asset-editor"><div class="hub-panel-head"><div>'
         '<span class="eyebrow">NOVO ATIVO</span><h2>Cadastrar ativo</h2><p class="hub-muted">Campos com * são obrigatórios.</p></div>'
-        f'<a class="secondary-button" href="{base}/assets">Fechar</a></div>{msg}'
-        f'<form class="hub-form" method="post" action="{base}/assets" data-hub-target="#asset-editor">'
+        f'<a class="secondary-button" href="{base}/assets{esc(qs)}">Fechar</a></div>{msg}'
+        f'<form class="hub-form" method="post" action="{base}/assets{esc(qs)}">'
         f'<div class="hub-form-grid">{fields}</div><div class="modal-actions">'
         '<button type="submit" class="primary-button">Cadastrar ativo</button></div></form></section>'
     )
