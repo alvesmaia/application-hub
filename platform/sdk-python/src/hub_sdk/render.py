@@ -57,13 +57,16 @@ ICONS: dict[str, str] = {
     "map": '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"></path><path d="M9 4v14M15 6v14"></path>',
     "home": '<path d="M3 11 12 4l9 7"></path><path d="M5 10v10h14V10"></path>',
     "search": '<circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path>',
+    "collapse": '<path d="m11 17-5-5 5-5M18 17l-5-5 5-5"></path>',
     "bell": '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"></path><path d="M10 21h4"></path>',
 }
 
 
 def icon(name: str | Markup) -> Markup:
-    """A named icon (`ICONS`) or the app's own SVG body as `Markup` (e.g. the icons of an app being adapted)."""
-    body = str(name) if isinstance(name, Markup) else ICONS.get(name, ICONS["file"])
+    """A named icon (`ICONS`) or the app's own SVG body (text starting with ``<``, or `Markup`), e.g. the
+    icons of an app being adapted. The body is the app's own constant, never user input."""
+    own = isinstance(name, Markup) or name.lstrip().startswith("<")
+    body = str(name) if own else ICONS.get(name, ICONS["file"])
     return Markup(f'<svg viewBox="0 0 24 24" aria-hidden="true">{body}</svg>')  # noqa: S704 — SVG fixo
 
 

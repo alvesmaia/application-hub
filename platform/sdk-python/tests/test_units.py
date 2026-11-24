@@ -79,3 +79,36 @@ def test_pool_sizes_respect_the_role_connection_budget(monkeypatch: "pytest.Monk
     assert pool_size("HUB_DB_POOL", 12, per_web_process=True) == 20  # explicit wins
     # web 12 + 12 + 2 and jobs 4 + 5 fit within the app role's CONNECTION LIMIT 40
     assert 12 + 12 + 2 + 4 + 5 <= 40
+
+
+class PostgresConnFake:
+    """A SQLAlchemy ``Connection`` on Postgres: records what the action's transaction executes."""
+
+    class dialect:  # same attribute name as SQLAlchemy's
+        name = "postgresql"
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, dict[str, object]]] = []
+
+    def execute(self, stmt: object, params: dict[str, object]) -> None:
+        self.calls.append((str(stmt), params))
+
+
+async def test_outbox_joins_the_sqlalchemy_transaction_of_the_action() -> None:
+    import json
+
+    import sqlalchemy as sa
+
+    from hub_sdk.outbox import notification
+
+    ev = notification("ana", "Manutenção vencida", to_roles=["Gestor de frota"])
+    pg = PostgresConnFake()
+    eid = Outbox.memory().in_transaction(pg, ev)
+    ((sql, params),) = pg.calls
+    assert "INSERT INTO hub_outbox" in sql and params["eid"] == eid and params["kind"] == "notification"
+    assert json.loads(str(params["payload"]))["meta"]["to_roles"] == ["Gestor de frota"]
+    # hub dev (SQLite): no hub_outbox table; the event goes to the in-memory outbox the hub reads there
+    o = Outbox.memory()
+    with sa.create_engine("sqlite://").begin() as conn:
+        mem = o.in_transaction(conn, ev)
+    assert [x.event_id for x in await o.pending(0, 10)] == [mem]

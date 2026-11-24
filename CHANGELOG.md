@@ -7,6 +7,25 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Added
+- App sidebar collapse on the desktop: the SDK sidebar has a "Recolher menu" button (`data-hub-menu="collapse"`);
+  icons only, labels kept as hints and for screen readers; one choice per browser for every app. Phones keep the
+  drawer.
+- App tokens `--app-brand`/`--app-on-brand` color the logo tile of the app's sidebar (light and dark).
+- SDK: `sdk.outbox.in_transaction(conn, ev)` writes audit events and Inbox notifications in the action's SQLAlchemy
+  transaction (Postgres; in-memory under `hub dev`); the app's own SVG icons can be passed as plain strings
+  (no `Markup`, no ruff S704).
+- `hub --version` shows the CLI, the hub it was built from and the bundled SDK.
+- Guide "Adaptar um app existente": a real port (Frota+) with what went where and the code that changed.
+
+### Changed
+- Template: a valid form POST answers `303` (Post/Redirect/Get) and writes its audit event in the same
+  transaction; the agent guide, the template's `AGENTS.md` and the contract agree on POST responses, colors only
+  in token declarations, notification recipients (`to_roles`, `hub dev --role`) and reserved template names.
+
+### Fixed
+- Contract §29 and §16/§17 pointed to sample apps and files that no longer exist.
+
 ## [0.4.1] — 2026-11-24
 
 ### Fixed

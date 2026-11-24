@@ -22,9 +22,10 @@ First time: `uv sync`. Run `hub check` before every commit.
 ## Conventions
 
 - Routes under `/__APP_ID__/…`; the browser sees `/apps/__APP_ID__/…`. **Every link/`action`** uses `{{ base }}` (comes from the `x-hub-base` header) — never a bare `/__APP_ID__/…`.
-- Screens = HTML fragments with the workspace (`templates/*.html` extend the SDK's `workspace.html`) and the hub classes (`app-page-header`, `content-panel`, `data-table`, `form-field`, `primary-button`, `metric-card`…). Colors only through hub CSS tokens (`var(--…)`) in `assets/app.css`.
+- Screens = HTML fragments with the workspace (`templates/*.html` extend the SDK's `workspace.html`) and the hub classes (`app-page-header`, `content-panel`, `data-table`, `form-field`, `primary-button`, `metric-card`…). Colors only through tokens: rules use `var(--…)`; literal colors (hex) appear only where `assets/app.css` declares the app's `--app-*` tokens (contract §29).
 - Screen behavior only through `data-hub-*` attributes (contract §25: modal, confirmation, filter, toast, poll…).
-- `method="post"` forms: the hub submits via XHR and swaps the workspace with the response (return the page).
+- `method="post"` forms: the hub submits via XHR. Valid: answer `303` to the list or the detail (Post/Redirect/Get; the hub follows it and updates the address bar). Invalid: `422` with the form and the messages.
+- Audit and Inbox notifications: `sdk.outbox.in_transaction(conn, ev)` inside the action's `with engine.begin() as conn:` (see `store.add_item`), so the event commits with the action; `hub_sdk.outbox.notification(..., to_roles=[…])` picks who receives it (empty = only the user who caused it).
 - Inputs (forms and API) are validated by Pydantic models. JSON API under `/__APP_ID__/api/v1/*`, each route with an `operation_id` (becomes an MCP tool); RFC 9457 errors (`hub_sdk.api.problem`); `require_user` requires an identity.
 - Database schema only through Alembic migrations in `src/__PKG__/migrations/versions/` (applied on startup).
 - What the app needs from the hub goes in `manifest.json` → `requires` (`database`, `storage`, `variables`, `secrets`).

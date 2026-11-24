@@ -5,14 +5,22 @@ You are a coding agent. Follow these steps to create and publish an app on this 
 **already exists**, read [Adapting an existing app](#adapting-an-existing-app) first: the goal is the same app,
 with the same pages, URLs, layout, design and behavior, now inside the hub.
 
+`@HUB@` is this hub's address (the hub fills it in when it serves this page). Reading this file from the
+repository instead? Ask the user for the hub's address; with no hub at hand, build the CLI from the repository
+(step 1).
+
 ## 1. Install the CLI
 
 Prerequisite: **uv** and Python 3.12. The CLI comes from this hub's public index:
 
 ```bash
-uv tool install hub-cli --index @HUB@/dev/cli/simple/
-hub --help
+uv tool install --reinstall hub-cli --index @HUB@/dev/cli/simple/
+hub --version   # hub-cli … (hub X, hub-sdk …): X must be the hub's version (@HUB@/healthz)
 ```
+
+`--reinstall` matters: an older CLI can keep the same `hub-cli` number while missing newer SDK features. The
+`hub X` part tells which hub it came from. Without a hub, from a clone of the repository:
+`bash platform-py/scripts/build-cli.sh && uv tool install --reinstall platform-py/dist/cli/hub_cli-*.whl`.
 
 ## 2. Create the project
 
@@ -85,41 +93,48 @@ failure even when `hub check` is green.
    Build links with `{{ base }}` (the public base); never flatten routes to `?id=`.
 3. **Return fragments, keep the layout.** Drop the app's own `<html>`/`<head>`/`<body>` and top bar: the page is
    the `workspace` fragment (§3 of the [contract](@HUB@/dev/docs/contrato.md)). The app's sidebar becomes the
-   workspace sidebar: same labels, same order, same icons — pass the app's own SVG as `Markup` in
-   `NavItem(icon=Markup('<path …/>'))` (or a name from `hub_sdk.render.ICONS`). `AppInfo(help_card=False)` keeps
-   the sidebar without the hub's help card. What the top bar showed goes where the hub already has it — never a
+   workspace sidebar: same labels, same order, same icons — pass the app's own SVG body as a plain string,
+   `NavItem("veiculos", "Veículos", '<path …/>')` (no `Markup`), or a name from `hub_sdk.render.ICONS`; the
+   same for the logo in `AppInfo(icon=…)`. `AppInfo(help_card=False)` keeps the sidebar without the hub's
+   help card. What the top bar showed goes where the hub already has it — never a
    second header inside the app:
 
    | The app's top bar had | In the hub |
    |---|---|
    | search box (global) | federated search: implement `GET /{id}/_hub/search` (§19, `hub_sdk.search`); the hub's Ctrl+K finds the app's records. Searching **inside a list** stays in the page, as its filter bar (`data-hub-filter` or a `GET` form) |
-   | notifications bell, unread counter | the hub's Inbox: emit `kind: "notification"` (or `approval_request`) events in the outbox (§20, `hub_sdk.outbox.notification`); no bell of its own |
+   | notifications bell, unread counter | the hub's Inbox: `hub_sdk.outbox.notification(user, title, link=…, to_roles=[…] or to_users=[…])` (§20; empty = only the user who caused it), written with `sdk.outbox.in_transaction(conn, ev)` in the action's transaction; no bell of its own. Alerts the original had for other people need `to_roles`; under `hub dev` the user has one role (`hub dev --role "<role>"`, default `Administrador`) |
    | user menu, profile, logout, language, theme | the hub's header (identity from `x-hub-user`); the app shows none of them |
-   | company name / logo | the page header (`h1` + subtitle) or the sidebar brand |
+   | company name / logo | the sidebar brand (`AppInfo(name, tagline, icon)`; tile colors `--app-brand`/`--app-on-brand`, §29) or the page header (`h1` + subtitle) |
    | settings, help, "about" links | items of the app's sidebar |
 4. **Keep the identity.** Move the CSS to `/{id}/assets/app.css` and translate the app's palette into the
    `--app-*` tokens (§29), **including** `--app-chrome`, `--app-chrome-raised`, `--app-chrome-text`,
-   `--app-chrome-text-2` and `--app-chrome-icon` (the sidebar), plus `--app-primary`/`--app-on-primary`. Write the
-   dark theme too (mandatory): the same roles under `:root[data-theme="dark"]` and the `auto` media query.
+   `--app-chrome-text-2` and `--app-chrome-icon` (the sidebar), `--app-brand`/`--app-on-brand` (the logo tile),
+   plus `--app-primary`/`--app-on-primary`. Hex values go **only** in these token declarations; every other
+   rule uses `var(--…)` ("colors only through tokens" means this). Write the dark theme too (mandatory): the
+   same roles under `:root[data-theme="dark"]` and the `auto` media query. Keep the original `@keyframes`
+   names (the hub prefixes them and their references) and inline SVG.
 5. **Replace the JavaScript, not the behavior** (no app JS by default):
 
    | The app did (JS) | In the hub |
    |---|---|
-   | sidebar collapse, hamburger/drawer | the hub's sidebar does it (`data-hub-menu="open\|close"` on phones) |
+   | sidebar collapse, hamburger/drawer | the SDK sidebar has a collapse button on the desktop (`data-hub-menu="collapse"`, remembered per browser) and the drawer on phones (`data-hub-menu="open\|close"`) |
    | tabs | `[data-hub-tabs] > [data-hub-tab="#panel"]` |
    | modal with a form | keep it a modal: `data-hub-modal="#tpl"` on the button; in `<template id="tpl">` a `<form id="f" data-hub-post="{{ base }}/…" data-hub-target="#f">` with `data-hub-close` on Cancel. Invalid: answer `422` with the form (it replaces itself in the modal). Valid: answer `303` to the page — the modal closes and that page shows |
    | "are you sure?" before delete | `data-hub-confirm="Text"` on the form or button, with `data-hub-confirm-title`, `-label` and `-danger` to keep the original wording and color |
    | select that filters on change | `<select data-hub-autosubmit>` |
-   | dismissible flash message | keep it as it is: the app's own cookies pass through the hub both ways (any name except `hub_*`, no `Domain`), so a cookie flash set on the `303` shows on the next page |
+   | dismissible flash message | keep it as it is: the app's own cookies pass through the hub both ways (any name except `hub_*`, no `Domain`), so a cookie flash set on the `303` shows on the next page; a close "×" can be a CSS checkbox (no JS) |
    | chart drawn with CSS/JS | keep the CSS bars, or `data-hub-chart` |
    | anything else | §25 attributes; only then the reviewed exception of §13.1 |
 
-6. **Keep Post/Redirect/Get.** A `POST` that answers `303` to the list or the detail works as before: the hub
-   follows the redirect, shows that page and updates the address bar. Validation errors answer `422` with the
-   form (use `data-hub-target` to replace only the form).
+6. **Keep Post/Redirect/Get.** A valid `POST` answers `303` to the list or the detail (as the template does):
+   the hub follows the redirect, shows that page and updates the address bar. Validation errors answer `422`
+   with the form (use `data-hub-target` to replace only the form). Audit and notifications go in the same
+   transaction as the change: `with engine.begin() as conn:` … `sdk.outbox.in_transaction(conn, ev)`. Template
+   variables cannot be named `conn`, `template`, `active` or `status` (parameters of `render.page`).
 7. **Verify against the checklist** in `hub dev`: every page, every sidebar link, every form (valid and invalid),
    delete, the phone layout and the dark theme, side by side with your screenshots of the original. Anything you
-   could not keep goes in your final report, with the reason.
+   could not keep goes in your final report, with the reason. A full example, with the code that changed:
+   [Adapting an existing app: the Frota+ example](/developers/guias/adaptar-app).
 
 ## Rules
 

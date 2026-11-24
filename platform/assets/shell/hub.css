@@ -677,7 +677,22 @@ input[type=checkbox]:focus-visible,input[type=radio]:focus-visible{outline:2px s
 #workspace .app-sidebar .nav-item svg{width:16px;height:16px;flex:none}
 #workspace .app-sidebar .sidebar-caption{font-size:11px!important;font-weight:600!important;letter-spacing:.05em!important;text-transform:uppercase;margin:0 10px 6px!important;padding:0!important}
 #workspace .app-sidebar .sidebar-app-row>span:last-child{min-width:0;flex:1}
-#workspace .app-sidebar .sidebar-app .app-icon{flex:none}
+#workspace .app-sidebar .sidebar-app .app-icon{flex:none;background:var(--app-brand,var(--c-blue-93-4))!important;color:var(--app-on-brand,var(--color-accent))!important}
+/* App sidebar collapsed on the desktop (data-hub-menu="collapse", hub-kit-mount.js): icons only, the
+   same targets; the labels stay for screen readers and as the `title` hint. Phones keep the drawer. */
+.app-nav-toggle{display:none}
+@media(min-width:1024px){
+  #workspace .app-nav-toggle{display:flex;align-items:center;gap:10px;width:100%;min-height:32px;margin:0 0 4px;padding:6px 10px;border:0;border-radius:var(--radius-lg);background:transparent;color:var(--color-chrome-text-2);font-size:13px;text-align:left}
+  #workspace .app-sidebar>.app-nav-toggle{margin-top:auto}
+  #workspace .app-nav-toggle:hover{background:var(--color-chrome-raised);color:var(--color-chrome-text)}
+  #workspace .app-nav-toggle svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .app-nav-collapsed body.in-app .app-sidebar{width:64px!important;padding-left:8px!important;padding-right:8px!important}
+  .app-nav-collapsed #workspace .app-nav-toggle svg{transform:rotate(180deg)}
+  .app-nav-collapsed #workspace .app-sidebar :is(.nav-item,.back-link,.app-nav-toggle)>span,.app-nav-collapsed #workspace .sidebar-app-row>span:last-child{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .app-nav-collapsed #workspace .app-sidebar :is(.sidebar-caption,.help-card,.hub-user-note){display:none}
+  .app-nav-collapsed #workspace .app-sidebar :is(.nav-item,.back-link,.app-nav-toggle,.sidebar-app-row){justify-content:center}
+  .app-nav-collapsed #workspace .app-sidebar .sidebar-app{padding-left:0;padding-right:0}
+}
 #workspace .app-sidebar .sidebar-app strong{color:var(--color-chrome-text);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;font-size:13px;line-height:1.25;white-space:normal;overflow:hidden;overflow-wrap:break-word}
 /* Dark: saturated indigo primary button with white text (the light lavender weighed next to
    the graphite cards). White on #3B55E6 = 5.8:1. Links and highlights follow the accent.

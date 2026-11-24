@@ -5,6 +5,7 @@ The schema changes only through an Alembic migration (``migrations/versions``); 
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 import sqlalchemy as sa
@@ -26,7 +27,11 @@ def list_items(engine: sa.Engine) -> list[dict[str, Any]]:
     return [dict(r) for r in rows]
 
 
-def add_item(engine: sa.Engine, name: str, quantity: int) -> dict[str, Any]:
+def add_item(
+    engine: sa.Engine, name: str, quantity: int, publish: Callable[[sa.Connection], object] = lambda _c: None
+) -> dict[str, Any]:
+    """Inserts the item; ``publish`` writes the action's outbox event in the same transaction."""
     with engine.begin() as c:
         new_id = c.execute(sa.insert(items).values(name=name, quantity=quantity)).inserted_primary_key
+        publish(c)
     return {"id": int(new_id[0]) if new_id else 0, "name": name, "quantity": quantity}

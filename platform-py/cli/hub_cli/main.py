@@ -45,8 +45,28 @@ if TYPE_CHECKING:  # argparse exposes no public name for this type
     Subparsers = argparse._SubParsersAction[Parser]
 
 
+def version() -> str:
+    """CLI, embedded hub and bundled SDK. The CLI's own number can stay the same across hub releases; the
+    embedded hub's version is the one to compare with the hub's `/healthz` (behind = reinstall)."""
+    from importlib.metadata import PackageNotFoundError
+    from importlib.metadata import version as dist_version
+
+    import hub
+
+    try:
+        cli = dist_version("hub-cli")
+    except PackageNotFoundError:  # imported from the repository (docs generator), not installed
+        cli = "dev"
+    try:
+        sdk = project.sdk_wheel().name.split("-")[1]
+    except CliError:
+        sdk = "(not bundled)"
+    return f"hub-cli {cli} (hub {hub.__version__}, hub-sdk {sdk})"
+
+
 def parser() -> argparse.ArgumentParser:
     p = Parser(prog="hub", description="Application Hub CLI", epilog=EPILOG, formatter_class=FMT)
+    p.add_argument("--version", action="version", version=version())
     sub = p.add_subparsers(dest="cmd", required=True, parser_class=Parser)
     for add in (add_project, add_check, add_pack, add_dev, add_login, add_deploy, add_mcp):
         add(sub)

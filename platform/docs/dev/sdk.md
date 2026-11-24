@@ -40,6 +40,12 @@ own volume) or the system temp directory.
 
 ### class `HubSdk`
 
+The hub's side of the app. Before :meth:`install`, set ``sdk.search = fn`` (``async fn(SearchQuery) ->
+list[SearchHit]``, answers ``GET /{id}/_hub/search``: the hub's Ctrl+K finds the app's records) and, with
+approvals, ``sdk.approvals = fn`` (``async fn(ApprovalDecision) -> str``). ``sdk.outbox`` publishes audit
+events and Inbox notifications: ``sdk.outbox.in_transaction(conn, ev)`` inside the action's SQLAlchemy
+transaction, ``await sdk.outbox.emit(ev)`` for actions without one (export, query).
+
 - `from_env(app_id: str | None=None, app_sql: str='', handlers: Sequence[Handler]=(), after_migrate: Callable[[HubSdk], Awaitable[None]] | None=None, cleanup_hooks: Sequence[Callable[[HubSdk], Awaitable[None]]]=()) -> HubSdk`
 - `pool() -> Any`
 - `db_ready() -> bool`
@@ -554,6 +560,11 @@ Approval request: the decision comes back at ``POST /{app}/_hub/approvals/{appro
 
 Writes ``ev`` with ``conn`` — usually the action's transaction. Returns the ``event_id``.
 
+### `write_sql(conn: Any, ev: Event) -> str`
+
+:func:`write` for a SQLAlchemy ``Connection`` on Postgres (the template's ``db.engine()``): inside
+``with engine.begin() as conn`` the event commits or rolls back with the action.
+
 ### class `Outbox`
 
 Outbox in Postgres (``pool``) or in memory (``pool=None``).
@@ -562,6 +573,7 @@ Outbox in Postgres (``pool``) or in memory (``pool=None``).
 - `memory() -> Outbox`
 - `durable() -> bool`
 - `async emit(ev: Event) -> str | None` — Publishes outside a transaction (actions without a DB: export, query). Failure only goes to the log.
+- `in_transaction(conn: Any, ev: Event) -> str` — Writes ``ev`` in the action's SQLAlchemy transaction (``with engine.begin() as conn:``), so an action that commits always has its audit/notification and one that fails has none. With SQLite (``hub dev``) there is no ``hub_outbox``: the event goes to the in-memory outbox the hub reads there.
 - `async pending(after: int, limit: int) -> list[Stored]` — Unconfirmed events with ``id > after``, in order.
 - `async ack(event_ids: list[str]) -> int` — Confirms; returns how many became confirmed (repeating is harmless).
 
@@ -606,7 +618,8 @@ HTML fragments with the shell's look (Jinja2) and common responses.
 
 ### `icon(name: str | Markup) -> Markup`
 
-A named icon (`ICONS`) or the app's own SVG body as `Markup` (e.g. the icons of an app being adapted).
+A named icon (`ICONS`) or the app's own SVG body (text starting with ``<``, or `Markup`), e.g. the
+icons of an app being adapted. The body is the app's own constant, never user input.
 
 ### class `NavItem`
 

@@ -58,6 +58,13 @@ GUIDES = (
     ),
     Doc("guias/mcp-api", "guias", "API e MCP do app", "dev/guias/mcp-api.md", "guia-mcp-api"),
     Doc("guias/dashboards", "guias", "Dashboards", "dev/guias/dashboards.md", "guia-dashboards"),
+    Doc(
+        "guias/adaptar-app",
+        "guias",
+        "Adaptar um app existente",
+        "dev/guias/adaptar-app.md",
+        "guia-adaptar-app",
+    ),
 )
 DOCS = (
     Doc("", "comecar", "Começar", "dev/comecar.md", "comecar"),
@@ -229,7 +236,7 @@ def _slugify(text: str) -> str:
 _LEXERS = {"bash": "bash", "sh": "bash", "shell": "bash", "console": "bash", "python": "python", "py": "python",
            "json": "json", "toml": "toml", "yaml": "yaml", "yml": "yaml", "html": "html", "jinja": "html+jinja",
            "sql": "sql", "js": "javascript", "javascript": "javascript", "ts": "typescript",
-           "typescript": "typescript"}  # fmt: skip
+           "typescript": "typescript", "css": "css"}  # fmt: skip
 
 
 def _bash_word(tok: Any, val: str, cmd: bool) -> tuple[Any, bool]:

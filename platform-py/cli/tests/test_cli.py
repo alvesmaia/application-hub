@@ -275,3 +275,12 @@ def test_check_wait_reports_last_ready_status(monkeypatch):
     monkeypatch.setattr(httpx, "get", lambda *a, **k: httpx.Response(204, content=b""))
     ok, last = check._wait("http://x/_hub/ready", seconds=0.05)
     assert not ok and last == "HTTP 204 (esperado 200 com JSON)"
+
+
+def test_version_names_the_hub_the_cli_was_built_from(capsys: pytest.CaptureFixture[str]):
+    import hub
+
+    assert main(["--version"]) == 0
+    out = capsys.readouterr().out
+    # an old CLI keeps its own number; the hub it embeds tells whether it is behind the hub's /healthz
+    assert out.startswith("hub-cli ") and f"hub {hub.__version__}" in out and "hub-sdk " in out

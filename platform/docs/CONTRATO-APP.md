@@ -905,7 +905,7 @@ Example (Coletor):
 </div>
 ```
 
-The demo apps (inventory, suppliers, serviços, contratos and collector) use only these
+The demo apps (inventory, suppliers, servicedesk, collector and automations) use only these
 attributes — none of them serves JavaScript.
 
 **App WebSocket (server side).** The hub's gateway forwards `GET /apps/{id}/ws/…` with
@@ -969,7 +969,10 @@ identity**. The app's CSS (`/{id}/assets/app.css`) enters confined by `@scope (#
   `border`, `border-strong`, `control`, `tint`, `tint-border`, `title`, `body`, `secondary`,
   `faint`, `ink`, `primary`, `primary-hover`, `on-primary`, `fill`, `accent`, `accent-soft`,
   `chrome` (the app's sidebar), `chrome-raised`, `chrome-text`, `chrome-text-2`,
-  `chrome-icon` (and the status ones `ok*`/`warn*`/`err*`, if you want). The hub passes each one on to
+  `chrome-icon`, `brand` and `on-brand` (the tile with the app's icon at the top of its sidebar; undeclared =
+  the hub's tile) and the status ones `ok*`/`warn*`/`err*`, if you want. **Literal colors (hex) live only in
+  these declarations**; every other rule of the app's CSS uses `var(--…)`. `AppInfo.color`/`ink` are not used
+  inside the hub: the tile follows `--app-brand`/`--app-on-brand`, with their dark variants. The hub passes each one on to
   everything it draws in the app's area (`hub-kit` components, tables, buttons, sidebar);
   an undeclared role = the hub's value. Fonts: `--app-font` (text) and `--app-font-display`
   (titles) — prefer system font stacks; a custom font is only served by the **app's package** (CSP `font-src 'self'`; `@font-face` does not cross the scope — use the hub's or the system's). Radii (`--radius-*`) and other shape tokens can also be redefined on the app's `:root`.
@@ -980,11 +983,13 @@ identity**. The app's CSS (`/{id}/assets/app.css`) enters confined by `@scope (#
   `node scripts/gen-dark-theme.mjs --check`, which does **not** rewrite the apps' CSS).
 - **Behavior and usability do not change:** components and `data-hub-*` attributes (§25) are
   the hub's; the app's sidebar may have a different look, but keeps the width and the targets (≥ 28 px).
-- Examples: `demo-apps/assets/inventory.css` (teal-blue), `app2.css` (Fornecedores: terracotta,
-  serif titles), `app3.css` (Serviços: forest green, rounded shapes) and
-  `demo-apps-py/contratos/src/contratos/assets/app.css` (burgundy, dense tables) and
-  `demo-apps-py/collector/src/collector/assets/app.css` (safety yellow/graphite, touch first) — blocks
-  `identidade:` (tokens) and `forma:` (own rules).
+- **Inside the scope:** `@keyframes` become `app-<name>` and the app's `animation`/`animation-name`
+  references are rewritten with them (write the original names); inline SVG is kept, except SVG animations
+  (`<set>`/`<animate>`), `<foreignObject>` and `<use>` pointing outside the page.
+- Examples (`demo-apps-py/<id>/src/<id>/assets/app.css`): `inventory` (teal green), `suppliers`
+  (terracotta, serif titles), `servicedesk` (forest green, rounded shapes), `collector` (safety
+  yellow/graphite, touch first) and `automations` (indigo and slate) — blocks `identidade:` (tokens) and
+  `forma:` (own rules).
 
 ## 16. Conformance suite
 
@@ -995,9 +1000,9 @@ API or sections are restricted to a role (e.g. `["Administrador"]`).
 
 ```bash
 # against the compose apps (container on each app's internal network; hub-web stopped during the suite)
-bash conformance/run.sh                 # inventory suppliers servicedesk contratos
+bash conformance/run.sh                 # inventory suppliers servicedesk collector automations
 # against any local app
-CONF_APP=contratos CONF_URL=http://127.0.0.1:9104 CONF_TOKEN=<token> CONF_DB_URL=<url> \
+CONF_APP=inventory CONF_URL=http://127.0.0.1:9104 CONF_TOKEN=<token> CONF_DB_URL=<url> \
   python -m pytest conformance
 ```
 
@@ -1039,8 +1044,8 @@ repeating; body cap with `Idempotency-Key` (depends on each app's limit).
 | Heavy-operations semaphore | per process; with `UVICORN_WORKERS=N`, effective limit `N × HUB_HEAVY_MAX` |
 | Concurrency | 1 asyncio loop per process; heavy CPU in `asyncio.to_thread`; scales with `UVICORN_WORKERS` |
 | Tasks | `HUB_JOBS_MODE=process` in the image; `inline` in `hub dev` and tests |
-| Examples | `inventory`, `suppliers`, `servicedesk`, `contratos`, `collector` (`demo-apps-py/`) |
-| `hub dev` | `hub dev --dir demo-apps-py/contratos --limits -- .venv/Scripts/python -m contratos` |
+| Examples | `inventory`, `suppliers`, `servicedesk`, `collector`, `automations` (`demo-apps-py/`) |
+| `hub dev` | `hub dev --dir demo-apps-py/inventory --limits -- .venv/Scripts/python -m inventory` |
 
 Other languages: implement this contract and pass `conformance/run.sh` (create a
 profile for the app). Wave 11: the suite also validates the served OpenAPI (openapi-spec-validator),

@@ -83,6 +83,12 @@ def scratch_dir(app_id: str) -> Path:
 
 
 class HubSdk:
+    """The hub's side of the app. Before :meth:`install`, set ``sdk.search = fn`` (``async fn(SearchQuery) ->
+    list[SearchHit]``, answers ``GET /{id}/_hub/search``: the hub's Ctrl+K finds the app's records) and, with
+    approvals, ``sdk.approvals = fn`` (``async fn(ApprovalDecision) -> str``). ``sdk.outbox`` publishes audit
+    events and Inbox notifications: ``sdk.outbox.in_transaction(conn, ev)`` inside the action's SQLAlchemy
+    transaction, ``await sdk.outbox.emit(ev)`` for actions without one (export, query)."""
+
     def __init__(
         self,
         app_id: str,

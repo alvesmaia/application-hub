@@ -14,11 +14,13 @@ from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from hub_sdk import dashboards as dash
 from hub_sdk import db
 from hub_sdk.api import install_api, require_user
 from hub_sdk.app import HubSdk
+from hub_sdk.identity import identity_of
+from hub_sdk.outbox import audit
 from hub_sdk.render import AppInfo, NavItem, Renderer
 from hub_sdk.storage import StorageError
 from pydantic import BaseModel, Field, ValidationError
@@ -145,8 +147,12 @@ def create_app() -> FastAPI:
             items = store.list_items(engine)
             error = "Informe nome e quantidade válidos."
             return page(req, "itens.html", "itens", 422, items=items, error=error)
-        store.add_item(engine, item.name, item.quantity)
-        return page(req, "itens.html", "itens", items=store.list_items(engine), error="")
+        who = identity_of(req).user
+        # the audit event commits (or rolls back) with the item: same transaction
+        event = audit(who, "Criou item", item.name)
+        store.add_item(engine, item.name, item.quantity, lambda c: sdk.outbox.in_transaction(c, event))
+        # Post/Redirect/Get: the hub follows the 303, shows the list and updates the address bar
+        return RedirectResponse(f"{public_base(req)}/itens", status_code=303)
 
     @app.get(f"/{APP_ID}/api/v1/itens", operation_id="listar_itens", response_model=list[ItemOut])
     def api_list(req: Request) -> Any:

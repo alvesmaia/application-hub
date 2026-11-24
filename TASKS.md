@@ -131,3 +131,11 @@
 - ✅ 107 · Sem banners: admin/tasks não mostra mais "Sem resposta de" (motivo fica em /api/ops/tasks); runtime indisponível e avisos de Conexões viram linha discreta
 - ✅ 108 · Cabeçalho do hub sem a caixa de pesquisa (confundida com a do app; Ctrl+K continua); guia dos agentes diz para onde vai cada item do cabeçalho próprio do app (pesquisa, notificações, menu do usuário, logo)
 - ✅ 109 · Idioma padrão "Automático (idioma do navegador)": salvar outras configurações não fixa mais pt-BR
+
+## Port de app existente: lacunas achadas com o Frota+ (2026-11-24)
+
+- ✅ 110 · Hub: recolher a barra lateral do app no desktop; bloco da marca usa `AppInfo.color`
+- ✅ 111 · SDK: ícone SVG sem `Markup` no código do app (sem S704); `sdk.search`/`sdk.outbox` no sdk.md
+- ✅ 112 · CLI: `hub --version` com a versão do SDK; versão da CLI acompanha a do hub
+- ✅ 113 · Guia e contrato: `@HUB@` sem hub, cores em tokens, outbox na mesma transação, destinatários de notificação e papéis no `hub dev`, caminhos do §29, POST → 303, nomes reservados, animações/SVG, flash
+- ✅ 114 · Exemplo de referência: port do Frota+ (as is → to be) no guia

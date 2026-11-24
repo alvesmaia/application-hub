@@ -11,6 +11,7 @@ dies — only for apps without Postgres).
 
 from __future__ import annotations
 
+import json
 import logging
 import threading
 import time
@@ -165,6 +166,22 @@ async def write(conn: Any, ev: Event) -> str:
     return eid
 
 
+def write_sql(conn: Any, ev: Event) -> str:
+    """:func:`write` for a SQLAlchemy ``Connection`` on Postgres (the template's ``db.engine()``): inside
+    ``with engine.begin() as conn`` the event commits or rolls back with the action."""
+    from sqlalchemy import text
+
+    eid = new_id("evt")
+    conn.execute(
+        text(
+            "INSERT INTO hub_outbox (event_id, kind, user_name, payload) "
+            "VALUES (:eid, :kind, :user, CAST(:payload AS jsonb))"
+        ),
+        {"eid": eid, "kind": ev.kind, "user": ev.user, "payload": json.dumps(_payload(ev))},
+    )
+    return eid
+
+
 class Outbox:
     """Outbox in Postgres (``pool``) or in memory (``pool=None``)."""
 
@@ -196,6 +213,17 @@ class Outbox:
             except Exception as e:
                 log.error("outbox: evento não gravado (%s): %s", e, ev.action)
                 return None
+        return self._remember(ev)
+
+    def in_transaction(self, conn: Any, ev: Event) -> str:
+        """Writes ``ev`` in the action's SQLAlchemy transaction (``with engine.begin() as conn:``), so an
+        action that commits always has its audit/notification and one that fails has none. With SQLite
+        (``hub dev``) there is no ``hub_outbox``: the event goes to the in-memory outbox the hub reads there."""
+        if conn.dialect.name == "postgresql":
+            return write_sql(conn, ev)
+        return self._remember(ev)
+
+    def _remember(self, ev: Event) -> str:
         with self._lock:
             self._next += 1
             st = Stored(

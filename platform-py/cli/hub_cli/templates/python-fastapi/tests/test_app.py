@@ -42,8 +42,11 @@ def test_pages_use_public_base(client: TestClient) -> None:
 
 
 def test_form_creates_item_and_validates(client: TestClient) -> None:
-    r = client.post(f"{A}/itens", data={"name": "Parafuso", "quantity": "7"}, headers=H)
-    assert r.status_code == 200 and "Parafuso" in r.text
+    r = client.post(
+        f"{A}/itens", data={"name": "Parafuso", "quantity": "7"}, headers=H, follow_redirects=False
+    )
+    assert r.status_code == 303 and r.headers["location"].endswith(f"{A}/itens")
+    assert "Parafuso" in client.get(f"{A}/itens", headers=H).text
     bad = client.post(f"{A}/itens", data={"name": "", "quantity": "x"}, headers=H)
     assert bad.status_code == 422
     assert "7" in client.get(f"{A}", headers=H).text

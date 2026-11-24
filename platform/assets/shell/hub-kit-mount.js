@@ -8,6 +8,34 @@
   if (!P) return;
   const { Pure, frag, inScope, appRoot, ref, t, toast, ownPath, insert, request, confirmDialog,
     guard, openModal, showErrors } = P;
+  // App sidebar collapsed on the desktop (data-hub-menu="collapse"): one choice for every app, kept in
+  // localStorage and applied on <html> before the app's fragment arrives (no jump between pages).
+  const NAV_KEY = 'hub-app-nav';
+  const navCollapsed = () => document.documentElement.classList.contains('app-nav-collapsed');
+  function setNav(collapsed, persist) {
+    document.documentElement.classList.toggle('app-nav-collapsed', collapsed);
+    document.querySelectorAll('[data-hub-menu="collapse"]').forEach((b) => b.setAttribute('aria-expanded', String(!collapsed)));
+    if (!persist) return;
+    try { localStorage.setItem(NAV_KEY, collapsed ? 'collapsed' : 'expanded'); } catch (_) { /* no storage */ }
+  }
+  try { setNav(localStorage.getItem(NAV_KEY) === 'collapsed', false); } catch (_) { /* no storage */ }
+  // Any app sidebar (SDK or hand-written, any stack) gets the collapse button and a hint per item.
+  function addNavToggle(side) {
+    side.querySelectorAll('.nav-item').forEach((it) => { if (!it.title) it.title = (it.textContent || '').trim(); });
+    if (side.querySelector('[data-hub-menu="collapse"]')) return;
+    const label = t('js.app_nav_collapse', 'Recolher menu');
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'app-nav-toggle'; b.title = label;
+    b.setAttribute('data-hub-menu', 'collapse');
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('aria-hidden', 'true');
+    const path = document.createElementNS(NS, 'path'); path.setAttribute('d', 'm11 17-5-5 5-5M18 17l-5-5 5-5');
+    svg.append(path);
+    const span = document.createElement('span'); span.textContent = label;
+    b.append(svg, span);
+    const bottom = side.querySelector('.sidebar-bottom');
+    if (bottom) bottom.prepend(b); else side.append(b);
+  }
   // ---- tabelas ----
   function rowsOf(container) {
     if (!container) return [];
@@ -259,6 +287,8 @@
       try { window.HubChart && window.HubChart.draw(n, JSON.parse(n.getAttribute('data-hub-chart'))); } catch (err) { console.error('data-hub-chart inválido', err); }
     });
     all('table[data-hub-page-size]').forEach((tb) => paginate(tb, 1));
+    all('.app-sidebar').forEach(addNavToggle);
+    all('[data-hub-menu="collapse"]').forEach((b) => b.setAttribute('aria-expanded', String(!navCollapsed())));
     all('[data-hub-tabs]').forEach((g) => { const cur = g.querySelector('[data-hub-tab][aria-selected="true"]') || g.querySelector('[data-hub-tab]'); if (cur) selectTab(cur); });
     all('select[data-hub-depends]').forEach(fillDependent);
     all('[data-hub-ws]').forEach(wsBind);
@@ -302,6 +332,7 @@
         ws.querySelectorAll('[data-hub-menu="open"], [data-mobile-menu]').forEach((b) => b.setAttribute('aria-expanded', 'false'));
       }
     }
+    if (t0.closest('[data-hub-menu="collapse"]')) { setNav(!navCollapsed(), true); return; }
     const menu = t0.closest('[data-hub-menu], [data-mobile-menu], [data-mobile-close]');
     if (menu) {
       const ws = document.getElementById('workspace');

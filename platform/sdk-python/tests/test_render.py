@@ -130,3 +130,19 @@ def test_sidebar_help_card_can_be_left_out(tmp_path: Path) -> None:
     lean = Renderer(replace(APP, help_card=False), tmp_path)  # an adapted app keeps its sidebar as it was
     body = bytes(lean.page(req("ana"), "page.html", "dashboard").body).decode()
     assert "help-card" not in body and "hub-user-note" not in body and "back-link" in body
+
+
+def test_the_apps_own_svg_can_be_a_plain_string() -> None:
+    from hub_sdk.render import icon
+
+    # an adapted app passes its SVG body as text: no `Markup(...)` in the app's code (ruff S704)
+    assert '<path d="M3 16V8h11v8"/>' in str(icon('<path d="M3 16V8h11v8"/>'))
+
+
+def test_sidebar_can_be_collapsed_on_the_desktop(tmp_path: Path) -> None:
+    (tmp_path / "page.html").write_text(
+        '{% extends "workspace.html" %}{% block content %}x{% endblock %}', "utf-8"
+    )
+    body = bytes(Renderer(APP, tmp_path).page(req("ana"), "page.html", "dashboard").body).decode()
+    assert 'data-hub-menu="collapse"' in body and 'aria-expanded="true"' in body
+    assert 'title="Dashboard"' in body  # the collapsed sidebar keeps a hint with each label

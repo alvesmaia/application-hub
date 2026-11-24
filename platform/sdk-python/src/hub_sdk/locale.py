@@ -175,6 +175,7 @@ register(
         },
         "Acessar central de ajuda →": {"en": "Open help center →"},
         "Voltar à plataforma": {"en": "Back to the platform"},
+        "Recolher menu": {"en": "Collapse menu"},
         "Menu da aplicação": {"en": "Application menu"},
         "Navegação da aplicação": {"en": "Application navigation"},
         "Página não encontrada": {"en": "Page not found"},
