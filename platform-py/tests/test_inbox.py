@@ -485,7 +485,7 @@ def test_language_resolution_and_translation(tmp_path: Path, monkeypatch: pytest
     en = c.get("/inbox", headers={"accept-language": "en"}).text
     assert '<html lang="en"' in en and "Alertas da plataforma" not in en and "Notification preferences" in en
     assert 'aria-label="Platform navigation"' in en and "Skip to content" in en and ">Home<" in en
-    assert 'class="hub-search-label">Search apps, pages and records<' in en
+    assert 'class="hub-search-label"' not in en  # no search box in the header (Ctrl+K opens the palette)
     assert "Pular para o conteúdo" in c.get("/inbox").text  # default: pt-BR
     assert c.put("/api/me/prefs", json={"lang": "es"}, headers=HDR).status_code == 400
     c.put("/api/me/prefs", json={"lang": "en"}, headers=HDR)
