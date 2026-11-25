@@ -7,6 +7,11 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Changed
+- `hub-check` runs the hub's tests in parallel (pytest-xdist, `HUB_CHECK_WORKERS`, default 4: ~5 min instead of ~11)
+  and does not test the same code twice: a green full run records the code's identity (docs and the release's
+  version line do not count), so the push hook and the release's push skip it (`HUB_CHECK_FORCE=1` forces).
+
 ## [0.6.1] — 2026-11-25
 
 ### Changed

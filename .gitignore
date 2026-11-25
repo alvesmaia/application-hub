@@ -37,3 +37,4 @@ __pycache__/
 
 # Playwright MCP screenshots and logs (local tool output)
 .playwright-mcp/
+platform-py/.hub-check-ok

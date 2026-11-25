@@ -167,3 +167,8 @@
 - ✅ 131 · Tela "Acesso ao banco" (aba de Usuários) + API de administração
 - ✅ 132 · Instalador interativo e flags (também numa instalação existente) + compose + docs
 - ✅ 133 · Validação: conexão real com TLS de fora do contêiner, E2E, ui-sweep, hub-check --all
+
+## Publicações mais rápidas (2026-11-25)
+
+- ✅ 134 · Testes do hub em paralelo (pytest-xdist, até 4 processos)
+- ✅ 135 · Check completo não roda de novo em código já verificado (assinatura do código; pre-push pula)

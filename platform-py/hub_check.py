@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -26,6 +28,40 @@ COV = [
     "hub.ops",
     "hub.api",
 ]
+
+
+# A green full run records the code's identity here; the next full run (push hook, release push) skips when nothing
+# that matters changed. Docs and the release's version bump do not count. HUB_CHECK_FORCE=1 runs anyway.
+STAMP = ROOT / ".hub-check-ok"
+_DOCS = re.compile(r"(\.md$|^platform/docs/dev/dates\.json$)")
+_VERSIONED = ("platform-py/hub/__init__.py", "platform-py/pyproject.toml", "platform-py/uv.lock")
+
+
+def _version() -> str:
+    m = re.search(r'__version__ = "([^"]+)"', (REPO / _VERSIONED[0]).read_text(encoding="utf-8"))
+    return m.group(1) if m else "-"
+
+
+def code_identity() -> str:
+    """SHA-256 of every file git tracks or would track (committed or not), without docs and the version number."""
+    names = subprocess.run(["git", "ls-files", "-co", "--exclude-standard", "-z"], cwd=REPO, capture_output=True,  # noqa: S607
+                           check=True).stdout.decode().split("\0")  # fmt: skip
+    version, h = f'"{_version()}"', hashlib.sha256()
+    for name in sorted(n for n in names if n and not _DOCS.search(n)):
+        p = REPO / name
+        if not p.is_file():
+            continue
+        data = p.read_bytes()
+        if name in _VERSIONED:  # the release bump changes only the line with the version
+            data = b"\n".join(x for x in data.splitlines() if version.encode() not in x)
+        h.update(name.encode() + b"\0" + data + b"\0")
+    return h.hexdigest()
+
+
+def already_checked(need: str, ident: str, stamp: str) -> bool:
+    """`need` = hub or all; an --all run also covers the hub-only one."""
+    mode, _, done = stamp.strip().partition(" ")
+    return os.getenv("HUB_CHECK_FORCE") != "1" and done == ident and (mode == "all" or need == "hub")
 
 
 MAX_FILE_LINES = 500
@@ -124,6 +160,8 @@ def hub_steps(fast: bool) -> list[tuple[str, list[str], Path]]:
                     *run,
                     "pytest",
                     "-q",
+                    "-n",  # parallel (pytest-xdist); 4 keeps memory low on small machines
+                    os.getenv("HUB_CHECK_WORKERS", "4"),
                     *cov,
                     "--cov-branch",
                     "--cov-report=term-missing",
@@ -190,10 +228,20 @@ def main() -> int:
         return check_sizes()
     if a.ty_files:
         return ty_files(a.ty_files)
+    need = "all" if a.all else "hub"
+    ident = "" if a.fast else code_identity()
+    if ident and already_checked(need, ident, STAMP.read_text(encoding="utf-8") if STAMP.exists() else ""):
+        print(
+            f"hub-check: este código já passou no check completo ({ident[:12]}); nada a refazer (HUB_CHECK_FORCE=1 força)"
+        )
+        return 0
     steps = hub_steps(a.fast)
     for p in _projects() if a.all else []:
         steps += project_steps(p, a.fast)
-    return summary(run_steps(steps), len(steps))
+    rc = summary(run_steps(steps), len(steps))
+    if rc == 0 and ident:
+        STAMP.write_text(f"{need} {ident}\n", encoding="utf-8")
+    return rc
 
 
 if __name__ == "__main__":

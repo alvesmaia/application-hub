@@ -34,8 +34,9 @@ repos:
         name: arquivos grandes (>1 MB)
         entry: uv run --project platform-py python -c "import os,sys;b=[f for f in sys.argv[1:] if os.path.getsize(f)>1<<20];print(*b,sep=chr(10));sys.exit(1 if b else 0)"
         language: system
-      # Push: the full suite (~20 min) only when the pushed commits carry code; docs, CHANGELOG/TASKS and the
-      # release's version bump (hub/__init__.py, pyproject.toml, uv.lock) only get the fast check below.
+      # Push: the full suite (hub tests in parallel, ~4 min) only when the pushed commits carry code; docs,
+      # CHANGELOG/TASKS and the release's version bump only get the fast check below. Code that already passed a full
+      # run (same identity, platform-py/.hub-check-ok) is not tested again; HUB_CHECK_FORCE=1 forces it.
       - id: hub-check
         name: hub-check (completo, so hub)
         entry: uv run --project platform-py hub-check
