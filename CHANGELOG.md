@@ -7,6 +7,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-11-25
+
 ### Added
 - Read access to the apps' database from other machines (dashboards, DBeaver) by host and port: off by default;
   `install.sh --db-public-port 5432 --db-allowed-cidrs …` (or the installer's question, also asked once on an existing
