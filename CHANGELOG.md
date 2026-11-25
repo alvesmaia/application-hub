@@ -7,6 +7,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-11-25
+
 ### Added
 - `hub login` signs the CLI in through the browser (OAuth device flow, RFC 8628): the CLI prints a link and a code,
   the person approves them signed in to the hub, and the CLI then acts as that person (with their permissions) on
