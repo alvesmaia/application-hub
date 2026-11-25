@@ -7,6 +7,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-11-25
+
 ### Fixed
 - CLI behind a corporate proxy that inspects TLS: `hub login`, `hub deploy` and `hub mcp` trust the system's
   certificate store (and `SSL_CERT_FILE`/`SSL_CERT_DIR`) besides the public CAs, and a refused certificate says why
