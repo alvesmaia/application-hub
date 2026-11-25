@@ -33,6 +33,10 @@ services:
   app-hub-app-db:
     environment:
       POSTGRES_PASSWORD: ${APP_HUB_APP_DB_PASSWORD:?}
+    # Read access from other machines (install.sh --db-public): 0.0.0.0:<port>. Off, this equals the debug port
+    # below (127.0.0.1:HUB_APPDB_PORT) and compose keeps one mapping.
+    ports:
+      - "${HUB_DB_PUBLIC_BIND:-127.0.0.1}:${HUB_DB_PUBLIC_PORT:-${HUB_APPDB_PORT:-15433}}:5432"
 
   app-hub-db-roles:
     environment:

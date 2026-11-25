@@ -46,6 +46,11 @@
 #   --local-login admins|todos|nenhum   e-mail/password sign-in besides Microsoft (default admins)
 #   --trusted-proxy CIDR   reverse proxy in front (e.g. Nginx with TLS): its X-Forwarded-* headers are trusted
 #
+# Read access to the apps' database from other machines (dashboards, DBeaver; accounts made in Administration),
+# also on an existing install (rerun with these options; the database is recreated with the port):
+#   --db-public-port PORT --db-allowed-cidrs LIST   TLS required, only from these networks (e.g. 10.0.0.0/8)
+#   --db-public-host NAME   name/IP people use to connect (default: the hub URL's)     --no-db-public   turns it off
+#
 # Rootless Podman: with a systemd user session the install enables podman.socket and podman-restart.service (start
 # after a reboot). On a host without systemd the hub runs its own API socket (cgroupfs, no systemd healthchecks) and
 # an @reboot line in the user's crontab runs scripts/hub-start.sh. A systemd host whose user session is missing (no
@@ -106,6 +111,8 @@ if [ -f "$LIB/net.sh" ]; then
   . "$LIB/db.sh"
   # shellcheck source=install/opts.sh
   . "$LIB/opts.sh"
+  # shellcheck source=install/dbpublic.sh
+  . "$LIB/dbpublic.sh"
 fi
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -141,6 +148,10 @@ while [ $# -gt 0 ]; do
     --entra-client-secret-file) ENTRA_SECRET_FILE=$2; ENTRA=s; shift; ASKED=1 ;;
     --entra-domains) ENTRA_DOMAINS=$2; shift; ASKED=1 ;;
     --entra-role) ENTRA_ROLE=$2; shift; ASKED=1 ;;
+    --db-public-port) DBPUB=s; DBPUB_PORT=$2; shift; ASKED=1 ;;
+    --db-allowed-cidrs) DBPUB=s; DBPUB_CIDRS=$2; shift; ASKED=1 ;;
+    --db-public-host) DBPUB_HOST=$2; shift; ASKED=1 ;;
+    --no-db-public) DBPUB=off; ASKED=1 ;;
     --local-login) ENTRA_LOCAL=$2; shift; ASKED=1 ;;
     --trusted-proxy) PROXIES=$2; PROXY=s; shift; ASKED=1 ;;
     --autostart) AUTOSTART=$2; shift
@@ -180,8 +191,10 @@ secret() { # secret <variable> <question>: no echo (the answer never shows on th
 yes_no() { case "$1" in s | S | y | Y) return 0 ;; *) return 1 ;; esac; }
 # a rerun keeps the answers already in .prod.env (it only starts what is missing): no questions again
 if [ "$CONFIG_ONLY" = 0 ] && [ -f "$LIB/../../.prod.env" ]; then
+  FLAGS_GIVEN=$ASKED
   echo "usando platform-py/.prod.env existente: sem perguntas" >&2; ASKED=1
   rerun_ignored "$LIB/../../.prod.env"
+  dbpub_rerun_question "$LIB/../../.prod.env"
 fi
 if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0 ] && [ -r /dev/tty ]; }; }; then
   exec 3< "$TTY"; TTY_OPEN=1
@@ -237,6 +250,7 @@ if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0
       fi
     fi
     ask ADMIN_CIDRS "Redes com acesso à Administração (CIDR, vírgula); vazio = sem restrição" '^$|^[0-9a-fA-F.:/,]+$'
+    dbpub_questions
     PROXY=$(case "${PUBLIC_URL:-}" in https://*) echo s ;; *) echo n ;; esac)
     ask PROXY "Há proxy/túnel com HTTPS na frente do hub? (s/n)" '^[snSN]$'
     yes_no "$PROXY" && ask PROXIES "  Rede do proxy confiável (CIDR)" '^[0-9a-fA-F.:/,]+$'
@@ -253,6 +267,7 @@ if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0
     echo "        arquivos=${OBJ_DIR:-volume Docker}  âncora=${HEAD_DIR:-./.secrets/audit-head}${HEAD_URL:+ + webhook}"
     echo "        cópia externa=$OFF_KIND${SP_TENANT:+ ($SP_SITE/$SP_FOLDER)}  login Microsoft=$(yes_no "$ENTRA" && echo sim || echo não)"
     echo "        Administração=${ADMIN_CIDRS:-sem restrição}  proxy=$PROXY  telemetria=$TELEMETRY  avisos=$UPDATES  docs públicas=$PUBDOCS"
+    echo "        banco por outras máquinas=$(yes_no "$DBPUB" && echo "porta $DBPUB_PORT, redes $DBPUB_CIDRS" || echo não)"
   fi
   if [ "$CONFIG_ONLY" = 1 ]; then # the real install ends in the consent below
     printf 'Gravar .prod.env com estas opções? (s/n) [s]: ' >&4
@@ -264,6 +279,7 @@ case "$PROJECT" in app-hub | app-hub-*) ;; *) echo "--project deve começar com 
 net_validate
 tls_validate
 opts_validate
+dbpub_validate
 [ "$CONFIG_ONLY" = 1 ] || rootless_detect
 disk_validate
 if [ "$DOCTOR_ONLY" = 1 ]; then # read-only: no consent, nothing written
@@ -414,6 +430,7 @@ net_write
 disk_write
 tls_write
 opts_write
+dbpub_write
 if yes_no "$ADV"; then
   [ -n "$OBJ_DIR" ] && { mkdir -p "$OBJ_DIR" 2>/dev/null || true; setv HUB_OBJSTORE_DIR "$OBJ_DIR"; }
   [ -n "$HEAD_DIR" ] && { mkdir -p "$HEAD_DIR" 2>/dev/null || true; setv HUB_AUDIT_HEAD_DIR "$HEAD_DIR"; }

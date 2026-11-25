@@ -24,6 +24,14 @@ export async function cleanupE2eData() {
         if (r.ok()) done.push(`token ${t.name}`);
       }
     }
+    const reads = await api.get('/api/admin/db-access');
+    if (reads.ok()) {
+      for (const a of ((await reads.json()).accounts || []) as { role: string }[]) {
+        if (!a.role.startsWith('ro_e2e_')) continue;
+        const r = await api.delete(`/api/admin/db-access/${a.role}`, { data: {} });
+        if (r.ok()) done.push(`conta de leitura ${a.role}`);
+      }
+    }
     const users = await api.get('/api/admin/users');
     if (users.ok()) {
       for (const u of (await users.json()) as { id: string; email: string; name: string; active: boolean }[]) {

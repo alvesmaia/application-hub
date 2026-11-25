@@ -71,6 +71,10 @@ def test_every_advanced_answer_reaches_prod_env_and_secrets_stay_off_the_screen(
         "",  # local login: admins (recommended)
         "segredo-entra-456",  # client secret (no echo; goes to the vault, not to .prod.env)
         "10.0.0.0/8",  # admin CIDRs
+        "s",  # read access to the database from other machines
+        "5433",  # its port
+        "10.20.0.0/16",  # networks that may connect
+        "db.exemplo.com",  # name people use
         "s",  # proxy in front
         "",  # trusted proxies: recommended
         "n",  # telemetry off
@@ -94,6 +98,8 @@ def test_every_advanced_answer_reaches_prod_env_and_secrets_stay_off_the_screen(
     assert env["HUB_TRUST_PROXY_HEADERS"] == "1" and env["HUB_TRUSTED_PROXIES"] == "172.16.0.0/12"
     assert env["HUB_TELEMETRY"] == "0" and env["HUB_UPDATE_CHECK"] == "0" and env["HUB_PUBLIC_DOCS"] == "0"
     assert env["HUB_BUILD_CPUS"] == "4"
+    assert env["HUB_DB_PUBLIC"] == "1" and env["HUB_DB_PUBLIC_PORT"] == "5433"
+    assert env["HUB_DB_ALLOWED_CIDRS"] == "10.20.0.0/16" and env["HUB_DB_PUBLIC_HOST"] == "db.exemplo.com"
     text = (tmp_path / "platform-py" / ".prod.env").read_text(encoding="utf-8")
     assert "segredo-entra-456" not in text  # Entra secret goes to the vault in the install step
     for secret in ("segredo-entra-456", "segredo-s3", "tok-ancora-123"):

@@ -32,7 +32,13 @@ up)
   PW=$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 20)A1
   (umask 077; printf 'HUB_DEMO_PASSWORD=%s\nHUB=http://127.0.0.1:%s\nHUB_PUBLIC_URL=http://127.0.0.1:%s\n' "$PW" "$PORT" "$PORT" > "$ENVF")
   run() { docker run -d --label hub.py=1 --network "$NET" "$@" >/dev/null; }
-  run --name $P-appdb --network-alias app-hub-app-db -v $P-appdb:/var/lib/postgresql/data -m 1g \
+  # read access from other machines (HUB_DB_PUBLIC=1 HUB_DB_ALLOWED_CIDRS=... in the caller): the database on PORT+3
+  dbpub=() dbport=()
+  if [ "${HUB_DB_PUBLIC:-}" = 1 ]; then
+    dbpub=(-e HUB_DB_PUBLIC=1 -e "HUB_DB_ALLOWED_CIDRS=${HUB_DB_ALLOWED_CIDRS:-}" -e "HUB_DB_PUBLIC_PORT=$((PORT + 3))")
+    dbport=(-p "127.0.0.1:$((PORT + 3)):5432")
+  fi
+  run --name $P-appdb --network-alias app-hub-app-db "${dbport[@]}" -v $P-appdb:/var/lib/postgresql/data -m 1g \
     -e POSTGRES_USER=hub -e POSTGRES_PASSWORD=hubpy-app-dev -e POSTGRES_DB=hub postgres:16-alpine
   run --name $P-objstore --network-alias app-hub-objstore -v $P-obj:/data -e MINIO_ROOT_USER=hubadmin \
     -e MINIO_ROOT_PASSWORD=hubpy-objstore-dev -e MINIO_BROWSER=off app-hub-minio:0.10.0 server /data
@@ -74,7 +80,7 @@ up)
     -e HUB_S3_ADMIN_URL=http://hubadmin:hubpy-objstore-dev@app-hub-objstore:9000 \
     -e HUB_BROKER_ADDR=0.0.0.0:8081 -e HUB_BROKER_PUBLIC_URL=http://app-hub-web:8081 \
     -e HUB_PUBLIC_URL="http://127.0.0.1:$PORT" -e HUB_ADMIN_ALLOWED_CIDRS=0.0.0.0/0,::/0 \
-    -e HUB_DEMO_USERS=1 -e HUB_DEMO_PASSWORD="$PW" "${hubtok[@]}" \
+    -e HUB_DEMO_USERS=1 -e HUB_DEMO_PASSWORD="$PW" "${hubtok[@]}" "${dbpub[@]}" \
     "$IMG" uvicorn hub.main:app --host 0.0.0.0 --port 8090
   for _ in $(seq 120); do curl -sf "http://127.0.0.1:$PORT/healthz" >/dev/null && break; sleep 1; done
   curl -sf "http://127.0.0.1:$PORT/healthz" >/dev/null || { docker logs --tail 30 $P-web; exit 1; }

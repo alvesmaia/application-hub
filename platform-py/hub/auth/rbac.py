@@ -132,7 +132,7 @@ def api_required(method: str, segs: list[str]) -> tuple[str, ...]:
         if res == "env":
             safe = method in ("GET", "HEAD", "OPTIONS") and len(segs) == 2
             return ("gerenciar_variaveis", "editar_configuracoes") if safe else ("gerenciar_variaveis",)
-        if res in ("roles", "users", "grants"):
+        if res in ("roles", "users", "grants", "db-access"):
             return ("gerenciar_usuarios",)
         if res in ("audit", "logs", "outbox"):
             return ("ver_auditoria",)

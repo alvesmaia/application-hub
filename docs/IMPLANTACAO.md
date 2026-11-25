@@ -62,6 +62,31 @@ input `version`) and publishes `ghcr.io/<owner>/app-hub-{web,minio,mc,ativos,for
 - [ ] Backup before any change: volume `app-hub-data` + `pg_dumpall` of `app-hub-app-db`.
 - [ ] E2E/ui-sweep only on a temporary instance (`scripts/tmp-instance.sh`), never with demo accounts in production.
 
+## Read access to the database from other machines (dashboards, DBeaver)
+
+Off by default: the apps' Postgres is published only on `127.0.0.1` (debug port). To let dashboards (Power BI,
+Metabase, Grafana) and tools such as DBeaver read the data by host and port:
+
+```bash
+bash platform-py/scripts/install.sh --db-public-port 5432 --db-allowed-cidrs 10.0.0.0/8 [--db-public-host db.empresa.com]
+```
+
+The interactive installer asks it under the advanced options, and a rerun on an existing install asks it once (or
+takes the flags above); the rerun recreates the database container with the port. `--no-db-public` turns it off.
+
+- **Who gets in:** only the read accounts made in **Administração › Usuários › Acesso ao banco** (members of
+  `hub_readers`), always over TLS (`sslmode=require`), only from `HUB_DB_ALLOWED_CIDRS`. The hub's and the apps'
+  service roles stay reachable only from the Docker networks. The hub writes `pg_hba.conf` and turns TLS on.
+- **Certificate:** self-signed, made once (its SHA-256 fingerprint is on the page). To use the company's, mount the
+  files in the hub container and set `HUB_DB_TLS_CERT_FILE`/`HUB_DB_TLS_KEY_FILE`.
+- **Accounts:** made by whoever manages users, each with a responsible person, the databases it reads (production
+  and/or staging; never `hub`), a validity (1–365 days, enforced by Postgres) and read only (`default_transaction_read_only`,
+  60 s per query, 5 connections). The password is shown once; "Nova senha" makes another. Deactivating the responsible
+  person, or "Revogar todos os acessos", suspends their accounts and ends their open sessions.
+- **Source address:** the allowed networks are checked against the client's real address. Rootful Docker on Linux and
+  rootless Podman with `pasta` keep it; an engine that rewrites it (the connection shows up as a Docker gateway) is
+  refused: fail closed. With the option on, the `127.0.0.1` debug port also stops accepting the service roles.
+
 ## Sizing (simultaneous users)
 
 Measured with `platform/loadtest/py-load.mjs` on an isolated stack (`install.sh --project app-hub-load`), on 13/10/2026,

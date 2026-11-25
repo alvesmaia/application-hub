@@ -18,7 +18,7 @@ export const STATIC_ROUTES = [
   '/account', '/account/security', '/account/access', '/account/password',
   '/admin', '/admin/audit', '/admin/backups', '/admin/connections',
   '/admin/deploys', '/admin/env', '/admin/health', '/admin/logs',
-  '/admin/users?tab=roles', '/admin/runtime', '/admin/tasks', '/oauth/device', '/admin/users',
+  '/admin/users?tab=roles', '/admin/users?tab=db', '/admin/runtime', '/admin/tasks', '/oauth/device', '/admin/users',
   '/developers', '/developers/agente', '/developers/cli', '/developers/sdk', '/developers/contrato', '/developers/guias/primeiro-app',
 ];
 

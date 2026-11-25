@@ -120,6 +120,21 @@
     return row ? JSON.parse(row.dataset.user) : null;
   };
 
+  // Credentials of a read account: shown once (the hub does not keep the password).
+  function showCredentials(out) {
+    const c = out.connection || {};
+    const ro = (label, value, id = '') => `<div class="form-field"><label>${esc(label)}</label><input ${id ? `id="${id}"` : ''} type="text" readonly value="${esc(value)}"/></div>`;
+    openModal(
+      'Credenciais da conta de leitura',
+      'Copie agora: a senha não será mostrada de novo. No DBeaver, use SSL com o modo "require".',
+      ro('Host', c.host) + ro('Porta', c.port) + ro('Usuário', out.role)
+        + `<div class="form-field"><label for="dbaccess-password">Senha</label><div class="pw-row"><input id="dbaccess-password" type="text" readonly value="${esc(out.password)}"/><button type="button" class="secondary-button" data-dbaccess-copy>Copiar</button></div></div>`
+        + ro('SSL', 'sslmode=require'),
+      'Concluir',
+      async () => reloadWithToast('Conta de leitura pronta.'),
+    );
+  }
+
   // ---- Users -------------------------------------------------------------
   document.addEventListener('click', async (e) => {
     const t = e.target.closest('button');
@@ -204,6 +219,40 @@
         await api('PUT', `/users/${enc(t.dataset.userToggle)}`, { active });
         reloadWithToast(active ? 'Usuário reativado.' : 'Usuário desativado.');
       } catch (err) { toast(err.message, 'error'); }
+      return;
+    }
+
+    // ---- Database access (read accounts) ----------------------------------------
+    if (t.matches('[data-dbaccess-new]')) {
+      const dbs = (meta.dbs || []).map((d) => ({ value: d, label: d }));
+      const people = (meta.users || []).map((u) => `<option value="${esc(u.id)}">${esc(u.name)} (${esc(u.email)})</option>`).join('');
+      openModal(
+        'Nova conta de leitura',
+        'Somente leitura, com validade. A senha aparece uma única vez; a conta para se a pessoa responsável for desativada.',
+        field('Nome (ex.: powerbi_vendas)', 'name', 'text', '', 'required pattern="[a-z][a-z0-9_]{1,40}" autocomplete="off"')
+          + `<div class="form-field"><label>Responsável</label><select name="owner" required>${people}</select></div>`
+          + checks('Bancos que pode ler', 'dbs', dbs, () => false)
+          + `<div class="form-field"><label>Validade</label><select name="days"><option value="30">30 dias</option><option value="90" selected>90 dias</option><option value="180">180 dias</option><option value="365">365 dias</option></select></div>`,
+        'Criar conta',
+        async (form) => {
+          const out = await api('POST', '/db-access', { name: form.name.value.trim(), owner: form.owner.value, dbs: values(form, 'dbs'), days: Number(form.days.value) });
+          showCredentials(out);
+        },
+      );
+      return;
+    }
+    if (t.matches('[data-dbaccess-password]')) {
+      if (!await window.HubConfirm(`Gerar nova senha para ${t.dataset.dbaccessPassword}? A senha atual deixa de funcionar.`)) return;
+      try { showCredentials(await api('POST', `/db-access/${enc(t.dataset.dbaccessPassword)}/password`, {})); } catch (err) { toast(err.message, 'error'); }
+      return;
+    }
+    if (t.matches('[data-dbaccess-remove]')) {
+      if (!await window.HubConfirm(`Remover a conta ${t.dataset.dbaccessRemove}? As conexões abertas caem agora.`)) return;
+      try { await api('DELETE', `/db-access/${enc(t.dataset.dbaccessRemove)}`); reloadWithToast('Conta de leitura removida.'); } catch (err) { toast(err.message, 'error'); }
+      return;
+    }
+    if (t.matches('[data-dbaccess-copy]')) {
+      try { await navigator.clipboard.writeText($('#dbaccess-password').value); toast('Senha copiada.'); } catch (err) { toast('Selecione e copie a senha manualmente.'); }
       return;
     }
 

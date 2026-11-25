@@ -92,7 +92,11 @@ def visible_nav(nav: dict[str, Any], perms: list[str]) -> dict[str, Any]:
 
 # Tabs per page: (path, ?tab= value, pt-BR label). The whole set appears under the title.
 TAB_SETS: tuple[tuple[tuple[str, str, str], ...], ...] = (
-    (("/admin/users", "", "Usuários"), ("/admin/users", "roles", "Funções")),
+    (
+        ("/admin/users", "", "Usuários"),
+        ("/admin/users", "roles", "Funções"),
+        ("/admin/users", "db", "Acesso ao banco"),
+    ),
     (("/admin/logs", "", "Logs"), ("/admin/audit", "", "Auditoria")),
     (("/admin/env", "", "Variáveis"), ("/admin/connections", "", "Conexões")),
 )

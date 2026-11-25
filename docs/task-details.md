@@ -430,3 +430,13 @@ tolerância só para o CLI (dois processos renovando juntos). `/admin/tokens` e 
 `/admin/users` (`POST /api/admin/users/{id}/revoke-access`, MCP `users_revoke_access`). Achado no E2E: um login feito
 com o cookie de outra pessoa substitui a sessão dela (proteção contra fixação de sessão, intencional); o teste usa um
 contexto com cookies próprios.
+
+✅ **Task 129–133 — Acesso de leitura ao banco por host:porta (2026-11-25)**
+Opt-in (`install.sh --db-public-port/--db-allowed-cidrs`, pergunta avançada, e uma vez numa reexecução). O hub escreve
+`pg_hba.conf` e o certificado no contêiner do banco via `exec` (`hub/admin/dbaccess_server.py`, a cada 5 min e no
+início): de fora só membros de `hub_readers`, `hostssl`, das redes permitidas; papéis de serviço só das sub-redes
+Docker; gateways recusados (origem perdida = falha fechada). Contas `ro_<nome>` com grupo `hub_read_<banco>`
+(privilégios padrão do dono do banco), `VALID UNTIL`, `default_transaction_read_only`, 60 s por consulta, 5 conexões;
+metadados no COMMENT do papel. Validado de verdade: leitura com TLS ok; escrita, sem TLS, banco `hub` e banco não
+concedido recusados; porta publicada no Docker Desktop chega como gateway e é recusada (documentado). Compose: porta
+pública igual à de depuração quando desligado (o compose deduplica).

@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 
-from hub.admin import routes_env, routes_roles, routes_users, tokens
+from hub.admin import routes_dbaccess, routes_env, routes_roles, routes_users, tokens
 from hub.admin.adminctx import AdminCtx, err, json_only
 from hub.admin.adminctx import actor_of as actor_of
 from hub.admin.adminctx import admin_level as admin_level
@@ -26,7 +26,7 @@ from hub.gateway.registry import Registry
 from hub.ux.texts import tr
 
 # Same order as before the split: FastAPI matches routes in registration order.
-_SECTIONS = (routes_users, routes_roles, routes_env, tokens)
+_SECTIONS = (routes_users, routes_roles, routes_dbaccess, routes_env, tokens)
 
 
 async def admin_error(request: Request, exc: Exception) -> JSONResponse:

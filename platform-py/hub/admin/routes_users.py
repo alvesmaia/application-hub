@@ -26,6 +26,7 @@ from hub.admin.adminctx import (
     wrap,
 )
 from hub.admin.config import AdminError
+from hub.admin.routes_dbaccess import dbaccess_page, suspend_for
 from hub.admin.routes_roles import roles_page
 from hub.auth import now_ms, user_view
 from hub.ux.pager import paginate
@@ -93,6 +94,8 @@ async def update_user(request: Request, user_id: str, c: AdminCtx = Depends(ctx)
         u = await c.auth.update_user(user_id, name=p.name, roles=p.roles, active=p.active)
     except (ValueError, LookupError) as e:
         raise wrap(e) from e
+    if before["active"] and not u["active"] and (db := await suspend_for(request, user_id)):
+        await c.audit(request, "users", "Contas de leitura do banco suspensas", f"{u['email']} · {db}")
     if changes := _changes(before, u):
         await c.audit(request, "users", "Usuário alterado", f"{u['email']} · {' · '.join(changes)}")
     return await c.view_of(u)
@@ -150,8 +153,10 @@ async def revoke_access(request: Request, user_id: str, c: AdminCtx = Depends(ct
     grants = await oauth.grants(user_id)
     for g in grants:
         await oauth.revoke_grant(g["grant_id"])
+    db = await suspend_for(request, user_id)
     await c.audit(request, "users", "Acessos do usuário revogados",
-                  f"{target['email']} · {tokens} token(s), {len(grants)} app(s) autorizado(s), sessões encerradas")  # fmt: skip
+                  f"{target['email']} · {tokens} token(s), {len(grants)} app(s) autorizado(s), sessões encerradas"
+                  + (f" · {db}" if db else ""))  # fmt: skip
     return {"tokens": tokens, "apps": len(grants)}
 
 
@@ -205,6 +210,8 @@ def _user_row(u: dict[str, Any], v: dict[str, Any], now: int, me: Any, grants: l
 async def users_page(request: Request, tab: str = "", c: AdminCtx = Depends(ctx)) -> Response:
     if tab == "roles":
         return await roles_page(request, c)
+    if tab == "db":
+        return await dbaccess_page(request, c)
     users = sorted(await c.users(), key=lambda u: u["name"].lower())
     now, me = now_ms(), request.state.user.get("id")
     inbox = request.app.state.inbox

@@ -1,0 +1,15 @@
+{% extends "admin_base.html" %}
+{% block actions %}<button type="button" class="primary-button" data-dbaccess-new=""{{ ' disabled=""'|safe if not has_dbs }}>{{ icon('plus')|safe }} Nova conta de leitura</button>{% endblock %}
+{% block body %}
+<div id="users-meta" hidden="" data-users-meta="{{ meta }}"></div>
+{% if conn.public %}<p class="ops-muted" data-dbaccess-status="on">Acesso externo ligado em <code>{{ conn.host }}:{{ conn.port }}</code> · TLS obrigatório (<code>sslmode=require</code>) · redes permitidas: {% if conn.cidrs %}<code>{{ conn.cidrs|join(', ') }}</code>{% else %}nenhuma (ninguém entra de fora){% endif %}{% if conn.fingerprint %} · certificado SHA-256 <code class="hub-truncate" title="{{ conn.fingerprint }}">{{ conn.fingerprint[:23] }}…</code>{% endif %}</p>
+{% else %}<p class="ops-muted" data-dbaccess-status="off">Acesso externo desligado: as contas abaixo só conectam pela rede interna. Para ligar, rode o instalador com <code>--db-public-port 5432 --db-allowed-cidrs &lt;redes&gt;</code> e aplique com <code>hub_update.py</code>.</p>{% endif %}
+{% if conn.bad_cidrs %}<p class="ops-muted" data-dbaccess-bad="">Redes ignoradas por formato inválido: <code>{{ conn.bad_cidrs|join(', ') }}</code></p>{% endif %}
+{% if conn.error %}<p class="ops-muted" data-dbaccess-error="">Última aplicação das regras do banco: {{ conn.error }}</p>{% endif %}
+{% if problem %}<p class="ops-muted" data-dbaccess-problem="">{{ problem }}</p>{% endif %}
+<div class="content-panel hub-cards-panel"><table class="data-table hub-table-cards" role="table" aria-label="Contas de leitura do banco"><thead role="rowgroup"><tr role="row"><th role="columnheader">Conta</th><th role="columnheader">Responsável</th><th role="columnheader">Bancos</th><th role="columnheader" class="hub-col-secondary">Validade</th><th role="columnheader">Status</th><th role="columnheader">Ações</th></tr></thead><tbody role="rowgroup">
+{% for r in rows %}<tr role="row" data-dbaccess-row="{{ r.role }}"><td role="cell" class="hub-card-title" data-label="Conta"><code>{{ r.role }}</code></td><td role="cell" data-label="Responsável">{{ r.owner_name }}</td><td role="cell" data-label="Bancos">{% for d in r.dbs %}<code>{{ d }}</code> {% endfor %}</td><td role="cell" class="hub-col-secondary" data-label="Validade">{{ r.until_text }}</td><td role="cell" data-label="Status"><span class="{{ r.css }}">{{ r.state|capitalize }}</span></td><td role="cell" data-label="Ações"><details class="hub-row-menu"><summary class="row-action" aria-label="Mais ações: {{ r.role }}" title="Mais ações">⋯</summary><div class="hub-row-menu-list" role="group"><button type="button" data-dbaccess-password="{{ r.role }}">Nova senha</button><button type="button" class="danger" data-dbaccess-remove="{{ r.role }}">Remover</button></div></details></td></tr>
+{% else %}<tr role="row"><td role="cell" colspan="6" class="empty-state">Nenhuma conta de leitura. Crie uma para um dashboard ou para uma pessoa que precise consultar os dados.</td></tr>{% endfor %}
+</tbody></table></div>
+<script src="/assets/users.js" defer=""></script>
+{% endblock %}

@@ -159,3 +159,11 @@
 - ✅ 126 · Tokens só por usuário: remover admin/tokens e /api/admin/tokens; tokens de serviço migrados para quem os criou; "Revogar todos os acessos" em admin/users; usuário desativado perde todos os acessos
 - ✅ 127 · Docs, instruções do MCP, CHANGELOG; E2E + ui-sweep; hub-check --all
 - ✅ 128 · CLI atrás de proxy com inspeção TLS: confia no repositório do sistema e em SSL_CERT_FILE; certificado recusado explica o motivo (0.5.1)
+
+## Acesso de leitura ao banco por host:porta (dashboards) (2026-11-25)
+
+- ✅ 129 · Postgres na rede (opt-in): TLS obrigatório, faixas de IP só para contas de leitura, contas de serviço só pela rede interna; pg_hba e certificado geridos pelo hub
+- ✅ 130 · Contas de leitura: admin cria com responsável, bancos escolhidos (produção/staging, nunca `hub`), validade no Postgres, só leitura e tempo máximo por consulta; nova senha, remover; param com a pessoa desativada ou com "Revogar todos os acessos"
+- ✅ 131 · Tela "Acesso ao banco" (aba de Usuários) + API de administração
+- ✅ 132 · Instalador interativo e flags (também numa instalação existente) + compose + docs
+- ✅ 133 · Validação: conexão real com TLS de fora do contêiner, E2E, ui-sweep, hub-check --all

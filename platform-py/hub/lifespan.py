@@ -12,7 +12,7 @@ from typing import Any, cast
 
 from fastapi import FastAPI
 
-from hub.admin import demo_db
+from hub.admin import dbaccess_net, dbaccess_server, demo_db
 from hub.admin.config import DEV_INFRA_PASSWORDS
 from hub.admin.store import AdminStore
 from hub.auth import ABSOLUTE_MS, IDLE_MS, MAX_SESSIONS, AuthStore, roles_for
@@ -103,6 +103,18 @@ async def _start_broker(app: FastAPI) -> Any:
     )
 
 
+def _start_dbaccess(app: FastAPI) -> asyncio.Task[None] | None:
+    """Keeps the database's network rules applied (read access from other machines). Only in a container stack,
+    where the compose passes HUB_DB_PUBLIC (0 or 1); tests and `hub dev` never touch a database container."""
+    ops = getattr(app.state, "ops_ctx", None)
+    if "HUB_DB_PUBLIC" not in os.environ or ops is None:
+        return None
+    app.state.dbaccess_state = {}
+    return asyncio.create_task(
+        dbaccess_server.keep_synced(ops.backups, dbaccess_net.from_env(), app.state.dbaccess_state)
+    )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     db = await _attach_db(app)
@@ -114,9 +126,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     bg = Background(app, gateway.client, app.state.data_dir)
     await bg.start(db, float(os.getenv("HUB_OUTBOX_POLL_S", "5") or 5))
     broker = await _start_broker(app)
+    tasks = [_start_dbaccess(app), getattr(app.state, "dev_watch", None)]
     yield
-    if (w := getattr(app.state, "dev_watch", None)) is not None:
-        w.cancel()
+    for t in tasks:
+        if t is not None:
+            t.cancel()
     await bg.stop()
     await insight.stop()
     if broker:

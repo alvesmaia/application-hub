@@ -7,6 +7,14 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Added
+- Read access to the apps' database from other machines (dashboards, DBeaver) by host and port: off by default;
+  `install.sh --db-public-port 5432 --db-allowed-cidrs …` (or the installer's question, also asked once on an existing
+  install). Only read accounts get in from outside, over TLS, from the allowed networks; the service roles stay on the
+  Docker networks; the hub writes `pg_hba.conf` and the certificate. Administração › Usuários › **Acesso ao banco**:
+  accounts with a responsible person, chosen databases (never `hub`), validity, read only; new password, removal;
+  suspended when the person is deactivated or loses every access.
+
 ## [0.5.1] — 2026-11-25
 
 ### Fixed

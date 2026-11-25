@@ -8314,5 +8314,81 @@
 [
 "Nenhuma outra ação para a sua própria conta: o acesso vem do login único (SSO)",
 "No other action for your own account: access comes from single sign-on (SSO)"
+],
+[
+"Acesso ao banco",
+"Database access"
+],
+[
+"Nova conta de leitura",
+"New read account"
+],
+[
+"Contas só de leitura para dashboards e ferramentas como o DBeaver, por host e porta, com TLS.",
+"Read-only accounts for dashboards and tools like DBeaver, over host and port, with TLS."
+],
+[
+"Responsável",
+"Responsible"
+],
+[
+"Bancos",
+"Databases"
+],
+[
+"Ativa",
+"Active"
+],
+[
+"Suspensa",
+"Suspended"
+],
+[
+"Expirada",
+"Expired"
+],
+[
+"Nenhuma conta de leitura. Crie uma para um dashboard ou para uma pessoa que precise consultar os dados.",
+"No read account. Create one for a dashboard or for someone who needs to query the data."
+],
+[
+"Acesso externo ligado em",
+"External access on at"
+],
+[
+"TLS obrigatório",
+"TLS required"
+],
+[
+"redes permitidas:",
+"allowed networks:"
+],
+[
+"nenhuma (ninguém entra de fora)",
+"none (nobody gets in from outside)"
+],
+[
+"certificado SHA-256",
+"certificate SHA-256"
+],
+[
+"Acesso externo desligado: as contas abaixo só conectam pela rede interna. Para ligar, rode o instalador com",
+"External access off: the accounts below only connect from the internal network. To turn it on, run the installer with"
+],
+[
+"e aplique com",
+"and apply with"
+],
+[
+"Redes ignoradas por formato inválido:",
+"Networks ignored (invalid format):"
+],
+[
+"Última aplicação das regras do banco:",
+"Last application of the database rules:"
+],
+[
+"Contas de leitura do banco",
+"Database read accounts"
 ]
 ]
