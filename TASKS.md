@@ -147,3 +147,14 @@
 - ✅ 117 · E2E 06 backups: menu "⋯" de tabela com uma linha ficava cortado pelo painel (Restaurar escondido); sem espaço nos dois sentidos, abre como camada fixa. 0 B = suppliers sem banco e bucket vazio (esperado)
 - ✅ 118 · E2E 15 storage: passa com `iso-instance.sh run` (variáveis da instância); sem defeito
 - ✅ 119 · Release 0.4.2 (também: `hub` CLI sem o pacote da plataforma voltou a funcionar; rótulo "Connection string" com dica)
+
+## Ajustes de UI + login único do CLI por OAuth (2026-11-25)
+
+- ✅ 120 · admin/runtime: barras de CPU/memória deslizam até o valor novo (sem salto)
+- ✅ 121 · Sem banners nas telas do hub (status, contêiner degradado, manutenção, aviso de versão, erro de login)
+- ✅ 122 · admin/users: própria conta SSO mostra o ⋯ desabilitado com o motivo (menu vazio)
+- ✅ 123 · Entra: papel padrão nunca é admin; conta do instalador assume o nome real da pessoa
+- ✅ 124 · OAuth device flow (RFC 8628) + escopo `deploy`; sessão do CLI 30 dias sem uso / 90 dias total, refresh rotativo com detecção de reuso
+- ✅ 125 · CLI: `hub login` pelo navegador (código de dispositivo), renovação automática, `hub mcp` e `hub deploy` usam o mesmo login; saída "não autenticado" orienta o agente
+- ✅ 126 · Tokens só por usuário: remover admin/tokens e /api/admin/tokens; tokens de serviço migrados para quem os criou; "Revogar todos os acessos" em admin/users; usuário desativado perde todos os acessos
+- ✅ 127 · Docs, instruções do MCP, CHANGELOG; E2E + ui-sweep; hub-check --all

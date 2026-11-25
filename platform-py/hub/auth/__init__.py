@@ -12,7 +12,7 @@ from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager, nullcontext
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, cast, override
 
 from hub.auth.authfile import (
     bootstrap_password,
@@ -41,6 +41,7 @@ from hub.auth.rbac import roles_for as roles_for
 from hub.auth.rbac import token_action as token_action
 from hub.auth.rbac import token_covers as token_covers
 from hub.auth.rbac import user_view as user_view
+from hub.auth.tokens import TokenOps, adopt_owner_less_tokens
 from hub.models import AuthDocument
 from hub.state import SessionLimits, SessionRow, StateDb
 
@@ -117,7 +118,7 @@ def _apply_user_changes(
 
 
 @dataclass
-class AuthStore:
+class AuthStore(TokenOps):
     path: Path
     db: StateDb | None = None
     _lock: asyncio.Lock = field(init=False, repr=False)
@@ -128,6 +129,7 @@ class AuthStore:
         if not self.path.exists():
             self.path.write_text('{"users":[],"sessions":[],"tokens":[],"next_id":0}', encoding="utf-8")
 
+    @override
     @asynccontextmanager
     async def locked(self, write: bool = False) -> AsyncIterator[dict[str, Any]]:
         # The write stays inside the cross-replica lock, or another replica can overwrite it.
@@ -146,12 +148,14 @@ class AuthStore:
         AuthDocument.model_validate(data)
         return data
 
+    @override
     def _id(self, d: dict[str, Any], prefix: str) -> str:
         d["next_id"] += 1
         return f"{prefix}{d['next_id']}{secrets.token_hex(4)}"
 
     async def bootstrap(self) -> None:
         async with self.locked(True) as d:
+            adopt_owner_less_tokens(d)
             if demo_users_enabled():
                 self._bootstrap_demo(d)
                 return
@@ -224,6 +228,11 @@ class AuthStore:
         Roles come from SSO: a `local_admin` account (local password + admin permission, e.g. the installer's) is
         never adopted, not even when linked before; the SSO login gets its own account with the default role."""
         async with self.locked(True) as d:
+            for u in d[
+                "users"
+            ]:  # the installer's account takes the person's real name (bootstrap placeholder)
+                if u["email"] == email and u["name"] == "Administrador" and name.strip():
+                    u.update(name=name.strip()[:80], updated_at=now_ms())
             pool = [u for u in d["users"] if not local_admin(u)]
             user = next(
                 (u for u in pool if u.get("sso_issuer") == issuer and u.get("sso_subject") == subject), None
@@ -425,71 +434,3 @@ class AuthStore:
         if self.db:
             await self.db.session_delete_user(user["id"])
         return True
-
-    async def create_token(
-        self,
-        user: dict[str, Any],
-        name: str,
-        apps: list[str],
-        actions: list[str],
-        days: int | None = None,
-        envs: list[str] | None = None,
-    ) -> tuple[str, dict[str, Any]]:
-        name = name.strip()
-        actions = sorted(set(actions))
-        if (
-            not name
-            or len(name) > 60
-            or not actions
-            or any(a not in TOKEN_ACTIONS for a in actions)
-            or (any(a in OWNED_ACTIONS for a in actions) and not user)
-        ):
-            raise ValueError("Dados de token inválidos.")
-        if not 1 <= (days or 90) <= 365:
-            raise ValueError("Validade entre 1 e 365 dias.")
-        async with self.locked(True) as d:
-            owned = any(a in OWNED_ACTIONS for a in actions)
-            if (
-                owned
-                and sum(
-                    t.get("owner") == user["id"]
-                    and t.get("revoked_at") is None
-                    and (t.get("expires_at") is None or t["expires_at"] > now_ms())
-                    for t in d["tokens"]
-                )
-                >= 20
-            ):
-                raise ValueError("Limite de 20 tokens ativos por usuário.")
-            token_id = self._id(d, "t")
-            secret = f"hubt_{token_id}_{secrets.token_urlsafe(32)}"
-            t = {
-                "id": token_id,
-                "name": name,
-                "hash": sha(secret),
-                "prefix": secret[:12],
-                "apps": apps,
-                "envs": envs or [],
-                "actions": actions,
-                "created_by": user["name"],
-                "created_at": now_ms(),
-                "expires_at": now_ms() + (days or 90) * 86_400_000,
-                "revoked_at": None,
-                "last_used": None,
-                "owner": user["id"] if owned else None,
-            }
-            d["tokens"].append(t)
-        return secret, t
-
-    async def bearer(self, value: str) -> dict[str, Any] | None:
-        if not value.startswith("hubt_"):
-            return None
-        async with self.locked() as d:
-            t = next((x.copy() for x in d["tokens"] if x["id"] == value[5:].split("_", 1)[0]), None)
-        if (
-            not t
-            or not secrets.compare_digest(t["hash"], sha(value))
-            or t.get("revoked_at") is not None
-            or t.get("expires_at", 0) <= now_ms()
-        ):
-            return None
-        return cast(dict[str, Any], t)

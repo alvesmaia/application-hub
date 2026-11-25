@@ -138,6 +138,23 @@ async def reset_password(request: Request, user_id: str, c: AdminCtx = Depends(c
     return await c.view_of(u)
 
 
+@api.post("/users/{user_id}/revoke-access")
+async def revoke_access(request: Request, user_id: str, c: AdminCtx = Depends(ctx)) -> Any:
+    """Someone left or a credential leaked: sessions, personal tokens and authorized apps (CLI, MCP) end now."""
+    target = await c.user(user_id)
+    if target is None:
+        raise AdminError("Usuário não encontrado.", 404)
+    check_target(request, await c.known_roles(), target)
+    tokens = await c.auth.revoke_access(user_id)
+    oauth = request.app.state.oauth
+    grants = await oauth.grants(user_id)
+    for g in grants:
+        await oauth.revoke_grant(g["grant_id"])
+    await c.audit(request, "users", "Acessos do usuário revogados",
+                  f"{target['email']} · {tokens} token(s), {len(grants)} app(s) autorizado(s), sessões encerradas")  # fmt: skip
+    return {"tokens": tokens, "apps": len(grants)}
+
+
 @api.post("/users/{user_id}/unlock")
 async def unlock(request: Request, user_id: str, c: AdminCtx = Depends(ctx)) -> Any:
     try:
@@ -180,6 +197,7 @@ def _user_row(u: dict[str, Any], v: dict[str, Any], now: int, me: Any, grants: l
         "sso": v["sso"],
         "grants": ", ".join(grants),
         "me": u["id"] == me,
+        "more": not v["sso"] or v["locked"] or u["id"] != me,  # else the ⋯ menu would be empty
     }
 
 

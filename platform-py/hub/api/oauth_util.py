@@ -7,9 +7,14 @@ import hashlib
 import ipaddress
 import secrets
 import time
+from typing import Any
 from urllib.parse import parse_qsl, quote
 
 SCOPES = ("mcp", "api:write")
+CLI_CLIENT, CLI_NAME = "hub-cli", "Hub CLI"
+CLI_SCOPES = ["mcp", "api:read", "api:write", "app-api", "deploy"]  # `hub login`: every surface the CLI uses
+DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code"
+GRANT_MAX_DAYS = 90  # a grant ends 90 days after the sign-in even when used every day (then sign in again)
 K_CLIENT, K_CODE, K_GRANT, K_REFRESH, K_ACCESS, K_CONSENT = (
     "oauth.client", "oauth.code", "oauth.grant", "oauth.refresh", "oauth.access", "oauth.consent",
 )  # fmt: skip
@@ -182,3 +187,24 @@ def ip_public(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
 
 class OAuthError(Exception):
     pass
+
+
+def cli_client() -> dict[str, Any]:
+    """The CLI is a public client known to every hub (no registration, no redirect: device flow only)."""
+    return {"id": CLI_CLIENT, "name": CLI_NAME, "redirect_uris": [], "kind": "verified", "auth_method": "none",
+            "secret_hash": None, "disabled": False}  # fmt: skip
+
+
+def grant_record(
+    gid: str,
+    client: dict[str, Any],
+    user: str,
+    scopes: list[str],
+    resource: str,
+    now: int,
+    redirect_uri: str = "",
+) -> dict[str, Any]:
+    """What a grant (one sign-in of one client) stores: who, which scopes, since when."""
+    return {"grant_id": gid, "client_id": client["id"], "client_name": client["name"], "client_kind": client["kind"],
+            "user": user, "scopes": scopes, "resource": resource, "redirect_uri": redirect_uri,
+            "created_at": now, "last_used": now}  # fmt: skip

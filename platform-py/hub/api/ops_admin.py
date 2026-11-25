@@ -17,6 +17,9 @@ P_NUM = Param("id", "path", S_NUM, "Número do incidente", True)
 _USERS: tuple[Op, ...] = (
     Op("users_delete", "/users/{id}", "Usuários", "Exclui um usuário (sessões e tokens dele deixam de valer)",
        "Done", method="DELETE", params=(P_ID,), **_tgt("DELETE", "/api/admin/users/{id}"), destructive=True),
+    Op("users_revoke_access", "/users/{id}/revoke-access", "Usuários",
+       "Revoga todos os acessos de um usuário: sessões, tokens pessoais e apps autorizados (CLI, MCP)", "AccessRevoked",
+       method="POST", params=(P_ID,), **_tgt("POST", "/api/admin/users/{id}/revoke-access"), destructive=True),
     Op("users_unlock", "/users/{id}/unlock", "Usuários", "Desbloqueia um usuário (zera as tentativas de login)",
        "User", method="POST", params=(P_ID,), **_tgt("POST", "/api/admin/users/{id}/unlock")),
     Op("roles_create", "/roles", "Usuários", "Cria uma função (sem permissões; conceda depois)", "Role",
@@ -58,12 +61,6 @@ _SETTINGS: tuple[Op, ...] = (
        "Settings", **_tgt("GET", "/api/admin/settings")),
     Op("settings_update", "/settings", "Configurações", "Altera as configurações da plataforma", "Settings",
        method="PUT", body="SettingsUpdate", **_tgt("PUT", "/api/admin/settings")),
-    Op("tokens_list", "/tokens", "Configurações", "Tokens de API e de CI (só metadados; o segredo nunca volta)",
-       "ApiToken", **_tgt("GET", "/api/admin/tokens"), list="", filters=("active", "owner")),
-    Op("tokens_revoke", "/tokens/{id}/revoke", "Configurações", "Revoga um token de API", "ApiToken",
-       method="POST", params=(P_ID,), **_tgt("POST", "/api/admin/tokens/{id}/revoke"), destructive=True),
-    Op("tokens_delete", "/tokens/{id}", "Configurações", "Exclui um token de API (revoga se ainda ativo)", "Done",
-       method="DELETE", params=(P_ID,), **_tgt("DELETE", "/api/admin/tokens/{id}"), destructive=True),
 )  # fmt: skip
 
 _HEALTH: tuple[Op, ...] = (

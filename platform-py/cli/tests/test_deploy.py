@@ -10,18 +10,9 @@ from typing import Any
 import httpx
 import pytest
 
-from hub_cli import deploy
+from hub_cli import auth, deploy
 from hub_cli.errors import CliError
 from hub_cli.main import main
-
-
-@pytest.fixture(autouse=True)
-def creds(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("APPDATA", str(tmp_path / "cfg"))
-    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "cfg"))
-    monkeypatch.delenv("HUB_URL", raising=False)
-    monkeypatch.delenv("HUB_TOKEN", raising=False)
-
 
 REAL = httpx.Client
 
@@ -38,7 +29,7 @@ def fake_hub(
     def client(**kw: Any) -> httpx.Client:
         return REAL(transport=httpx.MockTransport(h), **kw)
 
-    monkeypatch.setattr(deploy.httpx, "Client", client)
+    monkeypatch.setattr(httpx, "Client", client)
     return seen
 
 
@@ -59,7 +50,8 @@ def test_login_saves_and_resolves(monkeypatch: pytest.MonkeyPatch, capsys: Any) 
     assert main(["login", "--hub", "http://localhost:9", "--token", "hubt_x", "--json"]) == 0
     assert json.loads(capsys.readouterr().out)["hub"] == "http://localhost:9"
     assert seen[0].headers["authorization"] == "Bearer hubt_x"
-    assert deploy.resolve(None, None) == ("http://localhost:9", "hubt_x")
+    s = deploy.resolve(None, None)
+    assert (s.hub, s.token) == ("http://localhost:9", "hubt_x")
     fake_hub(monkeypatch, lambda r: httpx.Response(401))
     assert main(["login", "--hub", "http://localhost:9", "--token", "hubt_y"]) == 3
     fake_hub(monkeypatch, lambda r: httpx.Response(500))
@@ -76,9 +68,6 @@ def test_resolve_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     with pytest.raises(CliError) as e:
         deploy.resolve("ftp://x", "t")
     assert e.value.code == 2
-    monkeypatch.setattr("sys.stdin.isatty", lambda: False)
-    with pytest.raises(CliError):
-        deploy.login("http://localhost:1", None)
 
 
 def test_deploy_staging(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: Any) -> None:
@@ -140,8 +129,8 @@ def test_collect_values_prompts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setattr(deploy.getpass, "getpass", lambda _p: "")
     assert deploy.collect_values(m, None, True) == {"variables": {"A": "va"}, "secrets": {}}
     assert deploy.collect_values(m, tmp_path / "nada.env", False) == {"variables": {}, "secrets": {}}
-    assert deploy.cred_path().name == "credentials.json"
-    assert deploy.load_login() == {}
+    assert auth.cred_path().name == "credentials.json"
+    assert auth.load_login() == {}
 
 
 def test_deploy_shows_hub_reason(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

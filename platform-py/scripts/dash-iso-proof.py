@@ -46,7 +46,7 @@ def setup(c: httpx.Client) -> None:
     t = c.post("/api/admin/connections/vendas/test").json()
     print("teste", t["ok"], [(s["key"], s["ok"], s["detail"][:40]) for s in t["steps"]])
     tok = c.post(
-        "/api/admin/tokens",
+        "/api/me/tokens",
         json={"name": "dash-proof", "apps": [], "actions": ["upload", "status"], "expires_days": 1},
     )
     print("token", tok.status_code)

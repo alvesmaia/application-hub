@@ -133,10 +133,10 @@ Tools by area (`*` = destructive, needs `confirm_token`):
 | Tasks | `tasks_list`, `tasks_retry`, `tasks_cancel*` |
 | Variables | `variables_list`, `variables_create`, `variables_update`, `variables_delete*`, `variables_rotate*` |
 | Connections and storage | `connections_list`, `connections_test`, `connections_create`, `connections_update`, `connections_delete*`, `connections_set_bindings*`, `connections_rotate*`, `connections_rotate_storage_token*`, `storage_list`, `storage_provision`, `storage_deprovision*` |
-| Users and roles | `users_list`, `users_create`, `users_update*`, `users_delete*`, `users_unlock`, `roles_list`, `roles_create`, `roles_update`, `roles_delete*`, `roles_set_permission*`, `roles_set_apps*`, `grants_revoke*` |
+| Users and roles | `users_list`, `users_create`, `users_update*`, `users_delete*`, `users_unlock`, `users_revoke_access*`, `roles_list`, `roles_create`, `roles_update`, `roles_delete*`, `roles_set_permission*`, `roles_set_apps*`, `grants_revoke*` |
 | Audit and usage | `audit_query`, `audit_verify`, `usage_query`, `analytics_get`, `analytics_set_retention*`, `analytics_set_terms`, `analytics_rotate_key*` |
 | Inbox | `inbox_list`, `inbox_decide*`, `inbox_mark_read`, `inbox_archive`, `access_request` |
-| Settings and tokens | `settings_get`, `settings_update`, `tokens_list`, `tokens_revoke*`, `tokens_delete*` |
+| Settings | `settings_get`, `settings_update` |
 | Health | `health_list`, `health_create`, `health_check`, `health_update`, `health_delete*`, `slos_list`, `slos_set`, `slos_delete*`, `incidents_list`, `incidents_create`, `incidents_update` |
 | Flags | `flags_list`, `flags_create`, `flags_update`, `flags_delete*`, `flags_set_enabled` |
 

@@ -52,10 +52,6 @@ body[data-hub-perms]:not([data-hub-perms~="*"]):not([data-hub-perms~="editar_con
 body[data-hub-perms]:not([data-hub-perms~="*"]):not([data-hub-perms~="gerenciar_usuarios"]) [data-requires="gerenciar_usuarios"]{display:none!important}
 
 /* "Viewing staging" strip (cookie hub_env_<id>=staging): always visible above the app. */
-.env-banner{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-8) var(--space-12);margin:0 0 var(--space-10);padding:var(--space-8) var(--space-14);border-radius:var(--radius-3xl);background:var(--c-yellow-92);color:var(--c-yellow-21);border:1px solid var(--c-yellow-74);font-size:var(--font-size-base)}
-.env-banner strong{letter-spacing:.08em}
-.env-banner a,.env-banner-form{margin-left:auto;color:inherit;font-weight:600}
-.env-banner-button{font:inherit;font-weight:600;color:inherit;background:none;border:1px solid currentColor;border-radius:var(--radius-xl);padding:3px var(--space-10);cursor:pointer}
 
 /* ---- Wave 9: accessibility, ⌘K search, tour, Inbox, Home, Analytics ---- */
 .visually-hidden{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
@@ -451,8 +447,8 @@ select,input,textarea{color-scheme:inherit}
 @media (max-width:760px){.app-page-header,.page-head{grid-template-columns:1fr}.page-actions,.app-page-header .admin-actions{justify-content:flex-start}}
 .eyebrow{margin-bottom:var(--space-4);color:var(--color-accent)}
 /* Notice (callout): card padding, one color per type. */
-.callout,.ops-aside,.ops-alert,.ops-banner,.ops-note-box{display:block;background:var(--color-surface);border:1px solid var(--color-border);border-left:3px solid var(--color-accent-shape);border-radius:12px;padding:var(--space-12) var(--space-16);margin:0 0 var(--space-12);color:var(--color-text);line-height:1.5}
-.callout-warn,.ops-banner-warn,.ops-alert{border-left-color:var(--color-warning-shape);background:var(--color-warning-soft);color:var(--color-text)}
+.callout,.ops-aside,.ops-note-box{display:block;background:var(--color-surface);border:1px solid var(--color-border);border-left:3px solid var(--color-accent-shape);border-radius:12px;padding:var(--space-12) var(--space-16);margin:0 0 var(--space-12);color:var(--color-text);line-height:1.5}
+.callout-warn{border-left-color:var(--color-warning-shape);background:var(--color-warning-soft);color:var(--color-text)}
 .callout-danger{border-left-color:var(--color-danger-shape);background:var(--color-danger-soft)}
 .callout-ok{border-left-color:var(--color-success-shape);background:var(--color-success-soft)}
 :is(.callout,.ops-aside) p{margin:0}
@@ -978,7 +974,7 @@ body.in-app.rail-collapsed .workspace{left:56px}
 .hub-offline-clear{list-style:none;margin-top:6px}
 /* Printing (e.g. the Collector's supplies sheet): only the app's content. */
 @media print{
-  .platform-header,.platform-rail,.app-sidebar,.mobile-menu-button,.mobile-backdrop,.toast,.skip-link,.env-banner,.hub-appbar{display:none!important}
+  .platform-header,.platform-rail,.app-sidebar,.mobile-menu-button,.mobile-backdrop,.toast,.skip-link,.hub-appbar{display:none!important}
   body,#app-root,.workspace,.workspace-content{background:#fff!important;margin:0!important;padding:0!important;overflow:visible!important;height:auto!important;position:static!important}
 }
 /* Wave 13 — application catalog: the app's stack (manifest `stack`) appears on mouse hover,
@@ -1048,6 +1044,7 @@ tr[data-detail-row]:hover{background:var(--color-surface-hover)}
 /* ⋯ menu: <details class="hub-row-menu"> and the [data-row-menu] button (menu built by admin.js) look the same. */
 .hub-row-menu>summary,button.row-action,.env-icon-btn.row-action{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;min-width:30px;min-height:30px;padding:0;border:1px solid var(--color-border);border-radius:8px;background:var(--color-surface);color:var(--color-text-secondary);font-size:16px;font-weight:700;line-height:1;cursor:pointer}
 .hub-row-menu>summary:hover,.hub-row-menu[open]>summary,button.row-action:hover,button.row-action[aria-expanded=true]{background:var(--color-surface-hover);color:var(--color-text-strong)}
+button.row-action[aria-disabled=true]{opacity:.45;cursor:not-allowed;background:none}
 .row-menu{background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:8px;box-shadow:var(--shadow-popover);padding:4px;gap:2px;min-width:190px}
 .row-menu-item{display:flex;align-items:center;width:100%;min-height:32px;padding:6px 10px;border:0;border-radius:6px;background:none;color:var(--color-text);font-size:13px;text-align:left;cursor:pointer;white-space:nowrap}
 .row-menu-item:hover:not(:disabled){background:var(--color-surface-hover);color:var(--color-text-strong)}
@@ -1067,7 +1064,7 @@ select:not([multiple]):focus-visible,.hub-select:focus-visible{border-color:var(
 select option{background:var(--color-surface);color:var(--color-text-ink)}
 .hub-multi>summary{position:relative;padding:0 36px 0 12px;min-height:32px;font-size:13px;border:1px solid var(--color-border-control);border-radius:8px}
 .hub-multi>summary::after{content:"";position:absolute;right:14px;top:50%;width:6px;height:6px;margin-top:-5px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);opacity:.7}
-.status-banner-bad{color:var(--color-danger)}
+.status-overall-bad{color:var(--color-danger)}
 /* Page "i": the description of the page lives in a side panel (_page_info.html) */
 .page-title-row{display:flex;align-items:center;gap:8px;min-width:0}
 .page-title-row .page-title{min-width:0}

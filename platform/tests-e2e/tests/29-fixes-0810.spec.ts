@@ -3,28 +3,6 @@ import { HUB, apiAs, json, stateFile, uniq } from './helpers';
 
 test.use({ storageState: stateFile('admin') });
 
-test('credenciais: Revogar espera o clique; excluir vale também para token ativo @core', async ({ page }) => {
-  const api = await apiAs('admin');
-  const name = `fx-${uniq()}`;
-  const made = await json(await api.post('/api/admin/tokens', { data: { name, apps: [], envs: ['staging'], actions: ['status'], expires_days: 30 }, headers: { 'x-hub-request': '1' } }));
-  const id = made.item.id as string;
-  const row = page.locator(`tr[data-token-row="${id}"]`);
-  await page.goto('/admin/tokens');
-  await row.click();
-  await page.locator('[data-rowdrawer] [data-token-revoke]').click();
-  // The dialog stays open until the user clicks; the token stays active.
-  await page.waitForTimeout(1200);
-  await expect(page.locator('.hub-confirm')).toBeVisible();
-  const still = (await json(await api.get('/api/admin/tokens'))) as any;
-  expect((still.items || still).find((t: any) => t.id === id).active).toBe(true);
-  await page.locator('[data-hub-confirm="no"]').click();
-  // Delete (active token): confirms and the row disappears.
-  await page.locator('[data-rowdrawer] [data-token-delete]').click();
-  await page.locator('[data-hub-confirm="yes"]').click();
-  await expect(row).toHaveCount(0);
-  await api.dispose();
-});
-
 test('implantações: uma linha por app; a gaveta escolhe a versão @core', async ({ page }) => {
   await page.goto('/admin/deploys');
   const rows = page.locator('tr[data-detail-row]');

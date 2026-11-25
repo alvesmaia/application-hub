@@ -1,4 +1,4 @@
-<div class="{{ 'status-banner status-banner-ok' if ok else 'status-banner status-banner-bad' }}" data-status-overall="">{{ tr(data.overall) }}</div>
+<p class="{{ 'status-overall status-overall-ok' if ok else 'status-overall status-overall-bad' }}" data-status-overall="">{{ tr(data.overall) }}</p>
 <div class="filter-chips" aria-label="{{ tr('Período') }}"><a class="{{ 'filter-chip' if months else 'filter-chip active' }}" href="/status"{{ '' if months else ' aria-current="page"'|safe }}>{{ tr('30 dias') }}</a><a class="{{ 'filter-chip active' if months else 'filter-chip' }}" href="/status?periodo=12m"{{ ' aria-current="page"'|safe if months else '' }}>{{ tr('12 meses') }}</a></div>
 <section class="panel status-apps">
 {% for a in data.apps %}<div class="status-app" data-status-app="{{ a.name }}">

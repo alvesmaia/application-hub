@@ -14,7 +14,7 @@ def test_admin_and_insight_use_the_display_name(tmp_path: Path, monkeypatch: pyt
     reg = hub.app.state.gateway.registry
     for e in reg.entries():
         e.display["short"] = "CURTO-" + e.id  # a short label that must not show up anywhere
-    for page in ("/admin/env", "/admin/logs", "/admin/audit", "/admin/health", "/admin/tokens", "/status"):
+    for page in ("/admin/env", "/admin/logs", "/admin/audit", "/admin/health", "/status"):
         r = hub.get(page)
         assert r.status_code == 200, page
         assert "CURTO-" not in r.text, page

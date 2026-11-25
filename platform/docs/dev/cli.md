@@ -97,17 +97,30 @@ hub dev [-h] [--dir DIR] [--upstream UPSTREAM] [--port PORT] [--role ROLE] [--li
 
 ## `hub login`
 
-Save the hub and the token (the token is prompted without echo).
+Sign in: approve the CLI in the browser (OAuth device flow); or save a personal token (CI).
 
 ```
-hub login [-h] --hub HUB [--token TOKEN] [--token-file TOKEN_FILE] [--json]
+hub login [-h] [--hub HUB] [--no-browser] [--token TOKEN] [--token-file TOKEN_FILE] [--json]
 ```
 
 | Argument | Description | Default |
 |---|---|---|
-| `--hub` |  (required) |  |
-| `--token` | AVOID: use HUB_TOKEN, --token-file or the no-echo prompt |  |
-| `--token-file` | file with the token (e.g. provided by the CI vault) |  |
+| `--hub` | hub URL (default: HUB_URL or the saved login) |  |
+| `--no-browser` | only print the link (do not open the browser) |  |
+| `--token` | AVOID: personal token; use HUB_TOKEN or --token-file |  |
+| `--token-file` | file with a personal token (e.g. provided by the CI vault) |  |
+| `--json` |  |  |
+
+## `hub logout`
+
+Revoke the CLI session on the hub and delete the saved login.
+
+```
+hub logout [-h] [--json]
+```
+
+| Argument | Description | Default |
+|---|---|---|
 | `--json` |  |  |
 
 ## `hub deploy`
@@ -122,7 +135,7 @@ hub deploy [-h] --env {staging,production} [--dir DIR] [--hub HUB] [--token TOKE
 |---|---|---|
 | `--env` (staging \| production) |  (required) |  |
 | `--dir` |  | `.` |
-| `--hub` | hub URL (default: the one from `hub login` or HUB_URL) |  |
+| `--hub` | hub URL (default: HUB_URL or the one from `hub login`) |  |
 | `--token` | AVOID: use `hub login` or HUB_TOKEN |  |
 | `--env-file` | values for requires (default: deploy.<env>.env) |  |
 | `--yes`, `-y` | no questions |  |
@@ -130,7 +143,7 @@ hub deploy [-h] --env {staging,production} [--dir DIR] [--hub HUB] [--token TOKE
 
 ## `hub mcp`
 
-stdio MCP server that forwards to the hub MCP with a token.
+stdio MCP server that forwards to the hub MCP with the `hub login` session.
 
 ```
 hub mcp [-h] [--hub HUB] [--token TOKEN] [--token-file TOKEN_FILE] [--path PATH]
@@ -138,7 +151,7 @@ hub mcp [-h] [--hub HUB] [--token TOKEN] [--token-file TOKEN_FILE] [--path PATH]
 
 | Argument | Description | Default |
 |---|---|---|
-| `--hub` |  | `http://localhost:8080` |
-| `--token` | AVOID: use HUB_TOKEN or --token-file |  |
+| `--hub` | hub URL (default: HUB_URL, the saved login, or http://localhost:8080) |  |
+| `--token` | AVOID: use `hub login`, HUB_TOKEN or --token-file |  |
 | `--token-file` |  |  |
 | `--path` |  | `/mcp` |

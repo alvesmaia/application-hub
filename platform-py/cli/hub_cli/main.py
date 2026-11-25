@@ -9,11 +9,11 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn, override
 
+from . import auth, project
 from . import check as check_mod
 from . import deploy as deploy_mod
 from . import dev as dev_mod
 from . import mcp as mcp_mod
-from . import project
 from .errors import FAIL, VALIDATION, CliError
 from .pack import PackError, pack
 
@@ -22,7 +22,12 @@ EXIT_CODES = """exit codes: 0 ok · 1 failure (check/step) · 2 validation (miss
 
 EPILOG = f"""{EXIT_CODES}
 
+sign in once with `hub login`: it prints a link and a code, you approve in the browser (OAuth device
+flow); deploy, mcp and the other hub commands reuse that login and renew it on their own.
+CI: a personal token (HUB_TOKEN or --token-file) instead.
+
 examples:
+  hub login --hub https://hub.example.com
   hub project create estoque --stack python-fastapi --yes --json
   hub project stacks --json
   hub check
@@ -74,7 +79,7 @@ def parser() -> argparse.ArgumentParser:
     p = Parser(prog="hub", description="Application Hub CLI", epilog=EPILOG, formatter_class=FMT)
     p.add_argument("--version", action="version", version=version())
     sub = p.add_subparsers(dest="cmd", required=True, parser_class=Parser)
-    for add in (add_project, add_check, add_pack, add_dev, add_login, add_deploy, add_mcp):
+    for add in (add_project, add_check, add_pack, add_dev, add_login, add_logout, add_deploy, add_mcp):
         add(sub)
     return p
 
@@ -150,13 +155,33 @@ def add_dev(sub: Subparsers) -> None:
 
 def add_login(sub: Subparsers) -> None:
     fmt = FMT
-    lg = sub.add_parser("login", help="Save the hub and the token (the token is prompted without echo)",
-                        epilog=f"{EXIT_CODES}\n\nexample:\n  hub login --hub https://hub.example.com",
-                        formatter_class=fmt)  # fmt: skip
-    lg.add_argument("--hub", required=True)
-    lg.add_argument("--token", help="AVOID: use HUB_TOKEN, --token-file or the no-echo prompt")
-    lg.add_argument("--token-file", type=Path, help="file with the token (e.g. provided by the CI vault)")
+    lg = sub.add_parser(
+        "login",
+        help="Sign in: approve the CLI in the browser (OAuth device flow); or save a personal token (CI)",
+        epilog=f"""{EXIT_CODES}
+
+Without a token it prints a link and a code (stderr, works without a terminal) and opens the browser;
+after you approve, deploy/mcp use the login and renew it on their own. With HUB_TOKEN, --token-file or
+--token it validates and saves that personal token instead (Minha conta › Acessos).
+
+examples:
+  hub login --hub https://hub.example.com
+  hub login --no-browser
+  HUB_TOKEN=… hub login --hub https://hub.example.com""",
+        formatter_class=fmt,
+    )
+    lg.add_argument("--hub", help="hub URL (default: HUB_URL or the saved login)")
+    lg.add_argument("--no-browser", action="store_true", help="only print the link (do not open the browser)")
+    lg.add_argument("--token", help="AVOID: personal token; use HUB_TOKEN or --token-file")
+    lg.add_argument(
+        "--token-file", type=Path, help="file with a personal token (e.g. provided by the CI vault)"
+    )
     lg.add_argument("--json", action="store_true")
+
+
+def add_logout(sub: Subparsers) -> None:
+    lo = sub.add_parser("logout", help="Revoke the CLI session on the hub and delete the saved login")
+    lo.add_argument("--json", action="store_true")
 
 
 def add_deploy(sub: Subparsers) -> None:
@@ -166,7 +191,7 @@ def add_deploy(sub: Subparsers) -> None:
                         "  hub deploy --env production --hub https://hub.example.com --json", formatter_class=fmt)  # fmt: skip
     dp.add_argument("--env", required=True, choices=["staging", "production"])
     dp.add_argument("--dir", type=Path, default=Path())
-    dp.add_argument("--hub", help="hub URL (default: the one from `hub login` or HUB_URL)")
+    dp.add_argument("--hub", help="hub URL (default: HUB_URL or the one from `hub login`)")
     dp.add_argument("--token", help="AVOID: use `hub login` or HUB_TOKEN")
     dp.add_argument("--env-file", type=Path, help="values for requires (default: deploy.<env>.env)")
     dp.add_argument("--yes", "-y", action="store_true", help="no questions")
@@ -174,9 +199,11 @@ def add_deploy(sub: Subparsers) -> None:
 
 
 def add_mcp(sub: Subparsers) -> None:
-    m = sub.add_parser("mcp", help="stdio MCP server that forwards to the hub MCP with a token")
-    m.add_argument("--hub", default=os.environ.get("HUB_URL", "http://localhost:8080"))
-    m.add_argument("--token", help="AVOID: use HUB_TOKEN or --token-file")
+    m = sub.add_parser("mcp", help="stdio MCP server that forwards to the hub MCP with the `hub login` session",
+                       epilog="credentials: `hub login` (renewed on its own), or a personal token with the mcp "
+                       "scope (Minha conta › Acessos) in HUB_TOKEN / --token-file", formatter_class=FMT)  # fmt: skip
+    m.add_argument("--hub", help="hub URL (default: HUB_URL, the saved login, or http://localhost:8080)")
+    m.add_argument("--token", help="AVOID: use `hub login`, HUB_TOKEN or --token-file")
     tf = os.environ.get("HUB_TOKEN_FILE")
     m.add_argument("--token-file", type=Path, default=Path(tf) if tf else None)
     m.add_argument("--path", default=os.environ.get("HUB_MCP_PATH", "/mcp"))
@@ -253,9 +280,22 @@ def cmd_project(a: argparse.Namespace) -> int:
 
 
 def cmd_login(a: argparse.Namespace) -> int:
-    tok = a.token or (a.token_file.read_text(encoding="utf-8").strip() if a.token_file else None)
-    out = deploy_mod.login(a.hub, tok)
-    print(json.dumps(out) if a.json else f"login salvo em {out['saved']} ({out['hub']})")
+    tok = auth.explicit_token(a.token, a.token_file)
+    if tok:
+        out = deploy_mod.login(a.hub, tok[0])
+        print(json.dumps(out) if a.json else f"login salvo em {out['saved']} ({out['hub']})")
+        return 0
+    out = auth.device_login(a.hub, not a.no_browser)
+    who = f" como {out['user']}" if out.get("user") else ""
+    print(json.dumps(out) if a.json else f"login feito em {out['hub']}{who} (escopo: {out['scope']}); "
+          f"credenciais em {out['saved']}")  # fmt: skip
+    return 0
+
+
+def cmd_logout(a: argparse.Namespace) -> int:
+    out = auth.logout()
+    msg = f"sessão encerrada em {out['hub']}; login apagado" if out["removed"] else "nenhum login salvo"
+    print(json.dumps(out) if a.json else msg)
     return 0
 
 
@@ -284,15 +324,16 @@ def cmd_dev(a: argparse.Namespace) -> int:
 
 
 def cmd_mcp(a: argparse.Namespace) -> int:
-    token, warn = mcp_mod.resolve_token(a.token, a.token_file, os.environ.get("HUB_TOKEN"))
-    if warn:
-        print(f"hub mcp: {warn}", file=sys.stderr)
-    return mcp_mod.run(a.hub, token, a.path)
+    session = auth.resolve(a.hub, a.token, a.token_file, fallback_hub="http://localhost:8080")
+    if session.warn:
+        print(f"hub mcp: {session.warn}", file=sys.stderr)
+    return mcp_mod.run(session, a.path)
 
 
 COMMANDS = {
     "project": cmd_project,
     "login": cmd_login,
+    "logout": cmd_logout,
     "deploy": cmd_deploy,
     "check": cmd_check,
     "pack": cmd_pack,

@@ -16,24 +16,12 @@ export async function cleanupE2eData() {
   const api = await request.newContext({ baseURL: HUB, storageState: stateFile('admin'), extraHTTPHeaders: { origin: HUB } });
   const done: string[] = [];
   try {
-    const toks = await api.get('/api/admin/tokens');
+    const toks = await api.get('/api/me/tokens');
     if (toks.ok()) {
-      for (const t of (await toks.json()) as { id: string; name: string; revoked_at?: number | null }[]) {
-        if (!E2E.test(t.name)) continue;
-        if (!t.revoked_at) await api.post(`/api/admin/tokens/${t.id}/revoke`, { data: {} });
-        const r = await api.delete(`/api/admin/tokens/${t.id}`, { data: {} });
+      for (const t of ((await toks.json()).items || []) as { id: string; name: string; revoked_at?: number | null }[]) {
+        if (!E2E.test(t.name) || t.revoked_at) continue;
+        const r = await api.post(`/api/me/tokens/${t.id}/revoke`, { data: {} });
         if (r.ok()) done.push(`token ${t.name}`);
-      }
-    }
-    const page = await api.get('/admin/tokens');
-    if (page.ok()) {
-      const html = await page.text();
-      for (const m of html.matchAll(/<tr data-oauth-client-row="">([\s\S]*?)<\/tr>/g)) {
-        const name = (m[1].match(/<strong>([^<]*)<\/strong>/) || [])[1] || '';
-        const id = (m[1].match(/name="client" value="([^"]+)"/) || [])[1];
-        if (!id || !E2E.test(name)) continue;
-        const r = await api.post('/admin/oauth/remove-client', { form: { client: id }, maxRedirects: 0 });
-        if (r.status() < 400) done.push(`cliente de IA ${name}`);
       }
     }
     const users = await api.get('/api/admin/users');

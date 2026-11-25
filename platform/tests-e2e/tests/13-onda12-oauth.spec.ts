@@ -63,12 +63,6 @@ test('consentimento OAuth: aprovar, usar o /mcp, ver e revogar em Apps autorizad
   expect(names).toContain('apps_list');
   expect(names).not.toContain('deployments_rollback');
 
-  // Access › Credentials lists the client and the grant.
-  await page.goto('/admin/tokens#oauth');
-  await expect(page.locator('[data-oauth-client-row]', { hasText: `Langdock E2E ${RUN}` })).toBeVisible();
-  await page.locator('[data-ptab="grants"]').click();
-  await expect(page.locator('[data-oauth-grant-row]', { hasText: `Langdock E2E ${RUN}` }).first()).toBeVisible();
-
   // Account › Authorized apps (user menu) → revoke.
   await page.goto('/');
   await page.locator('details.hub-user-menu > summary').click();

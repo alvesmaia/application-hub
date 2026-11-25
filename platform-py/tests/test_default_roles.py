@@ -50,3 +50,15 @@ def test_a_configured_role_that_does_not_exist_falls_back_to_user() -> None:
     assert sso_default_role(sso, [{"name": n} for n in NAMES]) == "User"  # never a role nobody defined
     assert sso_default_role(EntraConfig(tenant="t", client_id="c", client_secret="s", default_role="Power User"),
                             [{"name": n} for n in NAMES]) == "Power User"  # fmt: skip
+
+
+def test_first_sso_login_is_never_admin_even_when_configured() -> None:
+    """Admin only by explicit assignment (group mapping or a person): a default role that can manage users
+    (`HUB_ENTRA_DEFAULT_ROLE=Administrador`, an older install's answer) falls back to "User"."""
+    roles = roles_for(Path("/nonexistent"))
+    for risky in ("Administrador", "administrador"):
+        sso = EntraConfig(tenant="t", client_id="c", client_secret="s", default_role=risky)
+        assert sso_default_role(sso, roles) == "User"
+    admin_like = [*roles, {"name": "Chefe", "permissions": [True] * 6, "apps": None}]
+    sso = EntraConfig(tenant="t", client_id="c", client_secret="s", default_role="Chefe")
+    assert sso_default_role(sso, admin_like) == "User"

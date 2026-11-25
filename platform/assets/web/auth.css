@@ -11,7 +11,7 @@
 .auth-submit:hover{background:var(--c-navy-25)}
 .auth-link{display:inline-block;text-decoration:none;box-shadow:none}
 .auth-actions{margin-top:var(--space-14)}
-.auth-alert{background:var(--color-danger-soft);color:var(--c-red-43);border:1px solid var(--c-red-88-1);border-radius:var(--radius-lg);padding:var(--space-10) var(--space-12);font-size:var(--font-size-md);margin:var(--space-8) 0 var(--space-4)}
+.auth-alert{color:var(--color-danger);font-size:var(--font-size-md);margin:var(--space-8) 0 var(--space-4)}
 .auth-info{background:var(--c-blue-95);color:var(--color-accent);border:1px solid var(--c-blue-87);border-radius:var(--radius-lg);padding:var(--space-10) var(--space-12);font-size:var(--font-size-md);margin:var(--space-8) 0 var(--space-4)}
 .auth-divider{display:flex;align-items:center;gap:var(--space-10);color:var(--c-gray-64-1);font-size:var(--font-size-sm);margin:var(--space-16) 0 var(--space-12)}
 .auth-divider:before,.auth-divider:after{content:"";flex:1;border-top:1px solid var(--c-blue-94-3)}
@@ -39,7 +39,7 @@ body.auth-body{min-height:100dvh;overflow-x:hidden}
 .auth-divider{margin:var(--space-12) 0 var(--space-10)}
 .auth-sso{padding:7px}
 .auth-note{margin-top:var(--space-10);line-height:1.45}
-.auth-info,.auth-alert{padding:var(--space-8) var(--space-10);line-height:1.45}
+.auth-info{padding:var(--space-8) var(--space-10);line-height:1.45}.auth-alert{line-height:1.45}
 @media(max-width:640px){.auth-main{min-height:calc(100dvh - 42px);padding:var(--space-12)}.auth-card{padding:var(--space-18) var(--space-16)}}
 /* Show/hide password (login.js). */
 .auth-pw{position:relative}

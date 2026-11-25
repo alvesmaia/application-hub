@@ -548,3 +548,19 @@ def test_bootstrap_ignores_bindings_of_apps_outside_catalog(hub: TestClient) -> 
     nomes = {e["name"]: e for e in env}
     assert "DB_FANTASMA" not in nomes
     assert nomes["DB_MISTO"]["bindings"] == [{"app": "inventory", "env": "staging"}]
+
+
+def test_own_sso_row_has_no_empty_menu(hub: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Own SSO account: nothing to reset, unlock or deactivate, so the ⋯ is shown disabled with the reason and
+    "Editar" stays visible in the card layout too (was: a ⋯ that opened an empty menu)."""
+    from hub.admin import routes_users
+
+    orig = routes_users._user_row
+    monkeypatch.setattr(routes_users, "_user_row", lambda u, v, *a: orig(u, {**v, "sso": True}, *a))
+    add_user(hub, "bia", ["User"])
+    html = hub.get("/admin/users").text
+    mine = html.split('data-user-id="u-test"')[1].split("</tr>")[0]
+    assert "hub-row-menu-list" not in mine and 'aria-disabled="true"' in mine and "Nenhuma outra ação" in mine
+    assert 'class="secondary-button" data-user-edit=' in mine  # not hub-hide-cards: the card keeps "Editar"
+    other = html.split('data-user-id="bia"')[1].split("</tr>")[0]
+    assert "hub-row-menu-list" in other and "data-user-toggle" in other

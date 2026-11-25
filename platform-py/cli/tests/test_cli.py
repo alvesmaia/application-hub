@@ -7,7 +7,8 @@ from pathlib import Path
 import httpx
 import pytest
 
-from hub_cli import mcp
+from hub_cli import auth, mcp
+from hub_cli.errors import AUTH, VALIDATION, CliError
 from hub_cli.main import main, version
 from hub_cli.pack import PackError, pack
 
@@ -58,13 +59,13 @@ def test_main(tmp_path: Path, capsys, monkeypatch):
     assert "x-1.0.0.hubapp" in capsys.readouterr().out
     assert main(["pack", "--dir", str(tmp_path / "nada"), "--image", IMG]) == 1
     assert main(["dev", "--upstream", "http://x"]) == 2
-    monkeypatch.delenv("HUB_TOKEN", raising=False)
-    assert main(["mcp"]) == 1
+    assert main(["mcp"]) == AUTH  # no credential: points to `hub login`
+    assert "hub login" in capsys.readouterr().err
     monkeypatch.setenv("HUB_TOKEN", "t")
-    assert main(["mcp", "--hub", "http://h.local"]) == 1
+    assert main(["mcp", "--hub", "http://h.local"]) == VALIDATION
 
 
-def test_url_and_token(tmp_path: Path):
+def test_url_and_token(tmp_path: Path, monkeypatch):
     for ok in ["https://h.local", "http://localhost:8080", "http://127.0.0.1:1", "http://[::1]:8080"]:
         mcp.check_hub_url(ok)
     for bad in ["http://h.local", "http://10.0.0.5", "ftp://x", "nada", "https://"]:
@@ -72,16 +73,19 @@ def test_url_and_token(tmp_path: Path):
             mcp.check_hub_url(bad)
     f = tmp_path / "t"
     f.write_text("hubt_f\nx")
-    assert mcp.resolve_token("c", f, "e") == ("hubt_f", None)
-    assert mcp.resolve_token("c", None, " hubt_e ") == ("hubt_e", None)
-    t, w = mcp.resolve_token("hubt_c", None, None)
+    monkeypatch.setenv("HUB_TOKEN", "e")
+    assert auth.explicit_token("c", f) == ("hubt_f", None)
+    monkeypatch.setenv("HUB_TOKEN", " hubt_e ")
+    assert auth.explicit_token("c", None) == ("hubt_e", None)
+    monkeypatch.setenv("HUB_TOKEN", "  ")
+    t, w = auth.explicit_token("hubt_c", None) or ("", None)
     assert t == "hubt_c" and w and "processos" in w
-    for args in [(None, None, "  "), (None, tmp_path / "nope", None)]:
-        with pytest.raises(ValueError):
-            mcp.resolve_token(*args)
+    assert auth.explicit_token(None, None) is None
+    with pytest.raises(CliError):
+        auth.explicit_token(None, tmp_path / "nope")
     f.write_text("\n")
-    with pytest.raises(ValueError):
-        mcp.resolve_token(None, f, None)
+    with pytest.raises(CliError):
+        auth.explicit_token(None, f)
 
 
 def test_sse_and_header_safe():
@@ -126,7 +130,7 @@ def fake_hub(seen: list[httpx.Request], mode: str = "ok") -> httpx.Client:
 
 def test_bridge_flow():
     seen: list[httpx.Request] = []
-    b = mcp.Bridge("http://localhost:1", "tk", "mcp", fake_hub(seen))
+    b = mcp.Bridge(auth.Session("http://localhost:1", "tk"), "mcp", fake_hub(seen))
     assert b.url == "http://localhost:1/mcp"
     assert b.forward("{")[1][0]["error"]["code"] == -32700
     assert b.forward("[]")[1][0]["error"]["code"] == -32600
@@ -149,7 +153,7 @@ def test_bridge_flow():
 
 def test_new_revision_headers():
     seen: list[httpx.Request] = []
-    b = mcp.Bridge("http://localhost:1", "tk", client=fake_hub(seen))
+    b = mcp.Bridge(auth.Session("http://localhost:1", "tk"), client=fake_hub(seen))
     meta = {"io.modelcontextprotocol/protocolVersion": "2026-07-28"}
     q = {"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "açaí", "_meta": meta}}
     b.forward(json.dumps(q))
@@ -163,14 +167,12 @@ def test_run_loop_and_disabled():
     inp = io.StringIO(
         '\n{"jsonrpc":"2.0","id":1,"method":"initialize"}\n{"jsonrpc":"2.0","method":"notifications/initialized"}\n'
     )
-    assert mcp.run("http://localhost:1", "t", "/mcp", inp, out, fake_hub([])) == 0
+    assert mcp.run(auth.Session("http://localhost:1", "t"), "/mcp", inp, out, fake_hub([])) == 0
     assert json.loads(out.getvalue())["result"]["protocolVersion"] == "2025-06-18"
     out = io.StringIO()
     inp = io.StringIO('{"id":1,"method":"initialize"}\n')
-    assert mcp.run("http://localhost:1", "t", "/mcp", inp, out, fake_hub([], "404")) == 3
+    assert mcp.run(auth.Session("http://localhost:1", "t"), "/mcp", inp, out, fake_hub([], "404")) == 3
     assert "desligado" in out.getvalue()
-    with pytest.raises(ValueError):
-        mcp.run("http://localhost:1", "", "/mcp")
 
 
 def _hub_up(url: str) -> bool:
@@ -186,7 +188,7 @@ HUBPY = os.environ.get("APP_HUB_URL", "http://localhost:8090")
 @pytest.mark.skipif(not _hub_up(HUBPY), reason="app-hub indisponível (APP_HUB_URL, padrão :8090)")
 def test_smoke_hubpy():
     """Without APP_HUB_TOKEN it uses an invalid token: the bridge returns a JSON-RPC error (hub reached)."""
-    b = mcp.Bridge(HUBPY, os.environ.get("APP_HUB_TOKEN", "hubt_invalido"))
+    b = mcp.Bridge(auth.Session(HUBPY, os.environ.get("APP_HUB_TOKEN", "hubt_invalido")))
     init = {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "t", "version": "0"}}
     k, ms = b.forward(json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": init}))
     assert k in ("reply", "disabled") and ms

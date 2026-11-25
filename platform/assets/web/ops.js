@@ -464,7 +464,18 @@
     if (!panel || document.hidden) return;
     try {
       const r = await fetch(panel.dataset.opsHost, { credentials: 'same-origin', headers: { Accept: 'text/html' } });
-      if (r.ok) panel.outerHTML = await r.text();
+      if (!r.ok) return;
+      const tpl = document.createElement('template');
+      tpl.innerHTML = (await r.text()).trim();
+      const next = tpl.content.firstElementChild;
+      // Start each bar segment at its old size, then let CSS slide it to the new one (no jump).
+      const want = [...next.querySelectorAll('.ops-seg')].map((s) => s.getAttribute('style'));
+      const had = [...panel.querySelectorAll('.ops-seg')].map((s) => s.getAttribute('style'));
+      const segs = [...next.querySelectorAll('.ops-seg')];
+      if (had.length === segs.length) segs.forEach((s, i) => s.setAttribute('style', had[i]));
+      panel.replaceWith(next);
+      void next.offsetWidth;
+      segs.forEach((s, i) => s.setAttribute('style', want[i]));
     } catch (_) { /* next round */ }
   }, 5000);
 })();

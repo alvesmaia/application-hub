@@ -8,8 +8,6 @@ from __future__ import annotations
 
 import getpass
 import json
-import os
-import sys
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -17,61 +15,20 @@ from typing import Any
 import httpx
 
 from . import check
+from .auth import Session, resolve, save_login
 from .errors import AUTH, FAIL, UNREACHABLE, VALIDATION, CliError
-from .mcp import check_hub_url
 from .pack import pack
 
 ENVS = {"staging": "staging", "production": "producao", "producao": "producao"}
 
 
-def cred_path() -> Path:
-    base = os.environ.get("APPDATA") if os.name == "nt" else os.environ.get("XDG_CONFIG_HOME")
-    root = Path(base) if base else Path.home() / ".config"
-    return root / "hub-cli" / "credentials.json"
+def _client(hub: str) -> httpx.Client:
+    return httpx.Client(base_url=hub, timeout=900, headers={"X-Hub-Request": "1"})
 
 
-def save_login(hub: str, token: str) -> Path:
-    p = cred_path()
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps({"hub": hub.rstrip("/"), "token": token}), encoding="utf-8")
-    if os.name != "nt":
-        p.chmod(0o600)
-    return p
-
-
-def load_login() -> dict[str, str]:
-    p = cred_path()
+def _call(c: httpx.Client, s: Session, method: str, url: str, **kw: Any) -> httpx.Response:
     try:
-        data = json.loads(p.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-    return {k: str(v) for k, v in data.items() if k in ("hub", "token")} if isinstance(data, dict) else {}
-
-
-def resolve(hub: str | None, token: str | None) -> tuple[str, str]:
-    saved = load_login()
-    h = (hub or os.environ.get("HUB_URL") or saved.get("hub") or "").rstrip("/")
-    t = token or os.environ.get("HUB_TOKEN") or saved.get("token") or ""
-    if not h:
-        raise CliError("informe o hub: --hub URL ou `hub login`", VALIDATION)
-    try:
-        check_hub_url(h)
-    except ValueError as e:
-        raise CliError(str(e), VALIDATION) from e
-    if not t:
-        raise CliError("sem token: use `hub login`, HUB_TOKEN ou --token", AUTH)
-    return h, t
-
-
-def _client(hub: str, token: str) -> httpx.Client:
-    return httpx.Client(
-        base_url=hub, timeout=900, headers={"Authorization": f"Bearer {token}", "X-Hub-Request": "1"}
-    )
-
-
-def _call(c: httpx.Client, method: str, url: str, **kw: Any) -> httpx.Response:
-    try:
-        r = c.request(method, url, **kw)
+        r = s.request(c, method, url, **kw)
     except httpx.HTTPError as e:
         raise CliError(f"hub inacessível ({type(e).__name__})", UNREACHABLE) from e
     if r.status_code in (401, 403):
@@ -81,19 +38,16 @@ def _call(c: httpx.Client, method: str, url: str, **kw: Any) -> httpx.Response:
     return r
 
 
-def login(hub: str, token: str | None) -> dict[str, Any]:
-    token = token or os.environ.get("HUB_TOKEN")
-    if not token:
-        if not sys.stdin.isatty():
-            raise CliError("sem TTY: passe o token por HUB_TOKEN ou --token", VALIDATION)
-        token = getpass.getpass("Token do hub (não aparece na tela): ").strip()
-    h, t = resolve(hub, token)
-    with _client(h, t) as c:
-        r = _call(c, "GET", "/api/ops/deployments")
+def login(hub: str | None, token: str) -> dict[str, Any]:
+    """Saves a personal token (CI): checked against the hub first. Without a token, `hub login` uses the
+    device flow (auth.device_login)."""
+    s = resolve(hub, token)
+    with _client(s.hub) as c:
+        r = _call(c, s, "GET", "/api/ops/deployments")
     if r.status_code != 200:
         raise CliError(f"hub respondeu HTTP {r.status_code} em /api/ops/deployments", FAIL)
-    p = save_login(h, t)
-    return {"ok": True, "hub": h, "saved": str(p)}
+    p = save_login({"hub": s.hub, "token": s.token})
+    return {"ok": True, "hub": s.hub, "saved": str(p)}
 
 
 def read_env_file(path: Path) -> dict[str, str]:
@@ -166,13 +120,13 @@ def deploy(directory: Path, env: str, hub: str | None, token: str | None, env_fi
     if target is None:
         raise CliError("--env: use staging ou production", VALIDATION)
     m = _valid_manifest(directory)
-    h, t = resolve(hub, token)
+    s = resolve(hub, token)
     env_file = env_file or directory / f"deploy.{env}.env"
     values = collect_values(m, env_file, tty)
     sha, name, data = _package(directory, m)
     form = {"env": target, "config": json.dumps(values)}
-    with _client(h, t) as c:
-        r = _call(c, "POST", "/api/ops/packages", params={"env": target, "wait": "true"},
+    with _client(s.hub) as c:
+        r = _call(c, s, "POST", "/api/ops/packages", params={"env": target, "wait": "true"},
                   files={"package": (name, data, "application/zip")}, data=form)  # fmt: skip
     job = _job(r)
     ok = r.status_code in (200, 201) and bool(job.get("ok"))
@@ -180,7 +134,7 @@ def deploy(directory: Path, env: str, hub: str | None, token: str | None, env_fi
               "status": r.status_code, "message": job.get("message", ""), "provisioned": job.get("provisioned", {}),
               "variables": sorted(values["variables"]), "secrets": sorted(values["secrets"])}  # fmt: skip
     if target == "staging" and ok:
-        result["url"] = f"{h}/hub-env?to=staging&next=/apps/{m['id']}"
+        result["url"] = f"{s.hub}/hub-env?to=staging&next=/apps/{m['id']}"
     if not ok:
         raise CliError(f"implantação recusada: {result['message'] or r.status_code}", FAIL)
     return result

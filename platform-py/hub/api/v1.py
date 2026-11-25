@@ -239,7 +239,7 @@ _DOCS = """<!doctype html>
 </head><body>
 <header class="apidoc-head"><h1>API do Application Hub <small>v1</small></h1>
 <p>Documento OpenAPI 3.1: <a href="/api/v1/openapi.json">/api/v1/openapi.json</a>. Autentique com a sua sessão ou com um token de API
-(<a href="/admin/tokens">Acesso › Credenciais</a>, escopos <code>api:read</code>/<code>api:write</code>) em <code>Authorization: Bearer …</code>.
+(<a href="/account/access">Minha conta › Acessos</a>, escopos <code>api:read</code>/<code>api:write</code>) ou com o login do CLI (<code>hub login</code>) em <code>Authorization: Bearer …</code>.
 Clientes de IA: servidor MCP em <code>/mcp</code> (escopo <code>mcp</code>).</p></header>
 <main id="apidoc" aria-live="polite"><p>Carregando…</p></main>
 <script src="/assets/api-docs.js" defer></script>

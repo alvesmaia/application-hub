@@ -34,16 +34,21 @@ hub deploy --env staging --yes
 5. `hub deploy` packages and sends it; production (`--env production`) stays pending approval. No token? `hub pack --build-dir .`
    and import the `.hubapp` on the Deployments screen ([Publishing](/developers/guias/publicar)).
 
-## Token (only to publish)
+## Login (only to publish)
 
-`project create`, `check` and `dev` work without login. To publish, [create a token](@HUB@/admin/tokens) with the **envio** (send) and **status** actions under Credenciais (Credentials) and save it in the CLI (the token is
-requested without echo and stays outside the project):
+`project create`, `check` and `dev` work without login. To publish, sign the CLI in once: it prints a link and a
+code, you approve them in the browser (signed in to the hub) and the CLI stays signed in as you, with your
+permissions, for every command (`deploy`, `mcp` and the others). The session renews itself and ends after 30 days
+unused or 90 days in total; see or revoke it in [My account › Access](@HUB@/account/access).
 
 ```bash
 hub login --hub @HUB@
 ```
 
-In CI, use `--token-file` or the `HUB_TOKEN` variable; never write the token to project files.
+An AI agent that gets "não autenticado: rode `hub login`" runs `hub login` and shows you the link and the code.
+In CI there is nobody to approve: create a personal token with the deploy actions (**upload** and **status**) in
+[My account › Access](@HUB@/account/access) (ideally of an account made for the pipeline) and pass it with
+`--token-file` or the `HUB_TOKEN` variable; never write the token to project files.
 
 ## Rules that `hub check` enforces
 

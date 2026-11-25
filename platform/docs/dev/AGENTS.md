@@ -54,12 +54,17 @@ Repeat until `hub check` is green.
 
 ## 6. Publish
 
-The token comes from the hub owner; the CLI asks for the token without echo and stores it outside the project:
+Sign the CLI in once: `hub login` prints a link and a code. **Show both to the user** (they approve in the browser,
+signed in to the hub); the CLI then acts as that person, with their permissions, for every command. Whenever a
+command answers "não autenticado" or "a sessão do CLI expirou", run `hub login` again and relay the link and code.
 
 ```bash
 hub login --hub @HUB@
 hub deploy --env staging --yes
 ```
+
+CI (no one to approve): a personal token with the **upload** and **status** actions from My account › Access in
+`HUB_TOKEN`.
 
 Without access to the hub, generate the package and deliver the `.hubapp` file:
 

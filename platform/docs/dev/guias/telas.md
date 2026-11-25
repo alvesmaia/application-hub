@@ -31,7 +31,7 @@ Example:
 
 Ready-made hub classes: buttons `primary-button`, `secondary-button`, `danger-button` and `icon-button`;
 panels `hub-panel` and `hub-panel-head`; forms `hub-form-grid`, `form-field` and `hub-actions`; notices
-`hub-notice` (+ `hub-notice-error`); tables `data-table` inside `hub-table-scroll`; empty `empty-state`. The
+`hub-notice` (+ `hub-notice-error`; in apps only — hub screens use a muted line, never a banner); tables `data-table` inside `hub-table-scroll`; empty `empty-state`. The
 model from `hub project create` uses all of them. Colors only through tokens (`var(--…)`).
 
 Full list and rules: Contract §25 ([Contract](/developers/contrato)).

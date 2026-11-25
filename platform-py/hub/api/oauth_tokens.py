@@ -14,7 +14,10 @@ from fastapi.responses import Response
 
 from hub.api.oauth_authorize import OAuthAuthorize
 from hub.api.oauth_util import (
+    CLI_CLIENT,
     DAY_MS,
+    DEVICE_GRANT,
+    GRANT_MAX_DAYS,
     K_ACCESS,
     K_CODE,
     K_GRANT,
@@ -24,6 +27,7 @@ from hub.api.oauth_util import (
     OAuthError,
     canon,
     form,
+    grant_record,
     now_ms,
     pkce_ok,
     sha,
@@ -86,8 +90,11 @@ class OAuthTokens(OAuthAuthorize):
         await self.rec.put(
             K_REFRESH, sha(refresh), {"grant_id": gid, "used": False}, now + c.refresh_token_ttl_days * DAY_MS
         )
-        return {"access_token": access, "token_type": "Bearer", "expires_in": c.access_token_ttl_s,
-                "refresh_token": refresh, "scope": " ".join(grant["scopes"])}  # fmt: skip
+        out = {"access_token": access, "token_type": "Bearer", "expires_in": c.access_token_ttl_s,
+               "refresh_token": refresh, "scope": " ".join(grant["scopes"])}  # fmt: skip
+        if grant["client_id"] == CLI_CLIENT:  # `hub login` says who it is signed in as
+            out["user"] = await self.user_label(grant["user"])
+        return out
 
     async def revoke_grant(self, gid: str) -> dict[str, Any] | None:
         g = await self.rec.take(K_GRANT, gid)
@@ -122,11 +129,16 @@ class OAuthTokens(OAuthAuthorize):
             return await self.code_grant(f, client, ours, now, grant_err)
         if gt == "refresh_token":
             return await self.refresh_grant(f, client, now, grant_err)
+        if gt == DEVICE_GRANT:
+            return await self.device_grant(f, client, ours)
         if gt is not None:
             return self.oerr(
-                400, "unsupported_grant_type", "grant_type: authorization_code ou refresh_token."
+                400, "unsupported_grant_type", "grant_type: authorization_code, refresh_token ou device_code."
             )
         return self.oerr(400, "invalid_request", "grant_type obrigatório.")
+
+    async def device_grant(self, f: dict[str, str], client: dict[str, Any], ours: str) -> Response:
+        return self.oerr(400, "unsupported_grant_type", "Login por código indisponível.")  # see OAuthDevice
 
     async def code_grant(
         self,
@@ -177,9 +189,8 @@ class OAuthTokens(OAuthAuthorize):
         user = c["user"]
         if not await self.user_ok(user):
             return grant_err("Conta desativada.")
-        grant = {"grant_id": gid, "client_id": client["id"], "client_name": c["client_name"], "client_kind": client["kind"],
-                 "user": user, "scopes": c["scopes"], "resource": c["resource"], "redirect_uri": c["redirect_uri"],
-                 "created_at": now, "last_used": now}  # fmt: skip
+        grant = grant_record(gid, client | {"name": c["client_name"]}, user, c["scopes"], c["resource"], now,
+                             c["redirect_uri"])  # fmt: skip
         await self.rec.put(K_GRANT, gid, grant, now + self.cfg.refresh_token_ttl_days * DAY_MS)
         # A replay that raced this exchange marked the code after we consumed it: drop the grant we just made.
         cur = await self.rec.get(K_CODE, key)
@@ -195,7 +206,9 @@ class OAuthTokens(OAuthAuthorize):
     ) -> Response:
         key = sha(f.get("refresh_token", ""))
         ttl = now + self.cfg.refresh_token_ttl_days * DAY_MS
-        r = await self.rec.update(K_REFRESH, key, partial(_rotate_refresh, ttl=ttl))
+        # The CLI's processes (`hub mcp`, `hub deploy`) may refresh with the same token at once: 60 s of grace.
+        grace = 60_000 if client["id"] == CLI_CLIENT else 0
+        r = await self.rec.update(K_REFRESH, key, partial(_rotate_refresh, ttl=ttl, now=now, grace=grace))
         if r is None:
             return grant_err("Refresh token inválido, vencido ou revogado.")
         gid, reused = r
@@ -208,6 +221,11 @@ class OAuthTokens(OAuthAuthorize):
         if not await self.user_ok(grant["user"]):
             await self.revoke_grant(gid)
             return grant_err("Conta desativada.")
+        if now - grant.get("created_at", now) > GRANT_MAX_DAYS * DAY_MS:
+            await self.revoke_grant(gid)
+            return grant_err(
+                f"Acesso vencido ({GRANT_MAX_DAYS} dias desde o login): conecte de novo (no CLI: `hub login`)."
+            )
         if "scope" in f:
             want = self.scopes_of(f["scope"])
             if any(w not in grant["scopes"] for w in want):
@@ -271,7 +289,8 @@ class OAuthTokens(OAuthAuthorize):
             await self.rec.update(K_GRANT, gid, lambda cur: (
                 Change.set(cur | {"last_used": now}, now + self.cfg.refresh_token_ttl_days * DAY_MS) if cur else Change.keep(), None))  # fmt: skip
         return {"id": f"oauth-{gid}", "name": f"OAuth: {a.get('client_name') or 'aplicativo'}", "hash": "",
-                "prefix": "hubo_", "apps": [], "envs": [], "actions": list(a["scopes"]), "created_by": a["client_id"],
+                "prefix": "hubo_", "apps": [], "envs": [], "actions": token_actions(a["scopes"]), "created_by": a["client_id"],
+                "cli": a["client_id"] == CLI_CLIENT,
                 "created_at": a.get("created_at", now), "expires_at": a["exp"], "revoked_at": None,
                 "last_used": now, "owner": a["user"]}  # fmt: skip
 
@@ -298,12 +317,12 @@ def _consume_code(
     return Change.set(cur | {"used_grant": gid}, now + 10 * 60_000), ("fresh", cur)
 
 
-def _rotate_refresh(cur: Any, *, ttl: int) -> tuple[Change, tuple[str, bool] | None]:
+def _rotate_refresh(cur: Any, *, ttl: int, now: int, grace: int) -> tuple[Change, tuple[str, bool] | None]:
     if cur is None:
         return Change.keep(), None
     if cur.get("used") is True:
-        return Change.keep(), (str(cur["grant_id"]), True)
-    return Change.set(cur | {"used": True}, ttl), (str(cur["grant_id"]), False)
+        return Change.keep(), (str(cur["grant_id"]), bool(now - int(cur.get("used_at", 0)) >= grace))
+    return Change.set(cur | {"used": True, "used_at": now}, ttl), (str(cur["grant_id"]), False)
 
 
 def _touch_grant(cur: Any, *, client_id: str, now: int, ttl: int) -> tuple[Change, Any]:
@@ -313,3 +332,8 @@ def _touch_grant(cur: Any, *, client_id: str, now: int, ttl: int) -> tuple[Chang
         return Change.keep(), "Refresh token de outro cliente."
     cur = cur | {"last_used": now}
     return Change.set(cur, ttl), cur
+
+
+def token_actions(scopes: list[str]) -> list[str]:
+    """Scopes → what the gate checks: `deploy` is the `upload` and `status` actions of `hub deploy`."""
+    return [*scopes, *(["upload", "status"] if "deploy" in scopes else [])]

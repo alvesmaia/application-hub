@@ -109,20 +109,9 @@ class SettingsUpdate(In):
     timezone: Literal["America/Sao_Paulo"]
 
 
-class ApiToken(Out):
-    id: str
-    name: str
-    active: bool
-    prefix: str | None = None
-    apps: list[str] | None = None
-    envs: list[str] | None = None
-    actions: list[str] | None = None
-    created_by: str | None = None
-    created_at: U | None = None
-    expires_at: U | None = None
-    revoked_at: U | None = None
-    last_used: U | None = None
-    owner: str | None = None
+class AccessRevoked(Out):
+    tokens: int
+    apps: int
 
 
 # ---- health, SLOs, incidents ----------------------------------------------------------------------------
@@ -416,7 +405,7 @@ class AccessRequestResult(Out):
 
 MODELS: tuple[type, ...] = (
     UploadLink, Done, RoleCreate, RoleUpdate, PermissionGrant, RoleApps, GrantRevoke, BindingIn, VariableCreate,
-    VariableUpdate, SecretRotated, Settings, SettingsUpdate, ApiToken, HealthService, HealthServiceUpdate,
+    VariableUpdate, SecretRotated, Settings, SettingsUpdate, AccessRevoked, HealthService, HealthServiceUpdate,
     HealthServiceCreate, HealthCheck, Slo, SloSet, Incident, IncidentCreate, IncidentUpdate, FlagRuleIn,
     FlagRolloutIn, FlagEnvIn, FlagUpdate, FlagCreate, FlagEnabled, Flag, Analytics, AnalyticsRetention,
     RetentionSet, AnalyticsTerms, TermsSet, LogStats, ConnectionCreate, ConnectionUpdate, BindingsSet,

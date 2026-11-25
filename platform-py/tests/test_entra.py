@@ -232,3 +232,21 @@ def test_sso_never_adopts_a_local_admin_account(sso: TestClient) -> None:
     assert len(mine) == 2 and sso_u["roles"] == ["User"] and sso_u["name"] != "Administrador"
     assert next(u for u in mine if u["id"] == admin["id"])["roles"] == ["Administrador"]
     assert asyncio.run(store.authenticate("ana@contoso.com", "Senha-Local-123!"))["id"] == admin["id"]
+
+
+def test_sso_names_the_installers_admin_after_the_person(sso: TestClient) -> None:
+    """The installer's account is created as "Administrador"; once the same e-mail signs in through Entra, that
+    account shows the person's real name (it stays a separate local account, with its role)."""
+    client = anon(client_for(create_app()))
+    store = client.app.state.auth  # type: ignore[attr-defined]
+    asyncio.run(
+        store.create_user("ana@contoso.com", "Administrador", ["Administrador"], "Senha-Local-123!", False)
+    )
+    asyncio.run(
+        store.create_user("bia@contoso.com", "Administrador", ["Administrador"], "Senha-Local-123!", False)
+    )
+    assert flow(client, sso).status_code == 303
+    mine = [u for u in users(client) if u["email"] == "ana@contoso.com"]
+    assert {u["name"] for u in mine} == {"Ana Entra"} and sorted(r for u in mine for r in u["roles"]) == [
+        "Administrador", "User"]  # fmt: skip
+    assert next(u for u in users(client) if u["email"] == "bia@contoso.com")["name"] == "Administrador"

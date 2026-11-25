@@ -22,7 +22,7 @@ def methods_for(path: str, mcp_path: str) -> str | None:
         path.startswith("/.well-known/oauth-protected-resource/")
     ):
         return "GET, OPTIONS"
-    if path in ("/oauth/token", "/oauth/register", "/oauth/revoke"):
+    if path in ("/oauth/token", "/oauth/register", "/oauth/revoke", "/oauth/device_authorization"):
         return "POST, OPTIONS"
     return None
 

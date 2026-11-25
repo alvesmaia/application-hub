@@ -33,6 +33,9 @@ class OAuthBase:
     def __init__(self, cfg: HubCfg, auth_store: Any, admin: Any, records: Records) -> None:
         self.hub, self.auth, self.admin, self.rec = cfg, auth_store, admin, records
         self.cimd_cache: dict[str, tuple[dict[str, Any], int]] = {}
+        # ponytail: device-flow poll times live in this process; several hub replicas each allow one poll per
+        # interval (still bounded by TOKEN_PER_IP).
+        self.device_last_poll: dict[str, int] = {}
         self.cimd_transport: Any = None  # testes
         self.resolver: Callable[[str, int], Awaitable[list[str]]] | None = None  # testes
 

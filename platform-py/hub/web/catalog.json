@@ -8306,5 +8306,13 @@
 [
 "Automático (idioma do navegador)",
 "Automatic (browser language)"
+],
+[
+"Mais ações: {} (nenhuma disponível)",
+"More actions: {} (none available)"
+],
+[
+"Nenhuma outra ação para a sua própria conta: o acesso vem do login único (SSO)",
+"No other action for your own account: access comes from single sign-on (SSO)"
 ]
 ]

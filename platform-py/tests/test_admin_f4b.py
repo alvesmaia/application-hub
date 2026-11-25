@@ -27,9 +27,9 @@ def test_admin_landing_settings_and_menu_by_permission(hub: TestClient) -> None:
     reader = add_user(hub, "leitor", ["User"])
     home = reader.get("/applications")
     assert home.status_code == 200 and 'id="hub-admin-menu"' not in home.text
-    for p in ("/admin", "/admin/env", "/admin/tokens", "/admin/users"):
+    for p in ("/admin", "/admin/env", "/admin/users"):
         assert reader.get(p).status_code == 403, p
-    for p in ("/api/admin/tokens", "/api/admin/settings", "/api/admin/users"):
+    for p in ("/api/admin/settings", "/api/admin/users"):
         assert reader.get(p).status_code == 403, p
     assert 'id="hub-admin-menu"' not in reader.get("/admin/env").text
 
@@ -59,34 +59,3 @@ def test_settings_api_validates_and_persists(hub: TestClient) -> None:
         and st["active_data_key"] == r.json()["active_data_key"]
     )
     assert "master" not in json.dumps(st).lower() and st["data_keys"] >= 2
-
-
-def test_tokens_page_api_and_oauth_section(hub: TestClient) -> None:
-    r = hub.post("/api/admin/tokens", json={"name": "ci", "apps": ["inventory"], "envs": ["staging"],
-                                            "actions": ["upload", "status"], "expires_days": 30})  # fmt: skip
-    assert r.status_code == 201
-    secret, item = r.json()["token"], r.json()["item"]
-    assert secret.startswith("hubt_") and item["envs"] == ["staging"] and item["active"]
-    page = hub.get("/admin/tokens").text
-    assert "Credenciais" in page and "ci" in page and secret not in page
-    assert "Apps: inventory · Ambientes: staging" in page and "em 30 dias" in page
-    assert 'id="oauth"' in page and "Clientes de IA conectados" in page and "Autorizações ativas" in page
-    assert hub.post("/api/admin/tokens", json={"name": "x", "actions": ["bogus"]}).status_code == 400
-    assert (
-        hub.post("/api/admin/tokens", json={"name": "x", "actions": ["upload"], "apps": ["nope"]}).status_code
-        == 400
-    )
-    live = hub.post("/api/admin/tokens", json={"name": "vivo", "actions": ["status"]}).json()["item"]
-    assert (
-        hub.delete(f"/api/admin/tokens/{live['id']}", headers=JSON).status_code == 204
-    )  # ativo: revoga e remove
-    assert hub.delete(f"/api/admin/tokens/{live['id']}", headers=JSON).status_code == 404
-    assert hub.post(f"/api/admin/tokens/{item['id']}/revoke", json={}).json()["active"] is False
-    assert "Revogado" in hub.get("/admin/tokens").text
-    assert hub.delete(f"/api/admin/tokens/{item['id']}", headers=JSON).status_code == 204
-    assert hub.post("/api/admin/tokens/zz/revoke", json={}).status_code == 404
-
-
-def test_tokens_page_translated(hub: TestClient) -> None:
-    en = hub.get("/admin/tokens", headers={"accept-language": "en"}).text
-    assert "API tokens" in en and "Credenciais" not in en.split("<main", 1)[1].split("</h1>")[0]

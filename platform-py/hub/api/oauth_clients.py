@@ -15,6 +15,7 @@ from fastapi.responses import Response
 
 from hub.api.oauth_base import OAuthBase
 from hub.api.oauth_util import (
+    CLI_CLIENT,
     K_CLIENT,
     KEPT_CLIENT_MS,
     MAX_UNUSED_CLIENTS,
@@ -25,6 +26,7 @@ from hub.api.oauth_util import (
     UNUSED_CLIENT_MS,
     OAuthError,
     clean_name,
+    cli_client,
     host_of,
     ip_public,
     now_ms,
@@ -144,6 +146,8 @@ class OAuthClients(OAuthBase):
                 "auth_method": "none", "secret_hash": None, "disabled": False}  # fmt: skip
 
     async def load_client(self, cid: str) -> dict[str, Any]:
+        if cid == CLI_CLIENT:
+            return cli_client()
         raw = await self.rec.get(K_CLIENT, sha(cid))
         stored = self.client_from(raw) if raw else None
         if stored and stored["disabled"]:

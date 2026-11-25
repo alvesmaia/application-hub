@@ -16,8 +16,8 @@ PERMISSIONS = (
     "gerenciar_variaveis",
     "aprovar_solicitacoes",
 )
-OWNED_ACTIONS = ("api:read", "api:write", "mcp", "app-api")
-TOKEN_ACTIONS = ("upload", "status", *OWNED_ACTIONS)
+OWNED_ACTIONS = ("api:read", "api:write", "mcp", "app-api", "upload", "status")  # every token has an owner
+TOKEN_ACTIONS = OWNED_ACTIONS
 
 
 def user_view(u: dict[str, Any], now: int, locked: bool = False) -> dict[str, Any]:
@@ -116,6 +116,7 @@ _ADMIN_REQUIRED = {
     "analytics": ("editar_configuracoes", "ver_auditoria"),
     "usage": ("editar_configuracoes", "ver_auditoria"),
     "health": ("editar_configuracoes", "ver_auditoria"),
+    "tokens": (),  # old address: redirects everyone to their own My account › Access
 }
 
 

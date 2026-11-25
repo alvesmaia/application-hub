@@ -1831,5 +1831,7 @@
 ["Visão geral", "Overview"],
 ["mês", "month"],
 ["sem área de transferência", "no clipboard"],
-["Últimas linhas e novas em tempo real.", "Latest lines and new ones in real time."]
+["Últimas linhas e novas em tempo real.", "Latest lines and new ones in real time."],
+["Mais ações: {} (nenhuma disponível)", "More actions: {} (none available)"],
+["Nenhuma outra ação para a sua própria conta: o acesso vem do login único (SSO)", "No other action for your own account: access comes from single sign-on (SSO)"]
 ]

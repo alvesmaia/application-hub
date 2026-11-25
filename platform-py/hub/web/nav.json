@@ -26,11 +26,6 @@
      "href": "/admin/users",
      "label": "Usuários e funções",
      "icon": "<path d=\"M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM20 8v6M23 11h-6\"/>"
-    },
-    {
-     "href": "/admin/tokens",
-     "label": "Credenciais",
-     "icon": "<circle cx=\"7.5\" cy=\"15.5\" r=\"4.5\"/><path d=\"m10.7 12.3 9.3-9.3M16 7l3 3M18 5l2 2\"/>"
     }
    ]
   },

@@ -124,16 +124,18 @@ test('usuários: criar e redefinir senha (troca obrigatória no primeiro acesso)
   await ctx.close();
 });
 
-test('tokens de API: criar (segredo mostrado uma vez) @core', async ({ page }) => {
-  await page.goto('/admin/tokens');
-  await page.click('[data-token-new]');
-  const m = page.locator('.overlay[data-users-modal] form');
+test('token de implantação é pessoal (Minha conta › Acessos; segredo mostrado uma vez) @core', async ({ page }) => {
+  await page.goto('/account/access');
+  await page.click('[data-acct-new-token]');
+  const m = page.locator('#new-token [data-token-form]');
   await m.locator('input[name="name"]').fill(`CI E2E ${RUN}`);
   await m.locator('input[name="actions"][value="upload"]').check();
+  await m.locator('input[name="actions"][value="status"]').check();
   await m.locator('button[type="submit"]').click();
-  const secret = page.locator('[data-token-secret] [data-token-value]');
+  const secret = page.locator('#new-token [data-token-secret]');
   await expect(secret).toHaveText(/^hubt_/);
   const token = (await secret.textContent())!.trim();
+  await page.locator('#new-token [data-token-done]').click();
   // The token authenticates the CI API (status) and is not valid as a page session.
   const api = await page.context().request.fetch(`${HUB}/api/ops/deployments`, { headers: { authorization: `Bearer ${token}`, cookie: '' } });
   expect([200, 403]).toContain(api.status());
@@ -146,7 +148,7 @@ test('tokens de API: criar (segredo mostrado uma vez) @core', async ({ page }) =
 test('auditoria mostra as ações feitas acima', async ({ page }) => {
   await page.goto('/admin/audit?scope=platform');
   await expect(page.locator('#app-root')).toContainText(NEW_USER.email);
-  await expect(page.locator('#app-root')).toContainText('Token de API criado');
+  await expect(page.locator('#app-root')).toContainText('Token pessoal criado');
   // Variables linked to an app appear in the app's scope (and in All).
   await page.goto('/admin/audit?scope=suppliers');
   await expect(page.locator('#app-root')).toContainText(VAR_PUB);

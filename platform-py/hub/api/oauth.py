@@ -14,24 +14,19 @@ from fastapi import APIRouter, Depends, FastAPI, Request
 from fastapi.responses import Response
 from fastapi.templating import Jinja2Templates
 
-from hub.api.oauth_tokens import OAuthTokens
+from hub.api.oauth_device import OAuthDevice
 from hub.api.oauth_util import (
     K_CLIENT,
     K_GRANT,
-    KEPT_CLIENT_MS,
-    form,
     host_of,
     now_ms,
-    sha,
     short,
 )
-from hub.api.v1 import principal
-from hub.state import Change
 from hub.ux.texts import ago
 
 
-class OAuth(OAuthTokens):
-    """The whole server: base → clients → authorize → tokens → admin views (one class per module)."""
+class OAuth(OAuthDevice):
+    """The whole server: base → clients → authorize → tokens → device (CLI) → views (one class per module)."""
 
     # ---- telas -------------------------------------------------------------------------------------
     async def grants(self, user: str | None = None) -> list[dict[str, Any]]:
@@ -63,53 +58,6 @@ class OAuth(OAuthTokens):
             await self.audit(actor or await self.user_label(uid), "OAuth: acesso de aplicativo revogado pelo usuário",
                              f"{g.get('client_name', '')} · {g.get('client_id', '')}")  # fmt: skip
         return True
-
-    async def admin_action(self, path: str, body: bytes, actor: str) -> Response:
-        f = form(body.decode("utf-8", "replace"))
-        match path:
-            case "/admin/oauth/revoke-grant":
-                await self.admin_revoke_grant(f.get("grant", ""), actor)
-            case "/admin/oauth/block-client" | "/admin/oauth/unblock-client":
-                await self.admin_block_client(f.get("client", ""), path.endswith("/block-client"), actor)
-            case "/admin/oauth/remove-client":
-                cid = f.get("client", "")
-                await self.revoke_client_grants(cid)
-                await self.rec.delete(K_CLIENT, sha(cid))
-                await self.audit(actor, "OAuth: cliente removido", cid)
-            case _:
-                return self.oerr(404, "not_found", "Ação desconhecida.")
-        return self.redirect("/admin/tokens#oauth")
-
-    async def admin_revoke_grant(self, gid: str, actor: str) -> None:
-        if g := await self.revoke_grant(gid):
-            await self.audit(actor, "OAuth: concessão revogada pela administração",
-                             f"{g.get('client_name', '')} · usuário {await self.user_label(g.get('user', ''))}")  # fmt: skip
-
-    async def admin_block_client(self, cid: str, block: bool, actor: str) -> None:
-        def upd(cur: Any) -> tuple[Change, None]:
-            v = cur or {
-                "client_id": cid,
-                "client_name": cid,
-                "redirect_uris": [],
-                "kind": "cimd",
-                "created_at": now_ms(),
-            }
-            return Change.set(v | {"disabled": block}, now_ms() + KEPT_CLIENT_MS), None
-
-        await self.rec.update(K_CLIENT, sha(cid), upd)
-        if block:
-            await self.revoke_client_grants(cid)
-            self.cimd_cache.pop(cid, None)
-        await self.audit(
-            actor,
-            "OAuth: cliente bloqueado (concessões revogadas)" if block else "OAuth: cliente desbloqueado",
-            cid,
-        )
-
-    async def revoke_client_grants(self, cid: str) -> None:
-        for g in await self.grants():
-            if g.get("client_id") == cid:
-                await self.revoke_grant(g["grant_id"])
 
 
 # ---- routes ------------------------------------------------------------------------------------------
@@ -178,6 +126,21 @@ async def revoke(request: Request, oa: OAuth = Depends(oauth_of)) -> Response:
     return await _machine(oa, request, oa.revoke)
 
 
+@router.post("/oauth/device_authorization", include_in_schema=False)
+async def device_authorization(request: Request, oa: OAuth = Depends(oauth_of)) -> Response:
+    return await _machine(oa, request, oa.device_authorization)
+
+
+@router.get("/oauth/device", include_in_schema=False)
+async def device_get(request: Request, oa: OAuth = Depends(oauth_of)) -> Response:
+    return await oa.device_get(request) if oa.on else oa.not_found()
+
+
+@router.post("/oauth/device", include_in_schema=False)
+async def device_post(request: Request, oa: OAuth = Depends(oauth_of)) -> Response:
+    return await _machine(oa, request, oa.device_post)
+
+
 @router.get("/oauth/authorize", include_in_schema=False)
 async def authorize_get(request: Request, oa: OAuth = Depends(oauth_of)) -> Response:
     return await oa.authorize_get(request) if oa.on else oa.not_found()
@@ -186,15 +149,6 @@ async def authorize_get(request: Request, oa: OAuth = Depends(oauth_of)) -> Resp
 @router.post("/oauth/authorize", include_in_schema=False)
 async def authorize_post(request: Request, oa: OAuth = Depends(oauth_of)) -> Response:
     return await _machine(oa, request, oa.authorize_post)
-
-
-@router.post("/admin/oauth/{action}", include_in_schema=False)
-async def admin_action(request: Request, action: str, oa: OAuth = Depends(oauth_of)) -> Response:
-    p = principal(request)
-    body = await _small(oa, request)
-    if p is None or isinstance(body, Response):
-        return oa.oerr(401, "unauthorized", "Entre no hub.")
-    return await oa.admin_action(f"/admin/oauth/{action}", body, p.name)
 
 
 def mount_oauth(app: FastAPI, templates: Jinja2Templates) -> None:

@@ -117,16 +117,17 @@ def test_destructive_tool_needs_the_confirmation_round_trip(hub: TestClient, age
     assert "Temporaria" not in [r["name"] for r in hub.get("/api/admin/roles").json()]
 
 
-def test_settings_and_tokens(hub: TestClient) -> None:
+def test_settings_and_revoking_a_persons_access(hub: TestClient) -> None:
     secret = make_token(hub, ["mcp", "api:write"])
     agent = bearer(hub, secret)
     s = call(agent, "settings_get")
     out = call(agent, "settings_update", {"body": {**s, "platform_name": "Hub da Empresa"}})
     assert out["platform_name"] == "Hub da Empresa"
-    items = call(agent, "tokens_list")["items"]
-    assert items and secret not in json.dumps(items) and all("hash" not in t for t in items)
-    tid = items[0]["id"]
-    assert call(agent, "tokens_revoke", {"id": tid})["active"] is False
+    other = add_user(hub, "saiu", ["User"])
+    gone = make_token(other, ["api:read"])
+    assert call(agent, "users_revoke_access", {"id": "saiu"}) == {"tokens": 1, "apps": 0}
+    assert bearer(hub, gone).get("/api/v1/apps").status_code == 401
+    assert "tokens_list" not in tools(agent)  # credentials are personal: no platform-wide token tools
 
 
 def test_health_slos_incidents_flags_and_analytics(agent: TestClient) -> None:

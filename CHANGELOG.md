@@ -7,6 +7,36 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Added
+- `hub login` signs the CLI in through the browser (OAuth device flow, RFC 8628): the CLI prints a link and a code,
+  the person approves them signed in to the hub, and the CLI then acts as that person (with their permissions) on
+  every surface: `hub deploy`, the API v1, `hub mcp` and the apps' APIs. The session renews itself, ends after 30 days
+  unused or 90 days in total, and is listed and revocable in My account › Access; `hub logout` ends it. An agent that
+  gets "não autenticado" runs `hub login` and relays the link and the code (MCP instructions and the agents' guide
+  say so).
+- Users: "Revogar todos os acessos" ends a person's sessions, personal tokens and authorized apps (CLI, MCP) at once
+  (`POST /api/admin/users/{id}/revoke-access`, MCP `users_revoke_access`).
+
+### Removed (breaking)
+- Access › Credentials (`/admin/tokens`) and `/api/admin/tokens` (API v1/MCP `tokens_list`, `tokens_revoke`,
+  `tokens_delete`): every credential now belongs to a person. A deploy/CI token is a personal token with the
+  `upload` and `status` actions (My account › Access), limited by its owner's permissions; `/admin/tokens` redirects
+  there. On start-up each existing owner-less CI token goes to the person who created it (by name; revoked when
+  that is not exactly one person), so pipelines keep working. The administration's list of AI clients went with the
+  page: each person sees and revokes their own authorized apps.
+
+### Fixed
+- Entra ID: a first sign-in never gets an admin role from `HUB_ENTRA_DEFAULT_ROLE` (a role that manages users falls
+  back to `User`; admin only through a mapped group or an administrator); the installer no longer offers it.
+- Entra ID: the installer's account ("Administrador") takes the person's real name on the first sign-in with the
+  same e-mail.
+
+### Changed
+- No banners on hub screens: the Status page's overall state, a degraded container, an app in maintenance
+  (Backups), the update notice (Health) and sign-in errors are a muted line instead of a coloured strip.
+- Users: one's own SSO account shows the ⋯ disabled, with the reason, instead of an empty menu.
+- Containers (`/admin/runtime`): the host's CPU and memory bars slide to the new values instead of jumping.
+
 ## [0.4.2] — 2026-11-24
 
 ### Added

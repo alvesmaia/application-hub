@@ -2,6 +2,11 @@
   "entries": [
     {
       "check": "fora-do-shell",
+      "route": "^/oauth/device$",
+      "reason": "Tela de aprovação do login do CLI (OAuth, como a de consentimento): página isolada, sem script (CSP script-src 'none') e sem menu, para ninguém ser levado a clicar em outra coisa no meio da autorização."
+    },
+    {
+      "check": "fora-do-shell",
       "route": "^/dev/docs/[a-z-]+\\.md$",
       "reason": "Documento Markdown cru servido para agentes e para a CLI (F22): não é página HTML do hub, então não tem shell."
     },

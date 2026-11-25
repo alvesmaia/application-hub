@@ -3,7 +3,7 @@ import { USERS, type Role } from './helpers';
 
 // Script: login via the form as admin, operator and reader; what each one sees and
 // what is refused (friendly 403), including the "Administration" menu of the rail.
-const ADMIN_AREAS = ['/admin', '/admin/env', '/admin/roles', '/admin/users', '/admin/tokens', '/admin/logs', '/admin/audit', '/admin/health', '/admin/deploys', '/admin/runtime', '/admin/backups', '/admin/tasks'];
+const ADMIN_AREAS = ['/admin', '/admin/env', '/admin/roles', '/admin/users', '/admin/logs', '/admin/audit', '/admin/health', '/admin/deploys', '/admin/runtime', '/admin/backups', '/admin/tasks'];
 const ALLOWED: Record<Role, string[]> = {
   admin: ADMIN_AREAS,
   operador: ADMIN_AREAS.filter((p) => !['/admin/roles', '/admin/users'].includes(p)),

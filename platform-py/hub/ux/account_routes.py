@@ -24,6 +24,8 @@ _SCOPES = {
     "api:write": "acct.scope_api_write",
     "mcp": "acct.scope_mcp",
     "app-api": "acct.scope_app_api",
+    "upload": "acct.scope_upload",
+    "status": "acct.scope_status",
 }
 
 

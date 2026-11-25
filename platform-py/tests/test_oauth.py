@@ -504,7 +504,7 @@ def test_client_metadata_document_never_reaches_internal_addresses(hub: TestClie
 # ---- revocation and screens ----
 
 
-def test_revoke_endpoint_account_page_and_admin_actions(hub: TestClient) -> None:
+def test_revoke_endpoint_and_account_page(hub: TestClient) -> None:
     t = oauth_login(hub)
     cid = t["client_id"]
     # another client does not revoke what is not its own; 200 even for an unknown token (RFC 7009)
@@ -543,21 +543,6 @@ def test_revoke_endpoint_account_page_and_admin_actions(hub: TestClient) -> None
     t2 = oauth_login(hub)
     r = machine(hub).post("/oauth/revoke", data={"token": t2["refresh_token"], "client_id": t2["client_id"]})
     assert r.status_code == 200 and rpc(bearer(hub, t2["access_token"]), "ping").status_code == 401
-    # the administration blocks the client: grants vanish and it does not authorize again
-    t3 = oauth_login(hub)
-    form = {"content-type": "application/x-www-form-urlencoded"}
-    r = hub.post("/admin/oauth/block-client", content=f"client={t3['client_id']}", headers=form)
-    assert r.status_code == 303 and r.headers["location"] == "/admin/tokens#oauth"
-    assert rpc(bearer(hub, t3["access_token"]), "ping").status_code == 401
-    _, ch = pkce()
-    assert "bloqueado" in hub.get("/oauth/authorize?" + authz_query(t3["client_id"], ch)).text
-    hub.post("/admin/oauth/unblock-client", content=f"client={t3['client_id']}", headers=form)
-    assert hub.get("/oauth/authorize?" + authz_query(t3["client_id"], ch)).status_code == 200
-    hub.post("/admin/oauth/remove-client", content=f"client={t3['client_id']}", headers=form)
-    assert "desconhecido" in hub.get("/oauth/authorize?" + authz_query(t3["client_id"], ch)).text
-    # administration is restricted to whoever can edit settings
-    colab = add_user(hub, "colab", ["Colaborador"])
-    assert colab.post("/admin/oauth/block-client", content="client=x", headers=form).status_code == 403
 
 
 def test_disabled_account_cannot_exchange_or_refresh(hub: TestClient) -> None:

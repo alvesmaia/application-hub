@@ -417,3 +417,16 @@ lines) after an import and after approve/promote/rollback; the version panel sho
 of a failed import/action is short and points to the History item. Pre-existing, not from this change: the E2E
 "(c)+(b) JavaScript próprio" fails on v0.4.0 too (servicedesk candidate stuck in "migrações do banco em curso" on the
 isolated instance) — to investigate.
+
+✅ **Task 124–127 — Login único do CLI por OAuth e tokens só por usuário (2026-11-25)**
+`hub login` usa o fluxo de código de dispositivo (RFC 8628, cliente embutido `hub-cli`, `hub/api/oauth_device.py`): o CLI
+imprime link + código, a pessoa aprova em `/oauth/device` (com sessão) e o CLI recebe tokens com os escopos
+`mcp api:read api:write app-api deploy` (`deploy` = ações `upload`/`status`), sempre limitados pelo RBAC da pessoa.
+Só o token do CLI vale fora de `/mcp`; tokens de clientes MCP de terceiros continuam só em `/mcp`. Sessão: refresh
+deslizante de 30 dias, teto de 90 dias desde o login (todas as concessões), rotação com detecção de reuso e 60 s de
+tolerância só para o CLI (dois processos renovando juntos). `/admin/tokens` e `/api/admin/tokens` saíram
+(`/admin/tokens` → 308 para `/account/access`); todo token tem dono; tokens antigos sem dono vão para quem os criou
+(por nome, só se for exatamente uma pessoa; senão revogados) no `bootstrap`. "Revogar todos os acessos" em
+`/admin/users` (`POST /api/admin/users/{id}/revoke-access`, MCP `users_revoke_access`). Achado no E2E: um login feito
+com o cookie de outra pessoa substitui a sessão dela (proteção contra fixação de sessão, intencional); o teste usa um
+contexto com cookies próprios.

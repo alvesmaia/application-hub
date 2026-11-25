@@ -1,7 +1,7 @@
-/* users.js — Access › Users and API tokens.
+/* users.js — Access › Users.
  *
  * The pages arrive ready from the server; this script opens the forms (mockup's
- * modal), calls /api/admin/users* and /api/admin/tokens* (application/json,
+ * modal), calls /api/admin/users* (application/json,
  * same origin) and reloads the page after each mutation. Values from the server and the
  * user enter the DOM only through textContent/value or esc(). */
 (function () {
@@ -120,19 +120,6 @@
     return row ? JSON.parse(row.dataset.user) : null;
   };
 
-  // Reloads only the list (HTML from the server) and highlights the new row.
-  async function refreshPanel(sel, id) {
-    try {
-      const res = await fetch(location.pathname + location.search, { credentials: 'same-origin', headers: { accept: 'text/html' } });
-      const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
-      const fresh = doc.querySelector(sel);
-      const cur = $(sel);
-      if (!res.ok || !fresh || !cur) return;
-      cur.replaceWith(document.importNode(fresh, true));
-      if (id) $(`${sel} [data-token-row="${CSS.escape(String(id))}"]`)?.classList.add('row-new');
-    } catch (_) { /* the list updates on the next load */ }
-  }
-
   // ---- Users -------------------------------------------------------------
   document.addEventListener('click', async (e) => {
     const t = e.target.closest('button');
@@ -220,64 +207,12 @@
       return;
     }
 
-    // ---- Tokens de API ------------------------------------------------------
-    if (t.matches('[data-token-new]')) {
-      const appItems = meta.apps.map((a) => ({ value: a.id, label: a.name }));
-      openModal(
-        'Novo token de API',
-        'Sem aplicações marcadas = todas. O token aparece uma única vez.',
-        field('Nome', 'name', 'text', '', 'required maxlength="60" placeholder="CI · Gestão de Ativos"') +
-          checks('Aplicações', 'apps', appItems, () => false) +
-          checks('Ambientes', 'envs', [{ value: 'staging', label: 'Staging' }, { value: 'producao', label: 'Produção' }], (v) => v === 'staging') +
-          checks('Ações', 'actions', [
-            { value: 'upload', label: 'Enviar pacotes (CI)' },
-            { value: 'status', label: 'Consultar status (CI)' },
-            { value: 'api:read', label: 'API v1: leitura (age como você)' },
-            { value: 'api:write', label: 'API v1: alterações (age como você)' },
-            { value: 'mcp', label: 'MCP: clientes de IA (age como você)' },
-            { value: 'app-api', label: 'API dos apps (/{app}/api)' },
-          ], (v) => v === 'upload' || v === 'status') +
-          field('Validade (dias)', 'days', 'number', '90', 'min="1" max="365" required'),
-        'Criar token',
-        async (form) => {
-          const out = await api('POST', '/tokens', {
-            name: form.name.value,
-            apps: values(form, 'apps'),
-            envs: values(form, 'envs'),
-            actions: values(form, 'actions'),
-            expires_days: Number(form.days.value) || 90,
-          });
-          closeModal();
-          await refreshPanel('[data-admin-tokens]', out.item && out.item.id);
-          const box = $('[data-token-secret]');
-          $('[data-token-value]', box).textContent = out.token;
-          box.classList.remove('hidden');
-          toast('Token criado. Copie agora: ele não será mostrado de novo.');
-        },
-      );
-      return;
-    }
-
-    if (t.matches('[data-token-copy]')) {
-      const v = $('[data-token-value]').textContent;
-      try { await navigator.clipboard.writeText(v); toast('Token copiado.'); } catch (err) { toast('Selecione e copie o token manualmente.'); }
-      return;
-    }
-
-    if (t.matches('[data-token-revoke]')) {
-      if (!await window.HubConfirm('Revogar o token? Pipelines que o usam deixam de conseguir enviar pacotes.')) return;
+    if (t.matches('[data-user-revoke-access]')) {
+      const u = userOf(t.dataset.userRevokeAccess);
+      if (!await window.HubConfirm(`Revogar todos os acessos de ${u ? u.name : 'o usuário'}? Sessões, tokens pessoais e apps autorizados (CLI, MCP) param agora; a conta continua ativa.`)) return;
       try {
-        await api('POST', `/tokens/${enc(t.dataset.tokenRevoke)}/revoke`, {});
-        reloadWithToast('Token revogado.');
-      } catch (err) { toast(err.message, 'error'); }
-    }
-
-    if (t.matches('[data-token-delete]')) {
-      const live = t.dataset.tokenActive === '1';
-      if (!await window.HubConfirm(live ? 'Excluir o token? Ele será revogado e removido da lista; pipelines que o usam deixam de funcionar.' : 'Excluir o token revogado? Ele some da lista.')) return;
-      try {
-        await api('DELETE', `/tokens/${enc(t.dataset.tokenDelete)}`);
-        reloadWithToast('Token excluído.');
+        const out = await api('POST', `/users/${enc(t.dataset.userRevokeAccess)}/revoke-access`, {});
+        reloadWithToast(`Acessos revogados: ${out.tokens} token(s), ${out.apps} app(s).`);
       } catch (err) { toast(err.message, 'error'); }
     }
   });

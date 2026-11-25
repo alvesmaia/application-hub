@@ -113,15 +113,15 @@ async def _identify(request: Request, facade: Any, authz: str) -> Principal | Re
 
 
 async def _bearer(request: Request, value: str) -> Principal:
-    """Token user: its owner (personal token) or a synthetic user (CI token); a token outside its scope is dropped."""
+    """Token user: its owner (personal token or `hub login`); a token outside its scope is dropped."""
     method, path, mcp_path = request.method, request.url.path, request.app.state.apicfg.mcp.path
     store = cast(AuthStore, request.app.state.auth)
     if value.startswith("hubo_"):
-        token = (
-            await request.app.state.oauth.verify_access(value, request)
-            if owned_surface(method, path, mcp_path) == "mcp"
-            else None
-        )
+        token = await request.app.state.oauth.verify_access(value, request)
+        if token and not token.get("cli") and owned_surface(method, path, mcp_path) != "mcp":
+            token = (
+                None  # an MCP client's token is valid on /mcp only; the CLI's (`hub login`) on every surface
+            )
     else:
         token = await store.bearer(value)
     if not token:
@@ -134,13 +134,7 @@ async def _bearer(request: Request, value: str) -> Principal:
     ):
         return None, None
     if not token.get("owner"):
-        return {
-            "id": token["id"],
-            "email": "",
-            "name": f"token:{token['name']}",
-            "roles": [],
-            "active": True,
-        }, token
+        return None, None  # every token belongs to a person (an old owner-less one was revoked at start-up)
     async with store.locked() as d:
         user = next(
             (
@@ -250,8 +244,6 @@ def _denied(
 ) -> bool:
     segs = path.strip("/").split("/")
     required = _required(path, method, segs)
-    if token and token_action(method, path) in token.get("actions", []):
-        required = ()  # CI token / `hub deploy` (upload/status): the token's action is the authorization
     in_app = segs[0] in ("apps", "_frag")
     app_id = segs[1] if in_app and len(segs) > 1 else segs[0]
     if required and not any(p in perms for p in required):

@@ -57,7 +57,6 @@
 .ops-steps li.warn .ops-step-dot{background:var(--color-warning);border-color:var(--color-warning)}
 .ops-step-detail{color:var(--color-text-secondary)!important}
 .ops-steps li.failed .ops-step-detail{color:var(--color-danger)!important;font-weight:600}
-.ops-banner{margin:0 0 var(--space-14);padding:11px var(--space-14);border-radius:var(--radius-2xl);background:var(--color-warning-soft);color:var(--c-orange-29);font-size:var(--font-size-sm);border:1px solid var(--c-yellow-83-1)}
 .ops-progress{margin:0 0 var(--space-14);padding:var(--space-12) var(--space-14);border-radius:var(--radius-3xl);background:var(--color-surface);border:1px solid var(--color-divider);display:grid;gap:var(--space-8)}
 .ops-progress[hidden]{display:none}
 .ops-progress-head{display:flex;justify-content:space-between;gap:var(--space-10);font-size:var(--font-size-sm);color:var(--color-text-secondary)}
@@ -71,14 +70,14 @@
 .ops-check{display:flex;align-items:center;gap:var(--space-8);font-size:var(--font-size-sm);color:var(--c-blue-37)}
 .ops-runtime-note{display:block;max-width:280px;margin-top:var(--space-4);white-space:normal;overflow-wrap:anywhere}
 /* Users, API tokens and applications per role (wave 3). */
-.auth-alert{background:var(--color-danger-soft);color:var(--c-red-43);border:1px solid var(--c-red-88-1);border-radius:var(--radius-lg);padding:var(--space-10) var(--space-12);font-size:var(--font-size-md);margin:var(--space-8) 0 var(--space-4)}
+.auth-alert{color:var(--color-danger);font-size:var(--font-size-md);margin:var(--space-8) 0 var(--space-4)}
 .auth-note{margin-top:var(--space-14);font-size:var(--font-size-sm);line-height:1.6}
 .user-actions{display:flex;gap:var(--space-6);flex-wrap:wrap}
 .user-actions .secondary-button{padding:var(--space-6) 9px}
 .token-secret{display:flex;align-items:center;gap:var(--space-10);flex-wrap:wrap;background:var(--color-warning-soft);border:1px solid var(--c-yellow-83);border-radius:var(--radius-2xl);padding:var(--space-12) var(--space-14);margin-bottom:var(--space-14);font-size:var(--font-size-md)}
 .token-secret code{background:var(--color-surface);border:1px solid var(--c-yellow-82);border-radius:var(--radius-sm);padding:var(--space-6) var(--space-8);word-break:break-all;flex:1;min-width:220px}
 .role-apps{margin-top:var(--space-12);padding-top:var(--space-10);border-top:1px solid var(--c-blue-95-10)}
-.ops-alert{background:var(--c-yellow-95-1);color:var(--c-orange-24);border:1px solid var(--c-yellow-81);border-radius:var(--radius-xl);padding:var(--space-10) var(--space-12);font-size:var(--font-size-base);margin:0 0 var(--space-12)}
+.ops-maint{margin:0 0 var(--space-12)}
 
 /* ---- Wave 8: Observability, status page, SLOs, flags, audit (tokens only) ---- */
 .obs-muted{color:var(--color-text-muted);font-size:var(--font-size-xs)}
@@ -101,9 +100,10 @@
 .obs-bar-db{background:var(--color-success)}
 .obs-bar-error{background:var(--color-danger)}
 .obs-span-dur{text-align:right;color:var(--color-text-muted)}
-.status-banner{border-radius:var(--radius-5xl);padding:var(--space-16) var(--space-20);font-weight:600;margin-bottom:var(--space-18)}
-.status-banner-ok{background:var(--color-success-soft);color:var(--color-success)}
-.status-banner-bad{background:var(--color-danger-soft);color:var(--color-danger)}
+.status-overall{display:flex;align-items:center;gap:var(--space-8);font-weight:600;margin:0 0 var(--space-12)}
+.status-overall::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.status-overall-ok{color:var(--color-success)}
+.status-overall-bad{color:var(--color-danger)}
 .status-apps{display:grid;gap:var(--space-18)}
 .status-app-head{display:flex;align-items:center;gap:var(--space-8);margin-bottom:var(--space-8)}
 .status-app-head .status-pill{margin-left:auto}
@@ -297,7 +297,8 @@ body.ops-drawer-open{overflow:hidden}
 /* Host panel (/admin/runtime): runtime address in the hover of a small "i" next to the title; exact value on each segment's hover. */
 .ops-host-title{display:inline-flex;align-items:center;gap:8px}
 .hub-info-toggle.sm{width:18px;height:18px;min-height:18px;font-size:12px;cursor:help}
-.ops-host .ops-seg{cursor:default}
+.ops-host .ops-seg{cursor:default;transition:flex-grow .8s ease-in-out}
+@media (prefers-reduced-motion:reduce){.ops-host .ops-seg{transition:none}}
 /* host capacity: stacked bar with scale + 5-minute stacked area */
 .ops-hm-head{display:flex;justify-content:space-between;align-items:baseline;margin:var(--space-16) 0 var(--space-6);font-size:var(--font-size-2xs);color:var(--color-text-secondary)}
 .ops-hm-row .ops-hm-head{margin-top:var(--space-8)}

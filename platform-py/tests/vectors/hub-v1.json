@@ -59,6 +59,28 @@
         ],
         "type": "object"
       },
+      "AccessRevoked": {
+        "additionalProperties": true,
+        "examples": [
+          {
+            "apps": 1,
+            "tokens": 2
+          }
+        ],
+        "properties": {
+          "apps": {
+            "type": "integer"
+          },
+          "tokens": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tokens",
+          "apps"
+        ],
+        "type": "object"
+      },
       "Analytics": {
         "additionalProperties": true,
         "examples": [
@@ -143,119 +165,6 @@
         },
         "required": [
           "raw"
-        ],
-        "type": "object"
-      },
-      "ApiToken": {
-        "additionalProperties": true,
-        "examples": [
-          {
-            "actions": [
-              "mcp",
-              "api:read"
-            ],
-            "active": true,
-            "apps": [],
-            "created_at": 1760000000000,
-            "created_by": "Ana",
-            "envs": [],
-            "expires_at": null,
-            "id": "t3",
-            "last_used": null,
-            "name": "agente",
-            "owner": "u-1",
-            "prefix": "hubt_t3_ab12",
-            "revoked_at": null
-          }
-        ],
-        "properties": {
-          "actions": {
-            "items": {
-              "type": "string"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
-          },
-          "active": {
-            "type": "boolean"
-          },
-          "apps": {
-            "items": {
-              "type": "string"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
-          },
-          "created_at": {
-            "minimum": 0,
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "created_by": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "envs": {
-            "items": {
-              "type": "string"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
-          },
-          "expires_at": {
-            "minimum": 0,
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "id": {
-            "type": "string"
-          },
-          "last_used": {
-            "minimum": 0,
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "name": {
-            "type": "string"
-          },
-          "owner": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "prefix": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "revoked_at": {
-            "minimum": 0,
-            "type": [
-              "integer",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "active"
         ],
         "type": "object"
       },
@@ -3318,17 +3227,23 @@
         "examples": [
           {
             "brand_color": "#0f766e",
+            "catalog_hidden_apps": [],
             "language": "pt-BR",
             "platform_name": "Application Hub",
             "status_public": false,
             "status_public_apps": [],
-            "timezone": "America/Sao_Paulo",
-            "catalog_hidden_apps": []
+            "timezone": "America/Sao_Paulo"
           }
         ],
         "properties": {
           "brand_color": {
             "type": "string"
+          },
+          "catalog_hidden_apps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           },
           "language": {
             "type": "string"
@@ -3347,12 +3262,6 @@
           },
           "timezone": {
             "type": "string"
-          },
-          "catalog_hidden_apps": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
           }
         },
         "required": [
@@ -3381,6 +3290,12 @@
             "pattern": "^(#[0-9a-fA-F]{6})?$",
             "type": "string"
           },
+          "catalog_hidden_apps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "language": {
             "enum": [
               "",
@@ -3405,12 +3320,6 @@
           "timezone": {
             "const": "America/Sao_Paulo",
             "type": "string"
-          },
-          "catalog_hidden_apps": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
           }
         },
         "required": [
@@ -10620,11 +10529,11 @@
               "application/json": {
                 "example": {
                   "brand_color": "#0f766e",
+                  "catalog_hidden_apps": [],
                   "language": "pt-BR",
                   "platform_name": "Application Hub",
                   "status_public": false,
                   "status_public_apps": [],
-                  "catalog_hidden_apps": [],
                   "timezone": "America/Sao_Paulo"
                 },
                 "schema": {
@@ -10682,11 +10591,11 @@
               "application/json": {
                 "example": {
                   "brand_color": "#0f766e",
+                  "catalog_hidden_apps": [],
                   "language": "pt-BR",
                   "platform_name": "Application Hub",
                   "status_public": false,
                   "status_public_apps": [],
-                  "catalog_hidden_apps": [],
                   "timezone": "America/Sao_Paulo"
                 },
                 "schema": {
@@ -11450,265 +11359,6 @@
         "x-hub-mcp": true
       }
     },
-    "/api/v1/tokens": {
-      "get": {
-        "operationId": "tokens_list",
-        "parameters": [
-          {
-            "description": "Itens por página",
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "minimum": 1,
-              "type": "integer"
-            }
-          },
-          {
-            "description": "Deslocamento",
-            "in": "query",
-            "name": "offset",
-            "required": false,
-            "schema": {
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
-            "description": "Texto em qualquer campo",
-            "in": "query",
-            "name": "q",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "Filtra por active",
-            "in": "query",
-            "name": "active",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "Filtra por owner",
-            "in": "query",
-            "name": "owner",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "example": {
-                  "items": [
-                    {
-                      "actions": [
-                        "mcp",
-                        "api:read"
-                      ],
-                      "active": true,
-                      "apps": [],
-                      "created_at": 1760000000000,
-                      "created_by": "Ana",
-                      "envs": [],
-                      "expires_at": null,
-                      "id": "t3",
-                      "last_used": null,
-                      "name": "agente",
-                      "owner": "u-1",
-                      "prefix": "hubt_t3_ab12",
-                      "revoked_at": null
-                    }
-                  ],
-                  "limit": 50,
-                  "next": null,
-                  "offset": 0,
-                  "total": 1
-                },
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/Page"
-                    },
-                    {
-                      "properties": {
-                        "items": {
-                          "items": {
-                            "$ref": "#/components/schemas/ApiToken"
-                          },
-                          "type": "array"
-                        }
-                      },
-                      "type": "object"
-                    }
-                  ]
-                }
-              }
-            },
-            "description": "Página da lista"
-          },
-          "400": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "401": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "403": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "404": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "429": {
-            "$ref": "#/components/responses/Problem"
-          }
-        },
-        "summary": "Tokens de API e de CI (só metadados; o segredo nunca volta)",
-        "tags": [
-          "Configurações"
-        ],
-        "x-hub-destructive": false,
-        "x-hub-mcp": true
-      }
-    },
-    "/api/v1/tokens/{id}": {
-      "delete": {
-        "operationId": "tokens_delete",
-        "parameters": [
-          {
-            "description": "Identificador",
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "2XX": {
-            "content": {
-              "application/json": {
-                "example": {},
-                "schema": {
-                  "$ref": "#/components/schemas/Done"
-                }
-              }
-            },
-            "description": "Sucesso"
-          },
-          "400": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "401": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "403": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "404": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "409": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "429": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "503": {
-            "$ref": "#/components/responses/Problem"
-          }
-        },
-        "summary": "Exclui um token de API (revoga se ainda ativo)",
-        "tags": [
-          "Configurações"
-        ],
-        "x-hub-destructive": true,
-        "x-hub-mcp": true
-      }
-    },
-    "/api/v1/tokens/{id}/revoke": {
-      "post": {
-        "operationId": "tokens_revoke",
-        "parameters": [
-          {
-            "description": "Identificador",
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "2XX": {
-            "content": {
-              "application/json": {
-                "example": {
-                  "actions": [
-                    "mcp",
-                    "api:read"
-                  ],
-                  "active": true,
-                  "apps": [],
-                  "created_at": 1760000000000,
-                  "created_by": "Ana",
-                  "envs": [],
-                  "expires_at": null,
-                  "id": "t3",
-                  "last_used": null,
-                  "name": "agente",
-                  "owner": "u-1",
-                  "prefix": "hubt_t3_ab12",
-                  "revoked_at": null
-                },
-                "schema": {
-                  "$ref": "#/components/schemas/ApiToken"
-                }
-              }
-            },
-            "description": "Sucesso"
-          },
-          "400": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "401": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "403": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "404": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "409": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "429": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "503": {
-            "$ref": "#/components/responses/Problem"
-          }
-        },
-        "summary": "Revoga um token de API",
-        "tags": [
-          "Configurações"
-        ],
-        "x-hub-destructive": true,
-        "x-hub-mcp": true
-      }
-    },
     "/api/v1/usage": {
       "get": {
         "operationId": "usage_query",
@@ -12198,6 +11848,66 @@
           }
         },
         "summary": "Altera nome, funções ou situação de um usuário",
+        "tags": [
+          "Usuários"
+        ],
+        "x-hub-destructive": true,
+        "x-hub-mcp": true
+      }
+    },
+    "/api/v1/users/{id}/revoke-access": {
+      "post": {
+        "operationId": "users_revoke_access",
+        "parameters": [
+          {
+            "description": "Identificador",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "apps": 1,
+                  "tokens": 2
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AccessRevoked"
+                }
+              }
+            },
+            "description": "Sucesso"
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "summary": "Revoga todos os acessos de um usuário: sessões, tokens pessoais e apps autorizados (CLI, MCP)",
         "tags": [
           "Usuários"
         ],

@@ -14,17 +14,24 @@ async function bearer(token: string): Promise<APIRequestContext> {
 }
 
 async function createToken(page: import('@playwright/test').Page, name: string, actions: string[], apps: string[] = []) {
-  await page.goto('/admin/tokens');
-  await page.click('[data-token-new]');
-  const m = page.locator('.overlay[data-users-modal] form');
+  if (apps.length) {
+    await page.goto('/account/access');
+    const r = await page.request.post('/api/me/tokens', { headers: { origin: HUB }, data: { name, actions, apps } });
+    expect(r.status()).toBe(201);
+    return (await r.json()).token as string;
+  }
+  await page.goto('/account/access');
+  await page.click('[data-acct-new-token]');
+  const m = page.locator('#new-token [data-token-form]');
   await m.locator('input[name="name"]').fill(name);
-  for (const a of ['upload', 'status']) await m.locator(`input[name="actions"][value="${a}"]`).uncheck();
+  for (const box of await m.locator('input[name="actions"]').all()) await box.uncheck();
   for (const a of actions) await m.locator(`input[name="actions"][value="${a}"]`).check();
-  for (const a of apps) await m.locator(`input[name="apps"][value="${a}"]`).check();
   await m.locator('button[type="submit"]').click();
-  const secret = page.locator('[data-token-secret] [data-token-value]');
+  const secret = page.locator('#new-token [data-token-secret]');
   await expect(secret).toHaveText(/^hubt_/);
-  return (await secret.textContent())!.trim();
+  const value = (await secret.textContent())!.trim();
+  await page.locator('#new-token [data-token-done]').click();
+  return value;
 }
 
 test('documentação da API renderiza a partir do OpenAPI 3.1 (sem script inline)', async ({ page }) => {

@@ -42,7 +42,7 @@
 # Sign-in with Microsoft and a reverse proxy in front, without questions (Redirect URI to register in the app
 # registration: <public URL>/auth/entra/callback; the secret goes to the vault, never to .prod.env):
 #   --entra-tenant ID --entra-client-id ID --entra-client-secret-file FILE   (the three together)
-#   --entra-domains LIST   accepted e-mail domains     --entra-role User|"Power User"|Administrador (default User)
+#   --entra-domains LIST   accepted e-mail domains     --entra-role User|"Power User" (default User; never admin)
 #   --local-login admins|todos|nenhum   e-mail/password sign-in besides Microsoft (default admins)
 #   --trusted-proxy CIDR   reverse proxy in front (e.g. Nginx with TLS): its X-Forwarded-* headers are trusted
 #
@@ -229,7 +229,7 @@ if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0
       ask ENTRA_TENANT "  Tenant ID (GUID; organizations/common = várias empresas)" '^[0-9a-fA-F-]{36}$|^(organizations|common)$|^[a-zA-Z0-9.-]+\.[a-z]+$'
       ask ENTRA_CLIENT "  Client ID do app registration (GUID)" '^[0-9a-fA-F-]{36}$'
       ask ENTRA_DOMAINS "  Domínios de e-mail aceitos (vírgula; vazio = qualquer um do tenant)" '^$|^[a-zA-Z0-9.,-]+$'
-      ask ENTRA_ROLE "  Papel de quem entra pela primeira vez (User, Power User ou Administrador)" '^(User|Power User|Administrador|Colaborador)$'
+      ask ENTRA_ROLE "  Papel de quem entra pela primeira vez (User ou Power User; admin só por grupo mapeado)" '^(User|Power User|Colaborador)$'
       ask ENTRA_LOCAL "  Login com e-mail e senha: admins (recomendado) | todos | nenhum" '^(admins|todos|nenhum)$'
       secret ENTRA_SECRET "  Segredo do cliente (não aparece na tela)"
       if [ -z "$ENTRA_SECRET" ] || [ -z "$ENTRA_TENANT" ] || [ -z "$ENTRA_CLIENT" ]; then

@@ -803,9 +803,7 @@ def test_same_origin_post_with_opaque_origin(hub: TestClient) -> None:
 def test_bearer_with_stray_session_cookie_skips_csrf_check(hub: TestClient) -> None:
     """F7a: API client with `Authorization: Bearer` and a session cookie alongside (inherited context) is not blocked
     by the same-origin test - the identity comes from the token; without a token, cross-origin stays 403."""
-    tok = hub.post(
-        "/api/admin/tokens", json={"name": "f7a", "actions": ["mcp"], "apps": [], "envs": []}
-    ).json()["token"]
+    tok = hub.post("/api/me/tokens", json={"name": "f7a", "actions": ["mcp"], "apps": []}).json()["token"]
     h = {"origin": "http://evil.example", "sec-fetch-site": "cross-site"}
     ok = hub.put("/api/me/prefs", json={"theme": ""}, headers=h | {"authorization": f"Bearer {tok}"})
     assert ok.status_code != 403, ok.text
@@ -874,3 +872,17 @@ def test_approved_script_enters_the_page_csp(hub: TestClient) -> None:
     assert approved_scripts("inventory", False) == [("x.js", sha)]
     csp = hub.get("/apps/inventory").headers["content-security-policy"]
     assert f"'{sha}'" in csp and "/_frag/inventory/assets/x.js" in csp
+
+
+def test_no_screen_uses_a_banner():
+    """Owner's call: warnings are a muted line, never a coloured strip (status, runtime, backups, health, login)."""
+    root = Path(__file__).resolve().parents[2]
+    banner = re.compile(
+        r"status-banner|ops-banner|env-banner|ops-alert|hub-notice|auth-alert\{[^}]*background"
+    )
+    shown = [
+        *Path(root, "platform-py/hub/web/templates").glob("*.html"),
+        *Path(root, "platform/assets").rglob("*.css"),
+    ]
+    hits = [p.name for p in shown if banner.search(p.read_text(encoding="utf-8"))]
+    assert hits == [], f"banner markup/styles in {hits}; expected a muted line (ops-muted) instead"

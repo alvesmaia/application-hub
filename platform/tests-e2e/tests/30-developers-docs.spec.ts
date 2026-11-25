@@ -123,7 +123,7 @@ test.describe('documentação pública (sem sessão)', () => {
     await expect(page.locator('.platform-rail')).toHaveCount(0);
     await expect(page.locator('.hub-user-menu')).toHaveCount(0);
     await expect(page.locator('.platform-header').getByRole('link', { name: 'Entrar' })).toHaveAttribute('href', /\/login\?next=/);
-    await expect(page.getByRole('link', { name: 'create a token' })).toHaveAttribute('href', /\/admin\/tokens$/);
+    await expect(page.getByRole('link', { name: 'My account › Access' }).first()).toHaveAttribute('href', /\/account\/access$/);
     await expect(page.locator('.dev-code .hl-nb, .dev-code [class^="hl-"]').first()).toBeVisible();
     await page.locator('[data-hub-copy-prompt-button]').click();
     await expect(page.locator('[data-hub-copy-prompt-button]')).toContainText('Prompt copiado');

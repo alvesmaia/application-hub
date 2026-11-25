@@ -45,7 +45,7 @@ def test_docs_are_public_without_shell(hub: TestClient) -> None:
     assert page.status_code == 200 and "dev-public" in page.text and "/login?next=/developers" in page.text
     assert "hub-user-menu" not in page.text and "platform-rail" not in page.text
     assert (
-        '/admin/tokens"' in page.text
+        '/account/access"' in page.text
         and "data-hub-palette" not in page.text
         and "Ver em Markdown</a></div>" not in page.text
     )
