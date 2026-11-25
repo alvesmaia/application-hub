@@ -264,9 +264,10 @@
     const d = e.target;
     if (!(d instanceof HTMLDetailsElement) || !d.classList.contains('hub-row-menu')) return;
     d.classList.remove('hub-row-menu--up', 'hub-row-menu--start');
-    if (!d.open) return;
     const list = d.querySelector('.hub-row-menu-list');
     if (!list) return;
+    list.style.removeProperty('position'); list.style.removeProperty('top'); list.style.removeProperty('left'); list.style.removeProperty('right'); list.style.removeProperty('bottom');
+    if (!d.open) return;
     const r = list.getBoundingClientRect();
     const s = d.getBoundingClientRect();
     // The edge that cuts the menu: the viewport or a panel with overflow (e.g. the last row of a table card).
@@ -277,8 +278,22 @@
       top = Math.max(top, b.top); bottom = Math.min(bottom, b.bottom);
       break;
     }
-    if (r.bottom > bottom - 8 && s.top - top > bottom - s.bottom) d.classList.add('hub-row-menu--up');
     if (r.left < 8) d.classList.add('hub-row-menu--start');
+    if (r.bottom <= bottom - 8) return;
+    if (s.top - top >= r.height + 12) { d.classList.add('hub-row-menu--up'); return; }
+    // Fits neither below nor above inside the panel (e.g. a table with one row): leaves the cut as a fixed
+    // layer next to the button, on the side of the viewport with room; scrolling closes it (see below).
+    const below = window.innerHeight - s.bottom >= r.height + 8;
+    list.style.position = 'fixed';
+    list.style.top = `${below ? s.bottom + 4 : Math.max(8, s.top - r.height - 4)}px`;
+    list.style.bottom = 'auto';
+    list.style.left = `${Math.max(8, s.right - r.width)}px`;
+    list.style.right = 'auto';
+  }, true);
+  document.addEventListener('scroll', () => {
+    document.querySelectorAll('details.hub-row-menu[open]').forEach((d) => {
+      if (d.querySelector('.hub-row-menu-list')?.style.position === 'fixed') d.open = false;
+    });
   }, true);
 
   // ---- Modal dialogs of the screens (Administration/Operations/Insights) -----------------------

@@ -325,3 +325,14 @@ def test_websocket_in_hub_dev(ws_upstream: int, tmp_path: Any) -> None:
         assert ws.receive_text().startswith("user=")
         ws.send_text("oi")
         assert ws.receive_text() == "echo:oi"
+
+
+def test_csp_staging_page_allows_the_staging_urls() -> None:
+    csp = csp_with("http://h", "ativos", [("a.js", "sha384-xyz")], env="staging")
+    assert (
+        "connect-src http://h/staging/_frag/ativos http://h/staging/_frag/ativos/ ws://h/staging/apps/ativos/ws/"
+        in csp
+    )
+    assert "http://h/staging/_frag/ativos/assets/a.js" in csp
+    assert "form-action http://h/staging/apps/ativos http://h/staging/apps/ativos/ " in csp
+    assert "/_frag/ativos " not in csp.replace("/staging/_frag/ativos ", "")

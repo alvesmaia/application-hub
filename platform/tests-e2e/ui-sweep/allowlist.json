@@ -70,6 +70,18 @@
       "check": "tema-padrao",
       "route": "^/apps/contratos(/|$)",
       "reason": "Mesmo caso do 404 do app removido 'contratos' (link de item de teste da Inbox): a resposta de erro é um trecho HTML sem o shell, então não há data-theme."
+    },
+    {
+      "check": "console",
+      "route": "^/apps/automations/(packages|processes|triggers)(/|$)",
+      "message": "status of 403",
+      "reason": "Regra do app Automações: pacotes, processos e gatilhos são só para os administradores do app (AUTOMATIONS_ADMIN_ROLES); o Leitor recebe a página 403 amigável, e o navegador registra o status no console."
+    },
+    {
+      "check": "console",
+      "route": "^/apps/automations/runs/[^/]+$",
+      "message": "status of 404",
+      "reason": "Regra do app Automações: quem não é administrador só vê as próprias execuções; a execução de outra pessoa responde 404 (não revela que existe)."
     }
   ]
 }

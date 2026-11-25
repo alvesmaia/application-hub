@@ -8,7 +8,7 @@ import httpx
 import pytest
 
 from hub_cli import mcp
-from hub_cli.main import main
+from hub_cli.main import main, version
 from hub_cli.pack import PackError, pack
 
 IMG = "hub-x@sha256:" + "a" * 64
@@ -284,3 +284,8 @@ def test_version_names_the_hub_the_cli_was_built_from(capsys: pytest.CaptureFixt
     out = capsys.readouterr().out
     # an old CLI keeps its own number; the hub it embeds tells whether it is behind the hub's /healthz
     assert out.startswith("hub-cli ") and f"hub {hub.__version__}" in out and "hub-sdk " in out
+
+
+def test_version_without_platform_package(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setitem(__import__("sys").modules, "hub", None)
+    assert "(hub (not installed)," in version()

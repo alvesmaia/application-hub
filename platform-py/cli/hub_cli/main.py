@@ -51,8 +51,14 @@ def version() -> str:
     from importlib.metadata import PackageNotFoundError
     from importlib.metadata import version as dist_version
 
-    import hub
+    try:
+        import hub
 
+        hub_v = hub.__version__
+    except (
+        ImportError
+    ):  # without the platform package: `--version` still answers, `hub dev` says what is missing
+        hub_v = "(not installed)"
     try:
         cli = dist_version("hub-cli")
     except PackageNotFoundError:  # imported from the repository (docs generator), not installed
@@ -61,7 +67,7 @@ def version() -> str:
         sdk = project.sdk_wheel().name.split("-")[1]
     except CliError:
         sdk = "(not bundled)"
-    return f"hub-cli {cli} (hub {hub.__version__}, hub-sdk {sdk})"
+    return f"hub-cli {cli} (hub {hub_v}, hub-sdk {sdk})"
 
 
 def parser() -> argparse.ArgumentParser:

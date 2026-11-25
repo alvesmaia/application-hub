@@ -139,3 +139,11 @@
 - ✅ 112 · CLI: `hub --version` com a versão do SDK; versão da CLI acompanha a do hub
 - ✅ 113 · Guia e contrato: `@HUB@` sem hub, cores em tokens, outbox na mesma transação, destinatários de notificação e papéis no `hub dev`, caminhos do §29, POST → 303, nomes reservados, animações/SVG, flash
 - ✅ 114 · Exemplo de referência: port do Frota+ (as is → to be) no guia
+
+## Falhas E2E pré-existentes + 0.4.2 (2026-11-24)
+
+- ✅ 115 · E2E (c)+(b) JS próprio: candidata do servicedesk presa em "migrações do banco em curso" — instância isolada não criava os papéis de banco dos apps (o hub implanta com o papel do app-env.json)
+- ✅ 116 · E2E 07-staging: CSP da página de staging só liberava /_frag/<app>; agora /staging/_frag/<app>, ws e formulários de staging, scripts aprovados de staging
+- ✅ 117 · E2E 06 backups: menu "⋯" de tabela com uma linha ficava cortado pelo painel (Restaurar escondido); sem espaço nos dois sentidos, abre como camada fixa. 0 B = suppliers sem banco e bucket vazio (esperado)
+- ✅ 118 · E2E 15 storage: passa com `iso-instance.sh run` (variáveis da instância); sem defeito
+- ✅ 119 · Release 0.4.2 (também: `hub` CLI sem o pacote da plataforma voltou a funcionar; rótulo "Connection string" com dica)

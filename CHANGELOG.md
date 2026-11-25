@@ -25,6 +25,15 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ### Fixed
 - Contract §29 and §16/§17 pointed to sample apps and files that no longer exist.
+- Staging pages never loaded the app ("Aplicação indisponível"): their CSP allowed only the production fragment URL;
+  it now allows the `/staging/…` fragment, WebSocket and form URLs and the scripts approved for staging.
+- A "⋯" row menu that fits neither below nor above inside its panel (e.g. a table with one row) was cut by the panel
+  and its items could not be clicked; it now opens as a fixed layer next to the button (scrolling closes it).
+- `hub` CLI without the platform package: building the parser imported `hub` for `--version` and every command
+  failed with `ModuleNotFoundError`; `--version` now says "(not installed)" and `hub dev` explains what is missing.
+- Variables: the type label ("Connection string") shows its full text as a hint when the column cuts it.
+- Isolated validation instance (`iso-instance.sh`): creates each sample app's own database role, as the stack does;
+  apps deployed by the hub no longer fail to sign in to their database.
 
 ## [0.4.1] — 2026-11-24
 

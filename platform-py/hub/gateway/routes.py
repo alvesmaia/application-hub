@@ -32,7 +32,8 @@ def origin_of(request: Request) -> str | None:
 
 
 def _app_headers(request: Request, resp: Response, app: str, frag: bool) -> None:
-    csp = csp_with(origin_of(request), app, approved_scripts(app, False))
+    env = env_of(request.scope)
+    csp = csp_with(origin_of(request), app, approved_scripts(app, env == "staging"), env)
     resp.headers["content-security-policy"] = sandbox_fragment(csp) if frag else csp
     resp.headers["vary"] = "Cookie"
     if "cache-control" not in resp.headers:

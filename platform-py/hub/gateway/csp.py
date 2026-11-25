@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from hub.gateway.env_path import public
+
 
 def app_url(app: str) -> str:
     return f"/apps/{app}"
@@ -31,7 +33,11 @@ def approved_scripts(app: str, staging: bool) -> list[tuple[str, str]]:
     return _provider(app, staging) if _provider else []
 
 
-def csp_with(origin: str | None, app: str | None, approved: list[tuple[str, str]] | None = None) -> str:
+def csp_with(
+    origin: str | None, app: str | None, approved: list[tuple[str, str]] | None = None, env: str = "producao"
+) -> str:
+    """`env` = the page's environment: a staging page (`/staging/apps/…`) talks to the `/staging/…` URLs."""
+
     def o(p: str) -> str:
         return f"{origin}{p}" if origin else "'self'"
 
@@ -42,16 +48,15 @@ def csp_with(origin: str | None, app: str | None, approved: list[tuple[str, str]
             f"worker-src {o('/hub-sw.js')}; manifest-src 'self'; form-action 'self'; "
             "frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
         )
+    frag, au = public(f"/_frag/{app}", env), public(app_url(app), env)
     scripts = o("/assets/")
     for file, sha in approved or []:
         scripts += f" '{sha}'"
         if origin:  # without an origin only the hash, never 'self'
-            scripts += f" {o(f'/_frag/{app}/assets/{file}')}"
+            scripts += f" {o(f'{frag}/assets/{file}')}"
     if origin:
-        au = app_url(app)
         connect = (
-            f"{o(f'/_frag/{app}')} {o(f'/_frag/{app}/')} "
-            f"{_ws_origin(origin, f'{au}/ws/')} {_ws_origin(origin, f'{au}/ws')}"
+            f"{o(frag)} {o(frag + '/')} {_ws_origin(origin, f'{au}/ws/')} {_ws_origin(origin, f'{au}/ws')}"
         )
         forms = (
             f"{o(au)} {o(au + '/')} {o('/logout')} {o('/account/prefs')} {o('/account/notifications/read')}"
