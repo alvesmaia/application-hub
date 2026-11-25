@@ -7,6 +7,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.4.2] — 2026-11-24
+
 ### Added
 - App sidebar collapse on the desktop: the SDK sidebar has a "Recolher menu" button (`data-hub-menu="collapse"`);
   icons only, labels kept as hints and for screen readers; one choice per browser for every app. Phones keep the
