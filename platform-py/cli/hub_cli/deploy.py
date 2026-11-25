@@ -14,6 +14,8 @@ from typing import Any
 
 import httpx
 
+from hub_cli import net
+
 from . import check
 from .auth import Session, resolve, save_login
 from .errors import AUTH, FAIL, UNREACHABLE, VALIDATION, CliError
@@ -23,14 +25,14 @@ ENVS = {"staging": "staging", "production": "producao", "producao": "producao"}
 
 
 def _client(hub: str) -> httpx.Client:
-    return httpx.Client(base_url=hub, timeout=900, headers={"X-Hub-Request": "1"})
+    return net.client(base_url=hub, timeout=900, headers={"X-Hub-Request": "1"})
 
 
 def _call(c: httpx.Client, s: Session, method: str, url: str, **kw: Any) -> httpx.Response:
     try:
         r = s.request(c, method, url, **kw)
     except httpx.HTTPError as e:
-        raise CliError(f"hub inacessível ({type(e).__name__})", UNREACHABLE) from e
+        raise CliError(f"hub inacessível: {net.why(e)}", UNREACHABLE) from e
     if r.status_code in (401, 403):
         raise CliError(
             f"autenticação recusada pelo hub (HTTP {r.status_code}): confira o token e o escopo", AUTH

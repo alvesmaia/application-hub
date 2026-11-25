@@ -158,3 +158,4 @@
 - ✅ 125 · CLI: `hub login` pelo navegador (código de dispositivo), renovação automática, `hub mcp` e `hub deploy` usam o mesmo login; saída "não autenticado" orienta o agente
 - ✅ 126 · Tokens só por usuário: remover admin/tokens e /api/admin/tokens; tokens de serviço migrados para quem os criou; "Revogar todos os acessos" em admin/users; usuário desativado perde todos os acessos
 - ✅ 127 · Docs, instruções do MCP, CHANGELOG; E2E + ui-sweep; hub-check --all
+- ✅ 128 · CLI atrás de proxy com inspeção TLS: confia no repositório do sistema e em SSL_CERT_FILE; certificado recusado explica o motivo (0.5.1)

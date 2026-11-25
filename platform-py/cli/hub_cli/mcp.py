@@ -7,6 +7,8 @@ from typing import Any, TextIO, cast
 
 import httpx
 
+from hub_cli import net
+
 from .auth import Session, check_hub_url
 from .errors import CliError
 
@@ -52,7 +54,7 @@ class Bridge:
         self.auth = session
         self.session: str | None = None
         self.protocol: str | None = None
-        self.http = client or httpx.Client(timeout=httpx.Timeout(300, connect=10))
+        self.http = client or net.client(timeout=httpx.Timeout(300, connect=10))
 
     def _headers(self, method: Any, params: dict[str, Any]) -> dict[str, str]:
         h = {"accept": "application/json, text/event-stream"}
@@ -84,7 +86,7 @@ class Bridge:
         try:
             res = self.auth.request(self.http, "POST", self.url, json=msg, headers=headers)
         except httpx.HTTPError as e:
-            return "reply", [rpc_error(msg.get("id"), -32603, f"hub inacessível em {self.url}: {e}")]
+            return "reply", [rpc_error(msg.get("id"), -32603, f"hub inacessível em {self.url}: {net.why(e)}")]
         except CliError as e:  # the CLI session could not be refreshed: the client sees why
             return "reply", [rpc_error(msg.get("id"), -32603, str(e))]
         return self._reply(res, msg)

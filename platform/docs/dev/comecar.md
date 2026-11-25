@@ -17,6 +17,11 @@ The index `@HUB@/dev/cli/simple/` is public and read-only (wheels of `hub-cli` a
 Update with `uv tool install --reinstall hub-cli --index @HUB@/dev/cli/simple/`. Today there is one stack:
 `python-fastapi` (`hub project stacks`).
 
+Behind a corporate proxy that inspects TLS (the hub's certificate comes from a company CA): install with
+`uv tool install --native-tls …` (uv then uses the system's certificate store). The CLI trusts the system store and
+the public CAs; if the company CA is not in the system store, point `SSL_CERT_FILE` to a `.pem` file with it. Never
+turn certificate checks off. A refused certificate shows "certificado TLS do hub não confiável" with the reason.
+
 ## First app in 5 commands
 
 ```bash

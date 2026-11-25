@@ -21,6 +21,8 @@ from urllib.parse import urlparse
 
 import httpx
 
+from hub_cli import net
+
 from .errors import AUTH, FAIL, UNREACHABLE, VALIDATION, CliError
 
 CLIENT_ID = "hub-cli"
@@ -126,10 +128,10 @@ def pick_hub(hub: str | None, saved: Login, fallback: str = "") -> str:
 
 def _post_form(hub: str, path: str, form: dict[str, str]) -> httpx.Response:
     try:
-        with httpx.Client(timeout=30) as c:
+        with net.client(timeout=30) as c:
             return c.post(hub + path, data=form)
     except httpx.HTTPError as e:
-        raise CliError(f"hub inacessível em {hub} ({type(e).__name__})", UNREACHABLE) from e
+        raise CliError(f"hub inacessível em {hub}: {net.why(e)}", UNREACHABLE) from e
 
 
 def _oauth_error(r: httpx.Response) -> str:

@@ -18,6 +18,11 @@ uv tool install --reinstall hub-cli --index @HUB@/dev/cli/simple/
 hub --version   # hub-cli … (hub X, hub-sdk …): X must be the hub's version (@HUB@/healthz)
 ```
 
+Behind a corporate proxy that inspects TLS (the hub's certificate comes from a company CA): install with
+`uv tool install --native-tls …` (uv then uses the system's certificate store). The CLI trusts the system store and
+the public CAs; if the company CA is not in the system store, point `SSL_CERT_FILE` to a `.pem` file with it. Never
+turn certificate checks off. A refused certificate shows "certificado TLS do hub não confiável" with the reason.
+
 `--reinstall` matters: an older CLI can keep the same `hub-cli` number while missing newer SDK features. The
 `hub X` part tells which hub it came from. Without a hub, from a clone of the repository:
 `bash platform-py/scripts/build-cli.sh && uv tool install --reinstall platform-py/dist/cli/hub_cli-*.whl`.
