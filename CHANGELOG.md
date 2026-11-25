@@ -7,6 +7,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.6.1] — 2026-11-25
+
 ### Changed
 - Database read access: the allowed networks are optional (`--db-allowed-cidrs` or an empty answer): without them,
   read accounts connect from any origin that reaches the port, for servers reachable only from the corporate
