@@ -34,11 +34,13 @@ def test_flags_turn_it_on(tmp_path: Path) -> None:
     )
 
 
-def test_off_by_default_and_networks_are_required(tmp_path: Path) -> None:
+def test_off_by_default_and_networks_are_optional(tmp_path: Path) -> None:
     assert run_install(tmp_path, ("--config-only", "--yes")).returncode == 0
     assert "HUB_DB_PUBLIC" not in prod_env(tmp_path)
     r = run_install(tmp_path / "b", ("--config-only", "--yes", "--db-public-port", "5432"))
-    assert r.returncode == 2 and "--db-allowed-cidrs" in r.stderr
+    env = prod_env(tmp_path / "b")
+    assert r.returncode == 0 and env["HUB_DB_PUBLIC"] == "1" and env["HUB_DB_ALLOWED_CIDRS"] == ""
+    assert "qualquer origem" in r.stderr  # said once: the network is what limits it
     r = run_install(
         tmp_path / "c", ("--config-only", "--yes", "--db-public-port", "5432", "--db-allowed-cidrs", "x;rm")
     )

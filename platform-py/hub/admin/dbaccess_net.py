@@ -35,6 +35,9 @@ class DbAccessCfg:
     bad_cidrs: tuple[str, ...]
     cert_file: str
     key_file: str
+    any_origin: bool = (
+        False  # no networks given: whoever reaches the port (a corporate network / VPN limits it)
+    )
 
 
 def from_env(env: Mapping[str, str] = os.environ) -> DbAccessCfg:
@@ -46,10 +49,13 @@ def from_env(env: Mapping[str, str] = os.environ) -> DbAccessCfg:
             cidrs.append(str(ipaddress.ip_network(s, strict=False)))
         except ValueError:
             bad.append(s)
+    raw = (env.get("HUB_DB_ALLOWED_CIDRS") or "").strip()
+    if not raw:  # optional: only typed-but-invalid networks shut the door (nobody guesses a typo means "all")
+        cidrs = ["0.0.0.0/0", "::/0"]
     host = env.get("HUB_DB_PUBLIC_HOST") or urlsplit(env.get("HUB_PUBLIC_URL") or "").hostname or "localhost"
     port = env.get("HUB_DB_PUBLIC_PORT") or "5432"
     return DbAccessCfg(env.get("HUB_DB_PUBLIC") == "1", int(port) if port.isdigit() else 5432, host, tuple(cidrs),
-                       tuple(bad), env.get("HUB_DB_TLS_CERT_FILE", ""), env.get("HUB_DB_TLS_KEY_FILE", ""))  # fmt: skip
+                       tuple(bad), env.get("HUB_DB_TLS_CERT_FILE", ""), env.get("HUB_DB_TLS_KEY_FILE", ""), not raw)  # fmt: skip
 
 
 def hba(cfg: DbAccessCfg, nets: list[Net]) -> str:

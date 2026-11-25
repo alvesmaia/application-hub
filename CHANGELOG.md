@@ -7,6 +7,12 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Changed
+- Database read access: the allowed networks are optional (`--db-allowed-cidrs` or an empty answer): without them,
+  read accounts connect from any origin that reaches the port, for servers reachable only from the corporate
+  network or VPN. TLS, password and read-only stay; Docker gateways stay refused; a typed-but-invalid network
+  still shuts the door.
+
 ## [0.6.0] — 2026-11-25
 
 ### Added

@@ -48,7 +48,8 @@
 #
 # Read access to the apps' database from other machines (dashboards, DBeaver; accounts made in Administration),
 # also on an existing install (rerun with these options; the database is recreated with the port):
-#   --db-public-port PORT --db-allowed-cidrs LIST   TLS required, only from these networks (e.g. 10.0.0.0/8)
+#   --db-public-port PORT [--db-allowed-cidrs LIST]   TLS required; networks optional (none = any origin that reaches
+#                        the port: for a server reachable only from the corporate network/VPN)
 #   --db-public-host NAME   name/IP people use to connect (default: the hub URL's)     --no-db-public   turns it off
 #
 # Rootless Podman: with a systemd user session the install enables podman.socket and podman-restart.service (start

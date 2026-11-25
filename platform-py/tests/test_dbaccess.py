@@ -50,9 +50,20 @@ def test_on_lets_only_readers_in_over_tls_from_the_allowed_ranges() -> None:
     assert lines[-1] == "host all all all reject" and not any(x.startswith("hostssl all all") for x in lines)
 
 
-def test_no_allowed_range_means_no_reader_gets_in() -> None:
-    lines = net.hba(cfg(HUB_DB_PUBLIC="1"), NETS).splitlines()
-    assert not any(x.startswith("hostssl all +hub_readers") for x in lines)
+def test_no_allowed_range_means_any_origin_the_network_lets_through() -> None:
+    """Corporate network / VPN only: the network already limits who reaches the port (TLS and password still)."""
+    c = cfg(HUB_DB_PUBLIC="1")
+    assert c.cidrs == ("0.0.0.0/0", "::/0") and c.any_origin
+    lines = net.hba(c, NETS).splitlines()
+    assert (
+        "hostssl all +hub_readers 0.0.0.0/0 scram-sha-256" in lines
+        and "hostssl all +hub_readers ::/0 scram-sha-256" in lines
+    )
+    first = lambda s: next(i for i, x in enumerate(lines) if x.startswith(s))  # noqa: E731
+    assert first("host all all 10.231.1.1/32 reject") < first(
+        "hostssl all +hub_readers 0.0.0.0/0"
+    )  # gateways still refused
+    assert not cfg(HUB_DB_PUBLIC="1", HUB_DB_ALLOWED_CIDRS="10.0.0.0/8").any_origin
 
 
 def test_self_signed_certificate_and_fingerprint() -> None:

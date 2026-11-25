@@ -68,14 +68,14 @@ Off by default: the apps' Postgres is published only on `127.0.0.1` (debug port)
 Metabase, Grafana) and tools such as DBeaver read the data by host and port:
 
 ```bash
-bash platform-py/scripts/install.sh --db-public-port 5432 --db-allowed-cidrs 10.0.0.0/8 [--db-public-host db.empresa.com]
+bash platform-py/scripts/install.sh --db-public-port 5432 [--db-allowed-cidrs 10.0.0.0/8] [--db-public-host db.empresa.com]
 ```
 
 The interactive installer asks it under the advanced options, and a rerun on an existing install asks it once (or
 takes the flags above); the rerun recreates the database container with the port. `--no-db-public` turns it off.
 
 - **Who gets in:** only the read accounts made in **Administração › Usuários › Acesso ao banco** (members of
-  `hub_readers`), always over TLS (`sslmode=require`), only from `HUB_DB_ALLOWED_CIDRS`. The hub's and the apps'
+  `hub_readers`), always over TLS (`sslmode=require`), from `HUB_DB_ALLOWED_CIDRS` when given; without it, from any origin that reaches the port (for a server reachable only from the corporate network or VPN: the network limits it). The hub's and the apps'
   service roles stay reachable only from the Docker networks. The hub writes `pg_hba.conf` and turns TLS on.
 - **Certificate:** self-signed, made once (its SHA-256 fingerprint is on the page). To use the company's, mount the
   files in the hub container and set `HUB_DB_TLS_CERT_FILE`/`HUB_DB_TLS_KEY_FILE`.

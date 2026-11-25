@@ -44,7 +44,7 @@ def conn_info(request: Request) -> dict[str, Any]:
     cfg = net.from_env()
     state = getattr(request.app.state, "dbaccess_state", {}) or {}
     return {"public": cfg.public, "host": cfg.host, "port": cfg.port, "cidrs": list(cfg.cidrs),
-            "bad_cidrs": list(cfg.bad_cidrs), "fingerprint": state.get("fingerprint", ""), "error": state.get("error", "")}  # fmt: skip
+            "bad_cidrs": list(cfg.bad_cidrs), "any_origin": cfg.any_origin, "fingerprint": state.get("fingerprint", ""), "error": state.get("error", "")}  # fmt: skip
 
 
 async def _owner_ok(c: AdminCtx, uid: str) -> dict[str, Any]:

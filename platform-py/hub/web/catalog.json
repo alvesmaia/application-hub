@@ -8390,5 +8390,13 @@
 [
 "Contas de leitura do banco",
 "Database read accounts"
+],
+[
+"qualquer origem que alcance a porta (a rede corporativa/VPN limita)",
+"any origin that reaches the port (the corporate network/VPN limits it)"
+],
+[
+"(e, se quiser limitar,",
+"(and, to limit it,"
 ]
 ]

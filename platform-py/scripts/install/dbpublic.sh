@@ -8,7 +8,7 @@ dbpub_questions() {
   ask DBPUB "Acesso de leitura ao banco por outras máquinas (dashboards, DBeaver)? (s/n)" '^[snSN]$'
   yes_no "$DBPUB" || return 0
   ask DBPUB_PORT "  Porta do banco no host" '^[0-9]{2,5}$'
-  ask DBPUB_CIDRS "  Redes que podem conectar (CIDR, vírgula; ex.: 10.0.0.0/8)" '^[0-9a-fA-F.:/,]+$'
+  ask DBPUB_CIDRS "  Redes que podem conectar (CIDR, vírgula); vazio = qualquer origem que alcance a porta (rede corporativa/VPN)" '^$|^[0-9a-fA-F.:/,]+$'
   ask DBPUB_HOST "  Nome ou IP que as pessoas usam para conectar (vazio = o da URL do hub)" '^$|^[a-zA-Z0-9.:-]+$'
 }
 
@@ -26,8 +26,9 @@ dbpub_rerun_question() {
 dbpub_validate() {
   yes_no "$DBPUB" || return 0
   echo "$DBPUB_PORT" | grep -Eq '^[0-9]{2,5}$' || opts_fail "--db-public-port: '$DBPUB_PORT' inválido (ex.: 5432)"
-  [ -n "$DBPUB_CIDRS" ] || opts_fail "--db-allowed-cidrs: informe as redes que podem conectar (ex.: 10.0.0.0/8)"
-  echo "$DBPUB_CIDRS" | grep -Eq '^[0-9a-fA-F.:/,]+$' ||
+  [ -n "$DBPUB_CIDRS" ] ||
+    echo "aviso: sem --db-allowed-cidrs, o banco aceita contas de leitura de qualquer origem que alcance a porta (TLS e senha continuam obrigatórios); use só se a rede corporativa/VPN já limita o acesso" >&2
+  echo "$DBPUB_CIDRS" | grep -Eq '^$|^[0-9a-fA-F.:/,]+$' ||
     opts_fail "--db-allowed-cidrs: '$DBPUB_CIDRS' inválido (CIDR separados por vírgula, ex.: 10.0.0.0/8,192.168.1.0/24)"
   echo "$DBPUB_HOST" | grep -Eq '^$|^[a-zA-Z0-9.:-]+$' || opts_fail "--db-public-host: '$DBPUB_HOST' inválido (nome ou IP)"
 }
