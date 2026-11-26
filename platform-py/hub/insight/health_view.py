@@ -74,8 +74,6 @@ def obs_ctx(c: InsightCtx, request: Request, app_q: str, env: str, min: str) -> 
     sel = app_q if any(a["id"] == app_q for a in apps_v) else (apps_v[0]["id"] if apps_v else "")
     env = "staging" if env == "staging" else "producao"
     minutes = int(min) if min in ("15", "30", "60") else 30
-    chip = lambda on: "filter-chip active" if on else "filter-chip"  # noqa: E731
-    url = lambda a, e, m: f"/admin/health?app={a}&env={e}&min={m}#obs"  # noqa: E731
     tel = c.tel
     otlp = (
         f"OTLP ligado: exportando traces e métricas para {tel.otlp}."
@@ -83,9 +81,9 @@ def obs_ctx(c: InsightCtx, request: Request, app_q: str, env: str, min: str) -> 
         else "OTLP desligado (defina OTEL_EXPORTER_OTLP_ENDPOINT para enviar a um coletor)."
     )
     return {
-        "app_chips": [(url(a["id"], env, minutes), a["short"], chip(a["id"] == sel)) for a in apps_v],
-        "env_chips": [(url(sel, e, minutes), env_label(e), chip(e == env)) for e in ("producao", "staging")],
-        "win_chips": [(url(sel, env, mm), f"{mm} min", chip(mm == minutes)) for mm in (15, 30, 60)],
+        "obs_apps": [(a["id"], a["short"], a["id"] == sel) for a in apps_v],
+        "obs_envs": [(e, env_label(e), e == env) for e in ("producao", "staging")],
+        "obs_wins": [(str(mm), f"{mm} min", mm == minutes) for mm in (15, 30, 60)],
         "charts": _charts(tel.metrics.points(sel, env, minutes)),
         "traces": _traces(c, sel),
         "otlp": otlp,

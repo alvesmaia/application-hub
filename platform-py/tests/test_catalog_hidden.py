@@ -27,5 +27,11 @@ def test_a_hidden_app_shows_only_to_users_with_access(hub: TestClient) -> None:
     page = ana.get("/applications").text
     assert 'data-app="suppliers"' not in page and 'data-app="inventory"' in page  # hidden, but she has access
     assert 'data-app="suppliers"' in hub.get("/applications").text  # the admin has access to every app
-    assert 'name="catalog_hidden_app" value="suppliers" checked' in hub.get("/admin").text
+    # Settings › Aplicações: a "visible in the catalog" switch per app (off = hidden)
+    admin = hub.get("/admin").text
+
+    def switch(app: str) -> str:
+        return str(admin.split(f'name="catalog_visible_app" value="{app}"', 1)[1].split("/>", 1)[0])
+
+    assert "checked" not in switch("suppliers") and "checked" in switch("servicedesk")
     assert hub.put("/api/admin/settings", json=BASE | {"catalog_hidden_apps": ["zzz"]}).status_code == 400

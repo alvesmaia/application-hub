@@ -1833,5 +1833,11 @@
 ["sem área de transferência", "no clipboard"],
 ["Últimas linhas e novas em tempo real.", "Latest lines and new ones in real time."],
 ["Mais ações: {} (nenhuma disponível)", "More actions: {} (none available)"],
-["Nenhuma outra ação para a sua própria conta: o acesso vem do login único (SSO)", "No other action for your own account: access comes from single sign-on (SSO)"]
+["Nenhuma outra ação para a sua própria conta: o acesso vem do login único (SSO)", "No other action for your own account: access comes from single sign-on (SSO)"],
+["Nenhuma cópia pré-restauração.", "No pre-restore copy."],
+["Cópia", "Copy"],
+["APAGAR a cópia {x}? Os dados dela serão perdidos. Confira antes que o banco {x} atual está correto.", "DELETE the copy {x}? Its data will be lost. First check that the current database {x} is correct."],
+["Cópias pré-restauração", "Pre-restore copies"],
+["Políticas", "Policies"],
+["Histórico", "History"]
 ]

@@ -205,3 +205,9 @@
 - ✅ 151 · /admin/env: nome + cadeado ("Mantida pelo hub"); nome no app em cinza na linha de baixo; sem seta e sem "gerida"
 - ✅ 152 · /admin/tasks (Tarefas): clicar numa tarefa abre o painel lateral com detalhes e log; coluna Tarefa com número sequencial no lugar do id
 - ✅ 153 · Todas as tabelas paginadas com 10 itens por padrão; paginador com Anterior/Próxima no centro e "Itens por página" à direita
+
+## UX: Governança, Backups e Observabilidade (2026-11-26)
+
+- ✅ 156 · Governança (/admin): abas Geral · Aplicações · Segurança e chaves · Uso (proposta aprovada)
+- ✅ 157 · Backups (/admin/backups): seções em abas, sem descrições desnecessárias
+- ✅ 158 · Saúde › Observabilidade: filtros mais limpos

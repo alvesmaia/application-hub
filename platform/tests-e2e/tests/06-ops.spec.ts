@@ -127,7 +127,7 @@ test('backups: backup agora + restaurar com faixa de manutenção', async ({ pag
   test.info().annotations.push({ type: 'backup', description: `${rec.detail} · ${(rec.size / 1048576).toFixed(1)} MiB em ${(rec.duration_ms / 1000).toFixed(1)} s` });
 
   // Restore: during the restore the "In maintenance" strip appears (another tab) and the API shows the state.
-  await page.goto('/admin/backups');
+  await page.goto('/admin/backups?tab=history');
   const other = await (await browser.newContext({ storageState: stateFile('admin') })).newPage();
   let sawBanner = false;
   let sawApi = false;

@@ -463,10 +463,16 @@ def test_observability_on_health_page(hub: TestClient) -> None:
                            "service": "inventory", "kind": "client", "start_us": ins.tel.traces.spans[-1]["start_us"] + 1})  # fmt: skip
     r = hub.get("/admin/health?app=inventory&min=15")
     assert r.status_code == 200 and 'id="obs"' in r.text and "Requisições mais lentas" in r.text
+    obs = r.text.split('id="obs"', 1)[1].split("</form>", 1)[0]
+    # one compact filter bar (selects), no rows of buttons and no repeated heading
     assert (
-        'class="filter-chip active" href="/admin/health?app=inventory&amp;env=producao&amp;min=15#obs"'
-        in r.text
+        "filter-chip" not in obs
+        and 'class="obs-filters" id="obs"' in r.text
+        and "Requisições, erros e lentidão" not in r.text
     )
+    for name, value in (("app", "inventory"), ("env", "producao"), ("min", "15")):
+        sel = obs.split(f'name="{name}"', 1)[1].split("</select>", 1)[0]
+        assert f'value="{value}" selected' in sel, name
     assert "Sem dados" in hub.get("/admin/health?app=suppliers&env=staging").text
     # restricted to one app: does not see another app's trace
     add_role(hub, "Product Owner", PRODUCT_OWNER)
@@ -474,7 +480,7 @@ def test_observability_on_health_page(hub: TestClient) -> None:
     hub.app.state.roles = __import__("hub.auth", fromlist=["roles_for"]).roles_for(hub.app.state.data_dir)  # type: ignore[attr-defined]
     po = add_user(hub, "po2", ["Product Owner"])
     page = po.get("/admin/health").text
-    assert "Ativos" not in page.split('id="obs"')[1].split("filter-chips")[1]
+    assert "Ativos" not in page.split('id="obs"')[1].split('name="app"')[1].split("</select>")[0]
 
 
 def test_ingest_from_apps_is_validated(hub: TestClient) -> None:

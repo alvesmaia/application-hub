@@ -55,7 +55,7 @@ def restore_test_metric(backups: list[Row], name_of: NameOf, now: int) -> tuple[
     """(value, change, css class) of the "last restore test" card."""
     last = next((b for b in backups if b["kind"] == "Teste de restore"), None)
     if not last:
-        return "Nunca", "Faça um teste de restauração a partir do histórico", "metric-change"
+        return "Nunca", "", "metric-change"
     ok = last["status"] == "Concluído"
     change = f"{name_of(last['app'])} · {'OK' if ok else 'falhou'} em {br(last['duration_ms'] / 1000, 1)} s"
     return relative(last["at"], now), change, "metric-change" if ok else "metric-change down"

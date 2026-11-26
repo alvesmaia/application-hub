@@ -7,6 +7,14 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Changed
+- Governança › Configurações: tabs Geral · Aplicações · Segurança e chaves · Uso; per app two switches (status page,
+  visible in the catalog) instead of two boxes of checkboxes; the keys as one row each.
+- Backups: tabs Políticas · Histórico · Cópias pré-restauração (the old "Bancos de lado", now loaded when the tab
+  opens); no hint lines under the metrics nor in the empty history.
+- Health › Observabilidade: one compact bar of selects (application, environment, window) instead of three rows of
+  buttons; no repeated heading.
+
 ## [0.9.0] — 2026-11-26
 
 ### Changed

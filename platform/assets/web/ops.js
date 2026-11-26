@@ -286,15 +286,24 @@
       if (!r.available) {
         box.innerHTML = '<p class="ops-muted">Backups de banco não configurados neste hub (HUB_BACKUP_DATA_MOUNT/HUB_DB_ADMIN_URL).</p>';
       } else if (!r.aside.length) {
-        box.innerHTML = '<p class="ops-muted" data-ops-aside-none="">Nenhum banco de lado encontrado.</p>';
+        box.innerHTML = '<p class="ops-muted" data-ops-aside-none="">Nenhuma cópia pré-restauração.</p>';
       } else {
-        box.innerHTML = `<table class="data-table"><thead><tr><th>Aplicação</th><th>Banco de lado</th><th>Banco atual</th><th></th></tr></thead><tbody>${r.aside.map(asideRow).join('')}</tbody></table>`;
+        box.innerHTML = `<table class="data-table"><thead><tr><th>Aplicação</th><th>Cópia</th><th>Banco atual</th><th></th></tr></thead><tbody>${r.aside.map(asideRow).join('')}</tbody></table>`;
       }
     } catch (err) {
       box.textContent = err.message;
     } finally {
       if (button) button.disabled = false;
     }
+  }
+
+  // Backups › "Cópias pré-restauração": the list loads by itself when the tab opens (no empty tab waiting for a click).
+  const asideList = $('[data-ops-aside-list]');
+  if (asideList) {
+    const panel = asideList.closest('[data-ptab-panel]');
+    const loadOnce = () => { if (panel && !panel.hidden && !asideList.dataset.loaded) { asideList.dataset.loaded = '1'; checkAside($('[data-ops-aside-check]')); } };
+    document.addEventListener('click', (e) => { if (e.target.closest('[data-ptab="aside"]')) setTimeout(loadOnce, 0); });
+    setTimeout(loadOnce, 0); // opened with ?tab=aside
   }
 
   // Deployments drawer: the version selector shows the panel (facts and actions) of the chosen version.
@@ -340,7 +349,7 @@
         const rename = d.action === 'rename-back';
         const q = rename
           ? `Devolver o banco ${d.opsAside} ao nome ${d.db}? Use só se o banco ${d.db} não existe mais (os dados voltam como estavam antes da restauração).`
-          : `APAGAR o banco de lado ${d.opsAside}? Os dados dele serão perdidos. Confira antes que o banco ${d.db} atual está correto.`;
+          : `APAGAR a cópia ${d.opsAside}? Os dados dela serão perdidos. Confira antes que o banco ${d.db} atual está correto.`;
         if (!await window.HubConfirm(q)) return;
         t.disabled = true;
         const r = await call('POST', `/backups/aside/${encodeURIComponent(d.opsAside)}/${d.action}`);

@@ -243,9 +243,9 @@ async def backups_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response
         "Cópias de segurança dos dados e arquivos de cada aplicação, com restauração e teste de restauração.", tab="Backups",
         policies=policies, history=hist, pager=pager, maint=maint, test_value=tv, test_change=tc, test_class=tcls,
         stored_value=m.human(sum(b["size"] for b in kept)),
-        stored_change={0: "Nenhum arquivo retido", 1: "1 arquivo retido"}.get(len(kept), f"{len(kept)} arquivos retidos"),
+        stored_change={0: "", 1: "1 arquivo retido"}.get(len(kept), f"{len(kept)} arquivos retidos"),
         fail_count=str(len(fails)), fail_class="metric-change down" if fails else "metric-change",
-        fail_change=f"{ops.name_of(fails[0]['app'])} · {fails[0]['detail']}" if fails else "Nenhuma falha",
+        fail_change=f"{ops.name_of(fails[0]['app'])} · {fails[0]['detail']}" if fails else "",
         tz_note=f"Agendas em cron de 5 campos (ou \"Diário 02:00\", \"A cada 6 h\", \"Manual\") no fuso {tz_name}, com atraso aleatório e execução perdida configuráveis; um job por aplicação por vez.",
     )  # fmt: skip
 

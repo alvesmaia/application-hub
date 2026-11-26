@@ -606,6 +606,21 @@ def test_backup_run_least_privilege_and_vault(hub: TestClient, bk: FakeDocker, t
     assert 'data-ops-restore="restore"' in page and "OK em" in page  # last restore test
 
 
+def test_backups_page_in_tabs_without_hint_texts(hub: TestClient) -> None:
+    page = hub.get("/admin/backups").text
+    tabs = page.split('data-ptabs=""', 1)[1].split("</div>", 1)[0]
+    assert ">Políticas<" in tabs and ">Histórico<" in tabs and ">Cópias pré-restauração<" in tabs
+    assert 'id="p-policies"' in page and 'id="p-history"' in page and 'id="p-aside"' in page
+    assert "policies-table" in page.split('id="p-policies"', 1)[1].split('id="p-history"', 1)[0]
+    for hint in (
+        "Faça um teste de restauração",
+        'Use "Backup agora"',
+        "Nenhum arquivo retido",
+        "Bancos de lado",
+    ):
+        assert hint not in page, hint
+
+
 def test_backup_failure_and_busy(hub: TestClient, bk: FakeDocker) -> None:
     bk.fail["pg_dump"] = 1
     r = hub.post("/api/ops/backups/inventory/run", headers=JSON)
