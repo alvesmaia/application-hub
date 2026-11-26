@@ -7,6 +7,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-11-26
+
 ### Changed
 - Governança › Configurações: tabs Geral · Aplicações · Segurança e chaves · Uso; per app two switches (status page,
   visible in the catalog) instead of two boxes of checkboxes; the keys as one row each.
