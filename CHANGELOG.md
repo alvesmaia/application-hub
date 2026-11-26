@@ -7,6 +7,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-11-26
+
 ### Changed
 - Variables: no arrow and no "gerida" next to the name; a lock (hint "Mantida pelo hub") marks the variables the hub
   maintains, and the name the app receives shows below in grey.
