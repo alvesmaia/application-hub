@@ -13,15 +13,14 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from hub.admin.routes import relative
-from hub.admin.store import log_stamp
 from hub.gateway.env_path import to_env
 from hub.ops import backups_view as bv
 from hub.ops import host_chart
-from hub.ops import jobs as jb
 from hub.ops import model as m
 from hub.ops import pipeline as pl
 from hub.ops import runtime as rt
 from hub.ops import runtime_view as rv
+from hub.ops import tasks_view as tv
 from hub.ops.devkit import mount_devkit
 from hub.ops.host_usage import HostUsage
 from hub.ops.model import now_ms
@@ -44,10 +43,6 @@ CI_SNIPPET = """- uses: actions/checkout@v4
 ROLLOUT = "Implantação blue/green ativa: o candidato sobe com a imagem do pacote, só recebe tráfego depois de GET /{app}/_hub/ready (sem a rota, é recusado) e o container anterior sai depois de esgotar as requisições. Rollback volta à versão anterior pelo mesmo caminho."
 TASK_STATUSES = [("queued", "Na fila"), ("running", "Em execução"), ("done", "Concluídas"), ("failed", "Falharam"),
                  ("dead", "Tentativas esgotadas"), ("cancelled", "Canceladas")]  # fmt: skip
-SAGA = {"running": "em andamento", "compensating": "compensando", "completed": "concluída", "compensated": "compensada",
-        "failed": "falhou (intervenção manual)"}  # fmt: skip
-SAGA_STEP = {"pending": "pendente", "done": "feito", "attempted": "falhou", "compensating": "desfazendo",
-             "compensated": "desfeito", "failed": "erro ao desfazer"}  # fmt: skip
 
 
 MANIFEST_EXAMPLE = """{
@@ -209,26 +204,6 @@ async def old_sdk(ops: OpsCtx = Depends(ctx)) -> Response:
     return RedirectResponse("/admin/deploys", 308)
 
 
-def _task_row(t: dict[str, Any]) -> dict[str, Any]:
-    lbl = jb.label(t)
-    total = t.get("progress_total", 0)
-    done = t.get("progress_done", 0)
-    progress = (f"{jb.percent(t)}% · {done} de {total}" if total > 0 else
-                f"{done} · {t.get('progress_text', '')}" if done > 0 else f"{jb.percent(t)}%")  # fmt: skip
-    sg = t.get("saga")
-    key = f"{t['app']}|{t['id']}"
-    return {
-        "id": t["id"], "kind": t["kind"], "app_id": t["app"], "app": f"{t['app_name']} (staging)" if t["env"] == "staging" else t["app_name"],
-        "status_key": t["status"], "status": lbl, "status_class": tone(lbl), "user": t.get("user", ""),
-        "created": log_stamp(max(int(t.get("created_at", 0)), 0)), "created_ms": str(t.get("created_at", 0)),
-        "pct": f"width:{jb.percent(t)}%", "progress": progress, "attempts": f"{t['attempts']} de {t['max_attempts']}",
-        "duration": f"{br(float(t.get('elapsed_s', 0)), 0)} s", "error": (t.get("error") or "")[:160],
-        "saga": (SAGA.get(sg.get("state"), "desconhecido"), [(p["name"] or "", SAGA_STEP.get(p["state"], "?")) for p in sg["steps"]]) if sg else None,
-        "retry": f"{key}|retry|{t['env']}" if jb.can_retry(t) else None,
-        "cancel": f"{key}|cancel|{t['env']}" if jb.can_cancel(t) else None,
-    }  # fmt: skip
-
-
 @router.get("/admin/tasks", response_class=HTMLResponse)
 async def tasks_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:
     q = request.query_params
@@ -238,12 +213,12 @@ async def tasks_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:
     every = listing["tasks"]
     running = sum(t["status"] == "running" for t in every)
     failed = sum(t["status"] in ("failed", "dead") for t in every)
-    rows = [
-        _task_row(t) for t in every if not ((app_f and t["app"] != app_f) or (st_f and t["status"] != st_f))
-    ]
+    shown = [t for t in every if not ((app_f and t["app"] != app_f) or (st_f and t["status"] != st_f))]
     n = len(every)
     summary = f"{n} {'tarefa' if n == 1 else 'tarefas'} · {running} em execução · {failed} com falha"
-    rows, pager = paginate(request, rows)
+    numbered, pager = paginate(request, list(enumerate(shown, 1)))
+    lines, now = list(ops.admin.logs.lines), now_ms()  # the panel's log: only for the rows of this page
+    rows = [tv.task_row(t, i, tv.task_log(lines, t, now)) for i, t in numbered]
     return render(ops, request, "ops_tasks.html", "Operação", "Tarefas",
                   "Importações, exportações e outros processos longos dos apps: acompanhe, reprocesse ou cancele.",
                   rows=rows, summary=summary, pager=pager)  # fmt: skip

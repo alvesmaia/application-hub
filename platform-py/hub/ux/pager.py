@@ -10,7 +10,7 @@ from fastapi import Request
 PER_CHOICES = (10, 25, 50, 100)
 
 
-def paginate(request: Request, rows: list[Any], per: int = 25) -> tuple[list[Any], dict[str, Any]]:
+def paginate(request: Request, rows: list[Any], per: int = 10) -> tuple[list[Any], dict[str, Any]]:
     q = request.query_params
 
     def num(k: str, d: int) -> int:

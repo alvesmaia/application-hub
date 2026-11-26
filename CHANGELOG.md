@@ -7,6 +7,14 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Changed
+- Variables: no arrow and no "gerida" next to the name; a lock (hint "Mantida pelo hub") marks the variables the hub
+  maintains, and the name the app receives shows below in grey.
+- Tasks: clicking a row opens the side panel with the task's details (id, progress, attempts, error, result) and the
+  app's log while it ran; the "Tarefa" column shows a running number instead of the job id.
+- Pagination: previous/next in the middle and "items per page" on the right; every paged table shows 10 per page
+  by default (audit, backups, containers, tasks, users, Inbox…).
+
 ## [0.8.0] — 2026-11-26
 
 ### Changed

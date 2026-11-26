@@ -971,9 +971,10 @@ body.in-app.rail-collapsed .workspace{left:56px}
 .content-panel:has(>table) .data-table:not(.hub-table-cards){min-width:max-content}
 /* Pager (?page=&per=) */
 .hub-pager{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-12);margin:var(--space-12) 0 var(--space-24);font-size:var(--font-size-sm);color:var(--color-text-muted)}
-.hub-pager-per{display:inline-flex;align-items:center;gap:var(--space-8);margin:0}
-.hub-pager-nav{display:inline-flex;align-items:center;gap:var(--space-8)}
+.hub-pager-per{display:inline-flex;align-items:center;gap:var(--space-8);margin:0;justify-self:end}
+.hub-pager-nav{display:inline-flex;align-items:center;gap:var(--space-8);justify-self:center}
 .hub-pager [aria-disabled=true]{opacity:.5;pointer-events:none}
+@media(min-width:641px){.hub-pager{display:grid;grid-template-columns:1fr auto 1fr}}
 @media(max-width:640px){.hub-pager{justify-content:center}}
 /* Hub page skeleton: table with taller rows */
 .hub-table-sk .table-line{height:34px;margin-bottom:var(--space-8)}

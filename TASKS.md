@@ -199,3 +199,9 @@
 - ✅ 148 · Validação: migração real num Postgres com dados, hub-check --all, E2E, docs
 - ✅ 149 · /admin/env: botão de filtro "Aplicação" e badges cortados na coluna Aplicação
 - ✅ 150 · Catálogo (/applications) sem o estado "Operacional/Degradado" nos cards
+
+## Variáveis e tarefas (2026-11-26)
+
+- ✅ 151 · /admin/env: nome + cadeado ("Mantida pelo hub"); nome no app em cinza na linha de baixo; sem seta e sem "gerida"
+- ✅ 152 · /admin/tasks (Tarefas): clicar numa tarefa abre o painel lateral com detalhes e log; coluna Tarefa com número sequencial no lugar do id
+- ✅ 153 · Todas as tabelas paginadas com 10 itens por padrão; paginador com Anterior/Próxima no centro e "Itens por página" à direita

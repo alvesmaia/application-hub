@@ -513,6 +513,28 @@ def test_tasks_list_page_and_actions(hub: TestClient) -> None:
     assert hub.post("/api/ops/tasks/inventory/a%20b/retry", headers=JSON).status_code == 409
 
 
+def test_a_task_opens_a_side_panel_with_details_and_its_log(hub: TestClient) -> None:
+    hub.app.state.admin.tokens["inventory"] = "t" * 20  # type: ignore[attr-defined]
+    logs = hub.app.state.admin.logs  # type: ignore[attr-defined]
+    t0 = 1_700_000_000_000  # = JOBS[0]["created_at"]
+    logs.add("INFO", "inventory", "", "importando lote 3", "container", t0 + 1000)  # during the task
+    logs.add("INFO", "inventory", "", "linha de antes", "container", t0 - 600_000)  # before it: left out
+    logs.add(
+        "ERROR", "inventory", "", "tarefa job-1: erro de leitura", "container", t0 + 9_000_000
+    )  # names it
+    logs.add("INFO", "collector", "", "outro app", "container", t0 + 1000)  # another app: left out
+    page = hub.get("/admin/tasks").text
+    rows = page.split("<tbody>", 1)[1]
+    # a running number instead of the job id; the row opens the side panel (the id goes to the panel)
+    assert 'class="ops-muted task-id"' not in rows and '<span class="task-num">#1</span>' in rows
+    row = rows.split('data-task="job-1"', 1)[1].split("</tr>", 1)[0]
+    assert 'data-detail-row=""' in row and 'data-detail-title="#2 · inventory.import"' in row
+    panel = row.split('class="row-detail-src"', 1)[1]
+    assert "job-1" in panel and "boom" in panel and "2 de 3" in panel
+    assert "importando lote 3" in panel and "erro de leitura" in panel
+    assert "linha de antes" not in panel and "outro app" not in panel
+
+
 def test_jobs_helpers() -> None:
     j = JOBS[0]
     assert (label(j), percent(j), can_retry(j), can_cancel(j)) == ("Falhou", 50, True, False)

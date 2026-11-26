@@ -473,7 +473,7 @@ def test_managed_variables_are_read_only_and_internal_tokens_live_in_the_vault(
     assert store.tokens["servicedesk"] != old and "Token interno rotacionado" in audit_titles(hub)
     with pytest.raises(Exception, match="sem token interno"):
         asyncio.run(cfg.rotate_internal_token("plataforma", "nao-existe"))
-    assert "gerida" in hub.get("/admin/env").text
+    assert "Mantida pelo hub" in hub.get("/admin/env").text  # the lock's hint
     # "Rotate token" on the app card (POST /api/ops/rotate): replaces the token and leaves the restart pending
     before = store.tokens["collector"]
     r = hub.post("/api/ops/rotate/collector/token", json={})
@@ -510,7 +510,7 @@ def test_bootstrap_import_only_creates_missing_without_marking_restart(hub: Test
     assert asyncio.run(cfg.import_bootstrap("plataforma", items)) == 0
     assert asyncio.run(cfg.pending_restart()) == {}
     page = hub.get("/admin/env").text
-    assert "→ <code>HUB_DB_URL</code>" in page and "postgres://u:p@h/db" not in page
+    assert '<code class="env-inject">HUB_DB_URL</code>' in page and "postgres://u:p@h/db" not in page
 
 
 def test_users_page_markup(hub: TestClient) -> None:

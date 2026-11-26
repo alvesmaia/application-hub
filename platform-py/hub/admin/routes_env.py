@@ -62,11 +62,6 @@ async def rotate_secret(request: Request, app_id: str, what: str, c: AdminCtx = 
 def _env_row(v: dict[str, Any], short: dict[str, str]) -> dict[str, Any]:
     m = masked(v)
     bound = [(a, short.get(a, a)) for a in sorted({b["app"] for b in v["bindings"]})]
-    title = [v["name"]]
-    if v.get("inject_as"):
-        title.append(f"no container: {v['inject_as']}")
-    if v.get("managed"):
-        title.append("gerida pela plataforma")
     return {
         "name": v["name"],
         "shown": m["value"],
@@ -76,7 +71,6 @@ def _env_row(v: dict[str, Any], short: dict[str, str]) -> dict[str, Any]:
         "managed": bool(v.get("managed")),
         "apps": bound,
         "apps_title": ", ".join(s for _, s in bound),
-        "name_title": " · ".join(title),
         "menu": f"env:{v['name']}",
         "item": dumps(
             {

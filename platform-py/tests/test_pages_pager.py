@@ -52,3 +52,28 @@ def test_users_paginates_above_ten(hub: TestClient) -> None:
         add_user(hub, f"pg{i:02d}", ["Colaborador"])
     page = hub.get("/admin/users?per=10&page=2").text
     assert 'class="hub-pager"' in page and "11–11 de 11" in page and page.count('data-user-id="') == 1
+
+
+def test_audit_shows_10_per_page_with_the_size_selector_last(hub: TestClient) -> None:
+    for i in range(15):
+        assert (
+            hub.post(
+                "/api/admin/env", json={"name": f"V{i:02d}", "value": "1", "kind": "publica", "bindings": []}
+            ).status_code
+            == 201
+        )
+    page = hub.get("/admin/audit").text
+    assert 'class="hub-pager"' in page and "Página 1 de " in page
+    assert '<option value="10" selected>' in page  # the audit's default
+    pager = page.split('class="hub-pager"', 1)[1].split("</nav>", 1)[0]
+    # previous/next in the middle, "items per page" on the right
+    assert pager.index("hub-pager-nav") < pager.index("hub-pager-per")
+
+
+def test_every_paged_table_defaults_to_10_per_page() -> None:
+    from starlette.requests import Request
+
+    from hub.ux.pager import paginate
+
+    rows, info = paginate(Request({"type": "http", "query_string": b""}), list(range(30)))
+    assert info["per"] == 10 and rows == list(range(10)) and info["pages"] == 3

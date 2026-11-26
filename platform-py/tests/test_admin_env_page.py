@@ -62,6 +62,17 @@ def test_app_chips_wrap_instead_of_being_cut() -> None:
     assert rules and "flex-wrap:wrap" in rules[-1] and "overflow:hidden" not in rules[-1]
 
 
+def test_variable_cell_shows_a_lock_and_the_name_in_the_app_without_arrow_or_words(hub: TestClient) -> None:
+    body = {"name": "COM_DESTINO", "value": "1", "kind": "publica", "inject_as": "HUB_DESTINO",
+            "bindings": [{"app": "inventory", "env": "producao"}]}  # fmt: skip
+    assert hub.post("/api/admin/env", json=body).status_code == 201
+    html = hub.get("/admin/env").text
+    cell = html.split(">COM_DESTINO</code>", 1)[1].split("</td>", 1)[0]
+    assert '<code class="env-inject">HUB_DESTINO</code>' in cell and "→" not in cell
+    assert "gerida" not in html.split("<tbody>", 1)[1]  # managed variables: a lock with a hint, no word
+    assert 'title="Mantida pelo hub"' in html or "env-lock" not in html
+
+
 def test_filter_by_one_app(hub: TestClient) -> None:
     html = hub.get("/admin/env?app=inventory").text
     assert shown(html, "SO_INVENTORY") and shown(html, "SEGREDO_INVENTORY")
