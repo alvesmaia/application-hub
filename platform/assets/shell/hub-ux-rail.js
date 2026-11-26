@@ -1,6 +1,6 @@
 /* hub-ux-rail.js — live inbox counter and the platform rail (expanded/collapsed/hidden, ☰ menu
  * on a narrow screen, collapsible admin sections), plus the development-mode reload. Last part
- * of hub-ux.js (split only for size), loaded after hub-ux-palette.js. */
+ * of hub-ux.js (split only for size), loaded after hub-ux-tour.js. */
 (function () {
   'use strict';
   const P = window.__hubUxParts;

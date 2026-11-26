@@ -63,8 +63,7 @@ h2 16px, card title 15px; KPI 27px/800 `tabular-nums`; buttons 13px/500, `line-h
 12px/600; table header 11px/600 UPPERCASE `letter-spacing: .05em` `secondary`; cell
 13px, `padding 8px 12px`; navigation items 500 (active 600), 32px high and 2px between items;
 eyebrow 12px/700, `letter-spacing: .12em`, primary color. Floor: text ≥ 12px (except the table header),
-clickable targets ≥ 28px. Header 41px, expanded rail 204px, brand icon 34px,
-search centered across the full width (max. 440px).
+clickable targets ≥ 28px. Header 41px, expanded rail 204px, brand icon 34px.
 
 **Lines and shapes**: borders always 1px; card with a `border` border, radius 12, **no shadow**;
 table rows separated by a 1px `hover` line (`#F0F3F8`), header by a 1px `border`; buttons,
@@ -181,7 +180,7 @@ CSS only for the hub (`hub.css`; not an app contract — no new `data-hub-*`):
   (`.hub-row-menu--up`) or aligns to the left (`--start`) when it would leave the screen.
 - **Sheet** (`.modal.hub-sheet`): < 768px the modal fills the screen, actions fixed in the footer,
   fields ≥ 44px, one column.
-- **Shell < 768px**: no rail; brand on the left and, on the right, search (icon; ⌘K palette full screen),
+- **Shell < 768px**: no rail; brand on the left and, on the right,
   notifications and ☰ (`[data-hub-drawer-toggle]`; avatar goes to the menu). The ☰
   opens the `#hub-rail` as a full-width panel from top to bottom under the header
   (`body.hub-drawer-open`; user at the top and account/theme/language/Sair (Sign out) at the end — blocks

@@ -87,7 +87,6 @@
           {
             "enabled": true,
             "opted_out": 0,
-            "raw_terms": false,
             "retention_days": 90,
             "storage_bytes": 2048,
             "summary": {
@@ -105,9 +104,6 @@
               "integer",
               "null"
             ]
-          },
-          "raw_terms": {
-            "type": "boolean"
           },
           "retention_days": {
             "minimum": 0,
@@ -127,7 +123,6 @@
         "required": [
           "summary",
           "retention_days",
-          "raw_terms",
           "enabled"
         ],
         "type": "object"
@@ -148,23 +143,6 @@
         },
         "required": [
           "days"
-        ],
-        "type": "object"
-      },
-      "AnalyticsTerms": {
-        "additionalProperties": false,
-        "examples": [
-          {
-            "raw": false
-          }
-        ],
-        "properties": {
-          "raw": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "raw"
         ],
         "type": "object"
       },
@@ -3082,124 +3060,6 @@
         ],
         "type": "object"
       },
-      "SearchGroup": {
-        "additionalProperties": true,
-        "properties": {
-          "hits": {
-            "items": {
-              "$ref": "#/components/schemas/SearchHit"
-            },
-            "type": "array"
-          },
-          "id": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "label",
-          "hits"
-        ],
-        "type": "object"
-      },
-      "SearchHit": {
-        "additionalProperties": true,
-        "properties": {
-          "kind": {
-            "type": "string"
-          },
-          "score": {
-            "format": "double",
-            "type": "number"
-          },
-          "subtitle": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "url": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "kind",
-          "title",
-          "subtitle",
-          "url",
-          "score"
-        ],
-        "type": "object"
-      },
-      "SearchResult": {
-        "additionalProperties": true,
-        "examples": [
-          {
-            "groups": [
-              {
-                "hits": [
-                  {
-                    "kind": "Aplicações",
-                    "score": 0.6,
-                    "subtitle": "",
-                    "title": "Gestão de Ativos",
-                    "url": "/inventory"
-                  }
-                ],
-                "id": "platform",
-                "label": "Plataforma"
-              }
-            ],
-            "partial": false,
-            "q": "inventory",
-            "took_ms": 3,
-            "total": 1,
-            "unavailable": []
-          }
-        ],
-        "properties": {
-          "groups": {
-            "items": {
-              "$ref": "#/components/schemas/SearchGroup"
-            },
-            "type": "array"
-          },
-          "partial": {
-            "type": "boolean"
-          },
-          "q": {
-            "type": "string"
-          },
-          "took_ms": {
-            "format": "int64",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "total": {
-            "format": "int64",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "unavailable": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "q",
-          "total",
-          "took_ms",
-          "partial",
-          "unavailable",
-          "groups"
-        ],
-        "type": "object"
-      },
       "SecretRotated": {
         "additionalProperties": true,
         "examples": [
@@ -3718,28 +3578,6 @@
           "cancelled"
         ],
         "type": "string"
-      },
-      "TermsSet": {
-        "additionalProperties": true,
-        "examples": [
-          {
-            "ok": true,
-            "raw": false
-          }
-        ],
-        "properties": {
-          "ok": {
-            "type": "boolean"
-          },
-          "raw": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "ok",
-          "raw"
-        ],
-        "type": "object"
       },
       "UploadLink": {
         "additionalProperties": true,
@@ -4376,7 +4214,6 @@
                 "example": {
                   "enabled": true,
                   "opted_out": 0,
-                  "raw_terms": false,
                   "retention_days": 90,
                   "storage_bytes": 2048,
                   "summary": {
@@ -4525,74 +4362,6 @@
           "Auditoria"
         ],
         "x-hub-destructive": true,
-        "x-hub-mcp": true
-      }
-    },
-    "/api/v1/analytics/terms": {
-      "put": {
-        "operationId": "analytics_set_terms",
-        "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "example": {
-                "raw": false
-              },
-              "schema": {
-                "$ref": "#/components/schemas/AnalyticsTerms"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "2XX": {
-            "content": {
-              "application/json": {
-                "example": {
-                  "ok": true,
-                  "raw": false
-                },
-                "schema": {
-                  "$ref": "#/components/schemas/TermsSet"
-                }
-              }
-            },
-            "description": "Sucesso"
-          },
-          "400": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "401": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "403": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "404": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "409": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "413": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "415": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "429": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "503": {
-            "$ref": "#/components/responses/Problem"
-          }
-        },
-        "summary": "Guarda (opt-in) ou não o texto das buscas sem resultado",
-        "tags": [
-          "Auditoria"
-        ],
-        "x-hub-destructive": false,
         "x-hub-mcp": true
       }
     },
@@ -10446,79 +10215,6 @@
         "x-hub-mcp": true
       }
     },
-    "/api/v1/search": {
-      "get": {
-        "operationId": "search",
-        "parameters": [
-          {
-            "description": "Termo",
-            "in": "query",
-            "name": "q",
-            "required": true,
-            "schema": {
-              "maxLength": 100,
-              "minLength": 1,
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "example": {
-                  "groups": [
-                    {
-                      "hits": [
-                        {
-                          "kind": "Aplicações",
-                          "score": 0.6,
-                          "subtitle": "",
-                          "title": "Gestão de Ativos",
-                          "url": "/inventory"
-                        }
-                      ],
-                      "id": "platform",
-                      "label": "Plataforma"
-                    }
-                  ],
-                  "partial": false,
-                  "q": "inventory",
-                  "took_ms": 3,
-                  "total": 1,
-                  "unavailable": []
-                },
-                "schema": {
-                  "$ref": "#/components/schemas/SearchResult"
-                }
-              }
-            },
-            "description": "Sucesso"
-          },
-          "400": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "401": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "403": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "404": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "429": {
-            "$ref": "#/components/responses/Problem"
-          }
-        },
-        "summary": "Busca federada (plataforma + apps que você alcança)",
-        "tags": [
-          "Busca"
-        ],
-        "x-hub-destructive": false,
-        "x-hub-mcp": true
-      }
-    },
     "/api/v1/settings": {
       "get": {
         "operationId": "settings_get",
@@ -12399,10 +12095,6 @@
     {
       "description": "Notificações e pedidos de aprovação",
       "name": "Inbox"
-    },
-    {
-      "description": "Busca federada",
-      "name": "Busca"
     },
     {
       "description": "Configurações da plataforma e tokens de API",

@@ -143,8 +143,6 @@ def _usage(request: Request, c: AdminCtx) -> dict[str, Any]:
     return {
         "mau": sm["mau"],
         "apps": sorted(((names.get(r[0], r[0]), r[3], r[4]) for r in sm["apps"]), key=lambda x: -x[2])[:5],
-        "zero": sm["searches_zero"],
-        "searches": sm["searches"],
     }
 
 

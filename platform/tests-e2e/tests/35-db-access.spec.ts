@@ -18,16 +18,21 @@ test('conta de leitura do banco: criar, ver a senha uma vez, nova senha e remove
   await form.locator('input[name="name"]').fill(NAME);
   await form.locator('select[name="owner"]').selectOption({ index: 0 });
   await form.locator('input[name="dbs"][value="inventory"]').check();
+  // the hub's own database is its own option, never in the apps' list
+  await expect(form.locator('input[name="dbs"][value="hub"]')).toHaveCount(0);
+  await form.locator('input[name="hub"]').check();
   await form.locator('button[type="submit"]').click();
 
   const creds = page.locator('.overlay[data-users-modal] form');
   await expect(creds).toContainText('Credenciais da conta de leitura');
+  await expect(creds.locator('input[readonly]').nth(2)).toHaveValue(/inventory.*hub|hub.*inventory/); // which databases to connect to
   const password = await page.locator('#dbaccess-password').inputValue();
   expect(password.length).toBeGreaterThanOrEqual(24);
   await creds.locator('button[type="submit"]').click();
 
   const row = page.locator(`tr[data-dbaccess-row="ro_${NAME}"]`);
   await expect(row).toContainText('inventory');
+  await expect(row).toContainText('hub');
   await expect(row).toContainText('Ativa');
   await expect(page.locator('body')).not.toContainText(password); // shown only once
 

@@ -130,7 +130,6 @@ def test_internal_endpoints_require_the_token(cfg: Cfg, http: httpx.Client) -> N
         ("/jobs/x/retry", "POST"),
         ("/telemetry", "GET"),
         ("/flags", "POST"),
-        ("/search?q=x", "GET"),
         ("/approvals/x-1", "POST"),
     ):
         r = keep(http.request(method, base + path, json={"ids": []} if method == "POST" else None))
@@ -146,7 +145,6 @@ def test_internal_endpoints_require_the_token(cfg: Cfg, http: httpx.Client) -> N
         assert r.status_code == 401, (path, r.status_code)
 
 
-# ---- [19] federated search (wave 9) ---------------------------------------------------------------
 def _ident_full(user: str, perms: list[str], locale: str = "") -> str:
     d: dict[str, Any] = {"user": user, "roles": [], "name": "Conformidade", "permissions": perms}
     if locale:
@@ -155,30 +153,6 @@ def _ident_full(user: str, perms: list[str], locale: str = "") -> str:
     import json
 
     return base64.urlsafe_b64encode(json.dumps(d).encode()).rstrip(b"=").decode()
-
-
-def test_search_contract(cfg: Cfg, internal: httpx.Client) -> None:
-    s = cfg.profile.get("search")
-    if not s:
-        pytest.skip("perfil sem busca")
-    base = f"/{cfg.app}/_hub/search"
-    h = {"x-hub-user": _ident_full("conf@x", ["acessar_aplicacoes"]), "x-hub-locale": "pt-BR"}
-    r = keep(internal.get(base, params={"q": s["q"], "limit": "1000"}, headers=h))
-    assert r.status_code == 200, r.text
-    res = r.json()["results"]
-    assert isinstance(res, list) and len(res) <= 20, "limit limitado a 20"
-    assert len(res) >= s.get("min", 0), f"ao menos {s.get('min', 0)} resultado(s) para {s['q']!r}"
-    for x in res:
-        assert x["title"] and isinstance(x.get("subtitle", ""), str)
-        u = x["url"]
-        assert u == f"/apps/{cfg.app}" or u.startswith((f"/apps/{cfg.app}/", f"/apps/{cfg.app}?")), u
-        assert 0.0 <= float(x.get("score", 0)) <= 1.0
-    scores = [float(x.get("score", 0)) for x in res]
-    assert scores == sorted(scores, reverse=True), "mais relevantes primeiro"
-    r = keep(internal.get(base, params={"q": s["q"], "limit": "2"}, headers=h))
-    assert len(r.json()["results"]) <= 2
-    assert keep(internal.get(base, params={"q": ""}, headers=h)).status_code == 400
-    assert keep(internal.get(base, params={"q": "x" * 101}, headers=h)).status_code == 400
 
 
 # ---- [20] approvals via Inbox (wave 9) ---------------------------------------------------------

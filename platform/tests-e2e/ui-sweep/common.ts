@@ -14,7 +14,7 @@ export const SHOTS_DIR = path.join(OUT_DIR, 'shots');
  * covers what no link reaches. The apps come in through discovery (rail/sidebar).
  */
 export const STATIC_ROUTES = [
-  '/', '/inbox', '/search', '/status', '/applications',
+  '/', '/inbox', '/status', '/applications',
   '/account', '/account/security', '/account/access', '/account/password',
   '/admin', '/admin/audit', '/admin/backups', '/admin/connections',
   '/admin/deploys', '/admin/env', '/admin/health', '/admin/logs',

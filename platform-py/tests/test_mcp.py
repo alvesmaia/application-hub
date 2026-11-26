@@ -199,7 +199,12 @@ def test_tools_list_follows_rbac_and_mcp_flag(hub: TestClient, agent: TestClient
     colab = add_user(hub, "colab", ["Colaborador"])
     mine = bearer(hub, make_token(colab, ["mcp", "api:write"]))
     only = {t["name"] for t in result(rpc(mine, "tools/list"))["tools"]}
-    assert only < names and "deployments_list" not in only and {"apps_list", "inbox_list", "search"} <= only
+    assert (
+        only < names
+        and "deployments_list" not in only
+        and {"apps_list", "inbox_list"} <= only
+        and "search" not in names
+    )
     t = next(t for t in result(rpc(agent, "tools/list"))["tools"] if t["name"] == "inbox_decide")
     assert t["annotations"]["destructiveHint"] is True and "confirm_token" in t["inputSchema"]["properties"]
     assert t["inputSchema"]["properties"]["body"]["properties"]["decision"]["enum"] == ["approve", "reject"]

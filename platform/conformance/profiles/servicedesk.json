@@ -31,10 +31,6 @@
     "parallel": 6,
     "expect_429": false
   },
-  "search": {
-    "q": "SD-",
-    "min": 0
-  },
   "approvals": {
     "unknown": "sd-999999999"
   }

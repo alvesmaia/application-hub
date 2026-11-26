@@ -1,4 +1,4 @@
-"""Onda 9: idioma (x-hub-locale / identidade / Accept-Language), busca federada e
+"""Onda 9: idioma (x-hub-locale / identidade / Accept-Language) e
 approvals over the internal channel, notifications/requests in the outbox."""
 
 from __future__ import annotations
@@ -15,7 +15,6 @@ from hub_sdk import internal, outbox
 from hub_sdk import locale as loc
 from hub_sdk.identity import Identity
 from hub_sdk.outbox import Outbox
-from hub_sdk.search import SearchHit, SearchQuery, like_pattern, sanitize, score
 
 TOKEN = "0123456789abcdef0123"
 
@@ -67,32 +66,8 @@ async def test_memory_outbox_keeps_meta() -> None:
     assert "meta" not in p[1].to_json()
 
 
-def test_search_helpers() -> None:
-    hits = [
-        SearchHit(title="a", url="/demo/x?q=1", score=0.2),
-        SearchHit(title="b", url="https://evil/x", score=1.0),
-        SearchHit(title="c", url="/demox/y", score=1.0),
-        SearchHit(title="d", url="/demo/../admin", score=1.0),
-        SearchHit(title="e", url="/demo/e", score=float("nan")),
-        SearchHit(title="f", url="/demo/f", score=0.9),
-    ]
-    assert [h.title for h in sanitize("demo", hits, 10)] == ["f", "a", "e"]
-    assert score("Gestão de Contratos", "gestao") == 0.8
-    assert score("Gestão de Contratos", "contratos") == 0.6
-    assert like_pattern("50%_a\\") == "%50\\%\\_a\\\\%"
-
-
 def make_app() -> FastAPI:
     seen: dict[str, Any] = {}
-
-    async def search(q: SearchQuery) -> list[SearchHit]:
-        who = q.identity.user if q.identity else ""
-        return [
-            SearchHit(
-                title=f"{q.q} {who} {q.locale} {loc.t('Voltar à plataforma')}", url="/demo/1", score=0.5
-            ),
-            SearchHit(title="fora", url="/admin", score=1.0),
-        ]
 
     async def approve(d: ap.ApprovalDecision) -> str:
         seen["last"] = d
@@ -106,9 +81,7 @@ def make_app() -> FastAPI:
 
     app = FastAPI()
     app.add_middleware(loc.LocaleMiddleware)
-    app.include_router(
-        internal.router("demo", TOKEN, Outbox.memory(), None, search=search, approvals=approve)
-    )
+    app.include_router(internal.router("demo", TOKEN, Outbox.memory(), None, approvals=approve))
 
     @app.get("/demo/t")
     async def t(req: Request) -> PlainTextResponse:
@@ -118,21 +91,12 @@ def make_app() -> FastAPI:
     return app
 
 
-async def test_internal_search_uses_identity_and_locale() -> None:
+async def test_locale_middleware_and_no_federated_search() -> None:
     async with client(make_app()) as c:
-        r = await c.get(
-            "/demo/_hub/search?q=note&limit=50",
-            headers={internal.TOKEN_HEADER: TOKEN, "x-hub-user": ident(), "x-hub-locale": "en"},
-        )
-        assert r.status_code == 200
-        res = r.json()["results"]
-        assert len(res) == 1 and res[0]["title"] == "note ana@x en Back to the platform"
-        assert (
-            await c.get("/demo/_hub/search?q=", headers={internal.TOKEN_HEADER: TOKEN})
-        ).status_code == 400
-        assert (await c.get("/demo/_hub/search?q=x")).status_code == 401
-        # Language middleware on the app's routes.
         assert (await c.get("/demo/t", headers={"accept-language": "en"})).text == "Back to the platform"
+        # Federated search was dropped (owner's call): the hub no longer asks apps, so no route.
+        r = await c.get("/demo/_hub/search?q=x", headers={internal.TOKEN_HEADER: TOKEN})
+        assert r.status_code == 404
 
 
 async def test_internal_approvals_validate_and_map() -> None:

@@ -37,8 +37,11 @@ def test_home_renders_widgets_and_checklist(client: TestClient) -> None:
     assert [h.index(o) for o in order] == sorted(h.index(o) for o in order)
     assert 'data-widget="inbox"' not in h and 'data-widget="shortcuts"' not in h  # the owner removed both
     assert 'data-layout-source="default"' in h
-    assert h.count("data-step=") == 7
-    assert "0/7 concluídos" in h
+    assert h.count("data-step=") == 6 and 'data-step="search"' not in h  # no search in the hub any more
+    assert "0/6 concluídos" in h
+    # the notification preferences live in My account (the Inbox has none): the step leads there
+    step = h.split('data-step="notifications"')[1].split("</li>")[0]
+    assert 'href="/account#prefs"' in step and "/inbox#prefs" not in h
     assert "Fixe aplicações com a estrela no catálogo." in h
 
 
@@ -88,12 +91,20 @@ def test_prefs_validation(client: TestClient) -> None:
     assert body["theme"] == "dark"
     assert "theme" in body["steps"]
     assert set(body["channels"]) == {"alert", "notification", "approval"}
-    assert client.post("/api/me/onboarding/step", json={"key": "search"}, headers=HDR).status_code == 200
-    assert client.post("/api/me/onboarding/step", json={"key": "backup"}, headers=HDR).status_code == 400
+    assert client.post("/api/me/onboarding/step", json={"key": "search"}, headers=HDR).status_code in (
+        404,
+        405,
+    )
     assert client.put("/api/me/onboarding", json={"tour": "step:3"}, headers=HDR).status_code == 200
     assert client.put("/api/me/onboarding", json={"tour": "xyz"}, headers=HDR).status_code == 400
     assert client.post("/api/me/analytics", json={"feature": "theme_toggle"}, headers=HDR).status_code == 204
-    assert client.get("/").text.count('class="done"') == 2  # theme + search
+    assert client.get("/").text.count('class="done"') == 1  # theme
+    # saving the notification channels (My account › Preferences) completes the "notifications" step
+    assert (
+        client.put("/api/me/prefs", json={"channels": {"alert": {"in_app": True}}}, headers=HDR).status_code
+        == 200
+    )
+    assert "notifications" in client.get("/api/me/prefs").json()["steps"]
 
 
 def test_app_visit_feeds_recents(client: TestClient) -> None:

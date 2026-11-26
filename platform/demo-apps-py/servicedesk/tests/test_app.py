@@ -1,12 +1,11 @@
 """App over HTTP: without DB (fragments, nav, assets, i18n, notices) and with Postgres (open, list,
-paginate, change status with 409, Inbox approvals, report, CSV, search, seed)."""
+paginate, change status with 409, Inbox approvals, report, CSV, seed)."""
 
 from __future__ import annotations
 
 import asyncio
 import re
 from datetime import UTC, datetime
-from typing import cast
 
 import asyncpg
 import httpx
@@ -70,7 +69,6 @@ async def test_internals_ready_locale_and_openapi(running: Running) -> None:
     doc = (await c.get("/servicedesk/api/openapi.json")).json()
     ops = {o["operationId"] for p in doc["paths"].values() for o in p.values()}
     assert len(ops) == 6
-    assert (await c.get("/servicedesk/_hub/search?q=vpn", headers=HUB)).json() == {"results": []}
     deny = await c.post(
         "/servicedesk/_hub/approvals/sd-1", json={"decision": "approve"}, headers={**HUB, "x-hub-user": BOSS}
     )
@@ -279,29 +277,6 @@ async def test_reports_cache_csv_and_busy(db_url: str, running: Running) -> None
 
 
 @pytest.mark.db
-async def test_federated_search(db_url: str, running: Running) -> None:
-    c = running.client
-    await wait_ready(c)
-    await open_ticket(c, title="Liberação de VPN urgente")
-
-    async def hits(q: str, **h: str) -> list[dict[str, object]]:
-        r = await c.get("/servicedesk/_hub/search", params={"q": q, "limit": "10"}, headers={**HUB, **h})
-        assert r.status_code == 200, r.text
-        return cast(list[dict[str, object]], r.json()["results"])
-
-    exact = await hits(f"sd-{YEAR}-0000600")
-    assert (
-        exact[0]["url"] == f"/apps/servicedesk/requests?protocolo=SD-{YEAR}-0000600"
-        and exact[0]["kind"] == "Chamado"
-    )
-    assert exact[0]["score"] == 1.0
-    vpn = await hits("vpn urgente")
-    assert any("Liberação de VPN" in str(h["title"]) for h in vpn)
-    gen = await hits("chamados", **{"x-hub-locale": "en"})
-    assert len(gen) == 10 and gen[0]["kind"] == "Ticket" and gen[0]["score"] == 0.5
-
-
-@pytest.mark.db
 async def test_tables_are_compatible_with_the_rust_schema(db_url: str, running: Running) -> None:
     await wait_ready(running.client)
     conn = await asyncpg.connect(db_url)
@@ -342,7 +317,6 @@ async def test_db_unavailable_paths(db_url: str, running: Running) -> None:
     assert r.status_code in (503, 500)
     up = await c.post("/servicedesk/requests/1", data={"status": "Aberto", "version": "1"})
     assert up.status_code in (503, 500)
-    assert (await c.get("/servicedesk/_hub/search?q=vpn", headers=HUB)).status_code in (200, 503)
 
 
 @pytest.mark.db

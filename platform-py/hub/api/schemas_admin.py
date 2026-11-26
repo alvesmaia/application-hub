@@ -234,7 +234,6 @@ class Flag(Out):
 class Analytics(Out):
     summary: dict[str, Any]
     retention_days: U
-    raw_terms: bool
     enabled: bool
     opted_out: U | None = None
     storage_bytes: U | None = None
@@ -247,15 +246,6 @@ class AnalyticsRetention(In):
 class RetentionSet(Out):
     ok: bool
     days: U
-
-
-class AnalyticsTerms(In):
-    raw: bool
-
-
-class TermsSet(Out):
-    ok: bool
-    raw: bool
 
 
 class LogStats(Out):
@@ -408,7 +398,7 @@ MODELS: tuple[type, ...] = (
     VariableUpdate, SecretRotated, Settings, SettingsUpdate, AccessRevoked, HealthService, HealthServiceUpdate,
     HealthServiceCreate, HealthCheck, Slo, SloSet, Incident, IncidentCreate, IncidentUpdate, FlagRuleIn,
     FlagRolloutIn, FlagEnvIn, FlagUpdate, FlagCreate, FlagEnabled, Flag, Analytics, AnalyticsRetention,
-    RetentionSet, AnalyticsTerms, TermsSet, LogStats, ConnectionCreate, ConnectionUpdate, BindingsSet,
+    RetentionSet, LogStats, ConnectionCreate, ConnectionUpdate, BindingsSet,
     ConnectionRotate, ContainerLimits, LimitsResult, ContainerLogs, ContainerInspect, DatabaseProvision, Replicas,
     BackupPolicyIn, BackupPolicy, BackupsAside, AsideResult, InboxIds, InboxArchive, InboxChange, AccessRequest,
     AccessRequestResult,

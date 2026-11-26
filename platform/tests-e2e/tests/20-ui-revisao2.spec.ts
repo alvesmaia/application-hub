@@ -3,7 +3,7 @@ import path from 'node:path';
 import { HUB, apiAs, json, newRoleContext, stateFile } from './helpers';
 
 // Second round of the UI review (dist/ui-review.md, "Re-review"): theme in 3 icons,
-// search with the internal one last, real version in the catalog, Recents without a test route,
+// real version in the catalog, Recents without a test route,
 // own account without "Deactivate", 403 with a page header, login with show password.
 // Stack up (HUB_DEMO_USERS=1).
 
@@ -49,29 +49,6 @@ test('Rail a 1280×720: só a seção atual aberta e tudo acessível @core', asy
   await expect(open).toHaveAttribute('id', 'hub-admin-group-apps');
   // The last section (Governance) appears without scrolling the page.
   await expect(page.locator('#hub-admin-group-gov')).toBeInViewport();
-});
-
-test('Busca: registros dos apps antes do interno; "ver todos" por app @core', async ({ page }) => {
-  const api = await apiAs('admin');
-  const r = await json(await api.get('/api/me/search?q=a'));
-  const ids: string[] = r.groups.map((g: { id: string }) => g.id);
-  if (ids.includes('admin')) expect(ids[ids.length - 1]).toBe('admin');
-  const atv = r.groups.find((g: { id: string }) => g.id === 'inventory');
-  expect(atv, 'registros do Ativos').toBeTruthy();
-  expect(ids.indexOf('inventory')).toBeLessThan(ids.includes('admin') ? ids.indexOf('admin') : 99);
-  if (atv.hits.length >= 5) expect(atv.more_url).toContain('app=inventory');
-  await api.dispose();
-  await page.goto('/search?q=a');
-  await expect(page.locator('.hub-search-group mark').first()).toBeVisible();
-  const t0 = Date.now();
-  // Full result (all providers, 1.5 s ceiling per app) in a few seconds.
-  // (networkidle is no use as a metric here: the inbox SSE, /api/me/stream, stays active.)
-  await page.goto('/search?q=a');
-  await expect(page.locator('.hub-search-group').first()).toBeVisible();
-  expect(Date.now() - t0).toBeLessThan(4000);
-  await page.goto('/search?q=a&app=inventory');
-  await expect(page.locator('.hub-search-group')).toHaveCount(1);
-  await expect(page.locator('.hub-search-back a')).toBeVisible();
 });
 
 test('Catálogo: versão "vX.Y.Z" vinda da implantação ativa @core', async ({ page }) => {

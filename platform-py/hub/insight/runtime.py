@@ -434,7 +434,7 @@ def page_key(segs: list[str]) -> str | None:
     """Hub page normalized for analytics (no ids or query)."""
     if segs == [""]:
         return "/"
-    if len(segs) == 1 and segs[0] in ("applications", "inbox", "search", "status", "admin"):
+    if len(segs) == 1 and segs[0] in ("applications", "inbox", "status", "admin"):
         return "/" + segs[0]
     if len(segs) >= 2 and segs[0] == "admin" and re.fullmatch(r"[A-Za-z0-9-]+", segs[1]):
         return f"/admin/{segs[1]}"

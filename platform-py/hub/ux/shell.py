@@ -1,4 +1,4 @@
-"""The shell in the user's language: menu, JS texts and the Ctrl+K palette (pt-BR/en catalogs), and the theme."""
+"""The shell in the user's language: menu and JS texts (pt-BR/en catalogs), and the theme."""
 
 from __future__ import annotations
 
@@ -55,18 +55,6 @@ def i18n_for(lang: str) -> str:
 
 
 @cache
-def platform_palette(lang: str) -> list[dict[str, Any]]:
-    rows = json.loads((_WEB / "shell_palette.json").read_text(encoding="utf-8"))
-    return [
-        r
-        | {
-            "title": t(_KEYED[r["title"]], lang) if r["title"] in _KEYED else r["title"],
-            "kind": tr(r["kind"], lang),
-        }
-        for r in rows
-    ]
-
-
 def theme_of(pref: str) -> tuple[str, str]:
     """(`data-theme`, `color-scheme`): the default is light; `auto` follows the system."""
     return {"dark": ("dark", "dark"), "auto": ("auto", "light dark")}.get(pref, ("light", "light"))
@@ -135,7 +123,7 @@ def eyebrow_for(path: str, lang: str) -> str:
         )
         return best[1] if best else t("shell.admin", lang)
     for prefix, key in (("/applications", "shell.apps"), ("/status", "shell.status"), ("/inbox", "shell.inbox"),
-                        ("/search", "search.title"), ("/account", "acct.eyebrow")):  # fmt: skip
+                        ("/account", "acct.eyebrow")):  # fmt: skip
         if path.startswith(prefix):
             return t(key, lang)
     return t("shell.home", lang) if path == "/" else ""

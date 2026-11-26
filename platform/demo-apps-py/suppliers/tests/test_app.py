@@ -1,5 +1,5 @@
 """App over HTTP: pages, supplier record, attachments (upload/download/delete), registry
-lookup, PDF record sheet, language, federated search and outbox audit."""
+lookup, PDF record sheet, language and outbox audit."""
 
 from __future__ import annotations
 
@@ -238,17 +238,6 @@ async def test_locale_translation(running: Running) -> None:
     assert en.status_code == 200 and en.headers["content-type"].startswith("text/html")
     ficha = await c.get("/suppliers/indicators", params={"id": "FOR-0271"}, headers={"x-hub-locale": "en"})
     assert "Attachments" in ficha.text or "Anexos" in ficha.text
-
-
-async def test_search_provider_and_internal_endpoints(running: Running) -> None:
-    c = running.client
-    r = await c.get("/suppliers/_hub/search", params={"q": "norte", "limit": 5}, headers=HUB)
-    hits = r.json()["results"]
-    assert [h["title"] for h in hits] == ["Norte Tecnologia"]
-    assert hits[0]["url"] == "/apps/suppliers/indicators?id=FOR-0284" and hits[0]["kind"] == "Fornecedor"
-    g = await c.get("/suppliers/_hub/search", params={"q": "fornecedores", "limit": 3}, headers=HUB)
-    assert len(g.json()["results"]) == 6 or len(g.json()["results"]) == 3
-    assert (await c.get("/suppliers/_hub/search", params={"q": "norte"})).status_code == 401
 
 
 async def test_user_header_is_optional_for_pages(running: Running) -> None:

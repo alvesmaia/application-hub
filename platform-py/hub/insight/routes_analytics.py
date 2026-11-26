@@ -34,7 +34,6 @@ async def analytics_get(c: InsightCtx = Depends(ctx)) -> Any:
     return {
         "summary": s,
         "retention_days": an.retention,
-        "raw_terms": an.raw_terms,
         "enabled": an.enabled,
         "opted_out": sum(1 for p in prefs.values() if p.analytics_opt_out),
         "storage_bytes": an.bytes_estimate(),
@@ -61,18 +60,6 @@ async def analytics_retention(request: Request, c: InsightCtx = Depends(ctx)) ->
         c.actor_of(request), "Retenção do analytics alterada", f"{days} dias", icon="settings"
     )
     return {"ok": True, "days": days}
-
-
-@router.put("/analytics/terms")
-async def analytics_terms(request: Request, c: InsightCtx = Depends(ctx)) -> Any:
-    c.need_settings(request)
-    b = await c.body(request)
-    if not isinstance(b.get("raw"), bool):
-        raise AdminError("Dados inválidos: verifique os campos enviados.")
-    c.an.set_raw_terms(b["raw"])
-    detail = "texto guardado (opt-in)" if b["raw"] else "só contagem e hash"
-    await c.store.audit(c.actor_of(request), "Termos de busca sem resultado", detail, icon="settings")
-    return {"ok": True, "raw": b["raw"]}
 
 
 @router.post("/analytics/rotate-key")

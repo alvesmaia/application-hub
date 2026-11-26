@@ -33,10 +33,6 @@ class PrefsIn(BaseModel):
     channels: dict[str, Channel] | None = None
 
 
-class StepIn(BaseModel):
-    key: str
-
-
 class TourIn(BaseModel):
     tour: str
 
@@ -270,7 +266,6 @@ async def get_prefs(request: Request, c: UxCtx = Depends(ctx)) -> dict[str, Any]
         "layout_source": source,
         "favorites": p.favorites,
         "recents": [r.model_dump() for r in p.recents],
-        "searches": p.searches,
         "channels": {k: p.channel(k).model_dump() for k in KINDS},
         "analytics_opt_out": p.analytics_opt_out,
     }
@@ -296,18 +291,6 @@ async def put_onboarding(request: Request, c: UxCtx = Depends(ctx)) -> JSONRespo
     if not (tour in ("", "done", "skipped") or (tour.startswith("step:") and n.isdigit() and int(n) < 256)):
         return _err(400, "Estado do tour inválido.")
     c.store.update(request.state.user["id"], tour=tour)
-    return JSONResponse({"ok": True})
-
-
-@router.post("/api/me/onboarding/step")
-async def post_step(request: Request, c: UxCtx = Depends(ctx)) -> JSONResponse:
-    try:
-        key = StepIn.model_validate(await request.json()).key
-    except (ValidationError, ValueError):
-        return _err(400, "Passo desconhecido.")
-    if key != "search":  # only steps that happen in the browser; the server marks the others
-        return _err(400, "Passo desconhecido.")
-    c.store.step(request.state.user["id"], key)
     return JSONResponse({"ok": True})
 
 

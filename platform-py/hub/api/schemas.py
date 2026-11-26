@@ -385,34 +385,10 @@ class DecideResult(Out):
     status: str | None = None
 
 
-class SearchHit(Out):
-    kind: str
-    title: str
-    subtitle: str
-    url: str
-    score: float
-
-
-class SearchGroup(Out):
-    id: str
-    label: str
-    hits: list[SearchHit]
-
-
-class SearchResult(Out):
-    q: str
-    total: U
-    took_ms: U
-    partial: bool
-    unavailable: list[str]
-    groups: list[SearchGroup]
-
-
 MODELS: tuple[type, ...] = (
     Env, Problem, Page, AppApi, AppMcp, App, Window, AppStatus, StatusApp, StatusPage, ObsItem,
     Observability, LogLine, Deployment, Job, ContainerAction, Container, Backup, RotateResult,
     TaskStatus, SagaStep, Saga, Task, TaskActionResult, Binding, VarKind, Variable,
     Connection, ConnectionTest, Storage, StorageChange, DeprovisionRequest, User, UserCreate,
     UserUpdate, Role, AuditEntry, AuditVerify, UsageRow, InboxItem, Decision, DecideRequest, DecideResult,
-    SearchHit, SearchGroup, SearchResult,
 )  # fmt: skip

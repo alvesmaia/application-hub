@@ -17,7 +17,7 @@ from starlette.requests import Request
 
 from hub.admin.store import LogBus
 from hub.insight import flags as fl
-from hub.insight.analytics import Analytics, day_key, norm_term
+from hub.insight.analytics import Analytics, day_key
 from hub.insight.metrics import (
     Metrics,
     TraceStore,
@@ -258,24 +258,18 @@ def test_analytics_privacy_aggregates_and_csv(tmp_path: Path) -> None:
     a.record("u1", "action", "inventory", now=now)
     a.record("u1", "section", "inventory", "assets", now=now)
     a.record("u1", "page", "/admin/users", now=now)
-    a.record("u1", "search", "ana@x.com 123", n=0, now=now)  # with @: discarded
-    a.record("u1", "search", "contrato 12345", n=0, now=now)
-    a.record("u1", "feature", "palette_open", now=now)
+    a.record("u1", "search", "contrato 12345", now=now)  # the hub has no search any more: ignored
+    a.record("u1", "feature", "theme_toggle", now=now)
+    a.record("u1", "feature", "palette_open", now=now)  # gone with the search palette: ignored
     a.record("u1", "feature", "inventada", now=now)
     a.record_global("approval_approved", "inventory", now=now)
     s = a.summary(now)
     assert (s["dau"], s["wau"], s["mau"]) == (2, 2, 2) and s["funnel"] == [2, 2, 1]
-    assert s["apps"] == [["inventory", 2, 2, 2, 2]] and s["searches"] == 2 and s["searches_zero"] == 2
-    assert s["top_sections"] == [["inventory/assets", 1]] and s["features"] == [["palette_open", 1]]
-    assert s["zero_terms"][0][0].startswith("termo #")  # hash only, no opt-in
-    a.set_raw_terms(True)
-    a.record("u1", "search", "contrato 99", n=0, now=now)
-    assert ["contrato ##", 1] in a.summary(now)["zero_terms"]
-    a.set_raw_terms(False)
-    assert all(k.startswith("termo #") for k, _ in a.summary(now)["zero_terms"])
+    assert s["apps"] == [["inventory", 2, 2, 2, 2]] and "searches" not in s and "zero_terms" not in s
+    assert s["top_sections"] == [["inventory/assets", 1]] and s["features"] == [["theme_toggle", 1]]
     a.flush(now)
     disk = (tmp_path / "analytics.json").read_text(encoding="utf-8")
-    assert "u1" not in disk and "ana@x.com" not in disk and "contrato" not in disk
+    assert "u1" not in disk and "contrato" not in disk and "raw_terms" not in disk
     assert (tmp_path / "analytics.key").exists()
     csv = a.csv(now)
     assert csv.startswith("dia;usuarios_ativos") and '"inventory";2;2;2;2' in csv
@@ -297,7 +291,6 @@ def test_analytics_retention_optout_and_disabled(tmp_path: Path) -> None:
     off.record("u", "login")
     off.record_global("x", "y")
     assert off.days == {} and off.bytes_estimate() > 0
-    assert norm_term("  ") is None and norm_term("a@b") is None and norm_term("Pedido 12") == "pedido ##"
 
     a.ux = SimpleNamespace(data=SimpleNamespace(users={"u": SimpleNamespace(analytics_opt_out=True)}))
     a.record("u", "login", now=now)
@@ -380,7 +373,6 @@ def test_pages_render_and_rbac(hub: TestClient) -> None:
     assert po.post("/api/admin/incidents", json={}).status_code == 403
     assert po.post("/api/admin/analytics/rotate-key", json={}).status_code == 403
     assert po.put("/api/admin/analytics/retention", json={"days": 30}).status_code == 403
-    assert po.put("/api/admin/analytics/terms", json={"raw": True}).status_code == 403
     assert (
         hub.post("/api/admin/flags", content="x", headers={"content-type": "text/plain"}).status_code == 415
     )
@@ -701,7 +693,7 @@ def test_analytics_card_api_and_tracking(hub: TestClient) -> None:
     hub.get("/_frag/inventory/_interno", headers={"x-hub-nav": "1"})
     hub.post("/_frag/inventory/acao", headers={"sec-fetch-site": "same-origin"})
     hub.get("/apps/inventory")
-    hub.post("/api/me/analytics", json={"feature": "palette_open"})
+    hub.post("/api/me/analytics", json={"feature": "theme_toggle"})
     ins = hub.app.state.insight  # type: ignore[attr-defined]
     ins.analytics.record("u-test", "login")
     s = hub.get("/api/admin/analytics").json()
@@ -714,18 +706,16 @@ def test_analytics_card_api_and_tracking(hub: TestClient) -> None:
     )
     assert sm["apps"][0][0] == "inventory" and sm["funnel"][0] == 1 and s["retention_days"] == 90
     page = hub.get("/admin").text
-    assert 'id="uso"' in page and "Usuários ativos (MAU)" in page and "Buscas sem resultado" in page
+    assert 'id="uso"' in page and "Usuários ativos (MAU)" in page and "Buscas sem resultado" not in page
     csv = hub.get("/api/admin/analytics.csv")
     assert csv.text.startswith("﻿dia;") and "attachment" in csv.headers["content-disposition"]
     assert hub.put("/api/admin/analytics/retention", json={"days": 30}).json() == {"ok": True, "days": 30}
     assert hub.put("/api/admin/analytics/retention", json={"days": "x"}).status_code == 400
-    assert hub.put("/api/admin/analytics/terms", json={"raw": True}).json() == {"ok": True, "raw": True}
-    assert hub.put("/api/admin/analytics/terms", json={"raw": 1}).status_code == 400
+    assert hub.put("/api/admin/analytics/terms", json={"raw": True}).status_code == 404
     assert hub.post("/api/admin/analytics/rotate-key", json={}).json() == {"ok": True}
     t = audit_titles(hub)
     for x in (
         "Retenção do analytics alterada",
-        "Termos de busca sem resultado",
         "Chave dos ids do analytics trocada",
     ):
         assert x in t, x
@@ -737,11 +727,14 @@ def test_analytics_card_api_and_tracking(hub: TestClient) -> None:
     assert HDR  # origin headers used by the client
 
 
-def test_login_and_search_feed_analytics(hub: TestClient) -> None:
-    ins = hub.app.state.insight  # type: ignore[attr-defined]
-    hub.post("/api/me/search", json={"q": "zzz-nada"})
-    s = ins.analytics.summary(int(time.time() * 1000))
-    assert s["searches"] == 1 and s["searches_zero"] == 1
+def test_days_saved_by_an_older_version_drop_the_search_counts(tmp_path: Path) -> None:
+    old = {"raw_terms": True, "days": {"2026-11-01": {"users": [1], "searches": 4, "searches_zero": 2,
+                                                       "zero_terms": {"contrato": 2}, "pages": {"/": 1}}}}  # fmt: skip
+    (tmp_path / "analytics.json").write_text(json.dumps(old), encoding="utf-8")
+    a = Analytics(tmp_path, None)
+    assert a.days["2026-11-01"]["pages"] == {"/": 1} and "zero_terms" not in a.days["2026-11-01"]
+    a.flush(1_790_000_000_000)
+    assert "contrato" not in (tmp_path / "analytics.json").read_text(encoding="utf-8")
 
 
 def test_for_push_hashes_users_and_keeps_only_env() -> None:
@@ -913,7 +906,7 @@ def test_two_replicas_telemetry_files_add_up(tmp_path: Path) -> None:
     a1, a2 = Analytics(tmp_path, None), Analytics(tmp_path, None)
     a1.record("u1", "login", now=now)
     a2.record("u2", "login", now=now)
-    a2.record("u2", "search", "contrato", n=0, now=now)
+    a2.record("u2", "page", "/inbox", now=now)
     a1.flush(now)
     a2.flush(now)
     assert Analytics(tmp_path, None).summary(now)["dau"] == 2

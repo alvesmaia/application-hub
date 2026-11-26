@@ -15,8 +15,8 @@ from fastapi import FastAPI
 
 from hub.admin.store import OutboxIngest
 from hub.ops.leader import Leader
+from hub.ux.applink import safe_app_link
 from hub.ux.inbox import approval_of, item_of, now_ms
-from hub.ux.search import safe_app_link
 
 TOKEN_HEADER, PAGE, MAX_BODY = "x-hub-internal-token", 200, 1 << 20
 _ADMIN_PERMS = (1, 2, 3, 4)  # Users, Settings, Audit, Variables

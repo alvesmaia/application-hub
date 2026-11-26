@@ -1,4 +1,4 @@
-"""Read accounts for the apps' Postgres (dashboards, DBeaver): the operations behind Administration › Users ›
+"""Read accounts for the apps' Postgres (dashboards, SQL clients): the operations behind Administration › Users ›
 Database access. SQL in `dbaccess_sql`, network/TLS in `dbaccess_net`; `run(db, statements)` is the psql of the
 database container (tests pass a disposable Postgres)."""
 
@@ -10,22 +10,29 @@ import secrets
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+from hub.admin import dbaccess_net as net
 from hub.admin import dbaccess_sql as q
-from hub.admin.dbaccess_net import NEVER
 
 Run = Callable[[str, list[str]], Awaitable[str]]
 
 
 class DbAccess:
-    def __init__(self, run: Run) -> None:
-        self.run = run
+    def __init__(self, run: Run, hub_db: str | None = None) -> None:
+        self.run, self.hub_db = run, hub_db or net.hub_db()
 
     async def _json(self, db: str, sql: str) -> Any:
         out = (await self.run(db, [sql])).strip().splitlines()
         return json.loads(out[-1] if out else "null")
 
+    async def _readable(self) -> list[str]:
+        return [d for d in await self._json("postgres", q.DBS_SQL) if d not in net.NEVER]
+
     async def databases(self) -> list[str]:
-        return [d for d in await self._json("postgres", q.DBS_SQL) if d not in NEVER]
+        """The apps' databases (the hub's own is a separate choice: `has_hub_db`)."""
+        return [d for d in await self._readable() if d != self.hub_db]
+
+    async def has_hub_db(self) -> bool:
+        return self.hub_db in await self._readable()
 
     async def accounts(self, now: datetime.datetime | None = None) -> list[dict[str, Any]]:
         await self.run("postgres", q.readers_sql())
@@ -36,7 +43,7 @@ class DbAccess:
         """(role, password): the password exists only in this answer."""
         role = q.role_of(a.name)
         q.check_dbs(a.dbs)
-        if missing := sorted(set(a.dbs) - set(await self.databases())):
+        if missing := sorted(set(a.dbs) - set(await self._readable())):
             raise ValueError(f"bancos inexistentes: {', '.join(missing)}")
         if not 1 <= a.days <= 365:
             raise ValueError(f"validade de {a.days} dias: use de 1 a 365")

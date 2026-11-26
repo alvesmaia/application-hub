@@ -8324,8 +8324,8 @@
 "New read account"
 ],
 [
-"Contas só de leitura para dashboards e ferramentas como o DBeaver, por host e porta, com TLS.",
-"Read-only accounts for dashboards and tools like DBeaver, over host and port, with TLS."
+"Contas só de leitura para dashboards e clientes SQL, por host e porta, com TLS.",
+"Read-only accounts for dashboards and SQL clients, over host and port, with TLS."
 ],
 [
 "Responsável",

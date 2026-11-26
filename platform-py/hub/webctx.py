@@ -19,7 +19,7 @@ from hub.gateway.env_path import env_of
 from hub.gateway.proxy import Gateway
 from hub.insight.runtime import Insight
 from hub.ux.inbox_routes import bell_of
-from hub.ux.shell import can_open, i18n_for, nav_for, platform_palette, tabs_for, theme_of, visible_nav
+from hub.ux.shell import can_open, i18n_for, nav_for, tabs_for, theme_of, visible_nav
 from hub.ux.texts import t, tn, tr
 
 THEME = "#0a2848"
@@ -38,7 +38,7 @@ STAGING_BAR_CSS = (
     "color:var(--color-warning);border:1px solid var(--color-warning-shape)}\n"
 )
 # hub-ux.js and the files split from it, in load order.
-UX_SCRIPTS = ("hub-ux.js", "hub-ux-palette.js", "hub-ux-rail.js", "hub-ux-colfilter.js", "hub-ux-pages.js")
+UX_SCRIPTS = ("hub-ux.js", "hub-ux-tour.js", "hub-ux-rail.js", "hub-ux-colfilter.js", "hub-ux-pages.js")
 WEB_SCRIPTS = ("hub-i18n.js", "logshare.js", "admin.js", "ops.js", "ops-drawer.js", "insights.js", "ux.js")
 SCRIPTS = (*UX_SCRIPTS, *WEB_SCRIPTS, "devdocs.js")
 
@@ -111,22 +111,6 @@ class WebCtx:
         c = str(cfg.get("brand_color", "")).strip().lower()
         return c if re.fullmatch(r"#[0-9a-f]{6}", c) else ""
 
-    def app_palette(self, request: Request, lang: str) -> str:
-        """User's apps first, then the platform pages (Ctrl+K shortcut)."""
-        allowed = getattr(request.state, "apps", None)
-        apps = [
-            {
-                "title": e.name,
-                "subtitle": e.display.get("description", ""),
-                "url": f"/apps/{e.id}",
-                "kind": t("shell.apps", lang),
-                "score": 0.0,
-            }
-            for e in self.gateway.registry.entries()
-            if allowed is None or e.id in allowed
-        ]
-        return json.dumps([*apps, *platform_palette(lang)], ensure_ascii=False, separators=(",", ":"))
-
     def page_ctx(self, request: Request, body_class: str = "rail-expanded") -> dict[str, Any]:
         principal = getattr(request.state, "user", {"name": "Visitante"})
         lang = getattr(request.state, "lang", "pt-BR")
@@ -151,7 +135,6 @@ class WebCtx:
             "tabs": tabs_for(request.url.path, request.query_params.get("tab", ""), perms),
             "manifest_href": _manifest_href(request.url.path),
             "i18n": i18n_for(lang),
-            "palette": self.app_palette(request, lang),
             "scripts": SCRIPTS,
             "theme_color": THEME,
             "lang": lang,

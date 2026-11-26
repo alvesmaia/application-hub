@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { apiAs, json, newRoleContext, openApp, stateFile, uniq } from './helpers';
 
 // Wave 9 (Phase 3): guided onboarding, Inbox (notifications and approvals coming from the apps),
-// federated global search (⌘K), customizable Home, usage analytics, dark theme,
+// customizable Home, usage analytics, dark theme,
 // idiomas e acessibilidade (axe, WCAG 2.2 AA).
 test.use({ storageState: stateFile('admin') });
 test.describe.configure({ mode: 'serial' });
@@ -165,45 +165,26 @@ test('inbox: pedido de acesso a app fora da lista → administrador aprova → a
   }
 });
 
-test('busca ⌘K: plataforma + apps federados, teclado, listbox e buscas recentes', async ({ page }) => {
-  await page.goto('/applications');
-  await page.keyboard.press('Control+k');
-  const dialog = page.getByRole('dialog', { name: 'Busca global' });
-  await expect(dialog).toBeVisible();
-  const input = dialog.getByRole('combobox');
-  await expect(input).toBeFocused();
-  await input.fill('Norte');
-  const listbox = dialog.getByRole('listbox');
-  await expect(listbox.getByRole('option', { name: /Norte Tecnologia/ }).first()).toBeVisible({ timeout: 15_000 });
-  await expect(listbox.getByRole('group').first()).toBeVisible();
-  // Group of the suppliers app (federated result through /_hub/search).
-  await expect(dialog.locator('.hub-palette-group', { hasText: 'Rede de Fornecedores' })).toBeVisible();
-  // Arrows move the active option (aria-activedescendant).
-  await page.keyboard.press('ArrowDown');
-  const active = await input.getAttribute('aria-activedescendant');
-  expect(active).toMatch(/^hub-po-/);
-  // Enter on the supplier option opens the deep link.
-  const opt = listbox.getByRole('option', { name: /Norte Tecnologia Fornecedor/ });
-  const id = await opt.getAttribute('id');
-  for (let i = 0; i < 12 && (await input.getAttribute('aria-activedescendant')) !== id; i++) await page.keyboard.press('ArrowDown');
-  await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(/\/apps\/suppliers\/indicators\?id=FOR-0284/);
-  await expect(page.locator('#app-root .app-sidebar')).toBeVisible({ timeout: 30_000 });
-  // Inside the app the palette uses the local index (CSP) and offers the full search.
-  await page.keyboard.press('Control+k');
-  await page.getByRole('combobox').fill('Ativos');
-  await expect(page.getByRole('option', { name: /Gestão de Ativos/ })).toBeVisible();
-  await expect(page.getByRole('option', { name: /Ver todos os resultados/ })).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog', { name: 'Busca global' })).toHaveCount(0);
-  // Buscas recentes (paleta vazia).
+test('sem busca; tutorial "notificações" leva às preferências e conclui', async ({ page }) => {
+  const api = await apiAs('admin');
+  // The hub has no search any more: Ctrl+K opens nothing and /search does not exist.
   await page.goto('/');
   await page.keyboard.press('Control+k');
-  await expect(page.getByRole('option', { name: 'Norte' })).toBeVisible();
-  await page.keyboard.press('Escape');
-  // Results page (no JS) and a search with no results in the analytics.
-  await page.goto(`/search?q=zzz-nada-${RUN}`);
-  await expect(page.locator('.empty-state')).toContainText('Nenhum resultado');
+  await expect(page.getByRole('dialog', { name: 'Busca global' })).toHaveCount(0);
+  expect((await page.request.get('/search?q=x')).status()).toBe(404);
+  await expect(page.locator('li[data-step="search"]')).toHaveCount(0);
+  // The "notifications" step leads to My account › Preferences, where saving completes it.
+  const step = page.locator('li[data-step="notifications"] a');
+  await expect(step).toHaveAttribute('href', '/account#prefs');
+  await step.click();
+  await expect(page).toHaveURL(/\/account#prefs$/);
+  const form = page.locator('[data-channel-form]');
+  await expect(form).toBeVisible();
+  await form.locator('button[type="submit"]').click();
+  await expect.poll(async () => (await json(await api.get('/api/me/prefs'))).steps).toContain('notifications');
+  await page.goto('/');
+  await expect(page.locator('li[data-step="notifications"]')).toHaveClass(/done/);
+  await api.dispose();
 });
 
 test('início: personalizar (remover, reordenar pelo teclado, adicionar), favoritos e persistência', async ({ page }) => {
@@ -243,14 +224,12 @@ test('início: personalizar (remover, reordenar pelo teclado, adicionar), favori
   await expect.poll(async () => (await json(await api.get('/api/me/prefs'))).layout_source).toBe('default');
 });
 
-test('uso: card em Configurações (MAU, uso por app, buscas sem resultado), CSV e links antigos; leitor sem acesso', async ({ page, browser }) => {
+test('uso: card em Configurações (MAU, uso por app), CSV e links antigos; leitor sem acesso', async ({ page, browser }) => {
   const admin = await apiAs('admin');
-  expect((await admin.put('/api/admin/analytics/terms', { data: { raw: false } })).status()).toBe(200);
-  expect((await admin.post('/api/me/search', { data: { q: `zzz-nada-${RUN}` } })).status()).toBe(200);
   await page.goto('/admin');
   const card = page.locator('[data-usage-card]');
   await expect(card).toContainText('Usuários ativos (MAU)');
-  await expect(card).toContainText('Buscas sem resultado');
+  await expect(card).not.toContainText('Buscas sem resultado');
   await expect(card).toContainText('Uso por aplicação');
   await page.goto('/admin/analytics'); // link antigo
   await expect(page).toHaveURL(/\/admin#uso$/);
@@ -328,7 +307,7 @@ test('tema escuro e idioma: menu do usuário persiste no servidor; en/es no shel
 });
 
 // ---- Accessibility: axe (WCAG 2.2 AA) on the main pages, 2 themes × 2 languages ----------
-const PAGES = ['/', '/applications', '/inbox', '/search?q=norte', '/status', '/admin', '/admin/health', '/admin/connections', '/apps/inventory/assets', '/apps/servicedesk/requests', '/apps/suppliers/indicators'];
+const PAGES = ['/', '/applications', '/inbox', '/status', '/admin', '/admin/health', '/admin/connections', '/apps/inventory/assets', '/apps/servicedesk/requests', '/apps/suppliers/indicators'];
 
 async function axe(page: Page) {
   const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();

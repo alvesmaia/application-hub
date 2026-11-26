@@ -49,7 +49,7 @@ def check_dbs(dbs: tuple[str, ...]) -> None:
     bad = [d for d in dbs if not _DB.match(d) or d in NEVER or d.startswith("template")]
     if bad or not dbs:
         raise ValueError(
-            f"bancos inválidos: {bad or 'nenhum'} (escolha bancos de apps; nunca {', '.join(NEVER)})"
+            f"bancos inválidos: {bad or 'nenhum'} (escolha bancos existentes; nunca {', '.join(NEVER)})"
         )
 
 
@@ -111,4 +111,4 @@ FROM pg_roles r WHERE starts_with(r.rolname, '{ROLE_PREFIX}') AND pg_has_role(r.
   AND r.rolname <> '{READERS}'"""  # noqa: S608 - constants
 
 DBS_SQL = """SELECT coalesce(json_agg(datname ORDER BY datname), '[]') FROM pg_database
-WHERE NOT datistemplate AND datname NOT IN ('hub', 'postgres')"""
+WHERE NOT datistemplate AND datname <> 'postgres'"""

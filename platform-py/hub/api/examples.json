@@ -209,28 +209,6 @@
   ],
   "rotated": 2
  },
- "SearchResult": {
-  "groups": [
-   {
-    "hits": [
-     {
-      "kind": "Aplicações",
-      "score": 0.6,
-      "subtitle": "",
-      "title": "Gestão de Ativos",
-      "url": "/inventory"
-     }
-    ],
-    "id": "platform",
-    "label": "Plataforma"
-   }
-  ],
-  "partial": false,
-  "q": "inventory",
-  "took_ms": 3,
-  "total": 1,
-  "unavailable": []
- },
  "StatusPage": {
   "apps": [
    {

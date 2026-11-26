@@ -7,7 +7,25 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Removed
+- Search: the hub no longer has a global search — no Ctrl+K palette, no `/search` page, no `GET/POST /api/me/search`,
+  no `search` operation in `/api/v1` and MCP, no "Use the search" step in the tutorial and tour. The usage analytics
+  no longer count searches nor keep terms without results (`PUT /api/v1/analytics/terms` is gone; data saved by
+  older versions drops those fields on load). Apps: the hub no longer calls `GET /{app}/_hub/search`; the SDK drops
+  `sdk.search`/`hub_sdk.search` and the sample apps their search providers. Each app keeps its own list filters.
+
+### Fixed
+- Tutorial: the "notifications" step pointed to `/inbox#prefs`, where there is no form, so it could not be
+  completed; it now leads to My account › Preferences (`/account#prefs`), where saving the channels completes it.
+
+### Added
+- Database read accounts may also read the hub's own database, through a separate "Banco do hub" option (never
+  as one more app; the audit line says so). Sessions and tokens there are hashes; the vault, users and audit live in
+  files. `postgres` and the templates stay closed.
+
 ### Changed
+- Database access texts name no particular tool ("SQL clients").
+- The read account's credentials also show the databases it reads (one connection per database in the client).
 - `hub-check` runs the hub's tests in parallel (pytest-xdist, `HUB_CHECK_WORKERS`, default 4: ~5 min instead of ~11)
   and does not test the same code twice: a green full run records the code's identity (docs and the release's
   version line do not count), so the push hook and the release's push skip it (`HUB_CHECK_FORCE=1` forces).
@@ -23,7 +41,7 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 ## [0.6.0] — 2026-11-25
 
 ### Added
-- Read access to the apps' database from other machines (dashboards, DBeaver) by host and port: off by default;
+- Read access to the apps' database from other machines (dashboards, SQL clients) by host and port: off by default;
   `install.sh --db-public-port 5432 --db-allowed-cidrs …` (or the installer's question, also asked once on an existing
   install). Only read accounts get in from outside, over TLS, from the allowed networks; the service roles stay on the
   Docker networks; the hub writes `pg_hba.conf` and the certificate. Administração › Usuários › **Acesso ao banco**:

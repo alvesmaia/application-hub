@@ -30,7 +30,6 @@ from servicedesk.approvals import make_approvals
 from servicedesk.i18n import I18nMiddleware
 from servicedesk.model import SCHEMA_SQL
 from servicedesk.routes import pages, reports, tickets
-from servicedesk.search import make_search
 from servicedesk.seed import seed
 from servicedesk.session import Sessions
 from servicedesk.state import State
@@ -41,7 +40,6 @@ APP_ID = "servicedesk"
 def create_app() -> FastAPI:
     scratch = scratch_dir(APP_ID)
     sdk = HubSdk.from_env(APP_ID, app_sql=SCHEMA_SQL, after_migrate=seed)
-    sdk.search = make_search(sdk)
     sdk.approvals = make_approvals(sdk)
     st = State(sdk, scratch, Sessions.from_env())
     app = FastAPI(lifespan=sdk.lifespan, docs_url=None, redoc_url=None, openapi_url=None)

@@ -202,7 +202,7 @@ async def test_scan_mode_is_remembered_per_user(db_url: str, running: Running) -
 
 
 @pytest.mark.db
-async def test_search_and_api(db_url: str, running: Running) -> None:
+async def test_api_and_lookup(db_url: str, running: Running) -> None:
     c = running.client
     await wait_ready(c)
     a = await c.get("/collector/api/v1/items/COL-0002")
@@ -214,11 +214,6 @@ async def test_search_and_api(db_url: str, running: Running) -> None:
     assert p.status_code == 201 and p.json()["kind"] == "local" and p.json()["source"] == "leitor"
     lst = (await c.get("/collector/api/v1/reads?limit=1")).json()["items"]
     assert lst[0]["value"] == "LOC-B01"
-    s = await c.get(
-        "/collector/_hub/search?q=COL-0003&limit=5",
-        headers={"x-hub-internal-token": "collector-token-de-teste-1234567"},
-    )
-    assert s.status_code == 200 and s.json()["results"][0]["url"].startswith("/apps/collector/scan?codigo=")
     look = (await c.get("/collector/scan?codigo=COL-0003")).text
     assert "data-col-lookup" in look and "Item:" in look
 

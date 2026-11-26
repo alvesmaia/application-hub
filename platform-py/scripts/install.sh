@@ -46,7 +46,7 @@
 #   --local-login admins|todos|nenhum   e-mail/password sign-in besides Microsoft (default admins)
 #   --trusted-proxy CIDR   reverse proxy in front (e.g. Nginx with TLS): its X-Forwarded-* headers are trusted
 #
-# Read access to the apps' database from other machines (dashboards, DBeaver; accounts made in Administration),
+# Read access to the apps' database from other machines (dashboards, SQL clients; accounts made in Administration),
 # also on an existing install (rerun with these options; the database is recreated with the port):
 #   --db-public-port PORT [--db-allowed-cidrs LIST]   TLS required; networks optional (none = any origin that reaches
 #                        the port: for a server reachable only from the corporate network/VPN)

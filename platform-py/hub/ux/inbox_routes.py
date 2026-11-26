@@ -1,4 +1,4 @@
-"""Inbox (`/inbox`, `/api/me/inbox*`, SSE `/api/me/stream`), access requests and search (`/search`, `/api/me/search`)."""
+"""Inbox (`/inbox`, `/api/me/inbox*`, SSE `/api/me/stream`) and access requests."""
 
 from __future__ import annotations
 
@@ -7,21 +7,18 @@ import json
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass
 from typing import Any, cast
-from urllib.parse import quote
 
 import httpx
-from fastapi import APIRouter, Depends, FastAPI, Query, Request
+from fastapi import APIRouter, Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, ValidationError, field_validator
 
 from hub.gateway.identity import Identity
-from hub.ux import search as srch
+from hub.ux.applink import internal_token
 from hub.ux.inbox import InboxError, InboxStore, Who
 from hub.ux.pager import paginate
-from hub.ux.shell import nav_for
 from hub.ux.store import KINDS, UxStore
-from hub.ux.texts import tn
 
 MAX_STREAMS = 12
 FILTERS = ("all", "unread", "approvals", "notifications", "alerts", "archived")
@@ -40,10 +37,6 @@ class DecideIn(BaseModel):
 class AccessIn(BaseModel):
     app: str
     reason: str = ""
-
-
-class QueryIn(BaseModel):
-    q: str
 
 
 class RevokeIn(BaseModel):
@@ -143,7 +136,7 @@ async def stream_events(
 
 @dataclass
 class InboxCtx:
-    """Inbox and search dependencies (`app.state.inbox_ctx`); route handlers get it with `Depends(ctx)`."""
+    """Inbox dependencies (`app.state.inbox_ctx`); route handlers get it with `Depends(ctx)`."""
 
     app: FastAPI
     templates: Jinja2Templates
@@ -161,7 +154,7 @@ class InboxCtx:
     ) -> str:
         """Notifies the app (`POST /_hub/approvals/{id}`); returns its final result or raises `InboxError`."""
         entry = self.app.state.gateway.registry.get(it["app"])
-        token = srch.internal_token(it["app"])
+        token = internal_token(it["app"])
         if entry is None or token is None:
             raise InboxError(502, "Aplicação sem token interno.")
         ident = Identity(
@@ -220,26 +213,6 @@ class InboxCtx:
         )
         return status
 
-    async def run_search(self, request: Request, q: str, only: str | None, per_app: int) -> srch.Results:
-        who = who_of(request)
-        users = []
-        if "gerenciar_usuarios" in who.perms:
-            async with self.app.state.auth.locked() as d:
-                users = [{"name": u["name"], "email": u["email"]} for u in d["users"] if u["active"]]
-        gw = self.app.state.gateway
-        ctx = srch.Ctx(
-            identity=gw.identity_for(request),
-            perms=who.perms,
-            superuser="Administrador" in who.roles,
-            reg=gw.registry,
-            client=gw.client,
-            nav=nav_for("pt-BR"),
-            lang=request.state.lang,
-            data_dir=self.app.state.data_dir,
-            users=users,
-        )
-        return await srch.search(ctx, q, only, per_app)
-
 
 def ctx(request: Request) -> InboxCtx:
     return cast(InboxCtx, request.app.state.inbox_ctx)
@@ -254,10 +227,6 @@ async def body_of(request: Request, model: type[BaseModel]) -> Any:
         return model.model_validate(await request.json())
     except (ValidationError, ValueError):
         return None
-
-
-def too_many() -> JSONResponse:
-    return err(429, "Muitas buscas seguidas; aguarde um instante.", **{"retry-after": "1"})
 
 
 router = APIRouter()
@@ -286,34 +255,6 @@ async def read_form(request: Request, next: str = "/inbox", c: InboxCtx = Depend
     ids = [int(e["id"][2:]) for e in entries_of(request) if not e["archived"]]
     c.inbox.set_state(who_of(request), ids, True, None)
     return RedirectResponse(next if next.startswith("/") and not next.startswith("//") else "/inbox", 303)
-
-
-@router.get("/search", response_class=HTMLResponse)
-async def search_page(
-    request: Request, q: str = "", only_app: str = Query("", alias="app"), c: InboxCtx = Depends(ctx)
-) -> Response:
-    only = only_app or None
-    res = None
-    if q.strip() and srch.search_allowed(request.state.user["id"]):
-        res = await c.run_search(request, q, only, srch.PER_APP_ALL if only else srch.PER_APP)
-    groups = [
-        g
-        | {
-            "hits": [(h["url"], srch.mark_split(h["title"], q), _meta(h)) for h in g["hits"]],
-            "more_label": tn("search.see_all_app", g["label"], request.state.lang) if g["more_url"] else "",
-        }
-        for g in (res.groups if res else [])
-    ]
-    page = c.page_ctx(request) | {
-        "q": q,
-        "record": "" if not q.strip() or only else q.strip(),
-        "back": f"/search?q={quote(q.strip())}" if only else "",
-        "partial": bool(res and res.partial),
-        "no_results": bool(res and res.total == 0),
-        "none_text": tn("search.none", q, request.state.lang),
-        "groups": groups,
-    }
-    return c.templates.TemplateResponse(request, "search.html", page)
 
 
 # ---- API: Inbox ---------------------------------------------------------------------------
@@ -406,36 +347,6 @@ async def revoke_grant(request: Request, c: InboxCtx = Depends(ctx)) -> Response
     return JSONResponse({"ok": True})
 
 
-# ---- API: busca ------------------------------------------------------------------------------
-@router.get("/api/me/search")
-@router.get("/api/search")
-async def api_search(request: Request, q: str = "", c: InboxCtx = Depends(ctx)) -> Response:
-    text = q.strip()
-    if not text:
-        return JSONResponse(
-            {"q": "", "groups": [], "recent": c.store.prefs(request.state.user["id"]).searches}
-        )
-    if not srch.search_allowed(request.state.user["id"]):
-        return too_many()
-    return JSONResponse((await c.run_search(request, text, None, srch.PER_APP)).json())
-
-
-@router.post("/api/me/search")
-async def search_final(request: Request, c: InboxCtx = Depends(ctx)) -> Response:
-    b = await body_of(request, QueryIn)
-    text = b.q.strip()[:120] if b else ""
-    if not text:
-        return err(400, "Informe o termo.")
-    if not srch.search_allowed(request.state.user["id"]):
-        return too_many()
-    res = await c.run_search(request, text, None, srch.PER_APP)
-    uid = request.state.user["id"]
-    c.store.remember_search(uid, text)
-    c.store.step(uid, "search")
-    request.app.state.insight.analytics.record(uid, "search", text, n=res.total)
-    return JSONResponse({"ok": True, "total": res.total})
-
-
 def mount_inbox(
     app: FastAPI,
     templates: Jinja2Templates,
@@ -448,7 +359,3 @@ def mount_inbox(
     app.state.inbox_ctx = c
     app.state.inbox_decide = c.decide
     app.include_router(router)
-
-
-def _meta(h: dict[str, Any]) -> str:
-    return f"{h['kind']} · {h['subtitle']}" if h["subtitle"] else str(h["kind"])

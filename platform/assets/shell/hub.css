@@ -66,25 +66,7 @@ body[data-hub-perms]:not([data-hub-perms~="*"]):not([data-hub-perms~="gerenciar_
 .linklike{background:none;border:0;padding:0;font:inherit;color:var(--color-accent);cursor:pointer;text-decoration:underline;text-align:left}
 .hub-select,.hub-input{font:inherit;font-size:var(--font-size-base);color:var(--color-text);background:var(--color-surface);border:1px solid var(--color-border-strong);border-radius:var(--radius-xl);padding:6px var(--space-10);min-height:32px}
 /* Header search button (opens the palette). */
-button.header-search.hub-search-trigger{font:inherit;cursor:pointer;text-align:left;height:30px;max-width:420px;color:color-mix(in srgb,var(--color-text-inverse) 85%,transparent)}
-button.header-search.hub-search-trigger .hub-search-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--font-size-sm)}
-button.header-search.hub-search-trigger .hub-kbd{display:inline-block;font:600 var(--font-size-xs) var(--font-mono,monospace);padding:1px 5px;border:1px solid color-mix(in srgb,var(--color-border-inverse) 30%,transparent);border-radius:var(--radius-xs);color:var(--color-text-inverse);background:transparent}
-@media(max-width:760px){button.header-search.hub-search-trigger .hub-search-label,button.header-search.hub-search-trigger .hub-kbd{display:none}button.header-search.hub-search-trigger{flex:0 0 auto;width:36px;justify-content:center}}
 body.hub-modal-open{overflow:hidden}
-.hub-palette-backdrop{position:fixed;inset:0;z-index:var(--z-menu);background:color-mix(in srgb,var(--c-navy-16) 45%,transparent);display:flex;align-items:flex-start;justify-content:center;padding:10vh var(--space-16) var(--space-16)}
-.hub-palette-backdrop[hidden]{display:none}
-.hub-palette{width:min(640px,100%);max-height:70vh;display:flex;flex-direction:column;background:var(--color-surface);color:var(--color-text);border:1px solid var(--color-border-strong);border-radius:var(--radius-5xl);box-shadow:var(--shadow-modal);overflow:hidden}
-.hub-palette-input{display:flex;align-items:center;gap:var(--space-10);padding:var(--space-12) var(--space-14);border-bottom:1px solid var(--color-border)}
-.hub-palette-input svg{width:18px;fill:none;stroke:currentColor;stroke-width:1.8;color:var(--color-text-muted)}
-.hub-palette-input input{flex:1;border:0;background:transparent;color:var(--color-text);font-size:var(--font-size-lg);min-width:0}
-.hub-palette-input input:focus-visible{outline:none}
-.hub-palette-list{overflow-y:auto;padding:var(--space-6)}
-.hub-palette-group{font:700 var(--font-size-xs) var(--font-ui);text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-secondary);padding:var(--space-10) var(--space-10) var(--space-4)}
-.hub-palette-option{display:flex;flex-direction:column;gap:2px;padding:var(--space-8) var(--space-10);border-radius:var(--radius-xl);cursor:pointer}
-.hub-palette-option small{color:var(--color-text-secondary)}
-.hub-palette-option[aria-selected="true"]{background:var(--color-accent-soft);outline:2px solid var(--color-accent);outline-offset:-2px}
-.hub-palette-all span{color:var(--color-accent);font-weight:600}
-.hub-palette-foot{display:flex;justify-content:space-between;gap:var(--space-10);padding:var(--space-8) var(--space-14);border-top:1px solid var(--color-border);font-size:var(--font-size-xs);color:var(--color-text-secondary)}
 /* Guided tour. */
 .hub-tour{position:fixed;z-index:var(--z-menu);top:90px;left:24px;width:min(330px,calc(100vw - 24px));background:var(--color-surface);color:var(--color-text);border:2px solid var(--color-accent);border-radius:var(--radius-5xl);box-shadow:var(--shadow-modal);padding:var(--space-16)}
 .hub-tour-close{position:absolute;top:var(--space-8);right:var(--space-8)}
@@ -161,10 +143,6 @@ body.hub-modal-open{overflow:hidden}
 .hub-prefs{margin-top:var(--space-16)}
 .hub-prefs td small{margin-left:var(--space-4);color:var(--color-text-secondary)}
 .hub-check-label{display:inline-flex;gap:var(--space-8);align-items:center}
-.hub-search-form{display:flex;gap:var(--space-8);margin-bottom:var(--space-16)}
-.hub-search-form .hub-input{flex:1}
-.hub-search-group{margin-bottom:var(--space-12)}
-.hub-search-group h2{font:700 15px var(--font-display);margin:0 0 var(--space-8)}
 /* Analytics. */
 .hub-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:var(--space-12);margin-bottom:var(--space-16)}
 .hub-kpi{display:flex;flex-direction:column;gap:var(--space-4);padding:var(--space-16);margin:0}
@@ -214,8 +192,6 @@ code,kbd,pre,samp,.mono,.hub-mono{font-family:var(--font-mono)}
 .hub-source-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}.hub-source-link svg{width:18px;height:18px;fill:currentColor;stroke:none}.platform-header .hub-source-link:hover{color:var(--color-chrome-text)}
 .user-copy strong{color:var(--color-chrome-text)}
 .user-copy small{color:var(--color-chrome-text-2)}
-.header-search,button.header-search.hub-search-trigger{color:var(--color-chrome-text-2);border-radius:8px}
-.header-search input::placeholder{color:var(--color-chrome-text-2)}
 .platform-rail,.rail-restore-button,.sidebar-skeleton,.app-sidebar{background:var(--color-chrome);color:var(--color-chrome-text)}
 .platform-rail{border-right:1px solid color-mix(in srgb,var(--color-chrome-text) 8%,transparent)}
 .rail-item,.rail-subitem,.rail-control{color:var(--color-chrome-icon)}
@@ -287,8 +263,6 @@ a.primary-button,a.secondary-button,a.filter-button,a.filter-chip{text-decoratio
 .brand-mark,.brand-mark img,.brand-mark svg{width:34px!important;height:34px!important;min-width:34px}
 .brand-subtitle{font-size:12px;letter-spacing:.1em;font-weight:600}
 .brand-name{font-family:var(--font-brand)!important;font-weight:700;letter-spacing:-.01em}
-@media(min-width:1001px){.platform-header .header-search,button.header-search.hub-search-trigger{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,calc(100% - 680px));min-width:240px;max-width:440px;margin:0}}
-@media(max-width:1000px){.platform-header .header-search,button.header-search.hub-search-trigger{flex:1;max-width:440px}}
 /* Rail and sidebars: 32px items, 2px gap, icons in the same box. */
 .rail-nav,.rail-expanded .rail-nav,.rail-submenu,.sidebar-nav{gap:2px}
 .rail-expanded .platform-rail{padding-top:var(--space-8)}
@@ -305,11 +279,10 @@ a.primary-button,a.secondary-button,a.filter-button,a.filter-chip{text-decoratio
 .nav-item.active{font-weight:600}
 .sidebar-caption{padding-top:var(--space-4)}
 /* Weights: tabs 500, active 600; panel header. */
-.hub-widget-head h2,.hub-search-group h2,.hub-inbox-title{font-size:15px;font-weight:800;letter-spacing:-.02em}
+.hub-widget-head h2,.hub-inbox-title{font-size:15px;font-weight:800;letter-spacing:-.02em}
 h1,h2,h3,h4,h5,h6{font-weight:800;letter-spacing:-.02em}
 .hub-kpi-value,.stat-number,.metric-value,.data-table td.num,.hub-num{font-variant-numeric:tabular-nums}
 .hub-kpi-value{font-size:27px}
-.hub-palette-group{font-weight:600}
 .hub-badge{font-weight:600}
 .app-card .app-card-title{font-weight:700}
 .skip-link{font-weight:600}
@@ -466,7 +439,7 @@ select,input,textarea{color-scheme:inherit}
 .hub-more-body p+p,.hub-more-body ul{margin-top:var(--space-6)}
 /* Controls: single 32 px height; neutral border (≥ 3:1 in both themes); the focus color
  * only appears in :focus-visible. */
-:is(.page-container,.modal,.auth-main,.header-popover,.acct-dialog,.hub-palette) :is(input:not([type=checkbox],[type=radio],[type=range],[type=file],[type=color],[type=hidden],[type=submit],[type=button]),select){min-height:32px;height:32px;padding:4px 10px;font-size:13px;line-height:1.4;box-sizing:border-box}
+:is(.page-container,.modal,.auth-main,.header-popover,.acct-dialog) :is(input:not([type=checkbox],[type=radio],[type=range],[type=file],[type=color],[type=hidden],[type=submit],[type=button]),select){min-height:32px;height:32px;padding:4px 10px;font-size:13px;line-height:1.4;box-sizing:border-box}
 :is(.page-container,.modal,.auth-main,.header-popover,.acct-dialog) :is(input:not([type=checkbox],[type=radio],[type=range],[type=file],[type=color],[type=hidden],[type=submit],[type=button]),select,textarea){border:1px solid var(--color-border-control);border-radius:8px;background:var(--color-surface);color:var(--color-text-ink)}
 :is(.page-container,.modal,.auth-main,.header-popover,.acct-dialog) :is(input,select,textarea):focus:not(:focus-visible){border-color:var(--color-border-control)}
 :is(input,select,textarea):focus-visible{border-color:var(--color-accent-shape)}
@@ -505,8 +478,6 @@ pre,code,kbd,samp,.mono,.hub-mono,.log-terminal,.log-terminal *{font-family:var(
 .rail-submenu:not(.open){visibility:hidden}
 .rail-submenu.open{visibility:visible}
 /* Palette (⌘K): close button visible in both themes. */
-.hub-palette-close{color:var(--color-text-secondary)!important;background:transparent!important}
-.hub-palette-close:hover{color:var(--color-text-strong)!important;background:var(--color-surface-hover)!important}
 /* User menu: sections with breathing room, language without truncation, 14 px items. */
 .hub-user-popover{width:280px;padding:var(--space-8) 0}
 .hub-user-popover .hub-pref-form{padding:var(--space-8) var(--space-14);border-top:1px solid var(--color-border)}
@@ -557,7 +528,6 @@ pre,code,kbd,samp,.mono,.hub-mono,.log-terminal,.log-terminal *{font-family:var(
 td.row-actions{text-align:right;white-space:nowrap}
 td.row-actions>*{display:inline-flex;vertical-align:middle;margin-left:var(--space-6)}
 td.row-actions form{margin:0 0 0 var(--space-6)}
-.hub-palette-option mark,.hub-search-group mark{background:var(--color-tint);color:inherit;font-weight:700;border-radius:2px;padding:0 1px}
 /* Catalog: grid without an orphan card; discreet version in the card footer. */
 .app-catalog-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))!important}
 .app-card .app-card-meta{display:flex;align-items:center;gap:var(--space-10);flex-wrap:wrap}
@@ -633,11 +603,6 @@ input[type=checkbox]:focus-visible,input[type=radio]:focus-visible{outline:2px s
 .hub-bar[data-h="0"]{opacity:.35}
 #app-root :is(.hub-filter,.hub-filters,.table-toolbar) :is(input:not([type=checkbox],[type=radio]),select){border-color:var(--color-border-control)!important}
 /* Search: "see all" per app and the internal administration group last, discreet. */
-.hub-search-more{margin:var(--space-8) 0 0;font-size:13px}
-.hub-search-back{margin:0 0 var(--space-12);font-size:13px}
-.hub-search-partial{margin:0 0 var(--space-12)}
-.hub-search-admin{background:var(--color-surface-muted,var(--color-surface));border-style:dashed}
-.hub-search-admin h2{color:var(--color-text-secondary)}
 /* Destructive actions: red also on hover in the ⋯ menus and on the row icons. */
 .hub-row-menu-list button.danger:hover:not(:disabled),.hub-row-menu-list a.danger:hover{background:var(--color-danger-soft);color:var(--color-danger)}
 .hub-row-menu-list a.danger{color:var(--color-danger)}
@@ -800,7 +765,7 @@ body.in-app.rail-collapsed .workspace{left:56px}
    avatar moves inside the menu). The ☰ opens the `#hub-rail` itself as a top-down panel
    under the header (`body.hub-drawer-open`, hub-ux-rail.js) and turns into ✕. `.hub-drawer-only`
    items (user and account) only appear in the panel. */
-.hub-drawer-toggle,.hub-search-mobile,.hub-drawer-only{display:none}
+.hub-drawer-toggle,.hub-drawer-only{display:none}
 @media(max-width:1023px),(pointer:coarse) and (max-height:600px){
   .platform-header{gap:var(--space-4);flex-wrap:nowrap;min-width:0}
   .platform-header .rail-toggle{display:none!important}
@@ -808,7 +773,6 @@ body.in-app.rail-collapsed .workspace{left:56px}
   .platform-header .brand-text{min-width:0}
   .platform-header .brand-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .platform-header .brand-subtitle{display:none}
-  .platform-header button.header-search.hub-search-trigger{display:none!important}
   .platform-header .header-actions{flex:none;gap:var(--space-2);margin-left:auto;order:1}
   .platform-header .hub-user-menu,.platform-header .hub-dev-user{display:none!important}
   .hub-drawer-toggle{order:2;display:inline-flex;align-items:center;justify-content:center;flex:none;width:44px;height:44px;margin-right:calc(-1 * var(--space-8));padding:0;border:0;background:none;color:inherit;border-radius:var(--radius-lg)}
@@ -819,8 +783,6 @@ body.in-app.rail-collapsed .workspace{left:56px}
   .hub-drawer-toggle[aria-expanded="true"] svg path:nth-child(1){transform:translateY(7px) rotate(45deg)}
   .hub-drawer-toggle[aria-expanded="true"] svg path:nth-child(2){opacity:0}
   .hub-drawer-toggle[aria-expanded="true"] svg path:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
-  .hub-search-mobile{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;border:0;background:none;color:inherit}
-  .hub-search-mobile svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
   .platform-header .hub-notif-menu>summary,.platform-header .hub-source-link{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
   .platform-header .hub-source-link{padding:0}
   /* Rail off-screen until the panel opens. */
@@ -868,7 +830,6 @@ body.in-app.rail-collapsed .workspace{left:56px}
   body.in-app:has(.workspace.menu-open){overflow:hidden}
 }
 /* Palette (⌘K) full-screen on phones. */
-@media(max-width:767px){.hub-palette-backdrop{padding:0}.hub-palette{width:100%;height:100dvh;max-height:none;border-radius:0;border:0}}
 @keyframes hub-panel-down{from{transform:translateY(-12px);opacity:0}to{transform:none;opacity:1}}
 @media(max-width:1023px) and (prefers-reduced-motion:reduce),(pointer:coarse) and (max-height:600px) and (prefers-reduced-motion:reduce){body.hub-drawer-open .platform-rail,body.in-app .workspace.menu-open .app-sidebar{animation:none}.hub-drawer-toggle svg path{transition:none}}
 /* ---- Column filters (`data-hub-colfilter`, hub-ux-colfilter.js; guide in docs/DESIGN-TOKENS.md) ---- */

@@ -4,6 +4,7 @@ read accounts against a real (disposable) Postgres."""
 from __future__ import annotations
 
 import datetime
+import html
 import json
 import os
 import secrets
@@ -43,7 +44,9 @@ def test_on_lets_only_readers_in_over_tls_from_the_allowed_ranges() -> None:
     first = lambda s: next(i for i, x in enumerate(lines) if x.startswith(s))  # noqa: E731
     # a connection that lost its source address (shows as a gateway) never reaches anyone
     assert first("host all all 10.231.1.1/32 reject") < first("hostssl all +hub_readers")
-    assert "host hub,postgres,template0,template1 +hub_readers all reject" in lines
+    assert (
+        "host postgres,template0,template1 +hub_readers all reject" in lines
+    )  # the hub's own: by grant only
     assert "hostssl all +hub_readers 10.0.0.0/8 scram-sha-256" in lines
     # readers from anywhere else are refused before the service rules; services only from the Docker networks
     assert first("host all +hub_readers all reject") < first("host all all 10.231.1.0/24 scram-sha-256")
@@ -77,7 +80,7 @@ def test_self_signed_certificate_and_fingerprint() -> None:
 def test_names_and_databases_never_reach_the_sql_unchecked() -> None:
     with pytest.raises(ValueError, match="nome"):
         q.role_of('x"; DROP ROLE hub; --')
-    for bad in (("hub",), ("postgres",), ("template1",), ()):
+    for bad in (("postgres",), ("template1",), ()):
         with pytest.raises(ValueError, match="bancos"):
             q.check_dbs(bad)
     sql = " ".join(
@@ -143,8 +146,10 @@ async def app_dbs() -> AsyncIterator[tuple[str, str]]:
 @pg
 async def test_a_read_account_reads_its_databases_and_nothing_more(app_dbs: tuple[str, str]) -> None:
     app, other = app_dbs
-    acc = DbAccess(run_pg)
-    assert app in await acc.databases() and "hub" not in await acc.databases()
+    acc = DbAccess(run_pg, hub_db=other)
+    assert (
+        app in await acc.databases() and other not in await acc.databases()
+    )  # the hub's is a separate choice
     name = f"t{secrets.token_hex(3)}"
     role, pw = await acc.create(q.NewAccount(name, "u-ana", (app,), 30, "Admin"))
     c = await asyncpg.connect(url_for(app, role, pw))
@@ -192,6 +197,30 @@ async def test_new_password_suspension_expiry_and_removal(app_dbs: tuple[str, st
         await acc.remove(role)
 
 
+def test_the_hubs_own_database_comes_from_its_url() -> None:
+    assert net.hub_db({"HUB_STATE_DB_URL": "postgresql://hub:x@app-hub-app-db:5432/hubstate"}) == "hubstate"
+    assert net.hub_db({}) == "hub"
+
+
+@pg
+async def test_a_read_account_may_read_the_hubs_own_database(app_dbs: tuple[str, str]) -> None:
+    app, hubdb = app_dbs
+    su = await asyncpg.connect(url_for(hubdb))
+    await su.execute("CREATE TABLE sessions (id_hash text)")
+    await su.close()
+    acc = DbAccess(run_pg, hub_db=hubdb)
+    assert await acc.has_hub_db()
+    role, pw = await acc.create(q.NewAccount(f"t{secrets.token_hex(3)}", "u-ana", (app, hubdb), 30, "Admin"))
+    c = await asyncpg.connect(url_for(hubdb, role, pw))
+    try:
+        assert await c.fetchval("SELECT count(*) FROM sessions") == 0
+        with pytest.raises(asyncpg.ReadOnlySQLTransactionError):
+            await c.execute("DELETE FROM sessions")
+    finally:
+        await c.close()
+    assert not await DbAccess(run_pg, hub_db="nao_existe").has_hub_db()
+
+
 # ---- Administration page and API ---------------------------------------------------------------------------
 
 
@@ -211,10 +240,12 @@ async def test_admin_creates_rotates_suspends_and_removes(
     assert r.status_code == 201, r.text
     out = r.json()
     assert out["role"] == f"ro_{name}" and len(out["password"]) >= 24 and out["connection"]["port"] == 5432
+    assert out["dbs"] == [app]  # the credentials say which database to put in the client's connection
     assert out["password"] not in json.dumps(hub.get("/api/admin/db-access").json())
     row = hub.get("/admin/users?tab=db").text.split(f'data-dbaccess-row="ro_{name}"')[1].split("</tr>")[0]
     assert "Bia" in row and "Ativa" in row
-    assert hub.post(f"/api/admin/db-access/ro_{name}/password", json={}).json()["password"] != out["password"]
+    again = hub.post(f"/api/admin/db-access/ro_{name}/password", json={}).json()
+    assert again["password"] != out["password"] and again["dbs"] == [app]
     assert (
         hub.post("/api/admin/db-access", json={"name": "x2", "owner": "bia", "dbs": ["hub"]}).status_code
         == 400
@@ -235,6 +266,35 @@ async def test_admin_creates_rotates_suspends_and_removes(
     )
     titles = [e["title"] for e in hub.get("/api/v1/audit?limit=20").json()["items"]]
     assert "Conta de leitura do banco criada" in titles and "Contas de leitura do banco suspensas" in titles
+
+
+@pg
+async def test_admin_ticks_the_hubs_database_on_its_own(
+    app_dbs: tuple[str, str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    app, hubdb = app_dbs
+    hub = make_hub(tmp_path, monkeypatch)
+    hub.app.state.dbaccess = DbAccess(run_pg, hub_db=hubdb)  # type: ignore[attr-defined]
+    add_user(hub, "bia", ["User"])
+    listed = hub.get("/api/admin/db-access").json()
+    assert app in listed["databases"] and hubdb not in listed["databases"] and listed["hub_db"] == hubdb
+    meta = hub.get("/admin/users?tab=db").text.split('data-users-meta="')[1].split('"')[0]
+    assert json.loads(html.unescape(meta))["hub_db"] == hubdb  # the form offers it as its own option
+    # only through its own option: the app list never carries it
+    bad = hub.post("/api/admin/db-access", json={"name": "x3", "owner": "bia", "dbs": [hubdb]})
+    assert bad.status_code == 400 and "banco do hub" in bad.text
+    assert hub.post("/api/admin/db-access", json={"name": "x4", "owner": "bia", "dbs": []}).status_code == 400
+    name = f"t{secrets.token_hex(3)}"
+    r = hub.post("/api/admin/db-access", json={"name": name, "owner": "bia", "dbs": [], "hub": True})
+    assert r.status_code == 201, r.text
+    acc = next(a for a in hub.get("/api/admin/db-access").json()["accounts"] if a["role"] == f"ro_{name}")
+    assert acc["dbs"] == [hubdb]
+    audit = hub.get("/api/v1/audit?limit=5").json()["items"]
+    assert any(
+        "banco do hub" in e.get("detail", "")
+        for e in audit
+        if e["title"] == "Conta de leitura do banco criada"
+    )
 
 
 # ---- applying the rules inside the database container -----------------------------------------------------

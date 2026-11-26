@@ -26,10 +26,6 @@
   },
   "job_trigger": null,
   "heavy": null,
-  "search": {
-    "q": "Norte",
-    "min": 1
-  },
   "storage": {
     "upload": {
       "path": "/suppliers/suppliers/FOR-0284/attachments",

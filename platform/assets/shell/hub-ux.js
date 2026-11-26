@@ -1,12 +1,5 @@
 /* hub-ux.js — shell experience (wave 9), on every hub page:
  *
- *  - Global search (palette ⌘K / Ctrl+K): modal dialog with a combobox + grouped listbox
- *    (ARIA 1.2), navigation by arrows/Home/End/Enter/Esc, focus trapped in the dialog and
- *    returned on close, recent searches. On the hub pages it queries
- *    `/api/me/search` (platform + federated apps); inside an app the CSP only lets it talk
- *    to the app's gateway, so the palette uses the local index (apps and the user's pages,
- *    published in `data-hub-palette`) and offers "Search in all applications"
- *    (opens `/search?q=`).
  *  - Guided tour: steps according to what the user sees (`[data-tour]`), dialog with focus,
  *    Back/Next/Skip, Esc interrupts (resumed later), state on the server
  *    (`/api/me/onboarding`). Starts by itself on the first visit to the Home page.
@@ -22,46 +15,9 @@
 
   // ---- Pure logic (tested in node: `require('hub-ux.js')`) --------------------------
   const Pure = {
-    fold(s) {
-      return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-    },
-    /** Relevance (same rule as the server): exact 1, starts with 0.8, word 0.6, contains 0.4. */
-    score(text, q) {
-      const t = Pure.fold(text);
-      const n = Pure.fold(q).trim();
-      if (!n) return 0;
-      if (t === n) return 1;
-      if (t.startsWith(n)) return 0.8;
-      if (t.split(/[^\p{L}\p{N}]+/u).some((w) => w.startsWith(n))) return 0.6;
-      if (t.includes(n)) return 0.4;
-      return 0;
-    },
-    /** Local results (palette index) for `q`, best first. */
-    local(index, q, max = 8) {
-      return (index || [])
-        .map((h) => ({ ...h, score: Math.max(Pure.score(h.title, q), Pure.score(h.subtitle, q) * 0.8) }))
-        .filter((h) => h.score > 0)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, max);
-    },
-    /** Next active index in the list (arrows, Home, End), wrapping around to the start/end. */
-    move(cur, len, key) {
-      if (!len) return -1;
-      if (key === 'Home') return 0;
-      if (key === 'End') return len - 1;
-      if (key === 'ArrowDown') return cur < 0 ? 0 : (cur + 1) % len;
-      if (key === 'ArrowUp') return cur <= 0 ? len - 1 : cur - 1;
-      return cur;
-    },
-    /** List of recent searches (newest first, no repeats, up to `max`). */
-    remember(list, q, max = 8) {
-      const v = String(q || '').trim();
-      if (!v) return list || [];
-      return [v, ...(list || []).filter((x) => x !== v)].slice(0, max);
-    },
     /** Tour steps that exist on the page, in canonical order. */
     tourSteps(available) {
-      const order = ['home', 'apps', 'search', 'inbox', 'user', 'admin'];
+      const order = ['home', 'apps', 'inbox', 'user', 'admin'];
       return order.filter((k) => available.includes(k));
     },
     /** Index to resume the tour from the saved state (`step:N`). */
@@ -78,7 +34,7 @@
 
   const body = document.body;
   if (!body || body.dataset.hubUx !== '1') return;
-  // Private scope shared with hub-ux-palette.js and hub-ux-rail.js, loaded right after this
+  // Private scope shared with hub-ux-tour.js and hub-ux-rail.js, loaded right after this
   // one; removed from window once hub-ux-rail.js has run.
   const P = (window.__hubUxParts = {});
   let T = {};
@@ -90,8 +46,6 @@
   };
   const inApp = body.classList.contains('in-app');
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  let paletteIndex = [];
-  try { paletteIndex = JSON.parse(body.dataset.hubPalette || '[]'); } catch (_) { paletteIndex = []; }
   const live = document.getElementById('hub-live');
   const announce = (msg) => { if (live) { live.textContent = ''; setTimeout(() => { live.textContent = msg; }, 50); } };
   const store = () => { try { return window.localStorage; } catch (_) { return null; } };
@@ -113,21 +67,6 @@
     if (inApp) return;
     api('POST', '/api/me/analytics', { feature: name }).catch(() => {});
   }
-  // "Final" search (analytics + recents + "Use the search" step): same-origin POST —
-  // the search GET has no side effects.
-  function recordSearch(q) {
-    if (inApp || !q) return;
-    fetch('/api/me/search', {
-      method: 'POST',
-      credentials: 'same-origin',
-      // No keepalive: the page stays open, and a keepalive fetch never gives the network
-      // as idle in Chromium (/search?q=a never reached networkidle).
-      headers: { 'content-type': 'application/json', accept: 'application/json' },
-      body: JSON.stringify({ q }),
-    }).catch(() => {});
-  }
-  const recordForm = document.querySelector('[data-hub-search-record]');
-  if (recordForm && recordForm.dataset.hubSearchRecord) recordSearch(recordForm.dataset.hubSearchRecord);
   window.HubUx = { api, t, announce, feature, inApp };
 
   // ---- Header menus (<details>) ---------------------------------------------------
@@ -241,10 +180,6 @@
       });
     });
   });
-  // Search shortcut according to the platform (⌘K on macOS, Ctrl K elsewhere).
-  if (/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '')) {
-    document.querySelectorAll('.hub-kbd').forEach((k) => { k.textContent = '⌘K'; });
-  }
 
   // ---- Row "⋯" menus (<details class="hub-row-menu">): one open at a time; click
   // outside or Esc closes; choosing an action closes the menu.
@@ -308,7 +243,7 @@
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Tab') return;
     const d = openDialog();
-    if (!d || d.classList.contains('hub-palette')) return;
+    if (!d) return;
     const f = [...d.querySelectorAll(FOCUSABLE)].filter((x) => x.getClientRects().length);
     if (!f.length) return;
     const first = f[0];
@@ -348,6 +283,5 @@
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') infoClose(); });
 
-  Object.assign(P, { Pure, body, T, t, inApp, esc, paletteIndex, announce, store, api, feature,
-    recordSearch, menus });
+  Object.assign(P, { Pure, body, T, t, inApp, esc, announce, store, api, feature, menus });
 })();

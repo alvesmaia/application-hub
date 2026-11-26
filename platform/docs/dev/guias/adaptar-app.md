@@ -11,7 +11,7 @@ color, and moved what the top bar did into the hub.
 | Frota+ (as is) | In the hub (to be) |
 |---|---|
 | logo + "Frota+" in the top bar | sidebar brand: `AppInfo(name="Frota+", tagline="Gestão de frota", icon=LOGO)`; the tile color comes from `--app-brand`/`--app-on-brand` in `app.css` |
-| global search box | `sdk.search = make_search(engine)`: the hub's Ctrl+K finds vehicles, drivers and trips. `/busca` stays as a page so old links work |
+| global search box | the hub has no global search: `/busca` stays as an app page, reached from a sidebar item |
 | bell + dropdown, own notifications table | Inbox notifications: `outbox.notification(..., to_roles=["Gestor de frota"])` written in the action's transaction; the table and `/notificacoes/*` are gone |
 | user menu (Perfil, Preferências, Sair) | the hub's header. `/sair` is dropped; `/perfil` shows the hub's identity (`identity_of(req)`) |
 | sidebar with 6 SVG icons | the same labels, order and SVG bodies: `NavItem("veiculos", "Veículos", ICONS["veiculos"])` (text, no `Markup`); `help_card=False` |
@@ -46,17 +46,6 @@ The brand tile and the palette (`assets/app.css`, literal colors only in the tok
 :root { --app-brand: #0f766e; --app-on-brand: #ffffff; --app-primary: #0f766e; /* … */ }
 :root[data-theme="dark"] { --app-brand: #14b8a6; --app-on-brand: #042f2e; /* … */ }
 @media (prefers-color-scheme: dark) { :root[data-theme="auto"] { --app-brand: #14b8a6; --app-on-brand: #042f2e; } }
-```
-
-The global search (`search.py`), registered with `sdk.search = make_search(engine)` before `sdk.install(app)`:
-
-```python
-def make_search(engine: sa.Engine) -> SearchFn:
-    async def search(q: SearchQuery) -> list[SearchHit]:
-        found = store.search(engine, q.q, q.limit)
-        return [SearchHit(v["plate"], f"/frota/veiculos/{v['id']}/editar", v["model"], "Veículo",
-                          score(v["plate"], q.q)) for v in found["vehicles"]][: q.limit]
-    return search
 ```
 
 The bell, as an Inbox notification that commits with the save (`with engine.begin() as conn`):

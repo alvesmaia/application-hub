@@ -49,9 +49,5 @@
     "path": "/inventory/items/export.csv",
     "parallel": 6,
     "expect_429": true
-  },
-  "search": {
-    "q": "a",
-    "min": 0
   }
 }

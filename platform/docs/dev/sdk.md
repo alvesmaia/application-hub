@@ -40,10 +40,8 @@ own volume) or the system temp directory.
 
 ### class `HubSdk`
 
-The hub's side of the app. Before :meth:`install`, set ``sdk.search = fn`` (``async fn(SearchQuery) ->
-list[SearchHit]``, answers ``GET /{id}/_hub/search``: the hub's Ctrl+K finds the app's records) and, with
-approvals, ``sdk.approvals = fn`` (``async fn(ApprovalDecision) -> str``). ``sdk.outbox`` publishes audit
-events and Inbox notifications: ``sdk.outbox.in_transaction(conn, ev)`` inside the action's SQLAlchemy
+The hub's side of the app. Before :meth:`install`, with approvals, set ``sdk.approvals = fn``
+(``async fn(ApprovalDecision) -> str``). ``sdk.outbox`` publishes audit events and Inbox notifications: ``sdk.outbox.in_transaction(conn, ev)`` inside the action's SQLAlchemy
 transaction, ``await sdk.outbox.emit(ev)`` for actions without one (export, query).
 
 - `from_env(app_id: str | None=None, app_sql: str='', handlers: Sequence[Handler]=(), after_migrate: Callable[[HubSdk], Awaitable[None]] | None=None, cleanup_hooks: Sequence[Callable[[HubSdk], Awaitable[None]]]=()) -> HubSdk`
@@ -739,32 +737,6 @@ Entry of ``manifest.scripts`` for ``ui/assets/<file>`` (same rules as the hub).
 ### `integrity(data: bytes) -> str`
 
 SRI/CSP integrity (``sha384-<base64>``) — the same one the hub computes on import.
-
-## `hub_sdk.search`
-
-Busca federada (onda 9): ``GET /{app}/_hub/search?q=&limit=``.
-
-### class `SearchQuery`
-
-### class `SearchHit`
-
-- `to_json() -> dict[str, Any]`
-
-### `url_in_app(app: str, url: str) -> bool`
-
-### `sanitize(app: str, hits: list[SearchHit], limit: int) -> list[SearchHit]`
-
-### `fold(s: str) -> str`
-
-Lowercase, no accents.
-
-### `score(text: str, q: str) -> float`
-
-Equal → 1, starts with → 0.8, word starts with → 0.6, contains → 0.4, otherwise 0.
-
-### `like_pattern(q: str) -> str`
-
-Safe ``ILIKE`` pattern (escapes ``%``, ``_`` and ``\``).
 
 ## `hub_sdk.shutdown`
 

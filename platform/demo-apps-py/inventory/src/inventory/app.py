@@ -38,7 +38,6 @@ from inventory import api, exporter, importer, saga
 from inventory.i18n import I18nMiddleware
 from inventory.model import SCHEMA_SQL
 from inventory.routes import assets, exports, imports, pages
-from inventory.search import make_search
 from inventory.seed import seed
 from inventory.state import State
 
@@ -102,7 +101,6 @@ async def run_worker() -> None:
 def create_app() -> FastAPI:
     scratch = scratch_dir(APP_ID)
     sdk = build_sdk(scratch)
-    sdk.search = make_search(sdk)
     st = State(sdk, scratch)
     app = FastAPI(lifespan=sdk.lifespan, docs_url=None, redoc_url=None, openapi_url=None)
     sdk.install(app)

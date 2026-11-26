@@ -32,7 +32,6 @@ from suppliers import api
 from suppliers.i18n import I18nMiddleware
 from suppliers.lookup import Lookup
 from suppliers.routes import pages, suppliers
-from suppliers.search import search
 from suppliers.state import State
 
 log = logging.getLogger("suppliers")
@@ -68,7 +67,6 @@ def attachments_store() -> storage.Connection | None:
 def create_app() -> FastAPI:
     scratch = scratch_dir(APP_ID)
     sdk = HubSdk.from_env(APP_ID)
-    sdk.search = search
     st = State(sdk, scratch, attachments_store(), Lookup.from_env(APP_ID))
     app = FastAPI(lifespan=sdk.lifespan, docs_url=None, redoc_url=None, openapi_url=None)
     sdk.install(app)

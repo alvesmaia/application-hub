@@ -1,6 +1,6 @@
 """End-to-end flows against Postgres (``HUB_DB_TEST_URL``): sample import, upload/process/run,
 roles and visibility, cancel and timeout killing the subprocess, the terminal-status rule,
-triggers firing exactly once, idempotency and search."""
+triggers firing exactly once, idempotency."""
 
 from __future__ import annotations
 
@@ -356,7 +356,7 @@ async def test_disabled_process_does_not_fire_its_trigger(running_db: Running) -
     assert await triggers.fire_due(pool, datetime.now(UTC)) == []
 
 
-async def test_pages_and_search_with_data(running_db: Running) -> None:
+async def test_pages_with_data(running_db: Running) -> None:
     r = running_db
     pid = await process_id(r, "Validar CPF/CNPJ")
     run = (await r.client.post(f"{API}/processes/{pid}/runs", json={"params": {"documentos": "1"}},
@@ -369,21 +369,3 @@ async def test_pages_and_search_with_data(running_db: Running) -> None:
     for path in ("/automations/packages", "/automations/processes", f"/automations/processes/{pid}/edit",
                  "/automations/triggers", "/automations/triggers/new"):  # fmt: skip
         assert (await r.client.get(path, headers=AS_ADMIN)).status_code == 200, path
-    hits = (
-        await r.client.get(
-            "/automations/_hub/search?q=validar&limit=5",
-            headers={**HUB, "x-hub-user": r.client.headers["x-hub-user"]},
-        )
-    ).json()["results"]
-    assert hits and hits[0]["url"] == f"/apps/automations/runs?processo={pid}"
-    hits = (
-        await r.client.get(
-            f"/automations/_hub/search?q=%23{run['id']}",
-            headers={**HUB, "x-hub-user": r.client.headers["x-hub-user"]},
-        )
-    ).json()["results"]
-    assert hits[0]["url"] == f"/apps/automations/runs/{run['id']}"
-    others = (
-        await r.client.get(f"/automations/_hub/search?q={run['id']}", headers={**HUB, **AS_BIA})
-    ).json()["results"]
-    assert all("/runs/" not in h["url"] for h in others)

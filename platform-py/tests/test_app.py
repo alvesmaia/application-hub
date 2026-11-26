@@ -56,8 +56,10 @@ def test_shell_renders(client: TestClient) -> None:
     assert r.status_code == 200
     h = r.text
     assert "Content-Security-Policy" in r.headers or "content-security-policy" in r.headers
-    # no search box in the header: users took it for the app's own search (owner's call); Ctrl+K still opens it
-    assert "hub-search-trigger" not in h and "hub-search-mobile" not in h
+    # the hub has no search (owner's call: a small product): no box, no Ctrl+K palette, no /search
+    assert "hub-search-trigger" not in h and "data-hub-palette" not in h and "hub-ux-palette.js" not in h
+    for gone in ("/search?q=x", "/api/me/search?q=x", "/api/v1/search?q=x"):
+        assert client.get(gone).status_code == 404, gone
     for needle in (
         'class="platform-header"',
         'class="brand-name">Application Hub',

@@ -30,7 +30,6 @@ from automations import api, present, scheduler
 from automations.model import SCHEMA_SQL, STATUS_CLASS, STATUS_LABELS, TRIGGER_LABELS
 from automations.routes import admin_packages, admin_processes, admin_triggers, pages, runs
 from automations.runner import RunHandler
-from automations.search import make_search
 from automations.seed import seed
 from automations.state import APP_ID, HERE, State
 
@@ -71,7 +70,6 @@ def build_sdk() -> HubSdk:
 
 def create_app() -> FastAPI:
     sdk = build_sdk()
-    sdk.search = make_search(sdk)
     app = FastAPI(lifespan=scheduler.lifespan(sdk), docs_url=None, redoc_url=None, openapi_url=None)
     sdk.install(app)
     app.state.automations = State(sdk, renderer(USER_NAV), renderer(ADMIN_NAV))

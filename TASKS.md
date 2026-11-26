@@ -172,3 +172,17 @@
 
 - ✅ 134 · Testes do hub em paralelo (pytest-xdist, até 4 processos)
 - ✅ 135 · Check completo não roda de novo em código já verificado (assinatura do código; pre-push pula)
+
+## Leitura do banco do hub (2026-11-26)
+
+- ✅ 136 · Conta de leitura pode incluir o banco interno do hub (opção separada, explícita)
+- ✅ 137 · Textos sem nome de ferramenta (clientes SQL, não DBeaver)
+- ✅ 139 · Credenciais mostram os bancos liberados (nome para a conexão do cliente SQL)
+- ✅ 138 · Validação: testes, ui-sweep, hub-check; mostrar o fluxo no browser
+
+## Sem busca; tutorial (2026-11-26)
+
+- ✅ 140 · Tutorial: tarefa "notificações" leva a /account#prefs (hoje cai na Inbox, sem formulário) e sai a tarefa "busca"
+- ✅ 141 · Hub sem busca: /search, Ctrl+K, botão do cabeçalho, API/MCP search, estatísticas de busca, textos
+- ✅ 142 · SDK e apps de exemplo sem `_hub/search`; contrato e docs
+- ✅ 143 · Validação: hub-check --all, conformance, E2E, ui-sweep

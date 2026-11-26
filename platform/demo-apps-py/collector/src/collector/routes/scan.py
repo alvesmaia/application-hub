@@ -44,7 +44,7 @@ async def scan_ctx(c: Any, req: HTTPConnection) -> dict[str, Any]:
 
 
 async def _lookup(c: Any, req: Request) -> dict[str, Any] | None:
-    """``?codigo=``: what that code is (the search results link here)."""
+    """``?codigo=``: what that code is (lookup links point here)."""
     want = clean_value(req.query_params.get("codigo", ""))
     if not want:
         return None

@@ -123,11 +123,12 @@
   // Credentials of a read account: shown once (the hub does not keep the password).
   function showCredentials(out) {
     const c = out.connection || {};
+    const dbs = out.dbs || [];
     const ro = (label, value, id = '') => `<div class="form-field"><label>${esc(label)}</label><input ${id ? `id="${id}"` : ''} type="text" readonly value="${esc(value)}"/></div>`;
     openModal(
       'Credenciais da conta de leitura',
-      'Copie agora: a senha não será mostrada de novo. No DBeaver, use SSL com o modo "require".',
-      ro('Host', c.host) + ro('Porta', c.port) + ro('Usuário', out.role)
+      'Copie agora: a senha não será mostrada de novo. No cliente SQL, ative SSL no modo "require" e informe o banco na conexão (uma conexão por banco); para ver só ele, desligue a opção de listar todos os bancos.',
+      ro('Host', c.host) + ro('Porta', c.port) + ro(dbs.length > 1 ? 'Bancos' : 'Banco', dbs.join(', ')) + ro('Usuário', out.role)
         + `<div class="form-field"><label for="dbaccess-password">Senha</label><div class="pw-row"><input id="dbaccess-password" type="text" readonly value="${esc(out.password)}"/><button type="button" class="secondary-button" data-dbaccess-copy>Copiar</button></div></div>`
         + ro('SSL', 'sslmode=require'),
       'Concluir',
@@ -231,11 +232,12 @@
         'Somente leitura, com validade. A senha aparece uma única vez; a conta para se a pessoa responsável for desativada.',
         field('Nome (ex.: powerbi_vendas)', 'name', 'text', '', 'required pattern="[a-z][a-z0-9_]{1,40}" autocomplete="off"')
           + `<div class="form-field"><label>Responsável</label><select name="owner" required>${people}</select></div>`
-          + checks('Bancos que pode ler', 'dbs', dbs, () => false)
+          + (dbs.length ? checks('Bancos das aplicações', 'dbs', dbs, () => false) : '')
+          + (meta.hub_db ? `<div class="form-field"><label>Banco do hub</label><label class="role-permission"><input type="checkbox" name="hub" value="1"/><span>Incluir o banco interno do hub (<code>${esc(meta.hub_db)}</code>)</span></label><p class="form-hint">Sessões e tokens só como hash; cofre, usuários e auditoria não ficam nele. As tabelas são internas e podem mudar entre versões.</p></div>` : '')
           + `<div class="form-field"><label>Validade</label><select name="days"><option value="30">30 dias</option><option value="90" selected>90 dias</option><option value="180">180 dias</option><option value="365">365 dias</option></select></div>`,
         'Criar conta',
         async (form) => {
-          const out = await api('POST', '/db-access', { name: form.name.value.trim(), owner: form.owner.value, dbs: values(form, 'dbs'), days: Number(form.days.value) });
+          const out = await api('POST', '/db-access', { name: form.name.value.trim(), owner: form.owner.value, dbs: values(form, 'dbs'), hub: !!(form.hub && form.hub.checked), days: Number(form.days.value) });
           showCredentials(out);
         },
       );

@@ -1,4 +1,4 @@
-"""Screens, roles, API guards, search and i18n over the real app without a database (the screens
+"""Screens, roles, API guards and i18n over the real app without a database (the screens
 say the database is not configured; admin areas answer 403 to non-admins regardless)."""
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ import pytest
 from hub_sdk.identity import Identity
 
 from automations.i18n import load
-from tests.conftest import AS_ADMIN, HUB, Running
+from tests.conftest import AS_ADMIN, Running
 
 SRC = Path(__file__).resolve().parents[1] / "src" / "automations"
 OPENAPI = Path(__file__).resolve().parents[1] / "openapi.json"
@@ -134,13 +134,10 @@ def test_packaged_openapi_matches_the_code(env: Path) -> None:
                    "update_process", "start_run", "get_run", "list_runs"}  # fmt: skip
 
 
-async def test_readiness_health_and_search(running: Running) -> None:
+async def test_readiness_and_health(running: Running) -> None:
     c = running.client
     assert (await c.get("/automations/_hub/ready")).status_code == 200
     assert (await c.get("/automations/_hub/health")).json() == {"status": "ok"}
-    r = await c.get("/automations/_hub/search?q=cep&limit=5", headers=HUB)
-    assert r.status_code == 200 and r.json()["results"] == [], "no database: nothing to find"
-    assert (await c.get("/automations/_hub/search?q=x")).status_code in (401, 403)
 
 
 async def test_pages_in_english(running: Running) -> None:

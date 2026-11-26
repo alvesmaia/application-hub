@@ -1,4 +1,4 @@
-"""Units without HTTP or DB: model, report, sessions, nav, search, CLI."""
+"""Units without HTTP or DB: model, report, sessions, nav, CLI."""
 
 from __future__ import annotations
 
@@ -10,7 +10,6 @@ import pytest
 from servicedesk import __main__ as cli
 from servicedesk import report, views
 from servicedesk.model import CATEGORIES, pick, sla_for, sla_text, status_class
-from servicedesk.search import fold, generic_term
 from servicedesk.seed import seed_rows
 from servicedesk.session import Sessions
 from servicedesk.state import to_i64
@@ -103,9 +102,7 @@ def test_nav_injection_and_helpers() -> None:
     assert wrap("<p>x</p>", "novo") == "novo"
 
 
-def test_search_terms_and_seed_rows(monkeypatch: pytest.MonkeyPatch) -> None:
-    assert fold("  Solicitações ") == "solicitacoes" and generic_term("Chamados") and generic_term("tick")
-    assert not generic_term("vpn") and not generic_term("abcdefg")
+def test_seed_rows(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("SERVICEDESK_SEED_ROWS", raising=False)
     monkeypatch.setenv("HUB_SEED_SCALE", "0.5")
     assert seed_rows() == 1_000_000

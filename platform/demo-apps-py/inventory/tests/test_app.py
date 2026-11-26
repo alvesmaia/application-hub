@@ -289,14 +289,7 @@ async def test_exports_csv_stream_xlsx_job_and_429(db_url: str, running: Running
 
 
 @pytest.mark.db
-async def test_search_provider_and_readiness(db_url: str, running: Running) -> None:
+async def test_readiness_with_db(db_url: str, running: Running) -> None:
     c = running.client
     await wait_ready(c)
-    h = {"x-hub-internal-token": TOKEN}
-    r = await c.get("/inventory/_hub/search", params={"q": "Notebook", "limit": 5}, headers=h)
-    assert r.status_code == 200
-    hits = r.json()["results"]
-    assert hits and all(x["url"].startswith("/apps/inventory/assets?q=") for x in hits)
-    g = await c.get("/inventory/_hub/search", params={"q": "ativos", "limit": 3}, headers=h)
-    assert len(g.json()["results"]) == 3
     assert (await c.get("/inventory/_hub/ready")).status_code == 200

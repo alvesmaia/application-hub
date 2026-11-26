@@ -16,35 +16,10 @@ const Ux = require(path.join(platform, 'assets/shell/hub-ux.js'));
 const { moveIn } = require(path.join(platform, 'assets/web/ux.js'));
 const { createLogShare } = require(path.join(platform, 'assets/web/logshare.js'));
 
-test('paleta: relevância sem acento/caixa e mesma régua do servidor', () => {
-  assert.equal(Ux.score('Gestão de Ativos', 'gestao'), 0.8);
-  assert.equal(Ux.score('Gestão de Ativos', 'ATIVOS'), 0.6);
-  assert.equal(Ux.score('Gestão de Ativos', 'tão'), 0.4);
-  assert.equal(Ux.score('Gestão de Ativos', 'gestão de ativos'), 1);
-  assert.equal(Ux.score('x', '  '), 0);
-  const idx = [
-    { title: 'Gestão de Ativos', subtitle: 'Patrimônio', url: '/ativos' },
-    { title: 'Inbox', subtitle: '/inbox', url: '/inbox' },
-    { title: 'Central de Serviços', subtitle: 'Chamados e ativos de TI', url: '/servicos' },
-  ];
-  assert.deepEqual(Ux.local(idx, 'ativ').map((h) => h.url), ['/servicos', '/ativos'].reverse());
-  assert.equal(Ux.local(idx, 'zzz').length, 0);
-});
-
-test('paleta: navegação por setas/Home/End com volta e buscas recentes', () => {
-  assert.equal(Ux.move(-1, 3, 'ArrowDown'), 0);
-  assert.equal(Ux.move(2, 3, 'ArrowDown'), 0);
-  assert.equal(Ux.move(0, 3, 'ArrowUp'), 2);
-  assert.equal(Ux.move(1, 3, 'Home'), 0);
-  assert.equal(Ux.move(1, 3, 'End'), 2);
-  assert.equal(Ux.move(0, 0, 'ArrowDown'), -1);
-  assert.deepEqual(Ux.remember(['a', 'b', 'c'], 'b'), ['b', 'a', 'c']);
-  assert.deepEqual(Ux.remember(['a'], '  '), ['a']);
-  assert.equal(Ux.remember([...'abcdefgh'], 'z').length, 8);
-});
-
 test('tour: passos na ordem canônica e retomada limitada', () => {
   assert.deepEqual(Ux.tourSteps(['admin', 'home', 'inbox']), ['home', 'inbox', 'admin']);
+  assert.deepEqual(Ux.tourSteps(['search', 'home']), ['home']); // no search in the hub any more
+  assert.equal(Ux.score, undefined); // the search palette is gone
   assert.equal(Ux.resumeAt('step:3', 5), 3);
   assert.equal(Ux.resumeAt('step:9', 5), 4);
   assert.equal(Ux.resumeAt('', 5), 0);

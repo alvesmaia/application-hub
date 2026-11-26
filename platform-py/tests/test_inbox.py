@@ -14,19 +14,13 @@ from fastapi.testclient import TestClient
 from hub.app import create_app
 from hub.gateway.proxy import Gateway, GwOptions
 from hub.gateway.registry import AppEntry, Registry
-from hub.ux import search as srch
+from hub.ux import applink
 from hub.ux.inbox import InboxError, InboxStore, Who, approval_of, can_decide, item_of, targets
 from hub.ux.inbox_routes import stream_events
 from hub.ux.texts import resolve, tn, tr
 
 HDR = {"origin": "http://testserver", "sec-fetch-site": "same-origin"}
 TOKEN = "t" * 32
-
-
-@pytest.fixture(autouse=True)
-def _fresh_search_state() -> None:
-    srch._buckets.clear()
-    srch._unsupported.clear()
 
 
 def _entry(app_id: str, name: str) -> AppEntry:
@@ -261,97 +255,8 @@ def test_inbox_page_bell_and_prefs(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     )
 
 
-def test_search_endpoints_federate_and_rank(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    def handler(req: httpx.Request) -> httpx.Response:
-        if req.url.path.startswith("/contratos/"):
-            assert req.headers["x-hub-internal-token"] == TOKEN and req.url.params["limit"] == "5"
-            return httpx.Response(
-                200,
-                json={
-                    "results": [
-                        {
-                            "title": "Contrato 1",
-                            "subtitle": "CT-1",
-                            "url": "/contratos/c?x=1",
-                            "kind": "Contrato",
-                            "score": 1,
-                        },
-                        {"title": "fora", "url": "/admin/users"},
-                        {"title": "", "url": "/apps/contratos/x"},
-                    ]
-                },
-            )
-        if req.url.path.startswith("/servicedesk/"):
-            return httpx.Response(404)  # no search
-        return httpx.Response(500)
-
-    c = make_client(tmp_path, monkeypatch, handler)
-    srch._buckets.clear()
-    body = c.get("/api/me/search?q=contrato").json()
-    assert [g["id"] for g in body["groups"]][:2] == ["contratos", "platform"]  # app records first
-    assert body["groups"][0]["hits"] == [
-        {
-            "title": "Contrato 1",
-            "subtitle": "CT-1",
-            "url": "/apps/contratos/c?x=1",
-            "kind": "Contrato",
-            "score": 1.0,
-        }
-    ]
-    assert "servicedesk" in srch._unsupported and body["partial"] is False
-    assert c.get("/api/me/search?q=").json() == {"q": "", "groups": [], "recent": []}
-    final = c.post("/api/me/search", json={"q": " contrato "}, headers=HDR).json()
-    assert final["ok"] is True and c.get("/api/me/prefs").json()["searches"] == ["contrato"]
-    assert c.post("/api/me/search", json={"q": " "}, headers=HDR).status_code == 400
-    page = c.get("/search?q=contrato").text
-    assert (
-        "<mark>Contrato</mark>" in page
-        and "Contrato · CT-1" in page
-        and 'data-hub-search-record="contrato"' in page
-    )
-    assert "hub-search-more" not in page  # fewer than 5 records: no "see all"
-    srch._buckets.clear()
-    quiet = make_client(tmp_path / "q", monkeypatch)  # no app responds with anything
-    assert "Nenhum resultado para “zzzz”." in quiet.get("/search?q=zzzz").text
-    assert "Administração (interno)" not in page or "hub-search-admin" in page
-
-
-def test_search_failure_marks_partial_and_see_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    def handler(req: httpx.Request) -> httpx.Response:
-        if req.url.path.startswith("/servicedesk/"):
-            raise httpx.ConnectError("down")
-        n = int(req.url.params["limit"])
-        return httpx.Response(
-            200, json={"results": [{"title": f"Contrato {i}", "url": f"/contratos/{i}"} for i in range(n)]}
-        )
-
-    c = make_client(tmp_path, monkeypatch, handler)
-    srch._buckets.clear()
-    srch._unsupported.clear()
-    body = c.get("/api/me/search?q=contrato").json()
-    assert body["partial"] is True and body["unavailable"] == ["servicedesk"]
-    more = next(g for g in body["groups"] if g["id"] == "contratos")["more_url"]
-    assert more == "/search?q=contrato&app=contratos"
-    page = c.get("/search?q=contrato&app=contratos").text
-    assert (
-        page.count("<li>") == 50
-        and "Voltar a todos os resultados" in page
-        and 'data-hub-search-record=""' in page
-    )
-    assert "Algumas aplicações não responderam a tempo." in c.get("/search?q=contrato").text
-
-
-def test_search_rate_limit_and_helpers() -> None:
-    srch._buckets.clear()
-    assert all(srch.search_allowed("u", 0.0) for _ in range(20)) and not srch.search_allowed("u", 0.0)
-    assert srch.search_allowed("u", 1.0)  # refills 4 tokens per second
-    assert srch.score("Gestão de Ativos", "gestao") == 0.8
-    assert srch.score("Gestão de Ativos", "ATIVOS") == 0.6
-    assert srch.score("Gestão de Ativos", "tão") == 0.4 and srch.score("x", " ") == 0.0
-    assert srch.mark_split("Gestão de Contratos", "gestao") == ("", "Gestão", " de Contratos")
-    assert srch.mark_split("Contrato 12", "TRATO") == ("Con", "trato", " 12")
-    assert srch.mark_split("abc", "z") == ("abc", "", "")
-    assert srch.safe_app_link("servicedesk", "/servicedesk/r/1") == "/apps/servicedesk/r/1"
+def test_app_links_and_internal_token() -> None:
+    assert applink.safe_app_link("servicedesk", "/servicedesk/r/1") == "/apps/servicedesk/r/1"
     for bad in (
         "/admin/users",
         "https://evil.example/servicedesk",
@@ -359,8 +264,8 @@ def test_search_rate_limit_and_helpers() -> None:
         "javascript:x",
         "/apps/servicedesk/a b",
     ):
-        assert srch.safe_app_link("servicedesk", bad) == "/apps/servicedesk"
-    assert srch.internal_token("nao-existe") is None
+        assert applink.safe_app_link("servicedesk", bad) == "/apps/servicedesk"
+    assert applink.internal_token("nao-existe") is None
 
 
 def test_settings_pages_and_prefs_form(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -485,15 +390,12 @@ def test_language_resolution_and_translation(tmp_path: Path, monkeypatch: pytest
     en = c.get("/inbox", headers={"accept-language": "en"}).text
     assert '<html lang="en"' in en and "Alertas da plataforma" not in en and "Notification preferences" in en
     assert 'aria-label="Platform navigation"' in en and "Skip to content" in en and ">Home<" in en
-    assert 'class="hub-search-label"' not in en  # no search box in the header (Ctrl+K opens the palette)
     assert "Pular para o conteúdo" in c.get("/inbox").text  # default: pt-BR
     assert c.put("/api/me/prefs", json={"lang": "es"}, headers=HDR).status_code == 400
     c.put("/api/me/prefs", json={"lang": "en"}, headers=HDR)
-    en = c.get("/search?q=zzz", headers={"accept-language": "pt-BR"}).text  # the preference beats the browser
-    assert '<html lang="en"' in en and "Sin resultados para" not in en
-    state = json.loads(
-        c.get("/").text.split('data-hub-i18n="')[1].split('" data-hub-palette')[0].replace("&#34;", '"')
-    )
+    en = c.get("/inbox", headers={"accept-language": "pt-BR"}).text  # the preference beats the browser
+    assert '<html lang="en"' in en
+    state = json.loads(c.get("/").text.split('data-hub-i18n="')[1].split('"')[0].replace("&#34;", '"'))
     assert state["lang"] == "en"
 
 

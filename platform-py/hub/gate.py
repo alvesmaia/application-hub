@@ -234,7 +234,7 @@ def _required(path: str, method: str, segs: list[str]) -> tuple[str, ...]:
         return admin_required(segs[1] if len(segs) > 1 else "")
     if segs[0] == "api":
         return () if len(segs) > 1 and segs[1] in ("me", "v1", "docs") else api_required(method, segs[1:])
-    if segs[0] in ("logout", "account", "status", "inbox", "search", "oauth", "mcp"):
+    if segs[0] in ("logout", "account", "status", "inbox", "oauth", "mcp"):
         return ()
     return ("acessar_aplicacoes",)
 

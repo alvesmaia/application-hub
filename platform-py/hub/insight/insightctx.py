@@ -87,7 +87,7 @@ class InsightCtx:
         sm = self.an.summary(int(time.time() * 1000))
         names = {a["id"]: a["short"] for a in self.refs()}
         top = sorted(((names.get(r[0], r[0]), r[3], r[4]) for r in sm["apps"]), key=lambda x: -x[2])[:5]
-        return {"mau": sm["mau"], "apps": top, "zero": sm["searches_zero"], "searches": sm["searches"]}
+        return {"mau": sm["mau"], "apps": top}
 
 
 def ctx(request: Request) -> InsightCtx:

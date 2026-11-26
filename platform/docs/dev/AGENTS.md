@@ -111,7 +111,7 @@ failure even when `hub check` is green.
 
    | The app's top bar had | In the hub |
    |---|---|
-   | search box (global) | federated search: implement `GET /{id}/_hub/search` (§19, `hub_sdk.search`); the hub's Ctrl+K finds the app's records. Searching **inside a list** stays in the page, as its filter bar (`data-hub-filter` or a `GET` form) |
+   | search box (global) | the hub has no global search: keep the app's search as a page of its own (a sidebar item) or, inside a list, as its filter bar (`data-hub-filter` or a `GET` form) |
    | notifications bell, unread counter | the hub's Inbox: `hub_sdk.outbox.notification(user, title, link=…, to_roles=[…] or to_users=[…])` (§20; empty = only the user who caused it), written with `sdk.outbox.in_transaction(conn, ev)` in the action's transaction; no bell of its own. Alerts the original had for other people need `to_roles`; under `hub dev` the user has one role (`hub dev --role "<role>"`, default `Administrador`) |
    | user menu, profile, logout, language, theme | the hub's header (identity from `x-hub-user`); the app shows none of them |
    | company name / logo | the sidebar brand (`AppInfo(name, tagline, icon)`; tile colors `--app-brand`/`--app-on-brand`, §29) or the page header (`h1` + subtitle) |

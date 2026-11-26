@@ -21,17 +21,6 @@
       "reason": "Texto puro no visualizador do navegador: no SO escuro o Chrome pinta fundo escuro na tela, mas o <body> fica transparente e a varredura o lê como branco (falso positivo; captura mostra texto claro sobre fundo escuro)."
     },
     {
-      "check": "modal-fecha-no-fundo",
-      "selector": "hub-palette",
-      "reason": "Paleta de busca (Ctrl K) é uma sobreposição transitória de navegação, sem dados digitados a perder; fechar ao clicar fora é o comportamento convencional (a regra vale para modais de formulário)."
-    },
-    {
-      "check": "contraste-ui",
-      "selector": "hub-palette-input > input",
-      "message": "controle sem borda",
-      "reason": "Campo único da paleta Ctrl K: ocupa a faixa superior do diálogo, separada do resto por uma linha, com ícone de busca e foco automático; o diálogo inteiro é o campo (padrão de command palette)."
-    },
-    {
       "check": "contraste-ui",
       "selector": "(app2-search|app3-knowledge-hero > div > label) > input",
       "message": "controle sem borda",

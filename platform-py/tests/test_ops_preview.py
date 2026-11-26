@@ -85,6 +85,11 @@ def test_current_versions_newest_deployed_and_registry_fallback() -> None:
         (package({"manifest.json": b"{"}), "manifest.json inválido"),
         (manifest_pkg(requires={"variables": ["HUB_X"]}), "requires.variables"),
     ],
+    ids=[
+        "nao-zip",
+        "manifest-invalido",
+        "requires-variables",
+    ],  # zips carry the build time: stable ids for xdist
 )
 def test_preview_invalid_manifest_is_reported(hub: TestClient, data: bytes, error: str) -> None:
     r = preview(hub, data)

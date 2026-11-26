@@ -16,7 +16,7 @@ from httpx import Response
 from hub.admin.config import bound_to, display_value, is_platform_env, masked, resolve
 from hub.admin.routes import admin_level, initials, relative, same_roles
 from hub.auth import api_required, user_view
-from hub.ux import search as srch
+from hub.ux import applink
 
 SECRET = "sk_live_super-secreto-123456"
 
@@ -458,9 +458,9 @@ def test_managed_variables_are_read_only_and_internal_tokens_live_in_the_vault(
         var["managed"] is True and var["inject_as"] == "HUB_INTERNAL_TOKEN" and token not in json.dumps(var)
     )
     assert token not in (tmp_path / "admin.json").read_text(encoding="utf-8")  # encrypted in the vault
-    # federated search and the Inbox use the vault token (not the hub environment)
+    # the Inbox and the outbox use the vault token (not the hub environment)
     monkeypatch.setenv("HUB_INTERNAL_TOKEN_INVENTORY", "valor-do-ambiente-que-nao-vale")
-    assert srch.internal_token("inventory") == token
+    assert applink.internal_token("inventory") == token
     # read-only here; rotating is the audited action
     ro = hub.put(
         "/api/admin/env/HUB_INTERNAL_TOKEN_INVENTORY",

@@ -93,7 +93,7 @@ class AdminStore:
         return cast(dict[str, Any], data)
 
     def _refresh_tokens(self, data: dict[str, Any]) -> None:
-        """Internal tokens (managed variables) in memory: search and the Inbox read them without touching disk."""
+        """Internal tokens (managed variables) in memory: the Inbox and the outbox read them without touching disk."""
         self.tokens = {
             b["app"]: v["value"]
             for v in data.get("env", [])

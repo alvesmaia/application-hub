@@ -149,7 +149,7 @@ Avoid a Dockerfile as an import artifact: it requires a build on the hub, which 
    - composes the fragment/Web Component inside the real shell (header, rail, theme);
    - injects a simulated identity (dev JWT, `--role admin`);
    - provides variables from `.hub/dev.env`, respecting public/secret;
-   - simulates platform services (notifications, audit trail, flags, search);
+   - simulates platform services (notifications, audit trail, flags);
    - validates the deploy rules in real time (manifest, scoped CSS, CSP, health).
 3. Access at `localhost:4173/<app-id>` with hot reload of the app's stack.
 
@@ -393,15 +393,9 @@ Limits:
 - **Requesting access** has limits: one pending request per app, up to 5 pending per person and a 24 h wait after a rejection. Whoever approves must, in addition to managing users, be able to reach the app; the granted access appears on the Users screen and only an active access can be revoked.
 - Examples in the demo: Gestão de Ativos and Gestão de Contratos send notices when an import finishes; the Central de Serviços (Service Center) asks for approval when a ticket is opened with "Precisa de aprovação" (Needs approval).
 
-## 19. How does the global search (Ctrl+K) work?
+## 19. Global search (removed)
 
-**In plain language:** press **Ctrl+K** (⌘K on Mac) or click the search bar at the top and type: the platform applications and pages you can open appear and, **from the applications themselves**, the matching records (an asset by its tag number, a supplier by name, a ticket by its protocol, a contract by its number). Arrow keys choose, Enter opens directly at the right place, Esc closes; recent searches are kept.
-
-**How it works (wave 9):**
-- The hub asks **all the applications you can open at the same time** (endpoint `/_hub/search`, over the internal network, with your identity — each app returns only what you can see). Each app gets at most 0.8 s; whoever takes longer is left out of that round (the palette warns "algumas aplicações não responderam" — some applications did not respond), and the rest appears.
-- Results grouped by application, most relevant first; user names only for those who manage users, deployments only for those who edit settings and **names** of variables (never values) only for those who see Variáveis (Variables).
-- Inside an app, the palette searches applications and pages instantly and offers "Buscar em todas as aplicações" (Search all applications) (opens the results page) — the protection (CSP) does not let an app's code query the platform.
-- Searches with no results enter the **Usage analytics** only as a count and a code (hash), to know how many times something was not found without storing what the person typed; storing the text is optional (switched on in the Analytics API, with audit). The person IDs in analytics use a key stored in the vault and rotated every retention period. Typing in the search stores nothing; only the "confirmed" search (Enter/opening a result) is recorded, and there is a per-second search limit per person.
+Removed: the hub no longer has a global search (Ctrl+K) and does not search inside the applications; each app keeps its own list filters.
 
 ## 20. Is the platform accessible? Does it have dark theme and other languages?
 
@@ -409,7 +403,7 @@ Limits:
 
 **How it works (wave 9):**
 - **Dark theme** generated from the design tokens: each palette color gets its dark version automatically (and the apps' own colors too), and an automatic checker (axe) verifies the contrast in both themes. The top bar and the side menu stay the same in both themes (they are already dark).
-- **Languages:** the hub translates the shell (top bar, menus, Início (Home), Aplicações, Inbox, search, tour, login) and **tells the apps the language** (`x-hub-locale`); the SDK brings the translation and the formatting of numbers, values and dates. The Gestão de Contratos app is fully translated; the Administration screens and the prototype apps remain in Portuguese (recorded as a pending item).
+- **Languages:** the hub translates the shell (top bar, menus, Início (Home), Aplicações, Inbox, tour, login) and **tells the apps the language** (`x-hub-locale`); the SDK brings the translation and the formatting of numbers, values and dates. The Gestão de Contratos app is fully translated; the Administration screens and the prototype apps remain in Portuguese (recorded as a pending item).
 - **Accessibility (WCAG 2.2 AA):** "Pular para o conteúdo" (Skip to content) link, named regions, visible focus, focus moved to the title when switching sections in an app and back to the button when a menu/dialog closes, announcements read by the screen reader (Inbox, toasts, Home reordering), click targets of at least 24 px and animations turned off with "reduzir movimento". axe runs in the E2E tests on all main pages, in both themes and in two languages — zero serious or critical violations.
 - **First time:** a **guided tour** shows where each thing is (only what you can use), and Início brings "Primeiros passos" (First steps) that tick themselves off as you use the platform. You can skip the tour, stop midway and continue later, or repeat it from the menu under your name.
 

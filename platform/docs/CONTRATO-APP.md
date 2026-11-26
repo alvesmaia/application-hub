@@ -55,7 +55,7 @@ through `/_frag/{id}/…` (gateway); the app receives `/{id}/…`.
 
 | Who sees it | Path |
 |---|---|
-| Browser (page, favorites, Inbox, search, PWA) | **`/apps/{id}`**, `/apps/{id}/{seção}?…` |
+| Browser (page, favorites, Inbox, PWA) | **`/apps/{id}`**, `/apps/{id}/{seção}?…` |
 | App API through the hub (session or `app-api` token) | **`/apps/{id}/api/…`** |
 | Fragments and downloads (internal to `hub.js`) | `/_frag/{id}/…` (unchanged) |
 | App upstream (what the app serves) | `/{id}/…` (unchanged; the hub strips `/apps`) |
@@ -64,7 +64,7 @@ through `/_frag/{id}/…` (gateway); the app receives `/{id}/…`.
 - The app **builds every link, `action`, `formaction` and `data-hub-get/post/poll` with the public base**
   `/apps/{id}`. The gateway sends this base in the **`x-hub-base`** header
   (`/apps/{id}`); the SDK has `hub_sdk.base(id)` and, in the Python SDK
-  templates, the `{{ base }}` variable. Notification links (§20) and search results (§19) also use
+  templates, the `{{ base }}` variable. Notification links (§20) also use
   `/apps/{id}/…` (the hub still accepts the old `/{id}/…` and converts it).
 - **Staging has its own URL:** `/staging/apps/{id}/…` (fragments at `/staging/_frag/{id}/…`). There the gateway
   sends `x-hub-base: /staging/apps/{id}` and `x-hub-env: staging`, so an app that builds its links with the base
@@ -161,7 +161,6 @@ wrong token → **401**.
 | `GET /{id}/_hub/telemetry?after=<seq>` | `{"spans": [Span…], "next": <seq>, "gauges": {"heavy_in_use": n, "heavy_max": n, "jobs_queued": n, "jobs_running": n}}` — spans with sequence > `after` (up to 1000); `after` greater than the current sequence = the app restarted, starts again from 0 (wave 8) |
 | `POST /{id}/_hub/flags` `{"version": n, "env": "producao"\|"staging", "flags": [Flag…]}` | `{"applied": bool, "flags": n, "version": n}`; a version lower than the current one is ignored (`applied: false`); invalid body → **400**; app without flags → **404** (wave 8) |
 | `POST /{id}/_hub/jobs/{job}/cancel` | `queued` (or `running` with an expired lease) → `cancelled`; live `running` → `cancel_requested` (the worker stops at the next batch) → `{"job": Job}`; terminal → 409; nonexistent → 404 |
-| `GET /{id}/_hub/search?q=&limit=` | federated search with the user's identity (wave 9, item 19) → `{"results": [Hit…]}`; app without search → **404** |
 | `POST /{id}/_hub/approvals/{approval_id}` | decision on an approval request coming from the Inbox (wave 9, item 20) → `{"status": "approved"\|"rejected"}`; app without approvals → **404** |
 
 `Job` = `id, kind, status, payload, attempts, max_attempts, max_duration_s, checkpoint,
@@ -442,21 +441,9 @@ SDK: `hub_sdk.telemetry` (`TraceMiddleware`, `db`,
 `sql_comment`) and `hub_sdk.flags`. Conformance: items 18 (propagation hub → app → database,
 telemetry format, `/_hub/flags`, UI controlled by the header in the example app).
 
-## 19. Federated search (wave 9)
+## 19. Federated search (removed)
 
-The hub's ⌘K palette (and the `/search` page) searches the platform and **in parallel** in each app
-the user can reach: `GET {upstream}/{id}/_hub/search?q=<consulta>&limit=<n>` over the internal network, with the internal token,
-`x-hub-user` (who is searching) and `x-hub-locale`.
-
-- `q`: 1–100 characters (empty or longer → **400**); `limit` capped at **20** (the hub asks for 5).
-- Response: `{"results": [{"title", "subtitle", "url", "kind", "score"}]}` — `url` **must**
-  be a path of the app itself (`/{id}`, `/{id}/…` or `/{id}?…`; the hub discards the rest),
-  `score` from 0 to 1 (most relevant first), `kind` = type label in the user's language.
-- The app **must** return only what that user can see and respond quickly: the hub waits at most
-  `HUB_SEARCH_TIMEOUT_MS` (default 800 ms) per app, reads up to 64 KiB and proceeds without it
-  (partial result). A 404 removes the app from searches for 5 min.
-- Bounded-cost queries: an index (trigram/prefix) or a recent window (e.g. the
-  last 20 thousand tickets of `servicedesk`). SDK: `hub_sdk.search`.
+Removed: the hub no longer searches inside apps and no longer calls `/{id}/_hub/search`; an app does not need to implement it.
 
 ## 20. Notifications and approvals through the Inbox (wave 9)
 
@@ -1019,7 +1006,6 @@ CONF_APP=inventory CONF_URL=http://127.0.0.1:9104 CONF_TOKEN=<token> CONF_DB_URL
 | 11 | SIGTERM → exit 0 in < 10 s (`run.sh`) |
 | 12–13 | no `hub_*`/`Domain` cookies, no `x-hub-*`, `x-app-version`; no inline script or `on*=` |
 | 18 | `/_hub/telemetry` and `/_hub/flags` require a token; `server` span with the `trace_id` and the parent from the `traceparent` sent; database spans children of `server` (profiles with `db_span_path`); `/_hub/flags` accepts/refuses; `x-hub-flags` turns the example flag's element on/off (profiles with `flag`) |
-| 19 | `/_hub/search` requires a token; response shape, `url` only from the app, `score` 0–1 in order, `limit` ≤ 20, empty/long `q` → 400 (profiles with `search`) |
 | 20 | `/_hub/approvals` requires a token; invalid id 400, body 422, without `aprovar_solicitacoes` or without `x-hub-user` 403, unknown 404; app without approvals → 404 |
 | 21 | `x-hub-locale`, the identity's `locale` and `Accept-Language` change the fragment's language; pt-BR by default (profiles with `locale`) |
 | 22 | storage (profiles with `storage`): upload → link in the response → identical download, `attachment` + `nosniff` + `no-store` → deletion (404 afterwards); names with traversal/encoding never serve a file (400/404); storage unavailable (broker stopped during the suite) → 503, never 500 (`accept_unavailable`) |

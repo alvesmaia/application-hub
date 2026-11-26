@@ -121,7 +121,7 @@ PART_TITLES = {
     "hub_sdk.identity": "Identidade do usuário", "hub_sdk.jobs": "Tarefas duráveis",
     "hub_sdk.locale": "Idioma e formatação", "hub_sdk.mcp": "MCP do app", "hub_sdk.outbox": "Auditoria (outbox)",
     "hub_sdk.ready": "Prontidão", "hub_sdk.render": "Renderizar telas", "hub_sdk.saga": "Sagas",
-    "hub_sdk.schema": "Tabelas do SDK", "hub_sdk.scripts": "JavaScript próprio", "hub_sdk.search": "Busca",
+    "hub_sdk.schema": "Tabelas do SDK", "hub_sdk.scripts": "JavaScript próprio",
     "hub_sdk.shutdown": "Desligamento gracioso", "hub_sdk.sql": "Consultas SQL a conexões",
     "hub_sdk.stack": "Stack do app", "hub_sdk.storage": "Armazenamento de arquivos",
     "hub_sdk.telemetry": "Telemetria", "hub_sdk.uploads": "Envio de arquivos em duas fases", "hub_sdk.dashboards_format": "Dashboards: formatação", "hub_sdk.jobs_model": "Tarefas: modelo", "hub_sdk.jobs_store": "Tarefas: fila no banco", "hub_sdk.jobs_worker": "Tarefas: execução", "hub_sdk.storage_core": "Armazenamento: caminhos e erros", "hub_sdk.storage_s3": "Armazenamento: S3",

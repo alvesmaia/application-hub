@@ -26,8 +26,6 @@ from hub.vault import Vault
 MAX_KEYS, OTHERS, DAY_MS = 300, "(outros)", 86_400_000
 VAULT_KEY = "analytics.hmac_key"
 FEATURES = (
-    "palette_open",
-    "palette_select",
     "tour_start",
     "tour_done",
     "tour_skip",
@@ -36,19 +34,11 @@ FEATURES = (
     "inbox_open",
     "favorite",
 )
-_MAPS = ("app_opens", "sections", "pages", "zero_terms", "features", "events")
+_MAPS = ("app_opens", "sections", "pages", "features", "events")
 
 
 def day_key(ms: int) -> str:
     return datetime.fromtimestamp(ms / 1000, UTC).strftime("%Y-%m-%d")
-
-
-def norm_term(q: str) -> str | None:
-    q = q.strip().lower()
-    if not q or "@" in q:
-        return None
-    s = "".join("#" if c.isdigit() else c for c in " ".join(q.split()) if c.isprintable())[:40]
-    return s or None
 
 
 def _bump(m: dict[str, int], k: str, n: int = 1) -> None:
@@ -60,7 +50,7 @@ def _bump(m: dict[str, int], k: str, n: int = 1) -> None:
 
 def _new_day() -> dict[str, Any]:
     day: dict[str, Any] = {m: {} for m in _MAPS}
-    day |= {"users": set(), "app_users": {}, "searches": 0, "searches_zero": 0}
+    day |= {"users": set(), "app_users": {}}
     day |= {"f_login": set(), "f_open": set(), "f_action": set()}
     return day
 
@@ -106,12 +96,11 @@ class Analytics:
         self.vault, self.enabled, self.dirty = vault, enabled, True
         self.ux: Any = None  # UxStore: per-user opt-out
         self.days: dict[str, dict[str, Any]] = {}
-        self.raw_terms, self.key_since = False, int(time.time() * 1000)
+        self.key_since = int(time.time() * 1000)
         self.retention = min(max(int(os.environ.get("HUB_ANALYTICS_RETENTION_DAYS", "90") or 90), 7), 400)
         if self.path and self.path.is_file():
             try:
                 d = json.loads(self.path.read_text(encoding="utf-8"))
-                self.raw_terms = bool(d.get("raw_terms"))
                 self.key_since = int(d.get("key_since", self.key_since))
                 self.retention = int(d.get("retention_days", self.retention))
                 self.days = {k: self._load_day(v) for k, v in d.get("days", {}).items()}
@@ -128,7 +117,7 @@ class Analytics:
                 day[k] = set(v)
             elif k == "app_users":
                 day[k] = {a: set(u) for a, u in v.items()}
-            else:
+            elif k in day:  # fields of older versions (e.g. the removed search counts) are dropped
                 day[k] = v
         return day
 
@@ -161,30 +150,13 @@ class Analytics:
     def _h(self, msg: str) -> bytes:
         return hmac.new(self.key.encode(), msg.encode(), hashlib.sha256).digest()
 
-    def _term_label(self, term: str) -> str:
-        return f"termo #{self._h('term|' + term)[:5].hex()}"
-
-    def set_raw_terms(self, on: bool) -> None:
-        self.raw_terms, self.dirty = on, True
-        if not on:  # deletes the stored texts: only the counts remain
-            for day in self.days.values():
-                old, day["zero_terms"] = day["zero_terms"], {}
-                for t, n in old.items():
-                    _bump(
-                        day["zero_terms"],
-                        t if t.startswith("termo #") or t == OTHERS else self._term_label(t),
-                        n,
-                    )
-
     def set_retention(self, days: int) -> int:
         self.retention, self.dirty = min(max(days, 7), 400), True
         return self.retention
 
     # ---- recording events -----------------------------------------------------------------------------
-    def record(
-        self, user: str, kind: str, a: str = "", b: str = "", n: int = 0, now: int | None = None
-    ) -> None:
-        """`kind`: login, page(a), open(a), section(a,b), action(a), search(a=texto, n=resultados), feature(a)."""
+    def record(self, user: str, kind: str, a: str = "", b: str = "", now: int | None = None) -> None:
+        """`kind`: login, page(a), open(a), section(a,b), action(a), feature(a)."""
         if (
             not self.enabled
             or not user
@@ -196,23 +168,14 @@ class Analytics:
         day = self.days.setdefault(day_key(now), _new_day())
         day["users"].add(uid)
         self.dirty = True
-        self._tally(day, uid, kind, a, b, n)
+        self._tally(day, uid, kind, a, b)
 
-    def _tally(self, day: dict[str, Any], uid: int, kind: str, a: str, b: str, n: int) -> None:
-        if kind == "search":
-            self._tally_search(day, a, n)
-        elif kind == "feature":
+    def _tally(self, day: dict[str, Any], uid: int, kind: str, a: str, b: str) -> None:
+        if kind == "feature":
             if a in FEATURES:
                 _bump(day["features"], a)
         elif (fn := _TALLY.get(kind)) is not None:
             fn(day, uid, kind, a, b)
-
-    def _tally_search(self, day: dict[str, Any], a: str, n: int) -> None:
-        day["searches"] += 1
-        if n == 0:
-            day["searches_zero"] += 1
-            if t := norm_term(a):
-                _bump(day["zero_terms"], t if self.raw_terms else self._term_label(t))
 
     def record_global(self, name: str, app: str, now: int | None = None) -> None:
         if self.enabled:
@@ -258,9 +221,6 @@ class Analytics:
             ],
             "top_sections": _top(total["sections"], 10),
             "top_pages": _top(total["pages"], 10),
-            "zero_terms": _top(total["zero_terms"], 15),
-            "searches": sum(d["searches"] for d in days),
-            "searches_zero": sum(d["searches_zero"] for d in days),
             "funnel": [len(login), len(opened), len(acted)],
             "features": _top(total["features"], 20),
             "daily": [[k, len(d["users"])] for k, d in w],
@@ -271,13 +231,11 @@ class Analytics:
             s = re.sub(r"[\x00-\x1f\x7f]", "", s).strip().replace('"', '""')
             return f'"\'{s}"' if s[:1] in "=+-@|%" and s else f'"{s}"'
 
-        out = [
-            "dia;usuarios_ativos;aberturas_de_app;navegacoes;paginas_do_hub;buscas;buscas_sem_resultado;logins"
-        ]
+        out = ["dia;usuarios_ativos;aberturas_de_app;navegacoes;paginas_do_hub;logins"]
         for k, d in self.window(now, 30):
             out.append(
                 f"{k};{len(d['users'])};{sum(d['app_opens'].values())};{sum(d['sections'].values())};"
-                f"{sum(d['pages'].values())};{d['searches']};{d['searches_zero']};{d['events'].get('login', 0)}"
+                f"{sum(d['pages'].values())};{d['events'].get('login', 0)}"
             )
         s = self.summary(now)
         out += [
@@ -286,7 +244,6 @@ class Analytics:
             *(f"{esc(a)};{x};{y};{z};{o}" for a, x, y, z, o in s["apps"]),
         ]
         out += ["", "secao;navegacoes_30d", *(f"{esc(k)};{v}" for k, v in s["top_sections"])]
-        out += ["", "busca_sem_resultado;vezes_30d", *(f"{esc(k)};{v}" for k, v in s["zero_terms"])]
         return "\n".join(out) + "\n"
 
     def bytes_estimate(self) -> int:
@@ -308,7 +265,6 @@ class Analytics:
         }
         doc = {
             "key_since": self.key_since,
-            "raw_terms": self.raw_terms,
             "retention_days": self.retention,
             "days": days,
         }

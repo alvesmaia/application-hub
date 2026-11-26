@@ -62,10 +62,10 @@ input `version`) and publishes `ghcr.io/<owner>/app-hub-{web,minio,mc,ativos,for
 - [ ] Backup before any change: volume `app-hub-data` + `pg_dumpall` of `app-hub-app-db`.
 - [ ] E2E/ui-sweep only on a temporary instance (`scripts/tmp-instance.sh`), never with demo accounts in production.
 
-## Read access to the database from other machines (dashboards, DBeaver)
+## Read access to the database from other machines (dashboards, SQL clients)
 
 Off by default: the apps' Postgres is published only on `127.0.0.1` (debug port). To let dashboards (Power BI,
-Metabase, Grafana) and tools such as DBeaver read the data by host and port:
+Metabase, Grafana) and SQL clients read the data by host and port:
 
 ```bash
 bash platform-py/scripts/install.sh --db-public-port 5432 [--db-allowed-cidrs 10.0.0.0/8] [--db-public-host db.empresa.com]
@@ -80,7 +80,8 @@ takes the flags above); the rerun recreates the database container with the port
 - **Certificate:** self-signed, made once (its SHA-256 fingerprint is on the page). To use the company's, mount the
   files in the hub container and set `HUB_DB_TLS_CERT_FILE`/`HUB_DB_TLS_KEY_FILE`.
 - **Accounts:** made by whoever manages users, each with a responsible person, the databases it reads (production
-  and/or staging; never `hub`), a validity (1–365 days, enforced by Postgres) and read only (`default_transaction_read_only`,
+  and/or staging; the hub's own database only through its separate "Banco do hub" option: sessions and tokens
+  there are hashes, the vault, users and audit live in files, and its tables may change between versions), a validity (1–365 days, enforced by Postgres) and read only (`default_transaction_read_only`,
   60 s per query, 5 connections). The password is shown once; "Nova senha" makes another. Deactivating the responsible
   person, or "Revogar todos os acessos", suspends their accounts and ends their open sessions.
 - **Source address:** the allowed networks are checked against the client's real address. Rootful Docker on Linux and

@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="/assets/devdocs.css"/>
 {% block head %}{% endblock %}
 </head>
-<body class="{{ body_class|default('rail-expanded') }}" data-hub-perms="{{ perms }}" data-hub-ux="1" data-hub-tour="{{ tour }}" data-hub-i18n="{{ i18n }}" data-hub-palette="{{ palette }}">
+<body class="{{ body_class|default('rail-expanded') }}" data-hub-perms="{{ perms }}" data-hub-ux="1" data-hub-tour="{{ tour }}" data-hub-i18n="{{ i18n }}">
 <a class="skip-link" href="#app-root">{{ t('shell.skip') }}</a>
 {% macro svg(inner) %}<svg viewBox="0 0 24 24" aria-hidden="true">{{ inner|safe }}</svg>{% endmacro %}
 <header class="platform-header">

@@ -15,14 +15,13 @@ WIDGETS = ("onboarding", "favorites", "recents", "status")
 STEPS: tuple[tuple[str, str | None, str], ...] = (
     ("open_app", None, "/applications"),
     ("theme", None, "#theme"),
-    ("notifications", None, "/inbox#prefs"),
-    ("search", None, "#search"),
+    ("notifications", None, "/account#prefs"),
     ("variable", "gerenciar_variaveis", "/admin/env"),
     ("package", "editar_configuracoes", "/admin/sdk"),
     ("backup", "editar_configuracoes", "/admin/backups"),
 )
 KINDS = ("alert", "notification", "approval")
-RECENTS_CAP, SEARCHES_CAP, FAVORITES_CAP = 8, 8, 24
+RECENTS_CAP, FAVORITES_CAP = 8, 24
 
 
 class Recent(BaseModel):
@@ -45,7 +44,6 @@ class Prefs(BaseModel):
     layout: list[str] | None = None
     favorites: list[str] = Field(default_factory=list)
     recents: list[Recent] = Field(default_factory=list)
-    searches: list[str] = Field(default_factory=list)
     channels: dict[str, Channel] = Field(default_factory=dict)
     analytics_opt_out: bool = False
 
@@ -111,10 +109,6 @@ class UxStore:
             return
         rest = [r for r in cur if r.path != path]
         self.update(user, recents=[Recent(path=path, label=label[:80], at=now), *rest][:RECENTS_CAP])
-
-    def remember_search(self, user: str, text: str) -> None:
-        rest = [s for s in self.prefs(user).searches if s != text]
-        self.update(user, searches=[text, *rest][:SEARCHES_CAP])
 
     def toggle_favorite(self, user: str, app: str, on: bool) -> list[str]:
         favs = [a for a in self.prefs(user).favorites if a != app]

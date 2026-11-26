@@ -38,9 +38,5 @@
     ],
     "kind": "automations.run"
   },
-  "heavy": null,
-  "search": {
-    "q": "Validar",
-    "min": 1
-  }
+  "heavy": null
 }

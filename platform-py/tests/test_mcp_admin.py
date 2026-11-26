@@ -164,7 +164,6 @@ def test_health_slos_incidents_flags_and_analytics(agent: TestClient) -> None:
     assert call(agent, "flags_list")["total"] == 1
     call(agent, "flags_delete", {"app": "inventory", "key": "novo-fluxo"})
     assert "retention_days" in call(agent, "analytics_get")
-    assert call(agent, "analytics_set_terms", {"body": {"raw": False}})["raw"] is False
     assert call(agent, "analytics_set_retention", {"body": {"days": 90}})["days"] == 90
     assert call(agent, "analytics_rotate_key")["ok"] is True
     assert "subscribers" in call(agent, "logs_stats")

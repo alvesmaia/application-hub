@@ -7,7 +7,7 @@ import fs from 'node:fs';
 const HUB = process.env.HUB || 'http://localhost:8080';
 const out = process.argv[2] || 'probe-out';
 fs.mkdirSync(out, { recursive: true });
-const pages = (process.env.PAGES || '/,/applications,/inbox,/status,/search?q=a,/admin,/admin/analytics,/inventory/assets,/servicedesk/requests').split(',').map((p) => (p.startsWith('/') ? p : `/${p}`));
+const pages = (process.env.PAGES || '/,/applications,/inbox,/status,/admin,/admin/analytics,/inventory/assets,/servicedesk/requests').split(',').map((p) => (p.startsWith('/') ? p : `/${p}`));
 const browser = await chromium.launch();
 const summary = [];
 for (const scheme of (process.env.SCHEMES || 'light,dark').split(',')) {

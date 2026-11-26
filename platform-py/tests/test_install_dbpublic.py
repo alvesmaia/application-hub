@@ -1,4 +1,4 @@
-"""install.sh: read access to the apps' database from other machines (dashboards, DBeaver), on a new install by
+"""install.sh: read access to the apps' database from other machines (dashboards, SQL clients), on a new install by
 flags or by the advanced question, and on an existing install (rerun) by flags or one new question."""
 
 from __future__ import annotations

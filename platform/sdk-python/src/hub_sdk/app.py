@@ -50,7 +50,6 @@ from hub_sdk.jobs import KILLED_BY_MEMORY, Handler, Jobs, Worker
 from hub_sdk.locale import LocaleMiddleware
 from hub_sdk.outbox import Event, Outbox, audit
 from hub_sdk.schema import cleanup
-from hub_sdk.search import SearchFn
 from hub_sdk.shutdown import Shutdown
 from hub_sdk.telemetry import Telemetry, TraceMiddleware
 
@@ -83,10 +82,8 @@ def scratch_dir(app_id: str) -> Path:
 
 
 class HubSdk:
-    """The hub's side of the app. Before :meth:`install`, set ``sdk.search = fn`` (``async fn(SearchQuery) ->
-    list[SearchHit]``, answers ``GET /{id}/_hub/search``: the hub's Ctrl+K finds the app's records) and, with
-    approvals, ``sdk.approvals = fn`` (``async fn(ApprovalDecision) -> str``). ``sdk.outbox`` publishes audit
-    events and Inbox notifications: ``sdk.outbox.in_transaction(conn, ev)`` inside the action's SQLAlchemy
+    """The hub's side of the app. Before :meth:`install`, with approvals, set ``sdk.approvals = fn``
+    (``async fn(ApprovalDecision) -> str``). ``sdk.outbox`` publishes audit events and Inbox notifications: ``sdk.outbox.in_transaction(conn, ev)`` inside the action's SQLAlchemy
     transaction, ``await sdk.outbox.emit(ev)`` for actions without one (export, query)."""
 
     def __init__(
@@ -124,8 +121,7 @@ class HubSdk:
         # Wave 8: traces (the hub fetches them at /_hub/telemetry) and flags pushed by the hub.
         self.telemetry = Telemetry(self.app_id)
         self.flags = FlagStore()
-        # Wave 9: federated search and Inbox approvals (set before `install`).
-        self.search: SearchFn | None = None
+        # Wave 9: Inbox approvals (set before `install`).
         self.approvals: ApprovalFn | None = None
         # Wave 12 (2.5): extra app readiness checks (beyond DB/shutdown).
         self.ready_checks: list[tuple[str, _ready.Check]] = []
@@ -391,7 +387,6 @@ class HubSdk:
                 self.wake,
                 telemetry=self.telemetry,
                 flags=self.flags,
-                search=self.search,
                 approvals=self.approvals,
             )
         )

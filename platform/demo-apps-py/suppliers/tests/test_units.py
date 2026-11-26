@@ -1,4 +1,4 @@
-"""Units: attachment types, names, PDF, registry lookup (retry, circuit breaker, timeout), search."""
+"""Units: attachment types, names, PDF, registry lookup (retry, circuit breaker, timeout)."""
 
 from __future__ import annotations
 
@@ -10,7 +10,6 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
 
 import pytest
-from hub_sdk.search import SearchQuery
 from hub_sdk.storage import Item
 from typing_extensions import override
 
@@ -18,7 +17,6 @@ from suppliers import lookup as lk
 from suppliers.app import s3_config
 from suppliers.ficha import ficha_pdf
 from suppliers.pdf import Pdf, pdf_string
-from suppliers.search import generic_term, search_hits
 from suppliers.suppliers import (
     SUPPLIERS,
     attach_max_bytes,
@@ -91,19 +89,6 @@ def test_ficha_pdf_variants() -> None:
     big = ficha_pdf(SUPPLIERS[0], "ana", (info, 5), items, None)
     assert big.count(b"/Type /Page ") >= 2 and b"doc0.pdf" in big and b"Score de cr" in big
     assert b"Nenhum anexo." in ficha_pdf(SUPPLIERS[0], "ana", None, [], None)
-
-
-def sq(q: str, loc: str = "pt-BR", limit: int = 10) -> SearchQuery:
-    return SearchQuery(q=q, limit=limit, identity=None, locale=loc)
-
-
-def test_search_hits_and_generic_terms() -> None:
-    assert [h.title for h in search_hits(sq("norte"))] == ["Norte Tecnologia"]
-    assert search_hits(sq("FOR-0271"))[0].url == "/apps/suppliers/indicators?id=FOR-0271"
-    assert len(search_hits(sq("fornecedores"))) == 6 and generic_term("Proveedores")
-    assert not generic_term("for") and search_hits(sq("zzzz")) == []
-    assert search_hits(sq("norte", "en"))[0].kind == "Supplier"
-    assert len(search_hits(sq("são paulo"))) == 2  # cidade (peso 0,6)
 
 
 def test_s3_config_from_env(monkeypatch: pytest.MonkeyPatch) -> None:

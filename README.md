@@ -8,15 +8,14 @@
 
 A white-label corporate portal that hosts many internal applications under one global shell
 (header + menu that never disappears). Each application runs isolated in its own container and is
-composed into the page without iframes, plus Administration, Operations, observability, Inbox and
-global search. Everything is also exposed as an **API** (`/api/v1`, OpenAPI 3.1, docs at `/api/docs`)
+composed into the page without iframes, plus Administration, Operations, observability and Inbox. Everything is also exposed as an **API** (`/api/v1`, OpenAPI 3.1, docs at `/api/docs`)
 and over **MCP** for AI assistants (`/mcp`, same access control as the UI).
 
 ## Features
 
 | Area | What you get |
 |---|---|
-| **Shell & UX** | Fixed global header and menu; Home, app catalog, Inbox (approvals and access requests), federated search (hub + apps), guided tour, light/dark theme, PT-BR/EN/ES, PWA |
+| **Shell & UX** | Fixed global header and menu; Home, app catalog, Inbox (approvals and access requests), guided tour, light/dark theme, PT-BR/EN/ES, PWA |
 | **Applications** | Each app in its own container, reached only through the gateway and composed into the page without iframes; same origin with strict CSP and sanitized HTML; real time via SSE and WebSocket; barcode scanning and camera (`hub-device`) |
 | **Access & security** | Local login or Microsoft Entra ID SSO (with single logout); per-app roles and permissions; scoped personal API tokens; encrypted vault for secrets; network-restricted control plane |
 | **Administration** | Users, roles, per-environment variables, connections (Postgres, MySQL, SQL Server, SharePoint/OneDrive, S3) behind a broker — apps never see credentials |

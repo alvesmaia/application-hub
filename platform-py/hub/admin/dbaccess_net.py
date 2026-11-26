@@ -1,4 +1,4 @@
-"""Read access to the apps' Postgres from other machines (dashboards, DBeaver): the configuration, the `pg_hba.conf`
+"""Read access to the apps' Postgres from other machines (dashboards, SQL clients): the configuration, the `pg_hba.conf`
 the hub writes and the TLS certificate.
 
 Off by default. When on (`HUB_DB_PUBLIC=1`, port published by the compose), only members of `hub_readers` (the read
@@ -22,8 +22,14 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.x509.oid import NameOID
 
 READERS = "hub_readers"
-NEVER = ("hub", "postgres", "template0", "template1")  # never open to a read account
+NEVER = ("postgres", "template0", "template1")  # never open to a read account
 Net = tuple[str, str]  # (subnet CIDR, gateway IP) of a Docker network the database is on
+
+
+def hub_db(env: Mapping[str, str] = os.environ) -> str:
+    """The hub's own database (sessions and OAuth records as hashes, jobs, leases; the vault, users and audit live in
+    files): readable only when an admin ticks it on its own, never as one more app."""
+    return urlsplit(env.get("HUB_STATE_DB_URL") or "").path.lstrip("/") or "hub"
 
 
 @dataclass(frozen=True)
@@ -95,6 +101,6 @@ def self_signed(host: str) -> tuple[bytes, bytes]:
 
 
 def fingerprint(cert_pem: bytes) -> str:
-    """SHA-256 of the certificate (what DBeaver and psql show when asked to trust it)."""
+    """SHA-256 of the certificate (what SQL clients show when asked to trust it)."""
     der = x509.load_pem_x509_certificate(cert_pem).public_bytes(serialization.Encoding.DER)
     return ":".join(f"{b:02X}" for b in hashlib.sha256(der).digest())

@@ -9,7 +9,6 @@ GET    ``/{app}/_hub/jobs?limit=``               jobs (most recent first)
 POST   ``/{app}/_hub/jobs/{id}/retry|cancel``    reprocessar / cancelar
 GET    ``/{app}/_hub/telemetry?after=``         spans novos + medidores (onda 8)
 POST   ``/{app}/_hub/flags``                    feature flag definitions (wave 8)
-GET    ``/{app}/_hub/search?q=&limit=``          federated search with the identity (wave 9)
 POST   ``/{app}/_hub/approvals/{id}``            decision on an approval request (wave 9)
 ====== ========================================= =====================================
 
@@ -29,8 +28,6 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from hub_sdk import approvals as _ap
-from hub_sdk import locale as _locale
-from hub_sdk import search as _search
 from hub_sdk.flags import FlagStore, validate_push
 from hub_sdk.identity import USER_HEADER, parse_identity
 from hub_sdk.jobs import Jobs
@@ -97,7 +94,6 @@ class _Internal:
     wake: Callable[[], None] | None
     telemetry: Telemetry | None
     flags: FlagStore | None
-    search: _search.SearchFn | None
     approvals: _ap.ApprovalFn | None
 
     def ob(self) -> Outbox:
@@ -202,30 +198,6 @@ class _Internal:
         applied = self.flags.replace(v, env, fl)
         return {"applied": applied, "flags": len(fl), "version": self.flags.version}
 
-    async def search_ep(self, req: Request) -> Any:
-        if (e := self.auth(req)) is not None:
-            return e
-        if self.search is None:
-            return _err(404, "este app não oferece busca")
-        q = (req.query_params.get("q") or "").strip()
-        if not q or len(q) > _search.MAX_QUERY:
-            return _err(400, "consulta vazia ou longa demais")
-        limit = max(1, min(_int(req.query_params.get("limit"), 5), _search.MAX_LIMIT))
-        query = _search.SearchQuery(
-            q=q,
-            limit=limit,
-            identity=parse_identity(req.headers.get(USER_HEADER)),
-            locale=_locale.from_headers(req.headers),
-        )
-        token_ = _locale.use(query.locale)
-        try:
-            hits = await self.search(query)
-        except Exception as ex:
-            return _err(503, str(ex))
-        finally:
-            _locale._current.reset(token_)
-        return {"results": [h.to_json() for h in _search.sanitize(self.app_id, hits, limit)]}
-
     async def approval_ep(self, req: Request, approval_id: str) -> Any:
         if (e := self.auth(req)) is not None:
             return e
@@ -261,12 +233,11 @@ def router(
     wake: Callable[[], None] | None = None,
     telemetry: Telemetry | None = None,
     flags: FlagStore | None = None,
-    search: _search.SearchFn | None = None,
     approvals: _ap.ApprovalFn | None = None,
 ) -> APIRouter:
     """``outbox``/``jobs`` can be argument-less functions (resolved on each call:
     the lifespan swaps the in-memory backends for the Postgres ones)."""
-    h = _Internal(app_id, token, outbox, jobs, wake, telemetry, flags, search, approvals)
+    h = _Internal(app_id, token, outbox, jobs, wake, telemetry, flags, approvals)
     r = APIRouter(include_in_schema=False)
     base = f"/{app_id}/{SEGMENT}"
     r.add_api_route(f"{base}/outbox", h.outbox_list, methods=["GET"])
@@ -275,6 +246,5 @@ def router(
     r.add_api_route(base + "/jobs/{job_id}/{action}", h.job_action, methods=["POST"])
     r.add_api_route(f"{base}/telemetry", h.telemetry_pull, methods=["GET"])
     r.add_api_route(f"{base}/flags", h.flags_push, methods=["POST"])
-    r.add_api_route(f"{base}/search", h.search_ep, methods=["GET"])
     r.add_api_route(base + "/approvals/{approval_id}", h.approval_ep, methods=["POST"])
     return r

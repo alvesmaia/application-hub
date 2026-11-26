@@ -39,7 +39,6 @@ from collector import api, barcodes, i18n
 from collector.model import SCHEMA_SQL, catalog, locations, orders
 from collector.reads import FORMAT_LABELS
 from collector.routes import live, pages, scan, sheet
-from collector.search import make_search
 from collector.state import HERE, State
 
 log = logging.getLogger("collector")
@@ -117,7 +116,6 @@ async def run_worker() -> None:
 
 def create_app() -> FastAPI:
     sdk = build_sdk()
-    sdk.search = make_search(sdk)
     render = Renderer(INFO, HERE / "templates")
     cast(Any, render.env.globals).update(code_svg=barcodes.svg, fmt_label=lambda f: FORMAT_LABELS.get(f, f))
     st = State(sdk, render)

@@ -22,10 +22,6 @@
   },
   "job_trigger": null,
   "heavy": null,
-  "search": {
-    "q": "COL-0001",
-    "min": 1
-  },
   "locale": {
     "pt": "Voltar à plataforma",
     "en": "Back to the platform"

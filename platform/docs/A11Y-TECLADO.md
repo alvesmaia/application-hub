@@ -12,8 +12,7 @@ checking the focus ring in the screenshots. No test with real screen readers (NV
 | # | Where | Keys | Expected | Result |
 |---|---|---|---|---|
 | 1 | Any page | `Tab` (first) | "Pular para o conteúdo" (Skip to content) appears at the top; `Enter` moves focus to the `<main>` | ✅ |
-| 2 | Header | `Tab` … | Order: brand → search (Ctrl K) → Inbox → user menu; 3 px focus ring in the brand color on all | ✅ |
-| 3 | Search | `Ctrl+K` (or `Enter` on the button) | Modal dialog; focus in the field; `↓`/`↑`/`Home`/`End` move the active option (`aria-activedescendant`), `Enter` opens, `Esc` closes and **returns focus** to whoever opened it; `Tab` stays trapped in the dialog (field ↔ Fechar) | ✅ |
+| 2 | Header | `Tab` … | Order: brand → Inbox → user menu; 3 px focus ring in the brand color on all | ✅ |
 | 4 | Inbox (bell) | `Enter`/`Espaço` on the bell | Popover opens; `Tab` goes through items and actions; `Esc` closes and returns to the bell; opening another menu closes this one | ✅ |
 | 5 | User menu | `Enter`, `Tab` | Theme (Sistema/Claro/Escuro, i.e. System/Light/Dark, `aria-pressed`) and language (select + OK) by keyboard; the page reloads with the chosen theme/language and focus returns to the top | ✅ |
 | 6 | Rail | `Tab` | Início (Home), Aplicações (Applications), Status, Administração (Administration) (`aria-expanded`, `aria-controls`); current item with `aria-current="page"` | ✅ |

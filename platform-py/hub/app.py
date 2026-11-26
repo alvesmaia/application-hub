@@ -34,7 +34,7 @@ from hub.insight.runtime import Insight
 from hub.lifespan import lifespan
 from hub.ops.newapp import load_dynamic
 from hub.ops.routes import mount_ops
-from hub.ux import search as srch
+from hub.ux import applink
 from hub.ux.account_routes import mount_account
 from hub.ux.inbox import InboxStore
 from hub.ux.inbox_routes import mount_inbox
@@ -60,7 +60,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
     admin = AdminStore(data_dir, vault, apps=gateway.registry.ids())
     conns = ConnStore(data_dir, vault, admin)
     broker_addr = os.getenv("HUB_BROKER_ADDR", "").strip()
-    srch.token_source = lambda app_id: admin.tokens.get(app_id)
+    applink.token_source = lambda app_id: admin.tokens.get(app_id)
 
     app = FastAPI(title=settings.brand, docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
     _init_state(app, apicfg, auth_store, admin, conns, broker_addr, gateway, data_dir)

@@ -1,11 +1,11 @@
 # shellcheck shell=bash
-# Read access to the apps' Postgres from other machines (dashboards, DBeaver): the question, the flags and what goes
+# Read access to the apps' Postgres from other machines (dashboards, SQL clients): the question, the flags and what goes
 # to .prod.env. The hub then writes the database's network rules and TLS (hub/admin/dbaccess_net.py); the accounts
 # are made in Administration › Users › Database access.
 DBPUB=n DBPUB_PORT=5432 DBPUB_CIDRS="" DBPUB_HOST=""
 
 dbpub_questions() {
-  ask DBPUB "Acesso de leitura ao banco por outras máquinas (dashboards, DBeaver)? (s/n)" '^[snSN]$'
+  ask DBPUB "Acesso de leitura ao banco por outras máquinas (dashboards, clientes SQL)? (s/n)" '^[snSN]$'
   yes_no "$DBPUB" || return 0
   ask DBPUB_PORT "  Porta do banco no host" '^[0-9]{2,5}$'
   ask DBPUB_CIDRS "  Redes que podem conectar (CIDR, vírgula); vazio = qualquer origem que alcance a porta (rede corporativa/VPN)" '^$|^[0-9a-fA-F.:/,]+$'

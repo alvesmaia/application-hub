@@ -30,7 +30,7 @@ DATA = re.compile(r"Gestão de Ativos|Central de Serviços|Português|São Paulo
 
 def _routes() -> list[str]:
     nav = json.loads((WEB / "nav.json").read_text("utf-8"))
-    out: set[str] = {"/", "/account", "/account/security", "/account/access", "/inbox", "/search?q=x"}
+    out: set[str] = {"/", "/account", "/account/security", "/account/access", "/inbox"}
 
     def walk(items: list[dict[str, Any]]) -> None:
         for it in items:

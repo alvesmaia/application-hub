@@ -141,9 +141,6 @@ OPS: tuple[Op, ...] = (
     Op("inbox_decide", "/inbox/{id}/decide", "Inbox", "Decide um pedido de aprovação (approve/reject)",
        "DecideResult", method="POST", params=(P_ID,), body="DecideRequest",
        **_tgt("POST", "/api/me/inbox/{id}/decide"), destructive=True),
-    Op("search", "/search", "Busca", "Busca federada (plataforma + apps que você alcança)", "SearchResult",
-       params=(Param("q", "query", {"type": "string", "minLength": 1, "maxLength": 100}, "Termo", True),),
-       **_tgt("GET", "/api/me/search"), passed=("q",)),
     *ADMIN_OPS,
 )  # fmt: skip
 
@@ -161,7 +158,6 @@ TAGS = {
     "Usuários": "Usuários e funções",
     "Auditoria": "Trilha de auditoria em cadeia",
     "Inbox": "Notificações e pedidos de aprovação",
-    "Busca": "Busca federada",
     **ADMIN_TAGS,
 }
 
