@@ -7,6 +7,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-11-26
+
 ### Removed
 - Search: the hub no longer has a global search — no Ctrl+K palette, no `/search` page, no `GET/POST /api/me/search`,
   no `search` operation in `/api/v1` and MCP, no "Use the search" step in the tutorial and tour. The usage analytics
