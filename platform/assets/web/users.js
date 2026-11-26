@@ -71,7 +71,7 @@
     wrap.dataset.usersModal = '';
     wrap.innerHTML = `<form class="modal hub-sheet" novalidate>
       <div class="modal-header"><h2>${esc(title)}</h2><button type="button" class="modal-close" data-close aria-label="Fechar">×</button></div>
-      <p class="modal-copy">${esc(copy)}</p>
+      ${copy ? `<p class="modal-copy">${esc(copy)}</p>` : ''}
       ${fieldsHtml}
       <div class="auth-alert hidden" data-modal-error></div>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close>Cancelar</button><button type="submit" class="primary-button">${esc(submitLabel)}</button></div>
@@ -127,7 +127,7 @@
     const ro = (label, value, id = '') => `<div class="form-field"><label>${esc(label)}</label><input ${id ? `id="${id}"` : ''} type="text" readonly value="${esc(value)}"/></div>`;
     openModal(
       'Credenciais da conta de leitura',
-      'Copie agora: a senha não será mostrada de novo. No cliente SQL, ative SSL no modo "require" e informe o banco na conexão (uma conexão por banco); para ver só ele, desligue a opção de listar todos os bancos.',
+      '',
       ro('Host', c.host) + ro('Porta', c.port) + ro(dbs.length > 1 ? 'Bancos' : 'Banco', dbs.join(', ')) + ro('Usuário', out.role)
         + `<div class="form-field"><label for="dbaccess-password">Senha</label><div class="pw-row"><input id="dbaccess-password" type="text" readonly value="${esc(out.password)}"/><button type="button" class="secondary-button" data-dbaccess-copy>Copiar</button></div></div>`
         + ro('SSL', 'sslmode=require'),
@@ -229,11 +229,11 @@
       const people = (meta.users || []).map((u) => `<option value="${esc(u.id)}">${esc(u.name)} (${esc(u.email)})</option>`).join('');
       openModal(
         'Nova conta de leitura',
-        'Somente leitura, com validade. A senha aparece uma única vez; a conta para se a pessoa responsável for desativada.',
+        '',
         field('Nome (ex.: powerbi_vendas)', 'name', 'text', '', 'required pattern="[a-z][a-z0-9_]{1,40}" autocomplete="off"')
           + `<div class="form-field"><label>Responsável</label><select name="owner" required>${people}</select></div>`
           + (dbs.length ? checks('Bancos das aplicações', 'dbs', dbs, () => false) : '')
-          + (meta.hub_db ? `<div class="form-field"><label>Banco do hub</label><label class="role-permission"><input type="checkbox" name="hub" value="1"/><span>Incluir o banco interno do hub (<code>${esc(meta.hub_db)}</code>)</span></label><p class="form-hint">Sessões e tokens só como hash; cofre, usuários e auditoria não ficam nele. As tabelas são internas e podem mudar entre versões.</p></div>` : '')
+          + (meta.hub_db ? `<div class="form-field"><label>Banco do hub</label><label class="role-permission"><input type="checkbox" name="hub" value="1"/><span>Incluir o banco interno do hub (<code>${esc(meta.hub_db)}</code>)</span></label></div>` : '')
           + `<div class="form-field"><label>Validade</label><select name="days"><option value="30">30 dias</option><option value="90" selected>90 dias</option><option value="180">180 dias</option><option value="365">365 dias</option></select></div>`,
         'Criar conta',
         async (form) => {

@@ -44,7 +44,7 @@ up)
     -e MINIO_ROOT_PASSWORD=hubpy-objstore-dev -e MINIO_BROWSER=off app-hub-minio:0.10.0 server /data
   # one database per app (= infra/app-db-init.sh, without mounting the file: CRLF in a Windows checkout breaks the shebang)
   until docker exec $P-appdb psql -U hub -c 'select 1' >/dev/null 2>&1; do sleep 1; done
-  for a in "${APPS[@]}"; do docker exec $P-appdb createdb -U hub "$a"; done
+  for a in "${APPS[@]}"; do docker exec $P-appdb createdb -U hub "app_$a"; done
   # each app's own role (= the app-hub-db-roles job): the hub deploys with the app-env.json values (role, not `hub`)
   roles=(-e HUB_APPDB_ADMIN_URL=postgresql://hub:hubpy-app-dev@app-hub-app-db:5432/postgres)
   for a in "${APPS[@]}"; do roles+=(-e "APP_HUB_APP_DB_PASSWORD_$(echo "$a" | tr a-z A-Z)=hubpy-$a-dev"); done
@@ -66,7 +66,7 @@ up)
       -e HUB_S3_SECRET_KEY_SUPPLIERS=hubpy-objstore-dev)
     [ "$a" = collector ] && extra=(-e COLLECTOR_HUB_URL=http://app-hub-web:8090)
     run --name $P-app-$a --network-alias app-hub-app-$a -m 1g --restart unless-stopped \
-      -e HUB_DB_URL=postgresql://$a:hubpy-$a-dev@app-hub-app-db:5432/$a -e HUB_DEMO_E2E_HOSTILE=1 \
+      -e HUB_DB_URL=postgresql://app_$a:hubpy-$a-dev@app-hub-app-db:5432/app_$a -e HUB_DEMO_E2E_HOSTILE=1 \
       -e HUB_INTERNAL_TOKEN="$t" "${extra[@]}" $P-$a
   done
   run --name $P-web --network-alias app-hub-web -p "127.0.0.1:$PORT:8090" -m 1g \

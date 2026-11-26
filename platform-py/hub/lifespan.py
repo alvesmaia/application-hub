@@ -63,7 +63,9 @@ async def _boot_syncs(app: FastAPI, admin: AdminStore) -> None:
     if rotated:
         print(f"hub: senhas de infraestrutura atualizadas em {len(rotated)} variável(is)")
     if moved := await admin.cfg.replace_secret_values(actor, demo_db.migration_pairs(os.environ)):
-        print(f"hub: apps de exemplo com papel próprio no banco em {len(moved)} variável(is)")
+        print(
+            f"hub: conexões dos apps de exemplo atualizadas (papel próprio, banco app_<id>) em {len(moved)} variável(is)"
+        )
     await admin.cfg.ensure_internal_tokens(actor, seed_of)
     await app.state.conns.sync_env(actor, broker_url())
 

@@ -167,7 +167,7 @@
 .env-table .env-meta{font-size:12px;color:var(--color-text-subtle);margin-left:6px}
 .env-table .env-value,.env-table .env-value-trunc{display:inline-block;max-width:100%;background:none;padding:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
 .env-table .status-pill,.env-table [class*="pill"],.env-table .env-chip{font-size:12px;line-height:22px;height:22px;padding:0 8px;vertical-align:middle}
-.env-table .env-chips{display:flex;flex-wrap:nowrap;gap:4px;max-width:100%;overflow:hidden}
+.env-table .env-chips{display:flex;flex-wrap:wrap;gap:4px;max-width:100%;padding:2px 0}
 .env-table .env-chip-more{flex:none;background:var(--color-neutral-soft);color:var(--color-text-secondary)}
 .env-table .env-chip{margin:0;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .env-table .env-actions{display:inline-flex;gap:2px}
@@ -176,9 +176,12 @@
 .env-table td .env-actions{height:24px;align-items:center}
 .env-table th:nth-child(1){width:30%}.env-table th:nth-child(2){width:13%}.env-table th:nth-child(3){width:24%}.env-table th:nth-child(4){width:auto}.env-table th:nth-child(5){width:68px}
 /* "Application" column: its filter popover must escape the clipped header cell. */
-.env-table th.env-app-col{overflow:visible}
+.env-table td:nth-child(4){white-space:normal}
+.table-toolbar:has(.env-app-filter){display:flex;align-items:center;gap:var(--space-8,8px)}
 .env-app-filter{margin:0}
-.env-app-filter .hub-row-menu-list{left:0;right:auto}
+.env-app-filter .hub-row-menu-list{left:auto;right:0}
+.env-app-filter .hub-row-menu-list button.primary-button{margin:6px 12px 4px;width:auto;justify-content:center;background:var(--c-violet-59);color:var(--color-text-inverse);font-weight:600}
+.env-app-filter .hub-row-menu-list button.primary-button:hover{background:var(--c-violet-52)}
 .env-table td:nth-child(2) .status-pill{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block}
 .env-table td:last-child{padding:6px 10px;text-align:left}
 td.ops-actions{display:table-cell}
@@ -333,3 +336,4 @@ body.ops-drawer-open{overflow:hidden}
 .ops-ver-log .ops-log{margin:var(--space-6) 0 0;max-height:320px;overflow:auto;padding:var(--space-8) var(--space-12);border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-muted,var(--c-blue-95-2));font-family:var(--font-mono,ui-monospace,monospace);font-size:11px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--color-text)}
 .ops-ver-log .ops-log{white-space:pre;overflow-wrap:normal}
 .ops-page-note{margin:0 0 var(--space-12);font-size:var(--font-size-xs)}
+@media(max-width:767px){.content-panel:has(> .env-table){overflow-x:auto}.table-toolbar:has(.env-app-filter){flex-wrap:wrap;min-width:0}}

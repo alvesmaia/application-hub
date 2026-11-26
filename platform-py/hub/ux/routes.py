@@ -198,16 +198,12 @@ async def applications(request: Request, c: UxCtx = Depends(ctx)) -> Response:
     lang = request.state.lang
     prefs = c.store.prefs(request.state.user["id"])
     vis = visible(request)
-    states = {i: catalog.state_label(k, lang) for i, _, k in await c.live_states(request, vis)}
     mine = catalog.cards(c.reg, c.data_dir, prefs.favorites, vis, allowed=True, lang=lang)
     hidden = catalog.catalog_hidden(c.data_dir)
     others = [x for x in catalog.cards(c.reg, c.data_dir, prefs.favorites, vis, allowed=False, lang=lang)
               if x.id not in hidden]  # fmt: skip
     page = {**c.page_ctx(request), **_HELPERS} | {
-        "mine": [
-            (card, catalog.card_texts(card, lang), states.get(card.id, catalog.state_label("ok", lang)))
-            for card in mine
-        ],
+        "mine": [(card, catalog.card_texts(card, lang)) for card in mine],
         "others": others,
         "show_stack": "editar_configuracoes"
         in getattr(request.state, "permissions", []),  # technical detail: admins

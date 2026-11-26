@@ -56,6 +56,7 @@ def test_identity_ignores_docs_and_the_version_bump_but_not_code(
 
 
 def test_skip_only_for_the_same_code_and_a_wide_enough_run(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("HUB_CHECK_FORCE", raising=False)  # the check itself may run forced
     assert already_checked("hub", "abc", "hub abc") and already_checked("hub", "abc", "all abc")
     assert already_checked("all", "abc", "all abc") and not already_checked("all", "abc", "hub abc")
     assert not already_checked("hub", "abc", "hub xyz") and not already_checked("hub", "abc", "")

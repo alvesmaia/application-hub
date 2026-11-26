@@ -1504,7 +1504,7 @@
           {
             "provisioned": {
               "changed": false,
-              "database": "inventory",
+              "database": "app_inventory",
               "variable": "DATABASE_URL"
             },
             "restart_pending": false
@@ -5224,7 +5224,7 @@
                 "example": {
                   "provisioned": {
                     "changed": false,
-                    "database": "inventory",
+                    "database": "app_inventory",
                     "variable": "DATABASE_URL"
                   },
                   "restart_pending": false

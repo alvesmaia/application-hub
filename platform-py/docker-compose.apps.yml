@@ -1,4 +1,4 @@
-# The one Postgres (the hub's `hub` database and one database per app) + the 5 sample apps (inventory, suppliers,
+# The one Postgres (the hub's `hub` database and one database per app, `app_<id>`) + the 5 sample apps (inventory, suppliers,
 # servicedesk, collector, automations).
 # The apps only start with the `demo-apps` profile (COMPOSE_PROFILES=demo-apps or --profile demo-apps); without it the hub and the
 # apps database start on their own (use HUB_APPS_JSON=./apps.empty.json for an empty catalog).
@@ -75,7 +75,7 @@ services:
     cpus: 0.5 # sample apps: half a CPU each (= resources.cpu in the manifests)
     restart: unless-stopped
     environment: &app-hub-app-env
-      HUB_DB_URL: postgresql://inventory:${APP_HUB_APP_DB_PASSWORD_INVENTORY:-hubpy-inventory-dev}@app-hub-app-db:5432/inventory # one database per app (inventory); the others override it
+      HUB_DB_URL: postgresql://app_inventory:${APP_HUB_APP_DB_PASSWORD_INVENTORY:-hubpy-inventory-dev}@app-hub-app-db:5432/app_inventory # one database per app (inventory); the others override it
       HUB_DEMO_E2E_HOSTILE: "1" # tests only: routes for the anti-phishing E2E (inventory/servicedesk); the production compose never enables it
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_INVENTORY:-hubpy-${APP_HUB_APP_TOKEN:-local}-inventory}
     depends_on: &app-hub-app-deps
@@ -108,7 +108,7 @@ services:
     environment:
       <<: *app-hub-app-env
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_SUPPLIERS:-hubpy-${APP_HUB_APP_TOKEN:-local}-suppliers}
-      HUB_DB_URL: postgresql://suppliers:${APP_HUB_APP_DB_PASSWORD_SUPPLIERS:-hubpy-suppliers-dev}@app-hub-app-db:5432/suppliers # one database per app
+      HUB_DB_URL: postgresql://app_suppliers:${APP_HUB_APP_DB_PASSWORD_SUPPLIERS:-hubpy-suppliers-dev}@app-hub-app-db:5432/app_suppliers # one database per app
       HUB_S3_ENDPOINT_SUPPLIERS: http://app-hub-objstore:9000
       HUB_S3_BUCKET_SUPPLIERS: suppliers
       HUB_S3_ACCESS_KEY_SUPPLIERS: hubadmin
@@ -144,7 +144,7 @@ services:
     environment:
       <<: *app-hub-app-env
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_SERVICEDESK:-hubpy-${APP_HUB_APP_TOKEN:-local}-servicedesk}
-      HUB_DB_URL: postgresql://servicedesk:${APP_HUB_APP_DB_PASSWORD_SERVICEDESK:-hubpy-servicedesk-dev}@app-hub-app-db:5432/servicedesk # one database per app
+      HUB_DB_URL: postgresql://app_servicedesk:${APP_HUB_APP_DB_PASSWORD_SERVICEDESK:-hubpy-servicedesk-dev}@app-hub-app-db:5432/app_servicedesk # one database per app
     depends_on: *app-hub-app-deps
     ports: ["127.0.0.1:${HUB_APP_PORT_SERVICEDESK:-9103}:8080"]
     networks: [default, hub-app-servicedesk]
@@ -174,7 +174,7 @@ services:
     environment:
       <<: *app-hub-app-env
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_COLLECTOR:-hubpy-${APP_HUB_APP_TOKEN:-local}-collector}
-      HUB_DB_URL: postgresql://collector:${APP_HUB_APP_DB_PASSWORD_COLLECTOR:-hubpy-collector-dev}@app-hub-app-db:5432/collector # one database per app
+      HUB_DB_URL: postgresql://app_collector:${APP_HUB_APP_DB_PASSWORD_COLLECTOR:-hubpy-collector-dev}@app-hub-app-db:5432/app_collector # one database per app
     depends_on: *app-hub-app-deps
     ports: ["127.0.0.1:${HUB_APP_PORT_COLLECTOR:-9105}:8080"]
     networks: [default, hub-app-collector]
@@ -205,7 +205,7 @@ services:
     environment:
       <<: *app-hub-app-env
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_AUTOMATIONS:-hubpy-${APP_HUB_APP_TOKEN:-local}-automations}
-      HUB_DB_URL: postgresql://automations:${APP_HUB_APP_DB_PASSWORD_AUTOMATIONS:-hubpy-automations-dev}@app-hub-app-db:5432/automations # one database per app
+      HUB_DB_URL: postgresql://app_automations:${APP_HUB_APP_DB_PASSWORD_AUTOMATIONS:-hubpy-automations-dev}@app-hub-app-db:5432/app_automations # one database per app
     depends_on: *app-hub-app-deps
     ports: ["127.0.0.1:${HUB_APP_PORT_AUTOMATIONS:-9106}:8080"]
     networks: [default, hub-app-automations]

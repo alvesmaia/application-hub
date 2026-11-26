@@ -19,7 +19,7 @@
   "ContainerLimits": {"cpu": 0.5, "memory": "256Mi", "pids": 100},
   "ContainerLogs": {"container": "app-hub-app-inventory", "items": [{"level": "info", "stream": "stdout",
                                                                  "text": "pronto"}]},
-  "DatabaseProvision": {"provisioned": {"changed": false, "database": "inventory", "variable": "DATABASE_URL"},
+  "DatabaseProvision": {"provisioned": {"changed": false, "database": "app_inventory", "variable": "DATABASE_URL"},
                         "restart_pending": false},
   "Flag": {"app": "inventory", "description": "", "envs": {"producao": {"default": "off", "enabled": false,
                                                                      "rules": []}},

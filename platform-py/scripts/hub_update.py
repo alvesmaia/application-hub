@@ -228,6 +228,16 @@ def rest_services(configured: list[str], running: list[str], hub: str) -> list[s
     return sorted((set(configured) | set(running)) - {hub, ""})
 
 
+JOBS_FIRST = (
+    "app-hub-db-roles",
+)  # one-shot jobs the apps depend on (compose's ordering is lost with --no-deps)
+
+
+def jobs_first(rest: list[str]) -> list[str]:
+    """The jobs among `rest` that must finish before the apps are recreated (e.g. the sample apps' database renames)."""
+    return [j for j in JOBS_FIRST if j in rest]
+
+
 def build(main_c: dict[str, Any], *services: str) -> None:
     """`compose build` with the code next to this script and the corporate network build args of `.prod.env`."""
     cmd = compose_cmd(main_c, Path(__file__).resolve().parents[1])
@@ -254,6 +264,9 @@ def apply_rest(proj: str, main_name: str, rebuild: bool) -> None:
     if rebuild:  # services without a build section are skipped by compose
         say("construindo os apps")
         build(main, *rest)
+    for job in jobs_first(rest):
+        say(f"rodando {job} antes dos apps")
+        run(*cmd, "up", "--no-deps", "--exit-code-from", job, job)
     say("aplicando o compose ao resto da pilha (só o que mudou é recriado)")
     run(*cmd, "up", "-d", "--no-deps", *rest)
 

@@ -22,7 +22,7 @@ volumes, networks and images; `app-hub`), `HUB_PORT` (8090), `HUB_BIND` (127.0.0
 The hub and the apps share one Postgres (`app-hub-app-db`): the hub's `hub` database next to one database per app, one
 superuser password (`APP_HUB_APP_DB_PASSWORD`). What isolates the apps there:
 - **Data:** each app has its own role and database (`app_<id>`, created by «Provisionar banco»; the sample apps get
-  theirs from the `app-hub-db-roles` job on every `up`): no superuser, `REVOKE ALL … FROM PUBLIC`, `CONNECTION LIMIT 40`.
+  theirs, with the same `app_<id>` names, from the `app-hub-db-roles` job on every `up`): no superuser, `REVOKE ALL … FROM PUBLIC`, `CONNECTION LIMIT 40`.
   The hub closes its own database to `PUBLIC` at boot, and backups/restores never touch the `hub` database.
 - **Runaway queries:** per-role limits, applied when provisioning (and refreshed on an already provisioned app):
   `HUB_APP_DB_STATEMENT_TIMEOUT` (5min), `HUB_APP_DB_IDLE_TX_TIMEOUT` (5min, a forgotten open transaction),

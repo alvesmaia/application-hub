@@ -7,6 +7,15 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Changed
+- Sample apps' databases and roles are `app_<id>`, like any app (they were the bare ids). Existing installs move
+  by themselves on the update: the `app-hub-db-roles` job renames database, role and read group and updates the read
+  accounts (data kept); `hub_update.py` runs it before recreating the apps; the hub rewrites the stored connections
+  at boot. SQL clients: use `app_<id>` as the database.
+- Application catalog cards no longer show the operational state ("Operacional/Degradado"); it stays in Status.
+- Database access screen without explanatory texts: no "external access on/off" lines, no copy in the new-account and
+  credentials dialogs, no hint under "Banco do hub".
+
 ## [0.7.0] — 2026-11-26
 
 ### Removed

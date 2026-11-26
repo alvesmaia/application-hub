@@ -47,6 +47,21 @@ def test_application_column_lists_bound_apps(hub: TestClient) -> None:
     assert "data-env-unbound" in unbound and "Nenhuma aplicação" in unbound
 
 
+def test_the_filter_sits_in_the_toolbar_and_the_header_is_plain_text(hub: TestClient) -> None:
+    # in the column header it took the header's capitals and looked like a label, not a control
+    html = hub.get("/admin/env").text
+    toolbar = html.split('class="table-toolbar"', 1)[1].split("</div>", 1)[0]
+    assert 'class="env-app-filter"' in toolbar and 'name="app"' in html
+    head = html.split("<thead>", 1)[1].split("</thead>", 1)[0]
+    assert "env-app-filter" not in head and ">Aplicação</th>" in head
+
+
+def test_app_chips_wrap_instead_of_being_cut() -> None:
+    css = (Path(__file__).resolve().parents[2] / "platform/assets/web/ops.css").read_text(encoding="utf-8")
+    rules = [r for r in css.split("}") if ".env-table .env-chips{" in r]
+    assert rules and "flex-wrap:wrap" in rules[-1] and "overflow:hidden" not in rules[-1]
+
+
 def test_filter_by_one_app(hub: TestClient) -> None:
     html = hub.get("/admin/env?app=inventory").text
     assert shown(html, "SO_INVENTORY") and shown(html, "SEGREDO_INVENTORY")

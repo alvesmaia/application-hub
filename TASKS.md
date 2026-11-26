@@ -186,3 +186,16 @@
 - ✅ 141 · Hub sem busca: /search, Ctrl+K, botão do cabeçalho, API/MCP search, estatísticas de busca, textos
 - ✅ 142 · SDK e apps de exemplo sem `_hub/search`; contrato e docs
 - ✅ 143 · Validação: hub-check --all, conformance, E2E, ui-sweep
+
+## Textos enxutos (2026-11-26)
+
+- ✅ 144 · "Acesso ao banco": sem a linha de status ligada, sem textos nos modais e sem a dica do banco do hub
+
+## Bancos dos apps de exemplo com prefixo app_ (2026-11-26)
+
+- ✅ 145 · Instalação nova: banco e papel `app_<id>` (job de papéis, init do banco, compose, variáveis semeadas, iso-instance)
+- ✅ 146 · Instalação existente: renomeia `<id>` → `app_<id>` (banco, papel, grupo de leitura e contas de leitura) e reescreve as conexões guardadas
+- ✅ 147 · Atualizador roda o job de papéis antes de recriar os apps
+- ✅ 148 · Validação: migração real num Postgres com dados, hub-check --all, E2E, docs
+- ✅ 149 · /admin/env: botão de filtro "Aplicação" e badges cortados na coluna Aplicação
+- ✅ 150 · Catálogo (/applications) sem o estado "Operacional/Degradado" nos cards

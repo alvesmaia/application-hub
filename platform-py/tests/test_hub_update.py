@@ -172,6 +172,14 @@ def test_rest_of_stack_never_includes_the_hub_and_keeps_running_profile_services
     assert got == ["app-hub-app-db", "app-hub-app-inventory", "app-hub-edge"]
 
 
+def test_the_roles_job_runs_before_the_apps_are_recreated() -> None:
+    # the job renames the sample apps' pre-0.8 databases: an app recreated before it would find no `app_<id>`
+    assert hu.jobs_first(["app-hub-app-inventory", "app-hub-db-roles", "app-hub-edge"]) == [
+        "app-hub-db-roles"
+    ]
+    assert hu.jobs_first(["app-hub-app-inventory"]) == []
+
+
 def _fake_stack(monkeypatch, argv: list[str]) -> list[tuple[str, ...]]:
     calls: list[tuple[str, ...]] = []
 

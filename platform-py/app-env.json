@@ -3,7 +3,7 @@
     "name": "DATABASE_URL_INVENTORY",
     "kind": "connection_string",
     "inject_as": "HUB_DB_URL",
-    "value": "postgresql://inventory:hubpy-inventory-dev@app-hub-app-db:5432/inventory",
+    "value": "postgresql://app_inventory:hubpy-inventory-dev@app-hub-app-db:5432/app_inventory",
     "bindings": [
       {
         "app": "inventory",
@@ -15,7 +15,7 @@
     "name": "DATABASE_URL_SERVICEDESK",
     "kind": "connection_string",
     "inject_as": "HUB_DB_URL",
-    "value": "postgresql://servicedesk:hubpy-servicedesk-dev@app-hub-app-db:5432/servicedesk",
+    "value": "postgresql://app_servicedesk:hubpy-servicedesk-dev@app-hub-app-db:5432/app_servicedesk",
     "bindings": [
       {
         "app": "servicedesk",
@@ -204,7 +204,7 @@
     "kind": "connection_string",
     "inject_as": "HUB_DB_URL",
     "managed": true,
-    "value": "postgresql://collector:hubpy-collector-dev@app-hub-app-db:5432/collector",
+    "value": "postgresql://app_collector:hubpy-collector-dev@app-hub-app-db:5432/app_collector",
     "bindings": [
       {
         "app": "collector",
@@ -247,7 +247,7 @@
     "name": "DATABASE_URL_AUTOMATIONS",
     "kind": "connection_string",
     "inject_as": "HUB_DB_URL",
-    "value": "postgresql://automations:hubpy-automations-dev@app-hub-app-db:5432/automations",
+    "value": "postgresql://app_automations:hubpy-automations-dev@app-hub-app-db:5432/app_automations",
     "bindings": [
       {
         "app": "automations",

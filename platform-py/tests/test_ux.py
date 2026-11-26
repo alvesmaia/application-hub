@@ -74,6 +74,13 @@ def test_favorites_and_catalog(client: TestClient) -> None:
     assert client.put("/api/me/favorites/inventory", json={}, headers=HDR).status_code == 400
 
 
+def test_catalog_cards_show_no_operational_state(client: TestClient) -> None:
+    # the owner: the app's state (operational/degraded) belongs to Status, not to the catalog cards
+    page = client.get("/applications").text
+    card = page.split('class="app-card" data-app="inventory"', 1)[1].split("</article>", 1)[0]
+    assert "app-card-meta" in card and "status-pill" not in card and "Operacional" not in card
+
+
 def test_catalog_cards_show_stack_and_deployed_version(data_dir: Path) -> None:
     (data_dir / "deployments.json").write_text(json.dumps({"inventory": "9.9.9"}))
     page = client_for(create_app()).get("/applications").text

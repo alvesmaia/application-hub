@@ -221,6 +221,32 @@ async def test_a_read_account_may_read_the_hubs_own_database(app_dbs: tuple[str,
     assert not await DbAccess(run_pg, hub_db="nao_existe").has_hub_db()
 
 
+class FakeDbAccess:
+    """Read accounts without a database: the page's texts only."""
+
+    hub_db = "hub"
+
+    async def databases(self) -> list[str]:
+        return ["inventory"]
+
+    async def has_hub_db(self) -> bool:
+        return True
+
+    async def accounts(self) -> list[dict[str, object]]:
+        return []
+
+
+def test_the_page_has_no_explanatory_lines_when_access_is_on(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("HUB_DB_PUBLIC", "1")
+    hub = make_hub(tmp_path, monkeypatch)
+    hub.app.state.dbaccess = FakeDbAccess()  # type: ignore[attr-defined]
+    page = hub.get("/admin/users?tab=db").text
+    assert "Nova conta de leitura" in page and "Acesso externo ligado" not in page  # the owner: no long texts
+    assert "data-dbaccess-status" not in page
+
+
 # ---- Administration page and API ---------------------------------------------------------------------------
 
 
@@ -232,7 +258,10 @@ async def test_admin_creates_rotates_suspends_and_removes(
     hub = make_hub(tmp_path, monkeypatch)
     hub.app.state.dbaccess = DbAccess(run_pg)  # type: ignore[attr-defined]
     page = hub.get("/admin/users?tab=db").text
-    assert "Acesso ao banco" in page and 'data-dbaccess-status="off"' in page and app in page
+    assert "Acesso ao banco" in page and app in page
+    assert (
+        "Acesso externo desligado" not in page and "data-dbaccess-status" not in page
+    )  # no explanatory lines
     assert 'href="/admin/users?tab=db"' in hub.get("/admin/users").text
     add_user(hub, "bia", ["User"])
     name = f"t{secrets.token_hex(3)}"

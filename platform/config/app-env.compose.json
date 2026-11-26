@@ -3,7 +3,7 @@
     "name": "DATABASE_URL_INVENTORY",
     "kind": "connection_string",
     "inject_as": "HUB_DB_URL",
-    "value": "postgres://inventory:inventory-demo-senha@hub-db:5432/inventory",
+    "value": "postgres://app_inventory:inventory-demo-senha@hub-db:5432/app_inventory",
     "bindings": [
       {
         "app": "inventory",
@@ -15,7 +15,7 @@
     "name": "DATABASE_URL_SERVICEDESK",
     "kind": "connection_string",
     "inject_as": "HUB_DB_URL",
-    "value": "postgres://servicedesk:servicedesk-demo-senha@hub-db:5432/servicedesk",
+    "value": "postgres://app_servicedesk:servicedesk-demo-senha@hub-db:5432/app_servicedesk",
     "bindings": [
       {
         "app": "servicedesk",

@@ -31,6 +31,14 @@ dc up -d                                              # the hub on the single se
   `.prod.env` generates only what is missing; `APP_HUB_DB_PASSWORD` is no longer used.
 - At boot the hub moves the seeded `DATABASE_URL_<APP>` variables off the superuser to each sample app's role.
 
+## Sample apps' databases as `app_<id>` (0.8.0, automatic)
+
+Before 0.8 the sample apps' databases and roles were the bare ids (`inventory`, `suppliers`…). From 0.8 they are
+`app_<id>`, like any app. Nothing to run: on the update the `app-hub-db-roles` job renames each database, its role and
+its read group (`hub_read_<id>` → `hub_read_app_<id>`), and points the read accounts at the new names; the data stays.
+`hub_update.py` runs that job before recreating the apps, and the hub rewrites the stored `DATABASE_URL_<APP>`
+connections at boot. Read accounts keep their passwords; in a SQL client, change the database to `app_<id>`.
+
 ## Sample apps in English (0.4.0, once)
 
 0.4.0 renames the sample apps: `ativos`→`inventory`, `fornecedores`→`suppliers`, `servicos`→`servicedesk`,

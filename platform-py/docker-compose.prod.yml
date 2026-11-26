@@ -50,30 +50,30 @@ services:
   app-hub-app-inventory:
     environment: &prod-app
       HUB_DEMO_E2E_HOSTILE: "0"
-      HUB_DB_URL: postgresql://inventory:${APP_HUB_APP_DB_PASSWORD_INVENTORY:?}@app-hub-app-db:5432/inventory
+      HUB_DB_URL: postgresql://app_inventory:${APP_HUB_APP_DB_PASSWORD_INVENTORY:?}@app-hub-app-db:5432/app_inventory
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_INVENTORY:?}
 
   app-hub-app-suppliers:
     environment:
       <<: *prod-app
-      HUB_DB_URL: postgresql://suppliers:${APP_HUB_APP_DB_PASSWORD_SUPPLIERS:?}@app-hub-app-db:5432/suppliers
+      HUB_DB_URL: postgresql://app_suppliers:${APP_HUB_APP_DB_PASSWORD_SUPPLIERS:?}@app-hub-app-db:5432/app_suppliers
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_SUPPLIERS:?}
       HUB_S3_SECRET_KEY_SUPPLIERS: ${APP_HUB_OBJSTORE_PASSWORD:?}
 
   app-hub-app-servicedesk:
     environment:
       <<: *prod-app
-      HUB_DB_URL: postgresql://servicedesk:${APP_HUB_APP_DB_PASSWORD_SERVICEDESK:?}@app-hub-app-db:5432/servicedesk
+      HUB_DB_URL: postgresql://app_servicedesk:${APP_HUB_APP_DB_PASSWORD_SERVICEDESK:?}@app-hub-app-db:5432/app_servicedesk
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_SERVICEDESK:?}
 
   app-hub-app-collector:
     environment:
       <<: *prod-app
-      HUB_DB_URL: postgresql://collector:${APP_HUB_APP_DB_PASSWORD_COLLECTOR:?}@app-hub-app-db:5432/collector
+      HUB_DB_URL: postgresql://app_collector:${APP_HUB_APP_DB_PASSWORD_COLLECTOR:?}@app-hub-app-db:5432/app_collector
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_COLLECTOR:?}
 
   app-hub-app-automations:
     environment:
       <<: *prod-app
-      HUB_DB_URL: postgresql://automations:${APP_HUB_APP_DB_PASSWORD_AUTOMATIONS:?}@app-hub-app-db:5432/automations
+      HUB_DB_URL: postgresql://app_automations:${APP_HUB_APP_DB_PASSWORD_AUTOMATIONS:?}@app-hub-app-db:5432/app_automations
       HUB_INTERNAL_TOKEN: ${HUB_INTERNAL_TOKEN_AUTOMATIONS:?}

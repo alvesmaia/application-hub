@@ -37,7 +37,7 @@ test('variáveis: criar, segredo nunca revelável, rotacionar e aplicar', async 
   const rv = await page.request.post(`/api/admin/env/${VAR_SECRET}/reveal`, { data: {}, headers: { origin: HUB } });
   expect([403, 404, 405]).toContain(rv.status());
   // "Application" column filter (server-side, ?app=): only variables bound to the picked apps; unbound ones only without a filter.
-  const filter = page.locator('th.env-app-col details');
+  const filter = page.locator('.table-toolbar .env-app-filter details');
   await filter.locator('summary').click();
   await filter.locator('input[name="app"][value="suppliers"]').check();
   await filter.locator('button[type="submit"]').click();

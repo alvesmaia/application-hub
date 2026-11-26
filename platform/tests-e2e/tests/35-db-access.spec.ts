@@ -11,13 +11,14 @@ test('conta de leitura do banco: criar, ver a senha uma vez, nova senha e remove
   await page.goto('/admin/users');
   await page.locator('nav.hub-tabbar, .hub-tabbar').getByRole('link', { name: 'Acesso ao banco' }).click();
   await expect(page).toHaveURL(/\/admin\/users\?tab=db$/);
-  await expect(page.locator('[data-dbaccess-status]')).toBeVisible();
+  await expect(page.locator('[data-dbaccess-new]')).toBeVisible();
 
   await page.locator('[data-dbaccess-new]').click();
   const form = page.locator('.overlay[data-users-modal] form');
+  await expect(form.locator('.modal-copy, .form-hint')).toHaveCount(0); // no explanatory texts (owner's call)
   await form.locator('input[name="name"]').fill(NAME);
   await form.locator('select[name="owner"]').selectOption({ index: 0 });
-  await form.locator('input[name="dbs"][value="inventory"]').check();
+  await form.locator('input[name="dbs"][value="app_inventory"]').check();
   // the hub's own database is its own option, never in the apps' list
   await expect(form.locator('input[name="dbs"][value="hub"]')).toHaveCount(0);
   await form.locator('input[name="hub"]').check();
