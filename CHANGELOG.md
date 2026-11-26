@@ -7,6 +7,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-11-26
+
 ### Changed
 - Sample apps' databases and roles are `app_<id>`, like any app (they were the bare ids). Existing installs move
   by themselves on the update: the `app-hub-db-roles` job renames database, role and read group and updates the read
