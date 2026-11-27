@@ -7,6 +7,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-27
+
 ### Added
 - Applications › Containers: **Remover aplicação** (Remove application) in an app's details removes any app (deployed
   or sample) as a background job: optional "Pré-remoção" backup, then catalog, containers, images, connections and
