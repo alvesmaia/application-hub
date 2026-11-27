@@ -5,8 +5,9 @@ tab, and a production link never lands in staging. The `hub_env` cookie only sen
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
-from starlette.types import ASGIApp, Receive, Scope, Send
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 PREFIX = "/staging"
 _ROUTED = ("/staging/apps/", "/staging/_frag/")
@@ -28,7 +29,30 @@ class StagingPath:
                 "raw_path": raw[len(PREFIX) :],
                 "hub_env": "staging",
             }
+            send = _slash_redirect_in_staging(send, scope["path"])
         await self.app(scope, receive, send)
+
+
+def _slash_redirect_in_staging(send: Send, path: str) -> Send:
+    """The router's trailing-slash redirect (307 to the same path with/without "/") is built from the path without
+    the prefix: put the prefix back, or `/staging/apps/x/` lands in production."""
+    twins = {path.rstrip("/"), path.rstrip("/") + "/"} - {path}
+
+    async def wrapped(message: Message) -> None:
+        if message["type"] == "http.response.start" and message["status"] == 307:
+            message = {**message, "headers": [_prefixed(k, v, twins) for k, v in message.get("headers", [])]}
+        await send(message)
+
+    return wrapped
+
+
+def _prefixed(key: bytes, value: bytes, twins: set[str]) -> tuple[bytes, bytes]:
+    if key.lower() != b"location":
+        return key, value
+    loc = urlsplit(value.decode("latin-1"))
+    if loc.path not in twins:
+        return key, value
+    return key, urlunsplit(loc._replace(path=PREFIX + loc.path)).encode("latin-1")
 
 
 def env_of(scope: Any) -> str:

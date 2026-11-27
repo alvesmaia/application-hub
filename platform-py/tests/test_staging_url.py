@@ -108,3 +108,9 @@ def test_a_fragment_redirect_stays_a_fragment(hub: TestClient) -> None:
         )
         staged = hub.get("/staging/_frag/inventory/inventory/redir", headers=mode).headers["location"]
         assert staged == "/staging/_frag/inventory/y"
+
+
+def test_the_trailing_slash_redirect_stays_in_staging(hub: TestClient) -> None:
+    # the router's slash redirect is built from the path without the staging prefix
+    r = hub.get("/staging/apps/inventory/", follow_redirects=False)
+    assert r.status_code in (307, 308) and r.headers["location"].endswith("/staging/apps/inventory")

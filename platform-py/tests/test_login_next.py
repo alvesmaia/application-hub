@@ -41,3 +41,17 @@ def test_safe_next_never_returns_logout() -> None:
 
     assert safe_next("/logout") == "/" and safe_next("/logout?x=1") == "/"
     assert safe_next("/admin") == "/admin"
+
+
+def test_staging_page_without_session_keeps_staging_in_next(anon: TestClient) -> None:
+    # the staging prefix is stripped before authentication: the login must send back to the staging URL
+    r = anon.get("/staging/apps/demo/x?a=1", follow_redirects=False)
+    assert r.headers["location"] == "/login?next=/staging/apps/demo/x%3Fa%3D1"
+
+
+def test_login_returns_to_the_staging_url(anon: TestClient) -> None:
+    r = anon.post(
+        "/login",
+        data={"email": "admin@demo.local", "password": "test-password", "next": "/staging/apps/demo/x"},
+    )
+    assert r.headers["location"] == "/staging/apps/demo/x"

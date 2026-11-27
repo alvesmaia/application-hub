@@ -233,3 +233,8 @@
   - ✅ 3 · `hub compare` (impressão de estilo: fontes, paleta, raios, contagens; porte ruim = 54–72%, limite 25%)
   - ✅ 4 · refazer o case de exemplo (subagente): visual fiel; só Tickets portado; compare 19,7–24,5%
   - ✅ 5 · ponte de tokens com especificidade zero (variáveis do app com nomes comuns)
+- ▶️ 166 · Fidelidade estrutural na adequação de apps
+  - ✅ 1 · staging: login e redirect da barra final mantêm `/staging`
+  - ▶️ 2 · filtro por coluna (`data-hub-colfilter`) disponível para os apps
+  - ⬜ 3 · `hub compare` checa estrutura (colunas, campos, botões, imagens quebradas)
+  - ⬜ 4 · refazer o port do case (todas as rotas, mesmo banco, compare aprovado)

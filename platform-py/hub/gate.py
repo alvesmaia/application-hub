@@ -22,6 +22,7 @@ from hub.auth import (
     token_action,
     token_covers,
 )
+from hub.gateway.env_path import env_of, public
 from hub.ux.shell import eyebrow_for
 from hub.ux.texts import default_lang, page_response, resolve
 
@@ -188,7 +189,7 @@ def _unauthenticated(request: Request, path: str, authz: str) -> Response:
     ):  # a POST (e.g. "Sair" after the session ended) cannot be revisited
         return RedirectResponse("/login", status_code=303)
     return RedirectResponse(
-        f"/login?next={quote(path, safe='/')}"
+        f"/login?next={quote(public(path, env_of(request.scope)), safe='/')}"
         + (f"%3F{quote(request.url.query)}" if request.url.query else ""),
         status_code=303,
     )
