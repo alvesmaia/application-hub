@@ -95,6 +95,24 @@ hub dev [-h] [--dir DIR] [--upstream UPSTREAM] [--port PORT] [--role ROLE] [--li
 | `--limits` |  |  |
 | `command` |  |  |
 
+## `hub compare`
+
+Original app × the app in `hub dev`: pages side by side and their difference.
+
+```
+hub compare [-h] [--routes ROUTES [ROUTES ...]] [--dir DIR] [--hub HUB] [--original-selector ORIGINAL_SELECTOR] [--login LOGIN] [--max-diff MAX_DIFF] original
+```
+
+| Argument | Description | Default |
+|---|---|---|
+| `original` | address of the original app, running (required) |  |
+| `--routes` | paths compared on both sides | `['/']` |
+| `--dir` |  | `.` |
+| `--hub` | `hub dev` address | `http://127.0.0.1:4173` |
+| `--original-selector` | part of the original page compared (e.g. main) | `body` |
+| `--login` | login page path of the original (form with e-mail/user and password) |  |
+| `--max-diff` | largest difference accepted, in percent | `15.0` |
+
 ## `hub login`
 
 Sign in: approve the CLI in the browser (OAuth device flow); or save a personal token (CI).

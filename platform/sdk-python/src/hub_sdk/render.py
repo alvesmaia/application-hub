@@ -6,7 +6,8 @@ Contract conventions (``docs/CONTRATO-APP.md``):
   ``<body>``) with the app workspace — sidebar + content — using the mockup classes
   (``app-sidebar``, ``workspace-content``, ``content-panel``, ``data-table``…);
 - ``GET /{id}/_skeleton`` — skeleton body shown between sections;
-- ``GET /{id}/assets/{demo.css,app.css,chart.js,interact.js}`` — app assets;
+- ``GET /{id}/assets/{demo.css,app.css,chart.js,interact.js}`` — app assets; the app's own fonts and
+  images through ``asset_file`` (adapting an existing app keeps them);
 - no inline ``<script>`` (hub CSP); ``POST`` forms with ``data-hub-target``;
   polling with ``data-hub-poll``; downloads at ``/_frag/{id}/…``.
 """
@@ -24,6 +25,7 @@ from starlette.requests import HTTPConnection
 from starlette.responses import HTMLResponse, Response
 
 from hub_sdk import locale as _locale
+from hub_sdk.assets import asset_file as asset_file  # re-exported: apps import helpers from here
 from hub_sdk.identity import identity_of
 
 FRAG = "/_frag"

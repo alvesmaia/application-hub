@@ -88,6 +88,7 @@ through `/_frag/{id}/…` (gateway); the app receives `/{id}/…`.
 | `GET /{id}/{desconhecida}` | **404** (friendly fragment) |
 | `GET /{id}/_skeleton` | Body of the skeleton shown between sections |
 | `GET /{id}/assets/{demo.css,app.css}` | App assets, **closed list** (no path coming from the client: no traversal); `text/css`; `app.css` may be empty. **No JavaScript** (wave 12): behaviors are `data-hub-*` attributes (§25); scripts only through the reviewed exception of §13.1 (`/{id}/assets/<nome>.js`). |
+| `GET /{id}/assets/files/{name}` | The app's own fonts and images (`.woff2`, `.woff`, `.ttf`, `.otf`, `.png`, `.jpg`, `.gif`, `.webp`, `.svg`, `.ico`) served **by name** (`hub_sdk.render.asset_file`: no `/`, no `..`, `nosniff`). `@font-face` in `app.css` pointing at them (relative URL, e.g. `url(files/inter.woff2)`) is kept by the hub, with the family renamed `app-<name>` (references renamed too); fonts from any other address are dropped. |
 
 Conventions of `hub.js` that the app uses in the HTML:
 
@@ -982,6 +983,10 @@ identity**. The app's CSS (`/{id}/assets/app.css`) enters confined by `@scope (#
   kit's classes (`primary-button`, `secondary-button`, `row-action`…) or give yours an explicit reset; the hub
   does not reset `<button>` inside the app's area (a bare button keeps the browser's border, on purpose: some
   apps rely on it).
+- **An adapted app keeps its own look:** its original CSS (copied unchanged into `app.css`), its markup (the
+  original sidebar in `{% block sidebar %}` of `workspace.html`, the pages in `{% block content %}`) and its fonts
+  (`assets/files/`). `hub compare <original-url>` measures how far each page is from the original (fonts,
+  palette, radii, counts of controls) and fails above 25%.
 - **CSS frameworks (Tailwind, Bootstrap, plain CSS):** `1rem` is the browser's 16px (the hub's 13px text sits on
   `<body>` and is inherited, not forced). The hub's look for native `<select>` has zero specificity (`:where`):
   any class of yours wins; only the arrow and its room are forced (skip them with `hub-select-plain`). Fields

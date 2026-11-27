@@ -178,7 +178,8 @@
     try {
       const res = await fetch(href, { credentials: 'same-origin' });
       if (!res.ok || !window.HubSafe || !window.HubSafe.scopedSheet) return;
-      const sheet = window.HubSafe.scopedSheet(await res.text());
+      // the file's URL: relative url()s and the app's own @font-face resolve as they would from a <link>
+      const sheet = window.HubSafe.scopedSheet(await res.text(), undefined, new URL(href, window.location.href).href);
       document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
     } catch (err) { console.error('CSS do app não aplicado', err); }
   }

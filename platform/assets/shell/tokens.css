@@ -418,10 +418,6 @@
  * light by default; the generated block below switches to dark. */
 :root, :root[data-theme="light"] { color-scheme: light; }
 
-
-
-
-
 /* tema-escuro:inicio (gerado por scripts/gen-dark-theme.mjs — não editar) */
 :root[data-theme="dark"] {
   color-scheme: dark;
@@ -523,20 +519,8 @@
 }
 /* tema-escuro:fim */
 
-
-
-
-
-
-
-
-
-
-
-
-
 /* temas-dos-apps:inicio (gerado por scripts/gen-dark-theme.mjs — não editar) */
-#app-root, [data-hub-layer] {
+:where(#app-root, [data-hub-layer]) {
   --am-page: var(--app-page, #F4F6FB);
   --am-surface: var(--app-surface, #FFFFFF);
   --am-raised: var(--app-raised, #FFFFFF);
@@ -871,7 +855,7 @@
   --tsc-tooltip-ink: var(--color-chrome-text);
   --tsc-focus-ring: var(--color-focus);
 }
-:root[data-theme="dark"] #app-root, :root[data-theme="dark"] [data-hub-layer] {
+:where(:root[data-theme="dark"] #app-root, :root[data-theme="dark"] [data-hub-layer]) {
   --am-page: var(--app-page, #191919);
   --am-surface: var(--app-surface, #202020);
   --am-raised: var(--app-raised, #272727);
@@ -916,7 +900,7 @@
   --am-scrim: var(--app-scrim, #000000);
 }
 @media (prefers-color-scheme: dark) {
-  :root[data-theme="auto"] #app-root, :root[data-theme="auto"] [data-hub-layer] {
+  :where(:root[data-theme="auto"] #app-root, :root[data-theme="auto"] [data-hub-layer]) {
     --am-page: var(--app-page, #191919);
     --am-surface: var(--app-surface, #202020);
     --am-raised: var(--app-raised, #272727);

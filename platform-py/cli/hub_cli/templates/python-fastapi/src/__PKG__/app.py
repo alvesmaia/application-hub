@@ -20,7 +20,7 @@ from hub_sdk.api import install_api, require_user
 from hub_sdk.app import HubSdk
 from hub_sdk.identity import identity_of
 from hub_sdk.outbox import audit
-from hub_sdk.render import AppInfo, NavItem, Renderer
+from hub_sdk.render import AppInfo, NavItem, Renderer, asset_file
 from pydantic import BaseModel, Field, ValidationError
 from starlette.requests import HTTPConnection
 
@@ -88,6 +88,10 @@ def create_app() -> FastAPI:
             return render.not_found()
         css = (HERE / "assets" / name).read_bytes()
         return Response(css, media_type="text/css; charset=utf-8", headers={"Cache-Control": "no-cache"})
+
+    @app.get(f"/{APP_ID}/assets/files/{{name}}")
+    async def asset_files(name: str) -> Response:  # the app's own fonts and images, by name (no client path)
+        return asset_file(HERE / "assets" / "files", name)
 
     @app.get(f"/{APP_ID}/_skeleton")
     async def skeleton() -> Response:

@@ -222,3 +222,14 @@
   - ✅ relatório: `--app-ink`, opt-out do chevron, contrato
   - ✅ testes do Entra: `HUB_PUBLIC_URL` exportado vazava para o pytest
   - ✅ compatibilidade Tailwind/Bootstrap/HTML: rem 16px, select com especificidade zero, E2E 39
+- ✅ 164 · Prova com app real de teste: subir original → validação do dono → adequação via "Copiar prompt" → comparação
+  - ✅ réplica sintética descartada (substituída pelo app real de teste)
+  - ✅ subir o app original e pausar para validação (validado pelo dono)
+  - ✅ adequação ao hub pelo prompt da documentação (publicado no hub, porte parcial)
+  - ✅ comparação lado a lado: porte reescreveu o CSS (363 KB → 12 KB), perdeu fontes/ícones e o layout
+- ✅ 165 · Fidelidade visual na adequação de apps
+  - ✅ 1 · fontes do próprio app (`@font-face` com URL do app) mantidas no CSS confinado
+  - ✅ 2 · modo "marcação original": templates e CSS do app reaproveitados dentro do `workspace` (SDK + AGENTS.md)
+  - ✅ 3 · `hub compare` (impressão de estilo: fontes, paleta, raios, contagens; porte ruim = 54–72%, limite 25%)
+  - ✅ 4 · refazer o case de exemplo (subagente): visual fiel; só Tickets portado; compare 19,7–24,5%
+  - ✅ 5 · ponte de tokens com especificidade zero (variáveis do app com nomes comuns)

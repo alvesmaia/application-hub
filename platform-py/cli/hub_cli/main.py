@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, NoReturn, override
 
 from . import auth, project
 from . import check as check_mod
+from . import compare as compare_mod
 from . import deploy as deploy_mod
 from . import dev as dev_mod
 from . import mcp as mcp_mod
@@ -79,7 +80,17 @@ def parser() -> argparse.ArgumentParser:
     p = Parser(prog="hub", description="Application Hub CLI", epilog=EPILOG, formatter_class=FMT)
     p.add_argument("--version", action="version", version=version())
     sub = p.add_subparsers(dest="cmd", required=True, parser_class=Parser)
-    for add in (add_project, add_check, add_pack, add_dev, add_login, add_logout, add_deploy, add_mcp):
+    for add in (
+        add_project,
+        add_check,
+        add_pack,
+        add_dev,
+        add_compare,
+        add_login,
+        add_logout,
+        add_deploy,
+        add_mcp,
+    ):
         add(sub)
     return p
 
@@ -151,6 +162,21 @@ def add_dev(sub: Subparsers) -> None:
     d.add_argument("--role", default="admin")
     d.add_argument("--limits", action="store_true")
     d.add_argument("command", nargs="*")
+
+
+def add_compare(sub: Subparsers) -> None:
+    c = sub.add_parser("compare", help="Original app × the app in `hub dev`: pages side by side and their difference",
+                       epilog="example:\n  hub compare http://127.0.0.1:8000 --routes / /tickets --login /auth/login\n"
+                       "  (login: HUB_COMPARE_USER / HUB_COMPARE_PASSWORD)", formatter_class=FMT)  # fmt: skip
+    c.add_argument("original", help="address of the original app, running")
+    c.add_argument("--routes", nargs="+", default=["/"], help="paths compared on both sides")
+    c.add_argument("--dir", type=Path, default=Path())
+    c.add_argument("--hub", default="http://127.0.0.1:4173", help="`hub dev` address")
+    c.add_argument(
+        "--original-selector", default="body", help="part of the original page compared (e.g. main)"
+    )
+    c.add_argument("--login", help="login page path of the original (form with e-mail/user and password)")
+    c.add_argument("--max-diff", type=float, default=15.0, help="largest difference accepted, in percent")
 
 
 def add_login(sub: Subparsers) -> None:
@@ -323,6 +349,11 @@ def cmd_dev(a: argparse.Namespace) -> int:
     return dev_mod.run(a.dir, a.upstream, a.port, a.role, a.limits, [c for c in a.command if c != "--"])
 
 
+def cmd_compare(a: argparse.Namespace) -> int:
+    opts = compare_mod.Options(a.original, a.routes, a.dir, a.hub, a.original_selector, a.login, a.max_diff)
+    return compare_mod.run(opts, compare_mod.real_browser())
+
+
 def cmd_mcp(a: argparse.Namespace) -> int:
     session = auth.resolve(a.hub, a.token, a.token_file, fallback_hub="http://localhost:8080")
     if session.warn:
@@ -338,6 +369,7 @@ COMMANDS = {
     "check": cmd_check,
     "pack": cmd_pack,
     "dev": cmd_dev,
+    "compare": cmd_compare,
     "mcp": cmd_mcp,
 }
 

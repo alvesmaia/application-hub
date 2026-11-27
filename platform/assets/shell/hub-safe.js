@@ -292,14 +292,48 @@
   });
 
 
+  /** `@font-face` of the app's own files (`base` = the CSS file's URL): every `src` URL, resolved against it,
+   *  must be same-origin and under the same `/_frag/{id}/` (or `/apps/{id}/`) prefix, else null. The family
+   *  gets the `app-` prefix, so an app font never replaces one of the hub's. */
+  function ownFontFace(r, base) {
+    if (!base) return null;
+    const b = new URL(base);
+    const prefix = `${b.pathname.split('/').slice(0, 3).join('/')}/`;
+    const family = r.style.getPropertyValue('font-family').trim().replace(/^["']|["']$/g, '');
+    let ok = Boolean(family);
+    const src = r.style.getPropertyValue('src').replace(/url\(\s*(["']?)([^"')]+)\1\s*\)/g, (_m, _q, u) => {
+      const abs = new URL(u, b);
+      if (abs.origin !== b.origin || !abs.pathname.startsWith(prefix)) ok = false;
+      return `url("${abs.href}")`;
+    });
+    if (!ok) return null;
+    const rest = [...r.style].filter((k) => k !== 'font-family' && k !== 'src').map((k) => `${k}: ${r.style.getPropertyValue(k)};`);
+    return { family, text: `@font-face { font-family: "app-${family}"; src: ${src}; ${rest.join(' ')} }` };
+  }
+
+  /** `font`/`font-family` declarations: the families the app brought (`names`) become `"app-<name>"`. */
+  function renameFamilies(css, names) {
+    if (!names.length) return css;
+    const esc = (n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return css.replace(/(font(?:-family)?\s*:)([^;{}]*)/g, (_m, prop, value) => {
+      let v = value;
+      for (const n of names) v = v.replace(new RegExp(`(^|[\\s,/])(["']?)${esc(n)}\\2(?=\\s*(?:[,;!]|$))`, 'g'), `$1"app-${n}"`);
+      return prop + v;
+    });
+  }
+
   /** App CSS → sheet built and confined to the app area (wave 12, M1 of the re-review):
    *  everything inside `@scope (<scope>)` — rules aimed at the hub's header/rail/`body` match
-   *  nothing; `@import`, `@font-face` and `@namespace` are removed; `@keyframes` stay outside the
-   *  scope with the name prefixed by `app-` (they do not replace the hub's animations). */
-  function scopedSheet(text, scope) {
-    const src = new CSSStyleSheet();
+   *  nothing; `@import` and `@namespace` are removed; `@font-face` stays only for the app's own font files
+   *  (`ownFontFace`; without `base`, none); `@keyframes` stay outside the scope with the name prefixed by
+   *  `app-` (they do not replace the hub's animations). `base` (the CSS file's URL) also resolves the
+   *  sheet's relative `url()`s, as a `<link>` would. */
+  function scopedSheet(text, scope, base) {
+    const src = new CSSStyleSheet(base ? { baseURL: base } : undefined);
     src.replaceSync(String(text || '').replace(/@import[^;]*;/gi, ''));
     const frames = [];
+    const faces = [];
+    const families = [];
     const walk = (rules) => [...rules].map(rule).filter(Boolean).join('\n');
     function body(r) { const c = r.cssText; return c.slice(c.indexOf('{')); }
     function rule(r) {
@@ -313,7 +347,12 @@
         frames.push(`@keyframes app-${r.name} ${body(r)}`);
         return '';
       }
-      return ''; // @import, @font-face, @namespace, @page, @layer… are removed
+      if (typeof CSSFontFaceRule !== 'undefined' && r instanceof CSSFontFaceRule) {
+        const face = ownFontFace(r, base);
+        if (face) { faces.push(face.text); families.push(face.family); }
+        return '';
+      }
+      return ''; // @import, @namespace, @page, @layer… are removed
     }
     let inner = walk(src.cssRules);
     // Renamed animations: `animation(-name)` references point to `app-<name>`.
@@ -321,14 +360,15 @@
       const name = /@keyframes app-([\w-]+)/.exec(f)[1];
       inner = inner.replace(new RegExp(`(animation(?:-name)?\\s*:[^;{}]*?)\\b${name}\\b`, 'g'), `$1app-${name}`);
     }
-    const out = new CSSStyleSheet();
-    out.replaceSync(`${frames.join('\n')}\n@scope (${scope}) {\n${inner}\n}`);
+    inner = renameFamilies(inner, families);
+    const out = new CSSStyleSheet(base ? { baseURL: base } : undefined);
+    out.replaceSync(`${faces.join('\n')}\n${frames.join('\n')}\n@scope (${scope}) {\n${inner}\n}`);
     return out;
   }
 
   window.HubSafe = Object.freeze({
-    /** App CSS sheet confined to `scope` (default: app area + hub layers). */
-    scopedSheet: (text, scope) => scopedSheet(text, scope || '#app-root, [data-hub-layer]'),
+    /** App CSS sheet confined to `scope` (default: app area + hub layers); `base` = the CSS file's URL. */
+    scopedSheet: (text, scope, base) => scopedSheet(text, scope || '#app-root, [data-hub-layer]', base),
     sanitize,
     setHTML,
     /** SVG HTML for `el.innerHTML` (charts): clean and accepted by Trusted Types. */

@@ -7,6 +7,24 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Added
+- `hub compare <original-url>`: the original app and the adapted one (in `hub dev`) page by page — screenshots
+  side by side and a style difference (fonts, palette, radii, counts of buttons/fields/rows/links/icons);
+  fails above `--max-diff` (25%) and says what to fix. Optional dependency: Playwright.
+- SDK: `{% block sidebar %}` in `workspace.html` takes the original sidebar's markup (the hub keeps collapse,
+  back link and the phone drawer); `asset_file` serves the app's own fonts and images by name; the project
+  templates expose them at `/{id}/assets/files/{name}`.
+
+### Changed
+- The token bridge of the app area (`#app-root`) has zero specificity: an app variable with a common name
+  (`--font-body`, `--ink`, `--line`, `--color-*`…) set in its `:root` wins in its area instead of being
+  silently replaced by the hub's.
+- The app's CSS keeps `@font-face` of its own files (family renamed `app-<name>`); relative `url()`s resolve
+  against the CSS file, as from a `<link>`.
+- AGENTS.md (adapting an existing app): copy the original CSS and markup unchanged instead of re-creating them,
+  keep fonts and icon fonts, run `hub compare` until it passes, and port every route (or list what is missing
+  before publishing).
+
 ## [0.11.0] — 2026-11-26
 
 ### Fixed

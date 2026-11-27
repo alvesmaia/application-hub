@@ -138,8 +138,10 @@ const roleDecls = (theme) => Object.entries(roles).map(([k, v]) => [`--am-${k}`,
   derivedOut.push(...shellVars);
   const prims = Object.entries(primitives).filter(([, v]) => typeof v === 'string').map(([n, v]) => [n, `var(--am-${v})`]);
   const bridge = (theme) => Object.entries(roles).map(([n, v]) => [`--am-${n}`, `var(--app-${n}, ${v[theme]})`]);
-  const SEL = '#app-root, [data-hub-layer]';
-  const dsel = (p) => `${p} #app-root, ${p} [data-hub-layer]`;
+  // zero specificity (`:where`): an app variable with a common name (--font-body, --ink, --line…) that the
+  // app sets in its `:root` (scoped to #app-root) wins over the hub's bridge in the app area
+  const SEL = ':where(#app-root, [data-hub-layer])';
+  const dsel = (p) => `:where(${p} #app-root, ${p} [data-hub-layer])`;
   const indent = (x) => x.replace(/^(?=.)/gm, '  ');
   const blk = [
     B2,

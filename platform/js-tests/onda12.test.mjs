@@ -276,3 +276,57 @@ test('CSS de app hostil não alcança o header (Chromium, @scope)', async (t) =>
     assert.deepEqual(r, { same: true, transform: 'none', display: 'block', clip: 'none', brandVisible: 'visible', bodyBefore: 'none', filter: 'none', appColor: 'rgb(255, 0, 0)', anim: 'app-spin' });
   } finally { await b.close(); }
 });
+
+test('fontes do próprio app: @font-face com URL do app fica (família com prefixo); externa ou sem base sai (Chromium)', async (t) => {
+  const b = await browser();
+  if (!b) { t.skip('Playwright/Chromium indisponível'); return; }
+  try {
+    const page = await b.newPage();
+    await page.setContent(`<!doctype html><html><head></head><body><main id="app-root"><span class="ico">home</span><p class="txt">x</p><p class="ext">y</p></main></body></html>`);
+    await page.addScriptTag({ content: fs.readFileSync(path.join(assets, 'hub-safe.js'), 'utf8') });
+    const r = await page.evaluate(() => {
+      const css = `@font-face{font-family:"Material Symbols Outlined";src:url(fonts/ms.woff2) format("woff2")}
+        @font-face{font-family:Inter;src:url(/_frag/demo/assets/inter.woff2)}
+        @font-face{font-family:Evil;src:url(https://evil.example/e.woff2)}
+        @font-face{font-family:Other;src:url(/_frag/other-app/x.woff2)}
+        .ico{font-family:"Material Symbols Outlined";font-feature-settings:"liga"} .txt{font:14px/1.4 Inter, sans-serif} .ext{font-family:Evil, Other, serif}`;
+      const base = 'https://hub.example/_frag/demo/assets/app.css';
+      const sheet = window.HubSafe.scopedSheet(css, undefined, base);
+      document.adoptedStyleSheets = [sheet];
+      const text = [...sheet.cssRules].map((x) => x.cssText).join('\n');
+      const fam = (s) => getComputedStyle(document.querySelector(s)).fontFamily;
+      return {
+        faces: [...sheet.cssRules].filter((x) => x instanceof CSSFontFaceRule).map((x) => [x.style.getPropertyValue('font-family'), x.style.getPropertyValue('src')]),
+        ico: fam('.ico'), txt: fam('.txt'), ext: fam('.ext'), evil: text.includes('evil.example'),
+        noBase: [...window.HubSafe.scopedSheet(css).cssRules].some((x) => x instanceof CSSFontFaceRule),
+      };
+    });
+    assert.deepEqual(r.faces, [
+      ['"app-Material Symbols Outlined"', 'url("https://hub.example/_frag/demo/assets/fonts/ms.woff2") format("woff2")'],
+      ['app-Inter', 'url("https://hub.example/_frag/demo/assets/inter.woff2")'],
+    ]);
+    assert.equal(r.ico, '"app-Material Symbols Outlined"');
+    assert.equal(r.txt, 'app-Inter, sans-serif');
+    assert.equal(r.ext, 'Evil, Other, serif'); // fonts the hub refused keep their (unloaded) names: the fallback applies
+    assert.equal(r.evil, false);
+    assert.equal(r.noBase, false); // no base URL: no way to tell the app's own files, nothing kept
+  } finally { await b.close(); }
+});
+
+test('variáveis do app com nomes comuns (--font-body, --ink, --line) valem na área do app (Chromium)', async (t) => {
+  const b = await browser();
+  if (!b) { t.skip('Playwright/Chromium indisponível'); return; }
+  try {
+    const page = await b.newPage();
+    const tokens = fs.readFileSync(path.join(assets, 'tokens.css'), 'utf8');
+    await page.setContent(`<!doctype html><html data-theme="dark"><head><style>${tokens}</style></head><body><main id="app-root"><p class="x">x</p></main></body></html>`);
+    await page.addScriptTag({ content: fs.readFileSync(path.join(assets, 'hub-safe.js'), 'utf8') });
+    const r = await page.evaluate(() => {
+      const css = `:root{--font-body:Georgia, serif;--ink:#123456;--line:#abcdef} :root[data-theme="dark"]{--ink:#654321} .x{font-family:var(--font-body);color:var(--ink);border:1px solid var(--line)}`;
+      document.adoptedStyleSheets = [window.HubSafe.scopedSheet(css)];
+      const cs = getComputedStyle(document.querySelector('.x'));
+      return { font: cs.fontFamily, color: cs.color, line: cs.borderTopColor, appPrimary: getComputedStyle(document.getElementById('app-root')).getPropertyValue('--color-accent').trim() !== '' };
+    });
+    assert.deepEqual(r, { font: 'Georgia, serif', color: 'rgb(101, 67, 33)', line: 'rgb(171, 205, 239)', appPrimary: true });
+  } finally { await b.close(); }
+});

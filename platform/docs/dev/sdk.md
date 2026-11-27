@@ -72,6 +72,14 @@ Inbox approvals of the hub (wave 9).
 
 ### class `Forbidden`
 
+## `hub_sdk.assets`
+
+The app's own files for the browser (fonts, images) — adapting an existing app keeps them.
+
+### `asset_file(folder: Path, name: str) -> Response`
+
+One font/image of ``folder`` by name, or 404 (bad name, other type, missing file).
+
 ## `hub_sdk.dashboards`
 
 Dashboard kit (light BI) for the apps: SQL datasets, filters, KPIs, server-side SVG charts and export.

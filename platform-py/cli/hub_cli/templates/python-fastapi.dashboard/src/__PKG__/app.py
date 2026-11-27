@@ -21,7 +21,7 @@ from hub_sdk.api import install_api, require_user
 from hub_sdk.app import HubSdk
 from hub_sdk.identity import identity_of
 from hub_sdk.outbox import audit
-from hub_sdk.render import AppInfo, NavItem, Renderer
+from hub_sdk.render import AppInfo, NavItem, Renderer, asset_file
 from hub_sdk.storage import StorageError
 from pydantic import BaseModel, Field, ValidationError
 from starlette.requests import HTTPConnection
@@ -96,6 +96,10 @@ def create_app() -> FastAPI:
         if name == "app.css":  # the shell only loads demo.css + app.css: dashboard CSS ships with app.css
             css += b"\n" + dash.CSS.encode()
         return Response(css, media_type="text/css; charset=utf-8", headers={"Cache-Control": "no-cache"})
+
+    @app.get(f"/{APP_ID}/assets/files/{{name}}")
+    async def asset_files(name: str) -> Response:  # the app's own fonts and images, by name (no client path)
+        return asset_file(HERE / "assets" / "files", name)
 
     @app.get(f"/{APP_ID}/_skeleton")
     async def skeleton() -> Response:

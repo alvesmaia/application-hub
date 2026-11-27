@@ -103,10 +103,10 @@ failure even when `hub check` is green.
    Build links with `{{ base }}` (the public base); never flatten routes to `?id=`.
 3. **Return fragments, keep the layout.** Drop the app's own `<html>`/`<head>`/`<body>` and top bar: the page is
    the `workspace` fragment (§3 of the [contract](@HUB@/dev/docs/contrato.md)). The app's sidebar becomes the
-   workspace sidebar: same labels, same order, same icons — pass the app's own SVG body as a plain string,
-   `NavItem("veiculos", "Veículos", '<path …/>')` (no `Markup`), or a name from `hub_sdk.render.ICONS`; the
-   same for the logo in `AppInfo(icon=…)`. `AppInfo(help_card=False)` keeps the sidebar without the hub's
-   help card. What the top bar showed goes where the hub already has it — never a
+   workspace sidebar with its **original HTML** in `{% block sidebar %}` (step 4): same labels, order, icons and
+   look. Only when there was no sidebar, build one with `NavItem("veiculos", "Veículos", '<path …/>')` (the
+   app's own SVG body as a plain string, no `Markup`, or a name from `hub_sdk.render.ICONS`; the same for the
+   logo in `AppInfo(icon=…)`; `AppInfo(help_card=False)` leaves out the hub's help card). What the top bar showed goes where the hub already has it — never a
    second header inside the app:
 
    | The app's top bar had | In the hub |
@@ -116,13 +116,29 @@ failure even when `hub check` is green.
    | user menu, profile, logout, language, theme | the hub's header (identity from `x-hub-user`); the app shows none of them |
    | company name / logo | the sidebar brand (`AppInfo(name, tagline, icon)`; tile colors `--app-brand`/`--app-on-brand`, §29) or the page header (`h1` + subtitle) |
    | settings, help, "about" links | items of the app's sidebar |
-4. **Keep the identity.** Move the CSS to `/{id}/assets/app.css` and translate the app's palette into the
-   `--app-*` tokens (§29), **including** `--app-chrome`, `--app-chrome-raised`, `--app-chrome-text`,
-   `--app-chrome-text-2` and `--app-chrome-icon` (the sidebar), `--app-brand`/`--app-on-brand` (the logo tile),
-   plus `--app-primary`/`--app-on-primary`. Hex values go **only** in these token declarations; every other
-   rule uses `var(--…)` ("colors only through tokens" means this). Write the dark theme too (mandatory): the
-   same roles under `:root[data-theme="dark"]` and the `auto` media query. Keep the original `@keyframes`
-   names (the hub prefixes them and their references) and inline SVG.
+4. **Keep the original markup and CSS — never rewrite them.** The look of the app is its templates' HTML plus
+   its CSS; port both as they are:
+   - **CSS:** copy the original stylesheet(s) unchanged into `/{id}/assets/app.css` (concatenate several files
+     in their original order; a Tailwind app keeps its build, with the `content` paths pointing at the new
+     templates). Do not re-create the styles by hand and do not swap the app's classes for the kit's: the hub
+     confines the app's CSS to the app area by itself (rules aimed at `html`/`body`/`:root` apply to the app
+     area). Delete only the rules of what the hub now draws (the top bar).
+   - **Markup:** each page template keeps the original page's HTML (the same elements and classes) inside
+     `{% block content %}`; the original sidebar's HTML goes in `{% block sidebar %}` of `workspace.html` (the
+     hub keeps only its collapse button, back link and phone drawer around it). `NavItem`/`AppInfo` remain for
+     the default sidebar of new apps.
+   - **Fonts, icon fonts and images:** copy the files into `assets/files/` (served by `asset_file`, see the
+     template's `/{id}/assets/files/{name}` route) and keep the `@font-face` rules with relative URLs
+     (`url(files/inter.woff2)`): the hub loads the app's own fonts (the family is renamed `app-<name>` for
+     you). Fonts from a CDN must be downloaded into `assets/files/` (external URLs are refused).
+     Images too: a logo inlined as `data:image/svg+xml` is refused by the hub's sanitizer, so save it as
+     `assets/files/logo.svg` and point `<img src>` at `{{ base }}/assets/files/logo.svg`.
+   - **Tokens (§29):** declare `--app-primary`/`--app-on-primary`, `--app-brand`/`--app-on-brand` and the
+     `--app-chrome*` roles from the original palette so the hub's parts around the app (sidebar frame, focus,
+     buttons the hub draws) match it, with their dark values. The original CSS keeps its own colors; an app that
+     never had a dark theme may stay light: add `#app-root{color-scheme:light}` so native controls stay light,
+     and say so in your report.
+   - Keep the original `@keyframes` names (the hub prefixes them and their references) and inline SVG.
 5. **Replace the JavaScript, not the behavior** (no app JS by default):
 
    | The app did (JS) | In the hub |
@@ -142,8 +158,13 @@ failure even when `hub check` is green.
    transaction as the change: `with engine.begin() as conn:` … `sdk.outbox.in_transaction(conn, ev)`. Template
    variables cannot be named `conn`, `template`, `active` or `status` (parameters of `render.page`).
 7. **Verify against the checklist** in `hub dev`: every page, every sidebar link, every form (valid and invalid),
-   delete, the phone layout and the dark theme, side by side with your screenshots of the original. Anything you
-   could not keep goes in your final report, with the reason. A full example, with the code that changed:
+   delete, the phone layout and the dark theme. Then compare the looks with the original running:
+   `hub compare <original-url> --routes / /tickets …` (same paths on both sides; `--login` for an original
+   behind a login form) writes `.hub/compare/index.html` with each page side by side and its difference, and
+   fails while any page differs more than the limit (`--max-diff`, default 25%). Fix and run it again until it
+   passes; never lower the limit to pass. Porting only part of the app is not done: every route of the inventory
+   is ported, or the final report lists each missing one with the reason **before** you publish. A full example,
+   with the code that changed:
    [Adapting an existing app: the Frota+ example](/developers/guias/adaptar-app).
 
 ## Rules
