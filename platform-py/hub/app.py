@@ -34,6 +34,7 @@ from hub.insight.runtime import Insight
 from hub.lifespan import lifespan
 from hub.ops.newapp import boot_registry
 from hub.ops.routes import mount_ops
+from hub.routes_static import asset_url
 from hub.ux import applink
 from hub.ux.account_routes import mount_account
 from hub.ux.inbox import InboxStore
@@ -110,6 +111,7 @@ def _shell(
     )
     w = WebCtx(app, settings, templates, gateway, auth_store, insight, app.state.data_dir)
     app.state.web = w
+    cast(dict[str, Any], templates.env.globals)["asset_url"] = lambda path: asset_url(w, path)
     for mw in (middleware.translate_errors, middleware.security_headers, gate.authentication):
         app.middleware("http")(mw)
     return w

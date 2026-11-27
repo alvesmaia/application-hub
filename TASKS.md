@@ -264,7 +264,7 @@
   - ✅ 1 · auditoria (consultas sem índice, páginas lentas, cabeçalhos de cache, trabalho síncrono no loop)
   - ✅ 2 · leituras de auth/admin sem trava (escrita atômica); `ops.json` com snapshot por mtime nos caminhos quentes
   - ✅ 3 · `ops.json`: poda (25 por app/ambiente; nunca a ativa, pendentes ou alvos de rollback); versões da tela Aplicações memorizadas
-  - ▶️ 4 · catálogo i18n com ETag/cache ✅; gzip dos assets ✅; URLs versionadas com cache longo (depois do 168)
+  - ✅ 4 · catálogo i18n com ETag/cache; gzip dos assets; URLs versionadas (`?v=`) com cache de 1 ano
   - ✅ 5 · `tr`: pular textos maiores que o maior padrão + cache de resultados
   - ✅ 6 · loader do app: pular quando o app já foi aberto na sessão e o conteúdo chegou (aprovado pelo dono: opção a)
   - ⬜ 7 · medir antes e depois (py-load) e validar

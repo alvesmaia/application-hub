@@ -70,8 +70,8 @@ def test_shell_renders(client: TestClient) -> None:
         'href="/applications"',
         'href="/status"',
         "Olá, Administrador",
-        'href="/assets/hub.css"',
-        'src="/assets/hub-ux.js"',
+        'href="/assets/hub.css?v=',
+        'src="/assets/hub-ux.js?v=',
         "data-hub-drawer-toggle",
     ):
         assert needle in h, needle

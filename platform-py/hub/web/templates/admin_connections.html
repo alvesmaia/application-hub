@@ -13,5 +13,5 @@
 {% for app, env, bucket, user, key in storage %}<tr data-conn-storage-row="{{ key }}"><td>{{ app }}</td><td>{{ env }}</td><td><code class="env-value">{{ bucket }}</code></td><td><code>{{ user }}</code></td><td><button type="button" data-requires="editar_configuracoes" class="secondary-button hub-danger" data-conn-storage-deprovision="{{ key }}" data-bucket="{{ bucket }}">{{ t('conn.storage_deprovision') }}</button></td></tr>
 {% endfor %}</tbody></table></div>{% if not storage %}<div class="empty-state" data-conn-storage-empty="">{{ t('conn.storage_none') }}</div>{% endif %}</div>
 
-<script src="/assets/connections.js" defer=""></script>
+<script src="{{ asset_url('connections.js') }}" defer=""></script>
 {% endblock %}

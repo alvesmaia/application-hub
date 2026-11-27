@@ -45,3 +45,19 @@ def test_the_compressed_catalog_is_valid_gzip() -> None:
 
     raw, zipped, _ = i18n_bytes("en")
     assert gzip.decompress(zipped) == raw
+
+
+def test_pages_link_versioned_assets_cached_for_a_year(client: TestClient) -> None:
+    import re
+
+    page = client.get("/").text
+    m = re.search(r'href="(/assets/hub\.css\?v=([0-9a-f]{8}))"', page)
+    assert m, "hub.css without its version"
+    r = client.get(m[1])
+    assert (
+        r.headers["cache-control"] == "public, max-age=31536000, immutable"
+        and "cdn-cache-control" not in r.headers
+    )
+    stale = client.get("/assets/hub.css?v=00000000")  # a page from before a deploy: revalidates
+    assert stale.headers["cache-control"] == "no-cache"
+    assert 'href="/assets/theme.css"' in page  # the installation theme changes without a deploy: no version

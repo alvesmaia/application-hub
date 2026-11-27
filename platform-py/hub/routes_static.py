@@ -119,6 +119,15 @@ def asset(w: WebCtx, path: str) -> tuple[bytes, str, str] | None:
     return body, mt, etag
 
 
+YEAR = "public, max-age=31536000, immutable"
+
+
+def asset_url(w: WebCtx, path: str) -> str:
+    """`/assets/<path>?v=<8 hex of its ETag>`: the URL changes when the file does, so it can be cached for a year."""
+    got = None if devmode.enabled() else asset(w, path)
+    return f"/assets/{path}?v={got[2][1:9]}" if got else f"/assets/{path}"
+
+
 def _cache_of(path: str) -> str:
     """Fonts 7 days, vendor 1 day, the rest revalidates (ETag → 304); dev mode: no cache."""
     if devmode.enabled():
@@ -134,7 +143,7 @@ async def assets(request: Request, path: str, w: WebCtx = Depends(web)) -> Respo
     if got is None:
         raise HTTPException(404)
     body, mt, etag = got
-    cache = _cache_of(path)
+    cache = YEAR if request.query_params.get("v") == etag[1:9] and not devmode.enabled() else _cache_of(path)
     headers = {"cache-control": cache, "etag": etag}
     if cache == "no-cache":  # CDN (e.g. Cloudflare) must not cache: else old CSS/JS after a deploy
         headers["cdn-cache-control"] = "no-store"

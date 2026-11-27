@@ -19,7 +19,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 ### Changed
 - Faster navigation: an app opened again in the same tab session skips the 3.5 s loader (the skeleton shows only
   until the content arrives); the English catalog answers 304 when unchanged; CSS/JS/JSON assets travel gzipped
-  (hub.css 108 KB → 24 KB); the translation of a text out of the catalog checks each template's literal parts
+  (hub.css 108 KB → 24 KB) and are linked with their version (`?v=`), cached for a year instead of revalidated
+  on every page (≈19 requests); the translation of a text out of the catalog checks each template's literal parts
   before its regex (a 4,000-character miss: 12 ms → 0.6 ms) and caches results.
 - Reading `admin.json`/`auth.json` takes no lock (writes are atomic): every authenticated request used to queue
   behind a cross-replica Postgres lock (4 round trips) about six times. `ops.json` is parsed once per change on

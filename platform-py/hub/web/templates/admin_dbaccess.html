@@ -9,5 +9,5 @@
 {% for r in rows %}<tr role="row" data-dbaccess-row="{{ r.role }}"><td role="cell" class="hub-card-title" data-label="Conta"><code>{{ r.role }}</code></td><td role="cell" data-label="Responsável">{{ r.owner_name }}</td><td role="cell" data-label="Bancos">{% for d in r.dbs %}<code>{{ d }}</code> {% endfor %}</td><td role="cell" class="hub-col-secondary" data-label="Validade">{{ r.until_text }}</td><td role="cell" data-label="Status"><span class="{{ r.css }}">{{ r.state|capitalize }}</span></td><td role="cell" data-label="Ações"><details class="hub-row-menu"><summary class="row-action" aria-label="Mais ações: {{ r.role }}" title="Mais ações">⋯</summary><div class="hub-row-menu-list" role="group"><button type="button" data-dbaccess-password="{{ r.role }}">Nova senha</button><button type="button" class="danger" data-dbaccess-remove="{{ r.role }}">Remover</button></div></details></td></tr>
 {% else %}<tr role="row"><td role="cell" colspan="6" class="empty-state">Nenhuma conta de leitura. Crie uma para um dashboard ou para uma pessoa que precise consultar os dados.</td></tr>{% endfor %}
 </tbody></table></div>
-<script src="/assets/users.js" defer=""></script>
+<script src="{{ asset_url('users.js') }}" defer=""></script>
 {% endblock %}
