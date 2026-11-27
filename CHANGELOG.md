@@ -7,6 +7,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.13.0] — 2026-11-27
+
 ### Added
 - Apps: spreadsheet-style column filters (`<table data-hub-colfilter>` + `<th data-hub-col>`, §25) in app
   fragments, mounted by `HubKit.mount` — an adapted app keeps the per-column filter/sort of its header.
