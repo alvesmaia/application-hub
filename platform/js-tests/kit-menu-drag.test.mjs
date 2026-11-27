@@ -28,7 +28,9 @@ const PAGE = `<!doctype html><html data-hub-app="demo"><body data-hub-i18n="{}">
     <article id="c2" data-hub-drag="/apps/demo/board/2/reorder" data-hub-drag-id="2" style="height:40px">2</article>
   </div></section>
   <section id="done" data-hub-dropzone data-hub-drop-name="new_state" data-hub-drop-value="done" data-hub-drop-body=".body" style="min-height:200px"><div class="body">
-    <article id="c3" data-hub-drag="/apps/demo/board/3/reorder" data-hub-drag-id="3" style="height:40px">3</article>
+    <article id="c3" data-hub-drag="/apps/demo/board/3/reorder" data-hub-drag-id="3">
+      <ul data-hub-dropzone data-hub-drop-group="sub" data-hub-drop-name="card" data-hub-drop-value="3" style="margin:0;height:30px"><li data-hub-drag="/apps/demo/sub/9/reorder" data-hub-drag-id="9" data-hub-drag-group="sub">s9</li></ul>3
+    </article>
   </div></section>
 </div></main></body></html>`;
 
@@ -77,7 +79,8 @@ test('drag and drop: the card moves to the other list, before the card under it,
   try {
     const { page, posts } = await open(b, 200);
     assert.equal(await page.getAttribute('#c1', 'draggable'), 'true');
-    await page.dragAndDrop('#c1', '#c3', { targetPosition: { x: 5, y: 5 } });
+    // dropped on the subtask list of #c3 (another group): the card goes to the column around it
+    await page.dragAndDrop('#c1', '#c3 ul', { targetPosition: { x: 5, y: 2 } });
     await page.waitForTimeout(200);
     assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#done .body > article')].map((e) => e.id)), ['c1', 'c3']);
     assert.equal(posts.length, 1);

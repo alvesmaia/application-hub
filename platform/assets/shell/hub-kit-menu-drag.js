@@ -44,9 +44,13 @@
   let dragged = null;
   let home = null;
   const group = (el, attr) => el.getAttribute(attr) || '';
+  // The nearest list of the dragged item's group: a card's own subtask list (another group) is skipped.
   const zoneAt = (e) => {
-    const z = e.target.closest && e.target.closest('[data-hub-dropzone]');
-    return z && dragged && group(z, 'data-hub-drop-group') === group(dragged, 'data-hub-drag-group') ? z : null;
+    if (!dragged) return null;
+    const want = group(dragged, 'data-hub-drag-group');
+    let z = e.target.closest && e.target.closest('[data-hub-dropzone]');
+    while (z && group(z, 'data-hub-drop-group') !== want) z = z.parentElement && z.parentElement.closest('[data-hub-dropzone]');
+    return z;
   };
   const bodyOf = (z) => (z.getAttribute('data-hub-drop-body') && z.querySelector(z.getAttribute('data-hub-drop-body'))) || z;
   const itemAfter = (body, y) => [...body.children]
