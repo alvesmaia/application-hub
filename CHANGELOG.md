@@ -7,6 +7,15 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Added
+- Applications › Containers: **Remover aplicação** (Remove application) in an app's details removes any app (deployed
+  or sample) as a background job: optional "Pré-remoção" backup, then catalog, containers, images, connections and
+  storage, databases (only hub-marked ones), variables and configuration, deployments, files, tokens and preferences;
+  one audit entry with the steps (the trail is never deleted). The modal asks for the app's name and the password;
+  "Manter os dados" keeps database, storage and backups. Refused while a deployment, rollout, backup or restore runs or
+  the app is in maintenance. Also in the API/MCP (`apps_remove`, destructive) and, for the sample apps,
+  **Remover apps de exemplo** in the page header (they stay hidden through `<data>/apps.removed.json`).
+
 ## [0.13.0] — 2026-11-27
 
 ### Added
