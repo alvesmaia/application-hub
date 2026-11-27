@@ -128,7 +128,7 @@ Tools by area (`*` = destructive, needs `confirm_token`):
 | Apps | `apps_list`, `apps_get`, `apps_status`, `status_get` |
 | Observability | `observability_summary`, `logs_tail`, `logs_stats` |
 | Deployments | `deployments_list`, `deployments_upload`, `deployments_approve*`, `deployments_promote*`, `deployments_rollback*`, `jobs_get` |
-| Containers | `containers_list`, `containers_start`, `containers_stop*`, `containers_restart*`, `containers_set_limits`, `containers_apply*`, `containers_logs`, `containers_inspect`, `database_provision`, `replicas_get` |
+| Containers | `containers_list`, `containers_start`, `containers_stop*`, `containers_restart*`, `containers_set_limits`, `containers_apply*`, `containers_logs`, `containers_inspect`, `database_provision`, `apps_remove*`, `replicas_get` |
 | Backups | `backups_list`, `backups_run`, `backups_restore*`, `backups_rotate_credentials*`, `backups_set_policy*`, `backups_clone*`, `backups_test`, `backups_aside_list`, `backups_aside_restore*`, `backups_aside_drop*`, `maintenance_clear*` |
 | Tasks | `tasks_list`, `tasks_retry`, `tasks_cancel*` |
 | Variables | `variables_list`, `variables_create`, `variables_update`, `variables_delete*`, `variables_rotate*` |

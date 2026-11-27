@@ -301,6 +301,12 @@ class InboxStore:
         )
 
     @_txn
+    def forget_app(self, app: str) -> None:
+        """Removed app: the access granted to it goes (the Inbox items stay as history)."""
+        self.grants = {u: [a for a in apps if a != app] for u, apps in self.grants.items()}
+        self._save()
+
+    @_txn
     def revoke_grant(self, item_id: int) -> bool:
         it = self.items.get(item_id)
         if not it or it["kind"] != "access" or it["approval"]["status"] != "approved":

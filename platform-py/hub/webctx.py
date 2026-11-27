@@ -39,7 +39,16 @@ STAGING_BAR_CSS = (
 )
 # hub-ux.js and the files split from it, in load order.
 UX_SCRIPTS = ("hub-ux.js", "hub-ux-tour.js", "hub-ux-rail.js", "hub-ux-colfilter.js", "hub-ux-pages.js")
-WEB_SCRIPTS = ("hub-i18n.js", "logshare.js", "admin.js", "ops.js", "ops-drawer.js", "insights.js", "ux.js")
+WEB_SCRIPTS = (
+    "hub-i18n.js",
+    "logshare.js",
+    "admin.js",
+    "ops.js",
+    "ops-drawer.js",
+    "ops-remove.js",
+    "insights.js",
+    "ux.js",
+)
 SCRIPTS = (*UX_SCRIPTS, *WEB_SCRIPTS, "devdocs.js")
 
 

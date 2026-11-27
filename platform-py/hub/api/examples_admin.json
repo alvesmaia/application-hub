@@ -47,6 +47,7 @@
                    "limits": {"cpu": 0.5, "memory": "256Mi", "pids": 100}},
   "LogStats": {"subscribers": 0},
   "PermissionGrant": {"granted": true},
+  "RemoveAppRequest": {"backup": true, "confirm": "inventory", "keep_data": false},
   "RetentionSet": {"days": 90, "ok": true},
   "RoleApps": {"apps": ["inventory"]},
   "RoleCreate": {"description": "Atendimento nível 1", "level": "Padrão", "name": "Suporte N1"},

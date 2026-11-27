@@ -73,6 +73,14 @@ The package can be up to **20 MB**. It carries the manifest, the `openapi.json`,
 limit, `hub pack` lists the largest files; the common case is a `.venv/` or a `vendor/` copied into
 `build/` (add it to `.dockerignore`).
 
+## Remove the app
+
+**Applications › Containers** (Aplicações › Containers) › the app's details › **Remover aplicação** (Remove
+application): type the app's name, confirm with your password. It removes containers, images, database, storage,
+variables and configuration (optionally after a backup, or keeping the data); the audit trail stays. Through the API:
+`POST /api/v1/apps/{app}/remove` with `{"confirm": "<name or id>", "backup": true, "keep_data": false}` (MCP tool
+`apps_remove`). Operations details: `docs/IMPLANTACAO.md` (Remove an application).
+
 ## Exit codes
 
 `0` ok · `1` package rejected · `2` validation · `3` token refused · `4` hub unreachable.

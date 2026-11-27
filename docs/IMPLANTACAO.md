@@ -141,6 +141,43 @@ As the user:
 The hub detects Podman through the API: the apps' tmpfs with `U` (Podman does not accept `uid=`) and, without the `cpu`
 controller delegated, builds and creates the containers without a CPU limit (memory and pids stay limited).
 
+## Remove an application
+
+**Aplicações › Containers** (Applications › Containers), the app's production row › details › **Remover aplicação**
+(Remove application). Works for any app: one deployed through the hub (`apps.dynamic.json`) or a sample app of the
+read-only registry file. The modal asks for the app's name (display name or id, any case) and your password; two
+options: **Fazer backup do banco antes de apagar** (back up the database first; on by default) and **Manter os dados**
+(keep the database, storage and backups; only take the app out of the hub). API/MCP: `POST /api/v1/apps/{app}/remove`
+(`apps_remove`, destructive: MCP asks for the `confirm_token`; a token has no password step).
+
+It runs as a job (`GET /api/ops/jobs/{id}`), one log line per step (Logs, source `ops`), and one audit entry
+"Aplicação removida" (scope = the app) lists the steps; the audit trail itself is never deleted. Order:
+
+1. Refused while a deployment, blue/green switch, backup or restore runs for the app, or while it is in maintenance.
+2. Optional backup "Pré-remoção" of production (database, bucket, volumes). If it fails, nothing is removed.
+3. Out of the catalog and the gateway (`<data>/apps.removed.json` keeps it out on every boot; `apps.dynamic.json`
+   loses it), so the supervisor no longer heals or revives it.
+4. Containers `app-hub-app-<id>`, `…__staging`, `…__new` and every tag of the image `app-hub-app-<id>`
+   (`keep-*`, `keep-stg-*`, `baseline-*`).
+5. Connections lose the app's bindings; the provisioned bucket, its MinIO user and its connection are deleted.
+6. Databases `app_<id>` and `app_<id>_staging`, only when marked by the hub (`hub-managed:app=<id>`, or
+   `hub-managed:demo=<id>` for a sample app; anything else is kept and reported), with the roles `hub_read_<db>` and
+   `hub_bkp_<db>`; read accounts (`ro_*`) stop listing the database.
+7. Variables bound only to the app (internal token, `DATABASE_URL_<APP>`, broker variables, the app's own) are
+   deleted, shared ones lose the binding; roles, Settings lists, flags, SLOs and the monitored service lose the app.
+8. Deployments, policies, schedules, limits and approvals in `ops.json`; packages, the outbox cursor, the volumes
+   `<data>/apps/<id>[__staging]` and old backups (the "Pré-remoção" one stays in `<data>/backups/<id>/`).
+9. Personal tokens lose the app (one left with no app is revoked: an empty list would mean every app); favorites,
+   recent pages and Inbox access grants too. Incidents, metrics, analytics and usage stay as history.
+
+With **Manter os dados**, steps 5 to 8 keep the database, the bucket (unbound), the volumes and the backups; deploying
+the same id again reuses them. Other replicas keep the app in memory until they restart (same as a new app).
+
+**Sample apps:** **Remover apps de exemplo** (Remove sample apps) in the page header (type `apps de exemplo`) removes
+each one in sequence. While the compose profile `demo-apps` is on, their containers and databases come back on the next
+`docker compose up`; the hub keeps hiding them (`apps.removed.json`). To stop them for good: `install.sh --no-demo-apps`
+on a new install, or remove `COMPOSE_PROFILES=demo-apps` (and set `HUB_APPS_JSON=./apps.empty.json`) in `.env`/`.prod.env`.
+
 ## Register the app in Entra ID
 
 Sign-in with Microsoft (OIDC authorization code + PKCE, v2 endpoints). Optional: without configuration the hub shows only local login.

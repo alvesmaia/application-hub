@@ -8474,5 +8474,85 @@
 [
 "Ver todas na Inbox",
 "See all in the Inbox"
+],
+[
+"Confirme digitando o nome da aplicação ({}).",
+"Confirm: type the application's name ({})."
+],
+[
+"Confirme digitando apps de exemplo.",
+"Confirm: type sample apps."
+],
+[
+"Senha incorreta: a remoção não foi confirmada.",
+"Wrong password: the removal was not confirmed."
+],
+[
+"Nenhum app de exemplo neste hub.",
+"No sample apps on this hub."
+],
+[
+"{}: implantação em andamento; aguarde terminar para remover.",
+"{}: a deployment is running; wait for it to finish before removing."
+],
+[
+"{}: troca de versão (blue/green) em andamento; aguarde terminar para remover.",
+"{}: a version switch (blue/green) is running; wait for it to finish before removing."
+],
+[
+"{}: backup, restauração ou remoção em andamento; aguarde terminar para remover.",
+"{}: a backup, restore or removal is running; wait for it to finish before removing."
+],
+[
+"{} em manutenção: libere em Backups antes de remover.",
+"{} under maintenance: release it in Backups before removing."
+],
+[
+"Remoção concluída: {}.",
+"Removal finished: {}."
+],
+[
+"{} não removida: o backup falhou ({}).",
+"{} not removed: the backup failed ({})."
+],
+[
+"{} removida com falhas em: {}.",
+"{} removed with failures in: {}."
+],
+[
+"Remover aplicação",
+"Remove application"
+],
+[
+"Remover aplicação · {}",
+"Remove application · {}"
+],
+[
+"Digite {} para confirmar",
+"Type {} to confirm"
+],
+[
+"Sua senha",
+"Your password"
+],
+[
+"Fazer backup do banco antes de apagar",
+"Back up the database before deleting"
+],
+[
+"Manter os dados (banco, armazenamento e backups); só tirar do hub",
+"Keep the data (database, storage and backups); only take it out of the hub"
+],
+[
+"Removendo…",
+"Removing…"
+],
+[
+"Remover apps de exemplo",
+"Remove sample apps"
+],
+[
+"Erro {} ao falar com o servidor.",
+"Error {} talking to the server."
 ]
 ]

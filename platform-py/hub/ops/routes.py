@@ -15,7 +15,7 @@ from fastapi.templating import Jinja2Templates
 
 from hub.connections.provision import ObjectStore
 from hub.gateway.csp import set_script_provider
-from hub.ops import routes_backups, routes_deploys, routes_pages, routes_runtime
+from hub.ops import routes_backups, routes_deploys, routes_pages, routes_remove, routes_runtime
 from hub.ops import runtime as rt
 from hub.ops.leader import Leader
 from hub.ops.model import OpsError, OpsStore
@@ -70,7 +70,7 @@ def mount_ops(
     app.add_exception_handler(OpsError, ops_error)
     app.middleware("http")(no_store)
     api = APIRouter(prefix="/api/ops", dependencies=[Depends(guard)])
-    for section in (routes_deploys, routes_runtime, routes_backups):
+    for section in (routes_deploys, routes_runtime, routes_backups, routes_remove):
         api.include_router(section.router)
         section.mount(c)
     app.include_router(api)

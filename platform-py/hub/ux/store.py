@@ -116,6 +116,15 @@ class UxStore:
             favs = [*favs, app][:FAVORITES_CAP]
         return self.update(user, favorites=favs).favorites
 
+    def forget_app(self, app: str) -> None:
+        """Removed app: out of everyone's favorites and recent pages."""
+        with file_lock(self.path):
+            self._reload()
+            for p in self.data.users.values():
+                p.favorites = [a for a in p.favorites if a != app]
+                p.recents = [r for r in p.recents if not under_app(r.path, app)]
+            self._save()
+
     def set_role_layout(self, role: str, widgets: list[str] | None) -> None:
         with file_lock(self.path):
             self._reload()
@@ -135,6 +144,12 @@ class UxStore:
             if r in self.data.role_layouts:
                 return known(self.data.role_layouts[r]), "role"
         return list(WIDGETS), "default"
+
+
+def under_app(path: str, app: str) -> bool:
+    """A page of the app (`/apps/<id>`, its subpages or query)."""
+    base = f"/apps/{app}"
+    return path == base or path.startswith((base + "/", base + "?"))
 
 
 def known(widgets: list[str]) -> list[str]:
