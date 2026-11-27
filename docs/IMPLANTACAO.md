@@ -120,6 +120,19 @@ Repeat the measurement after changes to the gateway, the session or the database
 HUB=http://127.0.0.1:<port> HUB_DEMO_PASSWORD=… node platform/loadtest/py-load.mjs --steps 25,50,100,200
 ```
 
+Re-measured on 27/11/2026 on the isolated test instance (`app-hub-iso`, 5 sample apps plus 2 deployed, same
+machine, `--app inventory`), before and after the navigation performance work (lock-free state reads, `ops.json`
+snapshot and pruning, compressed and versioned assets):
+
+| 100 users | p50 | p95 | p99 | Errors |
+|---|---|---|---|---|
+| v0.13.0 | 75 ms | 414 ms | 568 ms | 0% |
+| v0.14.0 | 43 ms | 331 ms | 479 ms | 0% |
+
+The busier instance explains the gap to the 13/10 numbers; compare new measurements with this table, on the same
+kind of instance.
+
+
 ## Podman rootless (RHEL, Rocky, Fedora)
 
 Tested on Rocky 9 with Podman 5.8, user without root/sudo (`docs/TESTE-IMPLANTACAO-RHEL-ROOTLESS.md`).

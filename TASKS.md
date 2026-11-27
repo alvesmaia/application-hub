@@ -260,11 +260,11 @@
   - ✅ 1 · admin/runtime: ao abrir, já mostrar o desempenho dos últimos 5 minutos (não só a partir da entrada)
   - ✅ 2 · admin/tasks: tirar a coluna Tentativas da tabela (fica só no painel lateral do item); Duração no formato 20m3s (abaixo de 60s, só 57s)
   - ✅ 3 · revisão geral do app e da documentação: trocar travessão (-) por hífen simples (-)
-- ▶️ 170 · Desempenho da navegação: índices do Postgres e cache (HTTP, service worker, servidor)
+- ✅ 170 · Desempenho da navegação: índices do Postgres e cache (HTTP, service worker, servidor)
   - ✅ 1 · auditoria (consultas sem índice, páginas lentas, cabeçalhos de cache, trabalho síncrono no loop)
   - ✅ 2 · leituras de auth/admin sem trava (escrita atômica); `ops.json` com snapshot por mtime nos caminhos quentes
   - ✅ 3 · `ops.json`: poda (25 por app/ambiente; nunca a ativa, pendentes ou alvos de rollback); versões da tela Aplicações memorizadas
   - ✅ 4 · catálogo i18n com ETag/cache; gzip dos assets; URLs versionadas (`?v=`) com cache de 1 ano
   - ✅ 5 · `tr`: pular textos maiores que o maior padrão + cache de resultados
   - ✅ 6 · loader do app: pular quando o app já foi aberto na sessão e o conteúdo chegou (aprovado pelo dono: opção a)
-  - ⬜ 7 · medir antes e depois (py-load) e validar
+  - ✅ 7 · medido no mesmo ambiente: 100 usuários p95 414 → 331 ms, p50 75 → 43 ms; E2E, ui-sweep e conformidade ok
