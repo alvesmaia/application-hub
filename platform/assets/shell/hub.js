@@ -9,6 +9,7 @@
  *      /_frag/{id}/{section}?query (gateway -> upstream, which sees /{id}/{section});
  *   3. reproduces the mockup's sequence (owner's decision): when OPENING the app, the loader
  *      (0→100% in 3.5 s, `1 - (1 - t)^2.2`) → component skeleton (0.9 s) → content;
+ *      an app opened again in the same tab session skips the loader: skeleton until the fragment;
  *      page change inside the app: only the skeleton (0.7 s). Fixed times — if the fragment
  *      has not arrived by their end, the skeleton stays until it does (never an empty area);
  * *   4. intercepts links of the same app (pushState + skeleton + new fragment) and popstate;

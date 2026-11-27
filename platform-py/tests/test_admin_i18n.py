@@ -44,3 +44,27 @@ def test_preformatted_text_is_not_translated() -> None:
     # template of the catalog froze the whole hub for seconds on the Deployments page in English
     assert tr_html("<p>Usuários</p><pre>Usuários</pre>", "en") == "<p>Users</p><pre>Usuários</pre>"
     assert tr_html('<pre title="Usuários">x</pre>', "en") == '<pre title="Users">x</pre>'
+
+
+def test_long_texts_out_of_the_catalog_translate_fast() -> None:
+    # every miss used to run ~500 lazy regexes over the whole text (12 ms at 4,000 characters); the literal parts
+    # of each template are checked first
+    import time
+
+    from hub.ux.texts import tr
+
+    texts = [f"linha {i} " + "palavra qualquer " * 240 for i in range(50)]
+    t0 = time.perf_counter()
+    assert [tr(s, "en") for s in texts] == texts
+    assert time.perf_counter() - t0 < 0.25
+
+
+def test_a_template_with_a_long_value_still_translates() -> None:
+    from hub.ux.texts import _catalog, tr
+
+    head = next(
+        r for _, r, lits in _catalog()[1] if r[0].endswith("}") and len(lits) == 1 and len(lits[0]) > 6
+    )
+    value = "x" * 3000
+    filled = head[0].split("{")[0] + value
+    assert tr(filled, "en").endswith(value) and tr(filled, "en") != filled

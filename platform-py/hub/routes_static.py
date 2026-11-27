@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import gzip
 import hashlib
+import json
 import mimetypes
 import os
 import time
+from functools import cache
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
@@ -58,11 +61,35 @@ async def theme_css(w: WebCtx = Depends(web)) -> Response:
     return Response(out, media_type="text/css", headers={"cache-control": "no-cache"})
 
 
+@cache
+def i18n_bytes(lang: str) -> tuple[bytes, bytes, str]:
+    """The browser catalog (≈166 KB, fetched by every hub screen): serialized once, gzipped, with an ETag."""
+    raw = json.dumps(js_catalog(lang), ensure_ascii=False, separators=(",", ":")).encode()
+    return raw, gzip.compress(raw, 6), f'"{hashlib.md5(raw, usedforsecurity=False).hexdigest()}"'
+
+
 @router.get("/assets/i18n/{file}")
-async def i18n_catalog(file: str) -> Response:
+async def i18n_catalog(request: Request, file: str) -> Response:
     if file != "en.json":
         raise HTTPException(404)
-    return JSONResponse(js_catalog(file[:-5]), headers={"cache-control": "no-cache"})
+    raw, zipped, etag = i18n_bytes(file[:-5])
+    headers = {"cache-control": "no-cache", "etag": etag}
+    if etag in request.headers.get("if-none-match", ""):
+        return Response(status_code=304, headers=headers)
+    return _maybe_gzip(request, raw, zipped, "application/json", headers)
+
+
+def _maybe_gzip(
+    request: Request, raw: bytes, zipped: bytes | None, mt: str, headers: dict[str, str]
+) -> Response:
+    """Compressed body when the browser accepts gzip (only static assets: no secrets, so no BREACH concern)."""
+    headers = {**headers, "vary": "accept-encoding"} if zipped is not None else headers
+    if zipped is not None and "gzip" in request.headers.get("accept-encoding", ""):
+        return Response(zipped, media_type=mt, headers={**headers, "content-encoding": "gzip"})
+    return Response(raw, media_type=mt, headers=headers)
+
+
+_TEXT = ("text/", "application/javascript", "application/json", "image/svg+xml")
 
 
 def asset(w: WebCtx, path: str) -> tuple[bytes, str, str] | None:
@@ -87,6 +114,8 @@ def asset(w: WebCtx, path: str) -> tuple[bytes, str, str] | None:
     )
     etag = f'"{hashlib.md5(body, usedforsecurity=False).hexdigest()}"'
     w.asset_cache[path] = (now, st.st_mtime_ns, st.st_size, body, mt, etag)
+    if mt.startswith(_TEXT) and len(body) > 1024:
+        w.asset_cache[f"gz:{path}"] = (now, st.st_mtime_ns, st.st_size, gzip.compress(body, 6), mt, etag)
     return body, mt, etag
 
 
@@ -111,7 +140,9 @@ async def assets(request: Request, path: str, w: WebCtx = Depends(web)) -> Respo
         headers["cdn-cache-control"] = "no-store"
     if cache == "no-cache" and etag in request.headers.get("if-none-match", ""):
         return Response(status_code=304, headers=headers)
-    return Response(body, media_type=mt, headers=headers)
+    gz = w.asset_cache.get(f"gz:{path}")
+    zipped = gz[3] if gz and gz[5] == etag else None
+    return _maybe_gzip(request, body, zipped, mt, headers)
 
 
 @router.get("/hub-sw.js")

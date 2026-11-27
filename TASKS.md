@@ -250,7 +250,7 @@
   - ✅ 8 · bugs relatados: `{{ base }}/assets/files` 404, 303 com base pública, compare capturando o loader
   - ✅ 9 · vazamentos de CSS do hub no app (fonte `!important`, peso dos títulos → `data-hub-original`), achados pelo compare por componente
   - ✅ 10 · validação pesada (hub-check --all, E2E, ui-sweep) + release v0.13.0
-- ⬜ 168 · Remover aplicação (qualquer app; confirmação digitando o nome)
+- ▶️ 168 · Remover aplicação (qualquer app; confirmação digitando o nome) — subagente: Implementar Remover aplicação
   - ⬜ 1 · serviço: catálogo, containers prod/staging, backup opcional, banco/papel, auditoria
   - ⬜ 2 · tela Operações › Aplicações: modal "digite o nome da aplicação"
   - ⬜ 3 · API + MCP (destrutiva, confirm_token)
@@ -259,6 +259,11 @@
   - ⬜ 1 · admin/runtime: ao abrir, já mostrar o desempenho dos últimos 5 minutos (não só a partir da entrada)
   - ⬜ 2 · admin/tasks: tirar a coluna Tentativas da tabela (fica só no painel lateral do item); Duração no formato 20m3s (abaixo de 60s, só 57s)
   - ⬜ 3 · revisão geral do app e da documentação: trocar travessão (—) por hífen simples (-)
-- ⬜ 170 · Desempenho da navegação: índices do Postgres e cache (HTTP, service worker, servidor)
+- ▶️ 170 · Desempenho da navegação: índices do Postgres e cache (HTTP, service worker, servidor)
   - ✅ 1 · auditoria (consultas sem índice, páginas lentas, cabeçalhos de cache, trabalho síncrono no loop)
-  - ⬜ 2 · correções priorizadas, medidas antes e depois
+  - ⬜ 2 · leitura dos documentos de estado sem trava global + cache por mtime (auth, admin, ops)
+  - ⬜ 3 · `ops.json`: podar implantações antigas e tirar os logs do registro; tela de Implantações sem todos os logs
+  - ▶️ 4 · catálogo i18n com ETag/cache ✅; gzip dos assets ✅; URLs versionadas com cache longo (depois do 168)
+  - ✅ 5 · `tr`: pular textos maiores que o maior padrão + cache de resultados
+  - ✅ 6 · loader do app: pular quando o app já foi aberto na sessão e o conteúdo chegou (aprovado pelo dono: opção a)
+  - ⬜ 7 · medir antes e depois (py-load) e validar

@@ -217,7 +217,13 @@
 
   async function open(target) {
     const token = ++navToken;
-    try { store('sessionStorage')?.setItem(OPENED_KEY, '1'); } catch (_) { /* private */ }
+    let again = false;
+    try {
+      const ss = store('sessionStorage');
+      again = ss?.getItem(OPENED_KEY) === '1';
+      ss?.setItem(OPENED_KEY, '1');
+    } catch (_) { /* private */ }
+    if (again) return openAgain(target, token);
     startLoader();
     const section = sectionOf(target.split('?')[0]);
     const fragment = Promise.all([fetchFragment(target), assetsReady.catch(() => {})]).then(([r]) => r);
@@ -239,6 +245,16 @@
     if (!result.ok) return showFailure(target, token, result);
     await wait(SKELETON_MS - (performance.now() - skelAt));
     if (token !== navToken) return;
+    await swap(result.html);
+  }
+
+  // The app was opened before in this tab session: no loader and no minimum time (owner, 2026-11-27) — the
+  // skeleton shows only until the fragment arrives.
+  async function openAgain(target, token) {
+    showSkeleton(sectionOf(target.split('?')[0]));
+    const result = await Promise.all([fetchFragment(target), assetsReady.catch(() => {})]).then(([r]) => r);
+    if (token !== navToken) return;
+    if (!result.ok) return showFailure(target, token, result);
     await swap(result.html);
   }
 

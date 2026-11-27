@@ -7,6 +7,12 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Changed
+- Faster navigation: an app opened again in the same tab session skips the 3.5 s loader (the skeleton shows only
+  until the content arrives); the English catalog answers 304 when unchanged; CSS/JS/JSON assets travel gzipped
+  (hub.css 108 KB → 24 KB); the translation of a text out of the catalog checks each template's literal parts
+  before its regex (a 4,000-character miss: 12 ms → 0.6 ms) and caches results.
+
 ## [0.13.0] — 2026-11-27
 
 ### Added

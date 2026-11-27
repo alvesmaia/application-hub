@@ -84,16 +84,21 @@ def ago(at_ms: int, now_ms: int, lang: str = "pt-BR") -> str:
     return tn("time.day", s // 86_400, lang)
 
 
+Mold = tuple[re.Pattern[str], list[str], list[str]]
+
+
 @cache
-def _catalog() -> tuple[dict[str, list[str]], list[tuple[re.Pattern[str], list[str]]]]:
+def _catalog() -> tuple[dict[str, list[str]], list[Mold]]:
     rows = cast(list[list[str]], json.loads((_WEB / "catalog.json").read_text(encoding="utf-8")))
     exact = {r[0]: r for r in rows}
-    molds = []
+    molds: list[Mold] = []
     for r in rows:
         parts = re.split(f"({_MARK})", r[0])
         if len(parts) > 1 and sum(c.isalpha() for c in "".join(parts[::2])) >= 3:
             rx = "".join(re.escape(p) if i % 2 == 0 else "(.+?)" for i, p in enumerate(parts))
-            molds.append((re.compile(f"^{rx}$", re.S), r))
+            # its literal parts: a cheap check before the regex (a miss on a long text no longer runs ~500 lazy
+            # regexes over it)
+            molds.append((re.compile(f"^{rx}$", re.S), r, [p for p in parts[::2] if p]))
     molds.sort(key=lambda m: -len(m[1][0]))
     return exact, molds
 
@@ -112,11 +117,18 @@ def tr(text: str, lang: str) -> str:
     """Translates a pt-BR text through the catalog (exact, `{…}` template or ` · ` parts); what is not in it passes through."""
     if lang not in _LANGS[1:] or not text.strip():
         return text
+    return _tr(text, lang)
+
+
+@lru_cache(maxsize=8192)
+def _tr(text: str, lang: str) -> str:
     col, (exact, molds) = _LANGS.index(lang), _catalog()
     s = " ".join(text.split())
     if row := exact.get(s):
         return row[col]
-    for rx, row in molds:
+    for rx, row, literals in molds:
+        if not all(p in s for p in literals):
+            continue
         if m := rx.match(s):
             vals = iter([_number(v) or tr(v, lang) for v in m.groups()])
             return re.sub(_MARK, lambda _, it=vals: next(it, ""), row[col])
