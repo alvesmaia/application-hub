@@ -12,6 +12,7 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   until the content arrives); the English catalog answers 304 when unchanged; CSS/JS/JSON assets travel gzipped
   (hub.css 108 KB → 24 KB); the translation of a text out of the catalog checks each template's literal parts
   before its regex (a 4,000-character miss: 12 ms → 0.6 ms) and caches results.
+- Tasks: no Attempts column (it stays in the side panel); the duration reads `20m3s` (`57s` under a minute).
 
 ## [0.13.0] — 2026-11-27
 

@@ -255,9 +255,9 @@
   - ⬜ 2 · tela Operações › Aplicações: modal "digite o nome da aplicação"
   - ⬜ 3 · API + MCP (destrutiva, confirm_token)
   - ⬜ 4 · atalho "Remover apps de exemplo" (+ perfil demo-apps)
-- ⬜ 169 · Ajustes de telas e texto
+- ▶️ 169 · Ajustes de telas e texto
   - ⬜ 1 · admin/runtime: ao abrir, já mostrar o desempenho dos últimos 5 minutos (não só a partir da entrada)
-  - ⬜ 2 · admin/tasks: tirar a coluna Tentativas da tabela (fica só no painel lateral do item); Duração no formato 20m3s (abaixo de 60s, só 57s)
+  - ✅ 2 · admin/tasks: tirar a coluna Tentativas da tabela (fica só no painel lateral do item); Duração no formato 20m3s (abaixo de 60s, só 57s)
   - ⬜ 3 · revisão geral do app e da documentação: trocar travessão (—) por hífen simples (-)
 - ▶️ 170 · Desempenho da navegação: índices do Postgres e cache (HTTP, service worker, servidor)
   - ✅ 1 · auditoria (consultas sem índice, páginas lentas, cabeçalhos de cache, trabalho síncrono no loop)

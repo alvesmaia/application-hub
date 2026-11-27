@@ -9,7 +9,7 @@ from typing import Any
 
 from hub.admin.store import log_stamp
 from hub.ops import jobs as jb
-from hub.ops.opsctx import br, tone
+from hub.ops.opsctx import tone
 
 SAGA = {"running": "em andamento", "compensating": "compensando", "completed": "concluída", "compensated": "compensada",
         "failed": "falhou (intervenção manual)"}  # fmt: skip
@@ -55,6 +55,16 @@ def _result(t: dict[str, Any]) -> str:
     return "" if res in (None, "", {}, []) else json.dumps(res, ensure_ascii=False, default=str)[:2000]
 
 
+def duration_label(seconds: float) -> str:
+    """`57s`, `20m3s`, `1h2m5s` (rounded to the second)."""
+    total = round(max(seconds, 0))
+    h, rest = divmod(total, 3600)
+    m, s = divmod(rest, 60)
+    if h:
+        return f"{h}h{m}m{s}s"
+    return f"{m}m{s}s" if m else f"{s}s"
+
+
 def task_row(t: dict[str, Any], n: int, log: list[dict[str, str]]) -> dict[str, Any]:
     """`n` = the row's number in the listing (1 = the newest), shown instead of the job id."""
     lbl = jb.label(t)
@@ -68,7 +78,7 @@ def task_row(t: dict[str, Any], n: int, log: list[dict[str, str]]) -> dict[str, 
         "created": log_stamp(_ms(t, "created_at")), "created_ms": str(t.get("created_at", 0)),
         "finished": log_stamp(finished) if finished else "",
         "pct": f"width:{jb.percent(t)}%", "progress": _progress(t), "attempts": f"{t['attempts']} de {t['max_attempts']}",
-        "duration": f"{br(float(t.get('elapsed_s', 0)), 0)} s", "error": (t.get("error") or "")[:160],
+        "duration": duration_label(float(t.get("elapsed_s", 0))), "error": (t.get("error") or "")[:160],
         "error_full": t.get("error") or "", "result": _result(t), "log": log,
         "saga": (SAGA.get(sg.get("state"), "desconhecido"), [(p["name"] or "", SAGA_STEP.get(p["state"], "?")) for p in sg["steps"]]) if sg else None,
         "retry": f"{key}|retry|{t['env']}" if jb.can_retry(t) else None,

@@ -278,12 +278,12 @@ body.ops-drawer-open{overflow:hidden}
 .tasks-table th,.tasks-table td{overflow:hidden;overflow-wrap:break-word;white-space:normal;vertical-align:middle}
 .tasks-table th:nth-child(1){width:19%}.tasks-table th:nth-child(2){width:12%}.tasks-table th:nth-child(3){width:9%}
 .tasks-table th.col-origem{width:9%}.tasks-table th:nth-child(5){width:11%}.tasks-table th:nth-child(6){width:10%}
-.tasks-table th.col-tent{width:9%}.tasks-table th.col-dur{width:9%}.tasks-table th:nth-child(9){width:auto}.tasks-table th.col-act{width:64px}
+.tasks-table th.col-dur{width:9%}.tasks-table th:nth-child(8){width:auto}.tasks-table th.col-act{width:64px}
 .tasks-table .task-id{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tasks-table .task-err small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tasks-table .col-act .ops-actions{flex-wrap:nowrap;gap:4px}
 .tasks-table .task-icon-btn{min-width:28px;padding:3px 6px;line-height:1}
-@media (max-width:1439px){.tasks-table .col-origem,.tasks-table .col-tent{display:none}}
+@media (max-width:1439px){.tasks-table .col-origem{display:none}}
 /* Below 1280: secondary columns disappear and the card scrolls instead of cutting controls */
 @media (max-width:1279px){
 .deploys-table th:nth-child(4),.deploys-table td:nth-child(4),.deploys-table th:nth-child(5),.deploys-table td:nth-child(5){display:none}
