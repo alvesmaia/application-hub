@@ -12,6 +12,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   fragments, mounted by `HubKit.mount` — an adapted app keeps the per-column filter/sort of its header.
 - `hub compare` checks the structure apart from the style: a table column missing or added, a field the
   original does not have (or lost) or a broken image fails the page whatever the difference.
+- Apps: `data-hub-dropdown` (split buttons, "⋮" menus) and drag and drop (`data-hub-drag` +
+  `data-hub-dropzone`, posts the move; a refused answer puts the item back), §25.
 
 ### Fixed
 - Staging: without a session, `/staging/apps/<id>/…` sent the login back to production; the trailing-slash

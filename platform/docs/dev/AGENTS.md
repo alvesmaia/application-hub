@@ -148,6 +148,8 @@ failure even when `hub check` is green.
    | modal with a form | keep it a modal: `data-hub-modal="#tpl"` on the button; in `<template id="tpl">` a `<form id="f" data-hub-post="{{ base }}/…" data-hub-target="#f">` with `data-hub-close` on Cancel. Invalid: answer `422` with the form (it replaces itself in the modal). Valid: answer `303` to the page — the modal closes and that page shows |
    | "are you sure?" before delete | `data-hub-confirm="Text"` on the form or button, with `data-hub-confirm-title`, `-label` and `-danger` to keep the original wording and color |
    | select that filters on change | `<select data-hub-autosubmit>` |
+   | dropdown, split button ("New ▾"), "⋮" menu | `<button data-hub-dropdown="#menu">` + `<div id="menu" hidden>` with the original markup and CSS |
+   | drag and drop (kanban cards, reordering) | `data-hub-drag="{{ base }}/…"` + `data-hub-drag-id` on the items, `data-hub-dropzone` + `data-hub-drop-name`/`-value` on the lists (§25); the route answers the move (`before_id` = the item it now precedes) |
    | filter/sort in the table header (funnel per column, spreadsheet style) | `<table data-hub-colfilter>` with `data-hub-col="key"` on each `<th>` (§25): keep the same columns and headers; never swap it for filter fields above the table |
    | dismissible flash message | keep it as it is: the app's own cookies pass through the hub both ways (any name except `hub_*`, no `Domain`), so a cookie flash set on the `303` shows on the next page; a close "×" can be a CSS checkbox (no JS) |
    | chart drawn with CSS/JS | keep the CSS bars, or `data-hub-chart` |

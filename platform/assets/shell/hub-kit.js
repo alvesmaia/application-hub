@@ -17,6 +17,9 @@
  *                        <input data-hub-filter="#tabela|#lista" data-hub-filter-empty="#vazio">
  *                        <table data-hub-colfilter> + <th data-hub-col="key"> (funnel per column,
  *                        hub-ux-colfilter.js; mounted by HubKit.mount)
+ *   dropdown menu        <button data-hub-dropdown="#menu"> + <div id="menu" hidden>  (hub-kit-menu-drag.js)
+ *   drag and drop        data-hub-drag="/apps/{app}/…" + data-hub-drag-id on items, data-hub-dropzone +
+ *                        data-hub-drop-name/-value on lists                          (hub-kit-menu-drag.js)
  *   upload with progress <form enctype="multipart/form-data"> + [data-hub-progress]
  *                        (<progress> or text) — handled by hub.js
  *   charts               data-hub-chart='{"type":"bar|line|area|donut",…}' and
@@ -259,8 +262,10 @@
       else if (target.isConnected && swap !== 'none' && !res.ok) toast(t('js.kit_error', 'Não foi possível concluir a operação.'));
       if (note) { let msg = note; try { msg = decodeURIComponent(note); } catch (_) { /* raw text */ } toast(msg); }
       else if (res.ok && el.dataset.hubToast) toast(el.dataset.hubToast);
+      return res.ok;
     } catch (_) {
       toast(t('js.kit_offline', 'Sem conexão com a aplicação. Tente de novo.'));
+      return false;
     } finally {
       busy(el, false);
     }
