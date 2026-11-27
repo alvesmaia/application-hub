@@ -114,3 +114,10 @@ def test_the_trailing_slash_redirect_stays_in_staging(hub: TestClient) -> None:
     # the router's slash redirect is built from the path without the staging prefix
     r = hub.get("/staging/apps/inventory/", follow_redirects=False)
     assert r.status_code in (307, 308) and r.headers["location"].endswith("/staging/apps/inventory")
+
+
+def test_the_kit_requests_of_a_staging_page_go_to_staging(hub: TestClient) -> None:
+    # hub-kit.js (data-hub-get/-post, SSE) loads before hub.js: it needs the staging prefix on its own tag,
+    # or its requests go to /_frag/… and the page's CSP refuses them
+    page = hub.get("/staging/apps/inventory/inventory").text
+    assert '<script src="/assets/hub-kit.js" data-hub-kit="" data-hub-frag="/staging/_frag">' in page

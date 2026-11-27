@@ -16,6 +16,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 ### Fixed
 - Staging: without a session, `/staging/apps/<id>/…` sent the login back to production; the trailing-slash
   redirect did the same. Both keep the staging URL.
+- Staging: `data-hub-get`/`-post`/SSE of an app went to `/_frag/…` instead of `/staging/_frag/…` (hub-kit.js
+  loads before the tag that carried the prefix) and the page's CSP refused them.
 
 ## [0.12.0] — 2026-11-27
 

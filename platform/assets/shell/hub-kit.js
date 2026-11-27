@@ -116,7 +116,10 @@
   const me = document.querySelector('script[data-hub-app]');
   // hub-kit loads BEFORE hub.js (which carries data-hub-app): the app id is read right away.
   const curApp = () => { const m = document.querySelector('script[data-hub-app]'); return (m && m.dataset.hubApp) || document.documentElement.dataset.hubApp || ''; };
-  const frag = (me && me.dataset.hubFrag) || '/_frag';
+  // `me` (hub.js) is not in the page yet when this runs: the fragment prefix (`/staging/_frag` in staging)
+  // comes on this script's own tag.
+  const kitTag = document.querySelector('script[data-hub-kit]');
+  const frag = (me && me.dataset.hubFrag) || (kitTag && kitTag.dataset.hubFrag) || '/_frag';
   const Safe = window.HubSafe;
   const SCOPE = '#app-root, [data-hub-layer]';
   const inScope = (el) => Boolean(el && el.closest && el.closest(SCOPE));
