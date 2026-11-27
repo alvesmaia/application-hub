@@ -7,6 +7,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.11.0] — 2026-11-26
+
 ### Fixed
 - Inside apps the hub overwrote the app's `--app-ink` (text-ink role, CONTRATO-APP §29) with the catalog's identity
   color, so form fields showed text in the app's color; the identity is now published as `--app-identity-ink`
