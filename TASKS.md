@@ -233,15 +233,15 @@
   - ✅ 3 · `hub compare` (impressão de estilo: fontes, paleta, raios, contagens; porte ruim = 54–72%, limite 25%)
   - ✅ 4 · refazer o case de exemplo (subagente): visual fiel; só Tickets portado; compare 19,7–24,5%
   - ✅ 5 · ponte de tokens com especificidade zero (variáveis do app com nomes comuns)
-- ▶️ 166 · Fidelidade estrutural na adequação de apps
+- ✅ 166 · Fidelidade estrutural na adequação de apps
   - ✅ 1 · staging: login e redirect da barra final mantêm `/staging`
   - ✅ 2 · filtro por coluna (`data-hub-colfilter`) disponível para os apps
   - ✅ 3 · `hub compare` checa estrutura (colunas, campos, botões, imagens quebradas)
   - ✅ 4 · lote de validação (8 telas) + kit: dropdown, arrastar com fantasma, classe lembrada; correções de staging
   - ⬜ 5 · adequação completa por novo subagente, do zero, só com o "Copiar prompt" — medir o tempo do início ao deploy final
-- ▶️ 167 · Adequação fiel já no primeiro ciclo
+- ✅ 167 · Adequação fiel já no primeiro ciclo
   - ✅ 1 · CSS original intocável (`assets/original/` + `hub-overrides.css`), conferido pelo `hub check`
-  - ✅ 2 · inventário obrigatório (`.hub/inventario.md`), conferido pelo `hub check`
+  - ✅ 2 · inventário obrigatório (`port-inventory.md`), conferido pelo `hub check`
   - ✅ 3 · armadilhas conhecidas no AGENTS.md
   - ✅ 4 · receitas de conversão JS → hub (guia)
   - ✅ 5 · definição de pronto + modelo de relatório
@@ -249,7 +249,7 @@
   - ✅ 7 · `hub compare` por componente (estilo computado de cada elemento pareado)
   - ✅ 8 · bugs relatados: `{{ base }}/assets/files` 404, 303 com base pública, compare capturando o loader
   - ✅ 9 · vazamentos de CSS do hub no app (fonte `!important`, peso dos títulos → `data-hub-original`), achados pelo compare por componente
-  - ⬜ 10 · validação pesada + release v0.13.0
+  - ✅ 10 · validação pesada (hub-check --all, E2E, ui-sweep) + release v0.13.0
 - ⬜ 168 · Remover aplicação (qualquer app; confirmação digitando o nome)
   - ⬜ 1 · serviço: catálogo, containers prod/staging, backup opcional, banco/papel, auditoria
   - ⬜ 2 · tela Operações › Aplicações: modal "digite o nome da aplicação"
@@ -259,6 +259,6 @@
   - ⬜ 1 · admin/runtime: ao abrir, já mostrar o desempenho dos últimos 5 minutos (não só a partir da entrada)
   - ⬜ 2 · admin/tasks: tirar a coluna Tentativas da tabela (fica só no painel lateral do item); Duração no formato 20m3s (abaixo de 60s, só 57s)
   - ⬜ 3 · revisão geral do app e da documentação: trocar travessão (—) por hífen simples (-)
-- ▶️ 170 · Desempenho da navegação: índices do Postgres e cache (HTTP, service worker, servidor) — subagente: Auditoria de índices e cache
-  - ⬜ 1 · auditoria (consultas sem índice, páginas lentas, cabeçalhos de cache, trabalho síncrono no loop)
+- ⬜ 170 · Desempenho da navegação: índices do Postgres e cache (HTTP, service worker, servidor)
+  - ✅ 1 · auditoria (consultas sem índice, páginas lentas, cabeçalhos de cache, trabalho síncrono no loop)
   - ⬜ 2 · correções priorizadas, medidas antes e depois
