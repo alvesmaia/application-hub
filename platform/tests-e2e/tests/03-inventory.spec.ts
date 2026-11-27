@@ -15,7 +15,7 @@ test('inventory: busca, ordenação e filtros no servidor @core', async ({ page 
   await openApp(page, '/apps/inventory/assets');
   await expect(page.locator('.page-subtitle')).toContainText('ativos encontrados');
   // Busca
-  await page.fill('input[name="q"]', 'MacBook');
+  await page.fill('#app-root .hub-filters input[name="q"]', 'MacBook'); // the header also has the app's search box
   await page.click('.hub-filters button.filter-button');
   await expect(page).toHaveURL(/q=MacBook/);
   await expect.poll(async () => {

@@ -91,9 +91,10 @@ def filter_entries(entries: list[dict[str, Any]], f: str) -> list[dict[str, Any]
     return [e for e in entries if keep.get(f, lambda x: not x["archived"])(e)]
 
 
-def bell_of(request: Request) -> tuple[int, list[dict[str, Any]]]:
-    """Bell counter and items (up to 8, excluding archived ones and those with the channel off)."""
-    entries = entries_of(request)
+def bell_of(request: Request, app: str | None = None) -> tuple[int, list[dict[str, Any]]]:
+    """Bell counter and items (up to 8, excluding archived ones and those with the channel off); inside an app
+    (`app`), only that app's."""
+    entries = [e for e in entries_of(request) if app is None or e["app"] == app]
     return InboxStore.unread(entries), [e for e in entries if not e["archived"] and e["in_app"]][:8]
 
 

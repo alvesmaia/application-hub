@@ -17,8 +17,10 @@ ISS = "https://login.fake"
 
 
 @pytest.fixture
-def sso(monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
+def sso(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[TestClient]:
+    # its own data dir: the worker's shared one carries other tests' users and audit chain (flaky under xdist)
     for k, v in {
+        "HUB_DATA_DIR": str(tmp_path),
         "HUB_SSO_PROVIDER": "entra",
         "HUB_ENTRA_TENANT_ID": fake_entra.TENANT,
         "HUB_ENTRA_CLIENT_ID": fake_entra.CLIENT,
@@ -46,7 +48,10 @@ def flow(client: TestClient, fake: TestClient) -> Any:
     assert r.headers["location"].startswith(f"{ISS}/{fake_entra.TENANT}/oauth2/v2.0/authorize?")
     assert "code_challenge_method=S256" in r.headers["location"]
     back = fake.get(r.headers["location"].removeprefix(ISS))
-    return client.get(back.headers["location"].removeprefix("http://testserver"))
+    done = client.get(back.headers["location"].removeprefix("http://testserver"))
+    if done.status_code == 401:  # why (the login page's alert), shown by pytest when a test fails
+        print("SSO recusado:", done.text.partition('class="auth-alert" role="alert">')[2][:200])
+    return done
 
 
 def users(client: TestClient) -> list[dict[str, Any]]:

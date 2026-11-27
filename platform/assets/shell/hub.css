@@ -171,7 +171,7 @@ body.hub-modal-open{overflow:hidden}
 
 /* ===== Alvesmaia identity (colors, fonts and lines) — last on purpose: it applies over
  * the layers inherited from the mockup. Colors only by token (tokens.css); see docs/DESIGN-TOKENS.md. */
-:root{font-family:var(--font-body);font-size:13px;font-synthesis:none;color:var(--color-text);background:var(--color-bg);--ink:var(--color-text-strong);--muted:var(--color-text-secondary);--line:var(--color-border);--shadow:var(--shadow-popover)}
+:root{font-family:var(--font-body);font-synthesis:none;color:var(--color-text);background:var(--color-bg);--ink:var(--color-text-strong);--muted:var(--color-text-secondary);--line:var(--color-border);--shadow:var(--shadow-popover)}
 body{font-family:var(--font-body);font-size:13px;font-weight:400;letter-spacing:-.005em;color:var(--color-text);background:var(--color-bg)}
 button,input,select,textarea{font-family:inherit}
 code,kbd,pre,samp,.mono,.hub-mono{font-family:var(--font-mono)}
@@ -464,12 +464,12 @@ pre,code,kbd,samp,.mono,.hub-mono,.log-terminal,.log-terminal *{font-family:var(
 .toast.toast-error::before,.toast.toast-success::before{display:inline-block;width:1.2em;margin-right:6px;font-weight:700;text-align:center}
 .toast.toast-error::before{content:"!"}
 .toast.toast-success::before{content:"✓"}
-/* App loader (the mockup's, owner's decision): % and bar in the app's color (--app-ink, from the
+/* App loader (the mockup's, owner's decision): % and bar in the app's color (--app-identity-ink, from the
    manifest; the app's identity applies inside its area). With prefers-reduced-motion the
    shine of the bar and the skeletons stops; the % and the timings stay. */
-.app-loading .loader-mark{color:var(--app-ink,var(--color-accent))}
+.app-loading .loader-mark{color:var(--app-identity-ink,var(--color-accent))}
 .app-loading .loader-percentage{color:var(--color-text-strong)}
-.app-loading .loader-fill{background:var(--app-ink,var(--color-accent))}
+.app-loading .loader-fill{background:var(--app-identity-ink,var(--color-accent))}
 .app-loading .loader-track{background:var(--color-surface-hover)}
 .app-loading .loader-footer,.app-loading .loader-message{color:var(--color-text-secondary)}
 @media (prefers-reduced-motion:reduce){.loader-fill::after,.component-loading::after{display:none!important;animation:none!important}.skeleton-block,.skeleton-chart-bars i{animation:none!important}}
@@ -1020,9 +1020,12 @@ button.row-action[aria-disabled=true]{opacity:.45;cursor:not-allowed;background:
 :root{--hub-select-chevron:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2352606D' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
 :root[data-theme="dark"]{--hub-select-chevron:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23A5A5A5' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
 @media (prefers-color-scheme:dark){:root[data-theme="auto"]{--hub-select-chevron:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23A5A5A5' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}}
-select:not([multiple]),.hub-select{-webkit-appearance:none!important;appearance:none!important;box-sizing:border-box;min-height:32px;height:32px;padding:4px 36px 4px 10px!important;border:1px solid var(--color-border-control);border-radius:8px;background-color:var(--color-surface);background-image:var(--hub-select-chevron)!important;background-position:calc(100% - 12px) 50%!important;background-size:10px 6px!important;background-repeat:no-repeat!important;color:var(--color-text-ink);font-size:13px;line-height:1.4;cursor:pointer}
-select:not([multiple]):hover{border-color:var(--color-border-strong)}
-select:not([multiple]):focus-visible,.hub-select:focus-visible{border-color:var(--color-accent-shape);outline:2px solid var(--color-focus);outline-offset:1px}
+/* zero specificity (`:where`): an app's own classes (Tailwind utilities, Bootstrap `form-select`) win over the look;
+   only the chevron and its room are forced, and `hub-select-plain` (an app drawing its own arrow) skips them (CONTRATO-APP §29) */
+:where(select:not([multiple])),.hub-select{-webkit-appearance:none!important;appearance:none!important;box-sizing:border-box;min-height:32px;height:32px;padding:4px 10px;border:1px solid var(--color-border-control);border-radius:8px;background-color:var(--color-surface);color:var(--color-text-ink);font-size:13px;line-height:1.4;cursor:pointer}
+:where(select:not([multiple]):not(.hub-select-plain)),.hub-select:not(.hub-select-plain){padding-right:36px!important;background-image:var(--hub-select-chevron)!important;background-position:calc(100% - 12px) 50%!important;background-size:10px 6px!important;background-repeat:no-repeat!important}
+:where(select:not([multiple])):hover{border-color:var(--color-border-strong)}
+:where(select:not([multiple])):focus-visible,.hub-select:focus-visible{border-color:var(--color-accent-shape);outline:2px solid var(--color-focus);outline-offset:1px}
 select option{background:var(--color-surface);color:var(--color-text-ink)}
 .hub-multi>summary{position:relative;padding:0 36px 0 12px;min-height:32px;font-size:13px;border:1px solid var(--color-border-control);border-radius:8px}
 .hub-multi>summary::after{content:"";position:absolute;right:14px;top:50%;width:6px;height:6px;margin-top:-5px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);opacity:.7}
@@ -1042,3 +1045,17 @@ select option{background:var(--color-surface);color:var(--color-text-ink)}
 #workspace .app-sidebar .sidebar-app small{color:var(--color-chrome-text-2)}
 /* the "i" buttons keep the classic serif italic glyph (styles.css forces --font-ui on every button with !important) */
 .hub-info-toggle,.hub-stack-toggle{font-family:Georgia,"Times New Roman",serif!important}
+/* Side menu foot: source code link and the hub's version (moved from the header) */
+.rail-footer{margin-top:auto;width:100%;display:flex;align-items:center;gap:var(--space-8);padding:var(--space-10) var(--space-12) var(--space-4);color:var(--color-chrome-text-2);font-size:11px}
+.rail-footer .hub-source-link{color:inherit;display:inline-flex}.rail-footer .hub-source-link svg{width:16px;height:16px}
+.rail-footer .hub-source-link:hover{color:var(--color-chrome-text)}
+.rail-footer .hub-version{margin:0;color:inherit}
+.rail-collapsed .rail-footer{flex-direction:column;padding:var(--space-10) 0 var(--space-4)}
+/* Inside an app: the app's own search in the header (manifest `search`) */
+.hub-app-search{position:relative;display:flex;align-items:center;width:min(320px,32vw);color:var(--color-chrome-text-2)}
+.hub-app-search svg{position:absolute;left:10px;width:15px;height:15px;pointer-events:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.hub-app-search input{width:100%;height:30px;padding:0 10px 0 32px;border-radius:8px;border:1px solid var(--color-chrome-text-2);background:color-mix(in srgb,var(--color-surface) 12%,transparent);color:var(--color-chrome-text);font-size:13px;outline:none}
+.hub-app-search input::placeholder{color:var(--color-chrome-text-2)}
+.hub-app-search input:focus-visible{border-color:var(--color-chrome-text);box-shadow:0 0 0 2px color-mix(in srgb,var(--color-chrome-text) 30%,transparent)}
+.hub-notif-all{display:block;text-align:center;font-weight:600;text-decoration:none;color:var(--color-accent)}
+@media(max-width:640px){.hub-app-search{width:auto;flex:1}}

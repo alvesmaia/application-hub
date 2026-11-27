@@ -211,3 +211,14 @@
 - ✅ 156 · Governança (/admin): abas Geral · Aplicações · Segurança e chaves · Uso (proposta aprovada)
 - ✅ 157 · Backups (/admin/backups): seções em abas, sem descrições desnecessárias
 - ✅ 158 · Saúde › Observabilidade: filtros mais limpos
+
+## Cabeçalho dentro do app e rodapé do menu (2026-11-26)
+
+- ✅ 159 · Busca do app no cabeçalho (campo `search` do manifesto; o hub só abre a página do app)
+- ✅ 160 · Sino dentro do app mostra só as notificações daquele app (+ "Ver todas")
+- ✅ 161 · Ícone do GitHub e versão no rodapé do menu lateral
+- ✅ 162 · Apps de exemplo, contrato e SDK; validação
+- ✅ 163 · Relatório de integração: `--app-ink` deixa de ser sobrescrito pela cor do catálogo; opt-out do chevron do select; contrato explica papéis dos tokens e botões
+  - ✅ relatório: `--app-ink`, opt-out do chevron, contrato
+  - ✅ testes do Entra: `HUB_PUBLIC_URL` exportado vazava para o pytest
+  - ✅ compatibilidade Tailwind/Bootstrap/HTML: rem 16px, select com especificidade zero, E2E 39

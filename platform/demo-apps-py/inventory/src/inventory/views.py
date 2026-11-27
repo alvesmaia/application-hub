@@ -93,7 +93,7 @@ def flag_banner(counts: dict[str, int]) -> str:
 
 def page_header(subtitle: str, actions: str) -> str:
     return (
-        '<div class="app-page-header"><div><div class="eyebrow" style="color:var(--app-ink,#644ce1)">GESTÃO DE ATIVOS</div>'
+        '<div class="app-page-header"><div><div class="eyebrow" style="color:var(--app-primary,#644ce1)">GESTÃO DE ATIVOS</div>'
         f'<h1 class="page-title">Inventário de ativos</h1><p class="page-subtitle">{esc(subtitle)}</p></div>{actions}</div>'
     )
 

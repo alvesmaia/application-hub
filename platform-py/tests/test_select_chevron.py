@@ -10,7 +10,8 @@ CSS = (Path(__file__).resolve().parents[1] / "../platform/assets/shell/hub.css")
 
 
 def _select_rule() -> str:
-    m = re.search(r"\nselect:not\(\[multiple\]\),\.hub-select\{([^}]*)\}", CSS)
+    # the arrow's own rule (zero specificity, skipped by `hub-select-plain`)
+    m = re.search(r"\n:where\(select:not\(\[multiple\]\):not\(\.hub-select-plain\)\),[^{]*\{([^}]*)\}", CSS)
     assert m
     return str(m.group(1))
 

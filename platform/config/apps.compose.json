@@ -48,7 +48,8 @@
           "openpyxl",
           "asyncpg"
         ]
-      }
+      },
+      "search": "assets?q="
     },
     "upstream": "http://hub-app-inventory:8080",
     "display": {

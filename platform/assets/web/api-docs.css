@@ -7,12 +7,12 @@
 * { box-sizing: border-box; }
 body { margin: 0; font: 13px/1.5 "Nunito Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; background: var(--bg); color: var(--fg); }
 .apidoc-head, #apidoc { max-width: 1040px; margin: 0 auto; padding: 16px; }
-.apidoc-head h1 { margin: 16px 0 4px; font-size: 1.6rem; }
+.apidoc-head h1 { margin: 16px 0 4px; font-size: 21px; }
 .apidoc-head small { color: var(--muted); font-weight: 500; }
 .apidoc-head p { color: var(--muted); margin: 0; }
 a { color: var(--link); }
 code { font: 13px "Red Hat Mono", ui-monospace, Consolas, monospace; background: var(--line); padding: 1px 4px; border-radius: 4px; }
-h2.tag { margin: 28px 0 8px; font-size: 1.15rem; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+h2.tag { margin: 28px 0 8px; font-size: 15px; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
 details.op { background: var(--card); border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; }
 details.op > summary { cursor: pointer; padding: 10px 12px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; list-style: none; }
 details.op > summary::-webkit-details-marker { display: none; }

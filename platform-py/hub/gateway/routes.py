@@ -18,6 +18,7 @@ from hub.gateway.env_path import env_of, public
 from hub.gateway.proxy import Gateway
 from hub.gateway.registry import AppEntry
 from hub.gateway.ws import proxy_ws
+from hub.ux.inbox_routes import bell_of
 from hub.ux.texts import page_response
 
 ALL = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
@@ -163,7 +164,12 @@ async def page(
         {"src": f"{frag}/{app_id}/assets/{f}", "integrity": s}
         for f, s in approved_scripts(app_id, env == "staging")
     ]
+    unread, bell = bell_of(request, app_id)  # inside the app, its own notifications
     data = c.page_ctx(request) | {
+        "unread": unread,
+        "bell": bell,
+        "bell_app": entry.name,
+        "app_search": app_search(entry, public(f"/apps/{app_id}", env)),
         "path": f"/apps/{app_id}",
         "app": {
             "frag": frag,
@@ -181,6 +187,15 @@ async def page(
     resp = c.templates.TemplateResponse(request, "app.html", data)
     _app_headers(request, resp, app_id, frag=False)
     return resp
+
+
+def app_search(entry: AppEntry, base: str) -> dict[str, str] | None:
+    """The header's search box inside the app: a GET to the app's own page (manifest `search`, e.g. "assets?q=")."""
+    spec = entry.manifest.search if entry.manifest else None
+    if not spec:
+        return None
+    path, param = spec.split("?", 1)
+    return {"action": f"{base}/{path}", "param": param.rstrip("="), "name": entry.name}
 
 
 async def legacy_redirect(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:

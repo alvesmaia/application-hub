@@ -9,7 +9,7 @@ import json
 import re
 from typing import Any
 
-from hub.models import requires_error
+from hub.models import requires_error, search_error
 
 SDK_MAJOR = "1"
 ROOT_FILES = {
@@ -80,8 +80,8 @@ def _policy_error(m: dict[str, Any]) -> str:
             or not 10 <= len(str(s.get("reason", "")).strip()) <= 500
         ):
             return f"scripts: {s.get('path')!r} inválido (ui/assets/<nome>.js e motivo de 10–500 caracteres)"
-    req_err = requires_error(m.get("requires"))
-    return req_err[:200] if req_err else ""
+    err = requires_error(m.get("requires")) or search_error(m.get("search"))
+    return err[:200] if err else ""
 
 
 def _manifest(text: str, registered: list[Any]) -> tuple[dict[str, Any] | None, str, bool]:

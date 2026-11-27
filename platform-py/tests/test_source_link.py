@@ -1,4 +1,4 @@
-"""GitHub link in the global header: HUB_SOURCE_URL (default = the project repo; empty or non-https = hidden)."""
+"""GitHub link at the foot of the side menu (it left the header): HUB_SOURCE_URL (default = the project repo; empty or non-https = hidden)."""
 
 from dataclasses import replace
 from pathlib import Path
@@ -16,10 +16,10 @@ def hub(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
 
 
 def _source_link(html: str) -> str:
-    header = html.split('<header class="platform-header">', 1)[1].split("</header>", 1)[0]
-    if "data-hub-source" not in header:
+    foot = html.split('class="rail-footer"', 1)[1].split("</div>", 1)[0]
+    if "data-hub-source" not in foot:
         return ""
-    return header.split("data-hub-source", 1)[1].split("</a>", 1)[0]
+    return foot.split("data-hub-source", 1)[1].split("</a>", 1)[0]
 
 
 @pytest.mark.parametrize(

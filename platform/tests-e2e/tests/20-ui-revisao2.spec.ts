@@ -127,10 +127,10 @@ test('"i" ao lado do título abre o painel com a descrição da página @core', 
   await expect(btn).toBeFocused();
 });
 
-test('versão do hub visível no header para quem está logado @core', async ({ page }) => {
+test('versão do hub visível no rodapé do menu lateral para quem está logado @core', async ({ page }) => {
   await page.goto('/admin/tasks');
-  await expect(page.locator('[data-hub-version]')).toBeVisible();
-  await expect(page.locator('[data-hub-version]')).toHaveText(/^v\d+\.\d+\.\d+/);
+  await expect(page.locator('.rail-footer [data-hub-version]')).toBeVisible();
+  await expect(page.locator('.rail-footer [data-hub-version]')).toHaveText(/^v\d+\.\d+\.\d+/);
 });
 
 test('hover da linha de /admin/users pinta também a faixa sob a coluna Ações', async ({ page }) => {

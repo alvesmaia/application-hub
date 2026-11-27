@@ -7,6 +7,26 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Fixed
+- Inside apps the hub overwrote the app's `--app-ink` (text-ink role, CONTRATO-APP §29) with the catalog's identity
+  color, so form fields showed text in the app's color; the identity is now published as `--app-identity-ink`
+  (loader only) and the sample apps' icon/eyebrow use `--app-primary`.
+- `select.hub-select-plain`: opt-out of the hub's arrow for an app that draws its own (no double arrow).
+- Apps on Tailwind/Bootstrap rendered at 81% inside the hub: the hub's 13px moved from `:root` to `<body>`, so
+  `1rem` is 16px again; the hub's `<select>` look now has zero specificity, so the app's own classes win.
+- E2E `39-compat-frameworks`: native controls under plain HTML, Tailwind (with/without preflight) and Bootstrap 5,
+  measured outside and inside the app area; fails on what the hub breaks.
+- CONTRATO-APP §29 says what each role paints (`control` = border of controls, `ink`, `primary`) and how native
+  selects and buttons behave; the Entra tests use their own data dir, ignore an exported `HUB_PUBLIC_URL` and say why a login failed.
+
+### Added
+- Inside an app the header serves that app: the app's own search box (manifest `search`, e.g. `"assets?q="`: the
+  hub only opens the app's page with the term; validated at the Manifest step) and the bell with only that app's
+  notifications plus "Ver todas na Inbox". Sample app Gestão de Ativos declares its search.
+
+### Changed
+- The GitHub link and the hub's version moved from the header to the foot of the side menu.
+
 ## [0.10.0] — 2026-11-26
 
 ### Changed

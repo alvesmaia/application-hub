@@ -1,0 +1,22 @@
+<!-- Native controls an app would render, one per kind; the same markup is styled by each framework variant. -->
+<div class="cmp p-6 container" data-cmp="">
+  <label class="block text-sm form-label" for="c-text">Texto</label>
+  <input id="c-text" data-c="input-text" class="form-control border border-gray-300 rounded px-3 py-2 text-gray-900" type="text" value="Valor"/>
+  <input data-c="input-email" class="form-control border border-gray-300 rounded px-3 py-2" type="email" value="a@b.c"/>
+  <input data-c="input-number" class="form-control border border-gray-300 rounded px-3 py-2" type="number" value="3"/>
+  <input data-c="input-date" class="form-control border border-gray-300 rounded px-3 py-2" type="date" value="2026-11-26"/>
+  <input data-c="input-time" class="form-control border border-gray-300 rounded px-3 py-2" type="time" value="10:30"/>
+  <input data-c="input-search" class="form-control border border-gray-300 rounded px-3 py-2" type="search" value="termo"/>
+  <input data-c="input-file" class="form-control" type="file"/>
+  <textarea data-c="textarea" class="form-control border border-gray-300 rounded px-3 py-2">Texto longo</textarea>
+  <select data-c="select" class="form-select border border-gray-300 rounded px-3 py-2"><option>Opção</option></select>
+  <span class="relative inline-block"><select data-c="select-own-arrow" class="appearance-none border border-gray-300 rounded pl-3 pr-8 py-2"><option>Ordenar</option></select><svg data-c-arrow="" class="pointer-events-none absolute right-2 top-3 h-4 w-4" viewBox="0 0 20 20"><path d="M5 7l5 5 5-5"/></svg></span>
+  <span class="relative inline-block"><select data-c="select-plain-own-arrow" class="hub-select-plain appearance-none border border-gray-300 rounded pl-3 pr-8 py-2"><option>Ordenar</option></select><svg data-c-arrow="" class="pointer-events-none absolute right-2 top-3 h-4 w-4" viewBox="0 0 20 20"><path d="M5 7l5 5 5-5"/></svg></span>
+  <input data-c="checkbox" class="form-check-input" type="checkbox" checked/>
+  <input data-c="radio" class="form-check-input" type="radio" checked/>
+  <input data-c="range" class="form-range" type="range"/>
+  <button data-c="button-bare">Ação</button>
+  <button data-c="button-styled" class="btn btn-primary bg-blue-600 text-white rounded px-4 py-2">Salvar</button>
+  <button data-c="button-link" class="btn btn-link text-blue-600 underline">Excluir</button>
+  <a data-c="link" class="text-blue-600 underline" href="#x">Link</a>
+</div>

@@ -131,6 +131,29 @@ class AppManifest(CompatibleModel):
     api: dict[str, Any] = Field(default_factory=dict)
     mcp: dict[str, Any] = Field(default_factory=dict)
     requires: AppRequires | None = None
+    # the app's own search page for the header box, relative to the app with one parameter left open: "assets?q="
+    search: str | None = None
+
+    @field_validator("search")
+    @classmethod
+    def _search_is_a_page_of_the_app(cls, v: str | None) -> str | None:
+        if v is not None and not _SEARCH.fullmatch(v):
+            raise ValueError(f"search inválido: {v!r} (página do app com um parâmetro, ex.: assets?q=)")
+        return v
+
+
+_SEARCH = re.compile(r"[a-z0-9][a-z0-9_-]{0,40}(/[a-z0-9][a-z0-9_-]{0,40}){0,3}\?[a-z_][a-z0-9_]{0,30}=")
+
+
+def search_error(raw: object) -> str | None:
+    """Short message if the manifest's `search` is invalid (None = ok or absent): the deployment's Manifest step."""
+    if raw is None:
+        return None
+    return (
+        None
+        if isinstance(raw, str) and _SEARCH.fullmatch(raw)
+        else f"search inválido: {str(raw)[:60]!r} (ex.: assets?q=)"
+    )
 
 
 class AppRecord(CompatibleModel):

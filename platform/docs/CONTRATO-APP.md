@@ -372,6 +372,7 @@ When no `data-hub-*` resolves (e.g. a rich editor), the app declares the file in
   },
   "forward_auth_schemes": [], "backup": { "pre": "/contratos/_hub/backup/pre" },  // optional
   "scripts": [{ "path": "ui/assets/editor.js", "reason": "…" }],  // optional — reviewed exception (§13.1)
+  "search": "contratos?q=",          // optional — the header's search box inside the app (§19)
   "requires": {                      // optional (developer kit): what the hub provisions at deployment
     "database": true, "storage": false,
     "variables": ["API_URL"], "secrets": ["API_KEY"]   // names; values set in the hub, never in the package
@@ -441,11 +442,18 @@ SDK: `hub_sdk.telemetry` (`TraceMiddleware`, `db`,
 `sql_comment`) and `hub_sdk.flags`. Conformance: items 18 (propagation hub → app → database,
 telemetry format, `/_hub/flags`, UI controlled by the header in the example app).
 
-## 19. Federated search (removed)
+## 19. Search in the header (inside the app)
 
-Removed: the hub no longer searches inside apps and no longer calls `/{id}/_hub/search`; an app does not need to implement it.
+The hub has no search of its own and never searches inside apps. An app that has a search page declares it in
+the manifest, relative to the app with one parameter left open: `"search": "assets?q="` (letters, digits, `-`,
+`_` and up to four `/` segments, then `?param=`). Inside that app the header shows a "Buscar em <app>" box;
+Enter opens `/apps/<id>/assets?q=<term>` (a plain GET to the app's own page, which filters as it already does).
+Without `search`, no box. An invalid value is refused at the Manifest step.
 
 ## 20. Notifications and approvals through the Inbox (wave 9)
+
+Inside an app, the header's bell shows only that app's notifications (with a link to the whole Inbox); outside
+apps it shows every app's.
 
 **Notification**: event `kind: "notification"` in the outbox (same transaction as the action, like
 the audit trail) with `meta` (item 8). Target: `to_users` (logins) and/or `to_roles` (roles);
@@ -963,6 +971,23 @@ identity**. The app's CSS (`/{id}/assets/app.css`) enters confined by `@scope (#
   everything it draws in the app's area (`hub-kit` components, tables, buttons, sidebar);
   an undeclared role = the hub's value. Fonts: `--app-font` (text) and `--app-font-display`
   (titles) — prefer system font stacks; a custom font is only served by the **app's package** (CSP `font-src 'self'`; `@font-face` does not cross the scope — use the hub's or the system's). Radii (`--radius-*`) and other shape tokens can also be redefined on the app's `:root`.
+- **What each role paints** (the ones apps most often misread): `control` = the **border** of form controls
+  (inputs, selects, checkboxes; ≥ 3:1 against `surface`), not their background (that is `surface`); `ink` = the
+  strongest text (inputs' text, highlighted values); `primary` = the app's identity color (buttons, links, the
+  icon tile, eyebrows). The hub publishes the catalog's identity as `--app-color`/`--app-identity-ink` (loader
+  only) and never overwrites a role you declared. Do not reuse the `--app-*` names for other meanings: the hub
+  reads them.
+- **Native controls:** every `<select>` gets the hub's arrow (`appearance: none` + background image); an app that
+  draws its own arrow adds the class `hub-select-plain` (or drops its own icon) — never both. Buttons: use the
+  kit's classes (`primary-button`, `secondary-button`, `row-action`…) or give yours an explicit reset; the hub
+  does not reset `<button>` inside the app's area (a bare button keeps the browser's border, on purpose: some
+  apps rely on it).
+- **CSS frameworks (Tailwind, Bootstrap, plain CSS):** `1rem` is the browser's 16px (the hub's 13px text sits on
+  `<body>` and is inherited, not forced). The hub's look for native `<select>` has zero specificity (`:where`):
+  any class of yours wins; only the arrow and its room are forced (skip them with `hub-select-plain`). Fields
+  that set a text color must also set their background, or the dark theme (the browser's dark field) hides the
+  text. Tailwind with `preflight: false` keeps the browser's button and field look: add the reset you need.
+  Checked by `platform/tests-e2e/tests/39-compat-frameworks.spec.ts` (`compat/`).
 - **Dark theme is mandatory:** repeat the roles in `:root[data-theme="dark"]` and in
   `@media (prefers-color-scheme: dark) { :root[data-theme="auto"] { … } }` (the user chooses
   Light/Dark/System in the hub). Minimum contrast in **both** themes: text ≥ 4.5:1 and shapes

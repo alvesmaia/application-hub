@@ -95,7 +95,8 @@
   const version = me.dataset.hubVersion || '';
   const root = document.getElementById('app-root');
   // App tokens (wave 8): the app's identity color and ink for the fragments
-  // (`var(--app-color)`/`var(--app-ink)`), color values only (no CSS injection).
+  // (`var(--app-color)`/`var(--app-identity-ink)`), color values only (no CSS injection). `--app-ink` is the
+  // app's own text-ink role (CONTRATO-APP §29): never overwritten here.
   const colorOk = (c) => /^#[0-9a-fA-F]{3,8}$/.test(c || '');
   // Dark theme (wave 9): the app's ink lightened and the icon background darkened, to
   // keep contrast over the dark surfaces.
@@ -109,7 +110,7 @@
     return `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
   };
   if (root && colorOk(me.dataset.hubColor)) root.style.setProperty('--app-color', dark ? mix(me.dataset.hubColor, 0, 0.78) : me.dataset.hubColor);
-  if (root && colorOk(me.dataset.hubInk)) root.style.setProperty('--app-ink', dark ? mix(me.dataset.hubInk, 255, 0.5) : me.dataset.hubInk);
+  if (root && colorOk(me.dataset.hubInk)) root.style.setProperty('--app-identity-ink', dark ? mix(me.dataset.hubInk, 255, 0.5) : me.dataset.hubInk);
   // Wave 12 (M1): the app content gets its own stacking context
   // (`isolation: isolate; position: relative; z-index: 0` on #app-root): nothing from the app —
   // not even `position: fixed; inset: 0; z-index: 2147483647` — paints above the hub's header and
