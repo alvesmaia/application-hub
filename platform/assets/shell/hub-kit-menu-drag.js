@@ -10,7 +10,9 @@
  *                   data-hub-drag-group / data-hub-drop-group (default: none). On drop the item moves
  *                   before the item under the pointer and the kit posts `<name>=<value>&before_id=<id>`
  *                   ("" = end of the list); a refused answer puts it back. Classes while dragging:
- *                   `hub-dragging` (item) and `hub-drop-over` (list). */
+ *                   `hub-dragging` (item) and `hub-drop-over` (list); a placeholder the item's height
+ *                   marks where it will land (class `hub-drop-indicator`, or the list's
+ *                   data-hub-drop-indicator="app-class" so the app's own CSS draws it). */
 (function () {
   'use strict';
   const P = window.__hubKitParts;
@@ -43,6 +45,10 @@
   // ---- drag and drop ----
   let dragged = null;
   let home = null;
+  let draggedHeight = 0;
+  const indicator = document.createElement('div');
+  indicator.setAttribute('aria-hidden', 'true');
+  const clearIndicator = () => indicator.remove();
   const group = (el, attr) => el.getAttribute(attr) || '';
   // The nearest list of the dragged item's group: a card's own subtask list (another group) is skipped.
   const zoneAt = (e) => {
@@ -54,7 +60,7 @@
   };
   const bodyOf = (z) => (z.getAttribute('data-hub-drop-body') && z.querySelector(z.getAttribute('data-hub-drop-body'))) || z;
   const itemAfter = (body, y) => [...body.children]
-    .filter((c) => c !== dragged && c.hasAttribute('data-hub-drag'))
+    .filter((c) => c !== dragged && c !== indicator && c.hasAttribute('data-hub-drag'))
     .find((c) => { const r = c.getBoundingClientRect(); return y < r.top + r.height / 2; }) || null;
   const clearOver = () => document.querySelectorAll('.hub-drop-over').forEach((z) => z.classList.remove('hub-drop-over'));
 
@@ -62,23 +68,30 @@
     const it = e.target.closest && e.target.closest('[data-hub-drag]');
     if (!it || !inScope(it)) return;
     dragged = it;
+    draggedHeight = it.offsetHeight; // before the app's CSS hides the dragged item
     home = [it.parentNode, it.nextSibling];
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', it.getAttribute('data-hub-drag-id') || '');
     setTimeout(() => it.classList.add('hub-dragging'), 0); // after the browser took the drag image
   });
-  document.addEventListener('dragend', () => { if (dragged) dragged.classList.remove('hub-dragging'); dragged = null; clearOver(); });
+  document.addEventListener('dragend', () => { if (dragged) dragged.classList.remove('hub-dragging'); dragged = null; clearOver(); clearIndicator(); });
   document.addEventListener('dragover', (e) => {
     const z = zoneAt(e);
-    if (!z) return;
+    if (!z) { if (dragged) { clearOver(); clearIndicator(); } return; } // outside every list: no landing spot
     e.preventDefault();
     if (!z.classList.contains('hub-drop-over')) { clearOver(); z.classList.add('hub-drop-over'); }
+    indicator.className = z.getAttribute('data-hub-drop-indicator') || 'hub-drop-indicator';
+    indicator.style.height = `${draggedHeight}px`;
+    const body = bodyOf(z);
+    const next = itemAfter(body, e.clientY);
+    if (indicator.parentNode !== body || indicator.nextSibling !== next) body.insertBefore(indicator, next);
   });
   document.addEventListener('drop', (e) => {
     const z = zoneAt(e);
     if (!z) return;
     e.preventDefault();
     clearOver();
+    clearIndicator();
     const it = dragged;
     const back = home;
     const next = itemAfter(bodyOf(z), e.clientY);

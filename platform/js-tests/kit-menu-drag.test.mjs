@@ -99,3 +99,25 @@ test('drag and drop: a refused move puts the card back', async (t) => {
     assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#todo .body > article')].map((e) => e.id)), ['c1', 'c2']);
   } finally { await b.close(); }
 });
+
+test('drag and drop: while dragging, a placeholder the size of the card marks where it will land', async (t) => {
+  const b = await browser();
+  if (!b) { t.skip('Playwright/Chromium indisponível'); return; }
+  try {
+    const { page } = await open(b, 200);
+    const r = await page.evaluate(async () => {
+      const done = document.getElementById('done');
+      done.setAttribute('data-hub-drop-indicator', 'kbv-drop-indicator');
+      const c1 = document.getElementById('c1');
+      const dt = new DataTransfer();
+      c1.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dt }));
+      const top = document.getElementById('c3').getBoundingClientRect().top;
+      document.getElementById('c3').dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt, clientY: top + 2 }));
+      const ph = done.querySelector('.kbv-drop-indicator');
+      const seen = ph && { next: ph.nextElementSibling.id, height: ph.style.height };
+      c1.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer: dt }));
+      return { seen, after: document.querySelectorAll('.kbv-drop-indicator').length };
+    });
+    assert.deepEqual(r, { seen: { next: 'c3', height: '40px' }, after: 0 });
+  } finally { await b.close(); }
+});

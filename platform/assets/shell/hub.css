@@ -1059,3 +1059,6 @@ select option{background:var(--color-surface);color:var(--color-text-ink)}
 .hub-app-search input:focus-visible{border-color:var(--color-chrome-text);box-shadow:0 0 0 2px color-mix(in srgb,var(--color-chrome-text) 30%,transparent)}
 .hub-notif-all{display:block;text-align:center;font-weight:600;text-decoration:none;color:var(--color-accent)}
 @media(max-width:640px){.hub-app-search{width:auto;flex:1}}
+
+/* Kit drag and drop (hub-kit-menu-drag.js): default landing placeholder; an app names its own class. */
+.hub-drop-indicator{box-sizing:border-box;border:2px dashed var(--color-border-strong,#9aa5b1);border-radius:8px;margin:4px 0}
