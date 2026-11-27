@@ -18,6 +18,7 @@ from hub.ops import backups_view as bv
 from hub.ops import host_chart
 from hub.ops import model as m
 from hub.ops import pipeline as pl
+from hub.ops import remove_app as ra
 from hub.ops import runtime as rt
 from hub.ops import runtime_view as rv
 from hub.ops import tasks_view as tv
@@ -195,7 +196,7 @@ async def runtime_page(request: Request, ops: OpsCtx = Depends(ctx)) -> Response
     return render(ops,
         request, "ops_runtime.html", "Aplicações", "Containers", "Cada aplicação roda isolada, com limites próprios de CPU e memória.",
         rows=page_rows, pager=pager, banner=None if info["reachable"] else rv.runtime_banner(info["error"]),
-        rollout=ROLLOUT, **await host_panel(ops, info),
+        rollout=ROLLOUT, has_samples=bool(ra.samples(ops)), **await host_panel(ops, info),
     )  # fmt: skip
 
 

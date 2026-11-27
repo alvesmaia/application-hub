@@ -159,6 +159,11 @@ _OPS: tuple[Op, ...] = (
     Op("database_provision", "/apps/{app}/database", "Containers",
        "Provisiona (ou verifica) o banco do app e a variável de conexão (idempotente)", "DatabaseProvision",
        method="POST", params=(P_APP, P_ENV), passed=("env",), **_tgt("POST", "/api/ops/provision/{app}/database")),
+    Op("apps_remove", "/apps/{app}/remove", "Containers",
+       "Remove o app do hub em segundo plano (containers, imagens, banco, armazenamento, variáveis e configuração; "
+       "a auditoria fica); confirm = nome ou id do app; keep_data mantém banco, armazenamento e backups",
+       "Job", method="POST", params=(P_APP,), body="RemoveAppRequest", **_tgt("POST", "/api/ops/apps/{app}/remove"),
+       destructive=True),
     Op("replicas_get", "/replicas", "Containers", "Réplicas do hub vivas e quem lidera as tarefas", "Replicas",
        **_tgt("GET", "/api/ops/replicas")),
     Op("backups_set_policy", "/apps/{app}/backups/policy", "Backups",

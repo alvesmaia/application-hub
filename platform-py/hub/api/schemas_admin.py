@@ -334,6 +334,17 @@ class DatabaseProvision(Out):
     restart_pending: bool
 
 
+class RemoveAppRequest(In):
+    confirm: str = Field(min_length=1, max_length=200, description="Nome ou id do app (confirmação).")
+    backup: bool = Field(default=True, description="Backup do banco antes de apagar.")
+    keep_data: bool = Field(
+        default=False, description="Mantém banco, armazenamento e backups; só tira do hub."
+    )
+    password: str | None = Field(
+        default=None, max_length=256, description="Só numa sessão do navegador.", json_schema_extra=_SECRET
+    )
+
+
 class Replicas(Out):
     """Live hub replicas and the leader of the background tasks."""
 
@@ -399,7 +410,7 @@ MODELS: tuple[type, ...] = (
     HealthServiceCreate, HealthCheck, Slo, SloSet, Incident, IncidentCreate, IncidentUpdate, FlagRuleIn,
     FlagRolloutIn, FlagEnvIn, FlagUpdate, FlagCreate, FlagEnabled, Flag, Analytics, AnalyticsRetention,
     RetentionSet, LogStats, ConnectionCreate, ConnectionUpdate, BindingsSet,
-    ConnectionRotate, ContainerLimits, LimitsResult, ContainerLogs, ContainerInspect, DatabaseProvision, Replicas,
+    ConnectionRotate, ContainerLimits, LimitsResult, ContainerLogs, ContainerInspect, DatabaseProvision, RemoveAppRequest, Replicas,
     BackupPolicyIn, BackupPolicy, BackupsAside, AsideResult, InboxIds, InboxArchive, InboxChange, AccessRequest,
     AccessRequestResult,
 )  # fmt: skip

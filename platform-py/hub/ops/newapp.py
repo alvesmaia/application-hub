@@ -23,6 +23,7 @@ from hub.ops.model import OpsError
 from hub.ops.runtime import container_name
 
 DYNAMIC = "apps.dynamic.json"
+REMOVED = "apps.removed.json"  # ids taken out of the hub, also sample apps of the read-only registry file
 
 
 def upstream_of(app_id: str) -> str:
@@ -56,11 +57,46 @@ def register(data_dir: Path, registry: Registry, apps: list[str], manifest: dict
     registry.add(_entry(m))
     if m.id not in apps:
         apps.append(m.id)
-    p = data_dir / DYNAMIC
-    cur = json.loads(p.read_text(encoding="utf-8")) if p.is_file() else []
-    cur = [x for x in cur if x.get("id") != m.id] + [manifest]
-    p.write_text(json.dumps(cur, ensure_ascii=False, indent=2), encoding="utf-8")
+    _write(data_dir / DYNAMIC, [x for x in _dynamic(data_dir) if x.get("id") != m.id] + [manifest])
+    if m.id in (gone := removed_ids(data_dir)):  # the same id deployed again after a removal
+        _write(data_dir / REMOVED, [a for a in gone if a != m.id])
     return True
+
+
+def _dynamic(data_dir: Path) -> list[dict[str, Any]]:
+    p = data_dir / DYNAMIC
+    return list(json.loads(p.read_text(encoding="utf-8"))) if p.is_file() else []
+
+
+def _write(p: Path, value: list[Any]) -> None:
+    p.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def removed_ids(data_dir: Path) -> list[str]:
+    try:
+        raw = json.loads((data_dir / REMOVED).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    return sorted({str(a) for a in raw}) if isinstance(raw, list) else []
+
+
+def apply_removed(data_dir: Path, registry: Registry) -> list[str]:
+    """On boot: the removed apps leave the registry again (sample apps come back from the read-only file)."""
+    return [a for a in removed_ids(data_dir) if registry.remove(a)]
+
+
+def boot_registry(data_dir: Path, registry: Registry) -> None:
+    """Startup: apps deployed by the hub join, removed apps leave (they get no token, seed or default policy)."""
+    load_dynamic(data_dir, registry)
+    apply_removed(data_dir, registry)
+
+
+def unregister(data_dir: Path, registry: Registry, app_id: str) -> None:
+    """Takes the app out of the registry, `apps.dynamic.json` and every later boot (`apps.removed.json`)."""
+    registry.remove(app_id)
+    if (data_dir / DYNAMIC).is_file():
+        _write(data_dir / DYNAMIC, [x for x in _dynamic(data_dir) if x.get("id") != app_id])
+    _write(data_dir / REMOVED, sorted({*removed_ids(data_dir), app_id}))
 
 
 def is_dynamic(data_dir: Path, app_id: str) -> bool:

@@ -11,7 +11,8 @@ from fastapi.templating import Jinja2Templates
 
 from hub.admin.routes import actor_of
 from hub.admin.store import AdminStore
-from hub.auth import AuthStore, now_ms, verify
+from hub.auth import AuthStore
+from hub.auth.stepup import check_password
 from hub.connections import provision as prov
 from hub.connections.store import ConnError, ConnStore
 
@@ -73,22 +74,14 @@ class ConnCtx:
             return "staging"
         raise ConnError("Ambiente inválido (use producao ou staging).")
 
-    def step_up_for(self, request: Request) -> Callable[[str], Any]:
+    @staticmethod
+    def step_up_for(request: Request) -> Callable[[str], Any]:
         async def check(password: str) -> str | None:
-            u = request.state.user
-            if request.state.token is not None or not u.get("id"):
+            if request.state.token is not None or not request.state.user.get("id"):
                 return "Apagar um bucket com objetos exige reautenticação com senha numa sessão do navegador (tokens e agentes não confirmam)."
-            tries = self.app.state.stepup_fails.setdefault(u["id"], [])
-            cut = now_ms() - 15 * 60_000
-            tries[:] = [x for x in tries if x > cut]
-            if len(tries) >= 5:
-                return "Muitas tentativas. Aguarde alguns minutos e tente de novo."
-            async with self.auth.locked() as d:
-                row = next((x for x in d["users"] if x["id"] == u["id"]), None)
-            if password and row and verify(password, row.get("password_hash")):
-                return None
-            tries.append(now_ms())
-            return "Senha incorreta: a remoção do bucket com objetos não foi confirmada."
+            return await check_password(
+                request, password, "Senha incorreta: a remoção do bucket com objetos não foi confirmada."
+            )
 
         return check
 

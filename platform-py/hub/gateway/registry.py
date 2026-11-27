@@ -40,6 +40,11 @@ class Registry:
         """New app deployed by the hub (developer kit) — `hub.ops.newapp`."""
         self._apps[entry.id] = entry
 
+    def remove(self, app_id: str) -> bool:
+        """App removed from the hub (`hub.ops.remove_app`): no more routes, staging included."""
+        self.staging.pop(app_id, None)
+        return self._apps.pop(app_id, None) is not None
+
     def get(self, app_id: str) -> AppEntry | None:
         return self._apps.get(app_id)
 

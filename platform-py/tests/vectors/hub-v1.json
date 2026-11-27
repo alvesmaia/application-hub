@@ -4112,6 +4112,46 @@
           "to"
         ],
         "type": "object"
+      },
+      "RemoveAppRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "confirm": {
+            "description": "Nome ou id do app (confirmação).",
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "backup": {
+            "description": "Backup do banco antes de apagar.",
+            "type": "boolean"
+          },
+          "keep_data": {
+            "description": "Mantém banco, armazenamento e backups; só tira do hub.",
+            "type": "boolean"
+          },
+          "password": {
+            "description": "Só numa sessão do navegador.",
+            "format": "password",
+            "writeOnly": true,
+            "maxLength": 256,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "confirm"
+        ],
+        "type": "object",
+        "examples": [
+          {
+            "backup": true,
+            "confirm": "inventory",
+            "keep_data": false
+          }
+        ]
       }
     },
     "securitySchemes": {
@@ -12035,6 +12075,96 @@
         ],
         "x-hub-destructive": false,
         "x-hub-mcp": true
+      }
+    },
+    "/api/v1/apps/{app}/remove": {
+      "post": {
+        "operationId": "apps_remove",
+        "summary": "Remove o app do hub em segundo plano (containers, imagens, banco, armazenamento, variáveis e configuração; a auditoria fica); confirm = nome ou id do app; keep_data mantém banco, armazenamento e backups",
+        "tags": [
+          "Containers"
+        ],
+        "parameters": [
+          {
+            "name": "app",
+            "in": "path",
+            "required": true,
+            "description": "Id do app (ex.: inventory)",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{1,80}$"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                },
+                "example": {
+                  "app": "inventory",
+                  "done": false,
+                  "env": "producao",
+                  "id": 1,
+                  "kind": "backup",
+                  "message": "",
+                  "ok": false,
+                  "progress": 0,
+                  "result": null,
+                  "steps": [],
+                  "title": "Backup de Gestão de Ativos"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "x-hub-destructive": true,
+        "x-hub-mcp": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveAppRequest"
+              },
+              "example": {
+                "backup": true,
+                "confirm": "inventory",
+                "keep_data": false
+              }
+            }
+          }
+        }
       }
     }
   },

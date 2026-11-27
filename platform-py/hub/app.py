@@ -32,7 +32,7 @@ from hub.gateway.routes import mount_gateway
 from hub.insight.routes import mount_insight
 from hub.insight.runtime import Insight
 from hub.lifespan import lifespan
-from hub.ops.newapp import load_dynamic
+from hub.ops.newapp import boot_registry
 from hub.ops.routes import mount_ops
 from hub.ux import applink
 from hub.ux.account_routes import mount_account
@@ -54,7 +54,7 @@ def create_app(settings: Settings | None = None, gateway: Gateway | None = None)
     apicfg = load_cfg(settings.config)
     gateway = gateway or Gateway(load_registry(), GwOptions(user_sig_key=user_sig_key()))
     data_dir = Path(os.getenv("HUB_DATA_DIR", Path(__file__).resolve().parents[2] / "platform/data"))
-    load_dynamic(data_dir, gateway.registry)  # F22: new apps deployed by the hub
+    boot_registry(data_dir, gateway.registry)  # F22: deployed apps in, removed apps out (before the stores)
     auth_store = AuthStore(data_dir / "auth.json")
     vault = Vault.open(data_dir)
     admin = AdminStore(data_dir, vault, apps=gateway.registry.ids())
