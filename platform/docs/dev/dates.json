@@ -1,7 +1,7 @@
 {
- "CONTRATO-APP.md": "2026-11-26",
- "dev/AGENTS.md": "2026-11-26",
- "dev/cli.md": "2026-11-25",
+ "CONTRATO-APP.md": "2026-11-27",
+ "dev/AGENTS.md": "2026-11-27",
+ "dev/cli.md": "2026-11-27",
  "dev/comecar.md": "2026-11-25",
  "dev/guias/adaptar-app.md": "2026-11-26",
  "dev/guias/armazenamento.md": "2026-10-14",
@@ -12,5 +12,5 @@
  "dev/guias/publicar.md": "2026-10-16",
  "dev/guias/telas.md": "2026-11-25",
  "dev/guias/tempo-real.md": "2026-10-14",
- "dev/sdk.md": "2026-11-26"
+ "dev/sdk.md": "2026-11-27"
 }

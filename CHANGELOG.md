@@ -7,6 +7,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.12.0] — 2026-11-27
+
 ### Added
 - `hub compare <original-url>`: the original app and the adapted one (in `hub dev`) page by page — screenshots
   side by side and a style difference (fonts, palette, radii, counts of buttons/fields/rows/links/icons);
