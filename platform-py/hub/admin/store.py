@@ -62,12 +62,14 @@ class AdminStore:
 
     @asynccontextmanager
     async def locked(self, write: bool = False) -> AsyncIterator[dict[str, Any]]:
+        if not write:  # writes are atomic (os.replace): a reader sees a whole file, no lock to queue behind
+            yield self._read()
+            return
         # The write stays inside the cross-replica lock, or another replica can overwrite it.
-        async with self.lock, self.db.file_lock("admin.json", write=write) if self.db else nullcontext():
+        async with self.lock, self.db.file_lock("admin.json", write=True) if self.db else nullcontext():
             data = self._read()
             yield data
-            if write:
-                self._write(data)
+            self._write(data)
 
     def _read(self) -> dict[str, Any]:
         if not self.path.exists():

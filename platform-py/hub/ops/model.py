@@ -20,6 +20,11 @@ IMPLANTADO, AGUARDANDO, REJEITADO, SUBSTITUIDO = (
 )
 REVERTIDO, FALHOU, IMPLANTANDO = "Revertido", "Falhou", "Implantando"
 STAGING, PRODUCAO = "Staging", "Produção"
+# History kept per app and environment (each record carries its log): `ops.json` was never pruned and every
+# request parsed it. Never dropped: the active, pending and in-progress ones, and replaced ones with an image
+# (rollback targets).
+KEEP_DEPLOYMENTS = 25
+_KEEP_ALWAYS = {IMPLANTADO, AGUARDANDO, IMPLANTANDO}
 Data = dict[str, Any]
 
 
@@ -48,6 +53,7 @@ class OpsStore:
         self.db: Any = None  # StateDb: locks `ops.json` across replicas (pg_advisory_lock)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.apps = apps
+        self._snap: tuple[tuple[int, int], Data] | None = None
 
     def read(self) -> Data:
         try:
@@ -65,7 +71,20 @@ class OpsStore:
         d["policies"] += [default_policy(a) for a in self.apps if a not in have]
         return d
 
+    def snapshot(self) -> Data:
+        """Read-only view for the request path (approved scripts, versions): parsed once per change of the file
+        (mtime + size). Never mutate it — `read()`/`locked(True)` give a private copy to change."""
+        try:
+            st = self.path.stat()
+            key = (st.st_mtime_ns, st.st_size)
+        except OSError:
+            key = (0, 0)
+        if self._snap is None or self._snap[0] != key:
+            self._snap = (key, self.read())
+        return self._snap[1]
+
     def write(self, d: Data) -> None:
+        self._snap = None  # this process sees its own write at once (same mtime tick and size)
         tmp = self.path.with_suffix(f".json.{os.getpid()}.tmp")
         tmp.write_text(json.dumps(d, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         with suppress(OSError):
@@ -123,7 +142,24 @@ def push(d: Data, dep: Data) -> Data:
     dep["id"] = d["next_deploy_id"]
     d["next_deploy_id"] += 1
     d["deployments"].insert(0, dep)
+    d["deployments"] = _pruned(d["deployments"])
     return dep
+
+
+def _pruned(deps: list[Data]) -> list[Data]:
+    """Newest first: past `KEEP_DEPLOYMENTS` per app+env, only the ones never dropped stay."""
+    seen: dict[tuple[str, str], int] = {}
+    out = []
+    for x in deps:
+        k = (x.get("app", ""), x.get("env", ""))
+        seen[k] = seen.get(k, 0) + 1
+        if (
+            seen[k] <= KEEP_DEPLOYMENTS
+            or x.get("status") in _KEEP_ALWAYS
+            or (x.get("status") == SUBSTITUIDO and x.get("image"))
+        ):
+            out.append(x)
+    return out
 
 
 def in_progress(d: Data, app: str, env: str) -> bool:

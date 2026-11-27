@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from contextlib import suppress
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 
 from hub.gateway.registry import AppEntry, Registry
@@ -90,7 +91,23 @@ def catalog_hidden(data_dir: Path) -> set[str]:
 
 
 def deployed_versions(data_dir: Path) -> dict[str, str]:
-    """Active release per app: `deployments.json` (legacy) and, on top, the `Implantado` (Deployed) deployment in Production from `ops.json`."""
+    """Active release per app: `deployments.json` (legacy) and, on top, the `Implantado` (Deployed) deployment in Production from `ops.json`.
+    Parsed again only when one of the files changed (it is asked twice on every Applications page)."""
+    return dict(_versions(data_dir, _stamp(data_dir / "deployments.json"), _stamp(data_dir / "ops.json")))
+
+
+def _stamp(f: Path) -> tuple[int, int]:
+    try:
+        st = f.stat()
+    except OSError:
+        return (0, 0)
+    return (st.st_mtime_ns, st.st_size)
+
+
+@lru_cache(maxsize=8)
+def _versions(
+    data_dir: Path, _deploys: tuple[int, int], _ops: tuple[int, int]
+) -> tuple[tuple[str, str], ...]:
     out: dict[str, str] = {}
     with suppress(OSError, ValueError, AttributeError):
         raw = json.loads((data_dir / "deployments.json").read_text(encoding="utf-8"))
@@ -100,7 +117,7 @@ def deployed_versions(data_dir: Path) -> dict[str, str]:
         for x in sorted(deps, key=lambda x: x.get("id", 0)):
             if x.get("env") == "Produção" and x.get("status") == "Implantado" and x.get("version"):
                 out[str(x["app"])] = str(x["version"])
-    return out
+    return tuple(out.items())
 
 
 def stack_rows(e: AppEntry, version: str, lang: str = "pt-BR") -> tuple[list[tuple[str, str]], list[str]]:

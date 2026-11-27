@@ -262,8 +262,8 @@
   - ⬜ 3 · revisão geral do app e da documentação: trocar travessão (—) por hífen simples (-)
 - ▶️ 170 · Desempenho da navegação: índices do Postgres e cache (HTTP, service worker, servidor)
   - ✅ 1 · auditoria (consultas sem índice, páginas lentas, cabeçalhos de cache, trabalho síncrono no loop)
-  - ⬜ 2 · leitura dos documentos de estado sem trava global + cache por mtime (auth, admin, ops)
-  - ⬜ 3 · `ops.json`: podar implantações antigas e tirar os logs do registro; tela de Implantações sem todos os logs
+  - ✅ 2 · leituras de auth/admin sem trava (escrita atômica); `ops.json` com snapshot por mtime nos caminhos quentes
+  - ✅ 3 · `ops.json`: poda (25 por app/ambiente; nunca a ativa, pendentes ou alvos de rollback); versões da tela Aplicações memorizadas
   - ▶️ 4 · catálogo i18n com ETag/cache ✅; gzip dos assets ✅; URLs versionadas com cache longo (depois do 168)
   - ✅ 5 · `tr`: pular textos maiores que o maior padrão + cache de resultados
   - ✅ 6 · loader do app: pular quando o app já foi aberto na sessão e o conteúdo chegou (aprovado pelo dono: opção a)

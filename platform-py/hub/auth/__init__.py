@@ -132,12 +132,14 @@ class AuthStore(TokenOps):
     @override
     @asynccontextmanager
     async def locked(self, write: bool = False) -> AsyncIterator[dict[str, Any]]:
+        if not write:  # writes are atomic (write_auth_file → os.replace): a reader sees a whole file
+            yield self._read()
+            return
         # The write stays inside the cross-replica lock, or another replica can overwrite it.
-        async with self._lock, self.db.file_lock("auth.json", write=write) if self.db else nullcontext():
+        async with self._lock, self.db.file_lock("auth.json", write=True) if self.db else nullcontext():
             data = self._read()
             yield data
-            if write:
-                write_auth_file(self.path, data, self.db is not None)
+            write_auth_file(self.path, data, self.db is not None)
 
     def _read(self) -> dict[str, Any]:
         try:

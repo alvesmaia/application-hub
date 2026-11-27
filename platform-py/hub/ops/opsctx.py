@@ -115,7 +115,7 @@ class OpsCtx:
 
     def active_scripts(self, app_id: str, staging: bool) -> list[tuple[str, str]]:
         """The app's own approved scripts of the ACTIVE version in the environment: only these go into the CSP and `hub.js`."""
-        d, env = self.store.read(), m.STAGING if staging else m.PRODUCAO
+        d, env = self.store.snapshot(), m.STAGING if staging else m.PRODUCAO
         dep = next(
             (
                 x

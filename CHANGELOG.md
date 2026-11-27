@@ -21,6 +21,10 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   until the content arrives); the English catalog answers 304 when unchanged; CSS/JS/JSON assets travel gzipped
   (hub.css 108 KB → 24 KB); the translation of a text out of the catalog checks each template's literal parts
   before its regex (a 4,000-character miss: 12 ms → 0.6 ms) and caches results.
+- Reading `admin.json`/`auth.json` takes no lock (writes are atomic): every authenticated request used to queue
+  behind a cross-replica Postgres lock (4 round trips) about six times. `ops.json` is parsed once per change on
+  the request path and keeps the last 25 deployments per app and environment (never the active, pending or
+  in-progress ones, nor rollback targets).
 - Tasks: no Attempts column (it stays in the side panel); the duration reads `20m3s` (`57s` under a minute).
 - Containers: the "Últimos 5 minutos" chart opens already drawn (the host is sampled in the background every 5 s,
   not only while someone looks at the page).
