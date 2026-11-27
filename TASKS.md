@@ -257,7 +257,7 @@
   - ✅ 4 · atalho "Remover apps de exemplo" (+ perfil demo-apps)
   - ✅ 5 · validação na 8093: app publicado removido pela tela (nada sobrou além da auditoria); modal corrigido para ficar acima do painel
 - ▶️ 169 · Ajustes de telas e texto
-  - ⬜ 1 · admin/runtime: ao abrir, já mostrar o desempenho dos últimos 5 minutos (não só a partir da entrada)
+  - ✅ 1 · admin/runtime: ao abrir, já mostrar o desempenho dos últimos 5 minutos (não só a partir da entrada)
   - ✅ 2 · admin/tasks: tirar a coluna Tentativas da tabela (fica só no painel lateral do item); Duração no formato 20m3s (abaixo de 60s, só 57s)
   - ⬜ 3 · revisão geral do app e da documentação: trocar travessão (—) por hífen simples (-)
 - ▶️ 170 · Desempenho da navegação: índices do Postgres e cache (HTTP, service worker, servidor)

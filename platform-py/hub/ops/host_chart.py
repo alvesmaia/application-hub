@@ -1,5 +1,5 @@
-"""Last 5 minutes of the host's CPU and memory for admin/runtime: samples kept in this process (one per panel poll,
-every 5 s while someone looks at the page) and drawn as a stacked area SVG (system, platform, apps)."""
+"""Last 5 minutes of the host's CPU and memory for admin/runtime: samples kept in this process (taken every 5 s in
+the background by `host_sampler`, and on each panel poll) and drawn as a stacked area SVG (system, platform, apps)."""
 
 from __future__ import annotations
 

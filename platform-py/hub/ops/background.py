@@ -12,6 +12,7 @@ from fastapi import FastAPI
 from hub.admin.store import OutboxIngest
 from hub.api.mcp import sweep as mcp_sweep
 from hub.ops import updates
+from hub.ops.host_sampler import HostSampler
 from hub.ops.leader import Leader
 from hub.ops.model import now_ms
 from hub.ops.outbox import Outbox
@@ -52,13 +53,22 @@ class Background:
         outbox.start(outbox_every)
         sched.start()
         sup.start()
-        self.parts = [sup, sched, outbox, leader]
-        if updates.enabled():  # new version notice (optional)
-            st.update_check = chk = updates.UpdateCheck()
-            chk.start()
-            self.parts.append(chk)
+        self.parts = [sup, sched, outbox, leader, *self._side_parts()]
         if db:
             self.watch = asyncio.create_task(self._inbox_refresh())
+
+    def _side_parts(self) -> list[Any]:
+        """Started parts that are not about leadership: the host chart's sampler and the optional update check."""
+        st = self.app.state
+        parts: list[Any] = [
+            HostSampler(st.ops_ctx)
+        ]  # admin/runtime opens with the last 5 minutes already drawn
+        if updates.enabled():  # new version notice (optional)
+            st.update_check = updates.UpdateCheck()
+            parts.append(st.update_check)
+        for p in parts:
+            p.start()
+        return parts
 
     async def sweeps(self) -> None:
         """From the leader, every minute: expired records in the state database, expired requests/confirmations, orphan jobs."""
