@@ -50,11 +50,34 @@ _FINGERPRINT_JS = """(sel) => {
     add(controls, norm(`${f.tagName} ${f.name || f.getAttribute('aria-label') || f.placeholder || f.id}`), 1);
   }
   for (const img of root.querySelectorAll('img')) if (img.complete && img.naturalWidth === 0) add(broken, 'img', 1);
-  return { fonts, palette, radii, counts, headers, controls, broken };
+  // Components: each visible element keyed by tag, classes (not the hub's own `hub-*`) and its own text (not
+  // its children's: a wrapped header cell must not change the table's key), with the computed style the eye
+  // notices; font and color only where the element shows text. Repeated keys get #2, #3… Up to 800.
+  const components = {}, seen = {};
+  const font = (cs) => cs.fontFamily.split(',')[0].replace(/["']/g, '').replace(/^app-/, '').trim().toLowerCase();
+  for (const el of root.querySelectorAll('*')) {
+    if (Object.keys(components).length >= 800) break;
+    if (el.closest('svg') !== null && el.tagName.toLowerCase() !== 'svg') continue;
+    const r = el.getBoundingClientRect(); if (r.width < 2 || r.height < 2) continue;
+    const cs = getComputedStyle(el); if (cs.visibility === 'hidden' || cs.display === 'none') continue;
+    const cls = [...el.classList].filter((c) => !c.startsWith('hub-')).sort().join('.');
+    const own = norm([...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join(' ')).slice(0, 30);
+    if (!cls && !own) continue;
+    let key = `${el.tagName.toLowerCase()}${cls ? '.' + cls : ''}|${own}`;
+    seen[key] = (seen[key] || 0) + 1;
+    if (seen[key] > 1) key += `#${seen[key]}`;
+    const box = {
+      background: cs.backgroundColor, padding: `${cs.paddingTop} ${cs.paddingRight} ${cs.paddingBottom} ${cs.paddingLeft}`,
+      border: cs.borderTopStyle === 'none' || parseFloat(cs.borderTopWidth) === 0 ? 'none' : `${cs.borderTopWidth} ${cs.borderTopStyle} ${cs.borderTopColor}`, radius: cs.borderTopLeftRadius,
+      height: String(Math.round(r.height)), width: String(Math.round(r.width)),
+    };
+    components[key] = own ? { ...box, color: cs.color, font: font(cs), size: cs.fontSize, weight: cs.fontWeight } : box;
+  }
+  return { fonts, palette, radii, counts, headers, controls, broken, components };
 }"""
 # The hub shows its loader before the app's fragment: wait until the app area has content and no loader.
 _HUB_READY_JS = """() => { const r = document.getElementById('app-root');
-  const busy = [...document.querySelectorAll('.app-loading, .app-skeleton, [data-hub-loading]')]
+  const busy = [...document.querySelectorAll('.app-loading, .app-skeleton, [data-hub-loading], .skeleton-block, #app-root [aria-busy="true"]')]
     .some((e) => e.getBoundingClientRect().height > 0 && getComputedStyle(e).display !== 'none');
   return Boolean(r && r.querySelector('#workspace, .workspace') && !busy); }"""
 
@@ -80,9 +103,21 @@ class PlaywrightBrowser:
             p.wait_for_function(_HUB_READY_JS, timeout=30000)
         else:
             p.wait_for_load_state("networkidle", timeout=15000)
-        p.wait_for_timeout(800)
+        self._settle(selector)
         p.screenshot(path=str(path))
         return as_style(p.evaluate(_FINGERPRINT_JS, selector))
+
+    def _settle(self, selector: str) -> None:
+        """Waits until the region stops changing (lazy fragments, a loader fading out): the same element
+        count twice, 400 ms apart, for at most 10 s."""
+        count = "(s) => (document.querySelector(s) || document.body).querySelectorAll('*').length"
+        last = -1
+        for _ in range(25):
+            now = self._page.evaluate(count, selector)
+            if now == last:
+                return
+            last = now
+            self._page.wait_for_timeout(400)
 
     def close(self) -> None:
         self._browser.close()

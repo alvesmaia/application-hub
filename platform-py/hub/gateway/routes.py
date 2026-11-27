@@ -79,6 +79,15 @@ async def frag_rest(request: Request, app_id: str, rest: str, c: GwCtx = Depends
     return await frag(request, c, app_id, rest)
 
 
+@router.get("/apps/{app_id}/assets/{rest:path}")
+async def app_assets(request: Request, app_id: str, rest: str, c: GwCtx = Depends(ctx)) -> Response:
+    """The app's files at its public base (`{{ base }}/assets/files/logo.svg`), as through /_frag. A path
+    without a file extension is an app page named "assets" (e.g. a list of assets): the shell shows it."""
+    if "." not in rest.rsplit("/", 1)[-1]:
+        return await page(request, app_id, "assets", rest, c)
+    return await frag(request, c, app_id, f"assets/{rest}")
+
+
 @router.api_route("/apps/{app_id}/api/{rest:path}", methods=ALL)
 async def app_api(request: Request, app_id: str, rest: str, c: GwCtx = Depends(ctx)) -> Response:
     return await c.gw.forward(request, app_id, rest)

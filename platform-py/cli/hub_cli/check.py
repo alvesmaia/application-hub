@@ -22,6 +22,7 @@ import httpx
 
 from . import dev
 from .errors import CliError
+from .port import step_port
 
 Step = tuple[str, Callable[[Path], tuple[bool, str]]]
 
@@ -302,6 +303,7 @@ STEPS: list[Step] = [
     ("pytest", lambda d: _uv(d, "pytest", "-q")),
     ("identidade", step_identity),
     ("conformidade", step_conformance),
+    ("porte", step_port),
 ]
 
 

@@ -121,3 +121,16 @@ def test_the_kit_requests_of_a_staging_page_go_to_staging(hub: TestClient) -> No
     # or its requests go to /_frag/… and the page's CSP refuses them
     page = hub.get("/staging/apps/inventory/inventory").text
     assert '<script src="/assets/hub-kit.js" data-hub-kit="" data-hub-frag="/staging/_frag">' in page
+
+
+def test_app_files_at_the_public_base_reach_the_app(hub: TestClient) -> None:
+    # `<img src="{{ base }}/assets/files/logo.svg">`: the page's address is /apps/<id>/…, so its files are too
+    assert hub.get("/apps/inventory/assets/files/logo.svg").status_code == 200
+    assert SEEN[-1]["path"] == "/inventory/assets/files/logo.svg" and SEEN[-1]["env"] == "producao"
+    assert hub.get("/staging/apps/inventory/assets/app.css").status_code == 200
+    assert SEEN[-1]["path"] == "/inventory/assets/app.css" and SEEN[-1]["host"] == "stg"
+
+
+def test_an_app_page_named_assets_still_opens_in_the_shell(hub: TestClient) -> None:
+    page = hub.get("/apps/inventory/assets/12").text
+    assert 'data-hub-base="/apps/inventory"' in page and 'data-hub-section="assets"' in page

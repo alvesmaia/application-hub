@@ -191,3 +191,52 @@ class _OriginalAs:
     def shoot(self, url: str, path: Path, selector: str, hub: bool) -> dict[str, Any]:
         got = self.fake.shoot(url, path, selector, hub)
         return got if hub else self.original
+
+
+BTN = {"color": "rgb(255, 255, 255)", "background": "rgb(26, 89, 131)", "font": "inter", "size": "14px",
+       "weight": "600", "padding": "8px 16px 8px 16px", "radius": "8px", "height": "36", "width": "120"}  # fmt: skip
+ROW = {**BTN, "background": "rgba(0, 0, 0, 0)", "padding": "0px 0px 0px 0px", "height": "52", "width": "1100"}
+
+
+def _page(**over: dict[str, str]) -> dict[str, Any]:
+    comps = {"button.btn.btn-primary|new ticket": BTN, "tr.row|#100 teste": ROW}
+    return {**SAME, "components": {**comps, **over}}
+
+
+def test_components_same_style_is_full_match() -> None:
+    score, diffs = compare.components(_page(), _page())
+    assert score == 100.0 and diffs == []
+
+
+def test_components_small_size_noise_is_tolerated_but_style_changes_are_not() -> None:
+    nudged = _page(**{"tr.row|#100 teste": {**ROW, "height": "53", "width": "1080"}})
+    assert compare.components(_page(), nudged)[0] == 100.0
+    restyled = _page(**{"button.btn.btn-primary|new ticket": {**BTN, "padding": "6px 12px 6px 12px"}})
+    score, diffs = compare.components(_page(), restyled)
+    assert score == 50.0
+    assert diffs == ["button.btn.btn-primary|new ticket: padding 8px 16px 8px 16px → 6px 12px 6px 12px"]
+
+
+def test_components_missing_on_the_hub_count_against() -> None:
+    hub = {**SAME, "components": {"button.btn.btn-primary|new ticket": BTN}}
+    score, diffs = compare.components(_page(), hub)
+    assert score == 50.0 and diffs == ["tr.row|#100 teste: ausente no hub"]
+
+
+def test_a_page_below_the_component_match_fails(
+    project_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    taller = _page(**{"tr.row|#100 teste": {**ROW, "height": "38"}})
+    fake = _OriginalAs(FakeBrowser({"root": taller, "veiculos": taller}), _page())
+    rc = compare.run(
+        compare.Options(original="http://127.0.0.1:9000", routes=["/"], directory=project_dir), fake
+    )
+    out = capsys.readouterr().out
+    assert rc == 1 and "componentes 50.0%" in out and "height 52 → 38" in out
+
+
+def test_components_page_regions_follow_the_hub_frame_and_are_not_measured() -> None:
+    region = {"background": "rgb(1, 2, 3)", "height": "900", "width": "1219"}
+    hub = {**region, "height": "831", "width": "1180"}
+    a, b = {**SAME, "components": {"main.page|": region}}, {**SAME, "components": {"main.page|": hub}}
+    assert compare.components(a, b) == (100.0, [])

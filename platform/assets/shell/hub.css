@@ -280,7 +280,8 @@ a.primary-button,a.secondary-button,a.filter-button,a.filter-chip{text-decoratio
 .sidebar-caption{padding-top:var(--space-4)}
 /* Weights: tabs 500, active 600; panel header. */
 .hub-widget-head h2,.hub-inbox-title{font-size:15px;font-weight:800;letter-spacing:-.02em}
-h1,h2,h3,h4,h5,h6{font-weight:800;letter-spacing:-.02em}
+/* An adapted app's original markup ([data-hub-original]) keeps its own heading weight. */
+h1:where(:not([data-hub-original] *)),h2:where(:not([data-hub-original] *)),h3:where(:not([data-hub-original] *)),h4:where(:not([data-hub-original] *)),h5:where(:not([data-hub-original] *)),h6:where(:not([data-hub-original] *)){font-weight:800;letter-spacing:-.02em}
 .hub-kpi-value,.stat-number,.metric-value,.data-table td.num,.hub-num{font-variant-numeric:tabular-nums}
 .hub-kpi-value{font-size:27px}
 .hub-badge{font-weight:600}

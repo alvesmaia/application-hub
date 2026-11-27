@@ -15,6 +15,7 @@ from . import compare as compare_mod
 from . import deploy as deploy_mod
 from . import dev as dev_mod
 from . import mcp as mcp_mod
+from . import port as port_mod
 from .errors import FAIL, VALIDATION, CliError
 from .pack import PackError, pack
 
@@ -86,6 +87,7 @@ def parser() -> argparse.ArgumentParser:
         add_pack,
         add_dev,
         add_compare,
+        add_port,
         add_login,
         add_logout,
         add_deploy,
@@ -176,7 +178,20 @@ def add_compare(sub: Subparsers) -> None:
         "--original-selector", default="body", help="part of the original page compared (e.g. main)"
     )
     c.add_argument("--login", help="login page path of the original (form with e-mail/user and password)")
-    c.add_argument("--max-diff", type=float, default=15.0, help="largest difference accepted, in percent")
+    c.add_argument(
+        "--max-diff", type=float, default=15.0, help="largest style difference accepted, in percent"
+    )
+    c.add_argument("--min-components", type=float, default=90.0,
+                   help="smallest share of the original's components with the same computed style, in percent")  # fmt: skip
+
+
+def add_port(sub: Subparsers) -> None:
+    pt = sub.add_parser("port", help="Adapting an existing app (port.json): build the served CSS",
+                        epilog="example:\n  hub port css   (app_css = the untouched original CSS + the overrides)",
+                        formatter_class=FMT)  # fmt: skip
+    ps = pt.add_subparsers(dest="pcmd", required=True, parser_class=Parser)
+    pc = ps.add_parser("css", help="write app_css from the original copies and the overrides file")
+    pc.add_argument("--dir", type=Path, default=Path())
 
 
 def add_login(sub: Subparsers) -> None:
@@ -350,8 +365,15 @@ def cmd_dev(a: argparse.Namespace) -> int:
 
 
 def cmd_compare(a: argparse.Namespace) -> int:
-    opts = compare_mod.Options(a.original, a.routes, a.dir, a.hub, a.original_selector, a.login, a.max_diff)
+    opts = compare_mod.Options(
+        a.original, a.routes, a.dir, a.hub, a.original_selector, a.login, a.max_diff, a.min_components
+    )
     return compare_mod.run(opts, compare_mod.real_browser())
+
+
+def cmd_port(a: argparse.Namespace) -> int:
+    print(f"escrito: {port_mod.write_css(a.dir)}")
+    return 0
 
 
 def cmd_mcp(a: argparse.Namespace) -> int:
@@ -370,6 +392,7 @@ COMMANDS = {
     "pack": cmd_pack,
     "dev": cmd_dev,
     "compare": cmd_compare,
+    "port": cmd_port,
     "mcp": cmd_mcp,
 }
 

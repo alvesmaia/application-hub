@@ -29,7 +29,7 @@ INSTALL = (
     "hub compare precisa do Playwright: uv tool install --reinstall hub-cli --with playwright "
     "--with-executables-from playwright --index <hub>/dev/cli/simple/ && playwright install chromium"
 )
-Style = dict[str, dict[str, float]]
+Style = dict[str, dict[str, Any]]
 
 
 class Browser(Protocol):
@@ -45,7 +45,8 @@ class Options:
     hub: str = "http://127.0.0.1:4173"
     original_selector: str = "body"
     login: str | None = None
-    max_diff: float = 25.0
+    max_diff: float = 15.0
+    min_components: float = 90.0
 
 
 @dataclass
@@ -55,9 +56,11 @@ class Row:
     diff: dict[str, float]
     why: list[str]
     structure: list[str]
+    match: float = 100.0
+    component_diffs: list[str] | None = None
 
-    def failed(self, limit: float) -> bool:
-        return self.diff["total"] > limit or bool(self.structure)
+    def failed(self, limit: float, min_components: float = 90.0) -> bool:
+        return self.diff["total"] > limit or bool(self.structure) or self.match < min_components
 
 
 def slug(route: str) -> str:
@@ -130,6 +133,42 @@ def structure(original: Style, hub: Style) -> list[str]:
     return lines
 
 
+# Sizes: a few pixels or 5% of noise; big boxes (page regions) follow the hub's frame, not the app: only
+# components up to these sizes are measured.
+_SIZES = {"height": 300.0, "width": 600.0}
+
+
+def _same(prop: str, a: str, b: str) -> bool:
+    if prop not in _SIZES:
+        return a == b
+    try:
+        x, y = float(a), float(b)
+    except ValueError:
+        return a == b
+    return x > _SIZES[prop] or abs(x - y) <= max(2.0, 0.05 * max(x, y))
+
+
+def components(original: dict[str, Any], hub: dict[str, Any]) -> tuple[float, list[str]]:
+    """Share (0-100%) of the original's components found on the hub page with the same computed style, and
+    what differs. A component is an element keyed by tag, classes and its first words (the markup is kept)."""
+    a: dict[str, Any] = original.get("components") or {}
+    b: dict[str, Any] = hub.get("components") or {}
+    if not a:
+        return 100.0, []
+    diffs: list[str] = []
+    for key, props in a.items():
+        other = b.get(key)
+        if other is None:
+            diffs.append(f"{key}: ausente no hub")
+            continue
+        changed = [
+            f"{p} {v} → {other.get(p, '—')}" for p, v in props.items() if not _same(p, v, other.get(p, ""))
+        ]
+        if changed:
+            diffs.append(f"{key}: {'; '.join(changed)}")
+    return round(100 * (len(a) - len(diffs)) / len(a), 1), diffs
+
+
 def _app_id(directory: Path) -> str:
     mf = directory / "manifest.json"
     if not mf.is_file():
@@ -153,7 +192,7 @@ def run(opts: Options, browser: Browser) -> int:
     _login(opts, browser)
     rows = [_compare_route(opts, browser, out, hub_base, r) for r in opts.routes]
     (out / "index.html").write_text(report(rows, opts.max_diff), encoding="utf-8")
-    return _summary(rows, opts.max_diff, out)
+    return _summary(rows, opts.max_diff, out, opts.min_components)
 
 
 def _compare_route(opts: Options, browser: Browser, out: Path, hub_base: str, route: str) -> Row:
@@ -162,19 +201,23 @@ def _compare_route(opts: Options, browser: Browser, out: Path, hub_base: str, ro
         opts.original.rstrip("/") + route, out / f"original--{name}.png", opts.original_selector, False
     )
     b = browser.shoot(hub_base + route, out / f"hub--{name}.png", "#app-root", True)
-    return Row(route, name, difference(a, b), explain(a, b), structure(a, b))
+    match, comp = components(a, b)
+    return Row(route, name, difference(a, b), explain(a, b), structure(a, b), match, comp)
 
 
-def _summary(rows: list[Row], limit: float, out: Path) -> int:
-    worse = [r for r in rows if r.failed(limit)]
+def _summary(rows: list[Row], limit: float, out: Path, min_components: float = 90.0) -> int:
+    worse = [r for r in rows if r.failed(limit, min_components)]
     for r in rows:
-        print(f"{'FALHOU' if r in worse else 'ok    '}  {r.diff['total']:5.1f}%  {r.route}")
-        for ln in r.structure + r.why if r in worse else []:
+        print(
+            f"{'FALHOU' if r in worse else 'ok    '}  {r.diff['total']:5.1f}%  componentes {r.match:.1f}%  {r.route}"
+        )
+        for ln in (r.structure + (r.component_diffs or [])[:15] + r.why) if r in worse else []:
             print(f"          - {ln}")
     print(f"relatório: {(out / 'index.html').resolve()}")
     if worse:
         print(
-            f"{len(worse)} página(s) acima do limite de {limit:g}% ou com a estrutura mudada: "
+            f"{len(worse)} página(s) acima do limite de {limit:g}%, com a estrutura mudada ou com menos de "
+            f"{min_components:g}% dos componentes iguais: "
             "aproxime do original e rode de novo"
         )
     return 1 if worse else 0
@@ -184,7 +227,10 @@ def report(rows: list[Row], limit: float) -> str:
     def row(r: Row) -> str:
         cls = "bad" if r.failed(limit) else "ok"
         parts = " · ".join(f"{k} {v:.1f}%" for k, v in r.diff.items() if k != "total")
-        why = "".join(f"<li>{html.escape(w)}</li>" for w in r.structure + r.why)
+        parts += f" · componentes iguais {r.match:.1f}%"
+        why = "".join(
+            f"<li>{html.escape(w)}</li>" for w in r.structure + (r.component_diffs or [])[:40] + r.why
+        )
         return (
             f'<section><h2 class="{cls}">{html.escape(r.route)} — {r.diff["total"]:.1f}%</h2><p>{parts}</p>'
             f'<ul>{why}</ul><div class="pair">'
@@ -224,4 +270,7 @@ def as_style(raw: Any) -> Style:
     """The browser's answer as a fingerprint (keeps only numeric weights of the known aspects)."""
     aspects = ("fonts", "palette", "radii", "counts", "headers", "controls", "broken")
     src = raw if isinstance(raw, dict) else {}
-    return {a: {str(k): float(v) for k, v in (src.get(a) or {}).items()} for a in aspects}
+    style: Style = {a: {str(k): float(v) for k, v in (src.get(a) or {}).items()} for a in aspects}
+    comps = src.get("components") or {}
+    style["components"] = {str(k): {str(p): str(v) for p, v in props.items()} for k, props in comps.items()}
+    return style

@@ -237,4 +237,16 @@
   - ✅ 1 · staging: login e redirect da barra final mantêm `/staging`
   - ✅ 2 · filtro por coluna (`data-hub-colfilter`) disponível para os apps
   - ✅ 3 · `hub compare` checa estrutura (colunas, campos, botões, imagens quebradas)
-  - ▶️ 4 · refazer o port do case (todas as rotas, mesmo banco, compare aprovado) — subagente: Refazer port digi-hub completo
+  - ✅ 4 · lote de validação (8 telas) + kit: dropdown, arrastar com fantasma, classe lembrada; correções de staging
+  - ⬜ 5 · adequação completa por novo subagente, do zero, só com o "Copiar prompt" — medir o tempo do início ao deploy final
+- ▶️ 167 · Adequação fiel já no primeiro ciclo
+  - ✅ 1 · CSS original intocável (`assets/original/` + `hub-overrides.css`), conferido pelo `hub check`
+  - ✅ 2 · inventário obrigatório (`.hub/inventario.md`), conferido pelo `hub check`
+  - ✅ 3 · armadilhas conhecidas no AGENTS.md
+  - ✅ 4 · receitas de conversão JS → hub (guia)
+  - ✅ 5 · definição de pronto + modelo de relatório
+  - ✅ 6 · ordem de trabalho (esqueleto + 1 tela, depois o resto)
+  - ✅ 7 · `hub compare` por componente (estilo computado de cada elemento pareado)
+  - ✅ 8 · bugs relatados: `{{ base }}/assets/files` 404, 303 com base pública, compare capturando o loader
+  - ✅ 9 · vazamentos de CSS do hub no app (fonte `!important`, peso dos títulos → `data-hub-original`), achados pelo compare por componente
+  - ⬜ 10 · validação pesada + release v0.13.0

@@ -10,6 +10,14 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 ### Added
 - Apps: spreadsheet-style column filters (`<table data-hub-colfilter>` + `<th data-hub-col>`, §25) in app
   fragments, mounted by `HubKit.mount` — an adapted app keeps the per-column filter/sort of its header.
+- Adapting an existing app: `port.json` keeps the original CSS untouched (copies byte for byte, the hub's changes
+  in one overrides file, `hub port css` builds the served CSS) and `port-inventory.md` lists the routes and
+  behaviors; `hub check` (step `porte`) fails on an edited copy or a pending item. AGENTS.md: order of work,
+  inventory, traps seen in real ports, definition of done; new guide "Receitas de adaptação" (JS → data-hub-*).
+- `hub compare` per component: each element of the original, paired with the hub's by tag, classes and text,
+  must keep its computed style (`--min-components`, 90%); the report lists what differs. It waits for the hub's
+  skeleton to go away and for the page to settle.
+- `data-hub-original` on an adapted app's markup keeps the hub's element defaults (heading weight) out of it.
 - `hub compare` checks the structure apart from the style: a table column missing or added, a field the
   original does not have (or lost) or a broken image fails the page whatever the difference.
 - Apps: `data-hub-dropdown` (split buttons, "⋮" menus) and drag and drop (`data-hub-drag` +
@@ -17,6 +25,11 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   spot), and a remembered class (`data-hub-state-class` + `data-hub-class`, e.g. collapsed kanban columns), §25.
 
 ### Fixed
+- The hub's font rule (`!important` on every element) overrode the `font-family` an app declares: inside
+  `#app-root` the app's own fonts win (elements without one still inherit the hub's).
+- `{{ base }}/assets/…` (an app's files at its public base, e.g. its logo) answered 404; a `303` to the app's
+  public base (`/apps/<id>/…`) answered to a fragment fetch opened the whole hub page inside the app.
+- `hub compare`: the CLI's default limit is 15% (the docs said 25%).
 - Staging: without a session, `/staging/apps/<id>/…` sent the login back to production; the trailing-slash
   redirect did the same. Both keep the staging URL.
 - Staging: `data-hub-get`/`-post`/SSE of an app went to `/_frag/…` instead of `/staging/_frag/…` (hub-kit.js

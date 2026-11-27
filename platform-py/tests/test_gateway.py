@@ -73,7 +73,11 @@ def test_public_location() -> None:
     assert public_location("ativos", "/ativos/assets?x=1") == "/apps/ativos/assets?x=1"
     assert public_location("ativos", "/ativos") == "/apps/ativos"
     assert public_location("ativos", "/ativosx/a") is None
-    assert public_location("ativos", "/apps/ativos/a") is None
+    # the public base the app builds its links with (x-hub-base) is its own too: a 303 there, answered to a
+    # fragment fetch, must go to the next fragment, not to the whole hub page (a shell inside the shell)
+    assert public_location("ativos", "/apps/ativos/a") == "/apps/ativos/a"
+    assert public_location("ativos", "/staging/apps/ativos/a?b=1") == "/apps/ativos/a?b=1"
+    assert public_location("ativos", "/apps/ativosx/a") is None
     assert public_location("ativos", "https://x/ativos") is None
 
 

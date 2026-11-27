@@ -65,6 +65,13 @@ GUIDES = (
         "dev/guias/adaptar-app.md",
         "guia-adaptar-app",
     ),
+    Doc(
+        "guias/receitas-adaptacao",
+        "guias",
+        "Receitas de adaptação (JS → data-hub-*)",
+        "dev/guias/receitas-adaptacao.md",
+        "guia-receitas-adaptacao",
+    ),
 )
 DOCS = (
     Doc("", "comecar", "Começar", "dev/comecar.md", "comecar"),

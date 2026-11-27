@@ -58,7 +58,7 @@ hub check [-h] [--dir DIR] [--only ONLY] [--full] [--json]
 | Argument | Description | Default |
 |---|---|---|
 | `--dir` |  | `.` |
-| `--only` | comma-separated steps: manifesto,ruff,formato,ty,openapi,pytest,identidade,conformidade |  |
+| `--only` | comma-separated steps: manifesto,ruff,formato,ty,openapi,pytest,identidade,conformidade,porte |  |
 | `--full` | also the full contract suite (conformance.json) |  |
 | `--json` |  |  |
 
@@ -100,7 +100,7 @@ hub dev [-h] [--dir DIR] [--upstream UPSTREAM] [--port PORT] [--role ROLE] [--li
 Original app × the app in `hub dev`: pages side by side and their difference.
 
 ```
-hub compare [-h] [--routes ROUTES [ROUTES ...]] [--dir DIR] [--hub HUB] [--original-selector ORIGINAL_SELECTOR] [--login LOGIN] [--max-diff MAX_DIFF] original
+hub compare [-h] [--routes ROUTES [ROUTES ...]] [--dir DIR] [--hub HUB] [--original-selector ORIGINAL_SELECTOR] [--login LOGIN] [--max-diff MAX_DIFF] [--min-components MIN_COMPONENTS] original
 ```
 
 | Argument | Description | Default |
@@ -111,7 +111,20 @@ hub compare [-h] [--routes ROUTES [ROUTES ...]] [--dir DIR] [--hub HUB] [--origi
 | `--hub` | `hub dev` address | `http://127.0.0.1:4173` |
 | `--original-selector` | part of the original page compared (e.g. main) | `body` |
 | `--login` | login page path of the original (form with e-mail/user and password) |  |
-| `--max-diff` | largest difference accepted, in percent | `15.0` |
+| `--max-diff` | largest style difference accepted, in percent | `15.0` |
+| `--min-components` | smallest share of the original's components with the same computed style, in percent | `90.0` |
+
+## `hub port css`
+
+write app_css from the original copies and the overrides file.
+
+```
+hub port css [-h] [--dir DIR]
+```
+
+| Argument | Description | Default |
+|---|---|---|
+| `--dir` |  | `.` |
 
 ## `hub login`
 

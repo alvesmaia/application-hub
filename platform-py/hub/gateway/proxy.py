@@ -56,7 +56,12 @@ class GwOptions:
 
 
 def public_location(app_id: str, loc: str) -> str | None:
-    """The app's own `Location` (`/{id}`, `/{id}/...`) -> `/apps/{id}...`; others are kept as they came."""
+    """The app's own `Location` (`/{id}/...`, or its public base `/apps/{id}/...` / `/staging/apps/{id}/...`)
+    -> `/apps/{id}...`; others are kept as they came."""
+    for base in ("/staging/apps/", "/apps/"):
+        if loc.startswith(base + app_id):
+            loc = loc[len(base) - 1 :]
+            break
     if not loc.startswith("/") or not loc[1:].startswith(app_id):
         return None
     rest = loc[1 + len(app_id) :]
