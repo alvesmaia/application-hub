@@ -126,7 +126,11 @@ def tr(text: str, lang: str) -> str:
 
 
 _ATTRS = r"(?:placeholder|aria-label|title|alt|data-hub-colfilter-empty|data-hub-col-label|data-label|data-confirm|data-obs-chart)"
-_SKIP = re.compile(r"<(script|style|code|textarea)\b.*?</\1>|<!--notr-->.*?<!--/notr-->", re.S | re.I)
+# Not translated: code, and preformatted text (deploy/build logs: thousands of lines, none in the catalog).
+_SKIP = re.compile(
+    r"<(script|style|code|textarea)\b.*?</\1>|<!--notr-->.*?<!--/notr-->|<pre\b[^>]*>(?P<body>.*?)</pre>",
+    re.S | re.I,
+)
 _NODE = re.compile(r">([^<>]*[^\s<>][^<>]*)<")
 _ATTR = re.compile(rf'(\s{_ATTRS}=")([^"]*)(")')
 
@@ -160,7 +164,8 @@ def tr_html(html: str, lang: str) -> str:
         chunk = _ATTR.sub(lambda m: m[1] + one(m[2]).replace('"', "&quot;") + m[3], chunk)
         return _NODE.sub(node, f">{chunk}<")[1:-1]
 
-    keep = [(m.start(), m.end()) for m in _SKIP.finditer(html)]
+    # a <pre>'s own tag (its aria-label, title) is translated; only its content is kept
+    keep = [m.span("body") if m["body"] is not None else m.span() for m in _SKIP.finditer(html)]
     out: list[str] = []
     pos = 0
     for a, b in [*keep, (len(html), len(html))]:

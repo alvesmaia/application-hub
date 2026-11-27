@@ -30,6 +30,10 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 - `{{ base }}/assets/…` (an app's files at its public base, e.g. its logo) answered 404; a `303` to the app's
   public base (`/apps/<id>/…`) answered to a fragment fetch opened the whole hub page inside the app.
 - `hub compare`: the CLI's default limit is 15% (the docs said 25%).
+- The Deployments page in English froze the whole hub for seconds: every build-log line (`<pre>`) was matched
+  against every template of the translation catalog. Preformatted text is no longer translated (its tag's
+  attributes still are).
+- Connections: a long description pushed the page wider than the screen; the tables scroll inside their panel.
 - Staging: without a session, `/staging/apps/<id>/…` sent the login back to production; the trailing-slash
   redirect did the same. Both keep the staging URL.
 - Staging: `data-hub-get`/`-post`/SSE of an app went to `/_frag/…` instead of `/staging/_frag/…` (hub-kit.js

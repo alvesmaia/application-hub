@@ -37,3 +37,10 @@ def test_tr_html_skips_code_attrs_and_notr() -> None:
         == '<p title="Users">New user <code>Novo usuário</code></p><!--notr-->Entrar<!--/notr-->'
     )
     assert tr_html(src, "pt-BR") == src
+
+
+def test_preformatted_text_is_not_translated() -> None:
+    # deploy and build logs (<pre>): thousands of lines, none in the catalog; matching each one against every
+    # template of the catalog froze the whole hub for seconds on the Deployments page in English
+    assert tr_html("<p>Usuários</p><pre>Usuários</pre>", "en") == "<p>Users</p><pre>Usuários</pre>"
+    assert tr_html('<pre title="Usuários">x</pre>', "en") == '<pre title="Users">x</pre>'
