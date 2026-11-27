@@ -121,3 +121,21 @@ test('drag and drop: while dragging, a placeholder the size of the card marks wh
     assert.deepEqual(r, { seen: { next: 'c3', height: '40px' }, after: 0 });
   } finally { await b.close(); }
 });
+
+test('remembered class: a click collapses/expands the column, and the choice survives a new fragment', async (t) => {
+  const b = await browser();
+  if (!b) { t.skip('Playwright/Chromium indisponível'); return; }
+  try {
+    const { page } = await open(b, 200);
+    const COL = '<section id="col" class="kbv-col is-collapsed" data-hub-state-class="is-collapsed" data-hub-remember="board.blocked"><span id="shut" data-hub-class="add">&lt;</span><button id="strip" data-hub-class="remove">ON HOLD</button><button id="flip" data-hub-class="toggle">~</button></section>';
+    const put = () => page.evaluate((html) => { const root = document.getElementById('app-root'); root.innerHTML = html; window.HubKit.mount(root); return document.getElementById('col').className; }, COL);
+    assert.equal(await put(), 'kbv-col is-collapsed'); // nothing stored: the server's default
+    await page.click('#strip');
+    assert.equal(await page.getAttribute('#col', 'class'), 'kbv-col');
+    assert.equal(await put(), 'kbv-col'); // remembered over the server's default
+    await page.click('#shut');
+    assert.equal(await put(), 'kbv-col is-collapsed');
+    await page.click('#flip');
+    assert.equal(await put(), 'kbv-col');
+  } finally { await b.close(); }
+});

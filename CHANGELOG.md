@@ -13,7 +13,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 - `hub compare` checks the structure apart from the style: a table column missing or added, a field the
   original does not have (or lost) or a broken image fails the page whatever the difference.
 - Apps: `data-hub-dropdown` (split buttons, "⋮" menus) and drag and drop (`data-hub-drag` +
-  `data-hub-dropzone`, posts the move; a refused answer puts the item back), §25.
+  `data-hub-dropzone`, posts the move; a refused answer puts the item back; a placeholder marks the landing
+  spot), and a remembered class (`data-hub-state-class` + `data-hub-class`, e.g. collapsed kanban columns), §25.
 
 ### Fixed
 - Staging: without a session, `/staging/apps/<id>/…` sent the login back to production; the trailing-slash

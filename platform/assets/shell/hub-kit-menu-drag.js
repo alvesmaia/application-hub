@@ -12,12 +12,39 @@
  *                   ("" = end of the list); a refused answer puts it back. Classes while dragging:
  *                   `hub-dragging` (item) and `hub-drop-over` (list); a placeholder the item's height
  *                   marks where it will land (class `hub-drop-indicator`, or the list's
- *                   data-hub-drop-indicator="app-class" so the app's own CSS draws it). */
+ *                   data-hub-drop-indicator="app-class" so the app's own CSS draws it).
+ *   remembered class element: data-hub-state-class="is-collapsed" [data-hub-remember="board.blocked"];
+ *                   inside it, data-hub-class="add|remove|toggle" on what is clicked (a column's
+ *                   chevron, its collapsed strip). The server's HTML is the default; with
+ *                   data-hub-remember the browser keeps the choice (per app) and reapplies it on mount. */
 (function () {
   'use strict';
   const P = window.__hubKitParts;
   if (!P) return;
   const { inScope, appRoot, ref, t, toast, request, confirmDialog } = P;
+
+  // ---- remembered class (collapsed columns, open panels) ----
+  const app = () => document.documentElement.dataset.hubApp || (document.querySelector('script[data-hub-app]') || { dataset: {} }).dataset.hubApp || '';
+  const store = (el) => `hub-app:${app()}:${el.getAttribute('data-hub-remember')}`;
+  const stateClass = (el) => el.getAttribute('data-hub-state-class');
+  function restoreState(el) {
+    let v = null;
+    try { v = localStorage.getItem(store(el)); } catch (_) { /* storage off: the server's default stays */ }
+    if (v === '1' || v === '0') el.classList.toggle(stateClass(el), v === '1');
+  }
+  P.restoreState = restoreState; // hub-kit-mount.js applies it to every new fragment
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest && e.target.closest('[data-hub-class]');
+    const el = btn && btn.closest('[data-hub-state-class]');
+    if (!el || !inScope(el)) return;
+    e.preventDefault();
+    e.stopPropagation(); // a chevron inside a link or a card must not also open it
+    const how = btn.getAttribute('data-hub-class');
+    const on = how === 'add' ? true : how === 'remove' ? false : !el.classList.contains(stateClass(el));
+    el.classList.toggle(stateClass(el), on);
+    if (!el.hasAttribute('data-hub-remember')) return;
+    try { localStorage.setItem(store(el), on ? '1' : '0'); } catch (_) { /* not kept: works for this page */ }
+  }, true);
 
   // ---- dropdown menu ----
   let openMenu = null;

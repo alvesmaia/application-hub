@@ -138,6 +138,12 @@ failure even when `hub check` is green.
      buttons the hub draws) match it, with their dark values. The original CSS keeps its own colors; an app that
      never had a dark theme may stay light: add `#app-root{color-scheme:light}` so native controls stay light,
      and say so in your report.
+   - **Themes:** keep the original's theme selectors as they are; the hub's `<html data-theme>` is `light`,
+     `dark` or `auto` (follow the system): where the original has a "system" theme, add `:root[data-theme="auto"]`
+     next to it — never add `light`/`dark` to another theme's block.
+   - **Full-height pages** (a board whose columns scroll inside): the app's content area in the hub is
+     `.workspace-content` (already the viewport's height below the hub header, and it scrolls); rules the original
+     aims at its own content wrapper's height (`calc(100vh - header)`) go to `.workspace-content:has(…)`.
    - Keep the original `@keyframes` names (the hub prefixes them and their references) and inline SVG.
 5. **Replace the JavaScript, not the behavior** (no app JS by default):
 
@@ -149,6 +155,7 @@ failure even when `hub check` is green.
    | "are you sure?" before delete | `data-hub-confirm="Text"` on the form or button, with `data-hub-confirm-title`, `-label` and `-danger` to keep the original wording and color |
    | select that filters on change | `<select data-hub-autosubmit>` |
    | dropdown, split button ("New ▾"), "⋮" menu | `<button data-hub-dropdown="#menu">` + `<div id="menu" hidden>` with the original markup and CSS |
+   | collapse/expand kept by the browser (kanban columns, panels; localStorage) | `data-hub-state-class="is-collapsed" data-hub-remember="key"` on the element, `data-hub-class="add\|remove\|toggle"` on the chevron/strip; render the original's default class on the server |
    | drag and drop (kanban cards, reordering) | `data-hub-drag="{{ base }}/…"` + `data-hub-drag-id` on the items, `data-hub-dropzone` + `data-hub-drop-name`/`-value` on the lists (§25); the route answers the move (`before_id` = the item it now precedes) |
    | filter/sort in the table header (funnel per column, spreadsheet style) | `<table data-hub-colfilter>` with `data-hub-col="key"` on each `<th>` (§25): keep the same columns and headers; never swap it for filter fields above the table |
    | dismissible flash message | keep it as it is: the app's own cookies pass through the hub both ways (any name except `hub_*`, no `Domain`), so a cookie flash set on the `303` shows on the next page; a close "×" can be a CSS checkbox (no JS) |
