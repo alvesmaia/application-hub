@@ -269,7 +269,7 @@ _NORMALIZERS = {"text": _text, "enum": _enum, "date": _date, "money": _money}
 
 
 def normalize(col: Col, raw: Any) -> Any:
-    """Normalized value (``None`` = empty/NULL) — text, date, cents or integer — or
+    """Normalized value (``None`` = empty/NULL) - text, date, cents or integer - or
     :class:`Invalid` with the column's error message."""
     if raw is None or (isinstance(raw, str) and not raw.strip()):
         if col.required:

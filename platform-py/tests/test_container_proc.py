@@ -58,7 +58,7 @@ def test_the_page_shows_x_over_y_measured_from_proc(hub: TestClient) -> None:  #
     live = hub.get("/api/ops/runtime").json()["engine"]["live"]
     assert live and all(x["cpu_used"] is not None and x["mem_used"] == 4000 * PAGE for x in live)
     page = hub.get("/admin/runtime").text
-    dash = [page[max(0, i - 160) : i + 20] for i in range(len(page)) if page.startswith("— /", i)]
+    dash = [page[max(0, i - 160) : i + 20] for i in range(len(page)) if page.startswith("- /", i)]
     assert not dash, dash
     assert "16 / " in page  # 16 MiB measured
 

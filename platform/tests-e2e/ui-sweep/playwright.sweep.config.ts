@@ -1,7 +1,7 @@
 import { defineConfig } from '@playwright/test';
 import { HUB } from './common';
 
-// UI sweep (@sweep) — use `node ui-sweep/run.mjs [--quick]` (joins and applies the allowlist).
+// UI sweep (@sweep) - use `node ui-sweep/run.mjs [--quick]` (joins and applies the allowlist).
 export default defineConfig({
   testDir: '.',
   testMatch: /sweep\.spec\.ts/,

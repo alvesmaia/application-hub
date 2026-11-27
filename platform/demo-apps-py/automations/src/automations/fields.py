@@ -118,7 +118,7 @@ def _number(f: FieldSpec, s: str) -> Value:
 
 
 def _num(v: float | None) -> str:
-    return "—" if v is None else f"{v:g}"
+    return "-" if v is None else f"{v:g}"
 
 
 def _select(f: FieldSpec, s: str) -> Value:

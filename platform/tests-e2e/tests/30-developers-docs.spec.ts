@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import path from 'node:path';
 import { stateFile } from './helpers';
 
-// F24 — developer portal: navigation between sections, filter, code copy and «Copy prompt» (simulated clipboard;
+// F24 - developer portal: navigation between sections, filter, code copy and «Copy prompt» (simulated clipboard;
 // the execCommand fallback covers an insecure context). Screenshots in platform-py/dist/shots.
 test.use({ storageState: stateFile('admin') });
 const SHOTS = path.resolve(__dirname, '../../../platform-py/dist/shots');

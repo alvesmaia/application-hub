@@ -126,7 +126,7 @@ await browser.close();
 const problems = all.filter((f) => f.problem);
 const lines = ['# Compatibilidade de frameworks com o hub', '', `Problemas causados pelo hub: **${problems.length}** · informativos: ${all.length - problems.length}`, '',
   '| Variante | Tema | Controle | Tipo | Problema | Detalhe |', '|---|---|---|---|---|---|',
-  ...[...problems, ...all.filter((f) => !f.problem)].map((f) => `| ${f.variant} | ${f.theme} | ${f.c} | ${f.kind} | ${f.problem ? 'sim' : '—'} | ${f.detail.replace(/\|/g, '/')} |`)];
+  ...[...problems, ...all.filter((f) => !f.problem)].map((f) => `| ${f.variant} | ${f.theme} | ${f.c} | ${f.kind} | ${f.problem ? 'sim' : '-'} | ${f.detail.replace(/\|/g, '/')} |`)];
 fs.mkdirSync(path.join(ROOT, '.work'), { recursive: true });
 fs.writeFileSync(path.join(ROOT, '.work/compat-report.md'), lines.join('\n') + '\n');
 console.log(`[compat] ${problems.length} problema(s) causado(s) pelo hub; ${all.length - problems.length} informativo(s) → .work/compat-report.md`);

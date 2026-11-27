@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "collector"
 version = "1.0.0"
 license = "Apache-2.0"
-description = "Coletor — demo app in Python/FastAPI (hub-sdk-python): inventory, receiving and lookup with a barcode reader."
+description = "Coletor - demo app in Python/FastAPI (hub-sdk-python): inventory, receiving and lookup with a barcode reader."
 requires-python = ">=3.11"
 # Pinned: same versions in the image, in CI and in the hub dev.
 dependencies = [

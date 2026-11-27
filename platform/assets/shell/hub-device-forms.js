@@ -1,4 +1,4 @@
-/* hub-device-forms.js — keyboard-wedge reader, offline submission queue (IndexedDB) and photo
+/* hub-device-forms.js - keyboard-wedge reader, offline submission queue (IndexedDB) and photo
  * capture. Third part of hub-device.js (split only for size), loaded right after
  * hub-device-camera.js. */
 (function () {
@@ -50,7 +50,7 @@
     }
   }
   document.addEventListener('keydown', onWedgeKey, true);
-  // Keeps the focus in the reader's field (only with a physical keyboard/reader — on a phone without a reader
+  // Keeps the focus in the reader's field (only with a physical keyboard/reader - on a phone without a reader
   // giving the focus back would open the virtual keyboard on every tap).
   document.addEventListener('focusout', (e) => {
     const el = e.target;

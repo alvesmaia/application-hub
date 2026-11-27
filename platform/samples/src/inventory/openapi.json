@@ -318,7 +318,7 @@
         "type": "object"
       },
       "Registration": {
-        "description": "Pedido de cadastro documentado (saga de exemplo, onda 12 — 2.9).",
+        "description": "Pedido de cadastro documentado (saga de exemplo, onda 12 - 2.9).",
         "properties": {
           "category": {
             "anyOf": [
@@ -459,7 +459,7 @@
     }
   },
   "info": {
-    "title": "Gestão de Ativos — API",
+    "title": "Gestão de Ativos - API",
     "version": "1.0.0"
   },
   "openapi": "3.1.0",

@@ -1,17 +1,17 @@
-"""Supplier Network — the platform's FastAPI app (``HUB_DEMO_APP=suppliers``; same routes and same markup).
+"""Supplier Network - the platform's FastAPI app (``HUB_DEMO_APP=suppliers``; same routes and same markup).
 
 Routes (all under ``/suppliers``; the hub exposes them at ``/_frag/suppliers/...``):
 
-- ``GET /suppliers`` · ``/suppliers/{dashboard,indicators,analysis,reports,settings}`` —
+- ``GET /suppliers`` · ``/suppliers/{dashboard,indicators,analysis,reports,settings}`` -
   mockup fragments (``fragments/``); ``indicators?id=FOR-0284`` inserts the supplier record
   (registry lookup + attachments) above the directory summary;
 - ``GET /suppliers/_skeleton`` · ``/suppliers/assets/{demo.css,app.css}`` (no JavaScript);
-- ``POST /suppliers/suppliers/{code}/lookup`` — registry lookup (external API with
+- ``POST /suppliers/suppliers/{code}/lookup`` - registry lookup (external API with
   timeout, novas tentativas e disjuntor);
 - ``POST …/attachments`` (multipart) · ``GET …/attachments/{name}`` (streaming download) ·
-  ``POST …/attachments/{name}/delete`` — attachments in ``hub_sdk.storage`` (connection
+  ``POST …/attachments/{name}/delete`` - attachments in ``hub_sdk.storage`` (connection
   ``suppliers-anexos`` of the hub, or the app's own S3 bucket ``HUB_S3_*``);
-- ``GET …/profile.pdf`` — supplier record as PDF (heavy operation: 429 without a slot);
+- ``GET …/profile.pdf`` - supplier record as PDF (heavy operation: 429 without a slot);
 - ``/suppliers/api/v1/*`` (OpenAPI at ``/suppliers/api/openapi.json``; MCP tools
   generated from it) and ``/suppliers/_hub/*`` (hub-sdk internal endpoints, internal token).
 

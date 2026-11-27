@@ -80,7 +80,7 @@ async def _provision(ops: OpsCtx, up: Upload, report: dict[str, Any]) -> None:
 
 
 def _keep_package(data_dir: Path, report: dict[str, Any], data: bytes) -> tuple[str, str | None]:
-    """(sha256, stored package name) — only a package that passed is kept."""
+    """(sha256, stored package name) - only a package that passed is kept."""
     sha = pl.hashlib.sha256(data).hexdigest()
     if not report["passed"]:
         return sha, None
@@ -101,7 +101,7 @@ def _import_status(report: dict[str, Any], env: str) -> str:
 async def _record_import(ops: OpsCtx, up: Upload, report: dict[str, Any], status: str) -> Data:
     sha, package = _keep_package(ops.data_dir, report, up.data)
     label = m.STAGING if up.env == "staging" else m.PRODUCAO
-    dep = {"id": 0, "app": report["app"] or "desconhecido", "version": report["version"] or "—", "env": label,
+    dep = {"id": 0, "app": report["app"] or "desconhecido", "version": report["version"] or "-", "env": label,
            "origin": up.origin, "commit": up.commit, "status": status, "at": now_ms(), "image": report["image"],
            "package": package, "sha256": sha, "note": report["reason"], "runtime": "", "scripts": report["scripts"],
            "build": bool(report.get("build")), "submitted_by": up.actor, "submitted_by_id": up.uid}  # fmt: skip
@@ -167,8 +167,8 @@ async def ensure_baseline(ops: OpsCtx, app_id: str, k: str) -> None:
         live = (x for x in d["deployments"] if x["app"] == app_id and x["env"] == m.PRODUCAO)
         if any(x["status"] == m.IMPLANTADO for x in live):
             return
-        base = m.push(d, {"id": 0, "app": app_id, "version": e.version or "—", "env": m.PRODUCAO, "origin": "Compose",
-                          "commit": "—", "status": m.IMPLANTADO, "at": now_ms(), "package": None, "sha256": "",
+        base = m.push(d, {"id": 0, "app": app_id, "version": e.version or "-", "env": m.PRODUCAO, "origin": "Compose",
+                          "commit": "-", "status": m.IMPLANTADO, "at": now_ms(), "package": None, "sha256": "",
                           "image": f"{str(raw['Config'].get('Image', 'imagem')).split(':')[0]}@{raw['Image']}",
                           "note": "versão em execução antes da primeira implantação", "runtime": "", "scripts": [],
                           "submitted_by": "", "submitted_by_id": ""})  # fmt: skip

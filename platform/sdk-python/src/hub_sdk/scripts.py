@@ -1,4 +1,4 @@
-"""Wave 12 (2.1) · the app's own JavaScript — a **declared exception** in the manifest.
+"""Wave 12 (2.1) · the app's own JavaScript - a **declared exception** in the manifest.
 
 By default an app runs no JavaScript: behaviors come from the hub's ``data-hub-*``
 attributes (docs/CONTRATO-APP.md §25). When there is no alternative, the app declares the file in
@@ -36,5 +36,5 @@ def declare(file: str, reason: str) -> dict[str, str]:
 
 
 def integrity(data: bytes) -> str:
-    """SRI/CSP integrity (``sha384-<base64>``) — the same one the hub computes on import."""
+    """SRI/CSP integrity (``sha384-<base64>``) - the same one the hub computes on import."""
     return "sha384-" + base64.b64encode(hashlib.sha384(data).digest()).decode("ascii")

@@ -1,4 +1,4 @@
-"""The app's own files for the browser (fonts, images) — adapting an existing app keeps them.
+"""The app's own files for the browser (fonts, images) - adapting an existing app keeps them.
 
 ``asset_file(folder, name)`` answers one file of ``folder`` by **name**: no client path reaches the disk
 (no ``/``, no ``..``), only font and image types, ``nosniff``. CSS stays on its closed list (``app.css``).

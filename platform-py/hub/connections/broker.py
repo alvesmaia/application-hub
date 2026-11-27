@@ -232,7 +232,7 @@ async def share_link(request: Request, name: str, b: BrokerCtx = Depends(bctx)) 
 
 @router.post("/_hub/sql/{name}/query")
 async def sql_query(request: Request, name: str, b: BrokerCtx = Depends(bctx)) -> Response:
-    """SQL query with the hub's credential. Audit: SQL hash/size, rows and time — never
+    """SQL query with the hub's credential. Audit: SQL hash/size, rows and time - never
     data nor parameter values."""
     c = await b.authorize(request, name, "consulta SQL", ("query",))
     if isinstance(c, JSONResponse):

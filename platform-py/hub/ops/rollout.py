@@ -79,7 +79,7 @@ class Rollout:
                  app_env: Callable[[str, str], Any], env_vars: Callable[[], Any]) -> None:  # fmt: skip
         self.engine, self.registry, self.client = engine, registry, client
         self.app_env, self.env_vars = app_env, env_vars
-        # F22: template for the first container of a new app (no compose) — `hub.ops.newapp.base_container`.
+        # F22: template for the first container of a new app (no compose) - `hub.ops.newapp.base_container`.
         self.fresh: Callable[[str], dict[str, Any] | None] = lambda _app: None
         self.locks: dict[str, asyncio.Lock] = {}
 

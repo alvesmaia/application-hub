@@ -18,10 +18,10 @@ and over **MCP** for AI assistants (`/mcp`, same access control as the UI).
 | **Shell & UX** | Fixed global header and menu; Home, app catalog, Inbox (approvals and access requests), guided tour, light/dark theme, PT-BR/EN/ES, PWA |
 | **Applications** | Each app in its own container, reached only through the gateway and composed into the page without iframes; same origin with strict CSP and sanitized HTML; real time via SSE and WebSocket; barcode scanning and camera (`hub-device`) |
 | **Access & security** | Local login or Microsoft Entra ID SSO (with single logout); per-app roles and permissions; scoped personal API tokens; encrypted vault for secrets; network-restricted control plane |
-| **Administration** | Users, roles, per-environment variables, connections (Postgres, MySQL, SQL Server, SharePoint/OneDrive, S3) behind a broker — apps never see credentials |
+| **Administration** | Users, roles, per-environment variables, connections (Postgres, MySQL, SQL Server, SharePoint/OneDrive, S3) behind a broker - apps never see credentials |
 | **Operations** | Blue/green deployments with mandatory readiness and rollback, containers, scheduled tasks, least-privilege backups, zero-downtime hub updates |
 | **Observability** | Metrics, SLOs and status page, usage and analytics, logs, OTLP export, verifiable hash-chained audit log (file or webhook anchor) |
-| **API & AI** | Public API `/api/v1` (OpenAPI 3.1, docs at `/api/docs`); MCP server `/mcp` with OAuth 2.1 — hub and app tools under the same access control as the UI |
+| **API & AI** | Public API `/api/v1` (OpenAPI 3.1, docs at `/api/docs`); MCP server `/mcp` with OAuth 2.1 - hub and app tools under the same access control as the UI |
 | **For developers** | Python SDK `hub_sdk`, `hub` CLI (`hub project create`, `hub dev`, `hub check --full` with the conformance suite, `hub deploy`), dev mode with reload, 5 sample apps (Assets, Suppliers, Services, Collector, Automations) |
 | **Deployment** | Docker only: `install.sh` generates secrets, builds everything from source and creates the first admin; multiple instances per host; tested on rootless RHEL |
 
@@ -84,8 +84,8 @@ Licenses of bundled third-party files are in [`NOTICE`](NOTICE).
 | Component | Version | Use | License |
 |---|---|---|---|
 | @zxing/library | 0.23.0 | Barcode/QR decoding in the browser | Apache-2.0 |
-| Nunito Sans, Red Hat Display, Red Hat Mono | — | Fonts | SIL OFL 1.1 |
-| Lucide icons | — | Theme icons | ISC |
+| Nunito Sans, Red Hat Display, Red Hat Mono | - | Fonts | SIL OFL 1.1 |
+| Lucide icons | - | Theme icons | ISC |
 
 ## Architecture
 
@@ -108,7 +108,7 @@ master key and the first administrator (temporary password in `platform-py/.secr
 sample apps are on by default (compose profile `demo-apps`); `--no-demo-apps` installs the hub only. Upgrades:
 `docs/ATUALIZACAO.md`; changes: `CHANGELOG.md`.
 
-The interactive install asks the basics and then "Review advanced options?" — every option shows the **recommended**
+The interactive install asks the basics and then "Review advanced options?" - every option shows the **recommended**
 value in [brackets] and Enter keeps it: MinIO data folder (e.g. a dedicated disk), audit anchor folder and webhook,
 off-site backup copy (none / SharePoint / S3), sign-in with Microsoft Entra ID, admin network restriction,
 proxy/tunnel in front, telemetry, new-version notice, public developer docs and build CPUs. Secrets are read without
@@ -140,5 +140,5 @@ bash scripts/dev.sh up     # dev mode (code from disk, --reload)
 
 ## License
 
-Apache License 2.0 — see [`LICENSE`](LICENSE) and third-party notices in [`NOTICE`](NOTICE). The "Application Hub"
+Apache License 2.0 - see [`LICENSE`](LICENSE) and third-party notices in [`NOTICE`](NOTICE). The "Application Hub"
 name and the Alvesmaia marks and logo are not licensed for forks' branding: see [`TRADEMARKS.md`](TRADEMARKS.md).

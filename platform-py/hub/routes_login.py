@@ -140,7 +140,7 @@ def _local_admin(request: Request, user: dict[str, Any]) -> bool:
 
 def sso_default_role(sso: entra.EntraConfig, roles: list[dict[str, Any]]) -> str:
     """Role of a new SSO account: the configured one, else "User", else the legacy "Colaborador" (installs seeded
-    before the three default roles) — never a role nobody defined (it would grant nothing) and never one that
+    before the three default roles) - never a role nobody defined (it would grant nothing) and never one that
     manages users: admin comes only from the group mapping or from a person."""
     names = {
         r["name"] for r in roles if "gerenciar_usuarios" not in permissions({"roles": [r["name"]]}, roles)[0]

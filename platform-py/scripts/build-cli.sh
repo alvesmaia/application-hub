@@ -2,7 +2,7 @@
 # Self-contained hub-cli wheel (+ the SDK one) in platform-py/dist/cli/:
 #   uv tool install platform-py/dist/cli/hub_cli-<version>-py3-none-any.whl
 # Bundles: the `hub` package (in-process hub for `hub dev`/`hub check`), shell assets and the hub_sdk wheel
-# (copied to vendor/ of each created project — the developer does not need the repository).
+# (copied to vendor/ of each created project - the developer does not need the repository).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 out=dist/cli

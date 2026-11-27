@@ -1,7 +1,7 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
 import { apiAs, autoConfirm, docker, gotoSafe, json, newRoleContext, USERS, CP, DATA_NETWORK, OBJSTORE_PASS } from './helpers';
 
-// Wave 12 (2.7) — Applications › Connections → "Provision storage": in one action, the
+// Wave 12 (2.7) - Applications › Connections → "Provision storage": in one action, the
 // app's bucket in the platform's MinIO, a MinIO user with a policy restricted to the
 // bucket and a broker S3 connection linked to the app × environment (the app never receives the
 // key). Idempotent, audited; deprovisioning requires typing the bucket and, with objects,
@@ -28,7 +28,7 @@ async function cleanup(api: APIRequestContext, app: string, env: string, bucket:
   });
 }
 
-test.describe('Onda 12 — Provisionar armazenamento (2.7)', () => {
+test.describe('Onda 12 - Provisionar armazenamento (2.7)', () => {
   test.describe.configure({ mode: 'serial' });
   test.setTimeout(240_000);
 

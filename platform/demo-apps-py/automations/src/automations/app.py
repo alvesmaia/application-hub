@@ -1,4 +1,4 @@
-"""Automações — a small automation orchestrator on the platform: **packages** (versioned zips of
+"""Automações - a small automation orchestrator on the platform: **packages** (versioned zips of
 Python code with an ``automation.json`` manifest) → **processes** (a package + selected version,
 default params) → **triggers** (interval/daily schedules of a process) → **runs** (durable job
 ``automations.run``, also listed in the hub's Tasks page; the package runs in an isolated

@@ -1,4 +1,4 @@
-/* hub-ux.js — shell experience (wave 9), on every hub page:
+/* hub-ux.js - shell experience (wave 9), on every hub page:
  *
  *  - Guided tour: steps according to what the user sees (`[data-tour]`), dialog with focus,
  *    Back/Next/Skip, Esc interrupts (resumed later), state on the server
@@ -62,7 +62,7 @@
     if (!res.ok) throw new Error(j.error || t('js.error'));
     return j;
   }
-  // Resource usage (analytics); inside apps the CSP does not allow it — ignored.
+  // Resource usage (analytics); inside apps the CSP does not allow it - ignored.
   function feature(name) {
     if (inApp) return;
     api('POST', '/api/me/analytics', { feature: name }).catch(() => {});

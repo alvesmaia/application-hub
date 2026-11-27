@@ -3,11 +3,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { apiAs, autoConfirm, docker, gotoSafe, json, newRoleContext, openApp, WORK_DIR, CP } from './helpers';
 
-// Wave 10 — Applications › Connections with SharePoint (Graph simulator, profile
+// Wave 10 - Applications › Connections with SharePoint (Graph simulator, profile
 // sharepoint-sim of the compose): create the connection on the screen, "Test connection" (token, site,
 // library, base folder, write/read/delete the probe), link the app × environment,
-// "Apply (restart)" and use it from the app — contract documents (contratos, Python) and
-// supplier attachments — without the app receiving the credential. Security: the broker only
+// "Apply (restart)" and use it from the app - contract documents (contratos, Python) and
+// supplier attachments - without the app receiving the credential. Security: the broker only
 // serves the app's token from the app's network, and only the connections linked to it.
 //
 // Stack up with the simulator:
@@ -91,7 +91,7 @@ async function reveal(_api: APIRequestContext, app: string): Promise<string> {
   return docker("exec", `${CP}app-${app}`, "printenv", "HUB_STORAGE_TOKEN").trim();
 }
 
-test.describe('Onda 10 — Conexões (SharePoint pelo simulador)', () => {
+test.describe('Onda 10 - Conexões (SharePoint pelo simulador)', () => {
   test.describe.configure({ mode: 'serial' });
   test.setTimeout(300_000);
 

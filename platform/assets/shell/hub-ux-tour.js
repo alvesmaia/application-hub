@@ -1,4 +1,4 @@
-/* hub-ux-tour.js — guided tour. Second part of hub-ux.js (split only for size; its header documents
+/* hub-ux-tour.js - guided tour. Second part of hub-ux.js (split only for size; its header documents
  * the behavior), loaded right after it on the same pages. */
 (function () {
   'use strict';

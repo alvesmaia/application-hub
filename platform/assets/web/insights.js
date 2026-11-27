@@ -1,4 +1,4 @@
-/* insights.js — wave 8 interactions in the hub shell:
+/* insights.js - wave 8 interactions in the hub shell:
  *   - Observability: automatic refresh (15 s);
  *   - Audit: "Check integrity";
  *   - Settings: rotation of the vault's data key;

@@ -1,4 +1,4 @@
-/* logshare.js — a single SSE log connection for all tabs (wave 5).
+/* logshare.js - a single SSE log connection for all tabs (wave 5).
  *
  * Each tab with the log console in "Real time" competes for a browser lock
  * (Web Locks: `navigator.locks.request('hub-logs-leader')`). Whoever holds the lock is the
@@ -6,7 +6,7 @@
  * each line to the other tabs through BroadcastChannel('hub-logs'). The others are
  * FOLLOWERS: they only listen to the channel and wait in the lock's queue. When the leader
  * tab closes (or pauses), the browser releases the lock and the next one in the queue takes
- * over by itself (failover) — no two connections at the same time and no duplicated line.
+ * over by itself (failover) - no two connections at the same time and no duplicated line.
  * Without BroadcastChannel/Web Locks (old browser), each tab opens its own connection.
  *
  * Tested in node (`node --test platform/assets/web/tests/`), with

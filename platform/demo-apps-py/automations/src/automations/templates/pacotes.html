@@ -15,7 +15,7 @@
 <div class="aut-table-wrap"><table class="data-table aut-packages">
 <thead><tr><th scope="col">{{ t('Pacote') }}</th><th scope="col">{{ t('Versão') }}</th><th scope="col">{{ t('Descrição') }}</th><th scope="col">{{ t('Usado por') }}</th><th scope="col">{{ t('Tamanho') }}</th><th scope="col">SHA-256</th><th scope="col">{{ t('Enviado') }}</th></tr></thead>
 <tbody>
-{% for p in items %}<tr data-package="{{ p.name }}@{{ p.version }}"><td>{{ p.name }}</td><td>{{ p.version }}</td><td>{{ p.description }}</td><td>{{ used.get((p.name, p.version), []) | join(', ') or '—' }}</td><td>{{ thousands(p.size) }} B</td><td><code title="{{ p.sha256 }}">{{ p.sha256[:12] }}</code></td><td>{{ when(p.created_at) }} · {{ p.uploaded_by }}</td></tr>{% endfor %}
+{% for p in items %}<tr data-package="{{ p.name }}@{{ p.version }}"><td>{{ p.name }}</td><td>{{ p.version }}</td><td>{{ p.description }}</td><td>{{ used.get((p.name, p.version), []) | join(', ') or '-' }}</td><td>{{ thousands(p.size) }} B</td><td><code title="{{ p.sha256 }}">{{ p.sha256[:12] }}</code></td><td>{{ when(p.created_at) }} · {{ p.uploaded_by }}</td></tr>{% endfor %}
 </tbody></table></div>
 {% else %}
 <p class="empty-state">{{ t('Nenhum pacote enviado ainda.') }}</p>

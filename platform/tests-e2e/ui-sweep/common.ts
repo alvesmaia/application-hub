@@ -10,7 +10,7 @@ export const SHOTS_DIR = path.join(OUT_DIR, 'shots');
 /**
  * (Left out: /account/env, /account/staging and /account/prefs require parameters or only accept POST;
  * /apps, /connections, /admin/applications and /admin/oauth are prefixes/redirects.)
- * GET pages without a parameter from the hub-web route table (Python hub, `platform-py/hub`) —
+ * GET pages without a parameter from the hub-web route table (Python hub, `platform-py/hub`) -
  * covers what no link reaches. The apps come in through discovery (rail/sidebar).
  */
 export const STATIC_ROUTES = [
@@ -22,10 +22,10 @@ export const STATIC_ROUTES = [
   '/developers', '/developers/agente', '/developers/cli', '/developers/sdk', '/developers/contrato', '/developers/guias/primeiro-app',
 ];
 
-/** App screens with state in the query that no sidebar link reaches — included only if the app
+/** App screens with state in the query that no sidebar link reaches - included only if the app
  *  exists in the stack (the light stack only has inventory). */
 export const APP_ROUTES: Record<string, string[]> = {
-  // Wave 13 — Coletor: location/order/code chosen.
+  // Wave 13 - Coletor: location/order/code chosen.
   collector: ['/apps/collector/scan?codigo=COL-0001', '/apps/collector/sheet', '/apps/collector/diagnostics'],
 };
 
@@ -35,7 +35,7 @@ const EXCLUDE = [
   /^\/(healthz|readyz|metrics)/, /\.(csv|json|xlsx|xls|pdf|zip|tar|gz|txt|ndjson|svg|png)$/i,
   /\/(download|export|logout)(\/|$)/,
   /\/(revoke|delete|remove|stop|start|restart|rotate|deprovision|confirm|decide|read|approve|block-client|unblock-client|remove-client|revoke-grant|test|archive)(\/|$)/,
-  /e2e-hostil/, // test-only route (HUB_DEMO_E2E_HOSTILE) — hostile HTML on purpose
+  /e2e-hostil/, // test-only route (HUB_DEMO_E2E_HOSTILE) - hostile HTML on purpose
 ];
 export const isExcluded = (p: string) => EXCLUDE.some((re) => re.test(p));
 

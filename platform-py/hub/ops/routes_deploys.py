@@ -76,7 +76,7 @@ async def upload(request: Request, ops: OpsCtx = Depends(ctx)) -> Response:
     actor = ops.actor_of(request)
     ops.log("INFO", "platform", actor, f"pacote {file_name} recebido ({-(-len(data) // 1024)} KB) · "
         f"{'Staging' if env == 'staging' else 'Produção'} · {origin}")  # fmt: skip
-    coro = run_import(ops, Upload(job["id"], data, env, origin, (commit or "—")[:12].lower(), file_name, actor,
+    coro = run_import(ops, Upload(job["id"], data, env, origin, (commit or "-")[:12].lower(), file_name, actor,
                                   str(request.state.user["id"]), config))  # fmt: skip
     if request.query_params.get("wait") == "true":
         await coro

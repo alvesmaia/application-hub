@@ -71,7 +71,7 @@ def test_never_emits_unprefixed_self_links(cfg: Cfg, http: httpx.Client) -> None
     for s in cfg.profile["sections"]:
         r = keep(http.get(f"/{cfg.app}/{s}"))
         hit = old.search(r.text)
-        assert hit is None, f"{s}: link sem /apps ({hit.group(0) if hit else ''!r}) — use a base x-hub-base"
+        assert hit is None, f"{s}: link sem /apps ({hit.group(0) if hit else ''!r}) - use a base x-hub-base"
 
 
 def test_unknown_section_is_404_and_other_prefixes_are_not_served(cfg: Cfg, http: httpx.Client) -> None:
@@ -100,13 +100,13 @@ def test_assets_closed_list_with_types(cfg: Cfg, http: httpx.Client) -> None:
 def test_no_app_javascript_in_fragments(cfg: Cfg, http: httpx.Client) -> None:
     """Wave 12 (2.1): the app runs no JavaScript of its own. Fragments without ``<script>``
     (except ``application/json`` data blocks), no event attributes (``on…=``) and
-    no ``javascript:`` URLs — the hub removes them anyway (sanitizer + CSP), so
+    no ``javascript:`` URLs - the hub removes them anyway (sanitizer + CSP), so
     an app that depends on them breaks; behaviors come from the ``data-hub-*`` attributes."""
     bad = re.compile(r"<script(?![^>]*type=[\"']application/json)|\son[a-z]+\s*=|javascript:", re.I)
     for s in cfg.profile["sections"]:
         r = keep(http.get(f"/{cfg.app}/{s}"))
         hit = bad.search(r.text)
-        assert hit is None, f"{s}: JavaScript no fragmento ({hit.group(0) if hit else ''!r}) — use data-hub-*"
+        assert hit is None, f"{s}: JavaScript no fragmento ({hit.group(0) if hit else ''!r}) - use data-hub-*"
 
 
 # ---- [4] identity -----------------------------------------------------------------------
@@ -652,7 +652,7 @@ def test_declared_endpoints_are_reachable_and_auth_is_enforced(cfg: Cfg, http: h
 
 
 def test_ready_header_is_absent_once_the_app_is_ready(cfg: Cfg, http: httpx.Client) -> None:
-    """x-hub-ready: 0 only while the app warms up (migrations); once ready, the header disappears — the
+    """x-hub-ready: 0 only while the app warms up (migrations); once ready, the header disappears - the
     hub's blue/green waits for this before switching traffic ([2], fix of 28/09)."""
     deadline = time.monotonic() + 60
     while True:
@@ -669,7 +669,7 @@ def test_ready_header_is_absent_once_the_app_is_ready(cfg: Cfg, http: httpx.Clie
 
 def test_ready_and_health_endpoints_are_mandatory(cfg: Cfg) -> None:
     """[2] Wave 12 (2.5): ``GET /{id}/_hub/ready`` (readiness: 200 ready / 503 not ready
-    with JSON ``reason``) and ``GET /{id}/_hub/health`` (liveness) are **required** —
+    with JSON ``reason``) and ``GET /{id}/_hub/health`` (liveness) are **required** -
     the hub's blue/green only switches traffic after the 200 from ready, and an app without the route is
     refused at deployment. No internal token; ``Cache-Control: no-store``."""
     with httpx.Client(base_url=cfg.url, timeout=10) as anon:

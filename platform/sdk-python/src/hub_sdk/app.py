@@ -6,7 +6,7 @@ Typical usage::
     app = FastAPI(lifespan=sdk.lifespan)
     sdk.install(app)          # idempotency, /_hub/*, x-app-version
 
-Variables (injected by the platform — see ``docs/CONTRATO-APP.md``): ``HUB_APP_ID``,
+Variables (injected by the platform - see ``docs/CONTRATO-APP.md``): ``HUB_APP_ID``,
 ``PORT``, ``HUB_DB_URL`` (or ``HUB_DB_URL_<ID>``), ``HUB_INTERNAL_TOKEN``,
 ``HUB_SCRATCH_DIR``/``TMPDIR``, ``HUB_HEAVY_MAX``, ``HUB_JOB_LEASE_S``,
 ``HUB_APP_VERSION_MARKER``, ``HUB_JOBS_MODE``.
@@ -21,7 +21,7 @@ No DB: outbox and idempotency in memory, no durable jobs.
   latency of simple pages (measured: 4 → 60 ms p50).
 - ``process`` (production image): the web process runs no jobs; a separate **jobs process**
   (:meth:`HubSdk.run_worker_process`, started and supervised by the app
-  — e.g. ``python -m contratos serve``) runs them. The web's SIGTERM is forwarded immediately to the
+  - e.g. ``python -m contratos serve``) runs them. The web's SIGTERM is forwarded immediately to the
   jobs process (:func:`hub_sdk.shutdown.on_process_shutdown`), and an OOM during an import kills
   only the jobs process (the web keeps responding; the job resumes from the checkpoint).
 - ``off``: nobody runs jobs in this container (they stay in the queue).
@@ -308,7 +308,7 @@ class HubSdk:
             try:
                 loop.add_signal_handler(sig, self.shutdown.trigger)
             except (NotImplementedError, RuntimeError, ValueError):
-                # Windows: no add_signal_handler — signal.signal on the main thread.
+                # Windows: no add_signal_handler - signal.signal on the main thread.
                 with contextlib.suppress(ValueError, OSError):
                     signal.signal(sig, lambda *_: loop.call_soon_threadsafe(self.shutdown.trigger))
 

@@ -56,7 +56,7 @@ def _attachments(p: Pdf, anexos: list[Item], anexos_err: str | None, y: float) -
         y += 16.0
     for o in [o for o in anexos if not o.folder][:40]:
         shown = o.name.partition("-")[2] if "-" in o.name else o.name
-        p.text(40.0, y, 10.0, False, DARK, f"• {shown} — {-(-o.size // 1024)} KB")
+        p.text(40.0, y, 10.0, False, DARK, f"• {shown} - {-(-o.size // 1024)} KB")
         y += 15.0
         if y > 780.0:
             p.new_page()

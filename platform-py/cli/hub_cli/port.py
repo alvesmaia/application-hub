@@ -2,10 +2,10 @@
 
 - **The original CSS stays untouched.** Each original stylesheet is copied byte for byte (`css`: pairs
   `[path in the original, path in the project]`, in cascade order); every change the hub needs goes to one
-  `overrides` file. `app_css` (what the app serves) must be exactly the copies followed by the overrides —
+  `overrides` file. `app_css` (what the app serves) must be exactly the copies followed by the overrides -
   `hub port css` writes it. A copy that differs from the original fails (when the original folder is at hand).
 - **The inventory is done.** `port-inventory.md` lists the original's routes and behaviors as a checklist:
-  `- [x]` ported, `- [~] … — reason` a deviation (the reason is required), `- [ ]` still to do (fails).
+  `- [x]` ported, `- [~] … - reason` a deviation (the reason is required), `- [ ]` still to do (fails).
 """
 
 from __future__ import annotations
@@ -79,7 +79,7 @@ def inventory_problems(directory: Path) -> list[str]:
         return [f"{INVENTORY} sem itens (`- [x] …`)"]
     todo = [f"pendente: {text}" for mark, text in items if mark == " "]
     loose = [
-        f"desvio sem motivo (`— motivo`): {text}" for mark, text in items if mark == "~" and " — " not in text
+        f"desvio sem motivo (`- motivo`): {text}" for mark, text in items if mark == "~" and " - " not in text
     ]
     return todo + loose
 

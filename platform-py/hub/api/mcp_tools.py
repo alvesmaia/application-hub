@@ -274,7 +274,7 @@ async def _confirm_gate(
             request,
             p,
             f"MCP: {name}",
-            f"confirmação pedida · cliente: {client or '—'} · argumentos: {keys}",
+            f"confirmação pedida · cliente: {client or '-'} · argumentos: {keys}",
             scope,
         )
         return text_result(app, {
@@ -314,7 +314,7 @@ async def tools_call(request: Request, p: P, params: dict[str, Any], client: str
         request,
         p,
         f"MCP: {name}",
-        f"{'erro' if result['isError'] else 'ok'} · argumentos: {keys or '—'}",
+        f"{'erro' if result['isError'] else 'ok'} · argumentos: {keys or '-'}",
         scope,
     )
     return result

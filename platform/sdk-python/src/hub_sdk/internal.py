@@ -35,7 +35,7 @@ from hub_sdk.outbox import Outbox
 from hub_sdk.schema import ct_eq
 from hub_sdk.telemetry import Telemetry
 
-TOKEN_HEADER = "x-hub-internal-token"  # noqa: S105 — header name, not a secret
+TOKEN_HEADER = "x-hub-internal-token"  # noqa: S105 - header name, not a secret
 SEGMENT = "_hub"
 MAX_PAGE = 500
 MAX_ACK = 1000

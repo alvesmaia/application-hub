@@ -1,4 +1,4 @@
-/* hub-kit-mount.js — tables (pagination, sorting, filter), tabs, dependent fields, real time
+/* hub-kit-mount.js - tables (pagination, sorting, filter), tabs, dependent fields, real time
  * (data-hub-ws / data-hub-sse), the mount of every behavior and the event delegation;
  * publishes window.HubKit. Second part of hub-kit.js (split only for size; its header
  * documents the attributes), loaded by a classic tag right after it. */
@@ -144,7 +144,7 @@
 
 
   // ---- real time (WebSocket through the gateway) ----
-  // One socket per URL; the owning element can be swapped for a fragment (outerHTML) — the
+  // One socket per URL; the owning element can be swapped for a fragment (outerHTML) - the
   // new element with the same data-hub-ws inherits the socket. No owner for 3 s → closes.
   const sockets = new Map();
   const polls = new WeakMap();

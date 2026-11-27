@@ -1,4 +1,4 @@
-"""hub_sdk.realtime: notice channel (SSE/WebSocket) without Postgres — the notice stays in the process."""
+"""hub_sdk.realtime: notice channel (SSE/WebSocket) without Postgres - the notice stays in the process."""
 
 import asyncio
 

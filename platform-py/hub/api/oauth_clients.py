@@ -1,4 +1,4 @@
-"""OAuth 2.1 for `/mcp` — Clients: dynamic registration (RFC 7591) and Client ID Metadata Documents (CIMD)."""
+"""OAuth 2.1 for `/mcp` - Clients: dynamic registration (RFC 7591) and Client ID Metadata Documents (CIMD)."""
 
 from __future__ import annotations
 

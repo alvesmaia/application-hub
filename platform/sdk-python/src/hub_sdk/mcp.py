@@ -1,5 +1,5 @@
 """Internal MCP of the app (wave 11): tools **generated from the app's OpenAPI** at
-``POST /{app}/_hub/mcp`` (JSON-RPC 2.0, MCP 2025-06-18) — only for the hub, over the internal
+``POST /{app}/_hub/mcp`` (JSON-RPC 2.0, MCP 2025-06-18) - only for the hub, over the internal
 network, with ``x-hub-internal-token`` (the gateway refuses the browser's ``/_hub/*``).
 
 Each operation under ``/{app}/api/`` becomes a
@@ -26,7 +26,7 @@ from hub_sdk.schema import ct_eq
 PROTOCOL = "2025-06-18"
 SUPPORTED = ("2025-11-25", "2025-06-18", "2025-03-26")
 MAX_RESULT = 256 * 1024
-TOKEN_HEADER = "x-hub-internal-token"  # noqa: S105 — header name
+TOKEN_HEADER = "x-hub-internal-token"  # noqa: S105 - header name
 FORWARD = ("x-hub-user", "x-hub-user-sig", "x-hub-locale", "x-hub-flags", "traceparent")
 METHODS = ("get", "head", "post", "put", "patch", "delete")
 
@@ -52,7 +52,7 @@ def _read_only(m: str, op: dict[str, Any]) -> bool:
 
 
 def _destructive(m: str, op: dict[str, Any]) -> bool:
-    """Every mutation (POST/PUT/PATCH/DELETE) is destructive by default — the hub asks for
+    """Every mutation (POST/PUT/PATCH/DELETE) is destructive by default - the hub asks for
     approval; ``x-hub-destructive: false`` does not waive it. It is only the app's hint: the hub
     classifies by the package's ``openapi.json`` and by the reviewed list ``mcp.confirm_exempt``."""
     if op.get("x-hub-destructive") is True:
@@ -145,7 +145,7 @@ def tools_from_openapi(doc: dict[str, Any], app_id: str) -> list[ToolDef]:
 
 
 def _inline_refs(schema: Any, doc: dict[str, Any], depth: int = 0) -> Any:
-    """Resolve ``$ref`` locais (``#/components/schemas/X``) — o cliente MCP recebe o
+    """Resolve ``$ref`` locais (``#/components/schemas/X``) - o cliente MCP recebe o
     esquema autocontido."""
     if isinstance(schema, dict):
         ref = schema.get("$ref")

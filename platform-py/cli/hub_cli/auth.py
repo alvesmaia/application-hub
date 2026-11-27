@@ -65,7 +65,7 @@ def check_hub_url(hub: str) -> None:
     except ValueError:
         pass
     raise ValueError(
-        f"recusado: {hub} usa http:// fora da máquina local — o token iria em texto claro. Use https://"
+        f"recusado: {hub} usa http:// fora da máquina local - o token iria em texto claro. Use https://"
     )
 
 

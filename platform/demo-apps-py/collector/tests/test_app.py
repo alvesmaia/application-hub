@@ -165,7 +165,7 @@ async def test_scan_classifies_and_is_idempotent(db_url: str, running: Running) 
     url = await c.post(
         "/collector/scan/read", data={"codigo": "https://hub.example.com/apps/collector"}, headers=idem()
     )
-    assert "Link para o app — abre o Coletor" in url.text and 'data-hub-feedback-result="warn"' in url.text
+    assert "Link para o app - abre o Coletor" in url.text and 'data-hub-feedback-result="warn"' in url.text
     unk = await c.post("/collector/scan/read", data={"codigo": "NADA-9"}, headers=idem())
     assert "Código desconhecido" in unk.text and 'data-hub-feedback-result="error"' in unk.text
     empty = await c.post("/collector/scan/read", data={"codigo": " "}, headers=idem())
@@ -197,7 +197,7 @@ async def test_scan_mode_is_remembered_per_user(db_url: str, running: Running) -
     page = (await c.get("/collector/scan")).text
     assert 'data-hub-scan-mode="barras"' in page and 'data-hub-scan-reader="automatico"' in page
     assert 'data-hub-scan-cooldown="3000"' in page
-    assert "Modo código de barras — troque para QR|Modo QR — troque para Código de barras" in page
+    assert "Modo código de barras - troque para QR|Modo QR - troque para Código de barras" in page
     await c.post("/collector/scan/prefs", data={"leitor": "interativo", "pausa": "0"}, headers=idem())
 
 

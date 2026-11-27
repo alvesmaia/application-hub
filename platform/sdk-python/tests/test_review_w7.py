@@ -209,7 +209,7 @@ async def test_permit_released_when_client_disconnects_before_start() -> None:
         await asyncio.sleep(10)
         return {"type": "http.disconnect"}
 
-    with pytest.raises(Exception):  # noqa: B017 — OSError or Starlette's ClientDisconnect
+    with pytest.raises(Exception):  # noqa: B017 - OSError or Starlette's ClientDisconnect
         await resp({"type": "http", "asgi": {"spec_version": "2.4"}}, receive, send)
     assert heavy.in_use == 0
 
@@ -229,6 +229,6 @@ async def test_permit_released_and_generator_closed_on_disconnect_mid_body() -> 
         await asyncio.sleep(10)
         return {"type": "http.disconnect"}
 
-    with pytest.raises(Exception):  # noqa: B017 — OSError or Starlette's ClientDisconnect
+    with pytest.raises(Exception):  # noqa: B017 - OSError or Starlette's ClientDisconnect
         await resp({"type": "http", "asgi": {"spec_version": "2.4"}}, receive, send)
     assert heavy.in_use == 0 and closed == [True]

@@ -8,7 +8,7 @@
 How it works (the `<proj>-edge` edge only sends traffic to whoever answers /healthz):
   1. backup (databases + data volume) and the current image becomes `<proj>-web:rollback`;
   2. starts `<proj>-web-next` with the new image and the same hub configuration (env, volumes, networks, aliases);
-  3. once the copy is ready (/readyz), recreates `<proj>-web` with the new image — the edge serves through the copy;
+  3. once the copy is ready (/readyz), recreates `<proj>-web` with the new image - the edge serves through the copy;
   4. watches the hub for `--watch` seconds; on failure, swaps back to the previous image;
   5. removes the copy and applies the rest of the compose (apps, edge, databases) without touching the hub: only
      services whose configuration changed are recreated (`--hub-only` skips this step).
@@ -175,7 +175,7 @@ def start_next(main: dict[str, Any], image: str, name: str) -> None:
     nets = list(main["NetworkSettings"]["Networks"])
     edge = [n for n in nets if n.endswith("-edge")]
     others = [n for n in nets if n not in edge]
-    alias = lambda n: "app-hub-web-next" if n in edge else "app-hub-web"  # noqa: E731 — the edge and the apps
+    alias = lambda n: "app-hub-web-next" if n in edge else "app-hub-web"  # noqa: E731 - the edge and the apps
     first = (edge or others)[0]
     args += ["--network", first, "--network-alias", alias(first), image, *(cfg.get("Cmd") or [])]
     run(*args)

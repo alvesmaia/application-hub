@@ -5,7 +5,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { HUB, PLATFORM, USERS, WORK_DIR, apiAs, apiLogin, appImage, autoConfirm, hubBin, json, openDeployVersion, stateFile, uniq } from './helpers';
 
-// Wave 12 (2.1) — anti-phishing with the apps on the SAME origin as the hub:
+// Wave 12 (2.1) - anti-phishing with the apps on the SAME origin as the hub:
 //  (a) a hostile fragment (TEST-ONLY route of the demo compose,
 //      HUB_DEMO_E2E_HOSTILE=1) with <script>, onerror=, javascript: links, forms to
 //      /login, /account and /oauth → nothing runs, nothing is sent;
@@ -13,7 +13,7 @@ import { HUB, PLATFORM, USERS, WORK_DIR, apiAs, apiLogin, appImage, autoConfirm,
 //  (c) the pipeline shows "REVISE: App brings its own JavaScript" and the deployment is only
 //      approved after the security review (separate, audited);
 //  (d) the security phrase appears on the OAuth consent and on the agent's action approval
-//      (step-up) — and never on a request that is not a top-level navigation;
+//      (step-up) - and never on a request that is not a top-level navigation;
 //  + the declarative data-hub-* behaviors that replaced the apps' JS.
 // Stack up (HUB_DEMO_USERS=1).
 
@@ -110,7 +110,7 @@ test('comportamentos data-hub-*: modal, toast, filtro, gráfico e menu sem JavaS
   const cat = page.locator('.tsc-cat-row').first();
   await cat.click();
   await expect(cat).toHaveAttribute('aria-pressed', 'true');
-  // Search in the knowledge base (filter with empty value) — servicedesk.
+  // Search in the knowledge base (filter with empty value) - servicedesk.
   await openFragment(page, '/apps/servicedesk/knowledge', '[data-hub-filter-item]');
   await page.locator('[data-hub-filter="#kb-page"]').fill('zzz-nada-aqui');
   await expect(page.locator('.app3-kb-empty')).toBeVisible();
@@ -358,7 +358,7 @@ test('M1 (CSS): folha do app com regras contra o shell não esconde nem troca o 
   const shot = await header.screenshot({ animations: 'disabled', caret: 'hide' });
   await page.evaluate(() => {
     const css = `.platform-header{transform:scale(0)!important;height:0!important;clip-path:inset(50%)!important;filter:opacity(0)!important;content-visibility:hidden!important}
-      .platform-header *{visibility:hidden!important} body::before{content:"Sessão expirada — entre novamente"!important;position:fixed;inset:0;z-index:99999;background:#fff}
+      .platform-header *{visibility:hidden!important} body::before{content:"Sessão expirada - entre novamente"!important;position:fixed;inset:0;z-index:99999;background:#fff}
       html{filter:blur(8px)!important} #app-root ~ *{display:none!important} :root .platform-header{display:none!important}`;
     document.adoptedStyleSheets = [...document.adoptedStyleSheets, (window as any).HubSafe.scopedSheet(css)];
   });

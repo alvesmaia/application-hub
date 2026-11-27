@@ -4,19 +4,19 @@ Guide for coding agents (Claude Code, Codex and others) working in this reposito
 
 ## Branches and where to work
 
-- **`main`**: official stack — the hub in **Python** (`platform-py/`) and the Python apps (`platform/demo-apps-py/`). Since 2026-10-07 it serves the owner's production instance. It also keeps the original static mockup (root: `index.html`, `js/`, `css/`) and the product documentation (`docs/PLAN.md`, `docs/FAQ-ARQUITETURA.md`).
+- **`main`**: official stack - the hub in **Python** (`platform-py/`) and the Python apps (`platform/demo-apps-py/`). Since 2026-10-07 it serves the owner's production instance. It also keeps the original static mockup (root: `index.html`, `js/`, `css/`) and the product documentation (`docs/PLAN.md`, `docs/FAQ-ARQUITETURA.md`).
 - **Read first:** `docs/PENDENCIAS.md` (status and what is missing), `docs/CONTRATO-APP.md` (HTTP contract of the apps, in `platform/docs/`), `docs/HANDOFF.md`.
 
 ## Stack (fixed decisions)
 
-Python 3.12 managed by `uv`; FastAPI + Jinja2 (SSR), asyncpg, httpx, Pydantic v2 + pydantic-settings, the `docker` SDK. Quality: **ruff** (lint and formatting, including the `S` rules from bandit), **Astral ty** (types), **pytest + pytest-cov** (lines + branches, 80% floor on the core), **`uv audit`**. The front-end (CSS, `hub*.js`, fonts, `catalog.json`) lives in `platform/assets/shell` (shell) and `platform/assets/web` (hub screens); app registry in `platform/config/` — do not rewrite. Official apps are Python only (SDK `hub_sdk` in `platform/sdk-python`).
+Python 3.12 managed by `uv`; FastAPI + Jinja2 (SSR), asyncpg, httpx, Pydantic v2 + pydantic-settings, the `docker` SDK. Quality: **ruff** (lint and formatting, including the `S` rules from bandit), **Astral ty** (types), **pytest + pytest-cov** (lines + branches, 80% floor on the core), **`uv audit`**. The front-end (CSS, `hub*.js`, fonts, `catalog.json`) lives in `platform/assets/shell` (shell) and `platform/assets/web` (hub screens); app registry in `platform/config/` - do not rewrite. Official apps are Python only (SDK `hub_sdk` in `platform/sdk-python`).
 
 ## Commands (in `platform-py/`)
 
 - Full check: `uv run hub-check` (ruff, ruff format, ty, `uv audit`, pytest with coverage; `--fast` = ruff/format/ty only; `--all` = + cli, SDK and each app). Database tests use a disposable Postgres.
-- Stack: compose project `app-hub` (sealed image `app-hub-web`; `dev.sh up` mounts the code) — `app-hub-web` at `127.0.0.1:8090`, `app-hub-app-db` (the one Postgres: the hub's `hub` database and one per app), `app-hub-objstore` (MinIO), apps `app-hub-app-<id>` (`docker-compose.apps.yml`), dev secrets in `.dev.env` (gitignored; never commit or print).
+- Stack: compose project `app-hub` (sealed image `app-hub-web`; `dev.sh up` mounts the code) - `app-hub-web` at `127.0.0.1:8090`, `app-hub-app-db` (the one Postgres: the hub's `hub` database and one per app), `app-hub-objstore` (MinIO), apps `app-hub-app-<id>` (`docker-compose.apps.yml`), dev secrets in `.dev.env` (gitignored; never commit or print).
 - Fresh install / another instance on the same host: `bash scripts/install.sh [--project app-hub-x --port 8095 --subnet 10.241] [--no-demo-apps]` (compose parameterized by `HUB_PROJECT`/`HUB_PORT`/`HUB_SUBNET`; sample apps in the `demo-apps` profile). Version: `hub/__init__.py` (`/healthz`), `CHANGELOG.md`, `scripts/release.sh <version>`; license Apache-2.0 (`NOTICE`, `TRADEMARKS.md`).
-- `bash scripts/dev.sh up|down|stop|status|logs|reload-on|reload-off|obs-up|obs-down` — dev mode (uvicorn `--reload`, SSE reload `/_dev/reload`), observability profile (OTel Collector + Jaeger).
+- `bash scripts/dev.sh up|down|stop|status|logs|reload-on|reload-off|obs-up|obs-down` - dev mode (uvicorn `--reload`, SSE reload `/_dev/reload`), observability profile (OTel Collector + Jaeger).
 - SharePoint simulator: `docker-compose.graphsim.yml` (profile `sharepoint-sim`, `app-hub-graphsim`).
 - App conformance: `bash scripts/conformance.sh`. CLI: `platform-py/cli` (`hub pack`, `hub mcp`, `hub dev`).
 - E2E and UI sweep against :8090: `platform/tests-e2e` (`npx playwright test`, `node ui-sweep/run.mjs [--quick]`). Resilience: `platform/loadtest/py-dr.mjs`, `py-resilience.mjs` (they only touch `app-hub-*`).

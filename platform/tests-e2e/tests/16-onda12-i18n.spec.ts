@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { apiAs, stateFile } from './helpers';
 
-// Wave 12 (2.8) — Administration/Operations in the browser's language (Accept-Language, without
+// Wave 12 (2.8) - Administration/Operations in the browser's language (Accept-Language, without
 // a saved preference): the server delivers the page translated by the catalog, the
 // hub-i18n.js translates what the JavaScript writes afterwards (toasts) and the error messages of the
 // API arrive translated. Does not change the admin's preference (other specs expect pt-BR).

@@ -1,5 +1,5 @@
 # Third-party dependencies of the hub-servicedesk image (hub-sdk-python + servicedesk app) and the
-# build dependencies of the two local packages. Source for requirements.lock (with hashes) — see "Atualizar
+# build dependencies of the two local packages. Source for requirements.lock (with hashes) - see "Atualizar
 # dependências Python" in platform/README.md. No openpyxl/calamine: the app neither reads nor writes
 # spreadsheets.
 fastapi==0.141.1

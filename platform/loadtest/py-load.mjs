@@ -1,5 +1,5 @@
 // Load: how many simultaneous users the hub handles. Virtual users (closed loop, with think time) run the
-// script of a real person — Início, catalog, open the app, navigate, search — in load steps.
+// script of a real person - Início, catalog, open the app, navigate, search - in load steps.
 //
 //   HUB=http://127.0.0.1:8097 HUB_DEMO_PASSWORD=… node loadtest/py-load.mjs [--steps 25,50,100,200] [--dur 60]
 //        [--think 2000] [--app ativos] [--out file.md]
@@ -93,7 +93,7 @@ for (const n of STEPS) {
 }
 const best = rows.filter((r) => r.ok).at(-1);
 const md = [
-  `# Carga — ${new Date().toISOString()}`, '',
+  `# Carga - ${new Date().toISOString()}`, '',
   `Hub ${HUB} · app ${APP} · ${DUR / 1000} s por degrau · pensar ~${THINK} ms · critério p95 < ${P95_MAX} ms e erros < ${ERR_MAX * 100}%`, '',
   '| Usuários | req/s | p50 ms | p95 ms | p99 ms | Erros | Resultado |', '|---|---|---|---|---|---|---|',
   ...rows.map((r) => `| ${r.users} | ${r.rps.toFixed(1)} | ${r.p50.toFixed(0)} | ${r.p95.toFixed(0)} | ${r.p99.toFixed(0)} | `

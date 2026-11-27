@@ -35,7 +35,7 @@
     {
       "check": "jargao",
       "route": "^/developers(/|$)",
-      "reason": "Portal do desenvolvedor (F24): a documentação técnica (referência da CLI, SDK, contrato do app) precisa citar variáveis de ambiente, verbos HTTP e caminhos de API — é o conteúdo, para desenvolvedores."
+      "reason": "Portal do desenvolvedor (F24): a documentação técnica (referência da CLI, SDK, contrato do app) precisa citar variáveis de ambiente, verbos HTTP e caminhos de API - é o conteúdo, para desenvolvedores."
     },
     {
       "check": "http-status",

@@ -40,7 +40,7 @@ final_message() {
   echo
   echo "Application Hub no ar: $HUB_PUBLIC_URL  (projeto $P, porta $HUB_PORT)"
   echo "Senha temporária do primeiro acesso:  cat $dir/.secrets/primeiro-acesso.txt  (apague depois de entrar)"
-  echo "Chave mestra do cofre: $dir/.secrets/master.key — copie para fora do servidor."
+  echo "Chave mestra do cofre: $dir/.secrets/master.key - copie para fora do servidor."
   if [ -f "$dir/.secrets/hub-env.sh" ]; then echo "Comandos manuais no engine do hub:  source $dir/.secrets/hub-env.sh"; fi
   if [ "${HUB_SSO_PROVIDER:-}" = entra ]; then
     echo "Login Microsoft: registre no app registration a Redirect URI $HUB_PUBLIC_URL/auth/entra/callback"

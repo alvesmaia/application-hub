@@ -41,7 +41,7 @@ async def dashboard_page(st: State, req: Request) -> Response:
     if counts is not None:
         start, end = body.find('<div class="metric-grid">'), body.find('<div class="dashboard-grid">')
         body = body[:start] + views.metric_cards(counts) + body[end:]
-    # Wave 8 — demo feature flag `novo-resumo` (Platform › Feature flags): the
+    # Wave 8 - demo feature flag `novo-resumo` (Platform › Feature flags): the
     # hub evaluates it for the user and sends it in `x-hub-flags`.
     if flags.from_headers(req.headers).is_on(FLAG_NOVO_RESUMO):
         banner = views.flag_banner(counts if counts is not None else DEMO_COUNTS)

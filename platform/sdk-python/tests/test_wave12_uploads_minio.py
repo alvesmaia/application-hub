@@ -3,7 +3,7 @@
 images ``HUB_MINIO_IMAGE``/``HUB_MC_IMAGE``): commit + promote, rolled-back transaction, crash
 between the phases with orphan cleanup, pre-signed ``PUT``."""
 
-# ruff: noqa: S603, S607 — the test controls Docker with fixed arguments
+# ruff: noqa: S603, S607 - the test controls Docker with fixed arguments
 from __future__ import annotations
 
 import asyncio
@@ -105,7 +105,7 @@ async def test_two_phase_upload_with_minio(pool: Any, minio: S3Connection) -> No
     url = s3.put_url
 
     def put() -> int:
-        req = urllib.request.Request(url, data=b"via url", method="PUT")  # noqa: S310 — local http URL of the test
+        req = urllib.request.Request(url, data=b"via url", method="PUT")  # noqa: S310 - local http URL of the test
         with urllib.request.urlopen(req, timeout=10) as r:  # noqa: S310
             return int(r.status)
 

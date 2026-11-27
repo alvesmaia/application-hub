@@ -1,6 +1,6 @@
 // One-time cleanup of the production state (hub STOPPED): node scripts/prod_cleanup.mjs <copy-of-/data-folder>
 // Removes test leftovers (E2E/probes) without touching the audit, the databases or the real accounts.
-// Prints only counts and names of test items — never values.
+// Prints only counts and names of test items - never values.
 import fs from 'node:fs';
 import path from 'node:path';
 

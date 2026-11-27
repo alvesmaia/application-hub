@@ -9,7 +9,7 @@
 #   PYTHONDONTWRITEBYTECODE, temp files in /scratch via TMPDIR);
 # - HEALTHCHECK without curl: `python -m inventory --health` (GET /inventory on the app itself);
 # - HUB_JOBS_MODE=process: durable jobs in a process separate from the web (no competing for the
-#   GIL with requests; an OOM during an import does not bring down the web) — see hub_sdk.app.
+#   GIL with requests; an OOM during an import does not bring down the web) - see hub_sdk.app.
 # - supply chain: base image pinned by digest; ALL dependencies (including
 #   transitive ones and the build's setuptools) come from demo-apps-py/inventory/requirements.lock,
 #   installed with --require-hashes; the two local packages are installed with --no-deps

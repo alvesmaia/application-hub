@@ -44,7 +44,7 @@ test.describe('autenticado', () => {
 });
 
 // Wave 9: the same screens in the dark theme (the user's choice saved on the server) and
-// the login with the OS in dark — stays light (default theme = light; login is always light).
+// the login with the OS in dark - stays light (default theme = light; login is always light).
 test('login (SO escuro → claro)', async ({ browser }) => {
   const ctx = await browser.newContext({ colorScheme: 'dark', viewport: { width: 1440, height: 900 }, locale: 'pt-BR' });
   const page = await ctx.newPage();
@@ -53,7 +53,7 @@ test('login (SO escuro → claro)', async ({ browser }) => {
   await ctx.close();
 });
 
-test.describe('autenticado — tema escuro', () => {
+test.describe('autenticado - tema escuro', () => {
   test.use({ storageState: stateFile('admin') });
   test.beforeAll(async ({ playwright }) => {
     const api = await playwright.request.newContext({ baseURL: process.env.HUB || 'http://localhost:8080', storageState: stateFile('admin'), extraHTTPHeaders: { origin: process.env.HUB || 'http://localhost:8080' } });

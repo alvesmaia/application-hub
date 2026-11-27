@@ -210,7 +210,7 @@ def cleanup_old_exports(
     scratch: Path, max_age_s: float = 6 * 3600, active_uploads: set[str] | None = None
 ) -> int:
     """Deletes from ``/scratch``: exports (``export-*.xlsx``/``.part``) older than ``max_age_s``;
-    uploads (``upload-*.xlsx``) outside ``active_uploads`` and older than 1 h — or, without the list
+    uploads (``upload-*.xlsx``) outside ``active_uploads`` and older than 1 h - or, without the list
     (DB down), older than 24 h."""
     n = 0
     now = time.time()

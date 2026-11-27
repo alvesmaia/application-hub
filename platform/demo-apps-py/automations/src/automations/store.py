@@ -37,7 +37,7 @@ async def create_run(
     conn: Any, p: Process, params: dict[str, Any], trigger: str, who: Requester, trigger_id: int | None = None
 ) -> Run:
     """Run (pinned to the process's package version NOW) + job ``automations.run`` + audit event,
-    with ``conn`` — the caller's transaction."""
+    with ``conn`` - the caller's transaction."""
     rid = await conn.fetchval(
         "INSERT INTO aut_runs (process_id, process_name, package_name, package_version, params, trigger, "
         "requested_by, requested_login, trigger_id, timeout_s) "
@@ -61,7 +61,7 @@ def summary(params: dict[str, Any]) -> str:
 
 async def start_run(pool: Any, run_id: int) -> Run | None:
     """``pendente`` → ``processando`` (a retry finds it already ``processando``); ``None`` when the
-    run is terminal (cancelled meanwhile) or gone — the job then has nothing to do."""
+    run is terminal (cancelled meanwhile) or gone - the job then has nothing to do."""
     async with pool.acquire() as c:
         row = await c.fetchrow(
             f"UPDATE aut_runs SET status = $2, started_at = coalesce(started_at, now()) "

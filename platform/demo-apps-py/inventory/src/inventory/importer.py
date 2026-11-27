@@ -309,7 +309,7 @@ class ImportHandler:
                     await c.copy_records_to_table("assets", records=fresh, columns=[c_.key for c_ in COLS])
                 return len(fresh), errs, False
         except (asyncpg.PostgresError, OSError) as e:
-            # E.g. an asset tag inserted by someone else during the import — the whole batch
+            # E.g. an asset tag inserted by someone else during the import - the whole batch
             # is rejected (the transaction was rolled back).
             first, last = good[0][0], good[-1][0]
             msg = f"lote não gravado: {db_error_text(e)}"

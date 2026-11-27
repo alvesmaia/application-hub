@@ -17,6 +17,8 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   **Remover apps de exemplo** in the page header (they stay hidden through `<data>/apps.removed.json`).
 
 ### Changed
+- No em dashes in the hub, its apps, templates and documentation: a plain hyphen everywhere (a test guards the
+  catalog, templates, docs and shell scripts).
 - Faster navigation: an app opened again in the same tab session skips the 3.5 s loader (the skeleton shows only
   until the content arrives); the English catalog answers 304 when unchanged; CSS/JS/JSON assets travel gzipped
   (hub.css 108 KB → 24 KB) and are linked with their version (`?v=`), cached for a year instead of revalidated
@@ -30,11 +32,11 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 - Containers: the "Últimos 5 minutos" chart opens already drawn (the host is sampled in the background every 5 s,
   not only while someone looks at the page).
 
-## [0.13.0] — 2026-11-27
+## [0.13.0] - 2026-11-27
 
 ### Added
 - Apps: spreadsheet-style column filters (`<table data-hub-colfilter>` + `<th data-hub-col>`, §25) in app
-  fragments, mounted by `HubKit.mount` — an adapted app keeps the per-column filter/sort of its header.
+  fragments, mounted by `HubKit.mount` - an adapted app keeps the per-column filter/sort of its header.
 - Adapting an existing app: `port.json` keeps the original CSS untouched (copies byte for byte, the hub's changes
   in one overrides file, `hub port css` builds the served CSS) and `port-inventory.md` lists the routes and
   behaviors; `hub check` (step `porte`) fails on an edited copy or a pending item. AGENTS.md: order of work,
@@ -64,10 +66,10 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 - Staging: `data-hub-get`/`-post`/SSE of an app went to `/_frag/…` instead of `/staging/_frag/…` (hub-kit.js
   loads before the tag that carried the prefix) and the page's CSP refused them.
 
-## [0.12.0] — 2026-11-27
+## [0.12.0] - 2026-11-27
 
 ### Added
-- `hub compare <original-url>`: the original app and the adapted one (in `hub dev`) page by page — screenshots
+- `hub compare <original-url>`: the original app and the adapted one (in `hub dev`) page by page - screenshots
   side by side and a style difference (fonts, palette, radii, counts of buttons/fields/rows/links/icons);
   fails above `--max-diff` (25%) and says what to fix. Optional dependency: Playwright.
 - SDK: `{% block sidebar %}` in `workspace.html` takes the original sidebar's markup (the hub keeps collapse,
@@ -84,7 +86,7 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   keep fonts and icon fonts, run `hub compare` until it passes, and port every route (or list what is missing
   before publishing).
 
-## [0.11.0] — 2026-11-26
+## [0.11.0] - 2026-11-26
 
 ### Fixed
 - Inside apps the hub overwrote the app's `--app-ink` (text-ink role, CONTRATO-APP §29) with the catalog's identity
@@ -106,7 +108,7 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 ### Changed
 - The GitHub link and the hub's version moved from the header to the foot of the side menu.
 
-## [0.10.0] — 2026-11-26
+## [0.10.0] - 2026-11-26
 
 ### Changed
 - Governança › Configurações: tabs Geral · Aplicações · Segurança e chaves · Uso; per app two switches (status page,
@@ -116,7 +118,7 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 - Health › Observabilidade: one compact bar of selects (application, environment, window) instead of three rows of
   buttons; no repeated heading.
 
-## [0.9.0] — 2026-11-26
+## [0.9.0] - 2026-11-26
 
 ### Changed
 - Variables: no arrow and no "gerida" next to the name; a lock (hint "Mantida pelo hub") marks the variables the hub
@@ -126,7 +128,7 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 - Pagination: previous/next in the middle and "items per page" on the right; every paged table shows 10 per page
   by default (audit, backups, containers, tasks, users, Inbox…).
 
-## [0.8.0] — 2026-11-26
+## [0.8.0] - 2026-11-26
 
 ### Changed
 - Sample apps' databases and roles are `app_<id>`, like any app (they were the bare ids). Existing installs move
@@ -137,10 +139,10 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 - Database access screen without explanatory texts: no "external access on/off" lines, no copy in the new-account and
   credentials dialogs, no hint under "Banco do hub".
 
-## [0.7.0] — 2026-11-26
+## [0.7.0] - 2026-11-26
 
 ### Removed
-- Search: the hub no longer has a global search — no Ctrl+K palette, no `/search` page, no `GET/POST /api/me/search`,
+- Search: the hub no longer has a global search - no Ctrl+K palette, no `/search` page, no `GET/POST /api/me/search`,
   no `search` operation in `/api/v1` and MCP, no "Use the search" step in the tutorial and tour. The usage analytics
   no longer count searches nor keep terms without results (`PUT /api/v1/analytics/terms` is gone; data saved by
   older versions drops those fields on load). Apps: the hub no longer calls `GET /{app}/_hub/search`; the SDK drops
@@ -162,7 +164,7 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   and does not test the same code twice: a green full run records the code's identity (docs and the release's
   version line do not count), so the push hook and the release's push skip it (`HUB_CHECK_FORCE=1` forces).
 
-## [0.6.1] — 2026-11-25
+## [0.6.1] - 2026-11-25
 
 ### Changed
 - Database read access: the allowed networks are optional (`--db-allowed-cidrs` or an empty answer): without them,
@@ -170,7 +172,7 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   network or VPN. TLS, password and read-only stay; Docker gateways stay refused; a typed-but-invalid network
   still shuts the door.
 
-## [0.6.0] — 2026-11-25
+## [0.6.0] - 2026-11-25
 
 ### Added
 - Read access to the apps' database from other machines (dashboards, SQL clients) by host and port: off by default;
@@ -180,7 +182,7 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   accounts with a responsible person, chosen databases (never `hub`), validity, read only; new password, removal;
   suspended when the person is deactivated or loses every access.
 
-## [0.5.1] — 2026-11-25
+## [0.5.1] - 2026-11-25
 
 ### Fixed
 - CLI behind a corporate proxy that inspects TLS: `hub login`, `hub deploy` and `hub mcp` trust the system's
@@ -188,7 +190,7 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
   ("certificado TLS do hub não confiável (…)") and how to fix it instead of a bare `ConnectError`. Install docs
   mention `uv tool install --native-tls`.
 
-## [0.5.0] — 2026-11-25
+## [0.5.0] - 2026-11-25
 
 ### Added
 - `hub login` signs the CLI in through the browser (OAuth device flow, RFC 8628): the CLI prints a link and a code,
@@ -220,7 +222,7 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 - Users: one's own SSO account shows the ⋯ disabled, with the reason, instead of an empty menu.
 - Containers (`/admin/runtime`): the host's CPU and memory bars slide to the new values instead of jumping.
 
-## [0.4.2] — 2026-11-24
+## [0.4.2] - 2026-11-24
 
 ### Added
 - App sidebar collapse on the desktop: the SDK sidebar has a "Recolher menu" button (`data-hub-menu="collapse"`);
@@ -250,7 +252,7 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 - Isolated validation instance (`iso-instance.sh`): creates each sample app's own database role, as the stack does;
   apps deployed by the hub no longer fail to sign in to their database.
 
-## [0.4.1] — 2026-11-24
+## [0.4.1] - 2026-11-24
 
 ### Fixed
 - MCP sign-in (OAuth) behind a corporate proxy: the client document (e.g. GitHub Copilot desktop's
@@ -290,7 +292,7 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 - admin/runtime: the "Runtime unavailable" banner names the likely cause (socket missing, no permission, connection
   refused, timeout) instead of the raw engine exception.
 
-## [0.4.0] — 2026-11-23
+## [0.4.0] - 2026-11-23
 
 ### Attention
 - **Sample apps renamed to English ids and routes:** `ativos`→`inventory`, `fornecedores`→`suppliers`,
@@ -309,11 +311,11 @@ From `platform-py/` (the sample apps and the hub stop for a few minutes):
 1. Backup (`docs/ATUALIZACAO.md` §1).
 2. `git fetch --tags && git checkout v0.4.0`
 3. `bash scripts/install.sh --config-only --yes` (new secret names are generated only if missing).
-4. `dc build` — the new images (hub and sample apps).
-5. `bash scripts/rename-sample-apps.sh --yes` — dumps the apps' Postgres and `.prod.env` to `.secrets/rename-apps/`,
+4. `dc build` - the new images (hub and sample apps).
+5. `bash scripts/rename-sample-apps.sh --yes` - dumps the apps' Postgres and `.prod.env` to `.secrets/rename-apps/`,
    stops the hub and the old sample containers, renames databases/roles/job kinds, copies the buckets, renames the
    `.prod.env` keys and the hub data, removes the old containers. Safe to run again.
-6. `dc up -d` — the hub and the sample apps under the new ids.
+6. `dc up -d` - the hub and the sample apps under the new ids.
 7. Check: `/healthz` answers `"version":"0.4.0"`, every `<project>-app-*` container is `(healthy)`, the catalog opens
    `/apps/inventory`, and staging of a sample app (if you used it) is deployed again from Implantações.
 
@@ -321,7 +323,7 @@ Rollback: `bash scripts/rename-sample-apps.sh --yes --reverse`, then `git checko
 (or restore the step 1 backup). Not using the sample apps (`--no-demo-apps`)? Run step 5 anyway: it renames only
 what exists.
 
-## [0.3.2] — 2026-11-23
+## [0.3.2] - 2026-11-23
 
 ### Upgrade from 0.3.1
 Only the hub changes. From `platform-py/`: `git fetch --tags && git checkout v0.3.2`, then
@@ -333,13 +335,13 @@ Only the hub changes. From `platform-py/`: `git fetch --tags && git checkout v0.
   the other screens) instead of "current usage · updates itself".
 - Menu icons: Status shows the gauge; the Operação group (tasks, backups, health, logs) shows a wrench.
 
-## [0.3.1] — 2026-11-23
+## [0.3.1] - 2026-11-23
 
 ### Upgrade from 0.3.0
 Only the hub changes (no compose, secrets or sample app change). From `platform-py/`:
 
 1. `git fetch --tags && git checkout v0.3.1`
-2. `python scripts/hub_update.py --build --project <project>` — swaps the hub without downtime (backup, copy, watch,
+2. `python scripts/hub_update.py --build --project <project>` - swaps the hub without downtime (backup, copy, watch,
    automatic rollback). Measured: one lost check of ~0.3 s; the apps are not touched.
 3. Check: `curl -s http://127.0.0.1:<port>/healthz` answers `"version":"0.3.1"`.
 
@@ -362,7 +364,7 @@ Coming from 0.2.0, follow the 0.3.0 steps first. Rollback: `python scripts/hub_u
 - App status labels follow status pages: Operational, Degraded (was "Unstable") and Outage (pt-BR: Operacional,
   Degradado, Indisponível).
 
-## [0.3.0] — 2026-11-23
+## [0.3.0] - 2026-11-23
 
 ### Attention
 - **One Postgres only:** the hub's `hub` database now lives in the apps' server (`app-hub-app-db`); the compose no
@@ -378,7 +380,7 @@ Coming from 0.2.0, follow the 0.3.0 steps first. Rollback: `python scripts/hub_u
 - New sample app `automacoes`: `install.sh --config-only --yes` adds its secrets (`APP_HUB_APP_DB_PASSWORD_AUTOMACOES`,
   `HUB_INTERNAL_TOKEN_AUTOMACOES`); the next `dc up -d` recreates the hub once (new network and broker range, ~10 s).
 - Sessions: 24 h without use (was 30 min), renewed at most once per hour while browsing, 3 days after the login at
-  most (was 12 h) — `HUB_SESSION_IDLE_MIN`, `HUB_SESSION_RENEW_MIN`, `HUB_SESSION_ABSOLUTE_HOURS`.
+  most (was 12 h) - `HUB_SESSION_IDLE_MIN`, `HUB_SESSION_RENEW_MIN`, `HUB_SESSION_ABSOLUTE_HOURS`.
 
 ### Upgrade from 0.2.0
 Run from `platform-py/` with `dc() { docker compose --env-file .prod.env -f docker-compose.yml -f docker-compose.apps.yml -f docker-compose.prod.yml "$@"; }`
@@ -386,16 +388,16 @@ Run from `platform-py/` with `dc() { docker compose --env-file .prod.env -f dock
 
 1. Backup (`docs/ATUALIZACAO.md` §1) and keep the vault master key and `.prod.env` off the server.
 2. `git fetch --tags && git checkout v0.3.0`
-3. `bash scripts/install.sh --config-only --yes` — adds only the missing secrets (sample apps' database roles,
+3. `bash scripts/install.sh --config-only --yes` - adds only the missing secrets (sample apps' database roles,
    `automacoes`); nothing else in `.prod.env` changes.
 4. Only if a `<project>-db` container still exists (installs from before the single Postgres): follow «Moving to the
    single Postgres» in `docs/ATUALIZACAO.md` (`dc build`, `dc up -d --no-deps app-hub-app-db`,
    `bash scripts/db-merge.sh --project <project>`, `dc up -d`) and skip step 5.
-5. `python scripts/hub_update.py --build --project <project>` — swaps the hub without downtime (backup, copy, watch,
+5. `python scripts/hub_update.py --build --project <project>` - swaps the hub without downtime (backup, copy, watch,
    automatic rollback).
    If it stops with "a borda <project>-edge não está no ar" (installs without the edge yet), skip it: step 6 creates
    the edge and takes over the port (~10 s, once). Podman hosts run it through `podman-docker` (as `install.sh` requires).
-6. `dc build && dc up -d` — rebuilds the sample apps, creates `automacoes` and applies this version's compose changes.
+6. `dc build && dc up -d` - rebuilds the sample apps, creates `automacoes` and applies this version's compose changes.
    This step recreates the hub once (new app network and broker range) and each sample app.
 7. Check: `curl -s http://127.0.0.1:<port>/healthz` answers `"version":"0.3.0"`; `docker ps` shows every
    `<project>-app-*` container `(healthy)`; sign in and open an app; Administração › Saúde has no alert.
@@ -421,7 +423,7 @@ Rollback: `python scripts/hub_update.py --rollback` (hub), then `git checkout v0
 - Row hover in tables left a lighter strip under the actions column; the select arrow could render as two triangles.
 
 ### Added
-- Sample app **Automações** (`automacoes`): a small automation orchestrator — versioned Python packages (upload on the
+- Sample app **Automações** (`automacoes`): a small automation orchestrator - versioned Python packages (upload on the
   screen, through the API with an `app-api` token, or MCP), processes pinned to a package version, scheduled triggers
   (interval or daily, a single fire across processes) and runs (durable jobs, shown in Tasks) with the form generated
   from the package fields and validated on the server. Package code runs in a subprocess without the app's secrets.
@@ -648,7 +650,7 @@ Rollback: `python scripts/hub_update.py --rollback` (hub), then `git checkout v0
   (only `assets/demo.css` and the JS tests' jsdom remain), non-Python SDK examples in the Contract and in the guides;
   the tests' E2E and `hub pack` now use the `app-hub` stack and the Python CLI. Python only.
 - In-Hub approval of agent actions in the Inbox (`destructive_actions = "approve_in_hub"`, page
-  `/account/agent-approval/{id}`): the default becomes `confirm` — the first destructive MCP call returns a
+  `/account/agent-approval/{id}`): the default becomes `confirm` - the first destructive MCP call returns a
   `confirm_token` and the second one executes; the AI client is the one that confirms with the person. `approve_in_hub`
   in configuration is now refused at startup (use `confirm` or `deny`). Old agent requests disappear from the Inbox.
 - `docs/migracao/` (migration history).
@@ -659,7 +661,7 @@ Rollback: `python scripts/hub_update.py --rollback` (hub), then `git checkout v0
   gateway, requires nothing from the apps; on by default (`HUB_USAGE=0` turns it off), same retention as analytics.
   API `GET /api/v1/usage` (`usage_query`, also in MCP); access with "Edit settings" (Editar configurações) or
   "View audit" (Ver auditoria).
-- `install.sh`: interactive mode (no options, in a terminal) — asks for admin, port, bind, public URL, project,
+- `install.sh`: interactive mode (no options, in a terminal) - asks for admin, port, bind, public URL, project,
   network range and example apps, with the default in brackets, shows a summary and asks for confirmation; `--yes`
   keeps the non-interactive mode for CI. `--get-compose` downloads the official docker-compose (fixed version, sha256
   checked) into `~/.local/bin`, for RHEL/Rocky without root.
@@ -703,12 +705,12 @@ Rollback: `python scripts/hub_update.py --rollback` (hub), then `git checkout v0
 - Installing without the example apps (`HUB_APPS_JSON=./apps.empty.json`) brought the hub down at boot
   (`Aplicação desconhecida: ativos` (Unknown application: ativos)): initial variable loading now discards app bindings
   outside the catalog.
-- `hub deploy`: the hub's refusal comes back with its reason (in the `error` field) — before, a large package only said
+- `hub deploy`: the hub's refusal comes back with its reason (in the `error` field) - before, a large package only said
   `400`. `hub pack` refuses before sending anything over 20 MB and points to the largest files; the hub reports the
   size and the limit. Limit documented in the publishing guide.
 - `hub check`: the `§3 página`/`§3 fragmento` conformance failure shows the status and the last exception from
   `.hub/check-app.log` (and, for `no such column`/`no such table`, the tip to delete `.hub/*.db`).
-- Rootless Podman (RHEL/Rocky): apps start — tmpfs `/scratch` with `U` instead of `uid=`/`gid=` (refused by Podman);
+- Rootless Podman (RHEL/Rocky): apps start - tmpfs `/scratch` with `U` instead of `uid=`/`gid=` (refused by Podman);
   without the `cpu` controller delegated to the user, build and containers run without a CPU limit instead of every
   `RUN` failing; compose socket configurable (`HUB_CONTAINER_SOCKET_HOST`) and `install.sh` detects rootless Podman,
   warns about linger/CPU and records the socket; `HUB_BIND6` avoids the `[::1]` conflict with `--bind 0.0.0.0`;
@@ -718,11 +720,11 @@ Rollback: `python scripts/hub_update.py --rollback` (hub), then `git checkout v0
   `openapi.json`. `hub check` shows the fix command for lint and formatting.
 - Contract §13 aligned with §25 (WebSocket `connect-src`); backup scheduler test no longer depends on the clock.
 
-## [0.2.0] — 2026-10-09
+## [0.2.0] - 2026-10-09
 
 ### Added
-- Dashboard kit (lightweight BI): SQL connections in Connections (Conexões) — PostgreSQL, MySQL/MariaDB and SQL Server
-  (password in the vault, read-only by default, row/time limits, test) — and app queries through the broker
+- Dashboard kit (lightweight BI): SQL connections in Connections (Conexões) - PostgreSQL, MySQL/MariaDB and SQL Server
+  (password in the vault, read-only by default, row/time limits, test) - and app queries through the broker
   (`POST /_hub/sql/{conexão}/query`, audit without data).
 - SDK: `hub_sdk.sql` (broker in the hub, `.hub/connections.toml` in dev, `from_engine`) and `hub_sdk.dashboards`
   (datasets with cache, filters, KPIs, SVG line/area/bar/pie/donut charts, table, CSV/XLSX export); extra
@@ -736,7 +738,7 @@ Rollback: `python scripts/hub_update.py --rollback` (hub), then `git checkout v0
 ### Changed
 - `hub`, `hub_sdk` and `hub-cli` unified at 0.2.0 (CLI templates pin `hub-sdk==0.2.0`).
 
-## [0.1.0] — 2026-10-08
+## [0.1.0] - 2026-10-08
 
 First public release (pre-1.0). Hub in Python 3.12 (FastAPI + Jinja2 SSR, asyncpg, PostgreSQL, MinIO, Docker).
 
@@ -747,7 +749,7 @@ First public release (pre-1.0). Hub in Python 3.12 (FastAPI + Jinja2 SSR, asyncp
   WebSocket through the gateway, mandatory readiness at `/{app}/_hub/ready`.
 - Local login with a password policy, sessions, role-based access control (RBAC), personal scoped tokens; single
   sign-on with Microsoft Entra ID (OIDC + PKCE, group/role mapping).
-- Administration: users and roles, variables and connections (SharePoint/S3 through the broker — credentials never in
+- Administration: users and roles, variables and connections (SharePoint/S3 through the broker - credentials never in
   HTML/API/logs), chained audit with a signed external anchor, vault with master key and rotation.
 - Operations: deployments via `.hubapp` packages with image build, blue/green, staging, container supervisor, backups
   with least-privilege credentials and restore, "Provision storage" (Provisionar armazenamento).

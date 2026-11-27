@@ -1,4 +1,4 @@
-/* hub-ux-pages.js — row menus, service worker registration, skeleton between hub pages and the
+/* hub-ux-pages.js - row menus, service worker registration, skeleton between hub pages and the
  * Administration page tabs/drawer/filter. Kept apart from hub-ux.js for size; loaded after
  * hub-ux-colfilter.js on the same pages. */
 

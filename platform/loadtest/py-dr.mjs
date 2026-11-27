@@ -1,4 +1,4 @@
-// F7a — DR against the Python stack (`app-hub-*`, hub on :8090). Touches nothing outside `app-hub-*`:
+// F7a - DR against the Python stack (`app-hub-*`, hub on :8090). Touches nothing outside `app-hub-*`:
 //
 //   HUB=http://localhost:8090 HUB_USER=admin@demo.local HUB_PASSWORD=… node loadtest/py-dr.mjs [--out arq.md]
 //
@@ -22,7 +22,7 @@ const OBJ_PASS = process.env.APP_HUB_OBJSTORE_PASSWORD || 'hubpy-objstore-dev';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const t0 = Date.now();
 const lines = [];
-const log = (m) => { const l = `${((Date.now() - t0) / 1000).toFixed(1)} s — ${m}`; lines.push(l); console.log(l); };
+const log = (m) => { const l = `${((Date.now() - t0) / 1000).toFixed(1)} s - ${m}`; lines.push(l); console.log(l); };
 const docker = (...a) => execFileSync('docker', a, { encoding: 'utf8' }).trim();
 const psql = (db, sql) => docker('exec', DBC, 'psql', '-U', 'hub', '-d', db, '-tAc', sql);
 const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
@@ -141,12 +141,12 @@ const checks = [
   ['apps respondendo depois (servicos/dashboard e ficha do fornecedor)', tOk > 0, tOk ? 'HTTP 200' : 'falhou'],
   ['manutenção desligada no fim', rtAfter.length === 0, rtAfter.length ? 'ainda ligada' : 'desligada'],
 ];
-checks.forEach(([n, ok, d]) => log(`${ok ? 'OK ' : 'FALHOU'} ${n} — ${d}`));
+checks.forEach(([n, ok, d]) => log(`${ok ? 'OK ' : 'FALHOU'} ${n} - ${d}`));
 const total = ((tOk || Date.now()) - tDisaster) / 1000;
 const day = new Date().toISOString().slice(0, 10);
 const outArg = process.argv.indexOf('--out');
 const outFile = outArg > 0 ? path.resolve(process.argv[outArg + 1]) : path.join(here, 'results', day, 'py-dr.md');
 fs.mkdirSync(path.dirname(outFile), { recursive: true });
-fs.writeFileSync(outFile, `# DR — pilha Python (${new Date().toISOString()})\n\nRTO: ${Object.entries(rto).map(([a, s]) => `${a} ${s.toFixed(1)} s`).join(' · ')} · do desastre ao app respondendo: ${total.toFixed(1)} s\n\n${lines.map((l) => `- ${l}`).join('\n')}\n`);
+fs.writeFileSync(outFile, `# DR - pilha Python (${new Date().toISOString()})\n\nRTO: ${Object.entries(rto).map(([a, s]) => `${a} ${s.toFixed(1)} s`).join(' · ')} · do desastre ao app respondendo: ${total.toFixed(1)} s\n\n${lines.map((l) => `- ${l}`).join('\n')}\n`);
 console.log(`\nRelatório: ${outFile}`);
 if (checks.some(([, ok]) => !ok)) process.exit(1);

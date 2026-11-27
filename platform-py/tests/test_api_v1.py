@@ -146,7 +146,7 @@ def test_app_scoped_token_limits_apps_everywhere(hub: TestClient) -> None:
 def test_writes_are_audited_and_rate_limited(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     hub = api_hub(tmp_path, monkeypatch, env={"HUB_API_RATE_PER_MIN": "3"})
     # the limit is a fixed window aligned to the clock minute: requests that straddle a minute boundary (a slow,
-    # loaded machine) reset the count and the 429 never came — freeze the clock mid-window
+    # loaded machine) reset the count and the 429 never came - freeze the clock mid-window
 
     import hub.api.v1_base as v1_base
 

@@ -7,7 +7,7 @@ Run on 28/09/2026 in the compose stack (Chromium 1440×900, light and dark theme
 driving the browser **with the keyboard only** through Playwright (the automatable steps became the
 "accessibility" scenario and the other wave scenarios in `tests-e2e/tests/10-onda9.spec.ts`) and
 checking the focus ring in the screenshots. No test with real screen readers (NVDA/JAWS/VoiceOver)
-— recorded in PENDENCIAS.
+- recorded in PENDENCIAS.
 
 | # | Where | Keys | Expected | Result |
 |---|---|---|---|---|
@@ -23,7 +23,7 @@ checking the focus ring in the screenshots. No test with real screen readers (NV
 | 11 | App (fragment) | `Tab` in the sidebar, `Enter` on a section | Section change moves focus to the new page title (read by screen readers); sidebar with `aria-current` (Python/SDK apps) | ✅ |
 | 12 | Administration/Operations modals | `Enter` on the button, `Tab`, `Esc` | Open with focus on the first field; `Tab` stays trapped in the dialog (generic in `hub-ux.js` for every modal `role=dialog`); on close, focus returns to the button that opened it | ✅ |
 | 13 | Motion | system with "reduce motion" | Spinner, transitions and animations off | ✅ (global rule in `hub.css`) |
-| 14 | Targets | — | Icon buttons, filters and menu options ≥ 24×24 px | ✅ |
+| 14 | Targets | - | Icon buttons, filters and menu options ≥ 24×24 px | ✅ |
 
 Failures found and fixed during the walkthrough: script order (Inbox actions with no effect),
 contrast of grays and of the apps' own colors (in both themes), missing labels in the

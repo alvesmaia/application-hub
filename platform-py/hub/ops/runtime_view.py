@@ -144,14 +144,14 @@ def _has_db(raw: list[Row], app: str) -> bool:
 
 
 def _usage(lv: Row | None, r: Row) -> tuple[str, str, float | None, float]:
-    """x / y of CPU and memory; a container that is not running uses 0 (only an unmeasurable running one shows —)."""
+    """x / y of CPU and memory; a container that is not running uses 0 (only an unmeasurable running one shows -)."""
     mem_mib = r["memory_bytes"] / MIB
     idle = not lv or lv.get("state") != "running"
     cpu_v = 0.0 if idle else lv["cpu_used"] if lv else None
     used: float | None = (
         0.0 if idle else float(lv["mem_used"]) / MIB if lv and lv["mem_used"] is not None else None
     )
-    num = lambda v, d: "0" if idle else "—" if v is None else br(v, d)  # noqa: E731
+    num = lambda v, d: "0" if idle else "-" if v is None else br(v, d)  # noqa: E731
     cpu = f"{num(cpu_v, 2)} / {br(r['cpu'], 2)} vCPU"
     mem = f"{num(used, 0)} / {br(mem_mib, 0)} MiB"
     return cpu, mem, used, float(mem_mib)
@@ -163,11 +163,11 @@ def container_view(r: Row, lv: Row | None, raw: list[Row], reachable: bool) -> R
     state, status = container_state(lv, alert, reachable)
     cpu, mem, used, mem_mib = _usage(lv, r)
     image = lv["image"] if lv else r["image"]
-    uptime = rt.uptime_of(lv["status"]) if lv else "—"
+    uptime = rt.uptime_of(lv["status"]) if lv else "-"
     port = r["upstream"].rstrip("/").rsplit(":", 1)[-1]
-    port = port if port.isdigit() else "—"
+    port = port if port.isdigit() else "-"
     hc = (lv or {}).get("host") or {}
-    pids = 0 if not lv or lv.get("state") != "running" else lv["pids"] if lv.get("pids") is not None else "—"
+    pids = 0 if not lv or lv.get("state") != "running" else lv["pids"] if lv.get("pids") is not None else "-"
     facts = [("Contêiner", r["container"]), ("Aplicação", r["name"]), ("Ambiente", "Staging" if r["env"] == "staging" else "Produção"), ("Estado", status),
              ("Imagem", image), ("Tempo ativo", uptime), ("Porta interna", port), ("CPU", cpu), ("Memória", mem),
              ("Processos", f"{pids} / {r['pids']}"), ("Rede isolada", hc.get("NetworkMode", ""))]  # fmt: skip
@@ -191,7 +191,7 @@ def platform_view(x: Row) -> Row:
     mem_l = mem_cap or (x["mem_limit"] or 0) / MIB
     used = 0.0 if not running else x["mem_used"] / MIB if x["mem_used"] is not None else None
     cpu_v = 0.0 if not running else x["cpu_used"]
-    num = lambda v, d: "—" if v is None else "0" if v == 0 and not running else br(v, d)  # noqa: E731
+    num = lambda v, d: "-" if v is None else "0" if v == 0 and not running else br(v, d)  # noqa: E731
     cpu = f"{num(cpu_v, 2)} / {br(cpu_l, 2)} vCPU" if cpu_l else f"{num(cpu_v, 2)} vCPU"
     mem = f"{num(used, 0)} / {br(mem_cap, 0)} MiB" if mem_cap else f"{num(used, 0)} MiB"
     status = "Em execução" if running else ("Parado" if x["state"] in ("exited", "created") else f"Com problema ({x['state']})")  # fmt: skip
@@ -200,7 +200,7 @@ def platform_view(x: Row) -> Row:
         "id": x["name"], "name": "Plataforma", "env": "platform", "plat": True, "container": x["name"], "image": x["image"],
         "state": "ok" if running else "off", "status": status, "cpu": cpu, "mem": mem,
         "mem_style": f"width:{min(max((used or 0) / mem_l * 100, 0), 100) if mem_l else 0:.0f}%",
-        "uptime": up, "port": "—", "vars_json": "{}",
+        "uptime": up, "port": "-", "vars_json": "{}",
         "facts": [("Contêiner", x["name"]), ("Grupo", "Plataforma (somente leitura)"), ("Estado", status),
                   ("Imagem", x["image"]), ("Tempo ativo", up), ("CPU", cpu), ("Memória", mem),
                   ("Rede", (x.get("host") or {}).get("NetworkMode", ""))],

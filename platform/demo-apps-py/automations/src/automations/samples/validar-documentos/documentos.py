@@ -66,7 +66,7 @@ def validate_lines(text: str, forced: str = "auto") -> dict[str, Any]:
             continue
         c = check(line, forced)
         results.append(
-            {"linha": n, "documento": c.document, "tipo": (c.kind or "—").upper(), "valido": c.valid}
+            {"linha": n, "documento": c.document, "tipo": (c.kind or "-").upper(), "valido": c.valid}
         )
     ok = sum(1 for r in results if r["valido"])
     return {"total": len(results), "validos": ok, "invalidos": len(results) - ok, "resultados": results}

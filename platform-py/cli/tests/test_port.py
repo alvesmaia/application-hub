@@ -17,7 +17,7 @@ DONE = """# Inventory
 - [x] `/tickets` list with header filters
 ## Behaviors
 - [x] board drag and drop → data-hub-drag
-- [~] combobox with search — no kit equivalent yet; <details> list
+- [~] combobox with search - no kit equivalent yet; <details> list
 """
 
 
@@ -84,7 +84,7 @@ def test_inventory_pending_items_and_deviations_without_reason_fail(project: Pat
     ok, out = port.step_port(project)
     assert not ok
     assert "pendente: `/wiki/new` editor" in out
-    assert "desvio sem motivo (`— motivo`): multi-select assignees" in out
+    assert "desvio sem motivo (`- motivo`): multi-select assignees" in out
 
 
 def test_missing_inventory_fails(project: Path) -> None:

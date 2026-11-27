@@ -1,4 +1,4 @@
-"""Feature flags (wave 8) — same algorithm as the ``hub-flags`` crate (shared vectors
+"""Feature flags (wave 8) - same algorithm as the ``hub-flags`` crate (shared vectors
 in ``tests/vectors/flags-vectors.json``).
 
 - **In the request**: :func:`from_headers` reads ``x-hub-flags`` (evaluated by the hub for the

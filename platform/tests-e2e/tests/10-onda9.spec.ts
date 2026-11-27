@@ -316,7 +316,7 @@ async function axe(page: Page) {
 
 for (const theme of ['light', 'dark'] as const) {
   for (const lang of ['pt-BR', 'en'] as const) {
-    test(`axe: 0 violações sérias/críticas — tema ${theme}, idioma ${lang}`, async ({ browser }) => {
+    test(`axe: 0 violações sérias/críticas - tema ${theme}, idioma ${lang}`, async ({ browser }) => {
       test.setTimeout(300_000);
       const api = await apiAs('admin');
       await prefs(api, { theme, lang });

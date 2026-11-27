@@ -6,7 +6,7 @@ transaction does not commit, the event does not exist; if it commits, it stays p
 by ``event_id``: redeliveries have a single effect.
 
 Without a DB, :meth:`Outbox.memory` keeps the events in memory (lost if the process
-dies — only for apps without Postgres).
+dies - only for apps without Postgres).
 """
 
 from __future__ import annotations
@@ -154,7 +154,7 @@ def _payload(ev: Event) -> dict[str, Any]:
 
 
 async def write(conn: Any, ev: Event) -> str:
-    """Writes ``ev`` with ``conn`` — usually the action's transaction. Returns the ``event_id``."""
+    """Writes ``ev`` with ``conn`` - usually the action's transaction. Returns the ``event_id``."""
     eid = new_id("evt")
     await conn.execute(
         "INSERT INTO hub_outbox (event_id, kind, user_name, payload) VALUES ($1, $2, $3, $4)",

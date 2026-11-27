@@ -222,7 +222,7 @@ def test_describe() -> None:
 def test_humanize_and_display() -> None:
     assert present.humanize("data_de_inicio") == "Data de inicio"
     assert present.display(True) == "Sim" and present.display(False) == "Não"
-    assert present.display(None) == "—" and present.display("") == "—"
+    assert present.display(None) == "-" and present.display("") == "-"
     assert present.display("2026-11-02") == "02/11/2026"
     assert present.display(["a", "b"]) == "a, b"
     assert present.display(2.5) == "2,5"
@@ -238,12 +238,12 @@ def test_rows_turn_lists_of_objects_into_tables() -> None:
 
 
 def test_duration_and_when() -> None:
-    assert present.duration(None) == "—"
+    assert present.duration(None) == "-"
     assert present.duration(850) == "850 ms"
     assert present.duration(2300) == "2,3 s"
     assert present.duration(65000) == "1 min 5 s"
     assert present.when(datetime(2026, 11, 23, 11, 5, tzinfo=UTC)) == "23/11/2026 08:05"
-    assert present.when(None) == "—"
+    assert present.when(None) == "-"
     assert present.display(date(2026, 1, 2)) == "02/01/2026"
 
 

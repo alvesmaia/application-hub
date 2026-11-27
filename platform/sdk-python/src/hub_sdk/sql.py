@@ -1,4 +1,4 @@
-"""SQL queries to the platform's connections (PostgreSQL, MySQL/MariaDB, SQL Server) — same API in the hub and in dev.
+"""SQL queries to the platform's connections (PostgreSQL, MySQL/MariaDB, SQL Server) - same API in the hub and in dev.
 
 .. code-block:: python
 
@@ -76,7 +76,7 @@ class SqlConnection:
         c.user_sig = (x_hub_user_sig or None) if c.user is not None else None
         return c
 
-    def _copy(self) -> SqlConnection:  # pragma: no cover — overridden
+    def _copy(self) -> SqlConnection:  # pragma: no cover - overridden
         raise NotImplementedError
 
     async def query(

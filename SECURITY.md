@@ -11,7 +11,7 @@ with the reporter.
 
 | Branch | Support |
 |---|---|
-| `main` (Python hub in `platform-py/`, apps and SDK in `platform/`) | yes — receives fixes |
+| `main` (Python hub in `platform-py/`, apps and SDK in `platform/`) | yes - receives fixes |
 | old tags/releases | no |
 
 ## Scope
@@ -19,7 +19,7 @@ with the reporter.
 - In scope: the hub (`platform-py/hub`), the SDK (`platform/sdk-python`), the `hub-cli` (`platform-py/cli`),
   the gateway, authentication/RBAC, MCP/OAuth, the vault and the deployment scripts.
 - Out of scope: the **demo** credentials and apps (`docker-compose.yml`, `HUB_DEMO_USERS=1`,
-  `*-demo-*` passwords — these are public on purpose), third-party dependencies (report to the
+  `*-demo-*` passwords - these are public on purpose), third-party dependencies (report to the
   original project) and the limitations already listed in `docs/PENDENCIAS.md` ("Known limitations").
 
 There is no bug bounty program.

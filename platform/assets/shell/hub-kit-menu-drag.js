@@ -1,4 +1,4 @@
-/* hub-kit-menu-drag.js — two more declarative behaviors for the apps (part of hub-kit.js, loaded right
+/* hub-kit-menu-drag.js - two more declarative behaviors for the apps (part of hub-kit.js, loaded right
  * after it and before hub-kit-mount.js; documented in docs/CONTRATO-APP.md §25):
  *
  *   dropdown menu   <button data-hub-dropdown="#menu"> + <div id="menu" hidden>: the button shows/hides

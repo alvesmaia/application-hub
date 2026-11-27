@@ -1,4 +1,4 @@
-/* users.js — Access › Users.
+/* users.js - Access › Users.
  *
  * The pages arrive ready from the server; this script opens the forms (mockup's
  * modal), calls /api/admin/users* (application/json,

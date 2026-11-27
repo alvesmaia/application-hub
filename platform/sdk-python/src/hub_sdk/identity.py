@@ -7,7 +7,7 @@ Format (contract, see ``docs/CONTRATO-APP.md``): JSON in **base64url without pad
 
 ``user`` (login) and ``roles`` always present; the others only when filled.
 
-Trust rules: the gateway **always** discards any ``x-hub-*`` coming from the browser and injects its own —
+Trust rules: the gateway **always** discards any ``x-hub-*`` coming from the browser and injects its own -
 the app trusts the header because only the hub can reach it (internal network
 ``hub-app-<id>``). Missing or invalid → guest identity (the app must never treat
 that as administrator).
@@ -114,7 +114,7 @@ def identity_of(conn: HTTPConnection) -> Identity:
 
 
 def user_key(headers_value: str | None) -> str:
-    """Raw header value, trimmed — it is the scope of the idempotency keys (another user's key never returns this user's response)."""
+    """Raw header value, trimmed - it is the scope of the idempotency keys (another user's key never returns this user's response)."""
     return (headers_value or "").strip()
 
 

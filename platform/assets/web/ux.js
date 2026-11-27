@@ -1,6 +1,6 @@
-/* ux.js — wave 9 pages in hub-web (Home, Applications, Inbox, Analytics).
+/* ux.js - wave 9 pages in hub-web (Home, Applications, Inbox, Analytics).
  *
- *  - Home: "Customize" turns on edit mode — drag widgets (HTML5 drag and
+ *  - Home: "Customize" turns on edit mode - drag widgets (HTML5 drag and
  *    drop) or, with the keyboard, the ↑/↓/✕ buttons of each widget; "Add widget",
  *    "Restore default" and (for whoever edits settings) "Save as default for the role".
  *    The layout goes to the server (`PUT /api/me/home`). Changes announced in aria-live.
@@ -341,7 +341,7 @@
     } catch (err) { toast(err.message, 'error'); b.disabled = false; }
   });
 
-  // Wave 13 — catalog: the app's stack opens on mouse hover and focus (CSS) and, on touch,
+  // Wave 13 - catalog: the app's stack opens on mouse hover and focus (CSS) and, on touch,
   // through the "i" button (aria-expanded). Esc or tapping outside closes.
   const closeStacks = (except) => document.querySelectorAll('.app-card.hub-stack-open').forEach((c) => {
     if (c === except) return;

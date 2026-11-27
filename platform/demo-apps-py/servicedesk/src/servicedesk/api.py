@@ -1,6 +1,6 @@
 """API v1 of the ``servicedesk`` (wave 11): tickets (open, query, change status with optimistic
 locking), aggregated management report and pending approval requests (the decision is made through the
-hub Inbox — tool ``inbox_decide`` — which calls the app through the internal channel with the
+hub Inbox - tool ``inbox_decide`` - which calls the app through the internal channel with the
 approver's identity). JSON; RFC 9457 errors.
 
 Hub identity required (``x-hub-user``); outbox audit and idempotency
@@ -36,7 +36,7 @@ from servicedesk.model import now as utcnow
 from servicedesk.state import DBERR, State, StateDep, audit_tx, db_notice, transient, user_of
 
 BASE = "/servicedesk/api/v1"
-TITLE = "Central de Serviços — API"
+TITLE = "Central de Serviços - API"
 VERSION = "1.0.0"
 GRANULARITY = ["dia", "semana", "mes"]
 

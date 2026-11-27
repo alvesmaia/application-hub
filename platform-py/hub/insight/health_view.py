@@ -39,7 +39,7 @@ def _slo_row(s: dict[str, Any], x: dict[str, Any], short: Callable[[str], str]) 
             ".", ","
         ),
         "sli": f"{pc2(x['availability'])} ({x['requests']} req.)",
-        "latency": pc2(x["latency"]) if x["latency"] is not None else "—",
+        "latency": pc2(x["latency"]) if x["latency"] is not None else "-",
         "budget": pc2(max(x["budget_remaining"], -9.99)),
         "budget_style": f"width:{max(b, 0.0) * 100:.0f}%;background:{color}",
         "burn": f"{x['burn_1h']:.1f}× (1 h) · {x['burn_5m']:.1f}× (5 min)".replace(".", ","),
@@ -53,8 +53,8 @@ def health_rows(health: list[dict[str, Any]], now: int) -> list[dict[str, Any]]:
     return [
         {
             "css": _STATUS_CSS.get(s["status"], "status-pill status-draft"),
-            "latency": f"{s['latency_ms']} ms" if s.get("latency_ms") is not None else "—",
-            "checked": relative(s["checked_at"], now) if s.get("checked_at") else "—",
+            "latency": f"{s['latency_ms']} ms" if s.get("latency_ms") is not None else "-",
+            "checked": relative(s["checked_at"], now) if s.get("checked_at") else "-",
             "item": dumps({"name": s["name"], "kind": s["kind"], "status": s["status"], "app": s.get("app")}),
             "menu": f"health:{s['name']}",
             "detail": s.get("detail") or "",

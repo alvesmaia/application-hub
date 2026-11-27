@@ -93,7 +93,7 @@ _TEXT = ("text/", "application/javascript", "application/json", "image/svg+xml")
 
 
 def asset(w: WebCtx, path: str) -> tuple[bytes, str, str] | None:
-    """Body, type and ETag; the assets folder is often on a slow bind mount (Windows/Docker) —
+    """Body, type and ETag; the assets folder is often on a slow bind mount (Windows/Docker) -
     keeps them in memory and only rechecks the file every 2 s (dev mode: always)."""
     now = time.monotonic()
     hit = w.asset_cache.get(path)

@@ -11,7 +11,7 @@ Life cycle: ``queued`` → ``running`` → ``done`` | ``failed`` (definitive err
   checkpoint, progress and completion only count with the current attempt's token.
 - **Lease**: renewed every ``lease/3`` and at each checkpoint; if it cannot be renewed for a whole lease
   period (DB down), the worker stops.
-- **Checkpoint** (:meth:`JobCtx.save_checkpoint`): written with the batch's connection/transaction —
+- **Checkpoint** (:meth:`JobCtx.save_checkpoint`): written with the batch's connection/transaction -
   the batch and the checkpoint commit together or not at all.
 - **Maximum time** per attempt; **cancel**; **final event** in the outbox in the same
   transaction as the state change.

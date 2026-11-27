@@ -220,7 +220,7 @@ class LocalConnection(Connection):
         full = self._p(path)
         if not os.path.isfile(full):
             raise StorageError(404, "Arquivo não encontrado.")
-        f = open(full, "rb")  # noqa: SIM115 — closed by Download.aclose
+        f = open(full, "rb")  # noqa: SIM115 - closed by Download.aclose
         return Download("application/octet-stream", os.path.getsize(full), f, f)
 
     def _list(self, prefix: str) -> builtins.list[Item]:

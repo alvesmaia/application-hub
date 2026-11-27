@@ -1,5 +1,5 @@
 """Barcodes and 2D codes as **SVG generated on the server** (no JavaScript; the app does not run
-script próprio — CONTRATO-APP §13).
+script próprio - CONTRATO-APP §13).
 
 - 1D: ``python-barcode`` (MIT) only to encode (``build()`` → modules 0/1); the drawing is ours:
   a single ``<path>`` with the bars (integer scale, 10-module quiet zone),
@@ -95,7 +95,7 @@ def _path_2d(rows: Sequence[str], quiet: int) -> str:
 
 
 def svg(fmt: str, value: str, *, label: str = "", module_px: int = 3, height_modules: int = 40) -> Markup:
-    """SVG of the code (white background, black bars — the contrast cameras expect, in
+    """SVG of the code (white background, black bars - the contrast cameras expect, in
     both themes). ``module_px`` = width of one module in px at natural size; CSS can
     ampliar (``viewBox``)."""
     e = encode(fmt, value)
@@ -113,7 +113,7 @@ def svg(fmt: str, value: str, *, label: str = "", module_px: int = 3, height_mod
         d = _path_2d(e.modules, q)
         vb = f"0 0 {w} {n + 2 * q}"
         pw, ph = w * module_px * 2, (n + 2 * q) * module_px * 2
-    return Markup(  # noqa: S704 — only numbers and the escaped label
+    return Markup(  # noqa: S704 - only numbers and the escaped label
         f'<svg class="col-code col-code-{fmt}" xmlns="http://www.w3.org/2000/svg" viewBox="{vb}" '
         f'width="{pw}" height="{ph}" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges" '
         f'role="img" aria-label="{name}" data-code-format="{fmt}" data-code-value="{escape(e.text)}">'

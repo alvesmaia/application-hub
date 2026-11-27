@@ -1,5 +1,5 @@
 """Packages in Postgres: register an uploaded zip (checked by :mod:`automations.package_format`;
-versions are immutable — the same name+version twice is refused), list, versions, content."""
+versions are immutable - the same name+version twice is refused), list, versions, content."""
 
 from __future__ import annotations
 

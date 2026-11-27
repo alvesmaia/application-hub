@@ -7,7 +7,7 @@ const APPS: Record<string, string[]> = {
   inventory: ['dashboard', 'assets', 'movements', 'reports', 'settings'],
   suppliers: ['dashboard', 'indicators', 'analysis', 'reports', 'settings'],
   servicedesk: ['dashboard', 'requests', 'approvals', 'knowledge', 'reports', 'settings'],
-  // Wave 7 — Python/FastAPI app (hub-sdk-python): same shell, loader and skeleton.
+  // Wave 7 - Python/FastAPI app (hub-sdk-python): same shell, loader and skeleton.
 };
 
 for (const [app, sections] of Object.entries(APPS)) {

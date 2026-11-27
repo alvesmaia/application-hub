@@ -56,4 +56,4 @@ Everything returns `Markup` (values escaped). In the template: `{{ grafico }}`. 
 - Aggregate in the database (`group by`); bring only what is needed to the screen (`max_rows`).
 - Up to 6 series per chart; pie/donut groups the excess into «Outros» (Others).
 - Missing connection → show a warning (the template shows «Vincule a conexão…» (Bind the connection…)), never 503 (the shell interprets it as a restart).
-- Test with the local connection (`HUB_SQL_LOCAL_FILE`) — see `tests/test_painel.py`.
+- Test with the local connection (`HUB_SQL_LOCAL_FILE`) - see `tests/test_painel.py`.

@@ -4,7 +4,7 @@
 
 > English: [README.md](README.md) · Segurança: [SECURITY.md](SECURITY.md) · Contribuir: [CONTRIBUTING.md](CONTRIBUTING.md)
 >
-> **Status: experimental** — não endurecido para produção sem seguir [`docs/IMPLANTACAO.md`](docs/IMPLANTACAO.md).
+> **Status: experimental** - não endurecido para produção sem seguir [`docs/IMPLANTACAO.md`](docs/IMPLANTACAO.md).
 
 Portal corporativo único (white label) que hospeda várias aplicações internas: um shell global (header + menu) que nunca some, cada aplicação isolada no seu container e composta na tela sem iframe, com Administração, Operações, observabilidade, Inbox e busca global. Tudo também por **API** (`/api/v1`, OpenAPI 3.1, documentação em `/api/docs`) e por **MCP** para assistentes de IA (`/mcp`, com o mesmo controle de acesso das telas).
 
@@ -18,10 +18,10 @@ Portal corporativo único (white label) que hospeda várias aplicações interna
 | **Shell e experiência** | Header e menu globais fixos; Início, catálogo de aplicações, Inbox (aprovações e pedidos de acesso), busca federada (hub + apps), tour guiado, tema claro/escuro, PT-BR/EN/ES, PWA |
 | **Aplicações** | Cada app no seu contêiner, alcançado só pelo gateway e composto na página sem iframe; mesma origem com CSP estrita e HTML sanitizado; tempo real por SSE e WebSocket; leitura de código de barras e câmera (`hub-device`) |
 | **Acesso e segurança** | Login local ou SSO Microsoft Entra ID (com logout único); papéis e permissões por app; tokens de API pessoais com escopos; cofre cifrado para segredos; plano de controle restrito por rede |
-| **Administração** | Usuários, papéis, variáveis por ambiente, conexões (Postgres, MySQL, SQL Server, SharePoint/OneDrive, S3) com broker — o app nunca vê a credencial |
+| **Administração** | Usuários, papéis, variáveis por ambiente, conexões (Postgres, MySQL, SQL Server, SharePoint/OneDrive, S3) com broker - o app nunca vê a credencial |
 | **Operações** | Implantação blue/green com prontidão obrigatória e rollback, contêineres, tarefas agendadas, backups com credencial de privilégio mínimo, atualização do hub sem parada |
 | **Observabilidade** | Métricas, SLOs e página de status, uso e analytics, logs, exportação OTLP, auditoria em cadeia verificável (âncora em arquivo ou webhook) |
-| **API e IA** | API pública `/api/v1` (OpenAPI 3.1, docs em `/api/docs`); servidor MCP `/mcp` com OAuth 2.1 — ferramentas do hub e dos apps com o mesmo controle de acesso das telas |
+| **API e IA** | API pública `/api/v1` (OpenAPI 3.1, docs em `/api/docs`); servidor MCP `/mcp` com OAuth 2.1 - ferramentas do hub e dos apps com o mesmo controle de acesso das telas |
 | **Para desenvolvedores** | SDK Python `hub_sdk`, CLI `hub` (`hub project create`, `hub dev`, `hub check --full` com a suíte de conformidade, `hub deploy`), modo dev com recarga, 4 apps de exemplo (Ativos, Fornecedores, Serviços, Coletor) |
 | **Implantação** | Só Docker: `install.sh` gera segredos, compila tudo do código-fonte e cria o primeiro administrador; várias instâncias no mesmo host; testado em RHEL rootless |
 
@@ -83,7 +83,7 @@ opções: `--public-url https://hub.empresa.com`, `--port`, `--project` (várias
 `--subnet`. Produção: [`docs/IMPLANTACAO.md`](docs/IMPLANTACAO.md); atualização: [`docs/ATUALIZACAO.md`](docs/ATUALIZACAO.md);
 mudanças: [`CHANGELOG.md`](CHANGELOG.md).
 
-A instalação interativa pergunta o básico e depois "Revisar opções avançadas?" — cada opção mostra o valor
+A instalação interativa pergunta o básico e depois "Revisar opções avançadas?" - cada opção mostra o valor
 **recomendado** entre [colchetes] e Enter o mantém: pasta dos arquivos do MinIO (ex.: um disco dedicado), pasta e
 webhook da âncora da auditoria, cópia externa dos backups (nenhuma / SharePoint / S3), login com Microsoft Entra ID,
 restrição de rede da Administração, proxy/túnel na frente, telemetria, aviso de versão nova, docs públicas e CPUs do
@@ -104,9 +104,9 @@ bash scripts/dev.sh up              # modo dev (código do disco, --reload)
 
 ## Licença / License
 
-Código sob a [Apache License 2.0](LICENSE) — atribuições de terceiros (fontes, ZXing, ícones; MinIO é compilado à
+Código sob a [Apache License 2.0](LICENSE) - atribuições de terceiros (fontes, ZXing, ícones; MinIO é compilado à
 parte, AGPL-3.0) em [`NOTICE`](NOTICE). O nome "Application Hub", a marca e o logotipo Alvesmaia **não** são
 licenciados para forks: veja [`TRADEMARKS.md`](TRADEMARKS.md).
 
 Code licensed under Apache-2.0 (third-party notices in `NOTICE`); the "Application Hub" name and Alvesmaia marks/logo
-are not licensed for forks' branding — see `TRADEMARKS.md`.
+are not licensed for forks' branding - see `TRADEMARKS.md`.

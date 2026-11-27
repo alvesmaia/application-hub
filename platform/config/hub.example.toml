@@ -1,4 +1,4 @@
-# Application Hub configuration (wave 11) — copy to config/hub.toml or point
+# Application Hub configuration (wave 11) - copy to config/hub.toml or point
 # HUB_CONFIG_FILE at the file. All values below are the DEFAULTS: an empty file
 # (or no file) gives exactly this behavior.
 #
@@ -15,7 +15,7 @@
 # The web UI uses the internal /api/* routes and always keeps working:
 # enabled = false only makes /api/v1, the OpenAPI and the docs return 404.
 enabled = true
-# Requests per minute per user — all tokens of the same owner (and the session)
+# Requests per minute per user - all tokens of the same owner (and the session)
 # share the quota; a CI token (no owner) has its own (429 + Retry-After above that).
 rate_per_min = 600
 # Pagination: default and maximum ?limit= size.
@@ -40,11 +40,11 @@ path = "/mcp"
 # ALL POST/PUT/PATCH/DELETE mutations of the apps, unless mcp.confirm_exempt in the manifest):
 #   "confirm" = (default) the 1st call returns a confirm_token and the 2nd, with it, executes.
 #               WARNING: depends on the AI client's confirmation (e.g. Claude Code asks
-#               before each tool) — the model itself can resend the token;
+#               before each tool) - the model itself can resend the token;
 #   "deny"    = these tools do not appear at all.
 destructive_actions = "confirm"
 # Aggregates the apps' MCP tools as <app>.<tool> (called by the hub, on the
-# user's behalf, over the internal network — the apps are never reached directly).
+# user's behalf, over the internal network - the apps are never reached directly).
 expose_app_tools = true
 # Wave 12: /mcp, /.well-known/* and /oauth/* outside HUB_ADMIN_ALLOWED_CIDRS (AI client
 # in the cloud, e.g. Langdock SaaS, reaches the hub over the internet). /api and /admin remain
@@ -63,10 +63,10 @@ max_request_kb = 256     # maximum body of a JSON-RPC message
 # The hub as an OAuth 2.1 authorization server (PKCE S256 required) and resource server
 # for /mcp, for remote MCP clients (e.g. Langdock). Discovery:
 # /.well-known/oauth-protected-resource/mcp e /.well-known/oauth-authorization-server.
-# The public address (issuer and "resource") comes from HUB_PUBLIC_URL — set it in production.
+# The public address (issuer and "resource") comes from HUB_PUBLIC_URL - set it in production.
 # Personal tokens (Authorization: Bearer hubt_…) remain valid on /mcp.
 enabled = true
-# Dynamic client registration (POST /oauth/register, RFC 7591) — Langdock uses it.
+# Dynamic client registration (POST /oauth/register, RFC 7591) - Langdock uses it.
 dynamic_registration = true
 # client_id = HTTPS URL of a Client ID Metadata Document (fetched by the hub; only
 # public addresses).

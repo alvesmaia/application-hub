@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Wave 12 (2.2) — **independent** MCP client (official TypeScript SDK,
+// Wave 12 (2.2) - **independent** MCP client (official TypeScript SDK,
 // @modelcontextprotocol/sdk) against the running hub (compose): proves that a third-party client
 // connects the way Langdock would.
 //
@@ -33,9 +33,9 @@ const lines = [];
 let failures = 0;
 const t0 = Date.now();
 function ok(cond, what, extra = '') {
-  const l = `${cond ? 'ok   ' : 'FALHA'} ${what}${extra ? ` — ${extra}` : ''}`;
+  const l = `${cond ? 'ok   ' : 'FALHA'} ${what}${extra ? ` - ${extra}` : ''}`;
   console.log(`[${((Date.now() - t0) / 1000).toFixed(1).padStart(5)}s] ${l}`);
-  lines.push(`- ${cond ? '✅' : '❌'} ${what}${extra ? ` — ${extra}` : ''}`);
+  lines.push(`- ${cond ? '✅' : '❌'} ${what}${extra ? ` - ${extra}` : ''}`);
   if (!cond) failures++;
   return cond;
 }
@@ -183,6 +183,6 @@ try {
 const summary = failures ? `${failures} FALHA(S)` : 'TODAS AS VERIFICAÇÕES PASSARAM';
 console.log(summary);
 if (OUT) {
-  writeFileSync(OUT, `# Cliente MCP independente (SDK oficial TypeScript) — ${new Date().toISOString()}\n\n- Hub: ${HUB}\n- SDK: @modelcontextprotocol/sdk (protocolo ${LATEST_PROTOCOL_VERSION})\n\n${lines.join('\n')}\n\n**${summary}**\n`);
+  writeFileSync(OUT, `# Cliente MCP independente (SDK oficial TypeScript) - ${new Date().toISOString()}\n\n- Hub: ${HUB}\n- SDK: @modelcontextprotocol/sdk (protocolo ${LATEST_PROTOCOL_VERSION})\n\n${lines.join('\n')}\n\n**${summary}**\n`);
 }
 process.exit(failures ? 1 : 0);

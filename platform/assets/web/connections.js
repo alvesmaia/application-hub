@@ -1,4 +1,4 @@
-/* connections.js — Applications › Connections (wave 10).
+/* connections.js - Applications › Connections (wave 10).
  *
  * The page arrives ready from the server (without any credential); this script opens the
  * create/edit/links/rotate modals, reads the chosen certificate (PEM or PFX) as

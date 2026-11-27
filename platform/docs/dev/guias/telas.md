@@ -31,7 +31,7 @@ Example:
 
 Ready-made hub classes: buttons `primary-button`, `secondary-button`, `danger-button` and `icon-button`;
 panels `hub-panel` and `hub-panel-head`; forms `hub-form-grid`, `form-field` and `hub-actions`; notices
-`hub-notice` (+ `hub-notice-error`; in apps only — hub screens use a muted line, never a banner); tables `data-table` inside `hub-table-scroll`; empty `empty-state`. The
+`hub-notice` (+ `hub-notice-error`; in apps only - hub screens use a muted line, never a banner); tables `data-table` inside `hub-table-scroll`; empty `empty-state`. The
 model from `hub project create` uses all of them. Colors only through tokens (`var(--…)`).
 
 Full list and rules: Contract §25 ([Contract](/developers/contrato)).
@@ -40,7 +40,7 @@ Full list and rules: Contract §25 ([Contract](/developers/contrato)).
 
 The right way is to open the screen in the hub (`hub dev` and then `/apps/<id>`). For a quick test from the command line,
 call the **fragment**, not the page: the hub's forms send to `/_frag/<id>/…`. The page `/apps/<id>/…`
-does not accept POST (`405`), and the fragment requires the headers the shell sends — without them you get `403`, and a POST
+does not accept POST (`405`), and the fragment requires the headers the shell sends - without them you get `403`, and a POST
 without an `Idempotency-Key` of 8 to 128 characters gets `400`.
 
 ```bash

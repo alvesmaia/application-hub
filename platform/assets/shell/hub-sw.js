@@ -1,8 +1,8 @@
-/* hub-sw.js — hub service worker (wave 13, PWA). Scope `/`.
+/* hub-sw.js - hub service worker (wave 13, PWA). Scope `/`.
  *
  * - Caches only the hub "shell": CSS/JS/fonts/icons from /assets/ and the /offline page.
  * - Navigation: always over the network; without network, the /offline page (never a cached
- *   app page — authenticated pages do not go into the cache).
+ *   app page - authenticated pages do not go into the cache).
  * - /api, /_frag, /mcp, /oauth, /login, /auth, /_dev: never intercepted or cached.
  *   The apps' offline submission queue belongs to hub-device.js (IndexedDB in the page), not here.
  * - Assets: network first (development mode and new versions take effect immediately);

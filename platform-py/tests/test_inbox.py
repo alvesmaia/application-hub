@@ -330,7 +330,7 @@ def test_authorized_apps_page_and_revoke(tmp_path: Path, monkeypatch: pytest.Mon
     assert r.status_code == 303 and "msg=not_found" in r.headers["location"]
     assert "Autorização não encontrada." in c.get("/account/access?msg=not_found").text
     row: dict[str, object] = {"id": "g1", "name": "Langdock", "unverified": True, "host": "x.com", "scopes": "mcp",
-           "created": "há 1 h", "last": "—"}  # fmt: skip
+           "created": "há 1 h", "last": "-"}  # fmt: skip
 
     async def grants_view(_uid: str, _lang: str = "pt-BR") -> list[dict[str, object]]:
         return [row]

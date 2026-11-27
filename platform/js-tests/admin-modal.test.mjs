@@ -1,5 +1,5 @@
 // Regression found by the wave 6 E2E: the "Nova variável" modal (admin.js) did not
-// send anything — `$(sel).map` (querySelector) threw a TypeError reading the bindings.
+// send anything - `$(sel).map` (querySelector) threw a TypeError reading the bindings.
 // Runs the real admin.js in a DOM (jsdom from demo-apps/tools) and checks the POST.
 //   node --test platform/js-tests/
 import { test } from 'node:test';

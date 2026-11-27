@@ -6,7 +6,7 @@
      "entrypoint": "main.py:run", "fields": [{"name": "cep", "label": "CEP", "type": "text", ...}],
      "labels": {"uf": "UF"}}
 
-:func:`inspect_zip` checks size, file count, paths (no absolute path, ``..`` or symlink — zip-slip),
+:func:`inspect_zip` checks size, file count, paths (no absolute path, ``..`` or symlink - zip-slip),
 the manifest schema (errors prefixed with their path, e.g. ``fields.0.type: …``) and that the
 entrypoint file exists. :func:`extract` writes a checked package into a directory.
 """

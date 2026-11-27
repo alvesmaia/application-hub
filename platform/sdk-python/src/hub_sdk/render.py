@@ -3,10 +3,10 @@
 Contract conventions (``docs/CONTRATO-APP.md``):
 
 - ``GET /{id}`` and ``GET /{id}/{section}`` return a **fragment** (no ``<html>``/
-  ``<body>``) with the app workspace — sidebar + content — using the mockup classes
+  ``<body>``) with the app workspace - sidebar + content - using the mockup classes
   (``app-sidebar``, ``workspace-content``, ``content-panel``, ``data-table``…);
-- ``GET /{id}/_skeleton`` — skeleton body shown between sections;
-- ``GET /{id}/assets/{demo.css,app.css,chart.js,interact.js}`` — app assets; the app's own fonts and
+- ``GET /{id}/_skeleton`` - skeleton body shown between sections;
+- ``GET /{id}/assets/{demo.css,app.css,chart.js,interact.js}`` - app assets; the app's own fonts and
   images through ``asset_file`` (adapting an existing app keeps them);
 - no inline ``<script>`` (hub CSP); ``POST`` forms with ``data-hub-target``;
   polling with ``data-hub-poll``; downloads at ``/_frag/{id}/…``.
@@ -69,7 +69,7 @@ def icon(name: str | Markup) -> Markup:
     icons of an app being adapted. The body is the app's own constant, never user input."""
     own = isinstance(name, Markup) or name.lstrip().startswith("<")
     body = str(name) if own else ICONS.get(name, ICONS["file"])
-    return Markup(f'<svg viewBox="0 0 24 24" aria-hidden="true">{body}</svg>')  # noqa: S704 — SVG fixo
+    return Markup(f'<svg viewBox="0 0 24 24" aria-hidden="true">{body}</svg>')  # noqa: S704 - SVG fixo
 
 
 @dataclass(frozen=True)

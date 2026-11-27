@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Versão (tag das imagens), ex.: 0.2.0 — deve bater com platform-py/hub/__init__.py"
+        description: "Versão (tag das imagens), ex.: 0.2.0 - deve bater com platform-py/hub/__init__.py"
         required: true
       latest:
         description: "Também marcar :latest"

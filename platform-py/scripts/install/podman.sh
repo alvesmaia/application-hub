@@ -152,7 +152,7 @@ rootless_setup() { # after the consent: socket up, start at boot; exports what t
   if [ "$OWN_SOCKET" = 1 ]; then export CONTAINER_HOST=$DOCKER_HOST; write_hub_env; fi
   if [ "$AUTOSTART" = cron ]; then autostart_cron; fi
   loginctl show-user "$(id -un)" -p Linger 2>/dev/null | grep -q yes || [ "$NOSYSTEMD" = 1 ] ||
-    echo "aviso: sem linger o hub cai no logout — peça à TI: loginctl enable-linger $(id -un)" >&2
+    echo "aviso: sem linger o hub cai no logout - peça à TI: loginctl enable-linger $(id -un)" >&2
   grep -qw cpu "/sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/cgroup.controllers" 2>/dev/null ||
     echo "aviso: controlador cpu não delegado ao usuário; os limites de CPU dos apps não serão aplicados (TI: Delegate=cpu cpuset io memory pids em user@.service, docs/IMPLANTACAO.md)" >&2
 }

@@ -1,7 +1,7 @@
 """`hub compare`: the original app and the adapted one (inside `hub dev`) page by page.
 
 Each route is opened on both sides (the original page's `--original-selector`, default `body`; the hub's
-`#app-root`): a screenshot for the eyes and a **style fingerprint** for the number — the fonts of the text
+`#app-root`): a screenshot for the eyes and a **style fingerprint** for the number - the fonts of the text
 (weighted by text length), the palette (text, background and border colors weighted by area), the corner radii
 and how many buttons, fields, table rows, links, headings and icons there are. The difference (0-100%) is
 the mean of what does not match; pixels are not compared (the hub moves things a few pixels on purpose, a
@@ -162,7 +162,7 @@ def components(original: dict[str, Any], hub: dict[str, Any]) -> tuple[float, li
             diffs.append(f"{key}: ausente no hub")
             continue
         changed = [
-            f"{p} {v} → {other.get(p, '—')}" for p, v in props.items() if not _same(p, v, other.get(p, ""))
+            f"{p} {v} → {other.get(p, '-')}" for p, v in props.items() if not _same(p, v, other.get(p, ""))
         ]
         if changed:
             diffs.append(f"{key}: {'; '.join(changed)}")
@@ -232,7 +232,7 @@ def report(rows: list[Row], limit: float) -> str:
             f"<li>{html.escape(w)}</li>" for w in r.structure + (r.component_diffs or [])[:40] + r.why
         )
         return (
-            f'<section><h2 class="{cls}">{html.escape(r.route)} — {r.diff["total"]:.1f}%</h2><p>{parts}</p>'
+            f'<section><h2 class="{cls}">{html.escape(r.route)} - {r.diff["total"]:.1f}%</h2><p>{parts}</p>'
             f'<ul>{why}</ul><div class="pair">'
             f'<figure><img src="original--{r.name}.png" alt=""><figcaption>original</figcaption></figure>'
             f'<figure><img src="hub--{r.name}.png" alt=""><figcaption>no hub</figcaption></figure></div></section>'

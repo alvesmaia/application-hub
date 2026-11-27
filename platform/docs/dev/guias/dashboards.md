@@ -25,7 +25,7 @@ grafico = dash.line_chart(r, "mes", "receita", "Receita", "R$")
 ```
 
 - **In the hub**: create the connection under Conexões (Connections) (PostgreSQL, MySQL/MariaDB or SQL Server) and bind it to the app × environment;
-  the app queries through the broker (`hub_sdk.sql.connection("vendas")`) — read-only, row/time limits,
+  the app queries through the broker (`hub_sdk.sql.connection("vendas")`) - read-only, row/time limits,
   audit without data, password never in the app.
 - **In `hub dev`**: `.hub/connections.toml` (copied from `dev/connections.toml`; `dev/<nome>.sql` becomes SQLite).
 - Portable, parameterized SQL (`:nome`); serve `dash.CSS` together with `app.css`.

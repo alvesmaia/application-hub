@@ -294,7 +294,7 @@ class Engine:
                 try:
                     await self._run(lambda cl, r=ref: cl.untag(r))
                     gone.append(ref)
-                except Exception:  # noqa: S112 — in use or already removed
+                except Exception:  # noqa: S112 - in use or already removed
                     continue
         return gone
 

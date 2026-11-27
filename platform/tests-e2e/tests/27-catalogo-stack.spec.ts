@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { stateFile } from './helpers';
 
-// Wave 13 — application catalog: each app's stack (manifest `stack`) appears only on the card's "i" button (hover, keyboard focus, tap); hovering the card shows nothing.
+// Wave 13 - application catalog: each app's stack (manifest `stack`) appears only on the card's "i" button (hover, keyboard focus, tap); hovering the card shows nothing.
 test.use({ storageState: stateFile('admin') });
 
 test('aplicações: balão da stack só no "i" (hover, foco, toque; Esc fecha) @core', async ({ page }) => {

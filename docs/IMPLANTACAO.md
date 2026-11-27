@@ -1,4 +1,4 @@
-# Deployment — Python hub (platform-py): new server
+# Deployment - Python hub (platform-py): new server
 
 Short checklist. From `platform-py/`, Docker Compose >= 2.24.
 
@@ -38,7 +38,7 @@ it. The hub's backup, restore, staging clone and password rotation only act on t
 [`ATUALIZACAO.md`](ATUALIZACAO.md) («Moving to the single Postgres»).
 
 **MinIO/mc:** there is no usable public image; `infra/minio/Dockerfile` builds from the official source code (pinned tags;
-AGPL-3.0, a separate program used only over the network — see `NOTICE`). `install.sh` generates `<project>-mc` and `<project>-minio`;
+AGPL-3.0, a separate program used only over the network - see `NOTICE`). `install.sh` generates `<project>-mc` and `<project>-minio`;
 manually: `docker build --target mc -t app-hub-mc:0.10.0 infra/minio` before `up --build` (the hub copies the `mc`).
 
 **Ready-made images (GHCR):** the workflow `.github/workflows/images.yml` is **manual** (Actions › images › Run workflow,
@@ -55,7 +55,7 @@ input `version`) and publishes `ghcr.io/<owner>/app-hub-{web,minio,mc,ativos,for
       **Do not** set `HUB_DEMO_USERS`/`HUB_DEMO_PASSWORD`.
 - [ ] Start: `docker compose --env-file .prod.env -f docker-compose.yml -f docker-compose.apps.yml -f docker-compose.prod.yml up -d --build`
       (refuses to start if a variable is missing; Secure cookies; app test routes disabled). Sample apps: `COMPOSE_PROFILES=demo-apps` in `.prod.env`.
-- [ ] Vault master key: created at `/data/master.key` on the first boot — copy it off the server (without it the encrypted secrets cannot be opened).
+- [ ] Vault master key: created at `/data/master.key` on the first boot - copy it off the server (without it the encrypted secrets cannot be opened).
 - [ ] First administrator (nothing secret in the log): `docker compose ... run --rm --no-deps app-hub-web python -m hub.admin create-admin --email voce@empresa.com --out /data/primeiro-acesso.txt`;
       read the temporary password from the file (`docker cp`), delete it from the volume; changing the password is mandatory on the first login.
 - [ ] Tunnel/TLS proxy to `127.0.0.1:8090`; check `/healthz`, login, `/apps/<id>` and `/.well-known/oauth-authorization-server`.
@@ -126,13 +126,13 @@ Tested on Rocky 9 with Podman 5.8, user without root/sudo (`docs/TESTE-IMPLANTAC
 
 Ask IT (root, once):
 - `dnf install podman podman-docker git` and `loginctl enable-linger <user>` (without linger the hub goes down on logout);
-- delegate CPU to the user — RHEL 9 delegates only `memory pids`; without this the apps' CPU limits stay off:
+- delegate CPU to the user - RHEL 9 delegates only `memory pids`; without this the apps' CPU limits stay off:
   `/etc/systemd/system/user@.service.d/delegate.conf` with `[Service]` and `Delegate=cpu cpuset io memory pids`,
   then `systemctl daemon-reload` and a new login of the user.
 
 As the user:
 - `systemctl --user enable --now podman.socket`;
-- compose without root: `install.sh` offers to download it (or run with `--get-compose`) — official binary at a fixed version,
+- compose without root: `install.sh` offers to download it (or run with `--get-compose`) - official binary at a fixed version,
   sha256 checked, in `~/.local/bin/docker-compose`; the `docker compose` from `podman-docker` uses it;
 - `bash platform-py/scripts/install.sh …` detects rootless Podman and writes to `.prod.env`
   `HUB_CONTAINER_SOCKET_HOST=$XDG_RUNTIME_DIR/podman/podman.sock` and `DOCKER_GID=0`. With `--bind` outside loopback
@@ -188,11 +188,11 @@ Sign-in with Microsoft (OIDC authorization code + PKCE, v2 endpoints). Optional:
 4. **Certificates & secrets › New client secret**: store the value in the hub's vault (recommended; with `app-hub-web` stopped:
    `docker compose ... run --rm --no-deps -T app-hub-web python -m hub.admin set-entra-secret < arquivo`, then delete the
    file) or in a file outside git (`chmod 600`) pointed to by `HUB_ENTRA_CLIENT_SECRET_FILE`. Note the expiry date and renew before it expires.
-5. **API permissions**: `openid`, `profile`, `email` (Microsoft Graph, delegated) — already included by default.
+5. **API permissions**: `openid`, `profile`, `email` (Microsoft Graph, delegated) - already included by default.
 6. Optional, roles by group: **Token configuration › Add groups claim** (security group IDs) or create **App roles** and assign them in *Enterprise applications*. Map them in `HUB_ENTRA_ROLE_MAP` (`{"<group objectId or app role value>":"Administrador"}`). With a mapping, the user's roles are synced on every login; with no mapped group, whoever signs in for the first time gets `HUB_ENTRA_DEFAULT_ROLE` (default `User`; the default roles are `Administrador`, `Power User` and `User`). A default role that manages users (e.g. `Administrador`) is ignored and `User` is used: admin comes only from a mapped group or from an administrator. The installer's account (`Administrador`) takes the person's name on the first Entra sign-in with the same e-mail.
 7. Set `HUB_SSO_PROVIDER=entra` and restart `app-hub-web`. Check it in **Administração › Configurações › Login único (SSO)** (Administration › Settings › Single sign-on (SSO)).
 
-Rules: the id_token is validated (signature by the cached JWKS, issuer, audience, nonce, validity, tenant); `HUB_ENTRA_ALLOWED_DOMAINS` restricts e-mail domains; a user deactivated in the hub cannot sign in; the first sign-in creates the user (origin "Entra ID" in Usuários — Users) or links to a local user with the same e-mail. SSO sign-ins and refusals go to the audit trail. Local login stays on (`HUB_LOCAL_LOGIN=1`) so the administrator can sign in even if Entra fails; `HUB_LOCAL_LOGIN=admins` leaves e-mail/password only for administrators.
+Rules: the id_token is validated (signature by the cached JWKS, issuer, audience, nonce, validity, tenant); `HUB_ENTRA_ALLOWED_DOMAINS` restricts e-mail domains; a user deactivated in the hub cannot sign in; the first sign-in creates the user (origin "Entra ID" in Usuários - Users) or links to a local user with the same e-mail. SSO sign-ins and refusals go to the audit trail. Local login stays on (`HUB_LOCAL_LOGIN=1`) so the administrator can sign in even if Entra fails; `HUB_LOCAL_LOGIN=admins` leaves e-mail/password only for administrators.
 
 ## Connect AI clients (MCP) with single sign-on
 

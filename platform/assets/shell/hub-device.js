@@ -1,5 +1,5 @@
-/* hub-device.js — device features as declarative `data-hub-*` behaviors
- * (wave 13; hub JavaScript, the app still has no script of its own — CONTRATO-APP §13/§25).
+/* hub-device.js - device features as declarative `data-hub-*` behaviors
+ * (wave 13; hub JavaScript, the app still has no script of its own - CONTRATO-APP §13/§25).
  * Kept apart from hub-kit.js only because of its size: it is loaded on the same pages as
  * the apps and follows the same rules (references only by id inside the app, texts via
  * textContent, app HTML through the sanitizer, URLs only from the app's own /_frag).
@@ -23,7 +23,7 @@
  *                        (POST mode/reader/pause on every change in the top bar of the layer)
  *                        only the aiming frame is read (video crop + code ≥ 90 % inside)
  *                        native BarcodeDetector; without it, @zxing/library (pure JS, served from
- *                        /assets/vendor/, loaded only when needed — no 'wasm-unsafe-eval')
+ *                        /assets/vendor/, loaded only when needed - no 'wasm-unsafe-eval')
  *   keyboard-wedge reader data-hub-wedge (field): fast burst + Enter/Tab = reading; repetition
  *                        within data-hub-wedge-debounce ms (default 800) is discarded
  *   feedback             data-hub-feedback="beep vibrate flash" (container) + element
@@ -124,7 +124,7 @@
     vibration(kind) {
       return { ok: [60], warn: [60, 60, 60], error: [220, 80, 220], queued: [40, 40, 40] }[kind] || [];
     },
-    /** Response to a queue resend: 'done' (leaves the queue), 'error' (goes to the error list —
+    /** Response to a queue resend: 'done' (leaves the queue), 'error' (goes to the error list -
      *  conflict/validation), 'retry' (network/server: try later), 'login'. */
     replayOutcome(status) {
       if (status === 401) return 'login';

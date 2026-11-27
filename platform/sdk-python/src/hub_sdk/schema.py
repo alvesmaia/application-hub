@@ -96,8 +96,8 @@ def base(app_id: str) -> str:
 
 OUTBOX_RETENTION = "7 days"
 
-# Migration lock (two processes of the same app — or a
-# seed and the app — do not migrate at the same time).
+# Migration lock (two processes of the same app - or a
+# seed and the app - do not migrate at the same time).
 MIGRATION_LOCK = 424242
 
 

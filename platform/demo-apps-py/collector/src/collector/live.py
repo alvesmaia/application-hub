@@ -3,7 +3,7 @@
 
 Whoever changes something (new reading, queued session) calls :func:`notify` **inside the
 transaction**: ``pg_notify('collector_live', …)`` is only delivered on commit, so the socket
-never shows something that was not written — and it works with several processes/replicas (each
+never shows something that was not written - and it works with several processes/replicas (each
 listens on the channel over its own connection). Without DB/listen (tests), delivery is local.
 
 Each socket has a small queue (repeated notices merge: the socket redraws the

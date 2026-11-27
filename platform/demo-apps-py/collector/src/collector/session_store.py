@@ -51,7 +51,7 @@ def rng() -> random.Random:
     seed = os.environ.get("COLLECTOR_SHUFFLE_SEED", "").strip()
     if seed.isdigit():
         if _SEEDED is None:
-            _SEEDED = random.Random(int(seed))  # noqa: S311 — test order
+            _SEEDED = random.Random(int(seed))  # noqa: S311 - test order
         return _SEEDED
     return random.Random(random.SystemRandom().randrange(1 << 62))  # noqa: S311
 

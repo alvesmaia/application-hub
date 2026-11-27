@@ -192,7 +192,7 @@ async def _recreate(
 ) -> dict[str, Any]:
     """`apply`: blue/green with the same image and the current variables."""
     lim = rt.resources_of(e, data["limits"])
-    await ops.rollout.apply(app_id, k, lim, e.version or "—", None)
+    await ops.rollout.apply(app_id, k, lim, e.version or "-", None)
     if k == "producao":
         await ops.admin.cfg.clear_pending(app_id)
     await ops.admin.audit(ops.actor_of(request), "Container recriado com as variáveis atuais", f"{e.name} · {name}",

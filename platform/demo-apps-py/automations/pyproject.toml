@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "automations"
 version = "1.0.0"
 license = "Apache-2.0"
-description = "Automations — demo app in Python/FastAPI (hub-sdk-python): code-defined automations, durable runs and schedules."
+description = "Automations - demo app in Python/FastAPI (hub-sdk-python): code-defined automations, durable runs and schedules."
 requires-python = ">=3.11"
 # Pinned: same versions in the image, in CI and in the hub dev.
 dependencies = [

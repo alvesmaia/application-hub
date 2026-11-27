@@ -4,7 +4,7 @@ The hub resolves the user's language (saved preference → ``Accept-Language`` �
 passes it on in ``x-hub-locale`` and in the ``locale`` field of ``x-hub-user``. :func:`from_headers`
 reads in that order and falls back to the browser's ``Accept-Language`` (the gateway also passes it on).
 
-Translation: the **pt-BR text is the key** — ``t("Contratos")`` returns "Contracts" in
+Translation: the **pt-BR text is the key** - ``t("Contratos")`` returns "Contracts" in
 English if the catalog has the entry, otherwise the text itself (nothing breaks if it is missing).
 ``{name}`` placeholders are filled by ``t("{n} linhas", n=...)``. The request's language lives in a
 ``ContextVar`` set by :class:`LocaleMiddleware` (``HubSdk.install``

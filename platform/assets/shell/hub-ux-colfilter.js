@@ -1,4 +1,4 @@
-/* hub-ux-colfilter.js — kept apart from hub-ux.js for size; loaded right after the hub-ux part
+/* hub-ux-colfilter.js - kept apart from hub-ux.js for size; loaded right after the hub-ux part
  * files on the same pages.
  *
  * ---- Column filters, spreadsheet style (`data-hub-colfilter`; guide in docs/DESIGN-TOKENS.md) ----
@@ -7,7 +7,7 @@
  * popover (on a phone, a sheet from the bottom up): sort, list of values with search and
  * "Select all" (or a date range), Clear/Apply. The value of each cell comes from
  * `data-hub-value` (dates in ms) or from the text. State in the URL (`f.<key>=a,b`, `f.<key>=from..to`,
- * `sort=<key>:asc|desc`) — shareable. "Active filters" line above the table; in the
+ * `sort=<key>:asc|desc`) - shareable. "Active filters" line above the table; in the
  * card layout (no header), the "Filters" button opens the same options. */
 (function () {
   'use strict';

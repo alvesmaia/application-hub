@@ -127,7 +127,7 @@ def _measure_entries(z: zipfile.ZipFile, f: Any) -> list[tuple[str, int, int]]:
 def actual_entries(path: Path) -> list[tuple[str, int, int]]:
     """(name, compressed, REAL uncompressed) of each entry. The central directory (and the
     local header) belong to the file's author: a zip can declare 1 KB and decompress to
-    gigabytes. Here each entry is decompressed as a stream and counted, with a cap — which is exactly
+    gigabytes. Here each entry is decompressed as a stream and counted, with a cap - which is exactly
     what calamine will read afterwards."""
     try:
         with zipfile.ZipFile(path) as z, path.open("rb") as f:

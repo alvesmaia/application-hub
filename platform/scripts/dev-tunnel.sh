@@ -4,11 +4,11 @@
 #
 # "Standalone container" model: cloudflared runs OUTSIDE compose, in the container
 # `apphub-devtunnel` (restart unless-stopped), and forwards to host.docker.internal:8080
-# — i.e., to whatever serves port 8080 on the host (the normal stack OR the dev mode of
+# - i.e., to whatever serves port 8080 on the host (the normal stack OR the dev mode of
 # development, platform-py/scripts/dev.sh). Starting/stopping/recreating the stack does not drop the tunnel.
 #
 # up:     copies the credentials to .tunnel/ (gitignored), generates .tunnel/config-standalone.yml
-#         and creates the container if it does not exist (if it exists, it only ensures it is running —
+#         and creates the container if it does not exist (if it exists, it only ensures it is running -
 #         never recreates a tunnel in use; use `down` + `up` to change the configuration).
 # down:   removes the apphub-devtunnel container (the site starts answering 502/tunnel errors).
 # status: container state + the last log lines.
@@ -32,7 +32,7 @@ case "${1:-status}" in
   up)
     if docker inspect "$NAME" >/dev/null 2>&1; then
       docker start "$NAME" >/dev/null
-      echo "túnel já existe ($NAME) — no ar: https://$HOSTNAME_PUB"
+      echo "túnel já existe ($NAME) - no ar: https://$HOSTNAME_PUB"
       exit 0
     fi
     [ -f "$SRC" ] || [ -f .tunnel/credentials.json ] || { echo "credenciais do túnel não encontradas: $SRC" >&2; exit 1; }

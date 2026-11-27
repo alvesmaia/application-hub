@@ -2,7 +2,7 @@ import { test, expect, type Page, type Locator } from '@playwright/test';
 import { openApp, stateFile } from './helpers';
 
 // Modals with a form do not close when clicking outside (what was typed would be lost).
-// They close only through the Close/Cancel button or Esc — and Esc is ignored when the form has changed.
+// They close only through the Close/Cancel button or Esc - and Esc is ignored when the form has changed.
 test.use({ storageState: stateFile('admin') });
 
 /** Clicks the darkened background, away from the modal box. */

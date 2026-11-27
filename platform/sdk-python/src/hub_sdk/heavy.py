@@ -1,11 +1,11 @@
 """Limit on simultaneous heavy operations per app (import, export, report).
 
 Without a slot, **immediate** 429 with ``Retry-After`` (``hub.js`` shows
-"queued…" and retries on its own). The slot is released when the *permit* is released —
+"queued…" and retries on its own). The slot is released when the *permit* is released -
 in a streaming download, only at the end of the body.
 
 Note (Python): the semaphore applies **per process**. With ``uvicorn --workers N`` the
-effective app limit is ``N × HUB_HEAVY_MAX`` — the recommended sizing
+effective app limit is ``N × HUB_HEAVY_MAX`` - the recommended sizing
 (``loadtest/RESULTADOS.md``, wave 7) is 1 worker per vCPU.
 """
 
@@ -84,7 +84,7 @@ class PermitStreamingResponse(StreamingResponse):
     """``StreamingResponse`` that **always** returns the heavy-operation slot:
 
     - at the end of ``__call__`` (body sent, error, client disconnected before or during the
-      send, cancellation by disconnection) — and closes the generator, releasing the DB connection;
+      send, cancellation by disconnection) - and closes the generator, releasing the DB connection;
     - if the response is never sent (e.g. an exception in a middleware before sending), when
       the object is collected (``weakref.finalize``).
 

@@ -1,10 +1,10 @@
 """F22: distribution of the developer kit by the hub, and the "Developers" screen.
 
-- `/dev/cli/simple/` — PEP 503 index (read-only, no session) with the wheels of `hub-cli` and `hub-sdk` generated in
+- `/dev/cli/simple/` - PEP 503 index (read-only, no session) with the wheels of `hub-cli` and `hub-sdk` generated in
   imagem (`scripts/build-cli.sh`): `uv tool install hub-cli --index <hub>/dev/cli/simple/`.
-- `/dev/cli/files/<wheel>` — direct wheel download (closed list: only the files in the directory).
-- `/dev/docs/*.md` — documentation Markdown (public with `HUB_PUBLIC_DOCS=1`, the default; `0` requires login).
-- `/developers` — installation, commands, stacks, links (token, contract, manifest validator).
+- `/dev/cli/files/<wheel>` - direct wheel download (closed list: only the files in the directory).
+- `/dev/docs/*.md` - documentation Markdown (public with `HUB_PUBLIC_DOCS=1`, the default; `0` requires login).
+- `/developers` - installation, commands, stacks, links (token, contract, manifest validator).
 """
 
 from __future__ import annotations
@@ -134,7 +134,7 @@ async def doc_file(request: Request, doc: str) -> Response:
 async def llms(request: Request) -> Response:
     """Index for agents (llmstxt.org): the raw Markdown of each page, with the literal code."""
     base = _kit(request).public_url(request)
-    lines = ["# Application Hub — documentação para desenvolvedores", ""]
+    lines = ["# Application Hub - documentação para desenvolvedores", ""]
     lines += [
         "> Leia os arquivos .md abaixo: trazem o texto e o código completos (um resumo do HTML perde código).",
         "",

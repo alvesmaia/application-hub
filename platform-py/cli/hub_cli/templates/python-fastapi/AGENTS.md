@@ -1,18 +1,18 @@
-# AGENTS.md — __APP_NAME__ (`__APP_ID__`)
+# AGENTS.md - __APP_NAME__ (`__APP_ID__`)
 
 Application Hub app. Guide for code agents (Claude Code, Codex…) and people.
 
 ## Stack
 
 Python 3.12 (`uv`), FastAPI, Jinja2 (SSR), `hub_sdk` (hub SDK, in `vendor/`), SQLAlchemy Core + Alembic
-(`hub_sdk.db`: SQLite in `.hub/dev.db` in dev, Postgres on the hub — same code), Pydantic v2 at the edges.
+(`hub_sdk.db`: SQLite in `.hub/dev.db` in dev, Postgres on the hub - same code), Pydantic v2 at the edges.
 Quality: ruff (includes the `S` rules), ty, pytest + pytest-cov (80% floor).
 
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `hub dev` | Lightweight local hub (shell, gateway, simulated identity) + app with reload at `http://localhost:4173/apps/__APP_ID__` — no Docker, no Postgres |
+| `hub dev` | Lightweight local hub (shell, gateway, simulated identity) + app with reload at `http://localhost:4173/apps/__APP_ID__` - no Docker, no Postgres |
 | `hub check` | ruff, formatting, ty, pytest + coverage, manifest, local conformance and `openapi.json` |
 | `hub deploy --env staging` | Packs and sends to the hub (production: `--env production`, stays pending approval) |
 | `hub pack` | Builds the `.hubapp` for the manual import on the Deployments screen (Import package: preview, variables/secrets, environment) |
@@ -21,7 +21,7 @@ First time: `uv sync`. Run `hub check` before every commit.
 
 ## Conventions
 
-- Routes under `/__APP_ID__/…`; the browser sees `/apps/__APP_ID__/…`. **Every link/`action`** uses `{{ base }}` (comes from the `x-hub-base` header) — never a bare `/__APP_ID__/…`.
+- Routes under `/__APP_ID__/…`; the browser sees `/apps/__APP_ID__/…`. **Every link/`action`** uses `{{ base }}` (comes from the `x-hub-base` header) - never a bare `/__APP_ID__/…`.
 - Screens = HTML fragments with the workspace (`templates/*.html` extend the SDK's `workspace.html`) and the hub classes (`app-page-header`, `content-panel`, `data-table`, `form-field`, `primary-button`, `metric-card`…). Colors only through tokens: rules use `var(--…)`; literal colors (hex) appear only where `assets/app.css` declares the app's `--app-*` tokens (contract §29).
 - Screen behavior only through `data-hub-*` attributes (contract §25: modal, confirmation, filter, toast, poll…).
 - `method="post"` forms: the hub submits via XHR. Valid: answer `303` to the list or the detail (Post/Redirect/Get; the hub follows it and updates the address bar). Invalid: `422` with the form and the messages.
@@ -35,8 +35,8 @@ First time: `uv sync`. Run `hub check` before every commit.
 ## Dashboards (light BI)
 
 - `hub_sdk.dashboards` (extra `hub-sdk[dashboards]`; ready-made template: `hub project create <id> --template dashboard`):
-  `Dataset` (SQL with `:name` parameters against an SQL connection), `Param` (query-string filters, validated), `Dashboard.load` (cache per filter combination, `ttl`), `kpi`/`kpis`, `line_chart`/`area_chart`/`bar_chart`/`pie_chart`/`donut_chart` (SVG rendered on the server, colors via tokens — light/dark), `table` (hub filter and pagination), `filters_form` (`<form method="get">`), `export_links` + `export_response` (CSV/XLSX).
-- Data source: `hub_sdk.sql.connection("<name>")` — on the hub, an SQL connection from Administração › Conexões (PostgreSQL, MySQL/MariaDB, SQL Server) bound to app × environment, through the broker (read-only, row and time limits, audit without data; the app never sees the password); under `hub dev`, `.hub/connections.toml` (a copy of `dev/connections.toml`; example SQLite from `dev/<name>.sql`). The app's own database: `hub_sdk.sql.from_engine`.
+  `Dataset` (SQL with `:name` parameters against an SQL connection), `Param` (query-string filters, validated), `Dashboard.load` (cache per filter combination, `ttl`), `kpi`/`kpis`, `line_chart`/`area_chart`/`bar_chart`/`pie_chart`/`donut_chart` (SVG rendered on the server, colors via tokens - light/dark), `table` (hub filter and pagination), `filters_form` (`<form method="get">`), `export_links` + `export_response` (CSV/XLSX).
+- Data source: `hub_sdk.sql.connection("<name>")` - on the hub, an SQL connection from Administração › Conexões (PostgreSQL, MySQL/MariaDB, SQL Server) bound to app × environment, through the broker (read-only, row and time limits, audit without data; the app never sees the password); under `hub dev`, `.hub/connections.toml` (a copy of `dev/connections.toml`; example SQLite from `dev/<name>.sql`). The app's own database: `hub_sdk.sql.from_engine`.
 - Portable, parameterized SQL (no f-strings with user values). The dashboard CSS (`dash.CSS`) ships with the `app.css` the app serves. Export via a `download` link to `/_frag/__APP_ID__/…`.
 - Guide: `DASHBOARDS.md` (on the hub: Desenvolvedores).
 

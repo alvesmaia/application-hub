@@ -21,7 +21,7 @@ def test_pick_sla_and_classes() -> None:
     assert sla_for("Crítica") == timedelta(hours=4) and sla_for("Baixa") == timedelta(hours=72)
     assert status_class("Aguardando") == "waiting" and status_class("Aberto") == ""
     now = datetime.now(UTC)
-    assert sla_text("Resolvido", now) == "—"
+    assert sla_text("Resolvido", now) == "-"
     assert sla_text("Aberto", now - timedelta(hours=1)) == "Vencido"
     assert sla_text("Aberto", now + timedelta(hours=5, minutes=30, seconds=30)) == "05:30"
 
@@ -56,7 +56,7 @@ def test_csv_and_render() -> None:
     h = report.render(_report(), p, True)
     assert "1 linhas" in h and "(cache da sessão)" in h and "sem. de 01/09/2026" in h and "80,0%" in h
     assert "Sem chamados" in report.render(report.Report([], 0), p, False)
-    assert report.pct(1, 0) == "—" and report.pct(1, 3) == "33,3%"
+    assert report.pct(1, 0) == "-" and report.pct(1, 3) == "33,3%"
     assert report.period_label(p, date(2026, 9, 1)) != report.period_label(
         report.Params.from_query({"agrupar": "dia"}), date(2026, 9, 1)
     )
@@ -117,6 +117,6 @@ def test_seed_rows(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_cli_openapi_and_usage(env: object, capsys: pytest.CaptureFixture[str]) -> None:
     assert cli.main(["openapi"]) == 0
     doc = json.loads(capsys.readouterr().out)
-    assert doc["info"]["title"] == "Central de Serviços — API"
+    assert doc["info"]["title"] == "Central de Serviços - API"
     assert cli.main(["nada"]) == 2
     assert cli.main(["--health"]) in (0, 1)

@@ -46,7 +46,7 @@ def policy_row(p: Row, schedules: Row, name_of: NameOf, now: int) -> Row:
 def history_row(b: Row, name_of: NameOf, now: int) -> Row:
     sfx = " (staging)" if (b.get("env") or "producao") == "staging" else ""
     detail = b.get("detail") or (f"sha256 {b['sha256']} · {b['files']} arquivos" if b.get("sha256") else "")
-    return {"id": b["id"], "app": name_of(b["app"]) + sfx, "kind": b["kind"], "size": m.human(b["size"]) if b["size"] else "—",
+    return {"id": b["id"], "app": name_of(b["app"]) + sfx, "kind": b["kind"], "size": m.human(b["size"]) if b["size"] else "-",
             "status": b["status"], "status_class": tone(b["status"]), "when": relative(b["at"], now), "detail": detail,
             "usable": b["status"] == "Concluído" and bool(b.get("file"))}  # fmt: skip
 

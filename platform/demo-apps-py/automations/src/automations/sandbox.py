@@ -1,7 +1,7 @@
 """Child process that runs a package: ``python -I -B -m automations.sandbox main.py:run`` with the
 package extracted in the working directory.
 
-Protocol: params as JSON on stdin; on stdout ONE JSON line — ``{"ok": {...}}`` or
+Protocol: params as JSON on stdin; on stdout ONE JSON line - ``{"ok": {...}}`` or
 ``{"error": "message"}``; anything the package prints (and tracebacks) goes to stderr, which the
 app keeps as the run log. Exit code 0 only on success. ``run(params)`` may be sync or async and
 must return a JSON object.

@@ -1,4 +1,4 @@
-# Handoff — Application Hub (updated 08/10/2026)
+# Handoff - Application Hub (updated 08/10/2026)
 
 ## Where everything is
 - **`main`** (and `stack/python`, the working branch): official Python stack. Hub in `platform-py/`; apps, SDK,
@@ -7,12 +7,12 @@
   `platform/docs/CONTRATO-APP.md`.
 
 ## Layout
-- `platform-py/hub` — FastAPI hub (templates in `hub/web/templates`, i18n catalog in `hub/web/catalog.json`).
-- `platform-py/cli` — `hub-cli` (wheel via `scripts/build-cli.sh`, embeds the shell assets).
-- `platform/assets/shell` — shell CSS/JS (`hub*.js`, `tokens.css`, fonts, `vendor/` ZXing), served at `/assets/`.
-- `platform/assets/web` — JS/CSS of the hub screens (Administration, Operations, Connections, UX).
-- `platform/assets/i18n` — `catalog.json`/`allowlist.json` used by the JS tests.
-- `platform/config` — app registry (`apps.json`, `apps.compose.json`), seeds `app-env.compose.json`, `hub.example.toml`.
+- `platform-py/hub` - FastAPI hub (templates in `hub/web/templates`, i18n catalog in `hub/web/catalog.json`).
+- `platform-py/cli` - `hub-cli` (wheel via `scripts/build-cli.sh`, embeds the shell assets).
+- `platform/assets/shell` - shell CSS/JS (`hub*.js`, `tokens.css`, fonts, `vendor/` ZXing), served at `/assets/`.
+- `platform/assets/web` - JS/CSS of the hub screens (Administration, Operations, Connections, UX).
+- `platform/assets/i18n` - `catalog.json`/`allowlist.json` used by the JS tests.
+- `platform/config` - app registry (`apps.json`, `apps.compose.json`), seeds `app-env.compose.json`, `hub.example.toml`.
 - `platform/demo-apps-py/*`, `platform/sdk-python`, `platform/conformance`, `platform/js-tests`, `platform/tests-e2e`.
 
 ## How to run (in `platform-py/`)

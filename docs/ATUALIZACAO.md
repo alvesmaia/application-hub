@@ -100,7 +100,7 @@ docker run --rm -v "$P-objstore-data:/d:ro" -v "$PWD:/b" alpine tar czf /b/objst
 cd -
 ```
 
-Also keep the vault master key (`/data/master.key` or `.secrets/master.key`) and `.prod.env` — without the
+Also keep the vault master key (`/data/master.key` or `.secrets/master.key`) and `.prod.env` - without the
 key, the encrypted secrets cannot be opened.
 
 ## 2. New code

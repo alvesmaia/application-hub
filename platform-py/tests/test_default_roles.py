@@ -1,4 +1,4 @@
-"""Default roles: three levels — Administrador, Power User (everything but managing users) and User (apps only).
+"""Default roles: three levels - Administrador, Power User (everything but managing users) and User (apps only).
 Installs seeded before keep their roles; SSO then falls back to the legacy "Colaborador"."""
 
 from __future__ import annotations

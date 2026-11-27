@@ -5,7 +5,7 @@
 #   bash platform-py/scripts/install.sh --admin-email voce@empresa.com
 #   # or, without cloning first:  bash install.sh --clone [--ref main] [--dir ./application-hub] ...
 #
-# What it does (idempotent — running it again only starts what is missing and never changes existing secrets):
+# What it does (idempotent - running it again only starts what is missing and never changes existing secrets):
 #   1. generates platform-py/.prod.env (0600) from prod.env.example with new secrets (Postgres/MinIO passwords,
 #      internal app tokens) and this instance's options (project, port, network range, sample apps);
 #   2. builds from source the MinIO/mc images (infra/minio/Dockerfile), the hub and the apps;
@@ -22,7 +22,7 @@
 #   --subnet A.B         app network range A.B.<n>.0/24 (default 10.231)
 #   --no-demo-apps       does not start the 5 sample apps (default: they start, for the first evaluation)
 #   --clone              clones the repository first (--repo URL, --ref REF, --dir FOLDER)
-#   --get-compose        downloads the official docker-compose (pinned version, sha256 checked) to ~/.local/bin — for
+#   --get-compose        downloads the official docker-compose (pinned version, sha256 checked) to ~/.local/bin - for
 #                        RHEL/Rocky without root, where the distribution does not ship a compose provider
 #   --config-only        only writes platform-py/.prod.env (no Docker): to review the answers before installing
 #
@@ -69,7 +69,7 @@
 #                        --public-url the URL becomes https://localhost:<port>
 #
 # Advanced options (interactive install, "Revisar opções avançadas?"): each one shows the RECOMMENDED value in
-# [brackets] and Enter keeps it — MinIO data folder, audit anchor folder and webhook, off-site backup copy
+# [brackets] and Enter keeps it - MinIO data folder, audit anchor folder and webhook, off-site backup copy
 # (none / SharePoint / S3), sign-in with Microsoft Entra ID, admin network restriction, proxy/tunnel in front,
 # telemetry, new-version notice, public developer docs and build CPUs. Secrets are read without echo and go to the
 # vault or to .prod.env (0600), never to the command line. Without a terminal, SharePoint can still be set with
@@ -200,7 +200,7 @@ fi
 if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0 ] && [ -r /dev/tty ]; }; }; then
   exec 3< "$TTY"; TTY_OPEN=1
   [ -n "${INSTALL_TTY:-}" ] || exec 4> /dev/tty
-  echo "Instalação do Application Hub — o valor entre [colchetes] é o recomendado; Enter o mantém."
+  echo "Instalação do Application Hub - o valor entre [colchetes] é o recomendado; Enter o mantém."
   ask EMAIL "E-mail do primeiro administrador" '^[^@ ]+@[^@ ]+\.[^@ ]+$'
   ask PORT "Porta do hub no host" '^[0-9]{2,5}$'
   ask BIND "Endereço de escuta (127.0.0.1 = só esta máquina)" '^[0-9.]+$|^::$'
@@ -217,7 +217,7 @@ if [ "$YES" = 0 ] && [ "$ASKED" = 0 ] && { [ -n "${INSTALL_TTY:-}" ] || { [ -t 0
   echo
   ask ADV "Revisar opções avançadas? Enter mantém todas no recomendado (s/n)" '^[snSN]$'
   if yes_no "$ADV"; then
-    echo "Opções avançadas — o valor entre [colchetes] é o recomendado; Enter o mantém."
+    echo "Opções avançadas - o valor entre [colchetes] é o recomendado; Enter o mantém."
     ask OBJ_DIR "Pasta do host para os arquivos (MinIO); vazio = volume Docker (recomendado)" '^$|^/.+'
     ask HEAD_DIR "Pasta da âncora da auditoria (outro disco/NFS); vazio = ./.secrets/audit-head" '^$|^/.+|^\./.+'
     ask HEAD_URL "Webhook da âncora da auditoria (https://…); vazio = sem webhook (recomendado)" '^$|^https://.+'
@@ -295,7 +295,7 @@ fi
 consent() { # what the install does, before doing anything; default no. --yes = consent given (kept in the log)
   cat >&4 <<EOT
 
-Application Hub — instalação. Isto vai:
+Application Hub - instalação. Isto vai:
   • criar contêineres, volumes e redes com o prefixo $PROJECT-* no Docker/Podman do usuário $(id -un)
   • dar ao contêiner do hub acesso ao socket do engine: ele cria e para os contêineres dos apps (só $PROJECT-*)
   • baixar imagens e pacotes (registry de imagens, PyPI, GitHub)$({ db_summary; net_summary; rootless_summary; disk_summary; tls_summary; } | awk 'NF { printf "\n%s", $0 }')
@@ -365,7 +365,7 @@ case "$PUBLIC_URL" in
   https://*) COOKIE=1 ;;
   http://localhost | http://localhost:* | http://127.0.0.1 | http://127.0.0.1:*) COOKIE=auto ;;
   *) COOKIE=auto
-    echo "aviso: $PUBLIC_URL sem HTTPS — senha e sessão trafegam sem criptografia e o login Microsoft (Entra) exige HTTPS; use só para teste" >&2 ;;
+    echo "aviso: $PUBLIC_URL sem HTTPS - senha e sessão trafegam sem criptografia e o login Microsoft (Entra) exige HTTPS; use só para teste" >&2 ;;
 esac
 ENVF=.prod.env
 rnd() { od -An -tx1 -N24 /dev/urandom | tr -d ' \n'; }

@@ -39,7 +39,7 @@ def level_of(kind: str, text: str) -> str:
 
 def uptime_of(status: str) -> str:
     if not status.startswith("Up "):
-        return "—"
+        return "-"
     s = status[3:].split(" (")[0]
     for a, b in (("Less than a second", "< 1 s"), ("About a minute", "~1 min"), ("About an hour", "~1 h"),
                  (" seconds", " s"), (" second", " s"), (" minutes", " min"), (" minute", " min"),

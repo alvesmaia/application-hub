@@ -1,4 +1,4 @@
-"""Coletor — the platform's FastAPI app (5th demo app, Python stack): reading bench for
+"""Coletor - the platform's FastAPI app (5th demo app, Python stack): reading bench for
 reading codes on a phone / barcode scanner, **with no JavaScript of its own**.
 
 Three screens:
@@ -7,13 +7,13 @@ Three screens:
   ready, "Barcode" / "QR" toggle (remembered per user), large card for the
   last result (green/red + beep/vibration) and the last 10 readings;
 - **Test sheet** (computer): the codes to read ("open the app" QR separately; Items,
-  Locations, Orders, Mixed formats) and, alongside, **Live readings** — what the same
+  Locations, Orders, Mixed formats) and, alongside, **Live readings** - what the same
   user is reading on the phone, updated every second (``data-hub-trigger="every 1s"``);
 - **Diagnostics**: the device's features.
 
 Camera reading, keyboard-style reader, beep/vibration, offline queue and install are
 **hub behaviors** (``data-hub-scan``, ``data-hub-wedge``, ``data-hub-feedback``,
-``data-hub-offline-queue``, ``data-hub-install``, ``data-hub-diag`` — CONTRATO-APP §25).
+``data-hub-offline-queue``, ``data-hub-install``, ``data-hub-diag`` - CONTRATO-APP §25).
 
 Routes (under ``/collector``; the browser sees ``/apps/collector/...``; the hub fetches from
 ``/_frag/collector/...``): ``GET /collector`` · ``/scan`` · ``POST /scan/read`` ·
@@ -72,7 +72,7 @@ INFO = AppInfo(
 
 
 async def seed(sdk: HubSdk) -> None:
-    """Idempotent initial load (catalog, locations and orders — only to name readings)."""
+    """Idempotent initial load (catalog, locations and orders - only to name readings)."""
     if sdk.pool is None:
         return
     async with sdk.pool.acquire() as c, c.transaction():

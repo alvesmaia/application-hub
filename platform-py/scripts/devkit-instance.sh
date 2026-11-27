@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # TEMPORARY hub to prove `hub deploy` (F22): copy of the /data state, own database, own network and container prefix
-# (`app-hub-devkit-app-*`) — never touches the apps or the production database. Docker socket mounted
+# (`app-hub-devkit-app-*`) - never touches the apps or the production database. Docker socket mounted
 # (builds and starts the deployed app). Demo users enabled only in the copy.
 #   bash scripts/devkit-instance.sh up     # app-hub-devkit at http://127.0.0.1:8094 (demo password in .devkit-instance.env)
 #   bash scripts/devkit-instance.sh down   # removes containers, network, volumes and images of the test app

@@ -73,7 +73,7 @@ The network options above are applied on a rerun.
   `source platform-py/.secrets/hub-env.sh`.
 - **systemd present but the user session missing** (no `$XDG_RUNTIME_DIR/bus`, even with linger): the container networks
   cannot start their DNS. The install stops before changing anything and prints what to ask the administrator:
-  `sudo loginctl enable-linger <user>` and `sudo systemctl restart user@<uid>.service` — or a dedicated user for the hub.
+  `sudo loginctl enable-linger <user>` and `sudo systemctl restart user@<uid>.service` - or a dedicated user for the hub.
   When the administrator says no, `--no-systemd` still works there: the hub's own socket gets a `systemd-run` that runs
   aardvark-dns directly (`scripts/install/nosystemd/`, only on that socket's PATH) and the install's `docker`/`podman`
   commands go through that socket (`CONTAINER_HOST`; podman-docker ignores `DOCKER_HOST`). It also covers a server

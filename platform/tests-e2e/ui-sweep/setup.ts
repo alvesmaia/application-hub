@@ -7,7 +7,7 @@ import { APP_ROUTES, OUT_DIR, ROUTES_FILE, STATIC_ROUTES, isExcluded, patternOf 
 
 /**
  * Sweep global setup: (1) admin/operator/reader sessions (reuses the specs' global-setup); (2) route
- * discovery — rail/menus/same-origin links up to depth N
+ * discovery - rail/menus/same-origin links up to depth N
  * (SWEEP_DEPTH, default 2) per role + the static list from the hub-web route table;
  * deduplicates by pattern (`/x/:id`) and writes `routes.json` to the report directory.
  */

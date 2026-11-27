@@ -2,7 +2,7 @@
 # ISOLATED hub instance for the full validation (E2E with restore/import, blue/green, OAuth): empty state,
 # the one Postgres (hub + apps databases), object store and the 4 OWN apps on their own network. The containers use
 # the `app-hub-iso-*` prefix and join the network with the stack's aliases (`app-hub-app-db`,
-# `app-hub-objstore`, `app-hub-app-<id>`, `app-hub-web`), so `apps.json`/`app-env.json` apply unchanged — nothing
+# `app-hub-objstore`, `app-hub-app-<id>`, `app-hub-web`), so `apps.json`/`app-env.json` apply unchanged - nothing
 # talks to production. Dev passwords (hubpy-*), demo users, the E2E hostile route enabled, HUB_PUBLIC_URL = this port.
 #   bash scripts/iso-instance.sh up      # http://127.0.0.1:8093 (demo password in .iso-instance.env)
 #   bash scripts/iso-instance.sh down    # removes containers, network, volumes and app-hub-iso-* images

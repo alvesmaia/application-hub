@@ -1,4 +1,4 @@
-/* identidade:inicio — Service Center — forest green, rounded shapes (CONTRATO-APP §29).
+/* identidade:inicio - Service Center - forest green, rounded shapes (CONTRATO-APP §29).
    Tokens PRÓPRIOS do app: no CSS do app, `:root` vale para a área do app (#app-root) e o hub
    repassa cada `--app-<papel>` para o que desenha ali. Variante escura obrigatória (claro e
    escuro conferidos por scripts/gen-dark-theme.mjs --check: texto ≥ 4,5:1, formas ≥ 3:1). */
@@ -94,7 +94,7 @@
 :root { --radius-md: 10px; --radius-lg: 12px; --radius-xl: 14px; --radius-2xl: 16px; --radius-3xl: 16px; --radius-4xl: 18px; --radius-5xl: 18px; --radius-6xl: 20px; --radius-7xl: 24px; }
 .primary-button, .secondary-button, .filter-button, .app-sidebar .nav-item { border-radius: var(--radius-pill); }
 /* forma:fim */
-/* App 3 — a distinct service operations interface in slate, ice-blue and orange. */
+/* App 3 - a distinct service operations interface in slate, ice-blue and orange. */
 
 .app3-workspace{min-height:calc(100vh - 41px);background:var(--am-hover)}
 .app3-sidebar{position:sticky!important;top:0!important;align-self:flex-start;flex:0 0 204px;width:204px;height:calc(100vh - 41px);min-height:0;max-height:calc(100vh - 41px);display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;padding:18px 14px 13px!important;background:var(--am-chrome)!important;border:0!important;color:var(--am-chrome-text);box-shadow:5px 0 18px color-mix(in srgb, var(--am-scrim) 9%, transparent)}

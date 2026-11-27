@@ -1,4 +1,4 @@
-/* ops.js — Operations interactions (Deployments, Containers, Backups, SDK).
+/* ops.js - Operations interactions (Deployments, Containers, Backups, SDK).
  *
  * The pages arrive ready from the server; this script only:
  *   - sends the .hubapp (multipart + X-Hub-Request: 1) and follows the pipeline job

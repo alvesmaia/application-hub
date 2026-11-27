@@ -83,9 +83,9 @@ const rank = (c) => { const i = SEV.indexOf(c); return i < 0 ? 99 : i; };
 const sorted = [...groups.values()].sort((a, b) => rank(a.check) - rank(b.check) || b.combos.size - a.combos.size || a.pattern.localeCompare(b.pattern));
 const esc = (s) => String(s ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
 const md = [];
-md.push(`# Varredura de UI — ${summary.when.slice(0, 19).replace('T', ' ')}`, '');
+md.push(`# Varredura de UI - ${summary.when.slice(0, 19).replace('T', ' ')}`, '');
 md.push(`- Modo: **${summary.mode}** · hub ${summary.hub} · duração ${Math.floor(secs / 60)}min${secs % 60}s · Playwright saiu com ${pwStatus}`);
-md.push(`- Cobertura: **${summary.routes} rotas × ${themes.length} temas (${themes.join(', ')}) × ${roles.length} papéis (${roles.join(', ')})** — ${units.length} unidades, ${visits} visitas de página, ${layers} camadas abertas (menus/popovers/modais)`);
+md.push(`- Cobertura: **${summary.routes} rotas × ${themes.length} temas (${themes.join(', ')}) × ${roles.length} papéis (${roles.join(', ')})** - ${units.length} unidades, ${visits} visitas de página, ${layers} camadas abertas (menus/popovers/modais)`);
 md.push(`- Achados: **${findings.length}** (${open.length} fora da allowlist; ${groups.size} distintos após agrupar temas/papéis)`, '');
 md.push('## Resumo por verificação', '', '| Verificação | Achados | Fora da allowlist |', '|---|---:|---:|');
 for (const [c, v] of Object.entries(byCheck).sort((a, b) => rank(a[0]) - rank(b[0]))) md.push(`| ${c} | ${v.total} | ${v.open} |`);
@@ -99,7 +99,7 @@ for (const r of routes.routes) {
 }
 if (routes.excluded?.length) md.push('', `Links excluídos (saída/destrutivos/downloads/API): ${routes.excluded.map((x) => '`' + x + '`').join(', ')}`);
 const allowedList = findings.filter((f) => f.allowlisted);
-if (allowedList.length) md.push('', `## Na allowlist (${allowedList.length})`, '', ...allowedList.slice(0, 200).map((f) => `- \`${f.pattern}\` ${f.check} — ${esc(f.message)} — _${f.allowlisted}_`));
+if (allowedList.length) md.push('', `## Na allowlist (${allowedList.length})`, '', ...allowedList.slice(0, 200).map((f) => `- \`${f.pattern}\` ${f.check} - ${esc(f.message)} - _${f.allowlisted}_`));
 fs.writeFileSync(path.join(out, 'report.md'), md.join('\n') + '\n');
 
 console.log(`\n[ui-sweep] ${summary.routes} rotas × ${themes.length} temas × ${roles.length} papéis · ${visits} visitas · ${layers} camadas · ${secs}s`);

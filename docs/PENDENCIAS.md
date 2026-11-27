@@ -1,4 +1,4 @@
-# Pending items — Python stack (updated 09/10/2026)
+# Pending items - Python stack (updated 09/10/2026)
 
 Living list: update it with every delivery. In-progress tasks live in the agent's
 native task list.
@@ -54,6 +54,6 @@ native task list.
 - **Human approval of agent actions in the hub:** removed on 13/10/2026 (the MCP default became `confirm`; the
   confirmation stays with the AI client). If it comes back: an "Approve agent action" request in the Inbox with an
   **Authorize** button + confirmation modal (no password), approvable only through the browser session (the agent token
-  never approves), and the `confirm_token` deadline renewed from the approval — in the old design the 5 min counted
+  never approves), and the `confirm_token` deadline renewed from the approval - in the old design the 5 min counted
   from the request and the person would exceed the deadline before telling the agent. Previous implementation in the git
   history (`e33ae8d`).

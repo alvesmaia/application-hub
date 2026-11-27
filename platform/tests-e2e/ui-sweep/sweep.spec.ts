@@ -43,7 +43,7 @@ const UNITS: Unit[] = QUICK
 const CHECKS_JS = fs.readFileSync(path.join(__dirname, 'checks.js'), 'utf8');
 const MAX_TRIGGERS = Number(process.env.SWEEP_MAX_TRIGGERS || 10);
 const MAX_SHOTS_PER_PAGE = 20;
-const ALLOWED_WRITES = /^\/api\/me\/analytics/; // usage telemetry — harmless
+const ALLOWED_WRITES = /^\/api\/me\/analytics/; // usage telemetry - harmless
 const DANGER = /excluir|remover|apagar|revogar|parar|reiniciar|restaurar|desativar|desinstalar|sair|encerrar|descartar|rotacionar|bloquear|delete|remove|revoke|logout|promover|implantar|reverter|rollback/i;
 const TRIGGER_TEXT = /^(\+\s*)?(nov[oa]s?\b|personalizar|editar|adicionar|filtros?\b|mais\b|ações|⋯|…|\.\.\.|convidar|criar|conectar|configurar|solicitar|provisionar)/i;
 const LAYERS = 'dialog[open], [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [popover], .popover, .menu-pop, .dropdown-menu, [data-hub-popover], [data-hub-menu-panel], .modal, .hub-modal, details[open]';

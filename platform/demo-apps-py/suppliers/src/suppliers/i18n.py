@@ -4,7 +4,7 @@ Fragments carry markers (``{{HUB_USER}}``, ``{{HUB_FIRST}}``, ``{{HUB_INITIALS}}
 ``{{HUB_TODAY}}``, ``{{HUB_GREETING}}``, ``{{HUB_APP_NAME}}``) that :func:`personalize` replaces in the
 response. HTML leaving the app goes through :class:`I18nMiddleware`: for a locale other than
 pt-BR, texts from the ``i18n.json`` catalog (rows ``[pt-BR, en]``, key = pt-BR text) are
-replaced — only text between tags and the ``placeholder``/``title``/``aria-label``/
+replaced - only text between tags and the ``placeholder``/``title``/``aria-label``/
 ``data-hub-toast``/``alt`` attributes; data (names, numbers, asset tags) pass through intact.
 """
 

@@ -183,7 +183,7 @@ test('tarefas: cancelar e reprocessar uma exportação em andamento', async ({ p
   await expect.poll(async () => Boolean(await findTask(['running', 'queued'])), { timeout: 60_000 }).toBe(true);
   const task = await findTask(['running', 'queued']);
   // The screen fetches the tasks from the app over the internal network; under load (export of 1 M rows)
-  // the query may come back empty once — reloads until the row appears.
+  // the query may come back empty once - reloads until the row appears.
   const openRow = async (sel: string) => {
     await expect(async () => {
       await gotoSafe(page, '/admin/tasks?app=inventory');

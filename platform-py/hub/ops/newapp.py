@@ -5,7 +5,7 @@
 - Base container: without a compose container, the candidate starts from a hardened template (read-only root,
   `cap_drop ALL`, `no-new-privileges`, `/scratch` on tmpfs) on the apps' network (`HUB_APP_NETWORK`).
 - `requires`: database (`provision.provision`), storage (Connections hook) and variables/secrets sent
-  by `hub deploy` — stored as managed variables `NAME_<APP>[_STAGING]` injected as `NAME`, write-only.
+  by `hub deploy` - stored as managed variables `NAME_<APP>[_STAGING]` injected as `NAME`, write-only.
 """
 
 from __future__ import annotations

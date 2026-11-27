@@ -31,7 +31,7 @@ async def fire_due(pool: Any, now: datetime) -> list[int]:
     """In ONE transaction: locks the due enabled triggers (``FOR UPDATE SKIP LOCKED``), creates
     each one's run + job, and moves ``next_run_at`` past ``now``. Another process (or replica)
     either skips the locked rows or, once this commits, re-checks them and no longer sees them as
-    due — so each slot fires exactly once. Returns the ids of the runs created."""
+    due - so each slot fires exactly once. Returns the ids of the runs created."""
     created: list[int] = []
     async with pool.acquire() as c, c.transaction():
         rows = await c.fetch(

@@ -1,4 +1,4 @@
-# Application Platform — Interactive Mockup
+# Application Platform - Interactive Mockup
 
 ## 1. Goal
 
@@ -317,7 +317,7 @@ The mockup must simulate a real application running inside the shell.
 
 Create at least three mocked applications:
 
-### App 1 — Asset Management
+### App 1 - Asset Management
 
 ```text
 /app1
@@ -332,7 +332,7 @@ Movements
 Reports
 ```
 
-### App 2 — Indicators
+### App 2 - Indicators
 
 ```text
 /app2
@@ -347,7 +347,7 @@ Analyses
 Reports
 ```
 
-### App 3 — Requests
+### App 3 - Requests
 
 ```text
 /app3

@@ -1,4 +1,4 @@
-// Wave 13 — hub camera (hub-device.js): only the AIM FRAME is read (video crop with
+// Wave 13 - hub camera (hub-device.js): only the AIM FRAME is read (video crop with
 // object-fit: cover + code ≥ 90 % inside) and the choices (code type, Interativo/Automático,
 // pause) stay inside the layer, notifying the app through data-hub-scan-prefs. Pure rules in node;
 // behavior in real Chromium with the app-page CSP. Skipped without Playwright/Chromium.
@@ -24,7 +24,7 @@ test('mira: barras 80 % × 30 %, QR quadrado 60 % do lado menor, centralizados',
   assert.deepEqual(Dev.aimRect(1000, 500, true), { x: 350, y: 100, w: 300, h: 300 });
 });
 
-test('object-fit: cover — celular em pé (390×844) com vídeo 1280×720', () => {
+test('object-fit: cover - celular em pé (390×844) com vídeo 1280×720', () => {
   const m = Dev.coverMap(1280, 720, 390, 844);
   near(m.scale, 844 / 720, 1e-9);
   near(m.offY, 0, 1e-9);
@@ -36,7 +36,7 @@ test('object-fit: cover — celular em pé (390×844) com vídeo 1280×720', () 
   near(r.sy + r.aim.y + r.aim.h / 2, 360, 1);
   near(r.aim.w, 312 / m.scale, 0.01);
   near(r.aim.h, (844 * 0.3) / m.scale, 0.01);
-  assert.ok(r.sw < 300 && r.sh < 230, `recorte pequeno (${r.sw}×${r.sh}) — menos CPU`);
+  assert.ok(r.sw < 300 && r.sh < 230, `recorte pequeno (${r.sw}×${r.sh}) - menos CPU`);
   // QR: 234 CSS px square → ~200 video px.
   const q = Dev.roi(1280, 720, 390, 844, Dev.aimRect(390, 844, true), 0);
   near(q.aim.w, 234 / m.scale, 0.01);
@@ -47,7 +47,7 @@ test('object-fit: cover — celular em pé (390×844) com vídeo 1280×720', () 
   near(f.aim.x, (f.sw - f.aim.w) / 2, 1.5);
 });
 
-test('object-fit: cover — palco deitado (1440×700) e vídeo em pé (720×1280)', () => {
+test('object-fit: cover - palco deitado (1440×700) e vídeo em pé (720×1280)', () => {
   const m = Dev.coverMap(1280, 720, 1440, 700);
   near(m.scale, 1.125, 1e-9);
   near(m.offX, 0, 1e-9);
@@ -102,7 +102,7 @@ const APP = `<div class="workspace" id="workspace"><section class="workspace-con
 <section id="painel"></section>
 </section></div>`;
 
-/** Fake 1280×720 video: three colored "codes" — red INSIDE the frame (center), blue
+/** Fake 1280×720 video: three colored "codes" - red INSIDE the frame (center), blue
  *  OUTSIDE (above the frame, but visible on screen) and green on the EDGE (half outside). The detector
  *  simulated finds the blocks by color IN THE IMAGE IT RECEIVES and returns each box. */
 const CAMERA = `
@@ -181,7 +181,7 @@ test('Chromium (celular 390×844, vídeo 1280×720): só o código DENTRO do qua
     assert.ok(srcs.length > 0 && srcs.every(([w, h]) => w < 640 && h < 300), JSON.stringify(srcs.slice(0, 3)));
     const roi = (await page.getAttribute('.hub-camera', 'data-roi')).split(',').map(Number);
     assert.ok(roi[0] + roi[2] / 2 > 620 && roi[0] + roi[2] / 2 < 660, `recorte centrado no vídeo (${roi})`);
-    assert.ok(roi[1] > 120 && roi[1] + roi[3] < 520, `fora do recorte: o azul (y 60–120) — ${roi}`);
+    assert.ok(roi[1] > 120 && roi[1] + roi[3] < 520, `fora do recorte: o azul (y 60–120) - ${roi}`);
     assert.deepEqual(violations, []);
   } finally { await b.close(); }
 });

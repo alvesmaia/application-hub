@@ -1,4 +1,4 @@
-"""OAuth 2.1 for `/mcp` — constants and pure helpers (URLs, redirect rules, PKCE, names, public IPs)."""
+"""OAuth 2.1 for `/mcp` - constants and pure helpers (URLs, redirect rules, PKCE, names, public IPs)."""
 
 from __future__ import annotations
 

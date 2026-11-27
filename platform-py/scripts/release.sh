@@ -24,7 +24,7 @@ fi
 sed -i "s/^__version__ = \"[^\"]*\"/__version__ = \"$V\"/" platform-py/hub/__init__.py
 sed -i "0,/^version = \"[^\"]*\"/s//version = \"$V\"/" platform-py/pyproject.toml
 if ! grep -q "^## \[$V\]" CHANGELOG.md; then
-  sed -i "s/^## \[Unreleased\]$/## [Unreleased]\n\n## [$V] — $(date +%F)/" CHANGELOG.md
+  sed -i "s/^## \[Unreleased\]$/## [Unreleased]\n\n## [$V] - $(date +%F)/" CHANGELOG.md
 fi
 # the CLI's lock records the hub version too (left stale, the next hub-check rewrote it outside the release)
 (cd platform-py && uv lock -q && uv lock -q --project cli && uv run python -m hub.ops.devdocs --dates)

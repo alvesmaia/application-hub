@@ -2,7 +2,7 @@ import { test, expect, request } from '@playwright/test';
 import { createHash, randomBytes } from 'node:crypto';
 import { HUB, stateFile, uniq } from './helpers';
 
-// Wave 12 (2.2) — MCP OAuth 2.1 through the browser: a dynamically registered client
+// Wave 12 (2.2) - MCP OAuth 2.1 through the browser: a dynamically registered client
 // (like Langdock) asks for access; the user sees the consent screen (client, return host,
 // permissions), approves, the code goes back to the client and becomes a token that uses
 // /mcp; the grant appears in Account › Authorized apps and in Administration, and revoking

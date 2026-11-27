@@ -1,4 +1,4 @@
-/* hub-chart.js — hub charts for apps (wave 12, 2.1): the TimeSeriesChart that used to live
+/* hub-chart.js - hub charts for apps (wave 12, 2.1): the TimeSeriesChart that used to live
  * in each app's chart.js (same code and visuals) and the declarative renderer
  * [data-hub-chart] (bar, line, area, donut) used by hub-kit.js. All generated SVG
  * markup goes through the 'hub-svg' Trusted Types policy (sanitized by hub-safe.js). */

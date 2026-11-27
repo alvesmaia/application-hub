@@ -1,4 +1,4 @@
-/* identidade:inicio — Asset Management — teal green, system sans (CONTRATO-APP §29).
+/* identidade:inicio - Asset Management - teal green, system sans (CONTRATO-APP §29).
    Tokens PRÓPRIOS do app: no CSS do app, `:root` vale para a área do app (#app-root) e o hub
    repassa cada `--app-<papel>` para o que desenha ali. Variante escura obrigatória (claro e
    escuro conferidos por scripts/gen-dark-theme.mjs --check: texto ≥ 4,5:1, formas ≥ 3:1). */

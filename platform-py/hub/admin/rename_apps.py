@@ -1,5 +1,5 @@
 """Renames the sample apps' ids in the hub's /data (0.4.0: ativos→inventory, fornecedores→suppliers, servicos→servicedesk,
-coletor→collector, automacoes→automations). Only keys and fields that hold an app id are rewritten — never free text
+coletor→collector, automacoes→automations). Only keys and fields that hold an app id are rewritten - never free text
 (descriptions, notes, messages); the audit chain is hash-linked and signed, so past events keep the old ids. Idempotent:
 running it twice, or over data already renamed, changes nothing. `reverse=True` undoes it."""
 

@@ -1,6 +1,6 @@
 """API v1 of ``automations`` (CLI with an ``app-api`` token; each operation is also an MCP tool):
-packages (upload multipart or base64, list), processes (list, create, update), runs (start —
-same validation as the form: 422 with the errors per field, 202 with the run —, get, list).
+packages (upload multipart or base64, list), processes (list, create, update), runs (start -
+same validation as the form: 422 with the errors per field, 202 with the run -, get, list).
 Same rules as the screens: admins (``AUTOMATIONS_ADMIN_ROLES``) manage packages and processes and
 see every run; others run enabled processes and see their own runs (403/404 otherwise)."""
 
@@ -27,7 +27,7 @@ from automations.package_format import MAX_ZIP_BYTES, PackageError
 from automations.state import DB_ERRORS, State, StateDep, mark_committed, may_see, new_run, to_int, user_of
 
 BASE = "/automations/api/v1"
-TITLE = "Automações — API"
+TITLE = "Automações - API"
 VERSION = "1.0.0"
 PKG: list[str | Enum] = ["Pacotes"]
 PROC: list[str | Enum] = ["Processos"]
@@ -216,7 +216,7 @@ async def create_process(body: processes.ProcessIn, req: Request, st: StateDep) 
 
 
 @router.put(f"{BASE}/processes/{{id}}", operation_id="update_process", tags=PROC, responses={200: {"model": ProcessOut}},
-            summary="Altera um processo (inclusive a versão do pacote — auditado)")  # fmt: skip
+            summary="Altera um processo (inclusive a versão do pacote - auditado)")  # fmt: skip
 async def update_process(id: str, body: processes.ProcessIn, req: Request, st: StateDep) -> Response:
     if (g := guard(req, st, admin=True)) is not None:
         return g

@@ -1,4 +1,4 @@
-"""0.4.0 migration of the hub's /data: sample app ids in English. Only id keys and id fields change — free text and
+"""0.4.0 migration of the hub's /data: sample app ids in English. Only id keys and id fields change - free text and
 the audit chain stay; idempotent; reversible."""
 
 from __future__ import annotations

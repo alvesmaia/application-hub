@@ -3,7 +3,7 @@
 - :class:`TraceMiddleware` (pure ASGI, works with streaming responses): reads the
   ``traceparent`` the gateway injects (the browser's is discarded by the hub), opens the
   ``server`` span of the app as a child of the hub's span and stores the context in a ``ContextVar``.
-- :func:`db` — ``async with telemetry.db("SELECT contratos"):`` creates the ``client`` span of the
+- :func:`db` - ``async with telemetry.db("SELECT contratos"):`` creates the ``client`` span of the
   database, child of the current one; :func:`sql_comment` returns ``/*traceparent='…'*/`` (sqlcommenter)
   to prefix the SQL (it shows up in ``pg_stat_activity``/the Postgres logs).
 - :class:`Telemetry` keeps the spans in a bounded buffer; the hub fetches them via
@@ -128,7 +128,7 @@ class Telemetry:
         return d
 
 
-# (current context, telemetry) — available during the request.
+# (current context, telemetry) - available during the request.
 _CURRENT: ContextVar[tuple[TraceContext, Telemetry] | None] = ContextVar("hub_trace", default=None)
 
 

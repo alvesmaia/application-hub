@@ -49,7 +49,7 @@ test('loader: abrir o app mostra o carregador 0→100% em ~3,5 s, depois o skele
   await ctx.close();
 });
 
-test('loader: fragmento lento — o skeleton fica até o conteúdo chegar (nunca área vazia)', async ({ browser }) => {
+test('loader: fragmento lento - o skeleton fica até o conteúdo chegar (nunca área vazia)', async ({ browser }) => {
   const ctx = await browser.newContext({ storageState: stateFile('admin') });
   const page = await ctx.newPage();
   await slowFragments(page, 'suppliers', 8000);

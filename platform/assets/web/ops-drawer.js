@@ -1,4 +1,4 @@
-/* ops-drawer.js — Containers page details drawer (kept apart from ops.js for size; loaded right
+/* ops-drawer.js - Containers page details drawer (kept apart from ops.js for size; loaded right
  * after it on the same pages).
  *
  * Containers: details panel (right on desktop; full screen on phones) with tabs

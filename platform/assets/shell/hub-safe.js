@@ -1,4 +1,4 @@
-/* hub-safe.js — sanitizer for app HTML + Trusted Types policies (wave 12, item 2.1).
+/* hub-safe.js - sanitizer for app HTML + Trusted Types policies (wave 12, item 2.1).
  *
  * Apps run on the SAME origin as the hub (there is no domain per app). For that reason no HTML
  * coming from an app enters the shell document without passing through here:
@@ -11,11 +11,11 @@
  *     (the content stays, the tag goes);
  *   - attributes: `on*` (inline handlers), `srcdoc`, `is`, `ping` are removed; URLs (`href`, `src`,
  *     `action`, `formaction`, `xlink:href`, `poster`, `srcset`…) only relative, http(s),
- *     mailto/tel and `data:image/*` in images — `javascript:`/`vbscript:`/`data:` are removed;
+ *     mailto/tel and `data:image/*` in images - `javascript:`/`vbscript:`/`data:` are removed;
  *     SVG `<use>` only references a local `#id`; `id`/`name` that would override
  *     `document`/form properties (DOM clobbering) or shell ids are removed;
- *   - a form (or a button with `formaction`) that points outside the app itself —
- *     above all /login, /account/*, /oauth/* — loses its target and gets
+ *   - a form (or a button with `formaction`) that points outside the app itself -
+ *     above all /login, /account/*, /oauth/* - loses its target and gets
  *     `data-hub-blocked` (hub.js does not send it; the `form-action` CSP also blocks it).
  *
  * Trusted Types (Chromium; the app page CSP requires `require-trusted-types-for
@@ -56,7 +56,7 @@
   function safeUrl(v, img) {
     const n = normUrl(v);
     const m = /^([a-z][a-z0-9+.-]*):/.exec(n);
-    // Relative (including `//host`: the origin is checked where it matters — forms — and the
+    // Relative (including `//host`: the origin is checked where it matters - forms - and the
     // CSP limits images/connections to the origin itself).
     if (!m) return true;
     const scheme = m[1];
@@ -323,7 +323,7 @@
   }
 
   /** App CSS → sheet built and confined to the app area (wave 12, M1 of the re-review):
-   *  everything inside `@scope (<scope>)` — rules aimed at the hub's header/rail/`body` match
+   *  everything inside `@scope (<scope>)` - rules aimed at the hub's header/rail/`body` match
    *  nothing; `@import` and `@namespace` are removed; `@font-face` stays only for the app's own font files
    *  (`ownFontFace`; without `base`, none); `@keyframes` stay outside the scope with the name prefixed by
    *  `app-` (they do not replace the hub's animations). `base` (the CSS file's URL) also resolves the

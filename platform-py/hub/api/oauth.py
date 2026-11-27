@@ -45,7 +45,7 @@ class OAuth(OAuthDevice):
             redirect = g.get("redirect_uri", "")
             host = host_of(redirect) if redirect else host_of(g.get("client_id", ""))
             rows.append({"id": g["grant_id"], "name": short(g.get("client_name", "")),
-                         "unverified": g.get("client_kind") != "verified", "host": host or "—",
+                         "unverified": g.get("client_kind") != "verified", "host": host or "-",
                          "scopes": " ".join(g.get("scopes", [])), "created": ago(g.get("created_at", 0), now, lang),
                          "last": ago(g.get("last_used", 0), now, lang)})  # fmt: skip
         return rows

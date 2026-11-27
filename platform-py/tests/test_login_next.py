@@ -1,5 +1,5 @@
 """Signing in again after leaving: a POST that met an ended session (e.g. "Sair" in a second tab) must not come
-back as `next` — the login then sent the browser to GET /logout, which only accepts POST ("Method Not Allowed")."""
+back as `next` - the login then sent the browser to GET /logout, which only accepts POST ("Method Not Allowed")."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-// Wave 13 — real time and reading (hub-kit data-hub-ws; hub-device: code-type toggle
+// Wave 13 - real time and reading (hub-kit data-hub-ws; hub-device: code-type toggle
 // INSIDE the camera, "Próximo" and pause between reads). Pure rules in node; each
 // behavior in real Chromium with the app-page CSP (Trusted Types) and a server
 // simulated WebSocket (page.routeWebSocket). Skipped without Playwright/Chromium.

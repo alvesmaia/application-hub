@@ -13,7 +13,7 @@
 <input type="hidden" id="formato" name="formato" value="">
 <label class="col-label" for="codigo">{{ t('Código') }}</label>
 <div class="col-code-row"><input id="codigo" name="codigo" class="col-input col-input-code" data-hub-wedge data-hub-clear autofocus autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="send" maxlength="256" placeholder="{{ t('Leia ou digite o código') }}" aria-describedby="codigo-dica"><button type="submit" class="col-button col-button-dark">{{ t('Registrar') }}</button></div>
-<p id="codigo-dica" class="col-hint">{{ t('Leitor tipo pistola: aponte e dispare — o campo fica sempre pronto.') }}</p>
+<p id="codigo-dica" class="col-hint">{{ t('Leitor tipo pistola: aponte e dispare - o campo fica sempre pronto.') }}</p>
 </form>
 {% if lookup %}<div class="col-result col-result-{{ lookup.feedback }} col-result-big" role="status" data-col-lookup><span class="col-result-mark" aria-hidden="true">{{ '✓' if lookup.feedback == 'ok' else ('!' if lookup.feedback == 'warn' else '✕') }}</span><span class="col-result-text"><strong>{{ lookup.label }}</strong><span class="col-mono">{{ lookup.value }}</span></span></div>{% endif %}
 {% set fresh = false %}{% set empty = false %}{% include "scan_result.html" %}

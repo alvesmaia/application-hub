@@ -73,8 +73,8 @@ async def profile(request: Request, c: AccountCtx = Depends(ctx)) -> Response:
     themes = [("light", "shell.theme_light", "sun"), ("dark", "shell.theme_dark", "moon")]
     themes.append(("auto", "shell.theme_system", "themeAuto"))
     page = c.frame(request, "perfil") | {
-        "email": user.get("email") or "—",
-        "role": ", ".join(user["roles"]) or "—",
+        "email": user.get("email") or "-",
+        "role": ", ".join(user["roles"]) or "-",
         "cur_theme": theme_of(request.state.theme)[0],
         "themes": [(v, t(k, lang), ic) for v, k, ic in themes],
         "lang_pref": pref.lang,
@@ -103,7 +103,7 @@ async def access(request: Request, msg: str = "", c: AccountCtx = Depends(ctx)) 
             "created": short_date(x["created_at"]),
             "expires": short_date(x["expires_at"]) if x.get("expires_at") else t("acct.never", lang),
             "expired": bool(x.get("expires_at")) and x["expires_at"] <= now,
-            "last": ago(x["last_used"], now, lang) if x.get("last_used") else "—",
+            "last": ago(x["last_used"], now, lang) if x.get("last_used") else "-",
         }
         for x in mine
     ]

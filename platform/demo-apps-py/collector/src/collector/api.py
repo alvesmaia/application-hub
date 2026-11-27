@@ -19,7 +19,7 @@ from collector.reads import clean_value, find_item, read_format, recent_reads, s
 from collector.state import State, StateDep, db_notice
 
 BASE = "/collector/api/v1"
-TITLE = "Coletor — API"
+TITLE = "Coletor - API"
 VERSION = "1.0.0"
 
 

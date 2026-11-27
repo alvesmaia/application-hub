@@ -182,7 +182,7 @@ class Uploads:
         return str(r["path"] or "") if r["promoted"] else str(r["staging_path"])
 
     async def cancel(self, upload_id: str) -> None:
-        """Undoes an upload (compensation) under the row lock — serialized with the promotion:
+        """Undoes an upload (compensation) under the row lock - serialized with the promotion:
         deletes the staging and, if already promoted, the target, and marks ``cancelled``. Idempotent."""
         async with self.pool.acquire() as c, c.transaction():
             r = await c.fetchrow(
@@ -203,7 +203,7 @@ class Uploads:
             await c.execute("UPDATE hub_uploads SET state = 'cancelled' WHERE id = $1", upload_id)
 
     async def _crashed_promotion_owns(self, c: Any, r: Any, upload_id: str) -> bool:
-        # Re-review P3: promotion that crashed after the move and before marking — staging
+        # Re-review P3: promotion that crashed after the move and before marking - staging
         # is gone and the target is the confirmed version → it also belongs to this upload.
         v = await c.fetchrow("SELECT size, etag FROM hub_uploads WHERE id = $1", upload_id)
         try:

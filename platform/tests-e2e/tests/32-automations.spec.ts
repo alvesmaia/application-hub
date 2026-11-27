@@ -4,7 +4,7 @@ import { stateFile } from './helpers';
 test.use({ storageState: stateFile('admin') });
 
 // App "Automações": the run form lives in a modal (data-hub-post); a valid submission lands on the run page
-// (PRG), which must keep polling until the run is terminal — content inserted by the kit polls too.
+// (PRG), which must keep polling until the run is terminal - content inserted by the kit polls too.
 test('Automações: formulário valida, abre a execução e ela se atualiza até concluir @core', async ({ page }) => {
   await page.goto('/apps/automations/catalog');
   // server-side validation: the 422 answer replaces the form inside the modal, with the field error

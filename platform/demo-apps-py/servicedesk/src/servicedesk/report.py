@@ -113,7 +113,7 @@ async def run(pool: Any, p: Params) -> Report:
 
 
 def pct(a: int, b: int) -> str:
-    return "—" if b == 0 else f"{a * 100 / b:.1f}%".replace(".", ",")
+    return "-" if b == 0 else f"{a * 100 / b:.1f}%".replace(".", ",")
 
 
 def period_label(p: Params, d: date) -> str:

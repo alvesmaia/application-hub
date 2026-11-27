@@ -1,5 +1,5 @@
 {
- "$comment": "Identidade Alvesmaia: papéis de cor (claro/escuro) e a qual papel cada primitiva --c-* do mockup aponta. Fonte única do tema — rode node scripts/gen-dark-theme.mjs depois de mudar.",
+ "$comment": "Identidade Alvesmaia: papéis de cor (claro/escuro) e a qual papel cada primitiva --c-* do mockup aponta. Fonte única do tema - rode node scripts/gen-dark-theme.mjs depois de mudar.",
  "roles": {
   "page": {
    "light": "#F4F6FB",

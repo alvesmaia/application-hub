@@ -1,4 +1,4 @@
-/* F24 — developer portal (/developers/*): navigation on the left, text ~784px, "On this page" on the right.
+/* F24 - developer portal (/developers/*): navigation on the left, text ~784px, "On this page" on the right.
    Only hub tokens (own fonts, light/dark theme colors). */
 /* Palette of the documentation pages (neutral oklch converted to hex): values measured in the Cloudflare docs (orange replaced by the hub's highlight). */
 :root{--dd-bg:#fcfcfc;--dd-text:#181818;--dd-muted:#737373;--dd-border:#e4e4e4;--dd-control:#8f8f8f;--dd-active:#f4f4f4;--dd-box:#fff;--dd-icode:#fafafa}
@@ -106,7 +106,7 @@ body:has(.dev-docs),body:has(.dev-docs) #app-root{background:var(--dd-bg)}
 :root[data-theme="dark"] .dev-theme-moon{display:block}
 @media (prefers-color-scheme:dark){:root[data-theme="auto"] .dev-theme-sun{display:none}:root[data-theme="auto"] .dev-theme-moon{display:block}}
 
-/* "Copy prompt" (data-hub-copy-prompt) — pill with the agents */
+/* "Copy prompt" (data-hub-copy-prompt) - pill with the agents */
 .dev-prompt{display:inline-flex}
 .agent-icons{display:inline-flex;align-items:center;gap:3px}
 .agent-ico{width:18px;height:18px;object-fit:contain}

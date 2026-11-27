@@ -1,5 +1,5 @@
 """Development mode: `HUB_DEV_MODE=1`, only via `scripts/dev.sh` and the overlay
-`docker-compose.dev.yml` — never in production.
+`docker-compose.dev.yml` - never in production.
 
 - assets always `no-store` and read from disk (already the case in `hub.app`); code with `uvicorn --reload`;
 - optional live reload (`HUB_DEV_RELOAD=1`): SSE `GET /_dev/reload`, which tells the browser when something in

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { HUB, WORK_DIR, apiAs, json, openApp, stateFile } from './helpers';
 
-// Wave 13 — Coletor app (Python/FastAPI: Scan, Test sheet with Live readings,
+// Wave 13 - Coletor app (Python/FastAPI: Scan, Test sheet with Live readings,
 // Diagnostics) and the hub's device features (hub-device.js): Chromium's fake camera
 // with a .y4m frame → the hub's ZXing; simulated BarcodeDetector (formats of the QR/barcode mode),
 // keyboard-wedge reader, offline queue, diagnostics, sheet (decodable SVG) and PWA.
@@ -11,7 +11,7 @@ import { HUB, WORK_DIR, apiAs, json, openApp, stateFile } from './helpers';
 const EAN = '7890000000017'; // item 1 of the catalog (COL-0001)
 const VENDOR = path.join(__dirname, '..', '..', 'assets', 'shell', 'vendor', 'zxing.min.js');
 
-/** .y4m frame (640×480, 4:2:0) with the SVG drawn in the center — becomes Chromium's "camera". */
+/** .y4m frame (640×480, 4:2:0) with the SVG drawn in the center - becomes Chromium's "camera". */
 async function makeY4m(svg: string, file: string, bw = 520, bh = 300) {
   const b = await chromium.launch();
   const p = await b.newPage();
@@ -164,7 +164,7 @@ test.describe('Coletor', () => {
     await expect(page.locator('.hub-camera-modes [data-mode="barras"]')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('.hub-camera')).toBeVisible();
     await expect.poll(() => page.evaluate(() => (window as any).__fmts[0])).toEqual(['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf']);
-    await expect(page.locator('.hub-camera-status')).toContainText('Modo código de barras — troque para QR', { timeout: 10_000 });
+    await expect(page.locator('.hub-camera-status')).toContainText('Modo código de barras - troque para QR', { timeout: 10_000 });
     await expect(page.locator('.hub-camera')).toHaveAttribute('data-wrong', /[1-9]/);
     await expect(page.locator('.hub-camera')).not.toHaveAttribute('data-reads', /[1-9]/);
     // Switches to QR inside the camera: the app records it (prefs) and the button keeps the mode.
@@ -250,13 +250,13 @@ test.describe('Coletor', () => {
     await ctx.close();
   });
 
-  test('link (QR do app) lido no Escanear: "Link para o app — abre o Coletor", aviso e não "desconhecido"', async ({ page }) => {
+  test('link (QR do app) lido no Escanear: "Link para o app - abre o Coletor", aviso e não "desconhecido"', async ({ page }) => {
     await openApp(page, '/apps/collector/scan');
     await page.locator('#codigo').fill('https://hub.example.com/apps/collector');
     await page.locator('#leitura button[type=submit]').click();
     const card = page.locator('#scan-result [data-col-last]');
     await expect(card).toHaveAttribute('data-col-last', 'link');
-    await expect(card).toContainText('Link para o app — abre o Coletor');
+    await expect(card).toContainText('Link para o app - abre o Coletor');
     await expect(card).toHaveAttribute('data-hub-feedback-result', 'warn');
   });
 

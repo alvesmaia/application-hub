@@ -1,5 +1,5 @@
 """Pure rules of the Coletor: **queued test session** (Sheet) and **reader modes**
-(Scan). No DB or network — the app stores the state (JSON) in ``col_sessions`` /
+(Scan). No DB or network - the app stores the state (JSON) in ``col_sessions`` /
 ``col_prefs`` and calls these functions inside a transaction.
 
 Session (one active per user):
@@ -15,7 +15,7 @@ Session (one active per user):
 
 Reader (Scan): ``interativo`` (after an accepted reading, waits for "Next") or
 ``automatico`` (ready again after ``cooldown_ms``; the same value within
-``DEDUP_MS`` is ignored) — :func:`reader_gate`.
+``DEDUP_MS`` is ignored) - :func:`reader_gate`.
 """
 
 from __future__ import annotations
@@ -98,7 +98,7 @@ class Session:
 def start(codes: list[Code], rng: random.Random, now: float, auto: bool = True, sid: str = "") -> Session:
     seed = rng.randrange(1 << 30)
     shuffled = list(codes)
-    random.Random(seed).shuffle(shuffled)  # noqa: S311 — test order, not a secret
+    random.Random(seed).shuffle(shuffled)  # noqa: S311 - test order, not a secret
     return Session(
         id=sid or f"s{seed:x}",
         seed=seed,

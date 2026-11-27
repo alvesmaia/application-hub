@@ -1,11 +1,11 @@
-"""SDK saga example (wave 12, item 2.9): **documented registration** of an asset —
+"""SDK saga example (wave 12, item 2.9): **documented registration** of an asset -
 (1) creates the asset, (2) confirms the document sent in two phases (if the app has the
 ``inventory-docs`` connection linked), (3) notifies the requester through the hub Inbox. Any
 definitive failure (or transient on the last attempt) compensates in reverse order: removes the
 confirmed document and the created asset. DB effects use ``StepCtx.once`` (exactly once).
 
 ``POST /inventory/api/v1/assets/registrations`` enqueues the saga; ``falhar_em`` (name of a step)
-forces a failure to demonstrate the compensation — only with ``HUB_DEMO_SAGA_FAULTS=1``.
+forces a failure to demonstrate the compensation - only with ``HUB_DEMO_SAGA_FAULTS=1``.
 """
 
 from __future__ import annotations

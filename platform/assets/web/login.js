@@ -1,4 +1,4 @@
-/* login.js — the login's "Show password" button (the hub's CSP does not allow inline script).
+/* login.js - the login's "Show password" button (the hub's CSP does not allow inline script).
  * Without JavaScript the button stays hidden (hidden attribute) and the field remains a password. */
 (function () {
   'use strict';

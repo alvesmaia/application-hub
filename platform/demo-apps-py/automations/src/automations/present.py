@@ -1,5 +1,5 @@
 """Friendly display of parameters and outputs (label/value rows, lists of objects as small
-tables), timestamps in São Paulo time and durations — in the request's language."""
+tables), timestamps in São Paulo time and durations - in the request's language."""
 
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ def display(v: Any) -> str:
     if isinstance(v, bool):
         return t("Sim") if v else t("Não")
     if v is None or v == "":
-        return "—"
+        return "-"
     if isinstance(v, date):
         return locale.date(v)
     if isinstance(v, float):
@@ -67,14 +67,14 @@ def _row(label: str, v: Any, label_of: Callable[[str], str]) -> Row:
 def when(d: datetime | None) -> str:
     """``23/11/2026 08:05`` (pt-BR) or ``11/23/2026 08:05`` (en), São Paulo time."""
     if d is None:
-        return "—"
+        return "-"
     local = d.astimezone(TZ)
     return f"{locale.date(local.date())} {local:%H:%M}"
 
 
 def duration(ms: int | None) -> str:
     if ms is None:
-        return "—"
+        return "-"
     if ms < 1000:
         return f"{ms} ms"
     if ms < 60000:

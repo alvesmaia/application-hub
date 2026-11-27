@@ -1,8 +1,8 @@
-/* hub-kit.js — declarative `data-hub-*` behaviors for the apps (wave 12, item 2.1).
+/* hub-kit.js - declarative `data-hub-*` behaviors for the apps (wave 12, item 2.1).
  *
  * By default an app does NOT run its own JavaScript (the app page CSP only accepts the hub's
  * scripts and the rare app scripts approved by the administration, with SRI). Everything the
- * apps used to do with JS becomes an attribute interpreted here — full documentation with
+ * apps used to do with JS becomes an attribute interpreted here - full documentation with
  * examples in docs/CONTRATO-APP.md, §25:
  *
  *   partial update       data-hub-get / data-hub-post="/apps/{app}/…", data-hub-target="#id",
@@ -21,7 +21,7 @@
  *   drag and drop        data-hub-drag="/apps/{app}/…" + data-hub-drag-id on items, data-hub-dropzone +
  *                        data-hub-drop-name/-value on lists                          (hub-kit-menu-drag.js)
  *   upload with progress <form enctype="multipart/form-data"> + [data-hub-progress]
- *                        (<progress> or text) — handled by hub.js
+ *                        (<progress> or text) - handled by hub.js
  *   charts               data-hub-chart='{"type":"bar|line|area|donut",…}' and
  *                        data-hub-charts='[TimeSeriesChart config]' (pre-rendered chart)
  *   toast                data-hub-toast="Message" (click) or X-Hub-Toast header in the response
@@ -210,7 +210,7 @@
     if ('disabled' in el && el.tagName !== 'FORM') el.disabled = on;
   }
 
-  // Post/Redirect/Get from a partial form (e.g. a form in a modal): the app sent the user to another page — close
+  // Post/Redirect/Get from a partial form (e.g. a form in a modal): the app sent the user to another page - close
   // the modal, show that page in the workspace and move the address bar there (`/_frag/…` → `/apps/…`).
   function landed(el, finalUrl, html) {
     el.closest('[data-hub-layer]')?.remove();

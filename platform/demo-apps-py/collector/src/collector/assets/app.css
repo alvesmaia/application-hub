@@ -1,6 +1,6 @@
-/* identidade:inicio — Coletor — safety yellow on graphite, high contrast, touch
+/* identidade:inicio - Coletor - safety yellow on graphite, high contrast, touch
    primeiro (CONTRATO-APP §29). Tokens PRÓPRIOS do app (valem só na área do app); variante
-   escura obrigatória (texto ≥ 4,5:1, formas ≥ 3:1 — scripts/gen-dark-theme.mjs --check). */
+   escura obrigatória (texto ≥ 4,5:1, formas ≥ 3:1 - scripts/gen-dark-theme.mjs --check). */
 :root {
   --app-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --app-page: #F3F3EF;
@@ -109,7 +109,7 @@
   }
 }
 /* identidade:fim */
-/* Shape: touch first — targets ≥ 48 px, field text 18 px (no zoom on iOS), firm corners. */
+/* Shape: touch first - targets ≥ 48 px, field text 18 px (no zoom on iOS), firm corners. */
 :root { --radius-md: 6px; --radius-lg: 8px; --radius-xl: 10px; --radius-2xl: 12px; --radius-3xl: 12px; --radius-4xl: 14px; --radius-5xl: 14px; }
 .app-sidebar .nav-item { min-height: 48px; font-size: 15px; }
 /* forma:fim */

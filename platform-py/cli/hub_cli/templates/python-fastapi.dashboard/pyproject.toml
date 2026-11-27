@@ -1,7 +1,7 @@
 [project]
 name = "__APP_ID__"
 version = "0.1.0"
-description = "__APP_NAME__ — Application Hub app (Python + FastAPI + hub_sdk)"
+description = "__APP_NAME__ - Application Hub app (Python + FastAPI + hub_sdk)"
 requires-python = ">=3.12"
 dependencies = [
   "hub-sdk[sql,dashboards]==0.2.0",

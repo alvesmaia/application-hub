@@ -27,7 +27,7 @@ class ProcessIn(BaseModel):
 def check_defaults(
     fields: Sequence[FieldSpec], params: Mapping[str, Any]
 ) -> tuple[dict[str, Any], dict[str, str]]:
-    """Default params: only known fields, each coerced (none is required here — the run form asks)."""
+    """Default params: only known fields, each coerced (none is required here - the run form asks)."""
     by_name = {f.name: f for f in fields}
     values: dict[str, Any] = {}
     errors: dict[str, str] = {}

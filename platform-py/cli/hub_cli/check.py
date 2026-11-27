@@ -142,10 +142,10 @@ def _why(log: Path) -> str:
         if m := re.match(r"^\w[\w.]*(Error|Exception|Warning)\b.*", ln):
             msg = m[0][:180]
             if "Content-Length" in msg:
-                msg += " — uma resposta 204 (ou 304) foi enviada com corpo: devolva 204 sem corpo (Response(status_code=204))"
+                msg += " - uma resposta 204 (ou 304) foi enviada com corpo: devolva 204 sem corpo (Response(status_code=204))"
             if "no such column" in msg or "no such table" in msg:
-                msg += " — a migração mudou depois do primeiro `hub check`: apague `.hub/*.db` e rode de novo"
-            return f" — {msg}"
+                msg += " - a migração mudou depois do primeiro `hub check`: apague `.hub/*.db` e rode de novo"
+            return f" - {msg}"
     return f" (veja {log.name})" if lines else ""
 
 

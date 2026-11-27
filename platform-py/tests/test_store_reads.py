@@ -1,5 +1,5 @@
 """Reading admin.json / auth.json takes no lock: writes are atomic (`os.replace`), so a reader always sees a whole
-file. Before, every read took a cross-replica Postgres lock (4 round trips) and queued behind the others — about
+file. Before, every read took a cross-replica Postgres lock (4 round trips) and queued behind the others - about
 six of them on every authenticated request. Writes still take both locks."""
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Readiness and liveness (wave 12, item 2.5 — docs/CONTRATO-APP.md §2).
+"""Readiness and liveness (wave 12, item 2.5 - docs/CONTRATO-APP.md §2).
 
 ====== ========================== ==============================================================
 Method Route                       Response

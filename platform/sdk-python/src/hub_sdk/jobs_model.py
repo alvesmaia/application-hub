@@ -176,7 +176,7 @@ def extra_events(handler: Handler | None, job: Job, status: str, detail: str) ->
 
 KILLED_BY_MEMORY = (
     "o processo de tarefas foi encerrado pelo sistema (provável falta de memória) enquanto esta "
-    "tarefa carregava os dados; ela não será repetida automaticamente — reduza ou divida o arquivo "
+    "tarefa carregava os dados; ela não será repetida automaticamente - reduza ou divida o arquivo "
     "e envie de novo"
 )
 

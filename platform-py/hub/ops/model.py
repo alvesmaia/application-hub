@@ -73,7 +73,7 @@ class OpsStore:
 
     def snapshot(self) -> Data:
         """Read-only view for the request path (approved scripts, versions): parsed once per change of the file
-        (mtime + size). Never mutate it — `read()`/`locked(True)` give a private copy to change."""
+        (mtime + size). Never mutate it - `read()`/`locked(True)` give a private copy to change."""
         try:
             st = self.path.stat()
             key = (st.st_mtime_ns, st.st_size)

@@ -1,6 +1,6 @@
 // Containers › "Remover aplicação": the remove button stays disabled until the typed name (or id) matches; the
 // modal sends the confirmation, the password and the two options, then follows the job. Rule in node; the modal
-// in a real Chromium (tests-e2e Playwright) — skipped if Playwright/the browser is not installed.
+// in a real Chromium (tests-e2e Playwright) - skipped if Playwright/the browser is not installed.
 //   node --test platform/js-tests/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

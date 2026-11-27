@@ -69,7 +69,7 @@ The deployment always uses the `manifest.json` **inside the package**. The **Val
 **Pipeline and CI** (Pipeline e CI) tab only checks a text you paste there; it does not change the package.
 
 The package can be up to **20 MB**. It carries the manifest, the `openapi.json`, the `ui/` folder and the build context
-(`build/**`) — **not** the dependencies: the `Dockerfile` installs them during the build in the hub. If it exceeds the
+(`build/**`) - **not** the dependencies: the `Dockerfile` installs them during the build in the hub. If it exceeds the
 limit, `hub pack` lists the largest files; the common case is a `.venv/` or a `vendor/` copied into
 `build/` (add it to `.dockerignore`).
 

@@ -84,7 +84,7 @@ def metric_cards(counts: dict[str, int]) -> str:
 
 def flag_banner(counts: dict[str, int]) -> str:
     return (
-        '<div class="hub-flag-banner" data-flag="novo-resumo" role="note"><strong>Novo resumo</strong> — '
+        '<div class="hub-flag-banner" data-flag="novo-resumo" role="note"><strong>Novo resumo</strong> - '
         f"<b>{thousands(counts.get('Em uso', 0))}</b> <span>ativos em uso</span>, "
         f"<b>{thousands(counts.get('Manutenção', 0))}</b> <span>em manutenção</span>. "
         "<small>(recurso liberado por feature flag)</small></div>"

@@ -26,9 +26,9 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const check = process.argv.includes('--check');
-const PAL_BEGIN = '/* paleta:inicio (gerado por scripts/gen-dark-theme.mjs a partir de scripts/brand-palette.json — não editar) */';
+const PAL_BEGIN = '/* paleta:inicio (gerado por scripts/gen-dark-theme.mjs a partir de scripts/brand-palette.json - não editar) */';
 const PAL_END = '/* paleta:fim */';
-const BEGIN = '/* tema-escuro:inicio (gerado por scripts/gen-dark-theme.mjs — não editar) */';
+const BEGIN = '/* tema-escuro:inicio (gerado por scripts/gen-dark-theme.mjs - não editar) */';
 const END = '/* tema-escuro:fim */';
 
 const palette = JSON.parse(fs.readFileSync(path.join(root, 'scripts/brand-palette.json'), 'utf8'));
@@ -104,13 +104,13 @@ const roleDecls = (theme) => Object.entries(roles).map(([k, v]) => [`--am-${k}`,
 // 2. App theme bridge (CONTRATO-APP §29), at the end of tokens.css: inside the app area
 //    (#app-root and [data-hub-layer] layers) each hub role becomes `var(--app-<papel>,
 //    <valor do hub>)` and the derived tokens (`--c-*`, `--color-*`, fonts) are redeclared
-//    there — an app that defines `--app-primary` etc. in its `:root` (scoped to #app-root) changes
+//    there - an app that defines `--app-primary` etc. in its `:root` (scoped to #app-root) changes
 //    everything the hub draws in its area; without the variable, the hub identity applies.
 //    The script does NOT rewrite the apps' CSS: it only checks the contrast of their `--app-*` (3).
 {
   const file = path.join(root, 'assets/shell/tokens.css');
   const src = fs.readFileSync(file, 'utf8');
-  const B2 = '/* temas-dos-apps:inicio (gerado por scripts/gen-dark-theme.mjs — não editar) */';
+  const B2 = '/* temas-dos-apps:inicio (gerado por scripts/gen-dark-theme.mjs - não editar) */';
   const E2 = '/* temas-dos-apps:fim */';
   const k = src.indexOf(B2);
   const head = k >= 0 ? src.slice(0, k).replace(/\n+$/, '\n') : src.replace(/\n*$/, '\n');
@@ -191,6 +191,6 @@ if (problems.length) {
   process.exit(1);
 }
 if (check && stale.length) {
-  console.error(`tema desatualizado: ${stale.join(', ')} — rode node scripts/gen-dark-theme.mjs`);
+  console.error(`tema desatualizado: ${stale.join(', ')} - rode node scripts/gen-dark-theme.mjs`);
   process.exit(1);
 }

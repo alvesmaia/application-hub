@@ -148,7 +148,7 @@ def _gist(body: str, limit: int = 140) -> str:
             t = str(re.split(r"(?<=\.)\s", t, maxsplit=1)[0])  # primeira frase
             if t.endswith(":"):  # only opens a list: summarizes nothing
                 return ""
-            return " — " + (t if len(t) <= limit else t[:limit].rsplit(" ", 1)[0] + "…")
+            return " - " + (t if len(t) <= limit else t[:limit].rsplit(" ", 1)[0] + "…")
     return ""
 
 
@@ -164,7 +164,7 @@ def all_docs() -> tuple[Doc, ...]:
         text = _read(d) if d.split else None
         for title, _ in _split(text)[1] if text else []:
             # no history notes in the title
-            clean = PART_TITLES.get(_tech(title)) or re.sub(r"\s*\(onda [^)]*\)| — .*", "", _tech(title))
+            clean = PART_TITLES.get(_tech(title)) or re.sub(r"\s*\(onda [^)]*\)| - .*", "", _tech(title))
             out.append(Doc(f"{d.slug}/{_part_slug(title)}", d.section, clean, d.file, d.raw, part=title))
     return tuple(out)
 

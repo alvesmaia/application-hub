@@ -1,11 +1,11 @@
 import { test, expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import { HUB, apiAs, openApp, stateFile } from './helpers';
 
-// Wave 13 — Coletor: test session in a QUEUE (Test sheet on the computer, one code at a time, order
+// Wave 13 - Coletor: test session in a QUEUE (Test sheet on the computer, one code at a time, order
 // drawn at random) synchronized LIVE by WebSocket with the phone (Scan), reader modes
 // (Interactive / Automatic with pause and discard of repeats) and the switch Barcode |
 // QR inside the camera. Two pages of the same user: computer (1440) and phone (390) with the
-// camera and the BarcodeDetector simulated — the "read" code is the one the test pushes.
+// camera and the BarcodeDetector simulated - the "read" code is the one the test pushes.
 
 const idem = () => ({ 'idempotency-key': `e2e-f-${Date.now()}-${Math.random()}` });
 
@@ -91,7 +91,7 @@ async function scan(p: Page, value: string) {
   await p.evaluate((v) => (window as any).__codes.push(v), value);
 }
 
-test.describe('Coletor — fila ao vivo (WebSocket)', () => {
+test.describe('Coletor - fila ao vivo (WebSocket)', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('@core avanço automático na leitura certa (latência < 1 s pelo socket); erro não avança; alternância na câmera', async ({ browser }) => {

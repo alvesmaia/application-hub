@@ -94,9 +94,9 @@ class JobCtx:
     async def save_checkpoint(
         self, conn: Any, checkpoint: Any, done: int, total: int, text: str = ""
     ) -> None:
-        """Writes checkpoint + progress (and renews the lease) with ``conn`` — the batch's
+        """Writes checkpoint + progress (and renews the lease) with ``conn`` - the batch's
         transaction. Raises :class:`JobLostLease`/:class:`JobCancelled` (the transaction must be
-        discarded — exiting the ``async with conn.transaction()`` with the exception does that)."""
+        discarded - exiting the ``async with conn.transaction()`` with the exception does that)."""
         r = await sql.save_checkpoint_row(
             conn,
             self.job.id,

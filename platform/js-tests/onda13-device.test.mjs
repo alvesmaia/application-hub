@@ -1,4 +1,4 @@
-// Wave 13 — device features (hub-device.js): pure rules in node and each
+// Wave 13 - device features (hub-device.js): pure rules in node and each
 // data-hub-* behavior in real Chromium with the app-page CSP (Trusted Types),
 // with simulated camera/BarcodeDetector/vibration/audio and real IndexedDB. Skipped without
 // Playwright/Chromium.   node --test platform/js-tests/
@@ -222,7 +222,7 @@ test('Chromium: câmera negada e contexto inseguro mostram a mensagem certa', as
   } finally { await b.close(); }
 });
 
-test('Chromium: leitor tipo teclado — rajada + Enter envia uma vez; repetição descartada; digitação lenta é normal', async (t) => {
+test('Chromium: leitor tipo teclado - rajada + Enter envia uma vez; repetição descartada; digitação lenta é normal', async (t) => {
   const b = await browser();
   if (!b) { t.skip('Playwright/Chromium indisponível'); return; }
   try {

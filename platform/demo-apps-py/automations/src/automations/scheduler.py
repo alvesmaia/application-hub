@@ -1,5 +1,5 @@
 """In-process scheduler: every ``TICK_S`` each web process fires the due triggers
-(:func:`automations.triggers.fire_due` — exactly once across processes and replicas) and wakes
+(:func:`automations.triggers.fire_due` - exactly once across processes and replicas) and wakes
 the jobs worker. Started and stopped with the app's lifespan."""
 
 from __future__ import annotations

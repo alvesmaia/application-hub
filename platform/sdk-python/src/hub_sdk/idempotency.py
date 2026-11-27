@@ -1,8 +1,8 @@
-"""``Idempotency-Key`` for routes that change data (POST/PUT/PATCH/DELETE) — ASGI middleware
+"""``Idempotency-Key`` for routes that change data (POST/PUT/PATCH/DELETE) - ASGI middleware
 that uses the ``hub_idempotency`` table (stable format: do not change without a migration).
 
 - First time: the request goes on to the handler; the response (2xx/3xx/4xx, except 408/429)
-  is stored. 5xx/429 are not stored — unless the handler already committed the action
+  is stored. 5xx/429 are not stored - unless the handler already committed the action
   (:meth:`IdemCtx.mark_committed`).
 - Replay with the same request: returns the stored response (``idempotent-replay: true``).
 - Same key with **another** request (different hash): **422**.
@@ -13,7 +13,7 @@ that uses the ``hub_idempotency`` table (stable format: do not change without a 
   (``boundary`` of the multipart normalized, including when split across chunks). Up to 1 MiB
   with ``Content-Length`` in memory; above that, or without a size (chunked), streamed
   to a temporary file in ``$TMPDIR`` (``/scratch``), re-delivered to the handler and deleted at the
-  end — including on exception. The hash follows the fixed test vectors.
+  end - including on exception. The hash follows the fixed test vectors.
 - **Body cap** (``HUB_MAX_BODY_MB``, default 64): ``Content-Length`` above the cap →
   **413** without reading anything; a body without size (chunked) that goes over the cap → 413 and the temp file
   is deleted right away. Nothing above the cap reaches the disk.
@@ -26,7 +26,7 @@ that uses the ``hub_idempotency`` table (stable format: do not change without a 
 **Crash midway** (Postgres): the key's owner holds a session advisory lock on the
 (``pg_try_advisory_lock(hashtextextended(rota||chave, 7))``) numa
 idempotency pool connection while the handler runs. If the process dies, the lock
-dies with the connection; the new attempt finds ``pending`` with no owner and runs again —
+dies with the connection; the new attempt finds ``pending`` with no owner and runs again -
 safe because the business transaction did not commit (otherwise the record would be
 ``committed``). If it committed but the response was not stored, the replay gets 200
 "Operação já concluída".

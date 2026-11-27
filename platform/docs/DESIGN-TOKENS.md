@@ -1,4 +1,4 @@
-# Design tokens — Alvesmaia identity
+# Design tokens - Alvesmaia identity
 
 Single source of the platform's look: **`assets/shell/tokens.css`**, served at
 `/assets/tokens.css` by hub-web and `hub dev` and loaded **before** `styles.css`.
@@ -12,7 +12,7 @@ styles.css   → shell components (mockup), only with var(--…)
 hub.css / ops.css / auth.css / demo.css / app.css → same
 ```
 
-## Alvesmaia identity (colors, fonts, lines — no logo)
+## Alvesmaia identity (colors, fonts, lines - no logo)
 
 Single source of the colors: **`scripts/brand-palette.json`**. Each **role** has a light and a
 dark (graphite) value chosen by hand; nothing is computed. `node scripts/gen-dark-theme.mjs`
@@ -33,7 +33,7 @@ writes to `tokens.css` the `paleta:inicio/fim` block (`--am-<role>` light + prim
 | `secondary` / `faint` / `ink` | `#52606D` / `#5F6B7A` / `#0F1E2B` | `#A5A5A5` / `#9A9A9A` / `#FFFFFF` | labels / subdued / near black |
 | `primary` / `primary-hover` / `on-primary` | `#3A4FD8` / `#2E3FB8` / `#FFFFFF` | `#8FA3FF` / `#AEBCFF` / `#08122E` | primary button, links, highlighted text |
 | `fill` | `#3A4FD8` | `#4A64F5` | indigo fill with white text in both themes (apps) |
-| `accent` / `accent-soft` | `#4F6BFF` / `#8FA3FF` | `#4F6BFF` / `#6F86FF` | shapes, charts, focus — **never running text** |
+| `accent` / `accent-soft` | `#4F6BFF` / `#8FA3FF` | `#4F6BFF` / `#6F86FF` | shapes, charts, focus - **never running text** |
 | `ok`, `ok-bg` | `#0B6B3A`, `#DDF5E8` | `#4FC79A`, `#1A2E25` | success (also `ok-border`, `ok-shape`) |
 | `warn`, `warn-bg` | `#8A4B00`, `#FFF1D6` | `#E0A661`, `#2E2517` | warning (also `warn-border`, `warn-shape`) |
 | `err`, `err-bg` | `#9B1C1C`, `#FDECEC` | `#F08B7C`, `#33201E` | error (also `err-border`, `err-shape`, `err-fill`) |
@@ -48,7 +48,7 @@ tables, popovers and modals).
 
 **Fonts** (the same as the Alvesmaia site), served by the hub itself at `/assets/fonts/`
 (variable woff2, `font-display: swap`; SIL OFL 1.1 license at `/assets/fonts/OFL-NunitoSans.txt`
-and `/assets/fonts/OFL.txt`). **Nunito Sans** (axis 400–900, latin subset — covers the accents
+and `/assets/fonts/OFL.txt`). **Nunito Sans** (axis 400–900, latin subset - covers the accents
 of pt-BR; `format("woff2-variations")`) across the whole interface: `--font-body`, `--font-ui` and
 `--font-display` (titles, KPIs). **Red Hat Display** only in the application name in the header
 (`--font-brand`, `.brand-name`). `--font-mono` **Red Hat Mono** (keys, values, IDs, code).
@@ -56,8 +56,8 @@ The shell preloads Nunito Sans and Red Hat Display; CSP `font-src 'self'`; fallb
 `system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif` and
 `ui-monospace, Consolas, monospace`.
 
-**Sizes** (real px — the `html` has no `zoom`): body 13px/400, `letter-spacing: -.005em`;
-h1–h6 800, `letter-spacing: -.02em` — h1 26px (22px in the app header, 24px on short screens),
+**Sizes** (real px - the `html` has no `zoom`): body 13px/400, `letter-spacing: -.005em`;
+h1–h6 800, `letter-spacing: -.02em` - h1 26px (22px in the app header, 24px on short screens),
 h2 16px, card title 15px; KPI 27px/800 `tabular-nums`; buttons 13px/500, `line-height 1.4`,
 `padding 6px 14px`, height 32px (12px inside tables); tabs/pills 13px/500 (28px); badges
 12px/600; table header 11px/600 UPPERCASE `letter-spacing: .05em` `secondary`; cell
@@ -115,7 +115,7 @@ of the mockup's inherited layers.
 ## White label
 
 Plataforma › Configurações › **Brand color** («Cor da marca»): saves `brand_color` (`#rrggbb`, validated on the
-server — nothing but hex reaches the CSS) and `/assets/theme.css` now has
+server - nothing but hex reaches the CSS) and `/assets/theme.css` now has
 `:root { --color-accent: <cor>; }`. Everything that uses the accent (shell primary buttons, links,
 focus, eyebrows, highlights of apps that follow the tokens) changes immediately, with no rebuild.
 
@@ -127,7 +127,7 @@ It applies to `:root[data-theme="dark"]` (the user's choice, saved on the server
 `<html>` by the shell) and, when the user chooses "Automático (sistema)" (Automatic (system)), to
 `prefers-color-scheme: dark` (`:root[data-theme="auto"]`). **The default is the light theme**: whoever
 never chose (missing preference or the old empty value) gets `data-theme="light"` from the
-server, even with a dark OS — no flash; `<meta name="color-scheme">` follows
+server, even with a dark OS - no flash; `<meta name="color-scheme">` follows
 (`light` / `dark` / `light dark` in automatic). Login/credential screens are always light. Since primitives and semantics point to `--am-*` through
 `var()`, the dark block redefines only the roles.
 
@@ -155,7 +155,7 @@ server, even with a dark OS — no flash; `<meta name="color-scheme">` follows
 
 ## Mobile and responsive tables (hub)
 
-CSS only for the hub (`hub.css`; not an app contract — no new `data-hub-*`):
+CSS only for the hub (`hub.css`; not an app contract - no new `data-hub-*`):
 
 - **Table → cards** (`.hub-table-cards` on the `<table>`, `.hub-cards-panel` on the panel).
   ≥ 1024px normal table; 768–1023px `.hub-col-secondary` disappears; < 768px each `<tr>` becomes a
@@ -165,12 +165,12 @@ CSS only for the hub (`hub.css`; not an app contract — no new `data-hub-*`):
   "Editar" (Edit) inside the menu). Use explicit `role="table|rowgroup|row|columnheader|cell"`
   (the `display` changes and the browser would lose the semantics). Applied in Acesso › Usuários (Access › Users).
 - **Column filters** (`<table data-hub-colfilter data-hub-colfilter-empty="…">`, only in the hub
-  screens — `hub-ux.js`; not exposed to apps): each `<th data-hub-col="chave"
+  screens - `hub-ux.js`; not exposed to apps): each `<th data-hub-col="chave"
   data-hub-col-label="Rótulo" [data-hub-col-type="list|date"]>` gets a funnel (filled when
   active) that opens a popover with sort A→Z/Z→A, a searchable list of values (> 8 values) and
-  "Selecionar todos" (Select all) — or a From/To range for dates — and Limpar (Clear)/Aplicar (Apply). Cell value:
+  "Selecionar todos" (Select all) - or a From/To range for dates - and Limpar (Clear)/Aplicar (Apply). Cell value:
   `data-hub-value` (dates in ms) or the text. State in the URL (`f.<chave>=a,b`,
-  `f.<chave>=AAAA-MM-DD..AAAA-MM-DD`, `sort=<chave>:asc|desc`) — the link is shareable.
+  `f.<chave>=AAAA-MM-DD..AAAA-MM-DD`, `sort=<chave>:asc|desc`) - the link is shareable.
   "Filtros ativos" (Active filters) line: … ✕ · "Limpar tudo" (Clear all) above the table. < 768px the popover becomes a bottom sheet
   and the "Filtros" (Filters) button lists the columns (suits the card layout, which has no
   header). Applied in Operação › Tarefas (Operations › Tasks).
@@ -183,7 +183,7 @@ CSS only for the hub (`hub.css`; not an app contract — no new `data-hub-*`):
 - **Shell < 768px**: no rail; brand on the left and, on the right,
   notifications and ☰ (`[data-hub-drawer-toggle]`; avatar goes to the menu). The ☰
   opens the `#hub-rail` as a full-width panel from top to bottom under the header
-  (`body.hub-drawer-open`; user at the top and account/theme/language/Sair (Sign out) at the end — blocks
+  (`body.hub-drawer-open`; user at the top and account/theme/language/Sair (Sign out) at the end - blocks
   `.hub-drawer-only`) and becomes ✕; focus trapped, Esc/background/✕/tapping an item closes it, page scrolling
   locked. In the app, the fixed bar "☰ App · Seção" (Section) (`[data-hub-menu="open"]`, label set
   by hub.js) opens the app's sections as a panel right below it. E2E
@@ -193,8 +193,8 @@ CSS only for the hub (`hub.css`; not an app contract — no new `data-hub-*`):
 
 `tests-e2e/visual/visual.spec.ts` + `playwright.visual.config.ts`: 12 screens (login, home,
 catalog, Administration, Operations, `inventory`, `servicedesk`) compared with the reference recorded
-**before** the extraction (1% pixel tolerance; relative times and the rail — which gained
-new items in wave 8 — masked). Run with the native hub (`bash scripts/demo.sh` on
+**before** the extraction (1% pixel tolerance; relative times and the rail - which gained
+new items in wave 8 - masked). Run with the native hub (`bash scripts/demo.sh` on
 fresh data):
 
 ```bash
@@ -203,7 +203,7 @@ npx playwright test -c playwright.visual.config.ts            # compares
 npx playwright test -c playwright.visual.config.ts --update-snapshots  # new reference
 ```
 
-Wave 9: references re-recorded (new Início (Home), header with search/Inbox, grays darkened for contrast) and 12 new screens in the dark theme — 24/24 stable across two runs.
+Wave 9: references re-recorded (new Início (Home), header with search/Inbox, grays darkened for contrast) and 12 new screens in the dark theme - 24/24 stable across two runs.
 
 Alvesmaia identity: references deliberately re-recorded (theme change: colors, Red Hat fonts and lines).
 

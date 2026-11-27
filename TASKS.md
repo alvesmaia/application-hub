@@ -114,10 +114,10 @@
 
 - ✅ 100 · ids e rotas dos apps de exemplo em inglês (inventory, suppliers, servicedesk, collector, automations), com migração automática das instalações existentes; telas seguem o idioma do usuário
   - ✅ inventário de tudo que guarda o id do app (hub, banco, segredos, contêineres, bucket, histórico) · subagente: Inventário de ids dos apps
-  - ✅ desenho da migração (ordem, reversão, o que fica como histórico) — docs/task-details.md
+  - ✅ desenho da migração (ordem, reversão, o que fica como histórico) - docs/task-details.md
   - ✅ renomeação dentro dos apps (pastas, pacotes, rotas, testes, conformance, E2E) · subagente: Renomear apps de exemplo para inglês (ativos virou inventory: `assets` colidia com /assets/ do hub)
   - ✅ renomeação na plataforma (hub, compose, registro, segredos, scripts, CI, docs, testes do hub)
-  - ✅ migração automática (bancos, papéis, segredos, contêineres, bucket, dados do hub) — scripts/rename-sample-apps.sh + python -m hub.admin rename-apps; achados no teste real: valores do cofre presos ao nome (recifrar), redes antigas com a mesma faixa, valores da .prod.env, rotas no histórico
+  - ✅ migração automática (bancos, papéis, segredos, contêineres, bucket, dados do hub) - scripts/rename-sample-apps.sh + python -m hub.admin rename-apps; achados no teste real: valores do cofre presos ao nome (recifrar), redes antigas com a mesma faixa, valores da .prod.env, rotas no histórico
   - ✅ validação: atualização real 0.3.2 → 0.4.0 (dados preservados, ~1 min 40 s fora), conformance 5/5, E2E 52/52, ui-sweep 0 achados; hub-check --all
 
 ## Melhorias pós-0.4.0 (2026-11-24)
@@ -142,7 +142,7 @@
 
 ## Falhas E2E pré-existentes + 0.4.2 (2026-11-24)
 
-- ✅ 115 · E2E (c)+(b) JS próprio: candidata do servicedesk presa em "migrações do banco em curso" — instância isolada não criava os papéis de banco dos apps (o hub implanta com o papel do app-env.json)
+- ✅ 115 · E2E (c)+(b) JS próprio: candidata do servicedesk presa em "migrações do banco em curso" - instância isolada não criava os papéis de banco dos apps (o hub implanta com o papel do app-env.json)
 - ✅ 116 · E2E 07-staging: CSP da página de staging só liberava /_frag/<app>; agora /staging/_frag/<app>, ws e formulários de staging, scripts aprovados de staging
 - ✅ 117 · E2E 06 backups: menu "⋯" de tabela com uma linha ficava cortado pelo painel (Restaurar escondido); sem espaço nos dois sentidos, abre como camada fixa. 0 B = suppliers sem banco e bucket vazio (esperado)
 - ✅ 118 · E2E 15 storage: passa com `iso-instance.sh run` (variáveis da instância); sem defeito
@@ -238,7 +238,7 @@
   - ✅ 2 · filtro por coluna (`data-hub-colfilter`) disponível para os apps
   - ✅ 3 · `hub compare` checa estrutura (colunas, campos, botões, imagens quebradas)
   - ✅ 4 · lote de validação (8 telas) + kit: dropdown, arrastar com fantasma, classe lembrada; correções de staging
-  - ⬜ 5 · adequação completa por novo subagente, do zero, só com o "Copiar prompt" — medir o tempo do início ao deploy final
+  - ⬜ 5 · adequação completa por novo subagente, do zero, só com o "Copiar prompt" - medir o tempo do início ao deploy final
 - ✅ 167 · Adequação fiel já no primeiro ciclo
   - ✅ 1 · CSS original intocável (`assets/original/` + `hub-overrides.css`), conferido pelo `hub check`
   - ✅ 2 · inventário obrigatório (`port-inventory.md`), conferido pelo `hub check`
@@ -256,10 +256,10 @@
   - ✅ 3 · API + MCP (destrutiva, confirm_token)
   - ✅ 4 · atalho "Remover apps de exemplo" (+ perfil demo-apps)
   - ✅ 5 · validação na 8093: app publicado removido pela tela (nada sobrou além da auditoria); modal corrigido para ficar acima do painel
-- ▶️ 169 · Ajustes de telas e texto
+- ✅ 169 · Ajustes de telas e texto
   - ✅ 1 · admin/runtime: ao abrir, já mostrar o desempenho dos últimos 5 minutos (não só a partir da entrada)
   - ✅ 2 · admin/tasks: tirar a coluna Tentativas da tabela (fica só no painel lateral do item); Duração no formato 20m3s (abaixo de 60s, só 57s)
-  - ⬜ 3 · revisão geral do app e da documentação: trocar travessão (—) por hífen simples (-)
+  - ✅ 3 · revisão geral do app e da documentação: trocar travessão (-) por hífen simples (-)
 - ▶️ 170 · Desempenho da navegação: índices do Postgres e cache (HTTP, service worker, servidor)
   - ✅ 1 · auditoria (consultas sem índice, páginas lentas, cabeçalhos de cache, trabalho síncrono no loop)
   - ✅ 2 · leituras de auth/admin sem trava (escrita atômica); `ops.json` com snapshot por mtime nos caminhos quentes

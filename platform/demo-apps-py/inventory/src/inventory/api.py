@@ -39,7 +39,7 @@ from inventory.state import (
 from inventory.views import asset_values
 
 BASE = "/inventory/api/v1"
-TITLE = "Gestão de Ativos — API"
+TITLE = "Gestão de Ativos - API"
 VERSION = "1.0.0"
 
 
@@ -104,7 +104,7 @@ class ExportIn(BaseModel):
 
 
 class Registration(BaseModel):
-    """Documented registration request (example saga, wave 12 — 2.9)."""
+    """Documented registration request (example saga, wave 12 - 2.9)."""
 
     tag: str
     name: str

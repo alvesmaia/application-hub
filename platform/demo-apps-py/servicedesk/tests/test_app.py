@@ -156,7 +156,7 @@ async def test_open_list_filter_paginate_and_update(db_url: str, running: Runnin
     tid = (await c.get("/servicedesk/api/v1/tickets", params={"protocol": proto})).json()["items"][0]["id"]
     upd = await c.post(f"/servicedesk/requests/{tid}", data={"status": "Resolvido", "version": "1"})
     assert upd.status_code == 200 and "Atualizado" in upd.text and "Versão 2" in upd.text
-    assert "app3-request-status done" in upd.text and "—" in upd.text
+    assert "app3-request-status done" in upd.text and "-" in upd.text
     stale = await c.post(f"/servicedesk/requests/{tid}", data={"status": "Fechado", "version": "1"})
     assert (
         stale.status_code == 409

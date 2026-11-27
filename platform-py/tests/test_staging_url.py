@@ -4,6 +4,7 @@ forgotten cookie; the cookie only sends `/apps/<id>` to the staging URL. A "STAG
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -120,7 +121,9 @@ def test_the_kit_requests_of_a_staging_page_go_to_staging(hub: TestClient) -> No
     # hub-kit.js (data-hub-get/-post, SSE) loads before hub.js: it needs the staging prefix on its own tag,
     # or its requests go to /_frag/… and the page's CSP refuses them
     page = hub.get("/staging/apps/inventory/inventory").text
-    assert '<script src="/assets/hub-kit.js" data-hub-kit="" data-hub-frag="/staging/_frag">' in page
+    assert re.search(
+        r'<script src="/assets/hub-kit\.js(\?v=\w+)?" data-hub-kit="" data-hub-frag="/staging/_frag">', page
+    )
 
 
 def test_app_files_at_the_public_base_reach_the_app(hub: TestClient) -> None:

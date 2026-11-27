@@ -1,16 +1,16 @@
-/* hub.js — fragment composition in the hub shell.
+/* hub.js - fragment composition in the hub shell.
  *
  * The page /{id}[/{section}][?query] arrives from the server with the shell in "inside the
  * app" mode and the mockup's loading screen. This script:
  *   1. loads the app's CSS through the gateway (the app does NOT bring JavaScript: behaviors
  *      are data-hub-* attributes of hub-kit.js; only scripts approved by the administration, listed
- *      in data-hub-scripts with the sha384, are loaded — with SRI, see hub-safe.js);
+ *      in data-hub-scripts with the sha384, are loaded - with SRI, see hub-safe.js);
  *   2. public page /apps/{id}/{section}?query → fetches the fragment at
  *      /_frag/{id}/{section}?query (gateway -> upstream, which sees /{id}/{section});
  *   3. reproduces the mockup's sequence (owner's decision): when OPENING the app, the loader
  *      (0→100% in 3.5 s, `1 - (1 - t)^2.2`) → component skeleton (0.9 s) → content;
  *      an app opened again in the same tab session skips the loader: skeleton until the fragment;
- *      page change inside the app: only the skeleton (0.7 s). Fixed times — if the fragment
+ *      page change inside the app: only the skeleton (0.7 s). Fixed times - if the fragment
  *      has not arrived by their end, the skeleton stays until it does (never an empty area);
  * *   4. intercepts links of the same app (pushState + skeleton + new fragment) and popstate;
  *   5. intercepts the app's forms:
@@ -22,13 +22,13 @@
  *   6. elements with data-hub-poll="/{id}/..." are reloaded every
  *      data-hub-interval ms (default 1000) until the response no longer brings data-hub-poll
  *      (job progress; for a continuous stream use data-hub-sse/data-hub-ws from hub-kit);
- *   7. downloads: normal links to /_frag/{id}/... (not intercepted) — the app
+ *   7. downloads: normal links to /_frag/{id}/... (not intercepted) - the app
  *      responds with Content-Disposition and the gateway passes the body through as a stream;
  *   8. on failure (e.g. 502 from the gateway with the app down) shows the friendly message
  *      inside the shell, never a blank page; if the app is restarting
  *      (502/503/504, network, `data-hub-unavailable`), it shows "restarting" and retries
  *      on its own with increasing wait (2 s → 15 s), swapping in the content when the
- *      app comes back — navigating elsewhere cancels the attempts; 429 (heavy operation
+ *      app comes back - navigating elsewhere cancels the attempts; 429 (heavy operation
  *      queued in the app) shows "queued…" (the app's label in `data-hub-queued`, e.g.
  *      "Report queued…") and retries on its own honoring the `Retry-After` with jitter
  *      (up to QUEUE_MAX times; once exhausted, the app's warning);
@@ -113,12 +113,12 @@
   if (root && colorOk(me.dataset.hubColor)) root.style.setProperty('--app-color', dark ? mix(me.dataset.hubColor, 0, 0.78) : me.dataset.hubColor);
   if (root && colorOk(me.dataset.hubInk)) root.style.setProperty('--app-identity-ink', dark ? mix(me.dataset.hubInk, 255, 0.5) : me.dataset.hubInk);
   // Wave 12 (M1): the app content gets its own stacking context
-  // (`isolation: isolate; position: relative; z-index: 0` on #app-root): nothing from the app —
-  // not even `position: fixed; inset: 0; z-index: 2147483647` — paints above the hub's header and
+  // (`isolation: isolate; position: relative; z-index: 0` on #app-root): nothing from the app -
+  // not even `position: fixed; inset: 0; z-index: 2147483647` - paints above the hub's header and
   // rail (positioned with a higher z-index). Inline `!important` style: the app's CSS cannot undo it.
   // Header and rail keep their position/layer, and the header keeps the display it had before
   // the app's CSS. (`contain: paint` was evaluated and discarded: it shifts the sidebar and the
-  // fixed elements of the apps — see PENDENCIAS.)
+  // fixed elements of the apps - see PENDENCIAS.)
   function containApp() {
     if (!root) return;
     for (const [k, val] of [['isolation', 'isolate'], ['position', 'relative'], ['z-index', '0']]) root.style.setProperty(k, val, 'important');
@@ -172,7 +172,7 @@
   // Public path → gateway path (`/_frag/{id}/...`; the upstream sees `/{id}/...`).
   const fragUrl = (target) => `${frag}/${app}${canon(target).slice(pub.length)}`;
 
-  // App CSS (wave 12, M1): never as a global <link> — the text comes through the gateway and becomes
+  // App CSS (wave 12, M1): never as a global <link> - the text comes through the gateway and becomes
   // a sheet built inside `@scope (#app-root, [data-hub-layer])` (hub-safe.js):
   // the app's rules do not reach the hub's header, rail or `body`.
   async function loadAppCss(href) {

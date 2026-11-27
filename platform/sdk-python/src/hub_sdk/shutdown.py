@@ -26,7 +26,7 @@ from typing import Any
 
 log = logging.getLogger("hub_sdk.shutdown")
 
-# Process hooks: called (once) when any Shutdown of this process fires —
+# Process hooks: called (once) when any Shutdown of this process fires -
 # e.g. forwarding SIGTERM to the jobs process (``HUB_JOBS_MODE=process``) right away, so
 # both drain in parallel within the 10 s of ``docker stop``.
 _PROCESS_HOOKS: list[Callable[[], None]] = []

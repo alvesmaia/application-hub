@@ -1,7 +1,7 @@
-// Wave 12 (2.1) — same-origin anti-phishing: pure rules of the sanitizer (hub-safe.js)
+// Wave 12 (2.1) - same-origin anti-phishing: pure rules of the sanitizer (hub-safe.js)
 // and of the declarative behaviors (hub-kit.js) in node; the XSS CORPUS runs in a
 // real Chromium (Playwright from tests-e2e/) with the app-page CSP (Trusted Types
-// required) — skipped if Playwright/the browser is not installed.
+// required) - skipped if Playwright/the browser is not installed.
 //   node --test platform/js-tests/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

@@ -1,4 +1,4 @@
-"""OAuth 2.1 for `/mcp` — Shared state, issuer/resource URLs, responses and the discovery metadata."""
+"""OAuth 2.1 for `/mcp` - Shared state, issuer/resource URLs, responses and the discovery metadata."""
 
 from __future__ import annotations
 

@@ -160,7 +160,7 @@ class Order:
 
 
 def catalog() -> list[Item]:
-    rnd = random.Random(424242)  # noqa: S311 — demo data, not a secret
+    rnd = random.Random(424242)  # noqa: S311 - demo data, not a secret
     out: list[Item] = []
     for i in range(1, N_ITEMS + 1):
         cat, unit, names = FAMILIES[(i - 1) % len(FAMILIES)]

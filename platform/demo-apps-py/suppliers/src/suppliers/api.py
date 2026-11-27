@@ -21,7 +21,7 @@ from suppliers.suppliers import SUPPLIERS, Supplier, supplier, valid_object_name
 from suppliers.views import storage_status
 
 BASE = "/suppliers/api/v1"
-TITLE = "Rede de Fornecedores — API"
+TITLE = "Rede de Fornecedores - API"
 VERSION = "1.0.0"
 
 

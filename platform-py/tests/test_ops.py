@@ -472,7 +472,7 @@ def test_runtime_actions_logs_inspect_limits(
 
 
 def test_runtime_units(monkeypatch: pytest.MonkeyPatch) -> None:
-    assert rt.uptime_of("Up 3 hours (healthy)") == "3 h" and rt.uptime_of("Exited") == "—"
+    assert rt.uptime_of("Up 3 hours (healthy)") == "3 h" and rt.uptime_of("Exited") == "-"
     assert rt.human_duration(0) == "Less than a second" and rt.human_duration(7200) == "2 hours"
     assert rt.human_duration(86400 * 3) == "3 days" and rt.human_duration(86400 * 90) == "3 months"
     assert rt.container_name("a", "staging") == "app-hub-app-a__staging"
@@ -894,7 +894,7 @@ def test_approved_script_enters_the_page_csp(hub: TestClient) -> None:
     d = ops.read()
     sha = "sha384-" + "A" * 64
     dep = {"id": d["next_deploy_id"], "app": "inventory", "version": "9.9.9", "env": "Produção", "origin": "Import manual",
-           "commit": "—", "status": m.IMPLANTADO, "at": 1, "package": None, "sha256": "", "image": "x", "note": "",
+           "commit": "-", "status": m.IMPLANTADO, "at": 1, "package": None, "sha256": "", "image": "x", "note": "",
            "runtime": "", "scripts": [{"path": "ui/assets/x.js", "sha384": sha, "reason": "gráfico interativo da tela"}],
            "submitted_by": "", "submitted_by_id": ""}  # fmt: skip
     d["next_deploy_id"] += 1

@@ -1,7 +1,7 @@
 import { test, expect, request, type APIRequestContext } from '@playwright/test';
 import { HUB, USERS, stateFile, uniq } from './helpers';
 
-// Wave 11 — public API v1 and MCP: the documentation renders (CSP, no inline script), a
+// Wave 11 - public API v1 and MCP: the documentation renders (CSP, no inline script), a
 // API token created on the screen calls the API, and an MCP client (JSON-RPC over Streamable
 // HTTP) uses the hub's tools and the apps' (aggregated by the hub, on behalf of the user).
 // Stack up (HUB_DEMO_USERS=1).

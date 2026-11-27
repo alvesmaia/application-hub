@@ -1,4 +1,4 @@
-"""Processes (admins): list, new/edit — package + version (the version select depends on the
+"""Processes (admins): list, new/edit - package + version (the version select depends on the
 package), timeout, enabled and default parameters (JSON, checked against the package fields)."""
 
 from __future__ import annotations

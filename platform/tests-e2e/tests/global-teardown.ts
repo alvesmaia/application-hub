@@ -52,10 +52,10 @@ export async function cleanupE2eData() {
 /**
  * Staging provisioning/blue-green (06-ops, 07-staging) brings up containers and networks
  * through the hub's runtime (`hub-app-<id>__staging`, `hub-deps-<id>__staging`, …) outside of
- * `docker compose` — so `docker compose down` does not remove them and they are left orphaned after the
+ * `docker compose` - so `docker compose down` does not remove them and they are left orphaned after the
  * suite (e.g. `hub-app-suppliers__staging` + `hub-deps-suppliers__staging`).
  * Cleans them here by the `__staging` suffix (never containers outside the project
- * nor any container/network without that suffix — we do not filter by image nor "kill by
+ * nor any container/network without that suffix - we do not filter by image nor "kill by
  * name" generically).
  */
 export default async function globalTeardown() {

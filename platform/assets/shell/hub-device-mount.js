@@ -1,4 +1,4 @@
-/* hub-device-mount.js — PWA installation, diagnostics, camera preferences, the click/change
+/* hub-device-mount.js - PWA installation, diagnostics, camera preferences, the click/change
  * delegation and the mount of every data-hub-* device behavior; publishes window.HubDevice.
  * Last part of hub-device.js (split only for size), loaded after hub-device-forms.js. */
 (function () {

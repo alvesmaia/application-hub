@@ -1,4 +1,4 @@
-/* hub-i18n.js — translation of what the hub screens' JavaScript writes after the page has
+/* hub-i18n.js - translation of what the hub screens' JavaScript writes after the page has
  * loaded (wave 12, item 2.8): toasts, modals, table rows, error messages and
  * `alert`/`confirm`/`prompt`.
  *

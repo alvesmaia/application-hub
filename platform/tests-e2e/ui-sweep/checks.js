@@ -1,4 +1,4 @@
-// UI sweep — checks run INSIDE the page (injected via addInitScript).
+// UI sweep - checks run INSIDE the page (injected via addInitScript).
 // `window.__uiSweep.run({ scope, lightTheme })` returns a list of findings
 // `{ check, selector, message, rect }`. No dependencies; read-only DOM access.
 (() => {
@@ -16,7 +16,7 @@
     if (!s) return null;
     const m = s.match(/rgba?\(([^)]+)\)/);
     if (!m) {
-      // color(srgb r g b / a) — Chromium uses it in color-mix()
+      // color(srgb r g b / a) - Chromium uses it in color-mix()
       const c = s.match(/color\(srgb ([\d.]+) ([\d.]+) ([\d.]+)(?: \/ ([\d.]+))?\)/);
       if (c) return [c[1] * 255, c[2] * 255, c[3] * 255, c[4] === undefined ? 1 : +c[4]];
       return null;
@@ -234,7 +234,7 @@
       }
     }
 
-    // 7b. Wave 13: apps live at /apps/{id}/… — no link/form/behavior to the
+    // 7b. Wave 13: apps live at /apps/{id}/… - no link/form/behavior to the
     // old path /{id}… (ids: the known apps + the app of the current page).
     {
       const ids = new Set(['inventory', 'suppliers', 'servicedesk', 'collector']);

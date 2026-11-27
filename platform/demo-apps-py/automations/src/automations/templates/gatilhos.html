@@ -12,8 +12,8 @@
 {% for it in items %}{% set g = it.g %}<tr data-trigger="{{ g.id }}">
 <td>{{ g.process_name }}</td>
 <td>{{ it.rule }}</td>
-<td>{{ when(g.next_run_at) if g.enabled else '—' }}</td>
-<td>{% if g.last_status %}<a href="{{ base }}/runs/{{ g.last_run_id }}"><span class="status-pill {{ status_class(g.last_status) }}">{{ t(status_label(g.last_status)) }}</span></a>{% else %}—{% endif %}</td>
+<td>{{ when(g.next_run_at) if g.enabled else '-' }}</td>
+<td>{% if g.last_status %}<a href="{{ base }}/runs/{{ g.last_run_id }}"><span class="status-pill {{ status_class(g.last_status) }}">{{ t(status_label(g.last_status)) }}</span></a>{% else %}-{% endif %}</td>
 <td><form method="post" action="{{ base }}/triggers/{{ g.id }}/enabled"><input type="hidden" name="ativo" value="{{ '0' if g.enabled else '1' }}"><button type="submit" class="secondary-button aut-toggle" aria-pressed="{{ 'true' if g.enabled else 'false' }}">{{ t('Ativo') if g.enabled else t('Inativo') }}</button></form></td>
 <td class="aut-row-actions"><a class="secondary-button" href="{{ base }}/triggers/{{ g.id }}/edit">{{ t('Editar') }}</a><form method="post" action="{{ base }}/triggers/{{ g.id }}/delete" data-hub-confirm="{{ t('Excluir este gatilho? As execuções já feitas continuam no histórico.') }}" data-hub-confirm-title="{{ t('Excluir gatilho') }}" data-hub-confirm-label="{{ t('Excluir') }}" data-hub-confirm-danger><button type="submit" class="secondary-button">{{ t('Excluir') }}</button></form></td>
 </tr>{% endfor %}

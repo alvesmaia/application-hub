@@ -9,7 +9,7 @@ Uso::
     @app.delete("/contratos/api/v1/contracts/{cid}", operation_id="contracts_delete",
                 openapi_extra=DESTRUCTIVE)
     async def contracts_delete(...): ...
-    install_api(app, "contratos", title="Gestão de Contratos — API", version="1.0.0")
+    install_api(app, "contratos", title="Gestão de Contratos - API", version="1.0.0")
 
 Each operation becomes an MCP tool (``hub_sdk.mcp``); ``openapi_extra=DESTRUCTIVE``
 (or ``DELETE``) marks the tool as destructive (the hub asks for confirmation) and

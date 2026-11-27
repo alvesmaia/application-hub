@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "suppliers"
 version = "1.9.0"
 license = "Apache-2.0"
-description = "Supplier Network — demo app in Python/FastAPI (hub-sdk-python)."
+description = "Supplier Network - demo app in Python/FastAPI (hub-sdk-python)."
 requires-python = ">=3.11"
 # Pinned: same versions in the image, in CI and in the hub dev.
 dependencies = [

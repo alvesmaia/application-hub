@@ -65,7 +65,7 @@ export function autoConfirm(page: Page) {
 
 /**
  * Confirms the hub's modal (HubConfirm) opened by a previous click. The `addLocatorHandler` of `autoConfirm` only runs
- * on actions with a locator; after a click that only waits for a response/`poll` nobody confirms — this loop clicks.
+ * on actions with a locator; after a click that only waits for a response/`poll` nobody confirms - this loop clicks.
  */
 export async function confirmHub(page: Page): Promise<void> {
   const ok = await page.evaluate(async () => {

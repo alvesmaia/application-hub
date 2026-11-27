@@ -90,7 +90,7 @@ class Jobs:
         self.pool = pool
         self.owner = owner or f"{os.getpid()}-{random.getrandbits(32):08x}"
         self.handlers = list(handlers)
-        # Markers of the "memory phase" (JobCtx.memory_phase) — see killed_markers/fail_killed.
+        # Markers of the "memory phase" (JobCtx.memory_phase) - see killed_markers/fail_killed.
         self.marker_dir = marker_dir
 
     def handler_for(self, kind: str) -> Handler | None:
@@ -99,7 +99,7 @@ class Jobs:
     def take_markers(self, killed_pid: int | None) -> builtins.list[str]:
         """Reads and deletes the memory-phase markers left by previous processes;
         returns the ids of the jobs whose marker belongs to the ``killed_pid`` process (killed by
-        SIGKILL — e.g. cgroup OOM). Markers of other PIDs (container restarted,
+        SIGKILL - e.g. cgroup OOM). Markers of other PIDs (container restarted,
         chaos) are only deleted: those jobs resume normally from the checkpoint."""
         d = self.marker_dir
         if d is None or not d.is_dir():

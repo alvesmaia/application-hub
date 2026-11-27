@@ -387,7 +387,7 @@ def export_response(r: SqlResult, fmt_: str, filename: str) -> Response:
 
 # ---- style (served by the app as an asset) -------------------------------------------------------
 
-CSS = """/* hub_sdk.dashboards — gráficos e KPIs com os tokens do hub (claro e escuro). */
+CSS = """/* hub_sdk.dashboards - gráficos e KPIs com os tokens do hub (claro e escuro). */
 :root{--hub-dash-c0:#3b5bdb;--hub-dash-c1:#1f9d5a;--hub-dash-c2:#b87500;--hub-dash-c3:#7a5af8;--hub-dash-c4:#d64545;--hub-dash-c5:#0e8c80}
 :root[data-theme="dark"]{--hub-dash-c0:#7d9bff;--hub-dash-c1:#4cc584;--hub-dash-c2:#e0a43a;--hub-dash-c3:#a993ff;--hub-dash-c4:#f08080;--hub-dash-c5:#3cc2b4}
 @media (prefers-color-scheme: dark){:root[data-theme="auto"]{--hub-dash-c0:#7d9bff;--hub-dash-c1:#4cc584;--hub-dash-c2:#e0a43a;--hub-dash-c3:#a993ff;--hub-dash-c4:#f08080;--hub-dash-c5:#3cc2b4}}

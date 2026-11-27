@@ -37,7 +37,7 @@ class Registry:
             self._apps[app_id] = replace(e, upstream=url, version=e.version if version is None else version)
 
     def add(self, entry: AppEntry) -> None:
-        """New app deployed by the hub (developer kit) — `hub.ops.newapp`."""
+        """New app deployed by the hub (developer kit) - `hub.ops.newapp`."""
         self._apps[entry.id] = entry
 
     def remove(self, app_id: str) -> bool:

@@ -26,7 +26,7 @@ export default async function globalSetup() {
     const ctx = await request.newContext({ baseURL: HUB, extraHTTPHeaders: { origin: HUB } });
     const r = await ctx.post('/login', { form: { email: u.email, password: u.password, next: '/' }, maxRedirects: 0 });
     if (r.status() !== 303) throw new Error(`login ${u.email}: HTTP ${r.status()}`);
-    // Wave 9: the guided tour starts by itself on the first visit to Home — the old scripts
+    // Wave 9: the guided tour starts by itself on the first visit to Home - the old scripts
     // start from a user who has already seen it (the onboarding scenario resets it).
     await ctx.put('/api/me/onboarding', { data: { tour: 'done' } }).catch(() => undefined);
     await ctx.storageState({ path: stateFile(role) });

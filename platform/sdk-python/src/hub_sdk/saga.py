@@ -192,8 +192,8 @@ class Saga:
             }
         if nxt == "compensated":
             await self._mark(ctx, st, "compensated")
-            raise JobFail(f"saga compensada — {st.get('reason') or ''}")
-        raise JobFail(f"saga com compensação pendente de intervenção — {st.get('reason') or ''}")
+            raise JobFail(f"saga compensada - {st.get('reason') or ''}")
+        raise JobFail(f"saga com compensação pendente de intervenção - {st.get('reason') or ''}")
 
     async def _mark(self, ctx: JobCtx, st: dict[str, Any], state: str) -> None:
         if st["state"] != state:

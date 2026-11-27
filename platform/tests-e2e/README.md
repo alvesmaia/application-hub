@@ -1,4 +1,4 @@
-# E2E tests (wave 6) — Playwright
+# E2E tests (wave 6) - Playwright
 
 Presentation walkthrough, multiple tabs, and `hub dev` × production parity, against the compose stack with the
 demo users (`HUB_DEMO_USERS=1`).

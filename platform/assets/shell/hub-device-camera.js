@@ -1,4 +1,4 @@
-/* hub-device-camera.js — camera reading (data-hub-scan) and the feedback of the app's answer
+/* hub-device-camera.js - camera reading (data-hub-scan) and the feedback of the app's answer
  * to a reading. Second part of hub-device.js (split only for size; its header documents the
  * attributes), loaded right after it on the same pages. */
 (function () {
@@ -237,7 +237,7 @@
     ui.host.dataset.formats = formats.join(',');
     if (modes.length) ui.host.dataset.mode = modes[modeIdx].key;
     if (reader) { ui.host.dataset.reader = reader.mode; ui.host.dataset.pause = String(reader.cooldown); }
-    // Interactive: the camera waits for "Próximo" — the repeat window goes back to the default.
+    // Interactive: the camera waits for "Próximo" - the repeat window goes back to the default.
     const dedupMs = () => (reader && reader.mode === 'interativo' ? 1500 : opts.dedupMs > 0 ? opts.dedupMs : 1500);
     const prefs = () => opts.onPrefs && opts.onPrefs({ mode: modes.length ? modes[modeIdx].key : '', reader: reader ? reader.mode : '', cooldown: reader ? reader.cooldown : 0 });
     // Region of interest: only what is inside the aiming frame goes to the decoder.
@@ -357,7 +357,7 @@
       decoder = await makeDecoder(formats);
       probe = null;
       // Wrong-mode warning: a second reader, with only the formats of the other mode, looks at
-      // one frame every 4 — whatever it finds is not delivered, it only becomes the app's warning.
+      // one frame every 4 - whatever it finds is not delivered, it only becomes the app's warning.
       if (wrongHint && !window.HubDeviceDecoder) {
         const other = Pure.complement(formats);
         if (other.length) probe = await makeDecoder(other).catch(() => null);

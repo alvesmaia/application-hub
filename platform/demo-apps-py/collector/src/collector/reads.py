@@ -18,8 +18,8 @@ from collector.state import public_url, user_login, user_name
 
 # Camera modes (Scan toggle) → formats of `data-hub-scan-formats`.
 MODES: dict[str, tuple[str, str]] = {
-    "barras": ("ean_13,ean_8,upc_a,upc_e,code_128,code_39,itf", "Modo código de barras — troque para QR"),
-    "qr": ("qr_code,data_matrix", "Modo QR — troque para Código de barras"),
+    "barras": ("ean_13,ean_8,upc_a,upc_e,code_128,code_39,itf", "Modo código de barras - troque para QR"),
+    "qr": ("qr_code,data_matrix", "Modo QR - troque para Código de barras"),
 }
 DEFAULT_MODE = "barras"
 MODE_KEYS = ("barras", "qr")
@@ -40,7 +40,7 @@ def clean_value(raw: str) -> str:
 def _link_label(value: str) -> str:
     parts = urlsplit(value.strip())
     own = "collector" in parts.path or parts.netloc.endswith(urlsplit(public_url()).netloc or "\x00")
-    return t("Link para o app — abre o Coletor") if own else t("Link (endereço web), não um código")
+    return t("Link para o app - abre o Coletor") if own else t("Link (endereço web), não um código")
 
 
 async def classify(c: Any, raw: str) -> tuple[str, str]:

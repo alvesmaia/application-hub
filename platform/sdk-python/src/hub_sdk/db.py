@@ -2,7 +2,7 @@
 
 - ``HUB_DB_URL`` (or ``HUB_DB_URL_<ID>``): the app's database URL, injected by the platform.
 - Pools separados (mesma URL): handlers (``HUB_DB_POOL``, 12),
-  idempotency (``HUB_IDEM_POOL``, 12) and jobs (``HUB_JOBS_POOL``, 5) — a burst of
+  idempotency (``HUB_IDEM_POOL``, 12) and jobs (``HUB_JOBS_POOL``, 5) - a burst of
   requests does not stall the lease heartbeat nor block itself.
 - **Connection budget**: the app's role has ``CONNECTION LIMIT 40`` on hub-db. The
   default sizes are **per process**, so (measured in wave 7: 2 uvicorn processes plus the jobs one exceeded
@@ -58,7 +58,7 @@ async def create_pool(url: str, size: int) -> Any:
 
 
 def pool_size(var: str, default: int, per_web_process: bool = False) -> int:
-    """``var`` from the environment; otherwise ``default`` — divided among the web processes
+    """``var`` from the environment; otherwise ``default`` - divided among the web processes
     (``UVICORN_WORKERS``) when ``per_web_process``."""
     raw = os.environ.get(var, "").strip()
     if raw:
@@ -104,7 +104,7 @@ class Database:
 
     def spawn_migrations(self, app_id: str, app_sql: str, after: Any = None) -> None:
         """Migrates in the background until it succeeds (does not hold up startup nor the health
-        check); ``after`` (optional coroutine) runs afterwards — e.g. the initial load."""
+        check); ``after`` (optional coroutine) runs afterwards - e.g. the initial load."""
 
         async def loop() -> None:
             wait = 0.5

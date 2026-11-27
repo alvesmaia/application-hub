@@ -71,7 +71,7 @@ def test_pdf_is_valid_looking_and_escapes() -> None:
     p.rect(0, 0, 595, 60, (0.1, 0.35, 0.51))
     p.text(40, 40, 18, True, (1, 1, 1), "Ficha (São Paulo) \\ ação")
     p.new_page()
-    p.text(40, 40, 10, False, (0, 0, 0), "página 2 — 😀")
+    p.text(40, 40, 10, False, (0, 0, 0), "página 2 — 😀")  # cp1252 0x97 (escaped on purpose)
     b = p.finish()
     s = b.decode("latin-1")
     assert b.startswith(b"%PDF-1.4") and "/Count 2" in s and s.rstrip().endswith("%%EOF")

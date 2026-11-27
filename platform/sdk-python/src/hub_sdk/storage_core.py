@@ -187,7 +187,7 @@ class Connection:
         c.user_sig = (x_hub_user_sig or None) if c.user is not None and c.user else None
         return c
 
-    def _copy(self) -> Connection:  # pragma: no cover — overridden
+    def _copy(self) -> Connection:  # pragma: no cover - overridden
         raise NotImplementedError
 
     async def upload(self, path: str, data: Body, content_type: str, length: int | None = None) -> Item:

@@ -1,4 +1,4 @@
-/* Platform operations — deployments, containers, backups and SDK. */
+/* Platform operations - deployments, containers, backups and SDK. */
 .ops-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-14)}
 .ops-grid-flat{align-items:start}
 .ops-section{margin-top:var(--space-16)}
@@ -127,7 +127,7 @@
 .flags-table td{white-space:normal;vertical-align:top}
 .status-public .page-container{padding-top:var(--space-32)}
 @media (max-width:900px){.obs-grid,.obs-cards{grid-template-columns:1fr}.obs-span{grid-template-columns:1fr 60px}.obs-span-track{grid-column:1/-1}}
-/* Wave 10 — Administration › Connections */
+/* Wave 10 - Administration › Connections */
 .ops-steps li.failed{opacity:1}
 .ops-steps li.failed .ops-step-dot{background:var(--color-danger);border-color:var(--color-danger)}
 .conn-actions{justify-content:flex-start}

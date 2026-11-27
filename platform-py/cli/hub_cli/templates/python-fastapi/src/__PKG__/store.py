@@ -1,4 +1,4 @@
-"""App data in SQLAlchemy Core (SQLite under `hub dev`, Postgres on the hub — same API).
+"""App data in SQLAlchemy Core (SQLite under `hub dev`, Postgres on the hub - same API).
 
 The schema changes only through an Alembic migration (``migrations/versions``); ``metadata`` mirrors the tables.
 """

@@ -1,4 +1,4 @@
-// F7a — zero downtime and chaos against the Python stack (`app-hub-*`, hub on :8090). Only touches `app-hub-*`; does not touch `hub-*` nor `apphub-devtunnel`:
+// F7a - zero downtime and chaos against the Python stack (`app-hub-*`, hub on :8090). Only touches `app-hub-*`; does not touch `hub-*` nor `apphub-devtunnel`:
 //
 //   HUB=http://localhost:8090 HUB_USER=… HUB_PASSWORD=… node loadtest/py-resilience.mjs zd|chaos [--rps 60] [--out arq.md]
 //
@@ -22,7 +22,7 @@ const RPS = Number(arg('--rps', 60));
 const here = path.dirname(fileURLToPath(import.meta.url));
 const t0 = Date.now();
 const lines = [];
-const log = (m) => { const l = `${((Date.now() - t0) / 1000).toFixed(1)} s — ${m}`; lines.push(l); console.log(l); };
+const log = (m) => { const l = `${((Date.now() - t0) / 1000).toFixed(1)} s - ${m}`; lines.push(l); console.log(l); };
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const docker = (...a) => execFileSync('docker', a, { encoding: 'utf8', env: { ...process.env, MSYS_NO_PATHCONV: '1' } }).trim();
 // Container prefix (E2E_CONTAINER_PREFIX; isolated instance: app-hub-iso-, apps database in E2E_APP_DB).
@@ -167,7 +167,7 @@ log(`total: ${total.n} req · 2xx ${total.ok} · não-2xx ${JSON.stringify(total
 const day = new Date().toISOString().slice(0, 10);
 const outFile = path.resolve(arg('--out', path.join(here, 'results', day, `py-${MODE}.md`)));
 fs.mkdirSync(path.dirname(outFile), { recursive: true });
-const md = `# ${MODE === 'zd' ? 'Zero downtime' : 'Caos'} — pilha Python (${new Date().toISOString()})\n\nCarga ${RPS} req/s.\n\n| Fase | s | req | 2xx | não-2xx | erro |\n|---|---:|---:|---:|---|---|\n${rows.map((r) => `| ${r.name} | ${r.secs} | ${r.n} | ${r.ok} | ${JSON.stringify(r.bad)} | ${r.err} |`).join('\n')}\n\nTotal: ${total.n} req, 2xx ${total.ok}, não-2xx ${JSON.stringify(total.bad)}\n\n${lines.map((l) => `- ${l}`).join('\n')}\n`;
+const md = `# ${MODE === 'zd' ? 'Zero downtime' : 'Caos'} - pilha Python (${new Date().toISOString()})\n\nCarga ${RPS} req/s.\n\n| Fase | s | req | 2xx | não-2xx | erro |\n|---|---:|---:|---:|---|---|\n${rows.map((r) => `| ${r.name} | ${r.secs} | ${r.n} | ${r.ok} | ${JSON.stringify(r.bad)} | ${r.err} |`).join('\n')}\n\nTotal: ${total.n} req, 2xx ${total.ok}, não-2xx ${JSON.stringify(total.bad)}\n\n${lines.map((l) => `- ${l}`).join('\n')}\n`;
 fs.writeFileSync(outFile, md);
 console.log(`\nRelatório: ${outFile}`);
 const failed = rows.some((r) => r.err) || (MODE === 'zd' && Object.keys(total.bad).length > 0);

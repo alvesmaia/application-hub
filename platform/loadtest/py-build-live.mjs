@@ -1,4 +1,4 @@
-// F8 — live: package with build context (`hub pack --build-dir`) -> upload -> build on the hub -> blue/green in
+// F8 - live: package with build context (`hub pack --build-dir`) -> upload -> build on the hub -> blue/green in
 // production under continuous load (0 failures) -> rollback. Touches only app-hub-*.
 //   HUB=http://localhost:8090 HUB_PASSWORD=… node loadtest/py-build-live.mjs <package.hubapp> [--rps 40]
 import fs from 'node:fs';
@@ -9,7 +9,7 @@ const pkg = process.argv[2];
 const RPS = Number(arg('--rps', 40));
 let cookie = '';
 const t0 = Date.now();
-const log = (m) => console.log(`${((Date.now() - t0) / 1000).toFixed(1)} s — ${m}`);
+const log = (m) => console.log(`${((Date.now() - t0) / 1000).toFixed(1)} s - ${m}`);
 
 async function login() {
   const r = await fetch(`${HUB}/login`, { method: 'POST', redirect: 'manual',

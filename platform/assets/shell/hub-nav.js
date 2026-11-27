@@ -1,4 +1,4 @@
-/* hub-nav.js — app page states (loader, skeleton, restarting, queued), fragment swap,
+/* hub-nav.js - app page states (loader, skeleton, restarting, queued), fragment swap,
  * polling, in-app navigation and form submission. Second part of hub.js (split only for
  * size; its header documents the behavior), loaded by a classic tag right after it. */
 (function () {
@@ -10,7 +10,7 @@
     fetchFragment, publicOfFrag } = P;
   let navToken = 0;
   // In-flight/rendered target (wave 9 bug): `location` already changes in pushState, before the
-  // fragment arrives — comparing the click with `location` leaves a click during that
+  // fragment arrives - comparing the click with `location` leaves a click during that
   // window (e.g. toggling the sorting very fast) with no effect, because the link still
   // shown (not re-rendered) points to the same target that was just pushed.
   // `pendingTarget` follows what is actually in flight/rendered on the screen.
@@ -95,7 +95,7 @@
   }
 
   // End of the loader: the LOADER_MS timer may fire before the animation frame that would reach
-  // 100% — closes at 100% and lets one frame paint before swapping.
+  // 100% - closes at 100% and lets one frame paint before swapping.
   function finishLoader() {
     const box = root.querySelector('.app-loading');
     if (!box) return Promise.resolve();
@@ -248,7 +248,7 @@
     await swap(result.html);
   }
 
-  // The app was opened before in this tab session: no loader and no minimum time (owner, 2026-11-27) — the
+  // The app was opened before in this tab session: no loader and no minimum time (owner, 2026-11-27) - the
   // skeleton shows only until the fragment arrives.
   async function openAgain(target, token) {
     showSkeleton(sectionOf(target.split('?')[0]));
@@ -275,11 +275,11 @@
     if (push) history.pushState({}, '', target);
     if (!samePage) window.scrollTo(0, 0);
     const hasSidebar = Boolean(root.querySelector('.app-sidebar'));
-    // Same page with another query (search, filter, pagination): no skeleton — but the
+    // Same page with another query (search, filter, pagination): no skeleton - but the
     // content (still the old one) does not receive clicks until the new fragment arrives,
     // otherwise a second quick click (e.g. toggling the sorting) hits the old link,
     // which does not yet reflect the change, and the target computed matches what was already
-    // pushed — the click is discarded as "no change" (wave 9: the server query became slow
+    // pushed - the click is discarded as "no change" (wave 9: the server query became slow
     // enough for this window to really show up).
     // Page change in the app: skeleton for a fixed PAGE_SKELETON_MS (or until the fragment arrives).
     // `quiet` (browser back/forward) cancels the skeleton, as in the mockup.
@@ -389,7 +389,7 @@
     const done = async (html) => {
       buttons.forEach((b) => { b.disabled = false; });
       const sel = form.dataset.hubTarget;
-      // Only an id (`#id`) inside the app content — never a selector built with app text.
+      // Only an id (`#id`) inside the app content - never a selector built with app text.
       const m = /^#?([A-Za-z][\w-]*)$/.exec((sel || '').trim());
       const cand = m ? document.getElementById(m[1]) : null;
       const el = cand && cand !== root && root.contains(cand) ? cand : null;

@@ -39,7 +39,7 @@ cd <id-do-app> && uv sync
 ## 3. Read the rules
 
 - The `AGENTS.md` generated at the project root: structure, commands and template rules.
-- The app contract: [@HUB@/dev/docs/contrato.md](@HUB@/dev/docs/contrato.md) — what the hub requires of every app.
+- The app contract: [@HUB@/dev/docs/contrato.md](@HUB@/dev/docs/contrato.md) - what the hub requires of every app.
 - References: [CLI](@HUB@/dev/docs/cli.md) and [SDK](@HUB@/dev/docs/sdk.md).
 
 ## 4. Develop
@@ -93,7 +93,7 @@ user before calling again. Step by step in [Publish and operate through MCP](/de
 
 The person expects to open the hub and find **their app as it was**: the same pages, URLs, data, layout,
 look and behavior. Rewriting it in the template's look, leaving pages out or "improving" its CSS is a failure
-even when `hub check` is green. `hub check` and `hub compare` hold you to this — read their messages and fix
+even when `hub check` is green. `hub check` and `hub compare` hold you to this - read their messages and fix
 what they say; never lower a limit or tick an item you did not do.
 
 ### Order of work
@@ -106,9 +106,9 @@ what they say; never lower a limit or tick an item you did not do.
    collapse, filters, forms valid and invalid, delete).
 5. **Done** (definition below), then publish to staging and write the report.
 
-### 1. Inventory — `port-inventory.md`
+### 1. Inventory - `port-inventory.md`
 
-At the project root, a checklist `hub check` reads: `- [x]` done, `- [~] … — reason` a deviation (the reason is
+At the project root, a checklist `hub check` reads: `- [x]` done, `- [~] … - reason` a deviation (the reason is
 required: what the hub lacks or what you chose), `- [ ]` still to do (`hub check` fails while one is left).
 List, from the running original:
 
@@ -117,11 +117,11 @@ List, from the running original:
   the templates and static JS with
   `grep -rnE "addEventListener|onclick=|fetch\(|localStorage|draggable|classList|aria-expanded|showModal|new Chart"`.
   One line each: `- [x] board: drag cards between columns → data-hub-drag`.
-- **States:** what the page shows without a click — a column collapsed by default, an open tab, a selected
+- **States:** what the page shows without a click - a column collapsed by default, an open tab, a selected
   filter, an empty state.
 - **Data:** the same records on both sides (point the port at a copy of the original's database in `hub dev`).
 
-### 2. The original CSS stays untouched — `port.json`
+### 2. The original CSS stays untouched - `port.json`
 
 Copy each original stylesheet byte for byte into the project (e.g. `assets/original/`) and put **every** change
 the hub needs (theme selector additions, `.workspace-content` rules, removing the top bar) in one overrides file.
@@ -152,7 +152,7 @@ differs from the original or `app_css` was edited by hand. A Tailwind app keeps 
   weight and others) out of the original markup. `NavItem`/`AppInfo` remain for the default sidebar of new apps.
 - **URLs:** each route keeps its path under `/{id}/…`; nested paths work. Build links with `{{ base }}` (the
   public base, from `hub_sdk.render.public_base`); never flatten routes to `?id=`.
-- **Top bar:** what it showed goes where the hub already has it — never a second header inside the app:
+- **Top bar:** what it showed goes where the hub already has it - never a second header inside the app:
 
   | The app's top bar had | In the hub |
   |---|---|
@@ -172,7 +172,7 @@ differs from the original or `app_css` was edited by hand. A Tailwind app keeps 
   with their dark values. An app that never had a dark theme may stay light: `#app-root{color-scheme:light}`.
 - **Themes:** keep the original's theme selectors as they are; the hub's `<html data-theme>` is `light`, `dark`
   or `auto` (follow the system): where the original has a "system" theme, add `:root[data-theme="auto"]` next to
-  it (in the overrides) — never add `light`/`dark` to another theme's block.
+  it (in the overrides) - never add `light`/`dark` to another theme's block.
 - **Full-height pages** (a board whose columns scroll inside): the app's content area in the hub is
   `.workspace-content` (already the viewport's height below the hub header, and it scrolls); rules the original
   aims at its own content wrapper (`calc(100vh - header)`) go to `.workspace-content:has(…)`.
@@ -187,7 +187,7 @@ No app JS by default. Each row has a full recipe (original → ported code, the 
 |---|---|
 | sidebar collapse, hamburger/drawer | the SDK sidebar has a collapse button on the desktop (`data-hub-menu="collapse"`, remembered per browser) and the drawer on phones (`data-hub-menu="open\|close"`) |
 | tabs | `[data-hub-tabs] > [data-hub-tab="#panel"]` |
-| modal with a form | keep it a modal: `data-hub-modal="#tpl"` on the button; in `<template id="tpl">` a `<form id="f" data-hub-post="{{ base }}/…" data-hub-target="#f">` with `data-hub-close` on Cancel. Invalid: answer `422` with the form (it replaces itself in the modal). Valid: answer `303` to the page — the modal closes and that page shows |
+| modal with a form | keep it a modal: `data-hub-modal="#tpl"` on the button; in `<template id="tpl">` a `<form id="f" data-hub-post="{{ base }}/…" data-hub-target="#f">` with `data-hub-close` on Cancel. Invalid: answer `422` with the form (it replaces itself in the modal). Valid: answer `303` to the page - the modal closes and that page shows |
 | "are you sure?" before delete | `data-hub-confirm="Text"` on the form or button, with `data-hub-confirm-title`, `-label` and `-danger` to keep the original wording and color |
 | select that filters on change | `<select data-hub-autosubmit>` |
 | dropdown, split button ("New ▾"), "⋮" menu | `<button data-hub-dropdown="#menu">` + `<div id="menu" hidden>` with the original markup and CSS |
@@ -208,7 +208,7 @@ form (use `data-hub-target` to replace only the form). Audit and notifications g
 change: `with engine.begin() as conn:` … `sdk.outbox.in_transaction(conn, ev)`. Template variables cannot be
 named `conn`, `template`, `active` or `status` (parameters of `render.page`).
 
-### 6. Compare with the original — `hub compare`
+### 6. Compare with the original - `hub compare`
 
 With `hub dev` and the original running, for every route of the inventory:
 
@@ -224,7 +224,7 @@ sidebar + content, without its top bar.) Per page it measures, and fails on any 
 - **components** below `--min-components` (90%): each element of the original, paired with the hub's by tag,
   classes and own text, must have the same computed style (color, background, font, size, weight, padding,
   border, radius; sizes within a few pixels). The report lists each one that differs, e.g.
-  `h2|lookups: weight 700 → 800` — fix it in the overrides (or the markup) and run again.
+  `h2|lookups: weight 700 → 800` - fix it in the overrides (or the markup) and run again.
 
 `.hub/compare/index.html` shows each page side by side with what differs. Never lower a limit to pass.
 
@@ -237,7 +237,7 @@ sidebar + content, without its top bar.) Per page it measures, and fails on any 
 - Filter fields above a table whose original had filters in the header: use `data-hub-colfilter`.
 - Invented sample data: compare against the original's own records.
 - A class of the original with the same name as one of the hub kit's (`data-table`, `card`, `btn`…): the kit's
-  rules apply too; `hub compare` shows the differing properties — neutralize them in the overrides.
+  rules apply too; `hub compare` shows the differing properties - neutralize them in the overrides.
 - Dropping small things that need JS (a "+" in a column header, a caret, a kebab): they are in the inventory and
   have a kit equivalent.
 - Comparing only the first page: every route of the inventory goes through `hub compare`.
@@ -255,4 +255,4 @@ A full example, with the code that changed: [Adapting an existing app: the Frota
 ## Rules
 
 - Never commit secrets (`.env`, tokens, keys); never write the token to project files.
-- Production (`--env production`) only with approval in the hub — publish to staging and request the approval.
+- Production (`--env production`) only with approval in the hub - publish to staging and request the approval.

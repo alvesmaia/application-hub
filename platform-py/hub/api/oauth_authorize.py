@@ -1,4 +1,4 @@
-"""OAuth 2.1 for `/mcp` — `/oauth/authorize`: the consent screen and its decision."""
+"""OAuth 2.1 for `/mcp` - `/oauth/authorize`: the consent screen and its decision."""
 
 from __future__ import annotations
 

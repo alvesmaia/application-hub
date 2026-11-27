@@ -1,5 +1,5 @@
-"""Triggers (admins): list, new/edit (choose the process first — the select reloads the form with
-its package's fields — then the rule and the parameters), enable/disable and delete."""
+"""Triggers (admins): list, new/edit (choose the process first - the select reloads the form with
+its package's fields - then the rule and the parameters), enable/disable and delete."""
 
 from __future__ import annotations
 

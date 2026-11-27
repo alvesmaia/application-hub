@@ -140,7 +140,7 @@ def now() -> datetime:
 
 def sla_text(status: str, sla_due: datetime) -> str:
     if status in CLOSED:
-        return "—"
+        return "-"
     secs = (sla_due - now()).total_seconds()
     mins = int(secs / 60)  # truncates to zero, like chrono
     if mins < 0:

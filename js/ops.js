@@ -1,4 +1,4 @@
-/* Platform operations — deployments, containers, backups and SDK. */
+/* Platform operations - deployments, containers, backups and SDK. */
 (function () {
   const baseAdminContent = window.adminContent;
   const appName = key => (applications[key] ? applications[key].name : key);
@@ -13,7 +13,7 @@
   let deploys = loadCache('deploys', [
     ['app1', '2.4.1', 'Produção', 'GitHub Actions', 'a91f3c2', 'Implantado', 'há 3 h'],
     ['app2', '1.8.0', 'Staging', 'GitHub Actions', '4be07d1', 'Implantado', 'há 5 h'],
-    ['app3', '3.1.0', 'Produção', 'Import manual', '—', 'Aguardando aprovação', 'ontem'],
+    ['app3', '3.1.0', 'Produção', 'Import manual', '-', 'Aguardando aprovação', 'ontem'],
     ['app2', '1.7.9', 'Produção', 'GitHub Actions', '9c21aa0', 'Implantado', '2 dias'],
     ['app1', '2.4.0', 'Staging', 'GitHub Actions', 'f02b6e9', 'Rejeitado', '3 dias']
   ]);
@@ -42,7 +42,7 @@
     ['app3', 'Agendado', '860 MB', 'Concluído', 'hoje 06:00'],
     ['app2', 'Sob demanda', '420 MB', 'Concluído', 'ontem 17:42'],
     ['app3', 'Teste de restore', '860 MB', 'Concluído', 'ontem 04:10'],
-    ['app2', 'Agendado', '—', 'Falhou', '2 dias']
+    ['app2', 'Agendado', '-', 'Falhou', '2 dias']
   ]);
 
   /* ---------- Deployments ---------- */
@@ -55,7 +55,7 @@
         <div class="panel-heading"><h3>Importar pacote</h3><span class="ops-muted">UI · mesma API do CI</span></div>
         <label class="ops-drop" data-ops-drop><input type="file" accept=".hubapp,.zip" data-ops-file hidden />${svg('plus')}<strong data-ops-file-name>Arraste um .hubapp ou clique para selecionar</strong><small>Pacote assinado com manifest, UI, SBOM e referência da imagem OCI</small></label>
         <div class="ops-inline"><div class="form-field"><label>Ambiente</label><select data-ops-env>${envOpts}</select></div><button class="primary-button" data-ops-import>Validar e implantar</button></div>
-        <p class="ops-note">Import manual em produção exige aprovação — o CI continua a fonte da verdade.</p>
+        <p class="ops-note">Import manual em produção exige aprovação - o CI continua a fonte da verdade.</p>
       </section>
       <section class="panel">
         <div class="panel-heading"><h3>Pipeline de validação</h3><span class="ops-muted" data-ops-pipeline-status>Aguardando pacote</span></div>
@@ -93,9 +93,9 @@
       if (i === total) {
         if (env !== 'Produção') items[items.length - 1].className = 'skipped';
         statusEl.textContent = env === 'Produção' ? 'Aguardando aprovação' : 'Aprovado';
-        deploys.unshift(['app1', fileName.replace(/^.*?-(\d[\w.]*)\.hubapp$/, '$1').replace(/\.hubapp$/, '') || '1.0.0', env, 'Import manual', '—', env === 'Produção' ? 'Aguardando aprovação' : 'Implantado', 'agora']);
+        deploys.unshift(['app1', fileName.replace(/^.*?-(\d[\w.]*)\.hubapp$/, '$1').replace(/\.hubapp$/, '') || '1.0.0', env, 'Import manual', '-', env === 'Produção' ? 'Aguardando aprovação' : 'Implantado', 'agora']);
         saveCache('deploys', deploys);
-        toast(env === 'Produção' ? 'Pacote validado — aguardando aprovação para produção.' : 'Pacote validado e implantado em staging.');
+        toast(env === 'Produção' ? 'Pacote validado - aguardando aprovação para produção.' : 'Pacote validado e implantado em staging.');
         setTimeout(render, 900);
         return;
       }
@@ -119,7 +119,7 @@
       <div class="ops-meter"><span>Processos</span>${bar(c.pids[0], c.pids[1])}<em>${c.pids[0]} / ${c.pids[1]}</em></div>
       <div class="ops-tags"><span>rede isolada</span><span>read-only</span><span>cap-drop ALL</span><span>no-new-privileges</span><span>${c.sandbox}</span></div>
       <div class="ops-actions"><button class="secondary-button" data-ops-toast="Limites de ${esc(applications[c.app].short)} abertos para edição (limitados pela política da plataforma).">Editar limites</button><button class="secondary-button" data-ops-toast="Container hub-app-${c.app} reiniciado.">Reiniciar</button></div></article>`).join('');
-    return `${header('Containers', 'Cada aplicação roda em container exclusivo com recursos definidos — compatível com Docker e Podman.')}
+    return `${header('Containers', 'Cada aplicação roda em container exclusivo com recursos definidos - compatível com Docker e Podman.')}
     <div class="ops-grid-2">
       <section class="panel"><div class="panel-heading"><h3>Runtime</h3><span class="ops-muted">Docker Engine API</span></div>
         <div class="filter-chips"><button class="filter-chip ${runtime === 'docker' ? 'active' : ''}" data-ops-runtime="docker">Docker</button><button class="filter-chip ${runtime === 'podman' ? 'active' : ''}" data-ops-runtime="podman">Podman</button></div>
@@ -136,16 +136,16 @@
   /* ---------- Backups ---------- */
   function backupsPage() {
     const policies = backupPolicies.map(([app, sched, ret, vols, hooks, dest]) => `<tr><td><span class="table-primary">${esc(appName(app))}</span></td><td>${sched}</td><td>${ret}</td><td>${vols.map(v => `<code>${v}</code>`).join(' ')}</td><td>${hooks ? pill('pre/post', 'ok') : pill('crash-consistent', 'warn')}</td><td>${dest}</td><td class="ops-actions"><button class="secondary-button" data-ops-backup="${app}">Backup agora</button></td></tr>`).join('');
-    const history = backups.map((b, i) => `<tr><td><span class="table-primary">${esc(appName(b[0]))}</span></td><td>${esc(b[1])}</td><td>${esc(b[2])}</td><td>${pill(esc(b[3]), toneFor(b[3]))}</td><td>${esc(b[4])}</td><td class="ops-actions">${b[3] === 'Concluído' ? `<button class="secondary-button" data-ops-toast="Restauração de ${esc(appName(b[0]))} (${esc(b[4])}) iniciada — imagem, volumes e banco.">Restaurar</button><button class="secondary-button" data-ops-toast="Clone de ${esc(appName(b[0]))} sendo criado em staging.">Clonar p/ staging</button>` : ''}</td></tr>`).join('');
+    const history = backups.map((b, i) => `<tr><td><span class="table-primary">${esc(appName(b[0]))}</span></td><td>${esc(b[1])}</td><td>${esc(b[2])}</td><td>${pill(esc(b[3]), toneFor(b[3]))}</td><td>${esc(b[4])}</td><td class="ops-actions">${b[3] === 'Concluído' ? `<button class="secondary-button" data-ops-toast="Restauração de ${esc(appName(b[0]))} (${esc(b[4])}) iniciada - imagem, volumes e banco.">Restaurar</button><button class="secondary-button" data-ops-toast="Clone de ${esc(appName(b[0]))} sendo criado em staging.">Clonar p/ staging</button>` : ''}</td></tr>`).join('');
     return `${header('Backups e snapshots', 'Estado das aplicações (volumes, bancos e configuração) com restic, criptografado e fora do host.')}
     <div class="metric-grid"><div class="metric-card"><div class="metric-label">Último teste de restore</div><div class="metric-value">ontem</div><div class="metric-change">Central de Serviços · OK em 4 min</div></div><div class="metric-card"><div class="metric-label">Armazenado (deduplicado)</div><div class="metric-value">38,4 GB</div><div class="metric-change">−62% com deduplicação</div></div><div class="metric-card"><div class="metric-label">Falhas nas últimas 24 h</div><div class="metric-value">1</div><div class="metric-change down">Fornecedores · hook pre expirou</div></div></div>
     <div class="content-panel"><table class="data-table"><thead><tr><th>Aplicação</th><th>Agenda</th><th>Retenção</th><th>Volumes</th><th>Consistência</th><th>Destino</th><th></th></tr></thead><tbody>${policies}</tbody></table></div>
     <div class="content-panel ops-section"><table class="data-table"><thead><tr><th>Aplicação</th><th>Tipo</th><th>Tamanho</th><th>Status</th><th>Quando</th><th></th></tr></thead><tbody>${history}</tbody></table></div>
-    <p class="ops-note">Jobs de backup rodam em container auxiliar com CPU, memória e I/O limitados — sem impacto nas demais aplicações.</p>`;
+    <p class="ops-note">Jobs de backup rodam em container auxiliar com CPU, memória e I/O limitados - sem impacto nas demais aplicações.</p>`;
   }
 
   function startBackup(app) {
-    backups.unshift([app, 'Sob demanda', '—', 'Em andamento', 'agora']);
+    backups.unshift([app, 'Sob demanda', '-', 'Em andamento', 'agora']);
     render();
     toast(`Backup de ${appName(app)} iniciado.`);
     setTimeout(() => { backups[0] = [app, 'Sob demanda', (0.3 + Math.random()).toFixed(1).replace('.', ',') + ' GB', 'Concluído', 'agora']; saveCache('backups', backups); if (location.pathname === '/team/admin/backups') render(); toast(`Backup de ${appName(app)} concluído.`); }, 2200);
@@ -177,7 +177,7 @@
     <section class="panel ops-section"><div class="panel-heading"><h3>CLI</h3><span class="ops-muted">binário único, Windows/Linux/macOS</span></div>
       <div class="ops-cmds">${cmd('hub dev', 'Shell local + proxy para o app nativo, identidade simulada, variáveis de .hub/dev.env')}${cmd('hub dev --limits', 'Aplica CPU/memória/PIDs do manifest (cgroups, Job Objects no Windows sem admin)')}${cmd('hub dev --container', 'Executa em Docker/Podman para fidelidade total')}${cmd('hub pack', 'Gera e assina o .hubapp')}${cmd('hub publish --env staging --wait', 'Publica e aguarda o pipeline de validação')}${cmd('hub promote / rollback', 'Promove a mesma versão ou volta a anterior')}${cmd('hub backup', 'Backup sob demanda e restore')}</div></section>
     <div class="content-panel ops-section"><table class="data-table"><thead><tr><th>Desenvolvimento local</th><th>Igual à produção</th><th>Como cobrir a diferença</th></tr></thead><tbody>
-      <tr><td><span class="table-primary">Shell, rotas, identidade, CSP</span></td><td>${pill('Sim', 'ok')}</td><td>—</td></tr>
+      <tr><td><span class="table-primary">Shell, rotas, identidade, CSP</span></td><td>${pill('Sim', 'ok')}</td><td>-</td></tr>
       <tr><td><span class="table-primary">Variáveis concedidas</span></td><td>${pill('Sim', 'ok')}</td><td>Segredos reais só no staging</td></tr>
       <tr><td><span class="table-primary">CPU / memória / processos</span></td><td>${pill('Aproximado', 'warn')}</td><td><code>hub dev --limits</code></td></tr>
       <tr><td><span class="table-primary">Rede isolada, read-only, banda</span></td><td>${pill('Não', 'err')}</td><td><code>hub dev --container</code> ou staging</td></tr>
@@ -206,7 +206,7 @@
     e.preventDefault();
     const d = t.dataset;
     if (d.opsImport !== undefined) return runValidation();
-    if (d.opsPromote !== undefined) { const r = deploys[+d.opsPromote]; deploys.unshift([r[0], r[1], 'Produção', r[3], r[4], 'Aguardando aprovação', 'agora']); saveCache('deploys', deploys); toast(`${appName(r[0])} ${r[1]} promovida — mesma versão, sem rebuild.`); return render(); }
+    if (d.opsPromote !== undefined) { const r = deploys[+d.opsPromote]; deploys.unshift([r[0], r[1], 'Produção', r[3], r[4], 'Aguardando aprovação', 'agora']); saveCache('deploys', deploys); toast(`${appName(r[0])} ${r[1]} promovida - mesma versão, sem rebuild.`); return render(); }
     if (d.opsApprove !== undefined) { deploys[+d.opsApprove][5] = 'Implantado'; saveCache('deploys', deploys); toast('Implantação aprovada e registrada na auditoria.'); return render(); }
     if (d.opsRollback !== undefined) { const r = deploys[+d.opsRollback]; toast(`Rollback de ${appName(r[0])} para a versão anterior iniciado.`); return; }
     if (d.opsRuntime !== undefined) { state.opsRuntime = d.opsRuntime; return render(); }

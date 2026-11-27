@@ -1,7 +1,7 @@
 """``python -m collector [serve|worker|--health|openapi]``.
 
 - ``serve`` (default): uvicorn on ``COLLECTOR_HOST`` (default 127.0.0.1; the image uses
-  0.0.0.0) and ``PORT`` (default 8080), with ``UVICORN_WORKERS`` processes (default 1 — see
+  0.0.0.0) and ``PORT`` (default 8080), with ``UVICORN_WORKERS`` processes (default 1 - see
   the sizing in ``loadtest/RESULTADOS.md``) and 8 s of drain on SIGTERM. With
   ``HUB_JOBS_MODE=process`` (the image default) it also starts and supervises the jobs process
   jobs (``worker``): restarted with increasing backoff if it dies (the web keeps running) and receives SIGTERM **immediately**, in parallel with the drain of the
@@ -48,7 +48,7 @@ KILLED_PID_ENV = "HUB_JOBS_KILLED_PID"
 
 
 def killed_by_sigkill(code: int | None) -> bool:
-    """SIGKILL exit (Popen: -9; shell: 137) — what the cgroup OOM killer does."""
+    """SIGKILL exit (Popen: -9; shell: 137) - what the cgroup OOM killer does."""
     return code in (-9, 137)
 
 
@@ -94,7 +94,7 @@ class WorkerSupervisor:
             killed = proc.pid if killed_by_sigkill(code) else None
             if time.monotonic() - started > 60:
                 wait = 1.0
-            why = " (SIGKILL — provável falta de memória)" if killed is not None else ""
+            why = " (SIGKILL - provável falta de memória)" if killed is not None else ""
             print(f"collector: processo de tarefas saiu ({code}){why}; religando em {wait:.0f} s", flush=True)
             self.stopping.wait(wait)
             wait = min(wait * 2, 30.0)

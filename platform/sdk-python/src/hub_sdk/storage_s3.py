@@ -229,7 +229,7 @@ class S3Connection(Connection):
         return self.presign("GET", key, secs, now)
 
     def presign_put_path(self, path: str, secs: int, now: dt.datetime | None = None) -> str:
-        """Pre-signed upload URL (``PUT``) for ``path`` (relative to the base folder) —
+        """Pre-signed upload URL (``PUT``) for ``path`` (relative to the base folder) -
         two-phase uploads (wave 12, 2.9)."""
         p = clean_path(path)
         return self.presign("PUT", self._key(p), secs, now or dt.datetime.now(dt.UTC))

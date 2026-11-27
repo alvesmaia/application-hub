@@ -3,7 +3,7 @@
 // - logshare.js: one SSE connection for N tabs (real node BroadcastChannel + Web Locks
 //   simulated), failover when the leader tab closes, local filters;
 // - hub.js: loader policy (deep link, reload, session, per-version cache) and the
-//   "reiniciando" state with retries — running the real hub.js in a DOM
+//   "reiniciando" state with retries - running the real hub.js in a DOM
 //   (jsdom from demo-apps/tools; install with `npm ci --prefix platform/demo-apps/tools`).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -196,7 +196,7 @@ function appPage({ url, respond, local = {}, session = {}, navType = 'navigate' 
   return { w, calls };
 }
 
-test('hub.js: abrir o app reproduz o mockup — carregador 0→100% em 3,5 s, skeleton 0,9 s, conteúdo', { skip: !hasJsdom && 'jsdom ausente' }, async () => {
+test('hub.js: abrir o app reproduz o mockup - carregador 0→100% em 3,5 s, skeleton 0,9 s, conteúdo', { skip: !hasJsdom && 'jsdom ausente' }, async () => {
   const { w } = appPage({
     url: 'http://hub.test/ativos/assets',
     respond: () => ({ status: 200, body: '<div class="workspace" id="workspace"><aside class="app-sidebar"></aside><section class="workspace-content"><p id="ok">Conteúdo</p></section></div>' }),

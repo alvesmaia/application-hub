@@ -59,7 +59,7 @@ def _ticks(lo: float, hi: float, n: int = 4) -> list[float]:
 
 def _safe(html: str) -> Markup:
     """HTML built here: every value coming from data/user went through :func:`_attr` (escaping)."""
-    return Markup(html)  # noqa: S704 — only own markup, escaped values
+    return Markup(html)  # noqa: S704 - only own markup, escaped values
 
 
 def _attr(s: Any) -> str:

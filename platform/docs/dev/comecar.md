@@ -1,6 +1,6 @@
 # Getting started
 
-Create a platform app, run it on your computer and publish it to this hub. Prerequisites: **uv** and Python 3.12 —
+Create a platform app, run it on your computer and publish it to this hub. Prerequisites: **uv** and Python 3.12 -
 no Docker, no Postgres, no access to the repository.
 
 > **Coding agents:** read [`/dev/llms.txt`](@HUB@/dev/llms.txt). It lists the original Markdown of each page

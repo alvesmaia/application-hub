@@ -63,7 +63,7 @@ async def seed(sdk: HubSdk) -> None:
 
 async def run_seed() -> int:
     """``python -m inventory seed``: migra o esquema e faz a carga (300 mil × ``HUB_SEED_SCALE``) fora
-    of the app — the equivalent of the one-shot ``hub-seed`` service. Idempotent and resumable."""
+    of the app - the equivalent of the one-shot ``hub-seed`` service. Idempotent and resumable."""
     from hub_sdk.db import app_env
 
     url = app_env("inventory", "HUB_DB_URL")

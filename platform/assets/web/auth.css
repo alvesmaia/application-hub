@@ -1,4 +1,4 @@
-/* auth.css — login, password change and 403 (standalone pages, no rail), in the shell's look. */
+/* auth.css - login, password change and 403 (standalone pages, no rail), in the shell's look. */
 .auth-body .app-root, .auth-main{margin-left:0}
 .auth-main{min-height:calc(100vh - 72px);display:grid;place-items:center;padding:var(--space-32) var(--space-16);background:var(--color-bg)}
 .auth-card{width:min(420px,100%);background:var(--color-surface);border:1px solid var(--color-divider);border-radius:var(--radius-5xl);padding:var(--space-28) var(--space-28) var(--space-24);box-shadow:0 8px 30px color-mix(in srgb,var(--c-navy-16-2) 5.5%,transparent);font-family:var(--font-ui)}

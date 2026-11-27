@@ -1,15 +1,15 @@
-"""Conformance suite for the app contract (``docs/CONTRATO-APP.md``) — black box over
+"""Conformance suite for the app contract (``docs/CONTRATO-APP.md``) - black box over
 HTTP, language-independent.
 
 Configuration (environment variables):
 
-- ``CONF_APP`` — app id; the profile ``profiles/<id>.json`` lists the sections, the action that
+- ``CONF_APP`` - app id; the profile ``profiles/<id>.json`` lists the sections, the action that
   writes data (idempotency + audit), the task trigger and the heavy route;
-- ``CONF_URL`` — app base URL (e.g. ``http://hub-app-contratos:8080`` on the app network, or
+- ``CONF_URL`` - app base URL (e.g. ``http://hub-app-contratos:8080`` on the app network, or
   ``http://127.0.0.1:9104`` native);
-- ``CONF_TOKEN`` — the app's ``HUB_INTERNAL_TOKEN``;
-- ``CONF_DB_URL`` — optional: the app database (schema and side-effect checks);
-- ``CONF_PROFILE`` — optional: profile path (``hub check --full`` uses the app's ``conformance.json``).
+- ``CONF_TOKEN`` - the app's ``HUB_INTERNAL_TOKEN``;
+- ``CONF_DB_URL`` - optional: the app database (schema and side-effect checks);
+- ``CONF_PROFILE`` - optional: profile path (``hub check --full`` uses the app's ``conformance.json``).
 
 The hub **must not** be collecting the app's outbox during the suite (``run.sh`` stops the
 ``hub-web``): the suite checks the pending events and the acknowledgements itself.

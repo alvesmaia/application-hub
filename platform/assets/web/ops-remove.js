@@ -1,6 +1,6 @@
-/* ops-remove.js — Applications › Containers: "Remover aplicação" (and "Remover apps de exemplo").
+/* ops-remove.js - Applications › Containers: "Remover aplicação" (and "Remover apps de exemplo").
  *
- * A modal where the person types the app's name (or id) — the button stays disabled until it matches —,
+ * A modal where the person types the app's name (or id) - the button stays disabled until it matches -,
  * gives their password (step-up) and picks backup / keep data. The removal runs as a job on the server
  * (POST /api/ops/apps/{id}/remove → GET /api/ops/jobs/{id}); the page reloads with its final message.
  * Values coming from the user/server enter the DOM only through textContent/value/esc(). */

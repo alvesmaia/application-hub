@@ -108,7 +108,7 @@ class _Captured:
     replay that arrives right after already finds ``done``. Once over the cap, what was in the buffer is
     sent and the rest goes **straight to the client** (streaming; nothing beyond the cap stays
     in memory) and only the "completed" mark is stored. If the client is gone (``send``
-    failed), the handler runs to the end without error — the action may already have been committed and the
+    failed), the handler runs to the end without error - the action may already have been committed and the
     result still needs to be recorded."""
 
     def __init__(self, send: Send) -> None:
@@ -250,7 +250,7 @@ def _replayer(receive: Receive, body: bytes | None, path: str | None) -> Receive
             state["done"] = True
             return {"type": "http.request", "body": body, "more_body": False}
         if state["f"] is None:
-            state["f"] = open(path or "", "rb")  # noqa: SIM115, ASYNC230 — closed at the end; short local read
+            state["f"] = open(path or "", "rb")  # noqa: SIM115, ASYNC230 - closed at the end; short local read
         chunk = state["f"].read(CHUNK)
         if not chunk:
             state["f"].close()

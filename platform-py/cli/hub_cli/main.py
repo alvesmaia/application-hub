@@ -294,7 +294,7 @@ def cmd_stacks(a: argparse.Namespace) -> int:
         print(json.dumps(rows, ensure_ascii=False))
     else:
         for r in rows:
-            print(f"{r['id']:<18} {r['name']} — {r['description']}")
+            print(f"{r['id']:<18} {r['name']} - {r['description']}")
     return 0
 
 

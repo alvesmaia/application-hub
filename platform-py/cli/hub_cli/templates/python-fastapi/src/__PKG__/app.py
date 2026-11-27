@@ -1,4 +1,4 @@
-"""__APP_NAME__ — Application Hub app (FastAPI + hub_sdk, SSR with Jinja2, no custom JavaScript).
+"""__APP_NAME__ - Application Hub app (FastAPI + hub_sdk, SSR with Jinja2, no custom JavaScript).
 
 Routes served under ``/__APP_ID__/…`` (the browser sees ``/apps/__APP_ID__/…``; the hub fetches fragments from
 ``/_frag/__APP_ID__/…``). Links always use the public base (``x-hub-base``, the ``base`` variable in templates).

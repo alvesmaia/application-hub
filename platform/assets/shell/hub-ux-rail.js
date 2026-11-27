@@ -1,4 +1,4 @@
-/* hub-ux-rail.js — live inbox counter and the platform rail (expanded/collapsed/hidden, ☰ menu
+/* hub-ux-rail.js - live inbox counter and the platform rail (expanded/collapsed/hidden, ☰ menu
  * on a narrow screen, collapsible admin sections), plus the development-mode reload. Last part
  * of hub-ux.js (split only for size), loaded after hub-ux-tour.js. */
 (function () {
@@ -190,7 +190,7 @@
 /* Development mode (scripts/dev-mode.sh reload-on): only when the server sets
  * <meta name="hub-dev-reload"> (HUB_DEV_MODE=1 + HUB_DEV_RELOAD=1; never in production).
  * Listens to the SSE /_dev/reload: "reload" (asset changed/app restarted) reloads the page;
- * "hello" carries the hub's start id — if it changed since the first connection, the hub
+ * "hello" carries the hub's start id - if it changed since the first connection, the hub
  * was restarted (new binary) and the page also reloads. Reconnection of the EventSource itself. */
 (function () {
   'use strict';

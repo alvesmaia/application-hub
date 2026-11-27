@@ -125,7 +125,7 @@ async def dbaccess_page(request: Request, c: AdminCtx) -> Response:
     for a in accounts:
         who = users.get(a["owner"])
         rows.append(a | {"owner_name": who["name"] if who else "(removido)", "css": _STATE_CSS[a["state"]],
-                         "until_text": a["until"].strftime("%d/%m/%Y") if a["until"] else "—"})  # fmt: skip
+                         "until_text": a["until"].strftime("%d/%m/%Y") if a["until"] else "-"})  # fmt: skip
     meta = dumps({"roles": [], "apps": [], "dbs": dbs, "hub_db": hub_db,
                   "users": [{"id": u["id"], "name": u["name"], "email": u["email"]} for u in users.values() if u["active"]]})  # fmt: skip
     return c.render(request, "admin_dbaccess.html", "Acesso", "Acesso ao banco",

@@ -39,7 +39,7 @@ async def health_page(
         "Serviços e integrações conectados.",
         rows=rows,
         slos=slo_rows(data.get("slos", []), c.tel.metrics, c.short),
-        has_latency=any(r["latency"] != "—" for r in rows),
+        has_latency=any(r["latency"] != "-" for r in rows),
         slo_meta=dumps(c.app_ids_meta()),
         meta=c.meta_json(),
         update=updates.notice(request.app.state),

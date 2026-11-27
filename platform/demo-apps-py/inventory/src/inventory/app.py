@@ -1,12 +1,12 @@
-"""Asset management — the platform's FastAPI app (``HUB_DEMO_APP=inventory``; same routes, same markup, same database).
+"""Asset management - the platform's FastAPI app (``HUB_DEMO_APP=inventory``; same routes, same markup, same database).
 
 Routes (all under ``/inventory``; the hub exposes them at ``/_frag/inventory/...``):
 
-- ``GET /inventory`` · ``/inventory/{dashboard,assets,movements,reports,settings}`` — fragmentos
+- ``GET /inventory`` · ``/inventory/{dashboard,assets,movements,reports,settings}`` - fragmentos
   (app workspace: sidebar + content). ``assets`` is dynamic (Postgres): paginated list with
   search, filters and server-side sorting, panels ``?edit=<id>``, ``?new=1``, ``?import=1``;
   the other sections are the mockup fragments (``fragments/``);
-- ``GET /inventory/_skeleton`` · ``/inventory/assets/{demo.css,app.css}`` (no JavaScript — wave 12);
+- ``GET /inventory/_skeleton`` · ``/inventory/assets/{demo.css,app.css}`` (no JavaScript - wave 12);
 - ``POST /inventory/assets`` (create) · ``POST /inventory/items/{id}`` (save, with ``version`` →
   409 if someone else changed it first) · ``POST /inventory/items/{id}/delete``;
 - ``POST /inventory/items/import`` (multipart) → durable job ``inventory.import``;

@@ -1,4 +1,4 @@
-"""OAuth 2.1 for `/mcp` — `/oauth/token` (code and refresh grants), revocation and access-token checks."""
+"""OAuth 2.1 for `/mcp` - `/oauth/token` (code and refresh grants), revocation and access-token checks."""
 
 from __future__ import annotations
 

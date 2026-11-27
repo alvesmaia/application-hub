@@ -2,7 +2,7 @@
 
 The ``vendas`` connection is a platform SQL connection (Administração › Conexões → PostgreSQL, MySQL/MariaDB or
 SQL Server, bound to this app × environment). Under ``hub dev`` it comes from ``.hub/connections.toml`` (SQLite with
-the data from ``dev/vendas.sql``) — same code. The SQL below is portable (SQLite/Postgres/MySQL/SQL Server):
+the data from ``dev/vendas.sql``) - same code. The SQL below is portable (SQLite/Postgres/MySQL/SQL Server):
 parameters ``:name``, no f-strings.
 """
 
@@ -26,7 +26,7 @@ BOARD = dash.Dashboard(
     [
         dash.Dataset(
             "summary",
-            f"select coalesce(sum(valor), 0) as receita, coalesce(sum(pedidos), 0) as pedidos, "  # noqa: S608 — fixed WHERE
+            f"select coalesce(sum(valor), 0) as receita, coalesce(sum(pedidos), 0) as pedidos, "  # noqa: S608 - fixed WHERE
             f"count(distinct produto) as produtos from vendas where {WHERE}",
             CONNECTION,
             params=("regiao",),

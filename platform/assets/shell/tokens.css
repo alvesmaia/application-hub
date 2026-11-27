@@ -1,5 +1,5 @@
 /*
- * Platform design tokens — Alvesmaia identity (colors, fonts, lines). Single source
+ * Platform design tokens - Alvesmaia identity (colors, fonts, lines). Single source
  * of color, spacing, radius, typography, shadows, layers (z-index) and motion.
  * Loaded BEFORE styles.css by the shell (hub-web and hub dev); the app fragments
  * run in the same document and use the same variables.
@@ -15,7 +15,7 @@
  * Documentation: platform/docs/DESIGN-TOKENS.md
  */
 
-/* Red Hat fonts (variables, SIL OFL 1.1 — see /assets/fonts/OFL.txt), served by the hub;
+/* Red Hat fonts (variables, SIL OFL 1.1 - see /assets/fonts/OFL.txt), served by the hub;
  * only latin + latin-ext. */
 @font-face { font-family: "Red Hat Display"; font-style: normal; font-display: swap; font-weight: 300 900; src: url("/assets/fonts/red-hat-display-latin-ext-wght-normal.woff2") format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
 @font-face { font-family: "Red Hat Display"; font-style: normal; font-display: swap; font-weight: 300 900; src: url("/assets/fonts/red-hat-display-latin-wght-normal.woff2") format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
@@ -23,7 +23,7 @@
 @font-face { font-family: "Red Hat Mono"; font-style: normal; font-display: swap; font-weight: 300 700; src: url("/assets/fonts/red-hat-mono-latin-ext-wght-normal.woff2") format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
 @font-face { font-family: "Red Hat Mono"; font-style: normal; font-display: swap; font-weight: 300 700; src: url("/assets/fonts/red-hat-mono-latin-wght-normal.woff2") format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
 
-/* paleta:inicio (gerado por scripts/gen-dark-theme.mjs a partir de scripts/brand-palette.json — não editar) */
+/* paleta:inicio (gerado por scripts/gen-dark-theme.mjs a partir de scripts/brand-palette.json - não editar) */
 :root {
   /* Identity roles (light theme). */
   --am-page: #F4F6FB;
@@ -418,7 +418,7 @@
  * light by default; the generated block below switches to dark. */
 :root, :root[data-theme="light"] { color-scheme: light; }
 
-/* tema-escuro:inicio (gerado por scripts/gen-dark-theme.mjs — não editar) */
+/* tema-escuro:inicio (gerado por scripts/gen-dark-theme.mjs - não editar) */
 :root[data-theme="dark"] {
   color-scheme: dark;
   --am-page: #191919;
@@ -519,7 +519,7 @@
 }
 /* tema-escuro:fim */
 
-/* temas-dos-apps:inicio (gerado por scripts/gen-dark-theme.mjs — não editar) */
+/* temas-dos-apps:inicio (gerado por scripts/gen-dark-theme.mjs - não editar) */
 :where(#app-root, [data-hub-layer]) {
   --am-page: var(--app-page, #F4F6FB);
   --am-surface: var(--app-surface, #FFFFFF);

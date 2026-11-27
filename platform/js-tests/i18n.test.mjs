@@ -1,4 +1,4 @@
-// Wave 12 (2.8) — in-browser translation (hub-i18n.js) with the same server catalog
+// Wave 12 (2.8) - in-browser translation (hub-i18n.js) with the same server catalog
 // (assets/i18n/catalog.json): exact texts, templates with variable parts and
 // phrases inside larger texts; two complete languages with the same markers.
 import { test } from 'node:test';

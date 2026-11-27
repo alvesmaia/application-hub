@@ -1,4 +1,4 @@
-/* admin.js — Administration interactions (and of the rail's submenu) in the hub shell.
+/* admin.js - Administration interactions (and of the rail's submenu) in the hub shell.
  *
  * The /admin/* pages arrive ready from the server; this script only:
  *   - opens/closes the "Administration" submenu of the rail;

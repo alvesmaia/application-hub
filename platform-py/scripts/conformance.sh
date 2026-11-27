@@ -76,7 +76,7 @@ for app in "${apps[@]}"; do
 done
 
 cat > "$OUT/conformance.md" <<EOF
-# Conformidade do contrato de app — $(date -Iseconds)
+# Conformidade do contrato de app - $(date -Iseconds)
 
 Suíte \`platform/conformance\` (pytest, caixa-preta por HTTP; ver \`platform/docs/CONTRATO-APP.md\`)
 rodando dentro das redes internas de cada app do compose, com o ${CP}web parado (a suíte confere
