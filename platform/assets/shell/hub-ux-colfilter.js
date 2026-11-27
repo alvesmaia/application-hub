@@ -29,6 +29,8 @@
   const dayMs = (s, end) => { if (!s) return null; const d = new Date(s + 'T00:00:00'); return d.getTime() + (end ? 86399999 : 0); };
 
   function setup(table) {
+    if (table.dataset.hubCfReady) return; // an app fragment can be mounted again
+    table.dataset.hubCfReady = '1';
     const heads = [...table.querySelectorAll('thead th')];
     const cols = heads.map((th, i) => ({ th, i, key: th.dataset.hubCol, label: th.dataset.hubColLabel || th.textContent.trim(), type: th.dataset.hubColType || 'list' })).filter((c) => c.key);
     if (!cols.length || !table.tBodies[0]) return;
@@ -252,4 +254,5 @@
     apply();
   }
   document.querySelectorAll('table[data-hub-colfilter]').forEach(setup);
+  window.HubColFilter = Object.freeze({ setup }); // app fragments arrive later: HubKit.mount calls it
 })();

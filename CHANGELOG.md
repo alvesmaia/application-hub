@@ -7,6 +7,16 @@ Versions 0.x = pre-1.0: the API may change between minor versions.
 
 ## [Unreleased]
 
+### Added
+- Apps: spreadsheet-style column filters (`<table data-hub-colfilter>` + `<th data-hub-col>`, §25) in app
+  fragments, mounted by `HubKit.mount` — an adapted app keeps the per-column filter/sort of its header.
+- `hub compare` checks the structure apart from the style: a table column missing or added, a field the
+  original does not have (or lost) or a broken image fails the page whatever the difference.
+
+### Fixed
+- Staging: without a session, `/staging/apps/<id>/…` sent the login back to production; the trailing-slash
+  redirect did the same. Both keep the staging URL.
+
 ## [0.12.0] — 2026-11-27
 
 ### Added

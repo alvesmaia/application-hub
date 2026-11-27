@@ -15,6 +15,8 @@
  *                        <form data-hub-dismiss data-hub-toast="…"> closes without sending
  *   table                <table data-hub-table data-hub-page-size="10">, <th data-hub-sort>,
  *                        <input data-hub-filter="#tabela|#lista" data-hub-filter-empty="#vazio">
+ *                        <table data-hub-colfilter> + <th data-hub-col="key"> (funnel per column,
+ *                        hub-ux-colfilter.js; mounted by HubKit.mount)
  *   upload with progress <form enctype="multipart/form-data"> + [data-hub-progress]
  *                        (<progress> or text) — handled by hub.js
  *   charts               data-hub-chart='{"type":"bar|line|area|donut",…}' and

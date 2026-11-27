@@ -148,6 +148,7 @@ failure even when `hub check` is green.
    | modal with a form | keep it a modal: `data-hub-modal="#tpl"` on the button; in `<template id="tpl">` a `<form id="f" data-hub-post="{{ base }}/…" data-hub-target="#f">` with `data-hub-close` on Cancel. Invalid: answer `422` with the form (it replaces itself in the modal). Valid: answer `303` to the page — the modal closes and that page shows |
    | "are you sure?" before delete | `data-hub-confirm="Text"` on the form or button, with `data-hub-confirm-title`, `-label` and `-danger` to keep the original wording and color |
    | select that filters on change | `<select data-hub-autosubmit>` |
+   | filter/sort in the table header (funnel per column, spreadsheet style) | `<table data-hub-colfilter>` with `data-hub-col="key"` on each `<th>` (§25): keep the same columns and headers; never swap it for filter fields above the table |
    | dismissible flash message | keep it as it is: the app's own cookies pass through the hub both ways (any name except `hub_*`, no `Domain`), so a cookie flash set on the `303` shows on the next page; a close "×" can be a CSS checkbox (no JS) |
    | chart drawn with CSS/JS | keep the CSS bars, or `data-hub-chart` |
    | anything else | §25 attributes; only then the reviewed exception of §13.1 |
@@ -161,7 +162,9 @@ failure even when `hub check` is green.
    delete, the phone layout and the dark theme. Then compare the looks with the original running:
    `hub compare <original-url> --routes / /tickets …` (same paths on both sides; `--login` for an original
    behind a login form) writes `.hub/compare/index.html` with each page side by side and its difference, and
-   fails while any page differs more than the limit (`--max-diff`, default 25%). Fix and run it again until it
+   fails while any page differs more than the limit (`--max-diff`, default 25%) or changed its structure: a
+   table column missing or added, a field the original does not have (or lost), a broken image. Point
+   `--original-selector` at the original's content area (e.g. `main`) so its top bar is left out. Fix and run it again until it
    passes; never lower the limit to pass. Porting only part of the app is not done: every route of the inventory
    is ported, or the final report lists each missing one with the reason **before** you publish. A full example,
    with the code that changed:

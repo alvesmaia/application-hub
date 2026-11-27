@@ -235,6 +235,6 @@
   - ✅ 5 · ponte de tokens com especificidade zero (variáveis do app com nomes comuns)
 - ▶️ 166 · Fidelidade estrutural na adequação de apps
   - ✅ 1 · staging: login e redirect da barra final mantêm `/staging`
-  - ▶️ 2 · filtro por coluna (`data-hub-colfilter`) disponível para os apps
-  - ⬜ 3 · `hub compare` checa estrutura (colunas, campos, botões, imagens quebradas)
-  - ⬜ 4 · refazer o port do case (todas as rotas, mesmo banco, compare aprovado)
+  - ✅ 2 · filtro por coluna (`data-hub-colfilter`) disponível para os apps
+  - ✅ 3 · `hub compare` checa estrutura (colunas, campos, botões, imagens quebradas)
+  - ▶️ 4 · refazer o port do case (todas as rotas, mesmo banco, compare aprovado) — subagente: Refazer port digi-hub completo

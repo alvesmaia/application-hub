@@ -287,6 +287,7 @@
       try { window.HubChart && window.HubChart.draw(n, JSON.parse(n.getAttribute('data-hub-chart'))); } catch (err) { console.error('data-hub-chart inválido', err); }
     });
     all('table[data-hub-page-size]').forEach((tb) => paginate(tb, 1));
+    if (window.HubColFilter) all('table[data-hub-colfilter]').forEach(window.HubColFilter.setup);
     all('.app-sidebar').forEach(addNavToggle);
     all('[data-hub-menu="collapse"]').forEach((b) => b.setAttribute('aria-expanded', String(!navCollapsed())));
     all('[data-hub-tabs]').forEach((g) => { const cur = g.querySelector('[data-hub-tab][aria-selected="true"]') || g.querySelector('[data-hub-tab]'); if (cur) selectTab(cur); });

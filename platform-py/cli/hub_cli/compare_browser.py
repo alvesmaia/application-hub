@@ -37,7 +37,20 @@ _FINGERPRINT_JS = """(sel) => {
     else if (/^H[1-6]$/.test(t)) counts.heading++;
     else if (t === 'svg' || t === 'IMG' || /symbol|icon/i.test(cs.fontFamily)) counts.icon++;
   }
-  return { fonts, palette, radii, counts };
+  // Structure: table headers and form fields as the reader sees them (icon-font glyph names left out) and
+  // images that did not load.
+  const iconish = (n) => /symbol|icon/i.test(getComputedStyle(n).fontFamily) || n.getAttribute('aria-hidden') === 'true';
+  const words = (el) => [...el.childNodes].map((n) => (n.nodeType === 3 ? n.textContent : n.nodeType === 1 && !iconish(n) ? words(n) : '')).join(' ');
+  const norm = (s) => String(s || '').replace(/\\s+/g, ' ').trim().toLowerCase();
+  const shown = (el) => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el); return r.width >= 2 && r.height >= 2 && cs.visibility !== 'hidden'; };
+  const headers = {}, controls = {}, broken = {};
+  for (const th of root.querySelectorAll('th')) if (shown(th)) add(headers, norm(words(th)) || null, 1);
+  for (const f of root.querySelectorAll('input, select, textarea')) {
+    if (!shown(f) || /^(hidden|submit|button|reset|image)$/i.test(f.type || '')) continue;
+    add(controls, norm(`${f.tagName} ${f.name || f.getAttribute('aria-label') || f.placeholder || f.id}`), 1);
+  }
+  for (const img of root.querySelectorAll('img')) if (img.complete && img.naturalWidth === 0) add(broken, 'img', 1);
+  return { fonts, palette, radii, counts, headers, controls, broken };
 }"""
 # The hub shows its loader before the app's fragment: wait until the app area has content and no loader.
 _HUB_READY_JS = """() => { const r = document.getElementById('app-root');

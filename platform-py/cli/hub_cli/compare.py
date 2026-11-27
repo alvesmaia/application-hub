@@ -5,8 +5,10 @@ Each route is opened on both sides (the original page's `--original-selector`, d
 (weighted by text length), the palette (text, background and border colors weighted by area), the corner radii
 and how many buttons, fields, table rows, links, headings and icons there are. The difference (0-100%) is
 the mean of what does not match; pixels are not compared (the hub moves things a few pixels on purpose, a
-rewrite in another look keeps similar pixels). `.hub/compare/index.html` shows the pages side by side with
-what differs; the command fails while any page differs more than `--max-diff`.
+rewrite in another look keeps similar pixels). The structure is checked apart (table columns, form
+fields, broken images): a port that adds filter fields or drops a column fails whatever the style.
+`.hub/compare/index.html` shows the pages side by side with what differs; the command fails while any page
+differs more than `--max-diff` or changed its structure.
 """
 
 from __future__ import annotations
@@ -52,6 +54,10 @@ class Row:
     name: str
     diff: dict[str, float]
     why: list[str]
+    structure: list[str]
+
+    def failed(self, limit: float) -> bool:
+        return self.diff["total"] > limit or bool(self.structure)
 
 
 def slug(route: str) -> str:
@@ -109,6 +115,21 @@ def explain(original: Style, hub: Style) -> list[str]:
     return lines
 
 
+def structure(original: Style, hub: Style) -> list[str]:
+    """What the port changed in the page itself, whatever the style: table columns missing or added, fields
+    the original does not have (e.g. filters above a table that had them in the header), broken images."""
+    a_cols, b_cols = original.get("headers", {}), hub.get("headers", {})
+    lines = [f"coluna do original ausente: {k}" for k in sorted(set(a_cols) - set(b_cols))]
+    lines += [f"coluna que o original não tem: {k}" for k in sorted(set(b_cols) - set(a_cols))]
+    a_fields, b_fields = original.get("controls", {}), hub.get("controls", {})
+    lines += [f"campo do original ausente: {k}" for k in sorted(set(a_fields) - set(b_fields))]
+    lines += [f"campo que o original não tem: {k}" for k in sorted(set(b_fields) - set(a_fields))]
+    broken = int(sum(hub.get("broken", {}).values()) - sum(original.get("broken", {}).values()))
+    if broken > 0:
+        lines.append(f"imagem quebrada no hub: {broken}")
+    return lines
+
+
 def _app_id(directory: Path) -> str:
     mf = directory / "manifest.json"
     if not mf.is_file():
@@ -141,26 +162,29 @@ def _compare_route(opts: Options, browser: Browser, out: Path, hub_base: str, ro
         opts.original.rstrip("/") + route, out / f"original--{name}.png", opts.original_selector, False
     )
     b = browser.shoot(hub_base + route, out / f"hub--{name}.png", "#app-root", True)
-    return Row(route, name, difference(a, b), explain(a, b))
+    return Row(route, name, difference(a, b), explain(a, b), structure(a, b))
 
 
 def _summary(rows: list[Row], limit: float, out: Path) -> int:
-    worse = [r for r in rows if r.diff["total"] > limit]
+    worse = [r for r in rows if r.failed(limit)]
     for r in rows:
         print(f"{'FALHOU' if r in worse else 'ok    '}  {r.diff['total']:5.1f}%  {r.route}")
-        for ln in r.why if r in worse else []:
+        for ln in r.structure + r.why if r in worse else []:
             print(f"          - {ln}")
     print(f"relatório: {(out / 'index.html').resolve()}")
     if worse:
-        print(f"{len(worse)} página(s) acima do limite de {limit:g}%: aproxime do original e rode de novo")
+        print(
+            f"{len(worse)} página(s) acima do limite de {limit:g}% ou com a estrutura mudada: "
+            "aproxime do original e rode de novo"
+        )
     return 1 if worse else 0
 
 
 def report(rows: list[Row], limit: float) -> str:
     def row(r: Row) -> str:
-        cls = "bad" if r.diff["total"] > limit else "ok"
+        cls = "bad" if r.failed(limit) else "ok"
         parts = " · ".join(f"{k} {v:.1f}%" for k, v in r.diff.items() if k != "total")
-        why = "".join(f"<li>{html.escape(w)}</li>" for w in r.why)
+        why = "".join(f"<li>{html.escape(w)}</li>" for w in r.structure + r.why)
         return (
             f'<section><h2 class="{cls}">{html.escape(r.route)} — {r.diff["total"]:.1f}%</h2><p>{parts}</p>'
             f'<ul>{why}</ul><div class="pair">'
@@ -198,6 +222,6 @@ def real_browser() -> Browser:
 
 def as_style(raw: Any) -> Style:
     """The browser's answer as a fingerprint (keeps only numeric weights of the known aspects)."""
-    aspects = ("fonts", "palette", "radii", "counts")
+    aspects = ("fonts", "palette", "radii", "counts", "headers", "controls", "broken")
     src = raw if isinstance(raw, dict) else {}
     return {a: {str(k): float(v) for k, v in (src.get(a) or {}).items()} for a in aspects}

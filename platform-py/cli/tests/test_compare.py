@@ -142,3 +142,52 @@ def test_command_line(project_dir: Path, monkeypatch: pytest.MonkeyPatch) -> Non
         ]
     )
     assert rc == 0 and seen[0].routes == ["/", "/x"] and seen[0].max_diff == 10.0
+
+
+def _with(style: dict[str, Any], **extra: dict[str, float]) -> dict[str, Any]:
+    return {**style, **extra}
+
+
+ORIGINAL_TABLE = _with(
+    SAME, headers={"#": 1, "title": 1, "status": 1, "initiative": 1}, controls={}, broken={}
+)
+
+
+def test_structure_missing_column_extra_field_and_broken_image_fail_even_with_the_same_style(
+    project_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    port = _with(
+        SAME,
+        headers={"#": 1, "title": 1, "status": 1},
+        controls={"select status": 1},
+        broken={"img": 1},
+    )
+    fake = FakeBrowser({"root": port, "veiculos": port})
+    fake_original = ORIGINAL_TABLE
+    rc = compare.run(
+        compare.Options(original="http://127.0.0.1:9000", routes=["/"], directory=project_dir),
+        _OriginalAs(fake, fake_original),
+    )
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "coluna do original ausente: initiative" in out
+    assert "campo que o original não tem: select status" in out
+    assert "imagem quebrada no hub" in out
+
+
+def test_same_structure_passes() -> None:
+    assert compare.structure(ORIGINAL_TABLE, ORIGINAL_TABLE) == []
+
+
+class _OriginalAs:
+    """The fake browser, answering a given style for the original side."""
+
+    def __init__(self, fake: FakeBrowser, original: dict[str, Any]) -> None:
+        self.fake, self.original = fake, original
+
+    def login(self, url: str, user: str, password: str) -> None:
+        self.fake.login(url, user, password)
+
+    def shoot(self, url: str, path: Path, selector: str, hub: bool) -> dict[str, Any]:
+        got = self.fake.shoot(url, path, selector, hub)
+        return got if hub else self.original
