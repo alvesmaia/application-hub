@@ -50,7 +50,7 @@
 
   function open(title, label, ask, accepted, path) {
     const host = document.createElement('div');
-    host.className = 'overlay';
+    host.className = 'overlay ops-rm-overlay'; // above the details drawer it is opened from
     host.innerHTML = `<section class="modal" role="dialog" aria-modal="true" aria-labelledby="ops-rm-title"><div class="modal-header"><h2 id="ops-rm-title">${esc(title)}</h2><button type="button" class="modal-close" aria-label="Fechar">×</button></div><form novalidate>${form(label, ask)}<p class="ops-modal-error" role="alert" data-rm="status"></p><div class="modal-actions"><button type="button" class="secondary-button" data-rm="cancel">Cancelar</button><button type="submit" class="danger-button" data-rm="submit" disabled>Remover</button></div></form></section>`;
     document.body.appendChild(host);
     const f = (k) => $(`[data-rm="${k}"]`, host);

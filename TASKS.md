@@ -250,11 +250,12 @@
   - ✅ 8 · bugs relatados: `{{ base }}/assets/files` 404, 303 com base pública, compare capturando o loader
   - ✅ 9 · vazamentos de CSS do hub no app (fonte `!important`, peso dos títulos → `data-hub-original`), achados pelo compare por componente
   - ✅ 10 · validação pesada (hub-check --all, E2E, ui-sweep) + release v0.13.0
-- ▶️ 168 · Remover aplicação (qualquer app; confirmação digitando o nome) — subagente: Implementar Remover aplicação
-  - ⬜ 1 · serviço: catálogo, containers prod/staging, backup opcional, banco/papel, auditoria
-  - ⬜ 2 · tela Operações › Aplicações: modal "digite o nome da aplicação"
-  - ⬜ 3 · API + MCP (destrutiva, confirm_token)
-  - ⬜ 4 · atalho "Remover apps de exemplo" (+ perfil demo-apps)
+- ✅ 168 · Remover aplicação (qualquer app; confirmação digitando o nome)
+  - ✅ 1 · serviço: catálogo, containers prod/staging, backup opcional, banco/papel, auditoria
+  - ✅ 2 · tela Operações › Aplicações: modal "digite o nome da aplicação"
+  - ✅ 3 · API + MCP (destrutiva, confirm_token)
+  - ✅ 4 · atalho "Remover apps de exemplo" (+ perfil demo-apps)
+  - ✅ 5 · validação na 8093: app publicado removido pela tela (nada sobrou além da auditoria); modal corrigido para ficar acima do painel
 - ▶️ 169 · Ajustes de telas e texto
   - ⬜ 1 · admin/runtime: ao abrir, já mostrar o desempenho dos últimos 5 minutos (não só a partir da entrada)
   - ✅ 2 · admin/tasks: tirar a coluna Tentativas da tabela (fica só no painel lateral do item); Duração no formato 20m3s (abaixo de 60s, só 57s)
